@@ -38,7 +38,7 @@ query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderC
       name
     }
     # Named optionally, like a mesh collection; `label` falls back to the file's name.
-    ... on CadModel {
+    ... on Fixture {
       id
       label
     }

@@ -28,7 +28,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@mikro/meshlens", name: "Mesh Lens", datum: false, path: "lenses/:id" },
     { identifier: "@mikro/networklens", name: "Network Lens", datum: false, path: "lenses/:id" },
     { identifier: "@mikro/annotationlens", name: "Annotation Lens", datum: false, path: "lenses/:id" },
-    { identifier: "@mikro/cadmodellens", name: "CAD Model Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/fixturelens", name: "Fixture Lens", datum: false, path: "lenses/:id" },
     { identifier: "@mikro/history", name: "History", datum: false, path: "history/:id" },
     { identifier: "@mikro/fluorophore", name: "Fluorophore", datum: false, path: "fluorophores/:id" },
     { identifier: "@mikro/file", name: "File (Mikro)", datum: true, path: "files/:id" },
@@ -40,7 +40,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@mikro/sparsedataset", name: "Sparse Dataset", datum: true, path: "sparsedatasets/:id" },
     { identifier: "@mikro/meshcollection", name: "Mesh Collection", datum: false, path: "meshcollections/:id" },
     // Hardware around the sample (a coverslip, a dish), one glTF in a space of its own.
-    { identifier: "@mikro/cadmodel", name: "CAD Model", datum: true, path: "cadmodels/:id" },
+    { identifier: "@mikro/fixture", name: "Fixture", datum: true, path: "fixtures/:id" },
     { identifier: "@mikro/annotation", name: "Annotation", datum: true, path: "annotations/:id" },
     { identifier: "@mikro/entityrelation", name: "Entity Relation", datum: false, path: "entityrelations/:id" },
     { identifier: "@mikro/specimen", name: "Specimen", datum: true, path: "specimens/:id" },

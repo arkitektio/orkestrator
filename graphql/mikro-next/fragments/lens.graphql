@@ -209,8 +209,8 @@ fragment LensSelection on Lens {
       id
     }
   }
-  ... on CadModelLens {
-    cadModel {
+  ... on FixtureLens {
+    fixture {
       id
     }
   }
@@ -326,11 +326,11 @@ fragment LensSubject on Lens {
       name
     }
   }
-  ... on CadModelLens {
+  ... on FixtureLens {
     windows {
       ...LensWindow
     }
-    cadModel {
+    fixture {
       id
       label
     }

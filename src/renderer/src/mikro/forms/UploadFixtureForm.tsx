@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { MikroCadModel } from "@/core/linkers";
+import { MikroFixture } from "@/core/linkers";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
-import { AxisType, CreateCadModelDocument, type CreateCadModelMutation, type CreateCadModelMutationVariables } from "@/mikro/api/graphql";
+import { AxisType, CreateFixtureDocument, type CreateFixtureMutation, type CreateFixtureMutationVariables } from "@/mikro/api/graphql";
 import { useMikro } from "@/mikro/api/funcs";
 import { uploadMediaBlob } from "@/mikro/components/scene/platform/sources/mediaUpload";
 
@@ -33,14 +33,14 @@ const unitButton = (active: boolean) =>
   }`;
 
 /**
- * Upload a binary glTF as a CAD model: the file goes to the datalayer as a
- * media object (`uploadMediaBlob`), then `createCadModel` registers it in a
+ * Upload a binary glTF as a fixture: the file goes to the datalayer as a
+ * media object (`uploadMediaBlob`), then `createFixture` registers it in a
  * space of its own whose x, y, z axes carry the chosen unit. The server reads
  * the file's header and box, and refuses anything that is not glTF 2.0.
  *
  * Opens the model's page on success, so there is no toast.
  */
-export const UploadCadModelForm = (props: { folder?: string }) => {
+export const UploadFixtureForm = (props: { folder?: string }) => {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const navigate = useNavigate();
@@ -53,8 +53,8 @@ export const UploadCadModelForm = (props: { folder?: string }) => {
       if (!file) throw new Error("Choose a .glb file to upload.");
       if (!datalayer) throw new Error("No datalayer is configured, so there is nowhere to upload the file to.");
       const store = await uploadMediaBlob(client, datalayer, new Blob([file], { type: "model/gltf-binary" }), file.name);
-      const result = await client.mutate<CreateCadModelMutation, CreateCadModelMutationVariables>({
-        mutation: CreateCadModelDocument,
+      const result = await client.mutate<CreateFixtureMutation, CreateFixtureMutationVariables>({
+        mutation: CreateFixtureDocument,
         variables: {
           input: {
             store,
@@ -65,11 +65,11 @@ export const UploadCadModelForm = (props: { folder?: string }) => {
         },
         refetchQueries: ["Children"],
       });
-      const created = result.data?.createCadModel;
+      const created = result.data?.createFixture;
       if (!created) throw new Error("The server answered with no model.");
       return created.id;
     },
-    { errorTitle: "Couldn't upload the model", onSuccess: (id) => navigate(MikroCadModel.linkBuilder(id)) },
+    { errorTitle: "Couldn't upload the model", onSuccess: (id) => navigate(MikroFixture.linkBuilder(id)) },
   );
 
   return (
@@ -81,7 +81,7 @@ export const UploadCadModelForm = (props: { folder?: string }) => {
       className="flex flex-col gap-4"
     >
       <DialogHeader>
-        <DialogTitle>Upload a CAD model</DialogTitle>
+        <DialogTitle>Upload a fixture</DialogTitle>
         <DialogDescription>
           A binary glTF (.glb) of hardware around the sample — a coverslip, a dish, a holder. Once registered, place
           it in a scene's world and add it as a layer.
@@ -89,9 +89,9 @@ export const UploadCadModelForm = (props: { folder?: string }) => {
       </DialogHeader>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="cad-model-file">File</Label>
+        <Label htmlFor="fixture-file">File</Label>
         <Input
-          id="cad-model-file"
+          id="fixture-file"
           type="file"
           accept=".glb,model/gltf-binary"
           onChange={(event) => {
@@ -103,8 +103,8 @@ export const UploadCadModelForm = (props: { folder?: string }) => {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="cad-model-name">Name</Label>
-        <Input id="cad-model-name" value={name} placeholder="Coverslip #1.5" onChange={(event) => setName(event.target.value)} />
+        <Label htmlFor="fixture-name">Name</Label>
+        <Input id="fixture-name" value={name} placeholder="Coverslip #1.5" onChange={(event) => setName(event.target.value)} />
       </div>
 
       <div className="flex flex-col gap-1.5">

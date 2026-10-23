@@ -1,0 +1,37 @@
+query GetFixture($id: ID!) {
+  fixture(id: $id) {
+    ...DetailFixture
+  }
+}
+
+# Whether a fixture can be drawn in a scene: its whole lens, if that lens's
+# space reaches the scene's world. Asked before the add-layer dialog opens on a
+# dropped model, so an unplaced one is refused in a sentence rather than
+# opening a picker that does not list it.
+query FixturePlacement($scene: ID!, $fixture: ID!) {
+  scene(id: $scene) {
+    id
+    worldCoordinateSystem {
+      id
+    }
+  }
+  fixture(id: $fixture) {
+    id
+    label
+    coordinateSystem {
+      id
+    }
+  }
+}
+
+query PlaceableFixtureLenses($fixture: ID!, $space: ID!) {
+  lenses(filters: { fixture: $fixture, sliced: false, placeableIn: { space: $space, asLayer: FIXTURE } }) {
+    id
+  }
+}
+
+query ListFixtures($filters: FixtureFilter, $pagination: OffsetPaginationInput) {
+  fixtures(filters: $filters, pagination: $pagination) {
+    ...ListFixture
+  }
+}

@@ -3,7 +3,7 @@ import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 /**
- * One download per CAD model file, shared by every layer drawing it.
+ * One download per fixture file, shared by every layer drawing it.
  *
  * Reference counted rather than kept forever: a model is fetched whole (a CAD
  * export can be tens of megabytes). The last release is DEFERRED by

@@ -72,9 +72,9 @@ export type PhasorLayerFragment = Extract<
   { __typename: "PhasorLayer" }
 >;
 
-export type CadModelLayerFragment = Extract<
+export type FixtureLayerFragment = Extract<
   SceneLayerFragment,
-  { __typename: "CadModelLayer" }
+  { __typename: "FixtureLayer" }
 >;
 
 export const isImageLayer = (

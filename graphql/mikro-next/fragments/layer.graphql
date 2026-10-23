@@ -618,12 +618,12 @@ fragment SceneLayer on Layer {
     }
     activeFilterBys
   }
-  # A CAD model: one glTF scene of hardware around the sample. No data, so no
+  # A fixture: one glTF scene of hardware around the sample. No data, so no
   # pickers: the model's own materials, or one `materialColor` over all of
   # them (null = as authored), and a wireframe toggle.
-  ... on CadModelLayer {
-    model {
-      ...CadModel
+  ... on FixtureLayer {
+    fixture {
+      ...Fixture
     }
     lens {
       ...LayerLens

@@ -38,7 +38,7 @@ const KIND = {
   Mesh: "MESH" as LensKind,
   Network: "NETWORK" as LensKind,
   Annotation: "ANNOTATION" as LensKind,
-  CadModel: "CAD_MODEL" as LensKind,
+  Fixture: "FIXTURE" as LensKind,
 };
 
 export type LensLabelInput = {
@@ -100,7 +100,7 @@ export type LensContainerRef = Pick<
   | "meshCollection"
   | "networkCollection"
   | "annotationCollection"
-  | "cadModel"
+  | "fixture"
 >;
 
 /** The lens structures, one per kind of container. */
@@ -111,7 +111,7 @@ export const LENS_IDENTIFIERS = [
   "@mikro/meshlens",
   "@mikro/networklens",
   "@mikro/annotationlens",
-  "@mikro/cadmodellens",
+  "@mikro/fixturelens",
 ] as const;
 
 export type LensIdentifier = (typeof LENS_IDENTIFIERS)[number];
@@ -193,14 +193,14 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     icon: Tags,
     filterKey: "annotationCollection",
   },
-  CadModelLens: {
-    identifier: "@mikro/cadmodellens",
-    kind: KIND.CadModel,
-    label: "CAD model lens",
+  FixtureLens: {
+    identifier: "@mikro/fixturelens",
+    kind: KIND.Fixture,
+    label: "Fixture lens",
     whole: "Whole model",
-    container: "CAD model",
+    container: "Fixture",
     icon: Box,
-    filterKey: "cadModel",
+    filterKey: "fixture",
   },
 };
 
@@ -212,7 +212,7 @@ export const LENS_KIND_ORDER: readonly LensTypename[] = [
   "MeshLens",
   "NetworkLens",
   "AnnotationLens",
-  "CadModelLens",
+  "FixtureLens",
 ];
 
 export const lensKindInfo = (kind: LensKind): LensKindInfo =>
@@ -269,8 +269,8 @@ const containerOf = (lens: LensSubjectFragment): LensDescription["container"] =>
       };
     case "AnnotationLens":
       return lens.annotationCollection;
-    case "CadModelLens":
-      return { id: lens.cadModel.id, name: lens.cadModel.label };
+    case "FixtureLens":
+      return { id: lens.fixture.id, name: lens.fixture.label };
   }
 };
 

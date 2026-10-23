@@ -164,9 +164,9 @@ export const MIKRO_HELP = {
       ]}
     />
   ),
-  cadModel: (
+  fixture: (
     <PageHelp
-      intro="One CAD model of hardware around the sample, such as a coverslip, a dish or a holder, in its own units. The preview shows the model alone; where it sits relative to the sample is set by registering it, and shows in a scene."
+      intro="A fixture: hardware around the sample, such as a coverslip, a dish or a holder, in its own units. The preview shows the model alone; where it sits relative to the sample is set by registering it, and shows in a scene."
       steps={[
         <>Drag in the preview to turn the model, and scroll to zoom.</>,
         <>Open the <b>Info</b> tab of the sidebar for its file, size and units.</>,

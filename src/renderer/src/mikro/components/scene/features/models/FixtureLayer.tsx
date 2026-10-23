@@ -12,7 +12,7 @@ import { collectionSlabThickness, useCollectionPlacement } from "../../platform/
 import { CROP_PLANE_FAR, createCropPlanes, updateCropPlanes } from "../../platform/coords/cropBox";
 import { createSlabPlanes, updateSlabPlanes } from "../../platform/coords/slabClip";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
-import type { CadModelLayerFragment } from "../../platform/model/layerGuards";
+import type { FixtureLayerFragment } from "../../platform/model/layerGuards";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
@@ -21,13 +21,13 @@ import {
   applyAppearance,
   createOverrideMaterial,
   lensClipPlanes,
-  type CadMeshRecord,
-} from "./cadModelScene";
-import { acquireGltf, releaseGltf } from "@/mikro/lib/cadModels/gltfCache";
-import { setCadLoadFailure } from "./loadFailures";
+  type FixtureMeshRecord,
+} from "./fixtureScene";
+import { acquireGltf, releaseGltf } from "@/mikro/lib/fixtures/gltfCache";
+import { setFixtureLoadFailure } from "./loadFailures";
 
 /**
- * CadModelLayer renderer: one binary glTF — a coverslip, a dish, a holder —
+ * FixtureLayer renderer: one binary glTF — a coverslip, a dish, a holder —
  * placed by the layer's `asAffine` like a mesh collection (`collectionPlacement.ts`).
  *
  * The model's coordinate system names its vertex slots (its axes, in order),
@@ -38,15 +38,15 @@ import { setCadLoadFailure } from "./loadFailures";
  * itself to a slab around `currentZ` and draws as an overlay. The scene's crop
  * box and the lens' own clip box clip it in both.
  */
-export const CadModelLayerRenderer = ({ layerId }: { layerId: string }) => {
+export const FixtureLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));
-  if (!layer || layer.__typename !== "CadModelLayer" || !layer.model) return null;
-  return <CadModelGroup layer={layer} model={layer.model} />;
+  if (!layer || layer.__typename !== "FixtureLayer" || !layer.fixture) return null;
+  return <FixtureGroup layer={layer} model={layer.fixture} />;
 };
 
-type CadModelRef = NonNullable<CadModelLayerFragment["model"]>;
+type FixtureRef = NonNullable<FixtureLayerFragment["fixture"]>;
 
-const CadModelGroup = ({ layer, model }: { layer: CadModelLayerFragment; model: CadModelRef }) => {
+const FixtureGroup = ({ layer, model }: { layer: FixtureLayerFragment; model: FixtureRef }) => {
   const rawInvalidate = useThree((state) => state.invalidate);
   const transformContext = useSceneStore((s) => s.transformContext);
   const viewerApi = useViewerStoreApi();
@@ -57,11 +57,11 @@ const CadModelGroup = ({ layer, model }: { layer: CadModelLayerFragment; model: 
   // every change that moves pixels bumps the volume inputs, or the volume keeps
   // the stale occlusion until the camera moves (the mesh layer's contract).
   const invalidate = useCallback(() => {
-    viewerApi.getState().volumeInputs.bump("cad-model");
+    viewerApi.getState().volumeInputs.bump("fixture");
     rawInvalidate();
   }, [viewerApi, rawInvalidate]);
 
-  // The vertex slots are the model's axes, in order: what `createCadModel`
+  // The vertex slots are the model's axes, in order: what `createFixture`
   // declared, and what placement reads the matrix's columns as.
   const slots = useMemo(() => model.coordinateSystem.axes.map((axis) => axis.name), [model.coordinateSystem]);
   const placeable = useMemo(
@@ -84,26 +84,26 @@ const CadModelGroup = ({ layer, model }: { layer: CadModelLayerFragment; model: 
   // The file, shared across layers and remounts; the scene clone and its
   // per-layer materials are this layer's.
   const storeKey = model.store.id;
-  const [records, setRecords] = useState<CadMeshRecord[] | null>(null);
+  const [records, setRecords] = useState<FixtureMeshRecord[] | null>(null);
   const [root, setRoot] = useState<THREE.Object3D | null>(null);
   const override = useMemo(() => createOverrideMaterial(), []);
   useEffect(() => {
     if (!datalayer) return;
     let cancelled = false;
-    let adopted: CadMeshRecord[] = [];
+    let adopted: FixtureMeshRecord[] = [];
     acquireGltf(storeKey, () => getMikroMediaUrl(model.store, client, datalayer))
       .then((gltf) => {
         if (cancelled) return;
         const scene = gltf.scene.clone(true);
         adopted = adoptMeshes(scene);
-        setCadLoadFailure(layer.id, null);
+        setFixtureLoadFailure(layer.id, null);
         setRoot(scene);
         setRecords(adopted);
       })
       .catch((error) => {
         if (cancelled) return;
-        console.error(`[cad-model] cannot load model ${model.id}:`, error);
-        setCadLoadFailure(layer.id, error);
+        console.error(`[fixture] cannot load model ${model.id}:`, error);
+        setFixtureLoadFailure(layer.id, error);
       });
     return () => {
       cancelled = true;
@@ -116,7 +116,7 @@ const CadModelGroup = ({ layer, model }: { layer: CadModelLayerFragment; model: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeKey, client, datalayer, layer.id, model.id]);
   useEffect(() => () => override.dispose(), [override]);
-  useEffect(() => () => setCadLoadFailure(layer.id, null), [layer.id]);
+  useEffect(() => () => setFixtureLoadFailure(layer.id, null), [layer.id]);
 
   // Placement and the lens clip box, which is stated in the model's own space
   // and so moves with it.

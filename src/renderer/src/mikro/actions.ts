@@ -18,16 +18,16 @@ import {
   DeleteCollaborationDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
-  DeleteCadModelDocument,
-  CadModelPlacementDocument,
-  type CadModelPlacementQuery,
-  type CadModelPlacementQueryVariables,
-  PlaceableCadModelLensesDocument,
-  type PlaceableCadModelLensesQuery,
-  type PlaceableCadModelLensesQueryVariables,
-  GetCadModelDocument,
-  type GetCadModelQuery,
-  type GetCadModelQueryVariables,
+  DeleteFixtureDocument,
+  FixturePlacementDocument,
+  type FixturePlacementQuery,
+  type FixturePlacementQueryVariables,
+  PlaceableFixtureLensesDocument,
+  type PlaceableFixtureLensesQuery,
+  type PlaceableFixtureLensesQueryVariables,
+  GetFixtureDocument,
+  type GetFixtureQuery,
+  type GetFixtureQueryVariables,
   DeleteLensDocument,
   DeleteSceneDocument,
   GetWholeLensDocument,
@@ -907,10 +907,10 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
     },
   },
-  // CAD models: hardware around the sample, one glTF each. Uploaded into a
+  // Fixtures: hardware around the sample, one glTF each. Uploaded into a
   // folder, dropped on a scene like any container.
-  'upload-cad-model': {
-    title: 'Upload CAD Model…',
+  'upload-fixture': {
+    title: 'Upload Fixture…',
     description: 'Upload a binary glTF (.glb) of a coverslip, dish or holder into this folder',
     icon: Upload,
     conditions: [
@@ -920,25 +920,25 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     collections: ['folder'],
     execute: async ({ state, dialog }) => {
       const folder = state.left.find((item) => item.identifier === '@mikro/folder');
-      dialog.openDialog('uploadcadmodel', { folder: folder?.id }, { size: 'small' });
+      dialog.openDialog('uploadfixture', { folder: folder?.id }, { size: 'small' });
     },
   },
   // The model itself dropped on a scene, as `add-lens-to-scene` takes its lens:
   // the add-layer dialog, already past the picker.
-  'add-cad-model-to-scene': {
+  'add-fixture-to-scene': {
     title: 'Add as Layer…',
-    description: 'Place this CAD model in the scene it was dropped on',
+    description: 'Place this fixture in the scene it was dropped on',
     icon: Box,
     conditions: [
       { type: 'identifier', identifier: '@mikro/scene' },
-      { type: 'pidentifier', identifier: '@mikro/cadmodel' },
+      { type: 'pidentifier', identifier: '@mikro/fixture' },
     ],
     collections: ['scene'],
     execute: async ({ state, services, dialog }) => {
       const scene = state.left.find((item) => item.identifier === '@mikro/scene');
-      const model = (state.right ?? []).find((item) => item.identifier === '@mikro/cadmodel');
+      const model = (state.right ?? []).find((item) => item.identifier === '@mikro/fixture');
       if (!scene?.id || !model?.id) {
-        throw new Error('Add as Layer needs both a scene and a CAD model');
+        throw new Error('Add as Layer needs both a scene and a fixture');
       }
       const mikro = services.mikro;
       if (!mikro) {
@@ -946,23 +946,23 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
       // A model nobody registered into this world is not one the dialog would
       // list: say so here, rather than open a picker without it.
-      const { data } = await mikro.client.query<CadModelPlacementQuery, CadModelPlacementQueryVariables>({
-        query: CadModelPlacementDocument,
-        variables: { scene: scene.id, model: model.id },
+      const { data } = await mikro.client.query<FixturePlacementQuery, FixturePlacementQueryVariables>({
+        query: FixturePlacementDocument,
+        variables: { scene: scene.id, fixture: model.id },
         fetchPolicy: 'network-only',
       });
       const { data: placeable } = await mikro.client.query<
-        PlaceableCadModelLensesQuery,
-        PlaceableCadModelLensesQueryVariables
+        PlaceableFixtureLensesQuery,
+        PlaceableFixtureLensesQueryVariables
       >({
-        query: PlaceableCadModelLensesDocument,
-        variables: { model: model.id, space: data.scene.worldCoordinateSystem.id },
+        query: PlaceableFixtureLensesDocument,
+        variables: { fixture: model.id, space: data.scene.worldCoordinateSystem.id },
         fetchPolicy: 'network-only',
       });
       const lens = placeable.lenses.at(0)?.id;
       if (!lens) {
         throw new Error(
-          `${data.cadModel.label} has no placement in this scene's world yet. Register it into the world first: "Register Into…" on the model.`,
+          `${data.fixture.label} has no placement in this scene's world yet. Register it into the world first: "Register Into…" on the model.`,
         );
       }
       dialog.openDialog('addlayer', { scene: scene.id, lens }, { className: 'max-w-3xl' });
@@ -971,40 +971,40 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   // Placing a model is registering its space: the edge from the model's own
   // axes (and unit) into a world. The register dialog, with the model's space
   // as the source.
-  'register-cad-model': {
+  'register-fixture': {
     title: 'Register Into…',
-    description: 'Place this CAD model in a coordinate system, such as a scene\'s world or a stage frame',
+    description: 'Place this fixture in a coordinate system, such as a scene\'s world or a stage frame',
     icon: Ruler,
     conditions: [
-      { type: 'identifier', identifier: '@mikro/cadmodel' },
+      { type: 'identifier', identifier: '@mikro/fixture' },
       { type: 'nopartner' },
     ],
-    collections: ['cadModel'],
+    collections: ['fixture'],
     execute: async ({ state, services, dialog }) => {
-      const model = state.left.find((item) => item.identifier === '@mikro/cadmodel');
+      const model = state.left.find((item) => item.identifier === '@mikro/fixture');
       if (!model?.id) {
-        throw new Error('No CAD model selected for Register Into… action');
+        throw new Error('No fixture selected for Register Into… action');
       }
       const mikro = services.mikro;
       if (!mikro) {
         throw new Error('Mikro service is not available');
       }
-      const { data } = await mikro.client.query<GetCadModelQuery, GetCadModelQueryVariables>({
-        query: GetCadModelDocument,
+      const { data } = await mikro.client.query<GetFixtureQuery, GetFixtureQueryVariables>({
+        query: GetFixtureDocument,
         variables: { id: model.id },
       });
       dialog.openDialog('register', {
-        source: { kind: 'coordinatesystem', id: data.cadModel.coordinateSystem.id },
+        source: { kind: 'coordinatesystem', id: data.fixture.coordinateSystem.id },
       });
     },
   },
-  'delete-cad-model': buildDeleteAction<ModuleServices<"mikro">>({
-    title: 'Delete CAD Model',
-    identifier: '@mikro/cadmodel',
-    description: 'Delete the CAD model. Its layers go with it',
+  'delete-fixture': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete Fixture',
+    identifier: '@mikro/fixture',
+    description: 'Delete the fixture. Its layers go with it',
     service: 'mikro',
-    typename: 'CadModel',
-    mutation: DeleteCadModelDocument,
+    typename: 'Fixture',
+    mutation: DeleteFixtureDocument,
   }),
   'delete-mikro-file': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete File',

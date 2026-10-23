@@ -72,16 +72,16 @@ export const residentName = (
       return "a lens of a mesh collection";
     case "NetworkLens":
       return "a lens of a network collection";
-    case "CadModelLens":
-      return "a lens of a CAD model";
+    case "FixtureLens":
+      return "a lens of a fixture";
     case "DataArray":
       return `pyramid level ${resident.level ?? "?"}`;
     case "MeshCollection":
       return resident.label ?? "a mesh collection";
     case "NetworkCollection":
       return resident.label ?? "a network collection";
-    case "CadModel":
-      return resident.label ?? "a CAD model";
+    case "Fixture":
+      return resident.label ?? "a fixture";
     default:
       return resident.name ?? resident.__typename;
   }

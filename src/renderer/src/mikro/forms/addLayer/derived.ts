@@ -53,7 +53,7 @@ const KEY_PREFIX: Record<`${LineageNodeKind}`, string> = {
   MESH_COLLECTION: "meshcollection",
   NETWORK_COLLECTION: "networkcollection",
   ANNOTATION_COLLECTION: "annotationcollection",
-  CAD_MODEL: "cadmodel",
+  FIXTURE: "fixture",
   FILE: "file",
 };
 

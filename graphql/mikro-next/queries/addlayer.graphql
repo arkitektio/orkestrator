@@ -144,7 +144,7 @@ query AddLayerWindowLenses($space: ID!) {
   ) {
     ...LayerLens
   }
-  models: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: CAD_MODEL } }) {
+  models: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: FIXTURE } }) {
     ...LayerLens
   }
 }

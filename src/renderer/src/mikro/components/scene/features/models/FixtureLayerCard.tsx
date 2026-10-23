@@ -1,7 +1,7 @@
 /**
- * A compact card for a `CadModelLayer` in the Layers panel.
+ * A compact card for a `FixtureLayer` in the Layers panel.
  *
- * Everything here is STORED (`updateCadModelLayer`), with the vector card's
+ * Everything here is STORED (`updateFixtureLayer`), with the vector card's
  * cadence: fold into the store at once so the canvas previews, write through.
  * The opacity slider previews per tick and writes on release.
  *
@@ -25,16 +25,16 @@ import {
 } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
 import { ErrorNote } from "@/core/ui/error-note";
-import { useUpdateCadModelLayerMutation, type UpdateCadModelLayerInput } from "@/mikro/api/graphql";
+import { useUpdateFixtureLayerMutation, type UpdateFixtureLayerInput } from "@/mikro/api/graphql";
 
 import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
-import type { CadModelLayerFragment } from "../../platform/model/layerGuards";
+import type { FixtureLayerFragment } from "../../platform/model/layerGuards";
 import { useSceneStore } from "../../platform/stores/sceneStore";
-import { cadLoadFailure, subscribeCadLoadFailures } from "./loadFailures";
+import { fixtureLoadFailure, subscribeFixtureLoadFailures } from "./loadFailures";
 
-type CadPatch = Omit<UpdateCadModelLayerInput, "id">;
+type FixturePatch = Omit<UpdateFixtureLayerInput, "id">;
 
 /** The override a fresh "single colour" starts from: a pale glass-like grey. */
 const DEFAULT_OVERRIDE = [205, 214, 224, 255];
@@ -60,25 +60,25 @@ const boundsSummary = (bounds: unknown, unit: string | null | undefined): string
   return `${sizes.join(" × ")}${unit ? ` ${unit}` : ""}`;
 };
 
-export const CadModelLayerCard = memo(
+export const FixtureLayerCard = memo(
   ({
     layer,
     expanded,
     onSelect,
     onRemove,
   }: {
-    layer: CadModelLayerFragment;
+    layer: FixtureLayerFragment;
     expanded: boolean;
     onSelect: (id: string, currentlyExpanded: boolean) => void;
     onRemove?: (id: string) => void;
   }) => {
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updateCadModelLayer] = useUpdateCadModelLayerMutation();
-    const persist = useOptimisticLayerPatch<CadPatch>(layer.id, updateCadModelLayer, "[cad-model]");
+    const [updateFixtureLayer] = useUpdateFixtureLayerMutation();
+    const persist = useOptimisticLayerPatch<FixturePatch>(layer.id, updateFixtureLayer, "[fixture]");
     const layerId = layer.id;
     const hidden = layer.visible === false;
-    const model = layer.model;
-    const failure = useSyncExternalStore(subscribeCadLoadFailures, () => cadLoadFailure(layerId));
+    const model = layer.fixture;
+    const failure = useSyncExternalStore(subscribeFixtureLoadFailures, () => fixtureLoadFailure(layerId));
 
     const override = Array.isArray(layer.materialColor) ? layer.materialColor : null;
     const unit = model?.coordinateSystem.axes[0]?.unit ?? null;
@@ -94,7 +94,7 @@ export const CadModelLayerCard = memo(
       <LayerCardShell
         icon={<Box className="h-3 w-3 text-brand-soft" />}
         tile="bg-brand/15"
-        title={layer.name?.trim() || model?.label || `CAD model ${layerId}`}
+        title={layer.name?.trim() || model?.label || `fixture ${layerId}`}
         badges={unit ? <Badge>{unit}</Badge> : undefined}
         hidden={hidden}
         expanded={expanded}
@@ -191,4 +191,4 @@ export const CadModelLayerCard = memo(
     );
   },
 );
-CadModelLayerCard.displayName = "CadModelLayerCard";
+FixtureLayerCard.displayName = "FixtureLayerCard";

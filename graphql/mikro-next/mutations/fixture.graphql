@@ -1,0 +1,28 @@
+# Register an uploaded binary glTF as a fixture. `store` is the finished
+# MediaStore id (`uploadMediaBlob`); the bounds are read from the file
+# server-side, and `axes` carry the unit the exporter wrote.
+mutation CreateFixture($input: CreateFixtureInput!) {
+  createFixture(input: $input) {
+    ...Fixture
+  }
+}
+
+mutation DeleteFixture($id: ID!) {
+  deleteFixture(input: { id: $id })
+}
+
+mutation CreateFixtureLayer($input: CreateFixtureLayerInput!) {
+  createFixtureLayer(input: $input) {
+    id
+  }
+}
+
+mutation UpdateFixtureLayer($input: UpdateFixtureLayerInput!) {
+  updateFixtureLayer(input: $input) {
+    id
+    materialColor
+    wireframe
+    opacity
+    visible
+  }
+}

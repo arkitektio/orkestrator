@@ -9,7 +9,7 @@ import { TrackLayerRenderer } from "../features/tracks/TracksLayer";
 import { PointLayerRenderer } from "../features/points/PointsLayer";
 import { NetworkCollectionLayer } from "../features/network/NetworkCollectionLayer";
 import { VectorLayerRenderer } from "../features/vectors/VectorsLayer";
-import { CadModelLayerRenderer } from "../features/models/CadModelLayer";
+import { FixtureLayerRenderer } from "../features/models/FixtureLayer";
 
 export type LayerRendererProps = { layerId: string };
 
@@ -41,7 +41,7 @@ const registered = {
   FabriksCollectionLayer: memoized(FabriksCollectionLayer),
   NetworkCollectionLayer: memoized(NetworkCollectionLayer),
   VectorLayerRenderer: memoized(VectorLayerRenderer),
-  CadModelLayerRenderer: memoized(CadModelLayerRenderer),
+  FixtureLayerRenderer: memoized(FixtureLayerRenderer),
 };
 
 /**
@@ -80,5 +80,5 @@ export const LAYER_RENDERERS: Record<SceneLayerFragment["__typename"], LayerRend
   VectorLayer: { Layer2D: registered.VectorLayerRenderer, Layer3D: registered.VectorLayerRenderer },
   // A glTF of hardware around the sample. The collection layers' shape: one
   // component, which clips itself to the slab in 2D.
-  CadModelLayer: { Layer2D: registered.CadModelLayerRenderer, Layer3D: registered.CadModelLayerRenderer },
+  FixtureLayer: { Layer2D: registered.FixtureLayerRenderer, Layer3D: registered.FixtureLayerRenderer },
 };

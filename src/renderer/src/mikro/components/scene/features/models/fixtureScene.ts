@@ -1,15 +1,15 @@
 import * as THREE from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
-import { asBlendedGlass } from "@/mikro/lib/cadModels/glass";
+import { asBlendedGlass } from "@/mikro/lib/fixtures/glass";
 
 import { CROP_PLANE_FAR, createCropPlanes, type CropPlanes } from "../../platform/coords/cropBox";
 
 /**
- * The parts of a CAD model layer that are not React: which planes clip it, and
+ * The parts of a fixture layer that are not React: which planes clip it, and
  * how its materials are drawn. Pure, so both are testable without a canvas.
  *
- * A CAD model is hardware around the sample, drawn as authored. The layer's
+ * A fixture is hardware around the sample, drawn as authored. The layer's
  * settings act on top of the file's own materials and never replace them for
  * good: each mesh keeps its AUTHORED material (a per-layer clone), and every
  * appearance change is recomputed from that, so clearing `materialColor` or
@@ -27,7 +27,7 @@ export const MAX_METALNESS = 0.3;
 /** Draw order above the image quad in 2D, the annotation and mesh layers' slab convention. */
 export const SLAB_RENDER_ORDER = 2;
 
-export type CadAppearance = {
+export type FixtureAppearance = {
   /** The layer's alpha, multiplied into each material's own. */
   opacity: number;
   /** One RGBA (0..255) colour replacing every material, or null for the file's own. */
@@ -39,10 +39,10 @@ export type CadAppearance = {
 
 type Authored = { opacity: number; transparent: boolean; depthWrite: boolean };
 
-const AUTHORED = "cadAuthored";
+const AUTHORED = "fixtureAuthored";
 
 /** One mesh of the model and the materials the file gave it, cloned for this layer. */
-export type CadMeshRecord = {
+export type FixtureMeshRecord = {
   mesh: THREE.Mesh;
   authored: THREE.Material[];
   multi: boolean;
@@ -56,8 +56,8 @@ const asList = (material: THREE.Material | THREE.Material[]): THREE.Material[] =
  * cached file's materials are shared by every layer drawing it) and remember
  * what it authored, so later appearance changes start from the file.
  */
-export const adoptMeshes = (root: THREE.Object3D): CadMeshRecord[] => {
-  const records: CadMeshRecord[] = [];
+export const adoptMeshes = (root: THREE.Object3D): FixtureMeshRecord[] => {
+  const records: FixtureMeshRecord[] = [];
   root.traverse((object) => {
     const mesh = object as THREE.Mesh;
     if (mesh.isMesh !== true || !mesh.material) return;
@@ -92,7 +92,7 @@ export const createOverrideMaterial = (): THREE.Material =>
 const applyTo = (
   material: THREE.Material,
   base: Authored,
-  appearance: CadAppearance,
+  appearance: FixtureAppearance,
 ): void => {
   const opacity = base.opacity * appearance.opacity;
   const transparent = base.transparent || opacity < 1;
@@ -124,9 +124,9 @@ const applyTo = (
  * values, never from the last application.
  */
 export const applyAppearance = (
-  records: readonly CadMeshRecord[],
+  records: readonly FixtureMeshRecord[],
   override: THREE.Material,
-  appearance: CadAppearance,
+  appearance: FixtureAppearance,
 ): void => {
   const color = appearance.materialColor;
   const overriding = Array.isArray(color) && color.length >= 3;

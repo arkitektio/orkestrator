@@ -27,7 +27,7 @@ export const LINEAGE_IDENTIFIER: Record<`${LineageNodeKind}`, string> = {
   MESH_COLLECTION: "@mikro/meshcollection",
   NETWORK_COLLECTION: "@mikro/networkcollection",
   ANNOTATION_COLLECTION: "@mikro/annotationcollection",
-  CAD_MODEL: "@mikro/cadmodel",
+  FIXTURE: "@mikro/fixture",
   FILE: "@mikro/file",
 };
 

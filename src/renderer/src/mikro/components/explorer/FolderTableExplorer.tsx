@@ -50,7 +50,7 @@ import {
 
 import { Sidebars } from "@/core/layout/Sidebars";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
-import { MikroArrayDataset, MikroCadModel, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
+import { MikroArrayDataset, MikroFixture, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
 import { SlotSections } from "@/core/layout/PageSections";
 import {
   ChildrenQuery,
@@ -152,11 +152,11 @@ export const columns: ColumnDef<Item>[] = [
               {name}
             </MikroTableDataset.DetailLink>
           );
-        case "CadModel":
+        case "Fixture":
           return (
-            <MikroCadModel.DetailLink object={item} className="lowercase">
+            <MikroFixture.DetailLink object={item} className="lowercase">
               {name}
-            </MikroCadModel.DetailLink>
+            </MikroFixture.DetailLink>
           );
         // Mesh and annotation collections have no detail route yet.
         default:

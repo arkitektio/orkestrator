@@ -21,7 +21,7 @@ import TableDatasetPage from "./pages/TableDatasetPage";
 import TableDatasetsPage from "./pages/TableDatasetsPage";
 import SparseDatasetPage from "./pages/SparseDatasetPage";
 import SparseDatasetsPage from "./pages/SparseDatasetsPage";
-import CadModelPage from "./pages/CadModelPage";
+import FixturePage from "./pages/FixturePage";
 import ScenesPage from "./pages/ScenesPage";
 import CollaborationsPage from "./pages/CollaborationsPage";
 import CollaborationPage from "./pages/CollaborationPage";
@@ -67,7 +67,7 @@ export const MikroNextModule = () => {
         <Route path="tabledatasets/:id" element={<TableDatasetPage />} />
         <Route path="sparsedatasets" element={<SparseDatasetsPage />} />
         <Route path="sparsedatasets/:id" element={<SparseDatasetPage />} />
-        <Route path="cadmodels/:id" element={<CadModelPage />} />
+        <Route path="fixtures/:id" element={<FixturePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

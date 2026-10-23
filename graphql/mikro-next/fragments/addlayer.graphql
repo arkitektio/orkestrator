@@ -209,9 +209,9 @@ fragment AddLayerCandidate on Resident {
       ...DerivationEdge
     }
   }
-  # A CAD model: hardware drawn around the sample (a coverslip, a dish). Named
+  # A fixture: hardware drawn around the sample (a coverslip, a dish). Named
   # optionally, labelled by its file's name.
-  ... on CadModel {
+  ... on Fixture {
     id
     label
     fullLens {
@@ -338,8 +338,8 @@ fragment AddLayerStagedLayer on Layer {
       }
     }
   }
-  ... on CadModelLayer {
-    model {
+  ... on FixtureLayer {
+    fixture {
       id
       coordinateSystem {
         id
@@ -374,7 +374,7 @@ fragment AddLayerSpaceOwner on Resident {
   ... on AnnotationCollection {
     id
   }
-  ... on CadModel {
+  ... on Fixture {
     id
   }
   ... on SparseDataset {
@@ -434,7 +434,7 @@ fragment AddLayerLineageNode on Resident {
       id
     }
   }
-  ... on CadModel {
+  ... on Fixture {
     id
     label
     coordinateSystem {

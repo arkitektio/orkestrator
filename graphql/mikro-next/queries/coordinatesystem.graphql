@@ -145,7 +145,7 @@ query RegisterSourceCandidates($search: String) {
       name
     }
   }
-  cadModels(filters: { search: $search }, pagination: { limit: 20 }) {
+  fixtures(filters: { search: $search }, pagination: { limit: 20 }) {
     id
     name
     label

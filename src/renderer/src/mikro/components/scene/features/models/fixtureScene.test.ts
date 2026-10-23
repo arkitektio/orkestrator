@@ -9,7 +9,7 @@ import {
   applyAppearance,
   createOverrideMaterial,
   lensClipPlanes,
-} from "./cadModelScene";
+} from "./fixtureScene";
 
 /** One glass pane and one steel bracket, as an exporter would write them. */
 const fixture = () => {

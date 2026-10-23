@@ -121,7 +121,7 @@ export const KIND_SEGMENT: Record<LineageNodeKind, string> = {
   [LineageNodeKind.MeshCollection]: "meshcollection",
   [LineageNodeKind.NetworkCollection]: "networkcollection",
   [LineageNodeKind.AnnotationCollection]: "annotationcollection",
-  [LineageNodeKind.CadModel]: "cadmodel",
+  [LineageNodeKind.Fixture]: "fixture",
 };
 
 export const kindFromSegment = (segment: string | undefined): LineageNodeKind | undefined =>
@@ -140,7 +140,7 @@ export const KIND_LABEL: Record<LineageNodeKind, string> = {
   [LineageNodeKind.MeshCollection]: "Mesh collection",
   [LineageNodeKind.NetworkCollection]: "Network collection",
   [LineageNodeKind.AnnotationCollection]: "Annotation collection",
-  [LineageNodeKind.CadModel]: "CAD model",
+  [LineageNodeKind.Fixture]: "Fixture",
 };
 
 export type FlowDataNode = {

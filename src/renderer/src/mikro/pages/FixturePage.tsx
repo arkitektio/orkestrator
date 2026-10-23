@@ -6,19 +6,19 @@ import type * as THREE from "three";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { MikroCadModel } from "@/core/linkers";
+import { MikroFixture } from "@/core/linkers";
 import { ErrorNote } from "@/core/ui/error-note";
 import { useMikro } from "@/mikro/api/funcs";
 import { getMikroMediaUrl } from "@/mikro/datalayer/mikroAccess";
 
-import { useGetCadModelQuery, type DetailCadModelFragment } from "../api/graphql";
+import { useGetFixtureQuery, type DetailFixtureFragment } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
-import { cloneForView } from "../lib/cadModels/glass";
-import { acquireGltf, releaseGltf } from "../lib/cadModels/gltfCache";
+import { cloneForView } from "../lib/fixtures/glass";
+import { acquireGltf, releaseGltf } from "../lib/fixtures/gltfCache";
 import { MIKRO_HELP } from "../help";
 
 /** "24 × 24 × 0.17 mm": the box the file declares, in the model's own unit. */
-const sizeOf = (model: DetailCadModelFragment): string | null => {
+const sizeOf = (model: DetailFixtureFragment): string | null => {
   const box = model.bounds as { min?: number[]; max?: number[] } | null;
   if (!box?.min || !box?.max) return null;
   const unit = model.coordinateSystem.axes[0]?.unit;
@@ -35,7 +35,7 @@ const sizeOf = (model: DetailCadModelFragment): string | null => {
  * transmissive glass drawn as blended glass: this canvas is transparent too,
  * so real transmission would have nothing behind it to refract and draw dark.
  */
-const CadModelPreview = ({ model }: { model: DetailCadModelFragment }) => {
+const FixturePreview = ({ model }: { model: DetailFixtureFragment }) => {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const [root, setRoot] = useState<THREE.Object3D | null>(null);
@@ -81,7 +81,7 @@ const CadModelPreview = ({ model }: { model: DetailCadModelFragment }) => {
   );
 };
 
-const CadModelInfo = ({ model }: { model: DetailCadModelFragment }) => {
+const FixtureInfo = ({ model }: { model: DetailFixtureFragment }) => {
   const size = sizeOf(model);
   const rows: [string, string | null | undefined][] = [
     ["File", model.store.originalFileName],
@@ -104,20 +104,20 @@ const CadModelInfo = ({ model }: { model: DetailCadModelFragment }) => {
   );
 };
 
-export const CadModelPage = asDetailQueryRoute(useGetCadModelQuery, ({ data }) => {
-  const model = data.cadModel;
+export const FixturePage = asDetailQueryRoute(useGetFixtureQuery, ({ data }) => {
+  const model = data.fixture;
 
   return (
-    <MikroCadModel.ModelPage
+    <MikroFixture.ModelPage
       object={model}
-      help={MIKRO_HELP.cadModel}
+      help={MIKRO_HELP.fixture}
       title={model.label}
-      actions={<MikroCadModel.Actions object={model} />}
-      pageActions={<MikroCadModel.ObjectButton alwaysShow object={model} />}
+      actions={<MikroFixture.Actions object={model} />}
+      pageActions={<MikroFixture.ObjectButton alwaysShow object={model} />}
       additionalSidebars={
         <>
           <Sidebars.Tab label="Info">
-            <CadModelInfo model={model} />
+            <FixtureInfo model={model} />
           </Sidebars.Tab>
           {/* The model's own space and the edges out of it: where it is
               registered, which is what places it in a scene. */}
@@ -129,13 +129,13 @@ export const CadModelPage = asDetailQueryRoute(useGetCadModelQuery, ({ data }) =
         </>
       }
       defaultSidebar="Info"
-      sidebarKey="CadModelDetail"
+      sidebarKey="FixtureDetail"
     >
       <div className="h-full w-full">
-        <CadModelPreview model={model} />
+        <FixturePreview model={model} />
       </div>
-    </MikroCadModel.ModelPage>
+    </MikroFixture.ModelPage>
   );
 });
 
-export default CadModelPage;
+export default FixturePage;

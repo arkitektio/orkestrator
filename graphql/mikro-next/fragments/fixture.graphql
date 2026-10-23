@@ -1,9 +1,9 @@
-# A CAD model is ONE binary glTF (`.glb`) in a media store: a coverslip, a dish,
+# A fixture is ONE binary glTF (`.glb`) in a media store: a coverslip, a dish,
 # a holder. The viewer fetches the file whole through a presigned URL
 # (`getMikroMediaUrl`); there is no per-part API. Its coordinate system's axes
 # carry the unit the exporter wrote, so the server's `asAffine` already
 # converts millimetres into the world's micrometres.
-fragment CadModel on CadModel {
+fragment Fixture on Fixture {
   id
   name
   label
@@ -23,15 +23,15 @@ fragment CadModel on CadModel {
   }
 }
 
-fragment ListCadModel on CadModel {
+fragment ListFixture on Fixture {
   id
   name
   label
   createdAt
 }
 
-fragment DetailCadModel on CadModel {
-  ...CadModel
+fragment DetailFixture on Fixture {
+  ...Fixture
   folder {
     id
     name

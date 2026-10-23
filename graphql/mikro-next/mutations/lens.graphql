@@ -42,8 +42,8 @@ mutation CreateMeshLens($input: CreateMeshLensInput!) {
   }
 }
 
-mutation CreateCadModelLens($input: CreateCadModelLensInput!) {
-  createCadModelLens(input: $input) {
+mutation CreateFixtureLens($input: CreateFixtureLensInput!) {
+  createFixtureLens(input: $input) {
     ...ListLens
   }
 }
@@ -89,8 +89,8 @@ mutation EnsureMeshLens($input: CreateMeshLensInput!) {
   }
 }
 
-mutation EnsureCadModelLens($input: CreateCadModelLensInput!) {
-  createCadModelLens(input: $input) {
+mutation EnsureFixtureLens($input: CreateFixtureLensInput!) {
+  createFixtureLens(input: $input) {
     ...LensSelection
   }
 }

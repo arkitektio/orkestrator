@@ -14,7 +14,7 @@ import { MoveToFolderForm } from "./forms/MoveToFolderForm";
 import { RegisterForm } from "./forms/RegisterForm";
 import { RenameLensForm } from "./forms/RenameLensForm";
 import { UpdateFolderForm } from "./forms/UpdateFolderForm";
-import { UploadCadModelForm } from "./forms/UploadCadModelForm";
+import { UploadFixtureForm } from "./forms/UploadFixtureForm";
 import { AgentUploadFileForm } from "./forms/AgentUploadFileForm";
 
 /**
@@ -41,7 +41,7 @@ export const MIKRO_DIALOGS = {
   renamelens: RenameLensForm,
   movetofolder: MoveToFolderForm,
   updatefolder: UpdateFolderForm,
-  uploadcadmodel: UploadCadModelForm,
+  uploadfixture: UploadFixtureForm,
   // a file the Orkestrator agent's `upload_file` asks the person for (awaited)
   agentuploadfile: prefersSize("small", AgentUploadFileForm),
 };

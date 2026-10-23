@@ -56,7 +56,7 @@ import {
   useCreateIntensityLayerMutation,
   useCreateLabelLayerMutation,
   useCreateMeshLayerMutation,
-  useCreateCadModelLayerMutation,
+  useCreateFixtureLayerMutation,
   useCreateNetworkLayerMutation,
   useCreatePhasorLayerMutation,
   useCreatePointLayerMutation,
@@ -75,7 +75,7 @@ import {
   LAYER_KIND_INFO,
   LayerKind,
   MeshEntry,
-  CadModelEntry,
+  FixtureEntry,
   NetworkEntry,
   Section,
   Source,
@@ -450,7 +450,7 @@ const EntryView = (props: {
           icon={Box}
           title={entry.name}
           subtitle={<SpaceCaption space={entry.space} />}
-          badge="CAD model"
+          badge="Fixture"
           relation={entry.relation}
           onClick={() => props.onSelect({ kind: "model", entry })}
         />
@@ -1030,15 +1030,15 @@ const MeshLayerForm = (props: {
 };
 
 /**
- * Step 2c-ter: a CadModel becomes a CAD model layer. Like a mesh collection,
+ * Step 2c-ter: a Fixture becomes a fixture layer. Like a mesh collection,
  * its own space is the layer's and the picker offered it because that space
  * reaches the world. The file's own materials are the default; a colour
  * override and the wireframe stay on the layer card, where the model is in
  * view while they are chosen.
  */
-const CadModelLayerForm = (props: {
+const FixtureLayerForm = (props: {
   scene: string;
-  entry: CadModelEntry;
+  entry: FixtureEntry;
   lenses: readonly WindowLens[];
   preselect?: string;
   onBack: () => void;
@@ -1046,7 +1046,7 @@ const CadModelLayerForm = (props: {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const containerLens = useContainerLens();
   const lensFailed = useLensFailed();
-  const [createModel] = useCreateCadModelLayerMutation();
+  const [createModel] = useCreateFixtureLayerMutation();
   const submitModel = useGraphQLDialog(createModel, DIALOG_OPTIONS);
 
   const form = useForm({
@@ -1059,7 +1059,7 @@ const CadModelLayerForm = (props: {
     const model = props.entry.model;
     let lensId: string;
     try {
-      lensId = await containerLens(lens, model.fullLens?.id, { cadModel: model.id });
+      lensId = await containerLens(lens, model.fullLens?.id, { fixture: model.id });
     } catch (error) {
       lensFailed(error);
       return;
@@ -1079,7 +1079,7 @@ const CadModelLayerForm = (props: {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <LensChoice typename="CadModelLens" lenses={props.lenses} value={lens} onChange={setLens} />
+        <LensChoice typename="FixtureLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <FloatField
           name="opacity"
           label="Opacity"
@@ -1443,7 +1443,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
         found = { kind: "annotation", entry };
       } else if (
         entry.kind === "model" &&
-        (entry.model.fullLens?.id === wanted || offers("CadModelLens", entry.model.id))
+        (entry.model.fullLens?.id === wanted || offers("FixtureLens", entry.model.id))
       ) {
         found = { kind: "model", entry };
       }
@@ -1519,10 +1519,10 @@ const AddLayerFormInner = (props: AddLayerProps) => {
           onBack={() => setSource(null)}
         />
       ) : source.kind === "model" ? (
-        <CadModelLayerForm
+        <FixtureLayerForm
           scene={props.scene}
           entry={source.entry}
-          lenses={lensesOf("CadModelLens", source.entry.model.id)}
+          lenses={lensesOf("FixtureLens", source.entry.model.id)}
           preselect={props.lens}
           onBack={() => setSource(null)}
         />
