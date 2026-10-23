@@ -2,7 +2,8 @@ import { MikroCoordinateSystem } from "@/core/linkers";
 import { NodeProps } from "@xyflow/react";
 import { Boxes, Globe } from "lucide-react";
 import CircleNode from "./CircleNode";
-import { isReferenceFrame, occupancyLabel } from "./residents";
+import { RESIDENT_ICON, RESIDENT_KIND_LABEL } from "./ResidentLink";
+import { isReferenceFrame, occupancyLabel, residentName } from "./residents";
 import { CoordinateSystemNode as TNode } from "./types";
 
 // Inhabited vs. uninhabited is the whole vocabulary the graph has left, and
@@ -78,8 +79,51 @@ const OCCUPANCY_TITLE = {
 
 export type Occupancy = keyof typeof OCCUPANCY_SWATCH;
 
+// How many kinds fit on one row inside the orb before the rest become "+N".
+const INLINE_KINDS = 3;
+
+/**
+ * The residents of a space (or of every space it stands for), counted by kind
+ * and drawn inside the orb — the simplified view's stand-in for resident nodes.
+ */
+const InlineResidents = ({
+  residents,
+}: {
+  residents: TNode["data"]["system"]["residents"];
+}) => {
+  const counts = new Map<(typeof residents)[number]["__typename"], number>();
+  for (const resident of residents) {
+    counts.set(resident.__typename, (counts.get(resident.__typename) ?? 0) + 1);
+  }
+  const kinds = [...counts];
+  if (kinds.length === 0) return null;
+
+  return (
+    <div className="mt-0.5 flex max-w-full flex-wrap items-center justify-center gap-1 text-[9px] leading-none">
+      {kinds.slice(0, INLINE_KINDS).map(([kind, count]) => {
+        const Icon = RESIDENT_ICON[kind];
+        return (
+          <span
+            key={kind}
+            className="flex items-center gap-0.5 rounded-full bg-chart-5 px-1 py-0.5 text-background"
+          >
+            <Icon className="h-2.5 w-2.5" />
+            {count}
+          </span>
+        );
+      })}
+      {kinds.length > INLINE_KINDS && (
+        <span className="text-muted-foreground">
+          +{kinds.length - INLINE_KINDS}
+        </span>
+      )}
+    </div>
+  );
+};
+
 export const CoordinateSystemNode = ({ data }: NodeProps<TNode>) => {
-  const { system, isRoot } = data;
+  const { system, isRoot, group, inlineResidents } = data;
+  const residents = (group ?? [system]).flatMap((member) => member.residents);
   const occupancy: Occupancy = isReferenceFrame(system) ? "frame" : "inhabited";
 
   // The axes do not fit in a circle and are not what distinguishes one space
@@ -90,21 +134,41 @@ export const CoordinateSystemNode = ({ data }: NodeProps<TNode>) => {
     .map((axis) => `${axis.name}${axis.unit ? ` (${axis.unit})` : ""}`)
     .join(" · ");
 
+  // A folded node names one of its members and lists the rest on the hover:
+  // the link still goes somewhere real, and the count says it stands for more.
+  const members = group
+    ? `\n\n${group.length} alike:\n${group.map((member) => member.name).join("\n")}`
+    : "";
+  const living = inlineResidents && residents.length > 0
+    ? `\n\nResidents:\n${residents
+        .map((resident) => `${residentName(resident)} (${RESIDENT_KIND_LABEL[resident.__typename]})`)
+        .join("\n")}`
+    : "";
+
   return (
     <CircleNode
       icon={OCCUPANCY_ICON[occupancy]}
-      title={`${system.name}\n${occupancyLabel(system)}\n${axes}\n\n${OCCUPANCY_TITLE[occupancy]}`}
+      title={`${system.name}\n${occupancyLabel(system)}\n${axes}\n\n${OCCUPANCY_TITLE[occupancy]}${members}${living}`}
       className={OCCUPANCY_RING[occupancy]}
       iconClassName={OCCUPANCY_TEXT[occupancy]}
       emphasised={isRoot}
-      caption={system.axes
+      badges={
+        inlineResidents ? <InlineResidents residents={residents} /> : undefined
+      }
+      caption={`${system.axes
         .map((axis) => axis.name)
         .slice(0, 5)
-        .join("")}
+        .join("")}${group ? ` · ×${group.length}` : ""}`}
     >
       <MikroCoordinateSystem.DetailLink object={system}>
         {system.name}
       </MikroCoordinateSystem.DetailLink>
+      {group && (
+        <span className="font-normal text-muted-foreground">
+          {" "}
+          +{group.length - 1}
+        </span>
+      )}
     </CircleNode>
   );
 };

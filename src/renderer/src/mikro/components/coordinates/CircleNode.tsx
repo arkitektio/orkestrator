@@ -33,6 +33,8 @@ export const CircleNode = (props: {
   caption?: string;
   /** The drawn circle. Defaults to filling the footprint. */
   diameter?: number;
+  /** Drawn under the caption, inside a full-size circle only. */
+  badges?: ReactNode;
 }) => {
   const diameter = props.diameter ?? NODE_DIAMETER;
   const compact = diameter < NODE_DIAMETER;
@@ -62,7 +64,13 @@ export const CircleNode = (props: {
           <props.icon className={cn("h-4 w-4 shrink-0", props.iconClassName)} />
           {!compact && (
             <>
-              <div className="line-clamp-3 max-w-full break-words text-[11px] font-semibold leading-tight">
+              {/* Badges take a line, so the name gives one up. */}
+              <div
+                className={cn(
+                  "max-w-full break-words text-[11px] font-semibold leading-tight",
+                  props.badges ? "line-clamp-2" : "line-clamp-3",
+                )}
+              >
                 {props.children}
               </div>
               {props.caption && (
@@ -70,6 +78,7 @@ export const CircleNode = (props: {
                   {props.caption}
                 </div>
               )}
+              {props.badges}
             </>
           )}
         </div>

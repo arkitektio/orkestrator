@@ -1,3 +1,4 @@
+import { Switch } from "@/core/ui/switch";
 import { GetCoordinateGraphQuery, PlacementValidity } from "@/mikro/api/graphql";
 import {
   Background,
@@ -22,6 +23,7 @@ import { facingHandles, sourceHandleId, targetHandleId } from "./handles";
 import { layoutOptionsFor } from "./layout";
 import { NODE_DIAMETER, NODE_SIZE } from "./nodeSize";
 import ResidentNode, { RESIDENT_SWATCH } from "./ResidentNode";
+import { partitionSystems, transformationKey } from "./simplify";
 import { describeTransformation, GraphEdge, GraphNode } from "./types";
 
 export type CoordinateGraph = GetCoordinateGraphQuery["coordinateGraph"];
@@ -86,6 +88,15 @@ const residencyStyle = {
 const residentNodeId = (systemId: string, resident: { __typename: string; id: string }) =>
   `r-${systemId}-${resident.__typename}-${resident.id}`;
 
+const PYRAMID_LEVEL = "DataArray";
+
+/** A space whose only residents are pyramid levels — never the root. */
+const isPyramidOnly =
+  (rootId: string) => (system: CoordinateGraph["systems"][number]) =>
+    system.id !== rootId &&
+    system.residents.length > 0 &&
+    system.residents.every((resident) => resident.__typename === PYRAMID_LEVEL);
+
 /**
  * Coordinate systems and their residents are the nodes; the transformations
  * between systems are the edges, labelled with what the map actually does and
@@ -94,9 +105,15 @@ const residentNodeId = (systemId: string, resident: { __typename: string; id: st
  * dangling — which is a live case now that CoordinateGraphView bounds the walk
  * (DEFAULT_MAX_DEPTH). While the walk was unbounded it returned whole connected
  * components, so nothing could fall outside one and `dropped` was always 0.
+ *
+ * `simplify` hides pyramids, folds interchangeable systems into one node
+ * (simplify.ts) that lists its residents inside the orb, and folds the equal
+ * transformations between them into one edge with a count. Unsimplified, every
+ * class is one system, so both views are the same walk.
  */
 const buildGraph = (
   graph: CoordinateGraph,
+  simplify: boolean,
 ): { nodes: GraphNode[]; edges: GraphEdge[]; dropped: number } => {
   const known = new Set(graph.systems.map((system) => system.id));
   let dropped = 0;
@@ -104,13 +121,62 @@ const buildGraph = (
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
 
-  for (const system of graph.systems) {
+  // Simplified, pyramids are gone entirely: no level as a resident, and no
+  // system that exists only to hold levels (nor the scales into it).
+  const hidden = new Set(
+    simplify
+      ? graph.systems.filter(isPyramidOnly(graph.root.id)).map((s) => s.id)
+      : [],
+  );
+  const systems = graph.systems
+    .filter((system) => !hidden.has(system.id))
+    .map((system) =>
+      simplify
+        ? {
+            ...system,
+            residents: system.residents.filter(
+              (resident) => resident.__typename !== PYRAMID_LEVEL,
+            ),
+          }
+        : system,
+    );
+  const transformations = graph.transformations.filter(
+    (t) => !hidden.has(t.input?.id ?? "") && !hidden.has(t.output?.id ?? ""),
+  );
+
+  const classOf = simplify
+    ? partitionSystems({ root: graph.root, systems, transformations })
+    : new Map(systems.map((system, index) => [system.id, index]));
+
+  const classes = new Map<number, CoordinateGraph["systems"]>();
+  for (const system of systems) {
+    const members = classes.get(classOf.get(system.id)!) ?? [];
+    members.push(system);
+    classes.set(classOf.get(system.id)!, members);
+  }
+
+  // The node a system is drawn as: its class's representative. The root is a
+  // class of its own, so it always represents itself.
+  const drawnAs = new Map<string, string>();
+
+  for (const members of classes.values()) {
+    const [system] = members;
+    for (const member of members) drawnAs.set(member.id, system.id);
+
     nodes.push({
       id: system.id,
       type: "coordinateSystem" as const,
       position: { x: 0, y: 0 },
-      data: { system, isRoot: system.id === graph.root.id },
+      data: {
+        system,
+        isRoot: system.id === graph.root.id,
+        group: members.length > 1 ? members : undefined,
+        inlineResidents: simplify,
+      },
     });
+
+    // Simplified, the orb carries its residents itself.
+    if (simplify) continue;
 
     // Who lives in this space, as its own node hanging off it. A resident can
     // only live in one system, so the id is per (system, resident) and never
@@ -134,7 +200,12 @@ const buildGraph = (
     }
   }
 
-  for (const transformation of graph.transformations) {
+  const folded = new Map<
+    string,
+    { transformation: CoordinateGraph["transformations"][number]; count: number }
+  >();
+
+  for (const transformation of transformations) {
     const input = transformation.input;
     const output = transformation.output;
     // Not silent: a transformation with an endpoint missing from the walk
@@ -145,15 +216,25 @@ const buildGraph = (
       continue;
     }
 
+    const key = simplify
+      ? `${drawnAs.get(input.id)} ${drawnAs.get(output.id)} ${transformationKey(transformation)}`
+      : transformation.id;
+    const seen = folded.get(key);
+    if (seen) seen.count++;
+    else folded.set(key, { transformation, count: 1 });
+  }
+
+  for (const { transformation, count } of folded.values()) {
     const unmappable = transformation.__typename === "UnmappableTransformation";
     const assumed = transformation.validity === PlacementValidity.Unknown;
     const identity = transformation.__typename === "IdentityTransformation";
     const base = identity ? identityStyle : transformationStyle;
+    const label = identity ? "≡ identity" : describeTransformation(transformation);
 
     edges.push({
       id: transformation.id,
-      source: input.id,
-      target: output.id,
+      source: drawnAs.get(transformation.input!.id)!,
+      target: drawnAs.get(transformation.output!.id)!,
       // Bezier, not smoothstep: right angles read as a routed pipeline, and
       // nothing about where these spaces landed is orthogonal any more.
       type: "default" as const,
@@ -162,7 +243,7 @@ const buildGraph = (
       // validity, a composite's children — is the edge table's job.
       // The one label that is not just what the map does: `≡` says "the same
       // space" in one glyph, and an identity has no numbers to show anyway.
-      label: identity ? "≡ identity" : describeTransformation(transformation),
+      label: count > 1 ? `${label} ×${count}` : label,
       labelBgPadding: [4, 2] as [number, number],
       labelBgBorderRadius: 4,
       // Fully opaque, like the nodes: a chip you can see the line through is a
@@ -184,6 +265,34 @@ const buildGraph = (
 
   return { nodes, edges, dropped };
 };
+
+/**
+ * The simplify switch, at the bottom of the canvas. Says what folding bought
+ * while it is on, so "nothing changed" reads as "nothing was alike".
+ */
+const SimplifyToggle = ({
+  simplified,
+  onChange,
+  systems,
+  drawn,
+}: {
+  simplified: boolean;
+  onChange: (simplified: boolean) => void;
+  systems: number;
+  drawn: number;
+}) => (
+  <label className="flex items-center gap-2 rounded-md border bg-background/80 px-2 py-1 text-[10px] text-foreground backdrop-blur">
+    <Switch size="sm" checked={simplified} onCheckedChange={onChange} />
+    Simplify
+    {simplified && (
+      <span className="font-mono text-muted-foreground">
+        {systems === drawn
+          ? "nothing alike"
+          : `${systems} → ${drawn} systems`}
+      </span>
+    )}
+  </label>
+);
 
 const Legend = ({
   systems,
@@ -252,9 +361,13 @@ export const CoordinateGraphFlow = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState<GraphEdge>([]);
   const [dropped, setDropped] = React.useState(0);
   const [laidOut, setLaidOut] = React.useState(false);
+  const [simplified, setSimplified] = React.useState(false);
 
   React.useEffect(() => {
-    const { nodes: rawNodes, edges: rawEdges, dropped } = buildGraph(graph);
+    const { nodes: rawNodes, edges: rawEdges, dropped } = buildGraph(
+      graph,
+      simplified,
+    );
     let cancelled = false;
 
     // Nothing is painted until ELK answers. The previous version put the nodes
@@ -344,7 +457,7 @@ export const CoordinateGraphFlow = ({
     // NOT `instance`: including it re-ran the entire layout a second time the
     // moment React Flow mounted, doubling the cost of the thing that was
     // already too slow. Fitting the view is a separate concern, below.
-  }, [graph]);
+  }, [graph, simplified]);
 
   React.useEffect(() => {
     if (laidOut) instance?.fitView({ padding: 0.2 });
@@ -354,6 +467,11 @@ export const CoordinateGraphFlow = ({
     () =>
       graph.systems.reduce((sum, system) => sum + system.residents.length, 0),
     [graph],
+  );
+
+  const drawnSystems = React.useMemo(
+    () => nodes.filter((node) => node.type === "coordinateSystem").length,
+    [nodes],
   );
 
   return (
@@ -386,6 +504,14 @@ export const CoordinateGraphFlow = ({
           </Panel>
         )}
         <Controls showInteractive={false} />
+        <Panel position="bottom-center">
+          <SimplifyToggle
+            simplified={simplified}
+            onChange={setSimplified}
+            systems={graph.systems.length}
+            drawn={drawnSystems}
+          />
+        </Panel>
         <Panel position={legendPosition}>
           <Legend
             systems={graph.systems.length}

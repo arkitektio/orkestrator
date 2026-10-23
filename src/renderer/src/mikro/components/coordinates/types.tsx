@@ -18,6 +18,16 @@ export type CoordinateSystemNodeData = {
   system: CoordinateSystemFragment;
   /** The system the walk started from — drawn as the anchor of the component. */
   isRoot: boolean;
+  /**
+   * Set when the simplified view folded several interchangeable systems into
+   * this node (simplify.ts): all of them, `system` among them. Absent for one.
+   */
+  group?: CoordinateSystemFragment[];
+  /**
+   * The simplified view: residents are drawn inside the orb, counted by kind,
+   * rather than as nodes of their own.
+   */
+  inlineResidents?: boolean;
 };
 
 export type CoordinateSystemNode = Node<
