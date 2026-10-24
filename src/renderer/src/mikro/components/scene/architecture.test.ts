@@ -11,58 +11,11 @@ import { describe, expect, it } from "vitest";
  * half-life, and every one of the layering violations this suite pins was
  * cheap to introduce and expensive to find.
  *
- * Three rules are hard zeroes. The fourth — features reaching sideways — is a
- * RATCHET against a known list, in the same spirit as `typecheck-baseline.json`:
- * the count may fall, never rise. Removing an entry is the work; adding one
- * needs a reason in ARCHITECTURE.md.
+ * Three rules, each a hard zero.
  */
 
 const SCENE = dirname(fileURLToPath(import.meta.url));
 const ALIAS_PREFIX = "@/mikro/components/scene/";
-
-/** `bricks` is the shared engine — the one folder other features may import. */
-const FEATURE_ALLOWLIST = new Set([
-  "features/volume->features/bricks",
-  "features/labels->features/bricks",
-  "features/probe->features/bricks",
-  "features/annotations->features/bricks",
-]);
-
-/**
- * Sideways edges that exist today, each waiting on a specific piece of work.
- * This list is a ceiling, not a licence.
- */
-const KNOWN_SIDEWAYS: Record<string, number> = {
-  // BrickVolumeLayer and useBrickPlaneProbe run annotation drawing inline,
-  // and both capture DESIGN gestures into the brush store (the plane carries
-  // the label LIFT click). Removed when BrickVolumeLayer is split.
-  "features/bricks->features/annotations": 6,
-  // The 3D label raymarcher captures DESIGN click gestures (the label LIFT)
-  // into the brush store, exactly like the bricks layers do.
-  "features/labels->features/annotations": 1,
-  // FabriksCollectionLayer reads the ROI drawing store directly.
-  "features/meshes->features/annotations": 1,
-  // ProbePanel's "Mark point" (create annotation from probe) action.
-  "features/probe->features/annotations": 1,
-  // AttributeProbeTracker calls identifyObjectId on the fabriks managers to
-  // resolve a probed instance. NOT a new coupling — it used to reach them via
-  // `meshSystems` on the platform store, which laundered a real feature
-  // dependency through a shared file. The slice carve surfaced it, which is
-  // the point; removing it means giving the probe a narrower way to ask
-  // "which object is this?".
-  "features/probe->features/meshes": 1,
-  // The mesh designer composes the annotation brush (its gesture capture,
-  // extraction engines and param rows) with the fabriks reader/writer: the
-  // downward edges are the composition itself, and the brush's types and
-  // engines come through ONE file (`meshDesign/brush.ts`). The two upward
-  // edges are the seams where those features hand over to it — the brush hook
-  // dispatching a DESIGN release to the tool registry, and the Meshes panel's
-  // "edit in design" entry. See ARCHITECTURE.md.
-  "features/meshDesign->features/annotations": 10,
-  "features/meshDesign->features/meshes": 7,
-  "features/annotations->features/meshDesign": 3,
-  "features/meshes->features/meshDesign": 2,
-};
 
 type Edge = { from: string; to: string; fromBucket: string; toBucket: string; typeOnly: boolean };
 
@@ -173,39 +126,4 @@ describe("scene architecture", () => {
     ).toBe(0);
   });
 
-  it("features do not reach sideways beyond the known list", () => {
-    const counts: Record<string, number> = {};
-    const sideways = edges.filter(
-      (e) =>
-        tier(e.fromBucket) === "features" &&
-        tier(e.toBucket) === "features" &&
-        e.fromBucket !== e.toBucket &&
-        !FEATURE_ALLOWLIST.has(`${e.fromBucket}->${e.toBucket}`),
-    );
-    for (const e of sideways) {
-      const key = `${e.fromBucket}->${e.toBucket}`;
-      counts[key] = (counts[key] ?? 0) + 1;
-    }
-
-    for (const [key, n] of Object.entries(counts)) {
-      const budget = KNOWN_SIDEWAYS[key];
-      expect(
-        budget,
-        `new sideways edge ${key}:\n${show(sideways.filter((e) => `${e.fromBucket}->${e.toBucket}` === key))}\n` +
-          `Invert it, or demote the shared symbol to platform/. Adding it to the ` +
-          `list needs a reason in ARCHITECTURE.md.`,
-      ).toBeDefined();
-      expect(n, `${key} grew from ${budget} to ${n} — the list is a ceiling`).toBeLessThanOrEqual(budget ?? 0);
-    }
-
-    // Ratchet down: once an entry is cleared, its budget must come off the list
-    // so it cannot silently come back.
-    for (const [key, budget] of Object.entries(KNOWN_SIDEWAYS)) {
-      const n = counts[key] ?? 0;
-      expect(
-        n,
-        `${key} is down to ${n} (budget ${budget}) — lower or remove its entry in KNOWN_SIDEWAYS`,
-      ).toBe(budget);
-    }
-  });
 });

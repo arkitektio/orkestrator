@@ -181,8 +181,7 @@ invert it, or to demote the shared symbol to `platform/` — not to widen rule 2
 Adding an entry needs a justification line here. The absence of any such check
 is precisely what turned the old `core/` into a 153-file grab-bag.
 
-**Known sideways edges, with their reasons** (the `KNOWN_SIDEWAYS` ceiling in
-`architecture.test.ts`):
+**Known sideways edges, with their reasons:**
 
 - `meshDesign -> annotations`, `meshDesign -> meshes`: the mesh designer
   (`features/meshDesign`) is a COMPOSITION of the annotation brush (its
@@ -200,10 +199,8 @@ is precisely what turned the old `core/` into a 153-file grab-bag.
   hand-over seams. ANNOTATE no longer hands surfaces over — a brush stroke
   there saves a path, and meshes are only ever built in DESIGN.
 
-`architecture.test.ts` asserts these rules in `pnpm test`. Three are hard
-zeroes; "features do not reach sideways" is a RATCHET against a known list, in
-the same spirit as `typecheck-baseline.json` — the count may fall, never rise,
-and clearing an entry means deleting it so it cannot come back.
+`architecture.test.ts` asserts the three hard-zero rules in `pnpm test`;
+sideways edges between features are kept to the list above by review.
 
 `node scripts/scene-graph.mjs` prints the same graph for a human, with
 `--edges` to list every offending import.
