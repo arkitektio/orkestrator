@@ -265,6 +265,8 @@ export type CreateMandateInput = {
   agentDeviceId?: InputMaybe<Scalars['String']['input']>;
   /** Only an agent acting as this user may issue. */
   agentUser?: InputMaybe<Scalars['ID']['input']>;
+  /** Whether a client logging in with a key issued under the mandate may ask for a mesh key. Every child key inherits it. */
+  allowMesh?: Scalars['Boolean']['input'];
   /** Opaque binding for the approving service (e.g. a release digest). */
   attestation?: InputMaybe<Scalars['String']['input']>;
   /** The mandate (and every key issued under it) stops working after this many days (1–365). Null: as long as your app. */
@@ -2675,7 +2677,7 @@ export type GetMandateQuery = { __typename?: 'Query', mandate: (
 export type StandingMandatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StandingMandatesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, agentIdentifier?: string | null, claimant: MandateClaimant, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null }, parent?: { __typename?: 'Mandate', id: string } | null }> };
+export type StandingMandatesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, agentIdentifier?: string | null, claimant: MandateClaimant, allowMesh: boolean, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null }, parent?: { __typename?: 'Mandate', id: string } | null }> };
 
 export type MembershipRequestsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5188,6 +5190,7 @@ export const StandingMandatesDocument = gql`
     id
     agentIdentifier
     claimant
+    allowMesh
     subject {
       identifier
       version

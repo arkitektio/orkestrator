@@ -286,6 +286,11 @@ input CreateMandateInput {
   """Only an agent acting as this user may issue."""
   agentUser: ID = null
 
+  """
+  Whether a client logging in with a key issued under the mandate may ask for a mesh key. Every child key inherits it.
+  """
+  allowMesh: Boolean! = false
+
   """Opaque binding for the approving service (e.g. a release digest)."""
   attestation: String = null
 
