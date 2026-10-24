@@ -17,6 +17,7 @@ import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { Progress } from "@/core/ui/progress";
 import { Spinner } from "@/core/ui/spinner";
+import { Switch } from "@/core/ui/switch";
 import { cn } from "@/core/util/utils";
 import { WifiProfileForm, useWifiProfiles, wifiProfileLabel, wifiProfileProblem } from "@/core/wifi";
 import { BluetoothOff, Check, CircleAlert, Plus, Wifi } from "lucide-react";
@@ -205,6 +206,8 @@ export const ProvisionDevicePage = () => {
     }
   });
   const [wifi, setWifi] = useState<WifiProfile | null>(null);
+  /** Whether the device's key may ask lok for a mesh key (the parent mandate's `allowMesh`). */
+  const [allowMesh, setAllowMesh] = useState(true);
   const [progress, setProgress] = useState<ProvisionProgress | null>(null);
   /** The mandate whose key this device already holds: a retry resends Wi-Fi only. */
   const [heldMandate, setHeldMandate] = useState<string | null>(null);
@@ -281,7 +284,7 @@ export const ProvisionDevicePage = () => {
           // The standing mandate this app holds for the firmware, created on first use.
           const { data: live, error } = await loadMandates();
           if (error) throw error;
-          let parentId = findStandingMandate(live?.mandates ?? [], appManifest.identifier, manifest.identifier)?.id;
+          let parentId = findStandingMandate(live?.mandates ?? [], appManifest.identifier, manifest.identifier, allowMesh)?.id;
           if (!parentId) {
             const { data } = await createMandate({
               variables: {
@@ -301,6 +304,8 @@ export const ProvisionDevicePage = () => {
                   },
                   // As long as this app's sign-in lasts.
                   expiresInDays: null,
+                  // Every device key under it inherits this.
+                  allowMesh,
                 },
               },
             });
@@ -416,6 +421,16 @@ export const ProvisionDevicePage = () => {
               <p className={cn("text-xs", originProblem ? "text-destructive" : "text-muted-foreground")}>
                 {originProblem ??
                   "The device must reach this address from its own Wi-Fi: localhost or a VPN-only address will not work."}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <Switch id="provision-mesh" checked={allowMesh} onCheckedChange={setAllowMesh} disabled={!!heldMandate} />
+                <Label htmlFor="provision-mesh">Let the device join the mesh</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Its key may then ask lok for a mesh key, so it can reach instances that the deployment serves only on its mesh.
               </p>
             </div>
 
