@@ -1,3 +1,20 @@
+# [4.5.0](https://github.com/arkitektio/orkestrator/compare/v4.4.0...v4.5.0) (2026-10-24)
+
+
+### Bug Fixes
+
+* **mikro:** keep recent-data cards inside their bento cells ([82cdb66](https://github.com/arkitektio/orkestrator/commit/82cdb662396cf77d83a76d4c19eed9ef1dafd071))
+* **security:** accept self-signed certificates only from fakts hosts ([8d841ca](https://github.com/arkitektio/orkestrator/commit/8d841cac53c2acef0283c11c8c894a9dbc141b0b))
+
+
+### Features
+
+* base bloks, typed queries, runtime Tailwind, task bloks, CAD models ([ec27897](https://github.com/arkitektio/orkestrator/commit/ec27897fde803502bea2b2c1b2d80030790fe917))
+* **mikro:** layer cards act on their lens, own their annotations ([151eada](https://github.com/arkitektio/orkestrator/commit/151eada6295235db27395cb7c18ad1dadc80402d))
+* **mikro:** placement fields, client-derived render axes and scene view planes ([d967a48](https://github.com/arkitektio/orkestrator/commit/d967a4879b40a1823e4716b48c8336eeae1bb7a5))
+* **mikro:** simplify toggle for the coordinate graph ([3c1d126](https://github.com/arkitektio/orkestrator/commit/3c1d1266bb3cd95e2fe553f97f4ee25274742016))
+* **plot,mikro:** wheel-zoom the overview strip; shared chart layer card shell ([d4ef048](https://github.com/arkitektio/orkestrator/commit/d4ef04832c3a88ce6fa8b699f2307a07c7a4aab5))
+
 # [4.4.0](https://github.com/arkitektio/orkestrator/compare/v4.3.0...v4.4.0) (2026-10-21)
 
 
