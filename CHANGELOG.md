@@ -1,3 +1,10 @@
+# [4.7.0](https://github.com/arkitektio/orkestrator/compare/v4.6.0...v4.7.0) (2026-10-24)
+
+
+### Features
+
+* **renderer:** request adapter limits; configurable WebGPU safety checks ([7a36c10](https://github.com/arkitektio/orkestrator/commit/7a36c103f52f74a888cc284dcdda1372d3a43ef3))
+
 # [4.6.0](https://github.com/arkitektio/orkestrator/compare/v4.5.0...v4.6.0) (2026-10-24)
 
 
