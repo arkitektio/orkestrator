@@ -12,12 +12,15 @@ import {
   type RendererBudgetSettings,
 } from "@/core/settings/renderer/rendererBudget";
 import type { Settings } from "@/core/settings/store/validator";
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { FormDescription, FormItem, FormLabel } from "@/core/ui/form";
 import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/core/ui/radio-group";
 import { Switch } from "@/core/ui/switch";
-import { Cpu, HardDrive, MemoryStick } from "lucide-react";
+import { Cpu, HardDrive, MemoryStick, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useController, useWatch } from "react-hook-form";
 import { Link } from "react-router-dom";
@@ -314,11 +317,113 @@ const LimitsCards = () => {
   );
 };
 
+type GpuChecks = "all" | "no-bounds" | "none";
+type GpuChecksState = Awaited<ReturnType<Window["api"]["gpuChecks"]["get"]>>;
+
+const GPU_CHECK_OPTIONS: { value: GpuChecks; label: string; description: string }[] = [
+  {
+    value: "all",
+    label: "All checks (recommended)",
+    description: "Every graphics memory access and command is checked, as in a browser.",
+  },
+  {
+    value: "no-bounds",
+    label: "Skip memory bounds checks",
+    description:
+      "Scenes render a little faster. A bug in Orkestrator then shows as a garbled picture or a scene that stops drawing, instead of a clean error.",
+  },
+  {
+    value: "none",
+    label: "Skip all checks",
+    description:
+      "Also skips checking graphics commands. Errors are no longer reported, and a bug can crash the graphics process.",
+  },
+];
+
+/** WebGPU safety checks. Main owns the choice (a Chromium switch, read
+ * before startup), so it is not a form field: it is read and written over
+ * IPC and applies from the next launch. */
+const GpuChecksCard = () => {
+  const [state, setState] = useState<GpuChecksState | null>(null);
+
+  useEffect(() => {
+    window.api?.gpuChecks
+      ?.get()
+      .then(setState)
+      .catch(reportErrorAs("Couldn't read the graphics safety setting"));
+  }, []);
+
+  // Desktop only: in the web build there is no switch to set.
+  if (!state) return null;
+
+  const choose = (value: string) =>
+    window.api.gpuChecks
+      .set(value as GpuChecks)
+      .then(setState)
+      .catch(reportErrorAs("Couldn't change the graphics safety setting"));
+
+  const pending = state.next !== state.active;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5" />
+          Graphics safety checks
+        </CardTitle>
+        <CardDescription>
+          Like a browser, Orkestrator checks every graphics operation in case a page tries
+          something it should not. Switching checks off makes scenes faster, but it applies to
+          everything Orkestrator shows, including emails and other outside content.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <RadioGroup value={state.next} onValueChange={choose}>
+          {GPU_CHECK_OPTIONS.map((option) => (
+            <div key={option.value} className="flex items-start gap-3">
+              <RadioGroupItem
+                id={`gpu-checks-${option.value}`}
+                value={option.value}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <Label htmlFor={`gpu-checks-${option.value}`}>{option.label}</Label>
+                <p className="text-sm text-muted-foreground">{option.description}</p>
+              </div>
+            </div>
+          ))}
+        </RadioGroup>
+        {pending && (
+          <div className="flex items-center gap-3">
+            {state.canRelaunch && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  window.api.gpuChecks
+                    .relaunch()
+                    .catch(reportErrorAs("Couldn't restart Orkestrator"))
+                }
+              >
+                Restart now
+              </Button>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Applies after Orkestrator restarts.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export const RendererPage = () => (
   <SettingsPage slug="renderer">
     <SettingsForm>
       <HardwareCard />
       <LimitsCards />
+      <GpuChecksCard />
     </SettingsForm>
   </SettingsPage>
 );

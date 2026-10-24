@@ -217,6 +217,12 @@ declare global {
           displays?: { width: number; height: number; refreshRate: number | null; main: boolean }[];
         }>;
       };
+      gpuChecks: {
+        get: () => Promise<import("../main/modules/GpuChecks").GpuChecksState>;
+        set: (checks: import("../main/modules/GpuChecks").GpuChecks) => Promise<import("../main/modules/GpuChecks").GpuChecksState>;
+        /** Restarts the app; a no-op under `pnpm dev`. */
+        relaunch: () => Promise<void>;
+      };
       onDownloadProgress: (downloadId: string, cb: (data: any) => void) => () => void;
       onDownloadError: (downloadId: string, cb: (data: any) => void) => () => void;
       onUploadProgress: (uploadId: string, cb: (data: any) => void) => () => void;

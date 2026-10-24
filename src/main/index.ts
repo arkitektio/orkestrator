@@ -25,6 +25,8 @@ import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
 import { HardwareService } from "./modules/HardwareService";
+import { GpuChecksService, applyGpuChecks } from "./modules/GpuChecks";
+import Store from "electron-store";
 import { BluetoothService } from "./bluetooth/BluetoothService";
 import { WifiService } from "./wifi/WifiService";
 import { FactoryResetService, finishFactoryReset } from "./modules/FactoryReset";
@@ -132,12 +134,16 @@ protocol.registerSchemesAsPrivileged([
 // machine without it gets an explicit "cannot be rendered" message from the
 // scene rather than a degraded picture. This Chromium enables WebGPU by default
 // on every platform we ship (Metal / D3D / Vulkan), so no switches are needed
-// here; if that regresses, this is where the flags would go.
+// for that; if that regresses, this is where the flags would go.
 
 // A factory reset requested last run empties userData now, before any
 // electron-store below opens its file (see ./modules/FactoryReset). When it
 // relaunches for a clean start this process is on its way out.
 const exitingForFactoryReset = finishFactoryReset();
+
+// WebGPU safety checks the user chose to drop (Settings → Renderer). A
+// Chromium switch, so it must be appended before `ready`.
+const gpuChecks = applyGpuChecks(new Store(), app.commandLine);
 
 // Core Services
 const appManager = new AppManager();
@@ -237,6 +243,7 @@ appManager.register(bigFileDownloadService);
 appManager.register(new AssetFetchService());
 appManager.register(shellService);
 appManager.register(hardwareService);
+appManager.register(new GpuChecksService(transport, gpuChecks));
 appManager.register(bluetoothService);
 appManager.register(wifiService);
 appManager.register(factoryResetService);

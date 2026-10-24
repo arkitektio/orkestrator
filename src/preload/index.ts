@@ -225,6 +225,12 @@ const api = {
     /** What GPU and how much memory this computer has (main's HardwareService). */
     probe: () => ipcRenderer.invoke("hardware:probe"),
   },
+  gpuChecks: {
+    /** Which WebGPU safety checks this run has, and the next launch will (main's GpuChecksService). */
+    get: () => ipcRenderer.invoke("gpu-checks:get"),
+    set: (checks: "all" | "no-bounds" | "none") => ipcRenderer.invoke("gpu-checks:set", checks),
+    relaunch: () => ipcRenderer.invoke("gpu-checks:relaunch"),
+  },
   onDownloadProgress: (downloadId: string, cb: (data: any) => void) => {
     const channel = `download-progress-${downloadId}`;
     const listener = (_e: any, data: any) => cb(data);

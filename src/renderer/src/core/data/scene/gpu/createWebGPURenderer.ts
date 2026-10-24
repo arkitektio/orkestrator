@@ -35,11 +35,54 @@ export type DeviceLostInfo = { message: string; reason: string | null };
  *  first — which is the one that names the cause. */
 const MAX_LOGGED_GPU_ERRORS = 10;
 
+/** Limits raised from the spec defaults to what the adapter offers. three
+ *  requests `requiredLimits: {}`, so without this every device gets the
+ *  "any laptop" profile (128 MiB storage binding, 256 MiB buffer, 2048 3D
+ *  extent) whatever the GPU has — and computeRepack / computeSkeleton /
+ *  the brick atlas size themselves from `device.limits`. */
+const RAISED_LIMITS = [
+  "maxBufferSize",
+  "maxStorageBufferBindingSize",
+  "maxTextureDimension2D",
+  "maxTextureDimension3D",
+  "maxComputeWorkgroupStorageSize",
+] as const;
+
+type LimitsAdapter = { limits?: Partial<Record<(typeof RAISED_LIMITS)[number], number>> };
+type NavigatorGPU = {
+  gpu?: { requestAdapter: (options?: { powerPreference?: unknown }) => Promise<LimitsAdapter | null> };
+};
+
+/** The adapter's own values for RAISED_LIMITS — never more, so requestDevice
+ *  cannot refuse them. Undefined (three's default) when the probe fails. */
+async function adapterLimits(powerPreference: unknown): Promise<Record<string, number> | undefined> {
+  try {
+    const adapter = await (navigator as unknown as NavigatorGPU).gpu?.requestAdapter({ powerPreference });
+    if (!adapter?.limits) return undefined;
+    const limits: Record<string, number> = {};
+    for (const key of RAISED_LIMITS) {
+      const value = adapter.limits[key];
+      if (typeof value === "number") limits[key] = value;
+    }
+    return limits;
+  } catch {
+    return undefined;
+  }
+}
+
+const mib = (bytes: number | undefined) =>
+  bytes === undefined ? "?" : `${Math.round(bytes / (1024 * 1024))} MiB`;
+
 export const createWebGPURendererFactory =
   ({ label, onInitialized, onDeviceLost }: WebGPURendererFactoryOptions) =>
   async (props: unknown): Promise<WebGPURenderer> => {
+    const rendererProps = props as Record<string, unknown>;
+    // Same powerPreference three passes to its own requestAdapter, so both
+    // land on the same GPU.
+    const requiredLimits = await adapterLimits(rendererProps?.powerPreference);
     const renderer = new WebGPURenderer({
-      ...(props as Record<string, unknown>),
+      ...rendererProps,
+      requiredLimits,
       // No MSAA. In mikro the dominant pixel cost is a full-screen raymarch with
       // no geometric edges, where MSAA is pure bandwidth; in elektro the geometry
       // is Line2 fat lines, which are screen-space quads with their own edge AA.
@@ -89,7 +132,11 @@ export const createWebGPURendererFactory =
     // so a try/catch around a pass cannot see them and, unhandled, they reach
     // the console only as a browser warning without our label.
     // (No @webgpu/types in this project: the device is typed structurally.)
-    const device = (renderer as unknown as { backend?: { device?: EventTarget } }).backend?.device;
+    const device = (
+      renderer as unknown as {
+        backend?: { device?: EventTarget & { limits?: Record<string, number> } };
+      }
+    ).backend?.device;
     if (device) {
       let logged = 0;
       device.addEventListener("uncapturederror", (event) => {
@@ -130,7 +177,12 @@ export const createWebGPURendererFactory =
       );
     }
 
-    console.info(`[${label}] renderer initialized — backend: WebGPU`);
+    const granted = device?.limits;
+    console.info(
+      `[${label}] renderer initialized — backend: WebGPU, ` +
+        `storage binding ${mib(granted?.maxStorageBufferBindingSize)}, ` +
+        `buffer ${mib(granted?.maxBufferSize)}, 3D extent ${granted?.maxTextureDimension3D ?? "?"}`,
+    );
     onInitialized?.(renderer);
     return renderer;
   };
