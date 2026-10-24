@@ -30,3 +30,20 @@ mutation UpdatePlacement($input: UpdatePlacementInput!) {
 mutation DeletePlacement($id: ID!) {
   deletePlacement(input: { id: $id })
 }
+
+
+mutation CreateSpacePlacement($input: CreateSpacePlacementInput!) {
+  createSpacePlacement(input: $input) {
+    ...SpaceBlokPlacement
+  }
+}
+
+mutation UpdateSpacePlacement($input: UpdateSpacePlacementInput!) {
+  updateSpacePlacement(input: $input) {
+    ...SpaceBlokPlacement
+  }
+}
+
+mutation DeleteSpacePlacement($id: ID!) {
+  deleteSpacePlacement(input: { id: $id })
+}

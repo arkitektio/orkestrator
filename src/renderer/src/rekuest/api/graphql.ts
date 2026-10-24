@@ -7889,7 +7889,12 @@ export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: 
 export type SpaceFragment = { __typename?: 'Space', id: string, name: string, placements: Array<(
     { __typename?: 'Placement' }
     & SpacePlacementFragment
+  )>, blokPlacements: Array<(
+    { __typename?: 'SpacePlacement' }
+    & SpaceBlokPlacementFragment
   )> };
+
+export type SpaceBlokPlacementFragment = { __typename?: 'SpacePlacement', id: string, name?: string | null, affineMatrix?: any | null, blok: { __typename?: 'MaterializedBlok', id: string, name?: string | null, blok: { __typename?: 'Blok', id: string, name: string, context: ComponentContext } } };
 
 export type ListSpaceFragment = { __typename?: 'Space', id: string, name: string };
 
@@ -8656,6 +8661,33 @@ export type DeletePlacementMutationVariables = Exact<{
 
 
 export type DeletePlacementMutation = { __typename?: 'Mutation', deletePlacement: string };
+
+export type CreateSpacePlacementMutationVariables = Exact<{
+  input: CreateSpacePlacementInput;
+}>;
+
+
+export type CreateSpacePlacementMutation = { __typename?: 'Mutation', createSpacePlacement: (
+    { __typename?: 'SpacePlacement' }
+    & SpaceBlokPlacementFragment
+  ) };
+
+export type UpdateSpacePlacementMutationVariables = Exact<{
+  input: UpdateSpacePlacementInput;
+}>;
+
+
+export type UpdateSpacePlacementMutation = { __typename?: 'Mutation', updateSpacePlacement: (
+    { __typename?: 'SpacePlacement' }
+    & SpaceBlokPlacementFragment
+  ) };
+
+export type DeleteSpacePlacementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteSpacePlacementMutation = { __typename?: 'Mutation', deleteSpacePlacement: string };
 
 export type DeleteImplementationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -12615,6 +12647,22 @@ export const SpacePlacementFragmentDoc = gql`
   affineMatrix
 }
     `;
+export const SpaceBlokPlacementFragmentDoc = gql`
+    fragment SpaceBlokPlacement on SpacePlacement {
+  id
+  name
+  affineMatrix
+  blok {
+    id
+    name
+    blok {
+      id
+      name
+      context
+    }
+  }
+}
+    `;
 export const SpaceFragmentDoc = gql`
     fragment Space on Space {
   id
@@ -12622,8 +12670,12 @@ export const SpaceFragmentDoc = gql`
   placements {
     ...SpacePlacement
   }
+  blokPlacements {
+    ...SpaceBlokPlacement
+  }
 }
-    ${SpacePlacementFragmentDoc}`;
+    ${SpacePlacementFragmentDoc}
+${SpaceBlokPlacementFragmentDoc}`;
 export const ListSpaceFragmentDoc = gql`
     fragment ListSpace on Space {
   id
@@ -15233,6 +15285,103 @@ export function useDeletePlacementMutation(baseOptions?: ApolloReactHooks.Mutati
 export type DeletePlacementMutationHookResult = ReturnType<typeof useDeletePlacementMutation>;
 export type DeletePlacementMutationResult = Apollo.MutationResult<DeletePlacementMutation>;
 export type DeletePlacementMutationOptions = Apollo.BaseMutationOptions<DeletePlacementMutation, DeletePlacementMutationVariables>;
+export const CreateSpacePlacementDocument = gql`
+    mutation CreateSpacePlacement($input: CreateSpacePlacementInput!) {
+  createSpacePlacement(input: $input) {
+    ...SpaceBlokPlacement
+  }
+}
+    ${SpaceBlokPlacementFragmentDoc}`;
+export type CreateSpacePlacementMutationFn = Apollo.MutationFunction<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>;
+
+/**
+ * __useCreateSpacePlacementMutation__
+ *
+ * To run a mutation, you first call `useCreateSpacePlacementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSpacePlacementMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSpacePlacementMutation, { data, loading, error }] = useCreateSpacePlacementMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>(CreateSpacePlacementDocument, options);
+      }
+export type CreateSpacePlacementMutationHookResult = ReturnType<typeof useCreateSpacePlacementMutation>;
+export type CreateSpacePlacementMutationResult = Apollo.MutationResult<CreateSpacePlacementMutation>;
+export type CreateSpacePlacementMutationOptions = Apollo.BaseMutationOptions<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>;
+export const UpdateSpacePlacementDocument = gql`
+    mutation UpdateSpacePlacement($input: UpdateSpacePlacementInput!) {
+  updateSpacePlacement(input: $input) {
+    ...SpaceBlokPlacement
+  }
+}
+    ${SpaceBlokPlacementFragmentDoc}`;
+export type UpdateSpacePlacementMutationFn = Apollo.MutationFunction<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>;
+
+/**
+ * __useUpdateSpacePlacementMutation__
+ *
+ * To run a mutation, you first call `useUpdateSpacePlacementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSpacePlacementMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSpacePlacementMutation, { data, loading, error }] = useUpdateSpacePlacementMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>(UpdateSpacePlacementDocument, options);
+      }
+export type UpdateSpacePlacementMutationHookResult = ReturnType<typeof useUpdateSpacePlacementMutation>;
+export type UpdateSpacePlacementMutationResult = Apollo.MutationResult<UpdateSpacePlacementMutation>;
+export type UpdateSpacePlacementMutationOptions = Apollo.BaseMutationOptions<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>;
+export const DeleteSpacePlacementDocument = gql`
+    mutation DeleteSpacePlacement($id: ID!) {
+  deleteSpacePlacement(input: {id: $id})
+}
+    `;
+export type DeleteSpacePlacementMutationFn = Apollo.MutationFunction<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>;
+
+/**
+ * __useDeleteSpacePlacementMutation__
+ *
+ * To run a mutation, you first call `useDeleteSpacePlacementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteSpacePlacementMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteSpacePlacementMutation, { data, loading, error }] = useDeleteSpacePlacementMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>(DeleteSpacePlacementDocument, options);
+      }
+export type DeleteSpacePlacementMutationHookResult = ReturnType<typeof useDeleteSpacePlacementMutation>;
+export type DeleteSpacePlacementMutationResult = Apollo.MutationResult<DeleteSpacePlacementMutation>;
+export type DeleteSpacePlacementMutationOptions = Apollo.BaseMutationOptions<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>;
 export const DeleteImplementationDocument = gql`
     mutation DeleteImplementation($id: ID!) {
   deleteImplementation(input: {implementation: $id})

@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as THREE from 'three';
 import {TransformControls} from '@react-three/drei';
 import {useFrame} from '@react-three/fiber';
-import {Check, Magnet, Move3d, Plus, Replace, Rotate3d, Scale3d, Scan, Trash2} from 'lucide-react';
+import {Box, Check, Magnet, Move3d, Plus, Replace, Rotate3d, Scale3d, Scan, Trash2} from 'lucide-react';
 import {
   BlokSceneInertProvider,
   SceneSurface,
@@ -20,11 +20,15 @@ import {
   ComponentContext,
   SpaceDocument,
   useCreatePlacementMutation,
+  useCreateSpacePlacementMutation,
   useDeletePlacementMutation,
+  useDeleteSpacePlacementMutation,
   useListMaterializedBloksQuery,
   useMaterializedBlokQuery,
   useUpdatePlacementMutation,
+  useUpdateSpacePlacementMutation,
   type ListMaterializedBlokFragment,
+  type SpaceBlokPlacementFragment,
   type SpaceFragment,
   type SpacePlacementFragment,
 } from '@/rekuest/api/graphql';
@@ -75,9 +79,51 @@ const MARKER_SIZE = 0.15;
 
 const viewName = (view: {name?: string | null; blok: {name: string}}): string => view.name || view.blok.name;
 
-/** The 3D view of a placement, when it has one this room can show. */
-const sceneViewOf = (placement: SpacePlacementFragment) =>
-  placement.blok?.blok.context === ComponentContext.Scene ? placement.blok : null;
+type SceneView = {id: string; name?: string | null; blok: {name: string; context: ComponentContext}};
+
+/** The view, when it is one this room can show: a blok of the scene context. */
+const sceneView = (view: SceneView | null | undefined): SceneView | null =>
+  view?.blok.context === ComponentContext.Scene ? view : null;
+
+/**
+ * Something standing in the room: an app's placement (its agent, shown by one
+ * of its 3D views), or a 3D blok placed on its own, with no agent. Both sit
+ * where a 4x4 affine puts them; `key` tells them apart across the two kinds.
+ */
+type Standing = {
+  key: string;
+  name: string;
+  affineMatrix: unknown;
+  /** The 3D view it shows, when it has one this room can show. */
+  view: SceneView | null;
+  /** Whether it has a view at all, if not one this room can show. */
+  hasView: boolean;
+} & ({kind: 'agent'; placement: SpacePlacementFragment} | {kind: 'blok'; placement: SpaceBlokPlacementFragment});
+
+const standingsOf = (space: SpaceFragment): Standing[] => [
+  ...space.placements.map(
+    (placement): Standing => ({
+      key: `agent:${placement.id}`,
+      kind: 'agent',
+      placement,
+      name: placement.name,
+      affineMatrix: placement.affineMatrix,
+      view: sceneView(placement.blok),
+      hasView: Boolean(placement.blok),
+    }),
+  ),
+  ...space.blokPlacements.map(
+    (placement): Standing => ({
+      key: `blok:${placement.id}`,
+      kind: 'blok',
+      placement,
+      name: placement.name || viewName(placement.blok),
+      affineMatrix: placement.affineMatrix,
+      view: sceneView(placement.blok),
+      hasView: true,
+    }),
+  ),
+];
 
 const Marker = ({title, detail}: {title: string; detail: string}) => {
   const mesh = React.useRef<THREE.Mesh>(null);
@@ -155,26 +201,26 @@ type Editing = {
   selected: string | null;
   mode: GizmoMode;
   snap: boolean;
-  onSelect: (id: string | null) => void;
-  onMove: (placement: SpacePlacementFragment, affine: Affine) => void;
-  /** The placements just added, to be fitted once their view has loaded. */
+  onSelect: (key: string | null) => void;
+  onMove: (item: Standing, affine: Affine) => void;
+  /** The keys of what was just added, to be fitted once its view has loaded. */
   fitting: ReadonlySet<string>;
-  onMeasured: (placement: SpacePlacementFragment, extent: number) => void;
-  /** Every placement's group, for the Fit button to measure. */
+  onMeasured: (item: Standing, extent: number) => void;
+  /** Every standing thing's group by key, for the Fit button to measure. */
   groups: React.RefObject<Map<string, THREE.Group>>;
   /** Set while the gizmo is held, so letting go of it is not read as a click beside everything. */
   gizmoHeld: React.RefObject<boolean>;
 };
 
-const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editing?: Editing}) => {
+const Placed = ({item, editing}: {item: Standing; editing?: Editing}) => {
   const [group, setGroup] = React.useState<THREE.Group | null>(null);
-  const affine = placement.affineMatrix as unknown;
+  const affine = item.affineMatrix;
   React.useLayoutEffect(() => {
     if (group) toMatrix4(affine).decompose(group.position, group.quaternion, group.scale);
   }, [affine, group]);
 
-  const view = sceneViewOf(placement);
-  const selected = editing?.selected === placement.id;
+  const view = item.view;
+  const selected = editing?.selected === item.key;
   const turning = editing?.mode === 'rotate';
   // The scale the view had when the scale gizmo was picked up.
   const scaleStart = React.useRef(new THREE.Vector3(1, 1, 1));
@@ -182,11 +228,11 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
   const groups = editing?.groups;
   React.useEffect(() => {
     if (!groups || !group) return undefined;
-    groups.current.set(placement.id, group);
+    groups.current.set(item.key, group);
     return () => {
-      groups.current.delete(placement.id);
+      groups.current.delete(item.key);
     };
-  }, [group, groups, placement.id]);
+  }, [group, groups, item.key]);
 
   return (
     <>
@@ -196,7 +242,7 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
           editing
             ? event => {
                 event.stopPropagation();
-                editing.onSelect(placement.id);
+                editing.onSelect(item.key);
               }
             : undefined
         }
@@ -204,11 +250,11 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
         {view ? (
           <PlacedView id={view.id} name={viewName(view)} />
         ) : (
-          <Marker title={placement.name} detail={placement.blok ? 'Its view is a panel, not a 3D view' : 'No 3D view'} />
+          <Marker title={item.name} detail={item.hasView ? 'Its view is a panel, not a 3D view' : 'No 3D view'} />
         )}
       </group>
-      {editing && view && group && editing.fitting.has(placement.id) ? (
-        <AutoFit group={group} onMeasured={extent => editing.onMeasured(placement, extent)} />
+      {editing && view && group && editing.fitting.has(item.key) ? (
+        <AutoFit group={group} onMeasured={extent => editing.onMeasured(item, extent)} />
       ) : null}
       {editing && selected && group ? (
         <>
@@ -241,7 +287,7 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
               }, 0);
               group.updateMatrix();
               // A click on the gizmo that moved nothing has nothing to save.
-              if (!group.matrix.equals(toMatrix4(affine))) editing.onMove(placement, fromMatrix4(group.matrix));
+              if (!group.matrix.equals(toMatrix4(affine))) editing.onMove(item, fromMatrix4(group.matrix));
             }}
           />
         </>
@@ -259,12 +305,12 @@ const Hint = ({children}: {children: React.ReactNode}) => (
 );
 
 const Room = ({
-  placements,
+  items,
   editing,
   inert = false,
   overlay,
 }: {
-  placements: readonly SpacePlacementFragment[];
+  items: readonly Standing[];
   editing?: Editing;
   /** Whether the devices ignore the pointer although nothing is being arranged. */
   inert?: boolean;
@@ -278,8 +324,8 @@ const Room = ({
     overlay={overlay}
   >
     <BlokSceneInertProvider value={Boolean(editing) || inert}>
-      {placements.map(placement => (
-        <Placed key={placement.id} placement={placement} editing={editing} />
+      {items.map(item => (
+        <Placed key={item.key} item={item} editing={editing} />
       ))}
     </BlokSceneInertProvider>
   </SceneSurface>
@@ -300,35 +346,42 @@ export const SpaceScene = ({
   space: SpaceFragment;
   overlay?: React.ReactNode;
   readOnly?: boolean;
-}) => (
-  <RekuestSceneHost>
-    <Room
-      placements={space.placements}
-      inert={readOnly}
-      overlay={
-        <>
-          {space.placements.length === 0 ? (
-            <Hint>
-              Nothing stands in this space yet. Press <b>Edit</b> to add 3D views.
-            </Hint>
-          ) : null}
-          {overlay}
-        </>
-      }
-    />
-  </RekuestSceneHost>
-);
+}) => {
+  const items = React.useMemo(() => standingsOf(space), [space]);
+  return (
+    <RekuestSceneHost>
+      <Room
+        items={items}
+        inert={readOnly}
+        overlay={
+          <>
+            {items.length === 0 ? (
+              <Hint>
+                Nothing stands in this space yet. Press <b>Edit</b> to add 3D views.
+              </Hint>
+            ) : null}
+            {overlay}
+          </>
+        }
+      />
+    </RekuestSceneHost>
+  );
+};
 
 type Agent = SpacePlacementFragment['agent'];
 
-/** A 3D view that can be added, and what a click on it does. */
+/**
+ * A 3D view that can be added, and what a click on it does. A view of an app
+ * places that app (once per space); a view connected to no app is placed as
+ * a blok of its own, as often as wanted.
+ */
 type ViewOption = {
   view: ListMaterializedBlokFragment;
-  /** The app the view shows: a placement belongs to one. */
+  /** The app the view shows, when it is connected to one. */
   agent: Agent | null;
   /** The placement of that app in this space, when it has one. */
   placement: SpacePlacementFragment | null;
-  action: 'add' | 'select' | 'swap' | 'none';
+  action: 'add' | 'select' | 'swap' | 'place';
 };
 
 const optionsFor = (
@@ -341,11 +394,11 @@ const optionsFor = (
       const mapping = view.agentMappings.find(candidate => candidate.key === 'self') ?? view.agentMappings[0];
       const agent = mapping?.agent ?? null;
       const placement = agent ? (placements.find(candidate => candidate.agent.id === agent.id) ?? null) : null;
-      const action = !agent ? 'none' : !placement ? 'add' : placement.blok?.id === view.id ? 'select' : 'swap';
+      const action = !agent ? 'place' : !placement ? 'add' : placement.blok?.id === view.id ? 'select' : 'swap';
       return {view, agent, placement, action};
     });
 
-const ACTION_ICON = {add: Plus, select: Check, swap: Replace, none: null} as const;
+const ACTION_ICON = {add: Plus, select: Check, swap: Replace, place: Plus} as const;
 
 const optionHint = (option: ViewOption): string => {
   switch (option.action) {
@@ -355,8 +408,8 @@ const optionHint = (option: ViewOption): string => {
       return 'Already in this space: select it';
     case 'swap':
       return `${option.agent?.name} already stands in this space: show it with this view instead`;
-    default:
-      return 'This view is not connected to an app, so it cannot be placed';
+    case 'place':
+      return 'Place it in this space on its own: it belongs to no app, so it can stand here more than once';
   }
 };
 
@@ -370,7 +423,7 @@ const ViewRow = ({option, disabled, onPick}: {option: ViewOption; disabled: bool
     <button
       type="button"
       title={optionHint(option)}
-      disabled={disabled || option.action === 'none'}
+      disabled={disabled}
       onClick={onPick}
       className="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
     >
@@ -383,18 +436,19 @@ const ViewRow = ({option, disabled, onPick}: {option: ViewOption; disabled: bool
               <span className="truncate">{option.agent.name}</span>
             </>
           ) : (
-            <span className="truncate">Not connected to an app</span>
+            <>
+              <Box className="size-3 shrink-0" />
+              <span className="truncate">A blok of its own</span>
+            </>
           )}
         </div>
       </div>
-      {Icon ? (
-        <Icon
-          className={cn(
-            'size-4 shrink-0 text-muted-foreground',
-            option.action === 'select' ? '' : 'group-hover:text-foreground',
-          )}
-        />
-      ) : null}
+      <Icon
+        className={cn(
+          'size-4 shrink-0 text-muted-foreground',
+          option.action === 'select' ? '' : 'group-hover:text-foreground',
+        )}
+      />
     </button>
   );
 };
@@ -441,30 +495,36 @@ const PoseField = (props: {
 };
 
 const PlacementRow = ({
-  placement,
+  item,
   selected,
   onSelect,
   onMove,
   onFit,
   onRemove,
 }: {
-  placement: SpacePlacementFragment;
+  item: Standing;
   selected: boolean;
   onSelect: () => void;
   onMove: (affine: Affine) => void;
   onFit: () => void;
   onRemove: () => void;
 }) => {
-  const view = sceneViewOf(placement);
-  const pose = readPose(placement.affineMatrix);
-  const scale = readScale(placement.affineMatrix);
+  const view = item.view;
+  const pose = readPose(item.affineMatrix);
+  const scale = readScale(item.affineMatrix);
   return (
     <div className={cn('rounded-md', selected ? 'bg-muted' : 'hover:bg-muted/60')}>
       <button type="button" onClick={onSelect} className="flex w-full items-center gap-2 px-2 py-1.5 text-left">
-        <OnlineDot online={placement.agent.connected} />
+        {item.kind === 'agent' ? (
+          <OnlineDot online={item.placement.agent.connected} />
+        ) : (
+          <Box className="size-3 shrink-0 text-muted-foreground" />
+        )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm">{placement.agent.name}</div>
-          <div className="truncate text-xs text-muted-foreground">{view ? viewName(view) : 'No 3D view'}</div>
+          <div className="truncate text-sm">{item.kind === 'agent' ? item.placement.agent.name : item.name}</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {item.kind === 'blok' ? 'A blok of its own' : view ? viewName(view) : 'No 3D view'}
+          </div>
         </div>
       </button>
       {selected ? (
@@ -477,7 +537,7 @@ const PlacementRow = ({
                 hint={field.hint}
                 step={field.step}
                 value={pose[field.key]}
-                onCommit={value => onMove(writePose(placement.affineMatrix, {...pose, [field.key]: value}))}
+                onCommit={value => onMove(writePose(item.affineMatrix, {...pose, [field.key]: value}))}
               />
             ))}
           </div>
@@ -489,7 +549,7 @@ const PlacementRow = ({
                 step={0.1}
                 value={scale}
                 onCommit={value => {
-                  if (value > 0) onMove(writeScale(placement.affineMatrix, value));
+                  if (value > 0) onMove(writeScale(item.affineMatrix, value));
                 }}
               />
             </div>
@@ -524,6 +584,7 @@ const PanelHeading = ({children}: {children: React.ReactNode}) => (
 /** The room with its handles: add 3D views from the list, pick one up and move it. */
 export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const placements = space.placements;
+  const items = React.useMemo(() => standingsOf(space), [space]);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [mode, setMode] = React.useState<GizmoMode>('translate');
   const [snap, setSnap] = React.useState(true);
@@ -555,23 +616,53 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
     awaitRefetchQueries: true,
   });
   const [deletePlacement] = useDeletePlacementMutation({refetchQueries: [SpaceDocument]});
+  const [updateSpacePlacement] = useUpdateSpacePlacementMutation();
+  const [createSpacePlacement, {loading: placing}] = useCreateSpacePlacementMutation({
+    refetchQueries: [SpaceDocument],
+    awaitRefetchQueries: true,
+  });
+  const [deleteSpacePlacement] = useDeleteSpacePlacementMutation({refetchQueries: [SpaceDocument]});
 
   const move = React.useCallback(
-    (placement: SpacePlacementFragment, affineMatrix: Affine) => {
-      updatePlacement({
-        variables: {input: {id: placement.id, affineMatrix}},
-        // The view stays where it was let go while the server is told.
-        optimisticResponse: {updatePlacement: {...placement, affineMatrix}},
-      }).catch(reportErrorAs("Couldn't move the placement"));
+    (item: Standing, affineMatrix: Affine) => {
+      // The view stays where it was let go while the server is told.
+      const moved =
+        item.kind === 'agent'
+          ? updatePlacement({
+              variables: {input: {id: item.placement.id, affineMatrix}},
+              optimisticResponse: {updatePlacement: {...item.placement, affineMatrix}},
+            })
+          : updateSpacePlacement({
+              variables: {input: {id: item.placement.id, affineMatrix}},
+              optimisticResponse: {updateSpacePlacement: {...item.placement, affineMatrix}},
+            });
+      moved.catch(reportErrorAs(`Couldn't move ${item.name}`));
     },
-    [updatePlacement],
+    [updatePlacement, updateSpacePlacement],
   );
+
+  // What was just placed is selected, and fitted once its view has loaded.
+  const fitNew = React.useCallback((key: string | null) => {
+    setSelected(key);
+    if (key) setFitting(current => new Set(current).add(key));
+  }, []);
 
   const pick = React.useCallback(
     (option: ViewOption) => {
-      if (!option.agent || option.action === 'none') return;
       if (option.action === 'select') {
-        setSelected(option.placement?.id ?? null);
+        setSelected(option.placement ? `agent:${option.placement.id}` : null);
+        return;
+      }
+      const free = freeSpot(items.map(item => item.affineMatrix));
+      if (option.action === 'place' || !option.agent) {
+        createSpacePlacement({
+          variables: {input: {space: space.id, blok: option.view.id, affineMatrix: free}},
+        })
+          .then(result => {
+            const id = result.data?.createSpacePlacement.id;
+            fitNew(id ? `blok:${id}` : null);
+          })
+          .catch(reportErrorAs(`Couldn't place ${viewName(option.view)}`));
         return;
       }
       createPlacement({
@@ -582,55 +673,56 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
             materializedBlok: option.view.id,
             // An app stands in a space once: its new view takes the spot of the
             // old one, at the size it was made, as a new view is fitted anew.
-            affineMatrix: option.placement
-              ? writeScale(option.placement.affineMatrix, 1)
-              : freeSpot(placements.map(placement => placement.affineMatrix)),
+            affineMatrix: option.placement ? writeScale(option.placement.affineMatrix, 1) : free,
           },
         },
       })
         .then(result => {
-          const id = result.data?.createPlacement.id ?? null;
-          setSelected(id);
-          if (id) setFitting(current => new Set(current).add(id));
+          const id = result.data?.createPlacement.id;
+          fitNew(id ? `agent:${id}` : null);
         })
         .catch(reportErrorAs(`Couldn't place ${viewName(option.view)}`));
     },
-    [createPlacement, placements, space.id],
+    [createPlacement, createSpacePlacement, fitNew, items, space.id],
   );
 
   // A view that was just placed and is ten times off the size of a device is fitted.
   const measured = React.useCallback(
-    (placement: SpacePlacementFragment, extent: number) => {
+    (item: Standing, extent: number) => {
       setFitting(current => {
         const next = new Set(current);
-        next.delete(placement.id);
+        next.delete(item.key);
         return next;
       });
       const scale = autoFitScale(extent);
-      if (scale !== null) move(placement, writeScale(placement.affineMatrix, scale));
+      if (scale !== null) move(item, writeScale(item.affineMatrix, scale));
     },
     [move],
   );
 
   const fit = React.useCallback(
-    (placement: SpacePlacementFragment) => {
-      const group = groups.current.get(placement.id);
+    (item: Standing) => {
+      const group = groups.current.get(item.key);
       const extent = group ? naturalExtent(group) : null;
       if (extent === null) {
         toast.info('This view has nothing to measure yet.');
         return;
       }
-      move(placement, writeScale(placement.affineMatrix, fitScale(extent)));
+      move(item, writeScale(item.affineMatrix, fitScale(extent)));
     },
     [move],
   );
 
   const remove = React.useCallback(
-    (placement: SpacePlacementFragment) => {
+    (item: Standing) => {
       setSelected(null);
-      deletePlacement({variables: {id: placement.id}}).catch(reportErrorAs("Couldn't remove the placement"));
+      const removed =
+        item.kind === 'agent'
+          ? deletePlacement({variables: {id: item.placement.id}})
+          : deleteSpacePlacement({variables: {id: item.placement.id}});
+      removed.catch(reportErrorAs(`Couldn't remove ${item.name}`));
     },
-    [deletePlacement],
+    [deletePlacement, deleteSpacePlacement],
   );
 
   // An agent card dropped on the room adds that app's 3D view, its default one first.
@@ -671,7 +763,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
               onChange={event => setSearch(event.target.value)}
             />
             {shown.map(option => (
-              <ViewRow key={option.view.id} option={option} disabled={adding} onPick={() => pick(option)} />
+              <ViewRow key={option.view.id} option={option} disabled={adding || placing} onPick={() => pick(option)} />
             ))}
             {shown.length === 0 ? (
               <div className="px-2 py-3 text-xs text-muted-foreground">
@@ -687,18 +779,18 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
           </div>
           <div>
             <PanelHeading>In this space</PanelHeading>
-            {placements.map(placement => (
+            {items.map(item => (
               <PlacementRow
-                key={placement.id}
-                placement={placement}
-                selected={selected === placement.id}
-                onSelect={() => setSelected(selected === placement.id ? null : placement.id)}
-                onMove={affine => move(placement, affine)}
-                onFit={() => fit(placement)}
-                onRemove={() => remove(placement)}
+                key={item.key}
+                item={item}
+                selected={selected === item.key}
+                onSelect={() => setSelected(selected === item.key ? null : item.key)}
+                onMove={affine => move(item, affine)}
+                onFit={() => fit(item)}
+                onRemove={() => remove(item)}
               />
             ))}
-            {placements.length === 0 ? (
+            {items.length === 0 ? (
               <div className="px-2 py-3 text-xs text-muted-foreground">Nothing yet.</div>
             ) : null}
           </div>
@@ -706,11 +798,11 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
 
         <div ref={dropRef} className={cn('relative min-w-0 flex-1', isOver && 'ring-2 ring-inset ring-primary')}>
           <Room
-            placements={placements}
+            items={items}
             editing={editing}
             overlay={
               <>
-                {placements.length === 0 ? (
+                {items.length === 0 ? (
                   <Hint>
                     Click a 3D view in <b>Add a 3D view</b> to place it here.
                   </Hint>

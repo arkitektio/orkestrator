@@ -4,6 +4,26 @@ fragment Space on Space {
   placements {
    ...SpacePlacement
   }
+  blokPlacements {
+    ...SpaceBlokPlacement
+  }
+}
+
+# A 3D blok standing in a space on its own, with no agent: a bench, a rack, a
+# room's walls. Where it sits is a 4x4 affine, as for an agent's placement.
+fragment SpaceBlokPlacement on SpacePlacement {
+  id
+  name
+  affineMatrix
+  blok {
+    id
+    name
+    blok {
+      id
+      name
+      context
+    }
+  }
 }
 
 

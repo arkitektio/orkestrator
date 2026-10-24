@@ -1,10 +1,11 @@
 /**
  * What a GLB must be to be shown, checked on its bytes.
  *
- * The same rule table the rekuest server holds a model to before it enters
- * the store (`facade/glb_validation.py`), plus the one check only a client
- * can make: texture sizes live in the binary chunk, which the server measures
- * but never decodes.
+ * The browser's implementation of the kulisse wire format (`KULISSE.md` in
+ * arkitektio/kulisse): the rule table a server's KulisseStore holds a model to
+ * when its upload is finished (`arkitekt_datalayer/kulisse.py`, with the same
+ * refusal codes), plus the one check only a client can make: texture sizes
+ * live in the binary chunk, which the server measures but never decodes.
  *
  * Pure: no DOM, no three.js. A viewer runs `validateModel` before an admin
  * upload and `modelRef` on every load.
