@@ -1,3 +1,10 @@
+# [4.6.0](https://github.com/arkitektio/orkestrator/compare/v4.5.0...v4.6.0) (2026-10-24)
+
+
+### Features
+
+* **lok:** let a device provisioned over Bluetooth join the mesh ([917f142](https://github.com/arkitektio/orkestrator/commit/917f14225c17ea8373548f602b3c0b23754aa79e))
+
 # [4.5.0](https://github.com/arkitektio/orkestrator/compare/v4.4.0...v4.5.0) (2026-10-24)
 
 
