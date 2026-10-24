@@ -2,7 +2,7 @@
 
 mutation RequestAssetUpload($input: RequestAssetUploadInput!) {
   requestAssetUpload(input: $input) {
-    ...MediaUploadGrant
+    ...AssetUploadGrant
   }
 }
 

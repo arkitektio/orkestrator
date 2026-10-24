@@ -46,14 +46,14 @@ export type Scalars = {
    * mechanism parameter) is the caller's job.
    */
   GenericQuantity: { input: GenericQuantity; output: GenericQuantity; }
-  /** A reference to an uploaded **binary glTF** (`.glb`) media object: one file holding a fixture's scene, materials and buffers. Upload it with `requestMediaUpload` / `finishMediaUpload`; `createFixture` reads its header and refuses anything that is not glTF 2.0 */
-  GltfLike: { input: any; output: any; }
   /** The `ImageFileLike` scalar type represents a reference to a snapshot image previously created by the user on a datalayer */
   ImageFileLike: { input: any; output: any; }
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
   JSON: { input: any; output: any; }
   /** A reference to an uploaded **konnektion store**: one prefix holding `konnektion.json`, both catalogs and every octree level of a node/edge network. Named for the wire format the way `FabriksLike` is, and a separate scalar because it is a separate format -- a graph, not a surface. Request it with `requestKonnektionUpload`, write the tree, land the manifest last, then `finishKonnektionUpload` -- which reads the manifest and refuses a prefix without one. A collection registered this way declares no grid and no encoding: the server reads them from the artifact, so they cannot be stated wrong */
   KonnektionLike: { input: any; output: any; }
+  /** A reference to a kulisse store (a device or scene model, one self-contained binary glTF): the id its finished upload returned. */
+  KulisseLike: { input: any; output: any; }
   /** A spatial length (``"2.5 µm"``, ``"1 mm"``, ``"3 m"``). */
   Length: { input: Length; output: Length; }
   /** The `ParquetLike` scalar type represents a reference to a parquet object previously created by the user on a datalayer */
@@ -1319,15 +1319,8 @@ export type BigFileStore = {
   maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a big file. */
@@ -1347,7 +1340,6 @@ export type BigFileUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Composites its children using an in-layer blend mode */
@@ -2431,7 +2423,7 @@ export type CreateFixtureInput = {
   folder?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   provenanceMetadata?: InputMaybe<Scalars['Any']['input']>;
-  store: Scalars['GltfLike']['input'];
+  store: Scalars['KulisseLike']['input'];
 };
 
 /** Create a layer that renders a fixture in a scene. The model's own coordinate system is the layer's space, so it must already have a path to the scene's world */
@@ -3328,12 +3320,6 @@ export type FabriksStore = {
   specVersion?: Maybe<Scalars['String']['output']>;
 };
 
-
-/** A fabriks collection stored as a prefix of Parquet files behind the S3 datalayer. Its grid and encoding are read from its own manifest, never declared by a caller. */
-export type FabriksStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Temporary S3 credentials for uploading a fabriks store. Scoped to the prefix and permitted to read back and delete inside it, because the tree is written incrementally and its manifest lands last. */
 export type FabriksUploadGrant = {
   __typename?: 'FabriksUploadGrant';
@@ -3351,7 +3337,6 @@ export type FabriksUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** The array a FIELD part reads: a times array, a warp field, a label mask whose pixels are the ids of a table's rows. The array is read at a fractional position by linear interpolation of its sample centres, so a pyramid level's fractional index is still a position */
@@ -3753,6 +3738,11 @@ export type FinishKonnektionUploadInput = {
   valid?: Scalars['Boolean']['input'];
 };
 
+export type FinishKulisseUploadInput = {
+  storeId: Scalars['String']['input'];
+  valid?: Scalars['Boolean']['input'];
+};
+
 export type FinishMediaUploadInput = {
   storeId: Scalars['String']['input'];
   valid?: Scalars['Boolean']['input'];
@@ -3773,7 +3763,7 @@ export type FinishZarrUploadInput = {
   valid?: Scalars['Boolean']['input'];
 };
 
-/** A piece of hardware around the sample -- a coverslip, a dish, a holder -- stored as one binary glTF. Ask its `store` for a `presignedUrl` and load the file whole; its space's axes carry the units its vertices are in */
+/** A piece of hardware around the sample -- a coverslip, a dish, a holder -- stored as one binary glTF. Ask its `store` for an `accessGrant` and load the file whole; its space's axes carry the units its vertices are in */
 export type Fixture = {
   __typename?: 'Fixture';
   /** The model's axis-aligned bounding box in its own space, as `{min: [x, y, z], max: [x, y, z]}` in the axes' order and unit, read from the file's accessor bounds at registration. Null when the file declares none */
@@ -3796,12 +3786,12 @@ export type Fixture = {
   /** The lenses over this model, oldest first: its whole lens and every clip box someone has cut. `windowed: true` keeps the clip boxes, `windowed: false` the whole lens, which is also `fullLens` */
   lenses: Array<FixtureLens>;
   name?: Maybe<Scalars['String']['output']>;
-  /** The media store holding the binary glTF. Ask it for a `presignedUrl` and fetch the file whole: a viewer loads a model in one request */
-  store: MediaStore;
+  /** The kulisse store holding the model: one self-contained binary glTF and what it says about itself (nodes, joints, bounds). Ask it for an `accessGrant` and fetch the file whole: a viewer loads a model in one request */
+  store: KulisseStore;
 };
 
 
-/** A piece of hardware around the sample -- a coverslip, a dish, a holder -- stored as one binary glTF. Ask its `store` for a `presignedUrl` and load the file whole; its space's axes carry the units its vertices are in */
+/** A piece of hardware around the sample -- a coverslip, a dish, a holder -- stored as one binary glTF. Ask its `store` for an `accessGrant` and load the file whole; its space's axes carry the units its vertices are in */
 export type FixtureLensesArgs = {
   windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -4171,6 +4161,20 @@ export type GeneralKonnektionAccessGrant = {
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
+};
+
+/** Temporary S3 credentials for reading the organization's kulisse models. */
+export type GeneralKulisseAccessGrant = {
+  __typename?: 'GeneralKulisseAccessGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a media object. */
@@ -4604,12 +4608,6 @@ export type KonnektionStore = {
   specVersion?: Maybe<Scalars['String']['output']>;
 };
 
-
-/** A konnektion collection stored as a prefix of Parquet files behind the S3 datalayer. Its grid and encoding are read from its own manifest, never declared by a caller. */
-export type KonnektionStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Temporary S3 credentials for uploading a konnektion store. Scoped to the prefix and permitted to read back and delete inside it, because the tree is written incrementally and its manifest lands last. */
 export type KonnektionUploadGrant = {
   __typename?: 'KonnektionUploadGrant';
@@ -4627,7 +4625,83 @@ export type KonnektionUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
+};
+
+/** Temporary S3 credentials for reading a kulisse model. */
+export type KulisseAccessGrant = {
+  __typename?: 'KulisseAccessGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store?: Maybe<Scalars['String']['output']>;
+};
+
+/** What a kulisse model contains, counted from its JSON. */
+export type KulisseStats = {
+  __typename?: 'KulisseStats';
+  animations: Scalars['Int']['output'];
+  nodes: Scalars['Int']['output'];
+  textures: Scalars['Int']['output'];
+  triangles: Scalars['Int']['output'];
+};
+
+/** A kulisse model: a device or scene model stored as one self-contained binary glTF. Everything here is read from the file when its upload is finished, never declared by a caller. */
+export type KulisseStore = {
+  __typename?: 'KulisseStore';
+  /** Get temporary S3 read credentials for the model. */
+  accessGrant: KulisseAccessGrant;
+  /** The box the default scene occupies, `{min: [x, y, z], max: [x, y, z]}` in the model's own coordinates. Null when nothing declares a box */
+  bounds?: Maybe<Scalars['JSON']['output']>;
+  bucket: Scalars['String']['output'];
+  /** The glTF extensions the model uses */
+  extensionsUsed?: Maybe<Array<Scalars['String']['output']>>;
+  /** The tool that wrote the model, as it says */
+  generator?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The joint table (`extras.arkitekt.joints`): name, node, type, axis, limit, mimic. Empty for a rigid model */
+  joints?: Maybe<Scalars['JSON']['output']>;
+  key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
+  /** The named nodes a blok can address */
+  nodes?: Maybe<Array<Scalars['String']['output']>>;
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  /** `sha256:` and the hex digest of the model's exact bytes: what a blok decorating it names as `forModel` */
+  ref?: Maybe<Scalars['String']['output']>;
+  /** How many bytes the model holds, measured when its upload was finished. Null while unfinished */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
+  /** The glTF version the model declares */
+  specVersion?: Maybe<Scalars['String']['output']>;
+  /** What the model contains, counted from its JSON. */
+  stats?: Maybe<KulisseStats>;
+  /** What the reader noticed but did not refuse */
+  warnings?: Maybe<Array<Scalars['String']['output']>>;
+};
+
+/** Temporary S3 credentials for uploading a kulisse model: one self-contained GLB, written once, then finished. */
+export type KulisseUploadGrant = {
+  __typename?: 'KulisseUploadGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store: Scalars['String']['output'];
+  uploadContentType?: Maybe<Scalars['String']['output']>;
+  uploadFileName: Scalars['String']['output'];
 };
 
 /** One entry of a label layer's colour picker: colour the mask's objects by a column of the table its FIELD edge keys into, instead of by hashing their id. The table is named, never the join: which of its columns holds row identity is already declared there, and the edge that makes the lookup possible is already in the coordinate graph */
@@ -5624,23 +5698,11 @@ export type MediaStore = {
   maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
-
-export type MediaStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type MediaStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** A presigned PUT grant for uploading a media object. */
+/** Temporary S3 credentials for uploading a media object. */
 export type MediaUploadGrant = {
   __typename?: 'MediaUploadGrant';
   accessKey: Scalars['String']['output'];
@@ -5657,7 +5719,6 @@ export type MediaUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** A user's membership in an organization, carrying the roles they hold there. */
@@ -6296,6 +6357,8 @@ export type Mutation = {
   finishFabriksUpload: FabriksStore;
   /** Finalize a konnektion upload. This reads the store's `konnektion.json` and refuses a prefix that has none -- which is what an interrupted upload looks like, since the manifest is written last */
   finishKonnektionUpload: KonnektionStore;
+  /** Finalize a kulisse upload. This reads the model's header and JSON chunk, records what it says (bounds, nodes, joints) and refuses a file that is not a self-contained glTF 2.0 model */
+  finishKulisseUpload: KulisseStore;
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
   /** Finalize a Parquet upload after the client has written the object */
@@ -6358,6 +6421,8 @@ export type Mutation = {
   requestGeneralFabriksAccess: GeneralFabriksAccessGrant;
   /** Request temporary S3 read credentials for konnektion stores in the organization */
   requestGeneralKonnektionAccess: GeneralKonnektionAccessGrant;
+  /** Request temporary S3 read credentials for kulisse models in the organization */
+  requestGeneralKulisseAccess: GeneralKulisseAccessGrant;
   /** Request temporary S3 read credentials for media files in the organization */
   requestGeneralMediaAccess: GeneralMediaAccessGrant;
   /** Request temporary S3 read credentials for Parquet files in the organization */
@@ -6370,6 +6435,10 @@ export type Mutation = {
   requestKonnektionAccess: KonnektionAccessGrant;
   /** Request an upload grant for a konnektion store. The grant covers the whole prefix, so one request authorizes the manifest, both catalogs and every level */
   requestKonnektionUpload: KonnektionUploadGrant;
+  /** Request temporary S3 read credentials for a kulisse model */
+  requestKulisseAccess: KulisseAccessGrant;
+  /** Request an upload grant for a kulisse store: one device or scene model, a self-contained binary glTF */
+  requestKulisseUpload: KulisseUploadGrant;
   /** Request temporary S3 read credentials for a media file */
   requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
@@ -6843,6 +6912,11 @@ export type MutationFinishKonnektionUploadArgs = {
 };
 
 
+export type MutationFinishKulisseUploadArgs = {
+  input: FinishKulisseUploadInput;
+};
+
+
 export type MutationFinishMediaUploadArgs = {
   input: FinishMediaUploadInput;
 };
@@ -6983,11 +7057,6 @@ export type MutationRequestFabriksAccessArgs = {
 };
 
 
-export type MutationRequestFabriksUploadArgs = {
-  input: RequestFabriksUploadInput;
-};
-
-
 export type MutationRequestGeneralFabriksAccessArgs = {
   input: RequestGeneralFabriksAccessInput;
 };
@@ -6995,6 +7064,11 @@ export type MutationRequestGeneralFabriksAccessArgs = {
 
 export type MutationRequestGeneralKonnektionAccessArgs = {
   input: RequestGeneralKonnektionAccessInput;
+};
+
+
+export type MutationRequestGeneralKulisseAccessArgs = {
+  input: RequestGeneralKulisseAccessInput;
 };
 
 
@@ -7023,8 +7097,13 @@ export type MutationRequestKonnektionAccessArgs = {
 };
 
 
-export type MutationRequestKonnektionUploadArgs = {
-  input: RequestKonnektionUploadInput;
+export type MutationRequestKulisseAccessArgs = {
+  input: RequestKulisseAccessInput;
+};
+
+
+export type MutationRequestKulisseUploadArgs = {
+  input: RequestKulisseUploadInput;
 };
 
 
@@ -7050,11 +7129,6 @@ export type MutationRequestParquetUploadArgs = {
 
 export type MutationRequestSparseAccessArgs = {
   input: RequestSparseAccessInput;
-};
-
-
-export type MutationRequestSparseUploadArgs = {
-  input: RequestSparseUploadInput;
 };
 
 
@@ -7819,20 +7893,8 @@ export type ParquetStore = {
   maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-export type ParquetStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type ParquetStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a parquet store. */
@@ -7852,7 +7914,6 @@ export type ParquetUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** The kind of one part of a BY_DIMENSION: how it maps its own input axes onto its own output axes. */
@@ -9082,18 +9143,11 @@ export type RequestBigFileAccessInput = {
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestFabriksAccessInput = {
   storeId: Scalars['String']['input'];
-};
-
-export type RequestFabriksUploadInput = {
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestGeneralFabriksAccessInput = {
@@ -9101,6 +9155,10 @@ export type RequestGeneralFabriksAccessInput = {
 };
 
 export type RequestGeneralKonnektionAccessInput = {
+  expiresIn?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type RequestGeneralKulisseAccessInput = {
   expiresIn?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -9124,9 +9182,13 @@ export type RequestKonnektionAccessInput = {
   storeId: Scalars['String']['input'];
 };
 
-export type RequestKonnektionUploadInput = {
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
+export type RequestKulisseAccessInput = {
+  storeId: Scalars['String']['input'];
+};
+
+export type RequestKulisseUploadInput = {
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  originalFileName: Scalars['String']['input'];
 };
 
 export type RequestMediaAccessInput = {
@@ -9145,17 +9207,10 @@ export type RequestParquetAccessInput = {
 
 export type RequestParquetUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestSparseAccessInput = {
   storeId: Scalars['String']['input'];
-};
-
-export type RequestSparseUploadInput = {
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestZarrAccessInput = {
@@ -9164,8 +9219,6 @@ export type RequestZarrAccessInput = {
 
 export type RequestZarrUploadInput = {
   chunks?: InputMaybe<Array<Scalars['Int']['input']>>;
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
   shape?: InputMaybe<Array<Scalars['Int']['input']>>;
   version?: InputMaybe<Scalars['String']['input']>;
 };
@@ -9560,7 +9613,7 @@ export type SceneSnapshot = {
   name: Scalars['String']['output'];
   /** The composition this is a picture of */
   scene: Scene;
-  /** The media store holding the rendered image. Ask it for a presignedUrl or an accessGrant to actually fetch the bytes */
+  /** The media store holding the rendered image. Ask it for an accessGrant to actually fetch the bytes */
   store: MediaStore;
 };
 
@@ -10225,12 +10278,6 @@ export type SparseStore = {
   spec?: Maybe<Scalars['String']['output']>;
 };
 
-
-/** A sparse matrix stored as an anndata-spelled zarr group behind the S3 datalayer: `data`, `indices` and `indptr`, with the encoding, shape and chunking read from the group itself rather than declared. Its `encoding` says which axis `indptr` indexes, and so which question it answers in one contiguous read -- ask the other and there is no range to read at all. */
-export type SparseStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Temporary S3 credentials for uploading a sparse store. Scoped to the prefix and permitted to read back and delete inside it, because the three arrays are written incrementally. */
 export type SparseUploadGrant = {
   __typename?: 'SparseUploadGrant';
@@ -10248,7 +10295,6 @@ export type SparseUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Spectral window */
@@ -11696,11 +11742,6 @@ export type ZarrStore = {
   version?: Maybe<Scalars['String']['output']>;
 };
 
-
-export type ZarrStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Temporary S3 credentials for uploading a Zarr store. */
 export type ZarrUploadGrant = {
   __typename?: 'ZarrUploadGrant';
@@ -11718,10 +11759,9 @@ export type ZarrUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -12702,6 +12742,10 @@ export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', ac
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
+export type KulisseUploadGrantFragment = { __typename?: 'KulisseUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
+
+export type KulisseAccessGrantFragment = { __typename?: 'KulisseAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
+
 export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: (
     { __typename?: 'BigFileStore' }
     & BigFileStoreFragment
@@ -12720,8 +12764,8 @@ export type ListFileFragment = { __typename?: 'File', descriptors: any, id: stri
 export type FileLinkFragment = { __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier?: string | null, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'TableDataset', id: string, name: string } };
 
 export type FixtureFragment = { __typename?: 'Fixture', id: string, name?: string | null, label: string, bounds?: any | null, createdAt: any, store: (
-    { __typename?: 'MediaStore', originalFileName?: string | null }
-    & MediaStoreFragment
+    { __typename?: 'KulisseStore' }
+    & KulisseStoreFragment
   ), coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
@@ -13837,6 +13881,8 @@ export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, ke
 
 export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: string, bucket: string };
 
+export type KulisseStoreFragment = { __typename?: 'KulisseStore', id: string, key: string, bucket: string, originalFileName?: string | null, sizeBytes?: number | null, ref?: string | null };
+
 export type FabriksStoreFragment = { __typename?: 'FabriksStore', id: string, key: string, bucket: string, path: string, specVersion?: string | null, grid?: any | null, encoding?: any | null, axes?: Array<string> | null, counts?: any | null, files?: any | null };
 
 export type KonnektionStoreFragment = { __typename?: 'KonnektionStore', id: string, key: string, bucket: string, path: string, specVersion?: string | null, grid?: any | null, encoding?: any | null, axes?: Array<string> | null, counts?: any | null, files?: any | null, attributes?: any | null };
@@ -14153,9 +14199,7 @@ export type RequestGeneralFabriksAccessMutation = { __typename?: 'Mutation', req
     & GeneralFabriksAccessGrantFragment
   ) };
 
-export type RequestFabriksUploadMutationVariables = Exact<{
-  input: RequestFabriksUploadInput;
-}>;
+export type RequestFabriksUploadMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type RequestFabriksUploadMutation = { __typename?: 'Mutation', requestFabriksUpload: (
@@ -14181,6 +14225,36 @@ export type RequestGeneralKonnektionAccessMutationVariables = Exact<{
 export type RequestGeneralKonnektionAccessMutation = { __typename?: 'Mutation', requestGeneralKonnektionAccess: (
     { __typename?: 'GeneralKonnektionAccessGrant' }
     & GeneralKonnektionAccessGrantFragment
+  ) };
+
+export type RequestKulisseUploadMutationVariables = Exact<{
+  input: RequestKulisseUploadInput;
+}>;
+
+
+export type RequestKulisseUploadMutation = { __typename?: 'Mutation', requestKulisseUpload: (
+    { __typename?: 'KulisseUploadGrant' }
+    & KulisseUploadGrantFragment
+  ) };
+
+export type FinishKulisseUploadMutationVariables = Exact<{
+  input: FinishKulisseUploadInput;
+}>;
+
+
+export type FinishKulisseUploadMutation = { __typename?: 'Mutation', finishKulisseUpload: (
+    { __typename?: 'KulisseStore' }
+    & KulisseStoreFragment
+  ) };
+
+export type RequestKulisseAccessMutationVariables = Exact<{
+  input: RequestKulisseAccessInput;
+}>;
+
+
+export type RequestKulisseAccessMutation = { __typename?: 'Mutation', requestKulisseAccess: (
+    { __typename?: 'KulisseAccessGrant' }
+    & KulisseAccessGrantFragment
   ) };
 
 export type RequestMediaUploadMutationVariables = Exact<{
@@ -19377,6 +19451,32 @@ export const GeneralKonnektionAccessGrantFragmentDoc = gql`
   bucket
 }
     `;
+export const KulisseUploadGrantFragmentDoc = gql`
+    fragment KulisseUploadGrant on KulisseUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  region
+  expiresIn
+  maxBytes
+  store
+}
+    `;
+export const KulisseAccessGrantFragmentDoc = gql`
+    fragment KulisseAccessGrant on KulisseAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  path
+  key
+  bucket
+}
+    `;
 export const BigFileAccessGrantFragmentDoc = gql`
     fragment BigFileAccessGrant on BigFileAccessGrant {
   accessKey
@@ -19502,6 +19602,16 @@ export const ListFixtureFragmentDoc = gql`
   createdAt
 }
     `;
+export const KulisseStoreFragmentDoc = gql`
+    fragment KulisseStore on KulisseStore {
+  id
+  key
+  bucket
+  originalFileName
+  sizeBytes
+  ref
+}
+    `;
 export const FixtureFragmentDoc = gql`
     fragment Fixture on Fixture {
   id
@@ -19510,8 +19620,7 @@ export const FixtureFragmentDoc = gql`
   bounds
   createdAt
   store {
-    ...MediaStore
-    originalFileName
+    ...KulisseStore
   }
   coordinateSystem {
     ...CoordinateSystem
@@ -19520,7 +19629,7 @@ export const FixtureFragmentDoc = gql`
     id
   }
 }
-    ${MediaStoreFragmentDoc}
+    ${KulisseStoreFragmentDoc}
 ${CoordinateSystemFragmentDoc}`;
 export const DetailFixtureFragmentDoc = gql`
     fragment DetailFixture on Fixture {
@@ -21740,8 +21849,8 @@ export type RequestGeneralFabriksAccessMutationHookResult = ReturnType<typeof us
 export type RequestGeneralFabriksAccessMutationResult = Apollo.MutationResult<RequestGeneralFabriksAccessMutation>;
 export type RequestGeneralFabriksAccessMutationOptions = Apollo.BaseMutationOptions<RequestGeneralFabriksAccessMutation, RequestGeneralFabriksAccessMutationVariables>;
 export const RequestFabriksUploadDocument = gql`
-    mutation RequestFabriksUpload($input: RequestFabriksUploadInput!) {
-  requestFabriksUpload(input: $input) {
+    mutation RequestFabriksUpload {
+  requestFabriksUpload {
     ...FabriksUploadGrant
   }
 }
@@ -21761,7 +21870,6 @@ export type RequestFabriksUploadMutationFn = Apollo.MutationFunction<RequestFabr
  * @example
  * const [requestFabriksUploadMutation, { data, loading, error }] = useRequestFabriksUploadMutation({
  *   variables: {
- *      input: // value for 'input'
  *   },
  * });
  */
@@ -21838,6 +21946,105 @@ export function useRequestGeneralKonnektionAccessMutation(baseOptions?: ApolloRe
 export type RequestGeneralKonnektionAccessMutationHookResult = ReturnType<typeof useRequestGeneralKonnektionAccessMutation>;
 export type RequestGeneralKonnektionAccessMutationResult = Apollo.MutationResult<RequestGeneralKonnektionAccessMutation>;
 export type RequestGeneralKonnektionAccessMutationOptions = Apollo.BaseMutationOptions<RequestGeneralKonnektionAccessMutation, RequestGeneralKonnektionAccessMutationVariables>;
+export const RequestKulisseUploadDocument = gql`
+    mutation RequestKulisseUpload($input: RequestKulisseUploadInput!) {
+  requestKulisseUpload(input: $input) {
+    ...KulisseUploadGrant
+  }
+}
+    ${KulisseUploadGrantFragmentDoc}`;
+export type RequestKulisseUploadMutationFn = Apollo.MutationFunction<RequestKulisseUploadMutation, RequestKulisseUploadMutationVariables>;
+
+/**
+ * __useRequestKulisseUploadMutation__
+ *
+ * To run a mutation, you first call `useRequestKulisseUploadMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestKulisseUploadMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestKulisseUploadMutation, { data, loading, error }] = useRequestKulisseUploadMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestKulisseUploadMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestKulisseUploadMutation, RequestKulisseUploadMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestKulisseUploadMutation, RequestKulisseUploadMutationVariables>(RequestKulisseUploadDocument, options);
+      }
+export type RequestKulisseUploadMutationHookResult = ReturnType<typeof useRequestKulisseUploadMutation>;
+export type RequestKulisseUploadMutationResult = Apollo.MutationResult<RequestKulisseUploadMutation>;
+export type RequestKulisseUploadMutationOptions = Apollo.BaseMutationOptions<RequestKulisseUploadMutation, RequestKulisseUploadMutationVariables>;
+export const FinishKulisseUploadDocument = gql`
+    mutation FinishKulisseUpload($input: FinishKulisseUploadInput!) {
+  finishKulisseUpload(input: $input) {
+    ...KulisseStore
+  }
+}
+    ${KulisseStoreFragmentDoc}`;
+export type FinishKulisseUploadMutationFn = Apollo.MutationFunction<FinishKulisseUploadMutation, FinishKulisseUploadMutationVariables>;
+
+/**
+ * __useFinishKulisseUploadMutation__
+ *
+ * To run a mutation, you first call `useFinishKulisseUploadMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useFinishKulisseUploadMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [finishKulisseUploadMutation, { data, loading, error }] = useFinishKulisseUploadMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useFinishKulisseUploadMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<FinishKulisseUploadMutation, FinishKulisseUploadMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<FinishKulisseUploadMutation, FinishKulisseUploadMutationVariables>(FinishKulisseUploadDocument, options);
+      }
+export type FinishKulisseUploadMutationHookResult = ReturnType<typeof useFinishKulisseUploadMutation>;
+export type FinishKulisseUploadMutationResult = Apollo.MutationResult<FinishKulisseUploadMutation>;
+export type FinishKulisseUploadMutationOptions = Apollo.BaseMutationOptions<FinishKulisseUploadMutation, FinishKulisseUploadMutationVariables>;
+export const RequestKulisseAccessDocument = gql`
+    mutation RequestKulisseAccess($input: RequestKulisseAccessInput!) {
+  requestKulisseAccess(input: $input) {
+    ...KulisseAccessGrant
+  }
+}
+    ${KulisseAccessGrantFragmentDoc}`;
+export type RequestKulisseAccessMutationFn = Apollo.MutationFunction<RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables>;
+
+/**
+ * __useRequestKulisseAccessMutation__
+ *
+ * To run a mutation, you first call `useRequestKulisseAccessMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestKulisseAccessMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestKulisseAccessMutation, { data, loading, error }] = useRequestKulisseAccessMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestKulisseAccessMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables>(RequestKulisseAccessDocument, options);
+      }
+export type RequestKulisseAccessMutationHookResult = ReturnType<typeof useRequestKulisseAccessMutation>;
+export type RequestKulisseAccessMutationResult = Apollo.MutationResult<RequestKulisseAccessMutation>;
+export type RequestKulisseAccessMutationOptions = Apollo.BaseMutationOptions<RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables>;
 export const RequestMediaUploadDocument = gql`
     mutation RequestMediaUpload($input: RequestMediaUploadInput!) {
   requestMediaUpload(input: $input) {

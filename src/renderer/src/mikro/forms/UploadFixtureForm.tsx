@@ -11,7 +11,7 @@ import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { AxisType, CreateFixtureDocument, type CreateFixtureMutation, type CreateFixtureMutationVariables } from "@/mikro/api/graphql";
 import { useMikro } from "@/mikro/api/funcs";
-import { uploadMediaBlob } from "@/mikro/components/scene/platform/sources/mediaUpload";
+import { uploadKulisseBlob } from "@/mikro/components/scene/platform/sources/mediaUpload";
 
 /**
  * The unit a CAD exporter wrote the vertices in. glTF says metres, and a
@@ -34,9 +34,10 @@ const unitButton = (active: boolean) =>
 
 /**
  * Upload a binary glTF as a fixture: the file goes to the datalayer as a
- * media object (`uploadMediaBlob`), then `createFixture` registers it in a
- * space of its own whose x, y, z axes carry the chosen unit. The server reads
- * the file's header and box, and refuses anything that is not glTF 2.0.
+ * kulisse store (`uploadKulisseBlob`), whose finish reads the file's header
+ * and box and refuses anything that is not a self-contained glTF 2.0 model;
+ * then `createFixture` registers it in a space of its own whose x, y, z axes
+ * carry the chosen unit.
  *
  * Opens the model's page on success, so there is no toast.
  */
@@ -52,7 +53,7 @@ export const UploadFixtureForm = (props: { folder?: string }) => {
     async () => {
       if (!file) throw new Error("Choose a .glb file to upload.");
       if (!datalayer) throw new Error("No datalayer is configured, so there is nowhere to upload the file to.");
-      const store = await uploadMediaBlob(client, datalayer, new Blob([file], { type: "model/gltf-binary" }), file.name);
+      const store = await uploadKulisseBlob(client, datalayer, new Blob([file], { type: "model/gltf-binary" }), file.name);
       const result = await client.mutate<CreateFixtureMutation, CreateFixtureMutationVariables>({
         mutation: CreateFixtureDocument,
         variables: {

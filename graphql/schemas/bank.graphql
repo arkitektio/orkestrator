@@ -1,4 +1,4 @@
-directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
 
 """Everything about one account over a window."""
 type AccountInsights {
@@ -318,6 +318,11 @@ input BankAccountFilter {
   connection: ID
   ids: [ID!]
   kind: AccountKind
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   search: String
 }
 
@@ -430,6 +435,11 @@ input BankConnectionFilter {
   OR: BankConnectionFilter
   ids: [ID!]
   provider: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   status: ConnectionStatus
 }
 
@@ -515,6 +525,11 @@ input BankProviderFilter {
   enabled: Boolean
   ids: [ID!]
   kind: Provider
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 }
 
 """Temporary S3 credentials for reading a big file."""
@@ -536,7 +551,7 @@ A BigFileStore represents a large object stored behind the S3 datalayer.
 """
 type BigFileStore {
   """Get temporary S3 read credentials for the object."""
-  accessGrant(host: String = null): BigFileAccessGrant!
+  accessGrant: BigFileAccessGrant!
 
   """The datalayer bucket/service this store belongs to."""
   bucket: String!
@@ -548,12 +563,16 @@ type BigFileStore {
   """The object key/path within the datalayer bucket."""
   key: String!
 
+  """
+  The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
+  """
+  maxBytes: ByteCount
+
   """The original client-provided file name."""
   originalFileName: String
 
   """The object-store URI of the file"""
   path: String!
-  presignedUrl: String!
 
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
@@ -577,7 +596,6 @@ type BigFileUploadGrant {
   store: String!
   uploadContentType: String
   uploadFileName: String!
-  uploadFormField: String!
 }
 
 """
@@ -629,6 +647,11 @@ input BudgetFilter {
   OR: BudgetFilter
   activeIn: Date
   category: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 }
 
 input BudgetOrder @oneOf {
@@ -792,6 +815,11 @@ input CategoryFilter {
   hidden: Boolean
   ids: [ID!]
   kind: CategoryKind
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   roots: Boolean
 
   """
@@ -1180,6 +1208,39 @@ type DayTotals {
 
 """Decimal (fixed-point)"""
 scalar Decimal
+
+"""
+One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@bank/direction`); a key it does not declare is refused.
+"""
+input DescriptorConstraintInput {
+  """The descriptor key, e.g. `@bank/direction`"""
+  key: String!
+
+  """
+  How the object's value is compared with `value`. MATCHES is equality, as EQUALS is
+  """
+  operator: DescriptorOperator!
+
+  """
+  The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS
+  """
+  value: JSON = null
+}
+
+"""
+How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` is written in, with the same meaning.
+"""
+enum DescriptorOperator {
+  CONTAINS
+  EQUALS
+  EXISTS
+  GTE
+  IN
+  LTE
+  MATCHES
+  NOT_EQUALS
+  NOT_IN
+}
 
 """Money in or money out."""
 enum Direction {
@@ -1633,6 +1694,11 @@ input MerchantFilter {
   """
   near: NearInput
   online: Boolean
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by text: a substring of name, description or an alias, or semantic similarity to name and description.
@@ -2497,7 +2563,7 @@ type Query {
   statementImport(id: ID!): StatementImport!
 
   """The organization's statement imports (uploaded exports), newest first."""
-  statementImports(pagination: OffsetPaginationInput): [StatementImport!]!
+  statementImports(filters: StatementImportFilter, pagination: OffsetPaginationInput): [StatementImport!]!
 
   """The categories a transaction most likely belongs to."""
   suggestCategories(limit: Int! = 3, transaction: ID!): [CategorySuggestion!]!
@@ -2623,6 +2689,11 @@ input RecurringPaymentFilter {
   NOT: RecurringPaymentFilter
   OR: RecurringPaymentFilter
   accounts: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   status: RecurringStatus
 }
 
@@ -2649,9 +2720,7 @@ input RequestBigFileAccessInput {
 input RequestBigFileUploadInput {
   contentType: String = null
   fileSize: ByteCount = null
-  host: String = null
   originalFileName: String!
-  port: Int = null
 }
 
 """Which transactions a rule applies to, by sign."""
@@ -2826,6 +2895,26 @@ type StatementImport {
   What was odd about the file (skipped lines, split parts that do not add up, unknown columns).
   """
   warnings: [String!]!
+}
+
+"""
+One uploaded statement export (a Finanzguru file), previewed and then applied.
+
+Preview parses the file and matches every row against the accounts and their synced history
+without writing a transaction; ``report`` says what applying would do. Applying writes it — idempotently:
+a row already imported (by its ``import_ref``) is updated, never duplicated.
+"""
+input StatementImportFilter {
+  AND: StatementImportFilter
+  DISTINCT: Boolean
+  NOT: StatementImportFilter
+  OR: StatementImportFilter
+  ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 }
 
 """
@@ -3030,6 +3119,11 @@ input TransactionFilter {
   Keep transactions that look like they belong to this category — close to what the organization put there, or to one of its terms — closest first.
   """
   nearCategory: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by text: a case-insensitive substring of counterparty, remittance or note; semantic similarity to them; or a category whose terms mean the text ("supermarket" finds what is in Groceries). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.

@@ -1,0 +1,1229 @@
+"""
+Metadata attached to an OMERO object. Concrete kinds carry their payload in kind-specific fields.
+"""
+interface Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+}
+
+input AnnotationLinkInput {
+  annotationId: ID!
+  target: AnnotationTargetInput!
+}
+
+"""The object an annotation is linked to (or should be linked to)."""
+input AnnotationTargetInput {
+  id: ID!
+  type: OmeroObjectType!
+}
+
+type BooleanAnnotation implements Annotation {
+  booleanValue: Boolean
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+}
+
+"""A channel of an image with its rendering settings."""
+type Channel {
+  """The rendering colour as #rrggbb."""
+  color: String!
+  emissionWave: Length
+  excitationWave: Length
+  id: ID!
+  index: Int!
+
+  """Whether the channel is switched on in the rendering settings."""
+  isActive: Boolean!
+
+  """
+  The display label: the channel name, or its wavelength / index if unnamed.
+  """
+  label: String!
+
+  """The lookup table applied to the channel, if any."""
+  lut: String
+  name: String
+
+  """Upper end of the rendering window."""
+  windowEnd: Float
+
+  """Maximum pixel value of the channel."""
+  windowMax: Float
+
+  """Minimum pixel value of the channel."""
+  windowMin: Float
+
+  """Lower end of the rendering window."""
+  windowStart: Float
+}
+
+"""A free-text comment."""
+type CommentAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+  text: String!
+}
+
+input CreateCommentInput {
+  target: AnnotationTargetInput!
+  text: String!
+}
+
+input CreateDatasetInput {
+  description: String = null
+  name: String!
+  projectId: ID = null
+}
+
+input CreateMapAnnotationInput {
+  """
+  Namespace. Defaults to OMERO's client map-annotation namespace so the pairs show up as editable key/value pairs in OMERO.web.
+  """
+  ns: String = null
+  target: AnnotationTargetInput!
+  values: [KeyValueInput!]!
+}
+
+input CreateProjectInput {
+  description: String = null
+  name: String!
+}
+
+input CreateRoiInput {
+  description: String = null
+  imageId: ID!
+  name: String = null
+  shapes: [ShapeInput!]!
+}
+
+input CreateScreenInput {
+  description: String = null
+  name: String!
+}
+
+input CreateTagInput {
+  description: String = null
+
+  """Link the new tag to this object right away."""
+  target: AnnotationTargetInput = null
+  text: String!
+}
+
+"""A dataset: an unordered collection of images."""
+type Dataset implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  imageCount: Int!
+  images: [Image!]!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+
+  """The projects this dataset is linked into."""
+  projects: [Project!]!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input DatasetFilter {
+  ids: [ID!] = null
+
+  """Only datasets that are in no project."""
+  orphaned: Boolean = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+
+  """Only datasets linked into this project."""
+  project: ID = null
+  search: String = null
+}
+
+input DatasetImagesInput {
+  datasetId: ID!
+  imageIds: [ID!]!
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+"""
+Delete a container. Children are only deleted when deleteChildren is true; otherwise they are unlinked and become orphans.
+"""
+input DeleteContainerInput {
+  deleteChildren: Boolean! = false
+  id: ID!
+}
+
+input DeleteImageInput {
+  id: ID!
+}
+
+input DeleteMeInput {
+  reason: String = null
+}
+
+input DeleteObjectInput {
+  id: ID!
+}
+
+type DeleteResult {
+  id: ID!
+}
+
+type DoubleAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  doubleValue: Float
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+}
+
+type Ellipse implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+  radiusX: Float!
+  radiusY: Float!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+
+  """Centre x."""
+  x: Float!
+
+  """Centre y."""
+  y: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input EllipseInput {
+  radiusX: Float!
+  radiusY: Float!
+
+  """Centre x."""
+  x: Float!
+
+  """Centre y."""
+  y: Float!
+}
+
+"""An OMERO user account (OMERO calls these experimenters)."""
+type Experimenter {
+  email: String
+  firstName: String
+  fullName: String!
+
+  """The groups this experimenter is a member of."""
+  groups: [ExperimenterGroup!]!
+  id: ID!
+  institution: String
+  isActive: Boolean!
+
+  """True if the experimenter is a member of the system group."""
+  isAdmin: Boolean!
+  lastName: String
+
+  """The OMERO login name (omeName)."""
+  omeName: String!
+}
+
+input ExperimenterFilter {
+  ids: [ID!] = null
+  search: String = null
+}
+
+"""
+An OMERO group. Data is owned by a user within a group; permissions are set per group.
+"""
+type ExperimenterGroup {
+  description: String
+  id: ID!
+
+  """The members of this group."""
+  members: [Experimenter!]!
+  name: String!
+}
+
+input ExperimenterGroupFilter {
+  ids: [ID!] = null
+  search: String = null
+}
+
+"""A file attached to an object."""
+type FileAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  file: OriginalFile
+  fileName: String
+
+  """File size in bytes."""
+  fileSize: Int
+  group: ExperimenterGroup!
+  id: ID!
+
+  """
+  True for the companion file OMERO writes with the original metadata at import.
+  """
+  isOriginalMetadata: Boolean!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+}
+
+"""The set of files a group of images was imported from together."""
+type Fileset {
+  files: [OriginalFile!]!
+  id: ID!
+
+  """The images that were imported from this fileset."""
+  images: [Image!]!
+}
+
+"""Exactly one geometry."""
+input GeometryInput @oneOf {
+  ellipse: EllipseInput
+  label: LabelInput
+  line: LineInput
+  point: PointInput
+  polygon: PolygonInput
+  polyline: PolylineInput
+  rectangle: RectangleInput
+}
+
+"""
+An image in OMERO. The pixel data itself is served over the thumbnail/download REST endpoints.
+"""
+type Image implements OmeroObject {
+  acquisitionDate: DateTime
+
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+  channels: [Channel!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+
+  """The datasets this image is linked into (an image can be in several)."""
+  datasets: [Dataset!]!
+
+  """The default timepoint shown by the rendering settings."""
+  defaultT: Int!
+
+  """The default Z plane shown by the rendering settings."""
+  defaultZ: Int!
+  description: String!
+
+  """The fileset this image was imported with, if any."""
+  fileset: Fileset
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  name: String!
+
+  """The name of the image's original file, when known."""
+  originalFile: String
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  physicalSizeX: Length
+  physicalSizeY: Length
+  physicalSizeZ: Length
+
+  """The pixel data type, e.g. uint8, uint16, float."""
+  pixelsType: String
+  roiCount: Int!
+  rois: [Roi!]!
+  sizeC: Int!
+  sizeT: Int!
+  sizeX: Int!
+  sizeY: Int!
+  sizeZ: Int!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+
+  """The well this image belongs to, when it is part of a plate."""
+  well: Well
+}
+
+input ImageFilter {
+  """Only images linked into this dataset."""
+  dataset: ID = null
+  ids: [ID!] = null
+
+  """Only images that are in no dataset and no well."""
+  orphaned: Boolean = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+  search: String = null
+}
+
+"""A key/value pair of a map annotation."""
+type KeyValue {
+  key: String!
+  value: String!
+}
+
+input KeyValueInput {
+  key: String!
+  value: String!
+}
+
+"""A text label anchored at a point."""
+type Label implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+  x: Float!
+  y: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input LabelInput {
+  fontSize: Float! = 12
+  text: String!
+  x: Float!
+  y: Float!
+}
+
+"""A physical length as OMERO stores it: a value plus its unit."""
+type Length {
+  """The unit symbol, e.g. µm"""
+  symbol: String!
+
+  """The OMERO UnitsLength name, e.g. MICROMETER"""
+  unit: String!
+  value: Float!
+}
+
+type Line implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+  x1: Float!
+  x2: Float!
+  y1: Float!
+  y2: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input LineInput {
+  x1: Float!
+  x2: Float!
+  y1: Float!
+  y2: Float!
+}
+
+type LongAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+  longValue: Int
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+}
+
+"""An ordered list of key/value pairs."""
+type MapAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+  values: [KeyValue!]!
+}
+
+"""
+A binary mask covering a rectangle. The mask bytes are not exposed over GraphQL.
+"""
+type Mask implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  height: Float!
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+  width: Float!
+  x: Float!
+  y: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+type Mutation {
+  createComment(input: CreateCommentInput!): CommentAnnotation!
+  createDataset(input: CreateDatasetInput!): Dataset!
+  createMapAnnotation(input: CreateMapAnnotationInput!): MapAnnotation!
+  createProject(input: CreateProjectInput!): Project!
+  createRoi(input: CreateRoiInput!): Roi!
+  createScreen(input: CreateScreenInput!): Screen!
+  createTag(input: CreateTagInput!): TagAnnotation!
+  deleteAnnotation(input: DeleteObjectInput!): DeleteResult!
+  deleteDataset(input: DeleteContainerInput!): DeleteResult!
+  deleteImage(input: DeleteImageInput!): DeleteResult!
+  deleteMe(input: DeleteMeInput!): User!
+  deletePlate(input: DeleteContainerInput!): DeleteResult!
+  deleteProject(input: DeleteContainerInput!): DeleteResult!
+  deleteRoi(input: DeleteObjectInput!): DeleteResult!
+  deleteScreen(input: DeleteContainerInput!): DeleteResult!
+  ensureOmeroUser(input: OmeroUserInput!): OmeroUser!
+  linkAnnotation(input: AnnotationLinkInput!): Annotation!
+  linkDatasets(input: ProjectDatasetsInput!): Project!
+  linkImages(input: DatasetImagesInput!): Dataset!
+  linkPlates(input: ScreenPlatesInput!): Screen!
+  unlinkAnnotation(input: AnnotationLinkInput!): Annotation!
+  unlinkDatasets(input: ProjectDatasetsInput!): Project!
+  unlinkImages(input: DatasetImagesInput!): Dataset!
+  unlinkPlates(input: ScreenPlatesInput!): Screen!
+  updateDataset(input: UpdateObjectInput!): Dataset!
+  updateImage(input: UpdateObjectInput!): Image!
+  updatePlate(input: UpdateObjectInput!): Plate!
+  updateProject(input: UpdateObjectInput!): Project!
+  updateScreen(input: UpdateObjectInput!): Screen!
+}
+
+input OffsetPaginationInput {
+  limit: Int
+  offset: Int! = 0
+}
+
+"""
+Fields every OMERO model object exposes: identity, ownership, dates, permissions and annotations.
+"""
+interface OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+"""
+The kinds of OMERO object that can be the target of an annotation or link.
+"""
+enum OmeroObjectType {
+  DATASET
+  IMAGE
+  PLATE
+  PLATE_ACQUISITION
+  PROJECT
+  ROI
+  SCREEN
+  WELL
+}
+
+"""
+A dataset is a collection of data files and metadata files.
+It mimics the concept of a folder in a file system and is the top level
+object in the data model.
+"""
+type OmeroUser {
+  id: ID!
+
+  """The host for the omero user"""
+  omeroHost: String!
+
+  """The password for the omero user"""
+  omeroPassword: String!
+
+  """The port for the omero user"""
+  omeroPort: Int!
+
+  """The username for the omero user"""
+  omeroUsername: String!
+
+  """The user that created the dataset"""
+  user: User!
+}
+
+input OmeroUserInput {
+  host: String = "localhost"
+  password: String!
+  port: Int = 4064
+  username: String!
+}
+
+"""
+An OMERO original file: one of the files an image was imported from, or a file annotation's payload.
+"""
+type OriginalFile {
+  id: ID!
+  mimetype: String
+  name: String!
+  path: String
+
+  """File size in bytes."""
+  size: Int
+}
+
+"""What the current OMERO user may do with an object."""
+type Permissions {
+  canAnnotate: Boolean!
+  canChgrp: Boolean!
+  canChown: Boolean!
+  canDelete: Boolean!
+  canEdit: Boolean!
+  canLink: Boolean!
+
+  """True if the current OMERO user owns the object."""
+  isOwned: Boolean!
+}
+
+"""A multi-well plate."""
+type Plate implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+  columnLabels: [String!]!
+
+  """
+  Declared column count, falling back to the highest occupied column when the plate does not declare one.
+  """
+  columns: Int!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  plateAcquisitions: [PlateAcquisition!]!
+  rowLabels: [String!]!
+
+  """
+  Declared row count, falling back to the highest occupied row when the plate does not declare one.
+  """
+  rows: Int!
+
+  """The screens this plate is linked into."""
+  screens: [Screen!]!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+  wellCount: Int!
+  wells: [Well!]!
+}
+
+"""
+A run of a plate through the microscope. Multi-run plates have one image per well per acquisition.
+"""
+type PlateAcquisition implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+  endTime: DateTime
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  maximumFieldCount: Int
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  startTime: DateTime
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input PlateFilter {
+  ids: [ID!] = null
+
+  """Only plates that are in no screen."""
+  orphaned: Boolean = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+
+  """Only plates linked into this screen."""
+  screen: ID = null
+  search: String = null
+}
+
+type Point implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+  x: Float!
+  y: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input PointInput {
+  x: Float!
+  y: Float!
+}
+
+type Polygon implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+  points: [Vertex!]!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input PolygonInput {
+  points: [VertexInput!]!
+}
+
+type Polyline implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+  points: [Vertex!]!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input PolylineInput {
+  points: [VertexInput!]!
+}
+
+"""A project: a collection of datasets."""
+type Project implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  datasetCount: Int!
+  datasets: [Dataset!]!
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input ProjectDatasetsInput {
+  datasetIds: [ID!]!
+  projectId: ID!
+}
+
+input ProjectFilter {
+  ids: [ID!] = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+  search: String = null
+}
+
+type Query {
+  _service: _Service!
+  annotation(id: ID!): Annotation!
+  currentExperimenter: Experimenter!
+  dataset(id: ID!): Dataset!
+  datasets(filters: DatasetFilter = null, pagination: OffsetPaginationInput = null): [Dataset!]!
+  experimenter(id: ID!): Experimenter!
+  experimenters(filters: ExperimenterFilter = null, pagination: OffsetPaginationInput = null): [Experimenter!]!
+  group(id: ID!): ExperimenterGroup!
+  groups(filters: ExperimenterGroupFilter = null, pagination: OffsetPaginationInput = null): [ExperimenterGroup!]!
+  image(id: ID!): Image!
+  images(filters: ImageFilter = null, pagination: OffsetPaginationInput = null): [Image!]!
+  me: User!
+  omeroUsers: [OmeroUser!]!
+  plate(id: ID!): Plate!
+  plateAcquisition(id: ID!): PlateAcquisition!
+  plates(filters: PlateFilter = null, pagination: OffsetPaginationInput = null): [Plate!]!
+  project(id: ID!): Project!
+  projects(filters: ProjectFilter = null, pagination: OffsetPaginationInput = null): [Project!]!
+  roi(id: ID!): Roi!
+  rois(filters: RoiFilter = null, pagination: OffsetPaginationInput = null): [Roi!]!
+  screen(id: ID!): Screen!
+  screens(filters: ScreenFilter = null, pagination: OffsetPaginationInput = null): [Screen!]!
+  tag(id: ID!): TagAnnotation!
+  tags(filters: TagFilter = null, pagination: OffsetPaginationInput = null): [TagAnnotation!]!
+  well(id: ID!): Well!
+  wells(filters: WellFilter = null, pagination: OffsetPaginationInput = null): [Well!]!
+}
+
+type Rectangle implements Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  height: Float!
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+  width: Float!
+  x: Float!
+  y: Float!
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input RectangleInput {
+  height: Float!
+  width: Float!
+  x: Float!
+  y: Float!
+}
+
+"""A region of interest on an image: a named group of shapes."""
+type Roi implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  image: Image!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  shapeCount: Int!
+  shapes: [Shape!]!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input RoiFilter {
+  ids: [ID!] = null
+
+  """Only ROIs drawn on this image."""
+  image: ID = null
+}
+
+"""A screen: a collection of plates."""
+type Screen implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  plateCount: Int!
+  plates: [Plate!]!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input ScreenFilter {
+  ids: [ID!] = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+  search: String = null
+}
+
+input ScreenPlatesInput {
+  plateIds: [ID!]!
+  screenId: ID!
+}
+
+"""
+A 2D shape of a region of interest, positioned on one Z/T/C plane (or all, when unset).
+"""
+interface Shape {
+  """Zero-based channel, or null if the shape applies to all channels."""
+  c: Int
+
+  """Fill colour as #rrggbbaa."""
+  fillColor: String
+  id: ID!
+
+  """Stroke colour as #rrggbbaa."""
+  strokeColor: String
+  strokeWidth: Length
+
+  """Zero-based timepoint, or null if the shape spans all timepoints."""
+  t: Int
+
+  """The text label drawn with the shape."""
+  text: String
+
+  """Zero-based Z plane, or null if the shape spans all planes."""
+  z: Int
+}
+
+input ShapeInput {
+  """Zero-based channel; null for all channels."""
+  c: Int = null
+
+  """#rrggbb or #rrggbbaa"""
+  fillColor: String = null
+  geometry: GeometryInput!
+
+  """#rrggbb or #rrggbbaa"""
+  strokeColor: String = null
+
+  """Stroke width in pixels."""
+  strokeWidth: Float = null
+
+  """Zero-based timepoint; null for all timepoints."""
+  t: Int = null
+  text: String = null
+
+  """Zero-based Z plane; null for all planes."""
+  z: Int = null
+}
+
+"""A tag. Tags are shared, reusable labels linked to many objects."""
+type TagAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+  text: String!
+}
+
+input TagFilter {
+  ids: [ID!] = null
+
+  """Only objects owned by this experimenter."""
+  owner: ID = null
+  search: String = null
+}
+
+"""A reference to an ontology term."""
+type TermAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+  term: String
+}
+
+type TimestampAnnotation implements Annotation {
+  creationDate: DateTime
+  description: String
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The namespace the annotation was written under, if any."""
+  ns: String
+  owner: Experimenter!
+  permissions: Permissions!
+  timeValue: DateTime
+}
+
+"""Rename and/or re-describe an object. Fields left null are not touched."""
+input UpdateObjectInput {
+  description: String = null
+  id: ID!
+  name: String = null
+}
+
+"""A reflection on the real User"""
+type User {
+  email: String!
+  id: ID!
+
+  """The user that created the dataset"""
+  omeroUser: OmeroUser
+  password: String!
+  sub: String!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+}
+
+"""An x/y coordinate."""
+type Vertex {
+  x: Float!
+  y: Float!
+}
+
+input VertexInput {
+  x: Float!
+  y: Float!
+}
+
+"""A well of a plate, addressed by row/column."""
+type Well implements OmeroObject {
+  """
+  All annotations linked to this object (tags, comments, key/value maps, files, ...).
+  """
+  annotations(ns: String = null): [Annotation!]!
+
+  """The well colour as #rrggbbaa, when one was set at import."""
+  color: String
+
+  """Zero-based column index."""
+  column: Int!
+
+  """When the object was created in OMERO."""
+  creationDate: DateTime
+  description: String!
+
+  """The group this object lives in."""
+  group: ExperimenterGroup!
+  id: ID!
+
+  """The images acquired in this well, one per field/acquisition."""
+  images: [Image!]!
+  name: String!
+
+  """The experimenter that owns this object."""
+  owner: Experimenter!
+  permissions: Permissions!
+  plate: Plate!
+
+  """The human label, e.g. A1."""
+  position: String!
+
+  """Zero-based row index."""
+  row: Int!
+  samples: [WellSample!]!
+
+  """The text values of the tag annotations linked to this object."""
+  tags: [String!]!
+}
+
+input WellFilter {
+  ids: [ID!] = null
+
+  """Only wells of this plate."""
+  plate: ID = null
+}
+
+"""One field of view in a well: the link between a well and an image."""
+type WellSample {
+  id: ID!
+  image: Image
+  plateAcquisition: PlateAcquisition
+
+  """Stage position of the field within the well."""
+  positionX: Length
+  positionY: Length
+}
+
+scalar _Any
+
+type _Service {
+  sdl: String!
+}

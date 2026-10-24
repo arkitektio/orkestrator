@@ -33,7 +33,7 @@ export type Scalars = {
   Any: { input: any; output: any; }
   /** The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer */
   ArrayLike: { input: any; output: any; }
-  /** A type representing a big file store reference, which can be either a string ID or a more complex object. */
+  /** A reference to a big file store: the id its finished upload returned. */
   BigFileLike: { input: any; output: any; }
   /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
   ByteCount: { input: number; output: number; }
@@ -491,7 +491,7 @@ export type ArrayDataset = {
   simulation?: Maybe<SimulationState>;
   /** The files this dataset was converted from -- the ABF or NWB file a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
-  /** What this dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation: the one spatial spec its SPACE axis count denotes, then a modifier per acquisition axis present. A (t, c) recording is [SCALAR, TIMESERIES, MULTICHANNEL]. Presence, not size: a one-channel CHANNEL axis still counts. Empty while the intrinsic system does not exist yet */
+  /** What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per acquisition axis. An axis counts only when it has more than one position. A (t, c) recording is [SCALAR, TIMESERIES, MULTICHANNEL]. A one-channel CHANNEL axis does not make it MULTICHANNEL; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet */
   spec: Array<ArrayDatasetSpec>;
   /** The physical dimension of this dataset's values, derived from `valueUnit` ('[time]' for a times dataset, a voltage or a current for a recording). Null when the unit is unstated or arbitrary */
   valueDimension?: Maybe<Scalars['Dimension']['output']>;
@@ -590,13 +590,15 @@ export type ArrayDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to datasets placeable into a coordinate system: those with a lens whose space reaches it across steps that compose into one affine map, walking the transformation edges. A route crossing a FIELD is not one -- it relates the two spaces by the values of an array -- so a spike train or a variable-step run is not offered here, though `inView` reports it. Takes a *space*: pass an experiment's `world.id` to ask it of an experiment */
   placeableIn?: InputMaybe<PlaceableFilter>;
+  /** Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key datasets do not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to the datasets converted from this file -- every series of it, unless `sourceSeriesIdentifier` narrows that. A file link, not a derivation: this asks which bytes the arrays were read out of, where `derivedFrom` asks which data they were computed from. A dataset can honestly answer both */
   sourceFile?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the datasets converted from one series of a file. Pair it with `sourceFile`; alone it matches that series identifier in any file */
   sourceSeriesIdentifier?: InputMaybe<Scalars['String']['input']>;
-  /** Filter to datasets satisfying every one of these specs, e.g. [TIMESERIES, MULTICHANNEL] for multi-channel recordings. Materialized from the axes of the intrinsic coordinate system at creation. A dataset carries one spatial spec (by how many SPACE axes it has) plus a modifier per acquisition axis present, so two spatial specs together match nothing */
+  /** Filter to datasets satisfying every one of these specs, e.g. [TIMESERIES, MULTICHANNEL] for multi-channel recordings. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per such acquisition axis, so two spatial specs together match nothing */
   spec?: InputMaybe<Array<ArrayDatasetSpec>>;
   /** Filter by the unit of the dataset's VALUES, as stated by its dataset-wide `ValueUnit` anchor, e.g. 'mV'. Compared after normalization, so 'mV' and 'millivolt' are the same request */
   valueUnit?: InputMaybe<Scalars['String']['input']>;
@@ -609,21 +611,21 @@ export type ArrayDatasetOrder =
 
 /** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds. */
 export enum ArrayDatasetSpec {
-  /** Four or more spatial axes. */
+  /** Four or more spatial axes with more than one position each. */
   Hypervolume = 'HYPERVOLUME',
-  /** Two spatial axes: a plane. The ordinary micrograph. */
+  /** Two spatial axes with more than one position each: a plane. The ordinary micrograph. */
   Image = 'IMAGE',
-  /** Carries a CHANNEL axis. Presence only: a one-channel axis still counts. */
+  /** Carries a CHANNEL axis of more than one channel. A one-channel axis does not count. */
   Multichannel = 'MULTICHANNEL',
-  /** One spatial axis -- a line profile, a depth trace. */
+  /** One spatial axis with more than one position -- a line profile, a depth trace. */
   Profile = 'PROFILE',
-  /** No spatial extent: the array carries no SPACE axis at all. What nearly every electrophysiology array is -- a (t, c) recording is SCALAR, TIMESERIES and MULTICHANNEL. */
+  /** No spatial extent: no SPACE axis with more than one position. What nearly every electrophysiology array is -- a (t, c) recording is SCALAR, TIMESERIES and MULTICHANNEL. */
   Scalar = 'SCALAR',
-  /** Carries a FREQUENCY axis: a spectrum or a spectrogram, not a signal over time. */
+  /** Carries a FREQUENCY axis of more than one bin: a spectrum or a spectrogram, not a signal over time. */
   Spectral = 'SPECTRAL',
-  /** Carries a TIME axis -- a signal. Presence only: a single-sample time axis still counts. */
+  /** Carries a TIME axis of more than one sample -- a signal. A single-sample time axis does not count. */
   Timeseries = 'TIMESERIES',
-  /** Three spatial axes: a stack. Holds whenever a z axis is present, even if it carries a single plane. */
+  /** Three spatial axes with more than one position each: a stack. A z axis of a single plane does not make one -- that dataset is an IMAGE. */
   Volume = 'VOLUME'
 }
 
@@ -738,17 +740,12 @@ export type BigFileStore = {
   contentType?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a big file. */
@@ -768,7 +765,6 @@ export type BigFileUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Represents a biophysics model, which consists of compartments, each with their own mechanisms and parameters. */
@@ -949,6 +945,39 @@ export type Client = {
   clientId: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   release?: Maybe<Release>;
+};
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
 };
 
 /** One entry of a spikes or events layer's colour picker: a column of a table the layer's rows (events) or units (spikes) reach, and how it becomes colour. mikro's COLUMN colour-by, field for field */
@@ -1416,6 +1445,12 @@ export type CreateClockOffsetInput = {
   offset?: InputMaybe<Scalars['Duration']['input']>;
   onto: Scalars['ID']['input'];
   validity?: InputMaybe<PlacementValidity>;
+};
+
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
 };
 
 /** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
@@ -1933,6 +1968,29 @@ export type DerivedFromInput = {
   /** What the derivation did to the *values* -- orthogonal to the transform's `kind`, which only says where the data sits: IDENTICAL for a window or a stride decimation (statistics transfer), TRANSFORMED for a filter, a baseline subtraction or an anti-aliased decimation, CATEGORIZED for a threshold crossing or a spike sorting (values became labels). Omit when unstated; the algorithm itself belongs to task provenance */
   valueRelation?: InputMaybe<ValueRelation>;
 };
+
+/** One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@elektro/n_space_axes`); a key it does not declare is refused. */
+export type DescriptorConstraintInput = {
+  /** The descriptor key, e.g. `@elektro/n_space_axes` */
+  key: Scalars['String']['input'];
+  /** How the object's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: InputMaybe<Scalars['JSON']['input']>;
+};
+
+/** How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning. */
+export enum DescriptorOperator {
+  Contains = 'CONTAINS',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  Gte = 'GTE',
+  In = 'IN',
+  Lte = 'LTE',
+  Matches = 'MATCHES',
+  NotEquals = 'NOT_EQUALS',
+  NotIn = 'NOT_IN'
+}
 
 export type DesociateInput = {
   other: Scalars['ID']['input'];
@@ -2703,6 +2761,8 @@ export type FolderChild = AnnotationCollection | ArrayDataset | File | Folder | 
 export type FolderChildrenFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
   showChildren?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Also list the containers that were converted from a file (those with a SOURCE file link). Hidden unless this is true, because the file they were made from is listed already. Any SOURCE link hides a container, wherever its file is kept; a RENDITION link (an export) never does */
+  showConverted?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type FolderFilter = {
@@ -3089,6 +3149,8 @@ export type LensFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges */
   placeableIn?: InputMaybe<PlaceableFilter>;
+  /** Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key lenses do not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
 
 export type LensOrder =
@@ -3253,25 +3315,15 @@ export type MediaStore = {
   contentType?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
-
-export type MediaStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type MediaStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** A presigned PUT grant for uploading a media object. */
+/** Temporary S3 credentials for uploading a media object. */
 export type MediaUploadGrant = {
   __typename?: 'MediaUploadGrant';
   accessKey: Scalars['String']['output'];
@@ -3288,7 +3340,6 @@ export type MediaUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 export type ModEnvironment = {
@@ -3465,6 +3516,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Add neuron models to a workspace (optionally into a group) */
   addModelsToWorkspace: ModelWorkspace;
+  /** Put an object in a collaboration, with what it needs to be seen: an experiment brings the data its layers draw, a dataset its stores, its spaces and their edges, and its anchors */
+  addToCollaboration: Collaboration;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, whatever is laid out over it (its layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive */
   clearCoordinateSystem: Array<Scalars['ID']['output']>;
   /** Draw an annotation into a collection, or onto an experiment (exactly one of the two). Drawing on an experiment finds its annotation collection or mints it on first use: a coordinate system copying the world's axes, an identity registration into the world, and one annotation layer */
@@ -3479,6 +3532,8 @@ export type Mutation = {
   createArrayDataset: ArrayDataset;
   /** Place one clock on another -- a segment in its session, a session or a run in an experiment's world -- with one offset edge shared by everything timed on it. Refused when the two are already related */
   createClockOffset: Transformation;
+  /** Create an empty collaboration, to put objects in and grant a guest */
+  createCollaboration: Collaboration;
   /** Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns' */
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (a space nothing lives in: a clock, a world) and, in one call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it */
@@ -3531,6 +3586,8 @@ export type Mutation = {
   deleteAnnotationCollection: Scalars['ID']['output'];
   /** Delete an existing array dataset, with its levels, its lenses, every interpretation of it, and the coordinate systems nothing else lives in. Its stores are flagged, not deleted: `purge_orphaned_stores` collects them after a grace period */
   deleteArrayDataset: Scalars['ID']['output'];
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one */
   deleteCoordinateSystem: Scalars['ID']['output'];
   /** Delete one downsampled level of a dataset. Level 0 cannot be deleted: it is the dataset */
@@ -3613,6 +3670,8 @@ export type Mutation = {
   releaseSparseDatasetsFromFolder: Folder;
   /** Take table datasets out of a folder */
   releaseTableDatasetsFromFolder: Folder;
+  /** Take an object out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Remove neuron models from a workspace */
   removeModelsFromWorkspace: ModelWorkspace;
   /** Request temporary S3 read credentials for a big file */
@@ -3691,6 +3750,11 @@ export type MutationAddModelsToWorkspaceArgs = {
 };
 
 
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationClearCoordinateSystemArgs = {
   input: ClearCoordinateSystemInput;
 };
@@ -3723,6 +3787,11 @@ export type MutationCreateArrayDatasetArgs = {
 
 export type MutationCreateClockOffsetArgs = {
   input: CreateClockOffsetInput;
+};
+
+
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
 };
 
 
@@ -3853,6 +3922,11 @@ export type MutationDeleteAnnotationCollectionArgs = {
 
 export type MutationDeleteArrayDatasetArgs = {
   input: DeleteArrayDatasetInput;
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -4056,6 +4130,11 @@ export type MutationReleaseTableDatasetsFromFolderArgs = {
 };
 
 
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationRemoveModelsFromWorkspaceArgs = {
   input: DesociateInput;
 };
@@ -4113,11 +4192,6 @@ export type MutationRequestParquetUploadArgs = {
 
 export type MutationRequestSparseAccessArgs = {
   input: RequestSparseAccessInput;
-};
-
-
-export type MutationRequestSparseUploadArgs = {
-  input: RequestSparseUploadInput;
 };
 
 
@@ -4500,22 +4574,12 @@ export type ParquetStore = {
   contentType?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-export type ParquetStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type ParquetStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a parquet store. */
@@ -4535,7 +4599,6 @@ export type ParquetUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Input type for one axis of a unit-carrying coordinate system: its name, its semantic kind and its physical unit */
@@ -4723,6 +4786,10 @@ export type Query = {
   cells: Array<Cell>;
   /** List everything filed in a folder: its sub-folders, files, array, table and sparse datasets and annotation collections */
   children: Array<FolderChild>;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset */
   coordinateAnchors: Array<CoordinateAnchor>;
   /** Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not */
@@ -4852,6 +4919,11 @@ export type QueryChildrenArgs = {
   order?: InputMaybe<ChildrenOrder>;
   pagination?: InputMaybe<ChildrenPaginationInput>;
   parent: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -5166,9 +5238,7 @@ export type RequestBigFileAccessInput = {
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestGeneralMediaAccessInput = {
@@ -5203,17 +5273,10 @@ export type RequestParquetAccessInput = {
 
 export type RequestParquetUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestSparseAccessInput = {
   storeId: Scalars['String']['input'];
-};
-
-export type RequestSparseUploadInput = {
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestZarrAccessInput = {
@@ -5222,8 +5285,6 @@ export type RequestZarrAccessInput = {
 
 export type RequestZarrUploadInput = {
   chunks?: InputMaybe<Array<Scalars['Int']['input']>>;
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
   shape?: InputMaybe<Array<Scalars['Int']['input']>>;
   version?: InputMaybe<Scalars['String']['input']>;
 };
@@ -5905,6 +5966,8 @@ export type SparseStore = {
   key: Scalars['String']['output'];
   /** The stored layouts, one per `layouts/<encoding>` child. Which axis a layout's `indptr` indexes decides which question it answers in one contiguous read, so a store holding one layout offers one capability and a store holding both offers both. Empty while the store is unpopulated, which is the only state in which what it holds is unknown */
   layouts: Array<SparseLayout>;
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   /** The shape of the matrix, as the root block declares it and every layout agrees. Two axes */
   shape?: Maybe<Array<Scalars['Int']['output']>>;
@@ -5912,12 +5975,6 @@ export type SparseStore = {
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at */
   spec?: Maybe<Scalars['String']['output']>;
-};
-
-
-/** A sparse matrix stored as an anndata-spelled zarr group behind the S3 datalayer: `data`, `indices` and `indptr`, with the encoding, shape and chunking read from the group itself rather than declared. Its `encoding` says which axis `indptr` indexes, and so which question it answers in one contiguous read -- ask the other and there is no range to read at all. */
-export type SparseStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a sparse store. Scoped to the prefix and permitted to read back and delete inside it, because the three arrays are written incrementally. */
@@ -5937,7 +5994,6 @@ export type SparseUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** What a spikes layer reads from a raster's nonzero values */
@@ -6772,9 +6828,23 @@ export type UpdateWorkspaceMappingInput = {
 export type User = {
   __typename?: 'User';
   activeOrganization?: Maybe<Organization>;
+  /** The family name, if the issuer sends one. */
+  familyName?: Maybe<Scalars['String']['output']>;
+  /** The given name, if the issuer sends one. */
+  givenName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  /** The user's locale (BCP47), if the issuer sends one. */
+  locale?: Maybe<Scalars['String']['output']>;
+  /** The full name, if the issuer sends one. */
+  name?: Maybe<Scalars['String']['output']>;
+  /** A casual name, if the issuer sends one. */
+  nickname?: Maybe<Scalars['String']['output']>;
+  /** URL of the profile picture, if the issuer sends one. */
+  picture?: Maybe<Scalars['String']['output']>;
   preferredUsername: Scalars['String']['output'];
   sub: Scalars['String']['output'];
+  /** The user's IANA time zone, if the issuer sends one. */
+  zoneinfo?: Maybe<Scalars['String']['output']>;
 };
 
 /** The distribution of values pinned to a coordinate anchor, including histogram bins, min/max and percentile limits */
@@ -6967,6 +7037,8 @@ export type ZarrStore = {
   fillValue: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   shape: Array<Scalars['Int']['output']>;
   /** Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit. */
@@ -6975,11 +7047,6 @@ export type ZarrStore = {
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   storageTransformers?: Maybe<Scalars['JSON']['output']>;
   version?: Maybe<Scalars['String']['output']>;
-};
-
-
-export type ZarrStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a Zarr store. */
@@ -6999,7 +7066,6 @@ export type ZarrUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 export type _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SimulationState | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore;

@@ -167,3 +167,29 @@ fragment GeneralKonnektionAccessGrant on GeneralKonnektionAccessGrant {
   region
   bucket
 }
+
+fragment KulisseUploadGrant on KulisseUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  region
+  expiresIn
+  maxBytes
+  # The kulisse store's id — what `finishKulisseUpload` takes as `storeId`, and
+  # the `KulisseLike` value `createFixture` wants.
+  store
+}
+
+fragment KulisseAccessGrant on KulisseAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  path
+  key
+  bucket
+}

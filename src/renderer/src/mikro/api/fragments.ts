@@ -151,6 +151,7 @@
       "ImageLayer",
       "IntensityLayer",
       "KonnektionStore",
+      "KulisseStore",
       "LabelLayer",
       "LightPath",
       "MapAxisTransformation",

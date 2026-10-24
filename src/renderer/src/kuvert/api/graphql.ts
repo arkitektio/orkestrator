@@ -137,19 +137,14 @@ export type BigFileStore = {
   id: Scalars['ID']['output'];
   /** The object key/path within the datalayer bucket. */
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The original client-provided file name. */
   originalFileName?: Maybe<Scalars['String']['output']>;
   /** The object-store URI of the file */
   path: Scalars['String']['output'];
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a big file. */
@@ -169,7 +164,6 @@ export type BigFileUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Put messages into categories of their mailbox and take them out (every copy of each message). */
@@ -1566,9 +1560,7 @@ export type RefusedRecipient = {
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Transport security of a connection. TLS: Implicit TLS (IMAPS 993, POP3S 995, SMTPS 465); STARTTLS: Plain connection upgraded with STARTTLS (IMAP 143, POP3 110, SMTP 587); NONE: No encryption (only when the deployment allows it). */
@@ -2741,7 +2733,6 @@ export type ListMailChangesQuery = { __typename?: 'Query', mailChanges: Array<(
 
 export type MessageAttachmentAccessQueryVariables = Exact<{
   message: Scalars['ID']['input'];
-  host?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -5346,7 +5337,7 @@ export type ListMailChangesQueryHookResult = ReturnType<typeof useListMailChange
 export type ListMailChangesLazyQueryHookResult = ReturnType<typeof useListMailChangesLazyQuery>;
 export type ListMailChangesQueryResult = Apollo.QueryResult<ListMailChangesQuery, ListMailChangesQueryVariables>;
 export const MessageAttachmentAccessDocument = gql`
-    query MessageAttachmentAccess($message: ID!, $host: String) {
+    query MessageAttachmentAccess($message: ID!) {
   message(id: $message) {
     id
     attachments {
@@ -5355,7 +5346,7 @@ export const MessageAttachmentAccessDocument = gql`
       filename
       store {
         id
-        accessGrant(host: $host) {
+        accessGrant {
           ...BigFileAccessGrant
         }
       }
@@ -5377,7 +5368,6 @@ export const MessageAttachmentAccessDocument = gql`
  * const { data, loading, error } = useMessageAttachmentAccessQuery({
  *   variables: {
  *      message: // value for 'message'
- *      host: // value for 'host'
  *   },
  * });
  */

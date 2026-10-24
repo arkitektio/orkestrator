@@ -40,7 +40,6 @@ const objectUrl = (datalayer: string, bucket: string, key: string, relative: str
 const requestGrant = async (client: MikroClient): Promise<FabriksUploadGrantFragment> => {
   const result = (await client.mutate({
     mutation: RequestFabriksUploadDocument,
-    variables: { input: {} },
   })) as { data?: RequestFabriksUploadMutation };
   const grant = result.data?.requestFabriksUpload;
   if (!grant) throw new FabriksUploadError("The datalayer refused a fabriks upload grant");

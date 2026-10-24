@@ -20,6 +20,8 @@ generates:
       # otherwise blow graphql.ts up to many MB and stall tsc.
       inlineFragmentTypes: combine
       scalars:
+        # 64-bit byte counts (store sizes, upload limits): a JSON number.
+        ByteCount: "number"
         # Isoformat strings on the wire. Decimals stay strings so money is
         # never rounded through a float; parse only where you format.
         Date: "string"

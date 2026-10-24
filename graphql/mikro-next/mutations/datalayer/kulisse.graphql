@@ -1,0 +1,22 @@
+# A fixture's model is ONE binary glTF in a kulisse store: request a grant, PUT
+# the file, then finish -- the server reads the header and JSON chunk, records
+# bounds, nodes and joints, and refuses anything that is not a self-contained
+# glTF 2.0 model (mikro/components/scene/platform/sources/mediaUpload.ts).
+mutation RequestKulisseUpload($input: RequestKulisseUploadInput!) {
+  requestKulisseUpload(input: $input) {
+    ...KulisseUploadGrant
+  }
+}
+
+mutation FinishKulisseUpload($input: FinishKulisseUploadInput!) {
+  finishKulisseUpload(input: $input) {
+    ...KulisseStore
+  }
+}
+
+# Read credentials for one model, signed client-side (presignS3Url).
+mutation RequestKulisseAccess($input: RequestKulisseAccessInput!) {
+  requestKulisseAccess(input: $input) {
+    ...KulisseAccessGrant
+  }
+}

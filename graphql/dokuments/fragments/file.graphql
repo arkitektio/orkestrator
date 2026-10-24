@@ -5,7 +5,7 @@ fragment File on File {
     ...ListDocument
   }
   store {
-    ...BigFileStore
+    ...MediaStore
   }
 }
 

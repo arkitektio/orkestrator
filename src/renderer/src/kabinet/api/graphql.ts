@@ -437,6 +437,8 @@ export type BackendOrder =
 
 /** Which locks does the agent provide in general */
 export type BlokImplementationInput = {
+  /** The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only. */
+  args?: Array<ArgPortInput>;
   /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
   catalog?: InputMaybe<Scalars['String']['input']>;
   /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */

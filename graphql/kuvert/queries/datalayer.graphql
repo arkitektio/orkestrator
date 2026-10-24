@@ -1,6 +1,6 @@
 # Read credentials for a message's attachment bytes, signed client-side
 # (presignS3Url). Asked for only when an attachment is shown or saved.
-query MessageAttachmentAccess($message: ID!, $host: String) {
+query MessageAttachmentAccess($message: ID!) {
   message(id: $message) {
     id
     attachments {
@@ -9,7 +9,7 @@ query MessageAttachmentAccess($message: ID!, $host: String) {
       filename
       store {
         id
-        accessGrant(host: $host) {
+        accessGrant {
           ...BigFileAccessGrant
         }
       }

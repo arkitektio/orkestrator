@@ -25,3 +25,25 @@ query BloksForModel($ref: String!) {
     ...ModelBlok
   }
 }
+
+# Read credentials for one asset's file, signed client-side (presignS3Url).
+# Asked for only when the file is loaded, never with the asset list.
+query AssetAccess($ref: String!) {
+  asset(ref: $ref) {
+    id
+    file {
+      ... on KulisseStore {
+        id
+        accessGrant {
+          ...KulisseAccessGrant
+        }
+      }
+      ... on MediaStore {
+        id
+        accessGrant {
+          ...MediaAccessGrant
+        }
+      }
+    }
+  }
+}

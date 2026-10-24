@@ -3,7 +3,7 @@ fragment Page on Page {
   index
   content
   image {
-    ...BigFileStore
+    ...MediaStore
   }
   ocrResult {
     ...OCRPageResult

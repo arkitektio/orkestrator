@@ -1,7 +1,21 @@
-fragment BigFileStore on BigFileStore {
+# A file or page image: a media store of the organization. Its bytes are read
+# with a grant from `requestMediaAccess`, signed client-side (presignS3Url).
+fragment MediaStore on MediaStore {
   id
   key
   bucket
   path
-  presignedUrl
+  originalFileName
+  sizeBytes
+}
+
+fragment MediaAccessGrant on MediaAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  path
+  key
+  bucket
 }

@@ -1,4 +1,4 @@
-import {  MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
+import { AssetAccessDocument, AssetAccessQuery, AssetAccessQueryVariables, MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
 import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
@@ -62,6 +62,45 @@ export const createMediaUrl = (_media: MediaStoreFragment, datalayer: string, cr
 export const getRekuestMediaUrl = async (media: MediaStoreFragment, client: ApolloClient<any>, datalayer: string): Promise<string> => {
   const credentials = await getCredentials(media, client);
   return createMediaUrl(media, datalayer, credentials);
+};
+
+// An asset's grant comes off its store (`accessGrant`): a kulisse store for a
+// model, a media store for an image. Cached per asset ref, as above per store.
+type AssetCredentials = Omit<MediaAccessGrantFragment, "__typename"> & { expiresAt: number };
+
+const assetGrantCache = new Map<string, Promise<AssetCredentials>>();
+
+const getAssetCredentials = (ref: string, client: ApolloClient<any>): Promise<AssetCredentials> => {
+  const cached = assetGrantCache.get(ref);
+  if (cached) return cached;
+
+  const request = client.query<AssetAccessQuery, AssetAccessQueryVariables>({
+    query: AssetAccessDocument,
+    variables: { ref },
+    fetchPolicy: "network-only",
+  }).then(({ data }) => {
+    const grant = data?.asset?.file.accessGrant;
+    if (!grant) throw new Error(`No asset ${ref} to read.`);
+    const { __typename: _kind, ...fields } = grant;
+    const credentials: AssetCredentials = { ...fields, expiresAt: grantExpiresAt(grant) };
+    const ttl = Math.max(0, credentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS - Date.now());
+    setTimeout(() => {
+      if (assetGrantCache.get(ref) === request) assetGrantCache.delete(ref);
+    }, ttl);
+    return credentials;
+  }).catch((error) => {
+    if (assetGrantCache.get(ref) === request) assetGrantCache.delete(ref);
+    throw error;
+  });
+
+  assetGrantCache.set(ref, request);
+  return request;
+};
+
+/** A presigned URL for the file of the asset `ref`, whichever kind of store holds it. */
+export const getRekuestAssetUrl = async (ref: string, client: ApolloClient<any>, datalayer: string): Promise<string> => {
+  const credentials = await getAssetCredentials(ref, client);
+  return presignS3Url(datalayer + "/" + credentials.bucket + "/" + credentials.key, credentials);
 };
 
 /**

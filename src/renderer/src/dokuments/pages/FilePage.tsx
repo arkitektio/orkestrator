@@ -12,7 +12,10 @@ import {
   FileIcon,
   FileTextIcon,
 } from "lucide-react";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { useDokuments } from "../api/funcs";
 import { useGetFileQuery } from "../api/graphql";
+import { getDokumentsMediaUrl } from "../datalayer/dokumentsAccess";
 import { DOKUMENTS_HELP } from "../help";
 import { Separator } from "@/core/ui/separator";
 
@@ -45,10 +48,13 @@ export const FilePage = asDetailQueryRoute(
   ({ data }) => {
     const file = data?.file;
 
-    const handleDownload = () => {
-      if (file?.store.presignedUrl) {
+    const client = useDokuments();
+    const datalayer = useDatalayerEndpoint();
+
+    const handleDownload = async () => {
+      if (file?.store && datalayer) {
         const link = document.createElement('a');
-        link.href = file.store.presignedUrl;
+        link.href = await getDokumentsMediaUrl(file.store, client, datalayer);
         link.download = file.name;
         document.body.appendChild(link);
         link.click();
@@ -114,18 +120,18 @@ export const FilePage = asDetailQueryRoute(
                 <div className="space-y-1">
                   <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Bucket</div>
                   <div className="text-xs font-mono bg-muted/40 px-2.5 py-1.5 rounded border border-border/30 select-all truncate">
-                    {file?.store.bucket}
+                    {file?.store?.bucket}
                   </div>
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Storage Key</div>
                   <div className="text-xs font-mono bg-muted/40 px-2.5 py-1.5 rounded border border-border/30 select-all break-all">
-                    {file?.store.key}
+                    {file?.store?.key}
                   </div>
                 </div>
               </div>
 
-              {file?.store.path && (
+              {file?.store?.path && (
                 <div className="space-y-1">
                   <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Storage Path</div>
                   <div className="text-xs font-mono bg-muted/40 px-2.5 py-1.5 rounded border border-border/30 select-all break-all">

@@ -1,0 +1,298 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+"""
+A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string.
+"""
+scalar ByteCount
+
+input CreateDocumentInput {
+  file: ID = null
+  title: String!
+}
+
+input CreatePageInput {
+  content: String = null
+  document: ID!
+  image: FileLike!
+  index: Int!
+  ocrResult: OCRPageResultInput!
+}
+
+input DeleteFileInput {
+  id: ID!
+}
+
+type Document {
+  file: File!
+  id: ID!
+  ocrEngine: String!
+  pageCount: Int
+  pages(filters: PageFilter, pagination: OffsetPaginationInput): [Page!]!
+  processedAt: String
+  title: String!
+}
+
+input DocumentFilter {
+  AND: DocumentFilter
+  DISTINCT: Boolean
+  NOT: DocumentFilter
+  OR: DocumentFilter
+  id: ID
+  ids: [ID!]
+  name: StrFilterLookup
+  search: String
+}
+
+type File {
+  """The documents that reference this file"""
+  documents(filters: DocumentFilter, pagination: OffsetPaginationInput): [Document!]!
+  id: ID!
+  name: String!
+  store: MediaStore
+}
+
+type FileEvent {
+  create: File
+  delete: ID
+  moved: File
+  update: File
+}
+
+input FileFilter {
+  AND: FileFilter
+  DISTINCT: Boolean
+  NOT: FileFilter
+  OR: FileFilter
+  id: ID
+  ids: [ID!]
+  name: StrFilterLookup
+  search: String
+}
+
+"""
+The `FileLike` scalar type represents a reference to a big file storage previously created by the user n a datalayer
+"""
+scalar FileLike
+
+input FinishMediaUploadInput {
+  storeId: String!
+  valid: Boolean! = true
+}
+
+input FromFileLike {
+  dataset: ID = null
+  file: FileLike!
+  origins: [ID!] = null
+}
+
+"""Temporary S3 credentials for reading a media object."""
+type GeneralMediaAccessGrant {
+  accessKey: String!
+  bucket: String!
+  expiresIn: Int!
+  path: String!
+  region: String!
+  secretKey: String!
+  sessionToken: String!
+  status: String!
+  store: String
+}
+
+"""Temporary S3 credentials for reading a media object."""
+type MediaAccessGrant {
+  accessKey: String!
+  bucket: String!
+  expiresIn: Int!
+  key: String!
+  path: String!
+  region: String!
+  secretKey: String!
+  sessionToken: String!
+  status: String!
+  store: String
+}
+
+type MediaStore {
+  """Get temporary S3 read credentials for the media object."""
+  accessGrant: MediaAccessGrant!
+  bucket: String!
+  contentType: String
+  id: ID!
+  key: String!
+
+  """
+  The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
+  """
+  maxBytes: ByteCount
+  originalFileName: String
+  path: String!
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
+}
+
+"""Temporary S3 credentials for uploading a media object."""
+type MediaUploadGrant {
+  accessKey: String!
+  bucket: String!
+  expiresIn: Int!
+  key: String!
+  maxBytes: ByteCount!
+  originalFileName: String
+  path: String!
+  region: String!
+  secretKey: String!
+  sessionToken: String!
+  status: String!
+  store: String!
+  uploadContentType: String
+  uploadFileName: String!
+}
+
+type Mutation {
+  """Create a new document"""
+  createDocument(input: CreateDocumentInput!): Document!
+
+  """Create a new page in a document"""
+  createPage(input: CreatePageInput!): Page!
+
+  """Delete an existing file"""
+  deleteFile(input: DeleteFileInput!): ID!
+
+  """Finalize an upload after the client has written the object."""
+  finishMediaUpload(input: FinishMediaUploadInput!): MediaStore!
+
+  """Create a file from file-like data"""
+  fromFileLike(input: FromFileLike!): File!
+
+  """Request temporary S3 read credentials for the organization's files."""
+  requestGeneralMediaAccess(input: RequestGeneralMediaAccessInput!): GeneralMediaAccessGrant!
+
+  """Request temporary S3 read credentials for an uploaded file."""
+  requestMediaAccess(input: RequestMediaAccessInput!): MediaAccessGrant!
+
+  """
+  Request temporary S3 credentials to upload one file (a document, or a page's image).
+  """
+  requestMediaUpload(input: RequestMediaUploadInput!): MediaUploadGrant!
+}
+
+type OCRPageResult {
+  angle: Float!
+  lines: [OCRTextLine!]!
+}
+
+input OCRPageResultInput {
+  """Estimated rotation angle of the page"""
+  angle: Float!
+  lines: [OCRTextLineInput!]!
+}
+
+type OCRTextLine {
+  angle: Float!
+  bbox: [[Int!]!]!
+  score: Float!
+  text: String!
+}
+
+input OCRTextLineInput {
+  angle: Float!
+  bbox: [[Int!]!]!
+  score: Float!
+  text: String!
+}
+
+input OffsetPaginationInput {
+  limit: Int
+  offset: Int! = 0
+}
+
+type Page {
+  """The content of the page as a flat string."""
+  content: String!
+  document: Document!
+  id: ID!
+  image: MediaStore!
+  index: Int!
+  ocrResult: OCRPageResult!
+}
+
+input PageFilter {
+  AND: PageFilter
+  DISTINCT: Boolean
+  NOT: PageFilter
+  OR: PageFilter
+  id: ID
+  ids: [ID!]
+  name: StrFilterLookup
+  search: String
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+  document(
+    """The unique identifier of an object"""
+    id: ID!
+  ): Document!
+  documents(filters: DocumentFilter, pagination: OffsetPaginationInput): [Document!]!
+  file(
+    """The unique identifier of an object"""
+    id: ID!
+  ): File!
+  files(filters: FileFilter, pagination: OffsetPaginationInput): [File!]!
+  page(
+    """The unique identifier of an object"""
+    id: ID!
+  ): Page!
+  pages(filters: PageFilter, pagination: OffsetPaginationInput): [Page!]!
+}
+
+input RequestGeneralMediaAccessInput {
+  expiresIn: Int = null
+}
+
+input RequestMediaAccessInput {
+  storeId: String!
+}
+
+input RequestMediaUploadInput {
+  contentType: String = null
+  fileSize: ByteCount = null
+  originalFileName: String!
+}
+
+input StrFilterLookup {
+  contains: String
+  endsWith: String
+  exact: String
+  gt: String
+  gte: String
+  iContains: String
+  iEndsWith: String
+  iExact: String
+  iRegex: String
+  iStartsWith: String
+  inList: [String!]
+  isNull: Boolean
+  lt: String
+  lte: String
+  range: [String!]
+  regex: String
+  startsWith: String
+}
+
+type Subscription {
+  """Subscribe to real-time file updates"""
+  files(dataset: ID = null): FileEvent!
+}
+
+scalar _Any
+
+union _Entity = MediaStore
+
+type _Service {
+  sdl: String!
+}

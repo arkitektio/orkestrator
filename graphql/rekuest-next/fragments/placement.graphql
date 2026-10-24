@@ -1,15 +1,6 @@
 fragment Placement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-
-    }
-    transferFunction
-  }
-
   agent {
     id
   }
@@ -42,15 +33,6 @@ fragment SpacePlacement on Placement {
 fragment AgentPlacement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-
-    }
-
-    transferFunction
-  }
   space {
     id
     name

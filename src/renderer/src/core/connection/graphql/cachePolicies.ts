@@ -220,7 +220,6 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   tasks: ["filters", "ordering"],
   testCases: ["filters"],
   testResults: ["filters"],
-  threedModels: ["filters", "ordering"],
   toolboxes: ["filters", "ordering"],
   triggers: ["filters", "ordering"],
   wiregrams: [],

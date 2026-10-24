@@ -15,8 +15,19 @@ fragment StoredAsset on Asset {
   }
   width
   height
+  # A MODEL_3D asset is a kulisse store (one self-contained .glb, read by the
+  # server at finish), an IMAGE a media store.
   file {
-    ...MediaStore
+    ... on KulisseStore {
+      id
+      key
+      bucket
+    }
+    ... on MediaStore {
+      id
+      key
+      bucket
+    }
   }
 }
 

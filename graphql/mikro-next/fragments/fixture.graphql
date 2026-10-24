@@ -1,6 +1,6 @@
-# A fixture is ONE binary glTF (`.glb`) in a media store: a coverslip, a dish,
-# a holder. The viewer fetches the file whole through a presigned URL
-# (`getMikroMediaUrl`); there is no per-part API. Its coordinate system's axes
+# A fixture is ONE binary glTF (`.glb`) in a kulisse store: a coverslip, a
+# dish, a holder. The viewer fetches the file whole through a URL it signs from
+# the store's read grant (`getMikroKulisseUrl`); there is no per-part API. Its coordinate system's axes
 # carry the unit the exporter wrote, so the server's `asAffine` already
 # converts millimetres into the world's micrometres.
 fragment Fixture on Fixture {
@@ -12,8 +12,7 @@ fragment Fixture on Fixture {
   bounds
   createdAt
   store {
-    ...MediaStore
-    originalFileName
+    ...KulisseStore
   }
   coordinateSystem {
     ...CoordinateSystem

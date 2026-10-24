@@ -9,7 +9,7 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { MikroFixture } from "@/core/linkers";
 import { ErrorNote } from "@/core/ui/error-note";
 import { useMikro } from "@/mikro/api/funcs";
-import { getMikroMediaUrl } from "@/mikro/datalayer/mikroAccess";
+import { getMikroKulisseUrl } from "@/mikro/datalayer/mikroAccess";
 
 import { useGetFixtureQuery, type DetailFixtureFragment } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
@@ -46,7 +46,7 @@ const FixturePreview = ({ model }: { model: DetailFixtureFragment }) => {
     let cancelled = false;
     let dispose = () => {};
     const key = model.store.id;
-    acquireGltf(key, () => getMikroMediaUrl(model.store, client, datalayer))
+    acquireGltf(key, () => getMikroKulisseUrl(model.store, client, datalayer))
       .then((gltf) => {
         if (cancelled) return;
         const view = cloneForView(gltf.scene);

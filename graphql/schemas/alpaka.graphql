@@ -1,3 +1,7 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
+
 """Documents to add to an existing collection"""
 input AddDocumentsToCollectionInput {
   collection: ID!
@@ -212,6 +216,11 @@ type ChromaCollection {
   createdAt: DateTime!
   description: String!
 
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """The model used to embed this collection's documents"""
   embedder: LLMModel!
   id: ID!
@@ -230,6 +239,11 @@ input ChromaCollectionFilter {
   NOT: ChromaCollectionFilter
   OR: ChromaCollectionFilter
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
@@ -264,6 +278,49 @@ type Client {
   release: Release
 }
 
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """What is in the collaboration; what is part of these is in it too"""
+  items: [CollaborationItem!]!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
 """A budget to create"""
 input CreateBudgetInput {
   hard: Boolean! = true
@@ -272,6 +329,12 @@ input CreateBudgetInput {
   model: ID = null
   period: BudgetPeriod! = MONTH
   user: ID = null
+}
+
+"""A new collaboration"""
+input CreateCollaborationInput {
+  description: String = null
+  name: String!
 }
 
 """The room to create"""
@@ -365,6 +428,39 @@ input DeleteRoomInput {
   id: ID!
 }
 
+"""
+One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@alpaka/provider_kind`); a key it does not declare is refused.
+"""
+input DescriptorConstraintInput {
+  """The descriptor key, e.g. `@alpaka/provider_kind`"""
+  key: String!
+
+  """
+  How the object's value is compared with `value`. MATCHES is equality, as EQUALS is
+  """
+  operator: DescriptorOperator!
+
+  """
+  The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS
+  """
+  value: JSON = null
+}
+
+"""
+How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning.
+"""
+enum DescriptorOperator {
+  CONTAINS
+  EQUALS
+  EXISTS
+  GTE
+  IN
+  LTE
+  MATCHES
+  NOT_EQUALS
+  NOT_IN
+}
+
 """A document stored in a collection"""
 type Document {
   content: String!
@@ -447,6 +543,11 @@ scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads
 
 """A LLM model to chage with"""
 type LLMModel {
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """The collections that can be embedded with this model"""
   embedderFor(filters: ChromaCollectionFilter, ordering: [ChromaCollectionOrder!]! = [], pagination: OffsetPaginationInput): [ChromaCollection!]!
 
@@ -478,6 +579,11 @@ input LLMModelFilter {
   inputModalities: [Modality!]
   outputModalities: [Modality!]
   provider: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   search: String
 }
 
@@ -500,6 +606,11 @@ type Message {
 
   """The rich-text representation of the message"""
   descendants: JSON!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """The message this one replies to, if any"""
@@ -527,6 +638,11 @@ input MessageFilter {
   NOT: MessageFilter
   OR: MessageFilter
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   search: String
 }
 
@@ -548,6 +664,11 @@ type Mutation {
   addDocumentsToCollection(input: AddDocumentsToCollectionInput!): [Document!]!
 
   """
+  Put a room or a message in a collaboration, with what it needs to be seen: a room comes with its agents and messages
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
   Append a delta to a streaming message. Batch deltas (every ~100-250 ms or ~30 characters) and await each call before sending the next, so they arrive in order.
   """
   appendMessage(input: AppendMessageInput!): Message!
@@ -559,6 +680,9 @@ type Mutation {
   Cap this organization's LLM consumption, optionally for one user and/or model
   """
   createBudget(input: CreateBudgetInput!): Budget!
+
+  """Create an empty collaboration, to put rooms in and grant a guest"""
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """Create a searchable collection of documents"""
   createCollection(input: ChromaCollectionInput!): ChromaCollection!
@@ -576,6 +700,11 @@ type Mutation {
 
   """Remove a budget"""
   deleteBudget(input: DeleteBudgetInput!): ID!
+
+  """
+  Delete a collaboration: whoever was granted it sees nothing of it any more
+  """
+  deleteCollaboration(id: ID!): ID!
 
   """Delete a collection and its documents"""
   deleteCollection(input: DeleteCollectionInput!): ID!
@@ -604,6 +733,11 @@ type Mutation {
 
   """Re-list the models a provider offers"""
   refreshProvider(input: RefreshProviderInput!): Provider!
+
+  """
+  Take a room or a message out of a collaboration, with what it brought that nothing else there needs
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """Post a complete message into a room"""
   send(input: SendMessageInput!): Message!
@@ -685,6 +819,11 @@ type Provider {
   apiBase: String
 
   """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
   Whether an API key is configured for this provider. The key itself is never exposed.
   """
   hasApiKey: Boolean!
@@ -703,6 +842,11 @@ input ProviderFilter {
   NOT: ProviderFilter
   OR: ProviderFilter
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
   search: String
 }
 
@@ -772,6 +916,14 @@ type Query {
 
   """List this organization's Chroma collections"""
   chromaCollections(filters: ChromaCollectionFilter, ordering: [ChromaCollectionOrder!]! = [], pagination: OffsetPaginationInput): [ChromaCollection!]!
+
+  """Get a single collaboration by ID"""
+  collaboration(id: ID!): Collaboration!
+
+  """
+  List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
+  """
+  collaborations: [Collaboration!]!
 
   """The model the caller uses by default for one kind of task, if any"""
   defaultModelFor(kind: DefaultKind!): LLMModel
@@ -871,6 +1023,11 @@ type Room {
   createdAt: DateTime!
   creator: User
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
   messages(filters: MessageFilter, ordering: [MessageOrder!]! = [], pagination: OffsetPaginationInput): [Message!]!
 
@@ -917,6 +1074,11 @@ input RoomFilter {
   NOT: RoomFilter
   OR: RoomFilter
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
@@ -1225,9 +1387,30 @@ input UseModelForInput {
 """A reflection on the real User"""
 type User {
   activeOrganization: Organization
+
+  """The family name, if the issuer sends one."""
+  familyName: String
+
+  """The given name, if the issuer sends one."""
+  givenName: String
   id: ID!
+
+  """The user's locale (BCP47), if the issuer sends one."""
+  locale: String
+
+  """The full name, if the issuer sends one."""
+  name: String
+
+  """A casual name, if the issuer sends one."""
+  nickname: String
+
+  """URL of the profile picture, if the issuer sends one."""
+  picture: String
   preferredUsername: String!
   sub: String!
+
+  """The user's IANA time zone, if the issuer sends one."""
+  zoneinfo: String
 }
 
 scalar _Any

@@ -1,7 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { Image } from "@/core/ui/image";
-import { useResolve } from "@/core/datalayer/hooks/useResolve";
+import { DokumentsImage } from "../datalayer/dokumentsAccess";
 import { DokumentsPage } from "@/core/linkers";
 import { useGetPageQuery } from "../api/graphql";
 import { DOKUMENTS_HELP } from "../help";
@@ -10,7 +9,6 @@ export const PagePage = asDetailQueryRoute(
   useGetPageQuery,
   ({ data }) => {
 
-    const resolve = useResolve();
 
 
     return (
@@ -34,7 +32,7 @@ export const PagePage = asDetailQueryRoute(
         {data.page.id}
         {data.page.content}
 
-        <Image src={resolve(data.page.image.presignedUrl)} className="w-full h-full" />
+        <DokumentsImage store={data.page.image} className="w-full h-full" />
 
       </DokumentsPage.ModelPage>
     );

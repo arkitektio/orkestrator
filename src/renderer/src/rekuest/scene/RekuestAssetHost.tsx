@@ -19,12 +19,11 @@ import {
   type AssetPolicyQuery,
   type CreateAssetMutation,
   type CreateAssetMutationVariables,
-  type MediaStoreFragment,
   type RequestAssetUploadMutation,
   type RequestAssetUploadMutationVariables,
 } from '@/rekuest/api/graphql';
 import {useRekuest} from '@/rekuest/api/hooks';
-import {getRekuestMediaUrl} from '@/rekuest/datalayer/rekuestAccess';
+import {getRekuestAssetUrl} from '@/rekuest/datalayer/rekuestAccess';
 import {addAsset, AddAssetError, type AssetLimits} from './addAsset';
 
 /**
@@ -132,7 +131,6 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
   });
 
   const declared = data?.agent.assets.find(candidate => candidate.name === name);
-  const file: MediaStoreFragment | undefined = declared?.asset?.file;
   const awaited = Boolean(declared) && !declared?.asset;
   React.useEffect(() => {
     if (!awaited) return;
@@ -146,10 +144,10 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
   const load = React.useCallback(async (): Promise<Uint8Array> => {
     const held = stored ? heldBytes.get(stored) : undefined;
     if (held) return held;
-    if (!file || !endpoint) throw new Error('The asset store is not reachable.');
+    if (!stored || !endpoint) throw new Error('The asset store is not reachable.');
     // TEMPORARY timing: which stage of a slow asset load is slow (grant, first byte, transfer).
     const started = performance.now();
-    const url = await getRekuestMediaUrl(file, client, endpoint);
+    const url = await getRekuestAssetUrl(stored, client, endpoint);
     const signed = performance.now();
     const response = await fetch(url);
     const headers = performance.now();
@@ -189,7 +187,7 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
       xCache: response.headers.get('x-cache'),
     });
     return bytes;
-  }, [client, endpoint, file, stored]);
+  }, [client, endpoint, stored]);
 
   return React.useMemo<BlokAsset>(() => {
     if (!name) return {status: 'unknown', reason: 'No asset is named.'};

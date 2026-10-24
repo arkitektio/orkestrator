@@ -43,6 +43,17 @@ fragment MediaStore on MediaStore {
   bucket
 }
 
+# A kulisse store is one self-contained binary glTF (.glb); the server read it
+# at finish and keeps what it says.
+fragment KulisseStore on KulisseStore {
+  id
+  key
+  bucket
+  originalFileName
+  sizeBytes
+  ref
+}
+
 
 # A fabriks store is a PREFIX, not an object: one tree holding `fabriks.json`,
 # both catalogs and every octree level. The server reads the manifest at

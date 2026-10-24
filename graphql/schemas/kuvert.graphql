@@ -128,7 +128,7 @@ A BigFileStore represents a large object stored behind the S3 datalayer.
 """
 type BigFileStore {
   """Get temporary S3 read credentials for the object."""
-  accessGrant(host: String = null): BigFileAccessGrant!
+  accessGrant: BigFileAccessGrant!
 
   """The datalayer bucket/service this store belongs to."""
   bucket: String!
@@ -140,12 +140,16 @@ type BigFileStore {
   """The object key/path within the datalayer bucket."""
   key: String!
 
+  """
+  The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
+  """
+  maxBytes: ByteCount
+
   """The original client-provided file name."""
   originalFileName: String
 
   """The object-store URI of the file"""
   path: String!
-  presignedUrl: String!
 
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
@@ -169,7 +173,6 @@ type BigFileUploadGrant {
   store: String!
   uploadContentType: String
   uploadFileName: String!
-  uploadFormField: String!
 }
 
 """
@@ -1629,9 +1632,7 @@ type RefusedRecipient {
 input RequestBigFileUploadInput {
   contentType: String = null
   fileSize: ByteCount = null
-  host: String = null
   originalFileName: String!
-  port: Int = null
 }
 
 """

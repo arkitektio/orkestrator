@@ -24,6 +24,8 @@ export type Scalars = {
   Arg: { input: any; output: any; }
   /** The `Args` scalar type represents a Dictionary of arguments */
   Args: { input: any; output: any; }
+  /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
+  ByteCount: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
   /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector (it carries no text, or the model could not be loaded when it was saved). */
@@ -34,7 +36,7 @@ export type Scalars = {
   JSON: { input: any; output: any; }
   /** The `JSONSerializable` scalar type represents a JSON-serializable value. */
   JSONSerializable: { input: any; output: any; }
-  /** A type representing a media store reference, which can be either a string ID or a more complex object. */
+  /** A reference to a media store: the id its finished upload returned. */
   MediaLike: { input: any; output: any; }
   /** The `Props` scalar type represents a JSON object of UI props or state */
   Props: { input: any; output: any; }
@@ -668,7 +670,6 @@ export type AgentFilter = {
   stateDemands?: InputMaybe<Array<StateDemandInput>>;
   /** Agents whose self-declared supervisor is this app (e.g. 'plugin_engine'). */
   supervisor?: InputMaybe<Scalars['String']['input']>;
-  threeDModel?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by user ID */
   user?: InputMaybe<Scalars['ID']['input']>;
   /** Filter based on version string */
@@ -825,10 +826,13 @@ export type ArgPortInput = {
 export type Asset = {
   __typename?: 'Asset';
   createdAt: Scalars['DateTime']['output'];
-  file: MediaStore;
+  /** The stored file: a kulisse store for a 3D model, a media store for an image. */
+  file: AssetFile;
   /** An image's height in pixels. Null for other kinds. */
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  /** A 3D model's joint table (name, node, type, axis, limit, mimic). Empty for other kinds. */
+  joints: Scalars['JSON']['output'];
   /** What the file is. */
   kind: AssetKind;
   /** A 3D model's node names: what blok bindings can address. Empty for other kinds. */
@@ -842,6 +846,9 @@ export type Asset = {
   /** An image's width in pixels. Null for other kinds. */
   width?: Maybe<Scalars['Int']['output']>;
 };
+
+/** Where an asset's bytes are: a kulisse store for a 3D model, a media store for an image. */
+export type AssetFile = KulisseStore | MediaStore;
 
 /** A file an agent brings with it: the name its bloks call it by, and what the bytes are. */
 export type AssetInput = {
@@ -868,6 +875,25 @@ export type AssetPolicy = {
   __typename?: 'AssetPolicy';
   image: ImagePolicy;
   model: ModelPolicy;
+};
+
+/** Temporary S3 credentials for uploading one asset: to a kulisse store for a 3D model, to a media store for an image. Write the file to `key`, then call `createAsset` with `store`. */
+export type AssetUploadGrant = {
+  __typename?: 'AssetUploadGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store: Scalars['String']['output'];
+  uploadContentType?: Maybe<Scalars['String']['output']>;
+  uploadFileName: Scalars['String']['output'];
 };
 
 /** The input for assigning args to a action. A GraphQL assign is a ROOT by definition — children are created only over the agent socket (AssignRequest, where parent is mandatory) and by server-internal paths like init hooks, so parent/dependency/method are deliberately absent here. */
@@ -1622,8 +1648,6 @@ export type CreatePlacementInput = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** A specific blok that should be used to visualize the state of the placement. */
   materializedBlok?: InputMaybe<Scalars['ID']['input']>;
-  /** The 3D model ID for the placement. This is used to identify the 3D model in the system. */
-  model?: InputMaybe<Scalars['ID']['input']>;
   /** The role of the placement. This is used to identify the placement in the system. */
   role?: InputMaybe<Scalars['String']['input']>;
   /** The ID of the space to create the placement in. */
@@ -1683,6 +1707,18 @@ export type CreateSpaceInput = {
   placements?: InputMaybe<Array<PlacementInput>>;
 };
 
+/** Place a 3D blok in a space at an affine transform. */
+export type CreateSpacePlacementInput = {
+  /** Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Omitted is the identity. */
+  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
+  /** The materialized 3D blok to place. */
+  blok: Scalars['ID']['input'];
+  /** What the placement is called in its space. */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The space to place the blok in. */
+  space: Scalars['ID']['input'];
+};
+
 /** Declare that one action tests another. */
 export type CreateTestCaseInput = {
   /** The action under test. */
@@ -1705,20 +1741,6 @@ export type CreateTestResultInput = {
   result?: InputMaybe<Scalars['AnyDefault']['input']>;
   /** The implementation that ran the test. */
   tester: Scalars['ID']['input'];
-};
-
-/** The input for creating a 3D model. */
-export type CreateThreeDModelInput = {
-  /** The agent this model shows: whose state the transfer function reads. */
-  dependency?: InputMaybe<AgentDependencyInput>;
-  /** A description of the 3D model. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** The media store file for the 3D model. */
-  media: Scalars['MediaLike']['input'];
-  /** The name of the 3D model. */
-  name: Scalars['String']['input'];
-  /** How the agent's state maps onto the model's properties. */
-  transferFunction?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Create a trigger: on a signal of `kind` for `identifier` whose descriptors satisfy `conditions` (and the port's own requires), run `action` with the object in `port`. */
@@ -1951,9 +1973,9 @@ export type DeleteSpaceInput = {
   id: Scalars['ID']['input'];
 };
 
-/** The input for deleting a 3D model. */
-export type DeleteThreeDModelInput = {
-  /** The ID of the 3D model to delete. */
+/** Remove a placed 3D blok from its space. */
+export type DeleteSpacePlacementInput = {
+  /** The blok placement to remove. */
   id: Scalars['ID']['input'];
 };
 
@@ -2582,6 +2604,64 @@ export type KickInput = {
   reason?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Temporary S3 credentials for reading a kulisse model. */
+export type KulisseAccessGrant = {
+  __typename?: 'KulisseAccessGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store?: Maybe<Scalars['String']['output']>;
+};
+
+/** What a kulisse model contains, counted from its JSON. */
+export type KulisseStats = {
+  __typename?: 'KulisseStats';
+  animations: Scalars['Int']['output'];
+  nodes: Scalars['Int']['output'];
+  textures: Scalars['Int']['output'];
+  triangles: Scalars['Int']['output'];
+};
+
+/** A kulisse model: a device or scene model stored as one self-contained binary glTF. Everything here is read from the file when its upload is finished, never declared by a caller. */
+export type KulisseStore = {
+  __typename?: 'KulisseStore';
+  /** Get temporary S3 read credentials for the model. */
+  accessGrant: KulisseAccessGrant;
+  /** The box the default scene occupies, `{min: [x, y, z], max: [x, y, z]}` in the model's own coordinates. Null when nothing declares a box */
+  bounds?: Maybe<Scalars['JSON']['output']>;
+  bucket: Scalars['String']['output'];
+  /** The glTF extensions the model uses */
+  extensionsUsed?: Maybe<Array<Scalars['String']['output']>>;
+  /** The tool that wrote the model, as it says */
+  generator?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The joint table (`extras.arkitekt.joints`): name, node, type, axis, limit, mimic. Empty for a rigid model */
+  joints?: Maybe<Scalars['JSON']['output']>;
+  key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
+  /** The named nodes a blok can address */
+  nodes?: Maybe<Array<Scalars['String']['output']>>;
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  /** `sha256:` and the hex digest of the model's exact bytes: what a blok decorating it names as `forModel` */
+  ref?: Maybe<Scalars['String']['output']>;
+  /** How many bytes the model holds, measured when its upload was finished. Null while unfinished */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
+  /** The glTF version the model declares */
+  specVersion?: Maybe<Scalars['String']['output']>;
+  /** What the model contains, counted from its JSON. */
+  stats?: Maybe<KulisseStats>;
+  /** What the reader noticed but did not refuse */
+  warnings?: Maybe<Array<Scalars['String']['output']>>;
+};
+
 /** The task an implementation last ran as, with what its record is made of. The first message of `latestTask`, and again whenever a newer task takes its place. */
 export type LatestTaskSnapshot = {
   __typename?: 'LatestTaskSnapshot';
@@ -2704,6 +2784,8 @@ export type MaterializedBlok = {
   revision?: Maybe<BlokRevision>;
   /** Where it lives: DASHBOARD, MESSAGE when it was made for one chat message to show inline, or TASK when a task showed it. */
   scope: MaterializationScope;
+  /** Where this 3D blok is placed in spaces, each at its affine transform. */
+  spacePlacements: Array<SpacePlacement>;
   /** Why its task showed it (scope TASK): ASK holds the task until a person answers through it, INFORM shows it while the task carries on. Null for any other. */
   taskRole?: Maybe<TaskBlokRole>;
   /** The required dependencies of the revision shown that no agent is bound to here. An edit made elsewhere can add one: bind it with updateMaterializedBlok. */
@@ -2724,6 +2806,14 @@ export type MaterializedBlokDashboardPlacementsArgs = {
 export type MaterializedBlokPlacementsArgs = {
   filters?: InputMaybe<PlacementFilter>;
   ordering?: Array<PlacementOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A materialized instance of a Blok that can be placed on dashboards and linked to agent states. */
+export type MaterializedBlokSpacePlacementsArgs = {
+  filters?: InputMaybe<SpacePlacementFilter>;
+  ordering?: Array<SpacePlacementOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -2773,30 +2863,22 @@ export type MediaStore = {
   contentType?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
-
-export type MediaStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type MediaStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** A presigned PUT grant for uploading a media object. */
+/** Temporary S3 credentials for uploading a media object. */
 export type MediaUploadGrant = {
   __typename?: 'MediaUploadGrant';
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -2806,7 +2888,6 @@ export type MediaUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 export type MemoryDrawer = {
@@ -2945,12 +3026,12 @@ export type Mutation = {
   createShortcut: Shortcut;
   /** Create a new space. */
   createSpace: Space;
+  /** Place a 3D blok (a Model or Robot over a kulisse asset) in a space at an affine transform. */
+  createSpacePlacement: SpacePlacement;
   /** Create a new test case. */
   createTestCase: TestCase;
   /** Create a test result record. */
   createTestResult: TestResult;
-  /** Create a new 3D model. */
-  createThreedModel: ThreeDModel;
   /** Create a trigger: run an action when a service signals a matching object. */
   createTrigger: Trigger;
   /** Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked. */
@@ -2973,8 +3054,8 @@ export type Mutation = {
   deleteShortcut: Scalars['ID']['output'];
   /** Delete a space. */
   deleteSpace: Scalars['ID']['output'];
-  /** Delete a 3D model. */
-  deleteThreedModel: Scalars['ID']['output'];
+  /** Remove a placed 3D blok from its space. */
+  deleteSpacePlacement: Scalars['ID']['output'];
   /** Delete a trigger; its runs are kept. */
   deleteTrigger: Scalars['ID']['output'];
   /** Delete a wiregram and the rules it owns. */
@@ -3014,7 +3095,7 @@ export type Mutation = {
   /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
   registerUiCatalog: UiCatalog;
   /** A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy. */
-  requestAssetUpload: MediaUploadGrant;
+  requestAssetUpload: AssetUploadGrant;
   /** Request temporary S3 read credentials for a media file */
   requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
@@ -3047,8 +3128,8 @@ export type Mutation = {
   updateSchedule: Schedule;
   /** Update an existing space. */
   updateSpace: Space;
-  /** Update an existing 3D model. */
-  updateThreedModel: ThreeDModel;
+  /** Move or rename a placed 3D blok. */
+  updateSpacePlacement: SpacePlacement;
   /** Change a trigger. */
   updateTrigger: Trigger;
 };
@@ -3151,6 +3232,12 @@ export type MutationCreateSpaceArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationCreateSpacePlacementArgs = {
+  input: CreateSpacePlacementInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationCreateTestCaseArgs = {
   input: CreateTestCaseInput;
 };
@@ -3159,12 +3246,6 @@ export type MutationCreateTestCaseArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateTestResultArgs = {
   input: CreateTestResultInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateThreedModelArgs = {
-  input: CreateThreeDModelInput;
 };
 
 
@@ -3235,8 +3316,8 @@ export type MutationDeleteSpaceArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationDeleteThreedModelArgs = {
-  input: DeleteThreeDModelInput;
+export type MutationDeleteSpacePlacementArgs = {
+  input: DeleteSpacePlacementInput;
 };
 
 
@@ -3457,8 +3538,8 @@ export type MutationUpdateSpaceArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationUpdateThreedModelArgs = {
-  input: UpdateThreeDModelInput;
+export type MutationUpdateSpacePlacementArgs = {
+  input: UpdateSpacePlacementInput;
 };
 
 
@@ -3572,7 +3653,6 @@ export type Placement = {
   agent: Agent;
   blok?: Maybe<MaterializedBlok>;
   id: Scalars['ID']['output'];
-  model?: Maybe<ThreeDModel>;
   /** Get the agent associated with this placement. */
   name: Scalars['String']['output'];
   role: Scalars['String']['output'];
@@ -3603,8 +3683,6 @@ export type PlacementInput = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** A specific blok that should be used to visualize the state of the placement. */
   blok?: InputMaybe<Scalars['ID']['input']>;
-  /** The 3D model ID for the placement. This is used to identify the 3D model in the system. */
-  model?: InputMaybe<Scalars['ID']['input']>;
   /** The role of the placement. This is used to identify the placement in the system. */
   role?: InputMaybe<Scalars['String']['input']>;
 };
@@ -4002,6 +4080,10 @@ export type Query = {
   snapshotsAroundRev: Array<Snapshot>;
   /** Fetch a specific space by ID. */
   space: Space;
+  /** Fetch one placed 3D blok by ID. */
+  spacePlacement: SpacePlacement;
+  /** List the 3D bloks placed in spaces. */
+  spacePlacements: Array<SpacePlacement>;
   /** List all spaces. */
   spaces: Array<Space>;
   /** Get a specific state by ID. */
@@ -4034,10 +4116,6 @@ export type Query = {
   testResult: TestResult;
   /** Test results associated with test cases. */
   testResults: Array<TestResult>;
-  /** Fetch a specific 3D model by ID. */
-  threedModel: ThreeDModel;
-  /** List all 3D models. */
-  threedModels: Array<ThreeDModel>;
   /** Get toolbox by ID. */
   toolbox: Toolbox;
   /** List of toolboxes containing shortcuts. */
@@ -4439,6 +4517,18 @@ export type QuerySpaceArgs = {
 };
 
 
+export type QuerySpacePlacementArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QuerySpacePlacementsArgs = {
+  filters?: InputMaybe<SpacePlacementFilter>;
+  ordering?: Array<SpacePlacementOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QuerySpacesArgs = {
   filters?: InputMaybe<SpaceFilter>;
   ordering?: Array<SpaceOrder>;
@@ -4530,18 +4620,6 @@ export type QueryTestResultsArgs = {
 };
 
 
-export type QueryThreedModelArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryThreedModelsArgs = {
-  filters?: InputMaybe<ThreeDModelFilter>;
-  ordering?: Array<ThreeDModelOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
 export type QueryToolboxArgs = {
   id: Scalars['ID']['input'];
 };
@@ -4619,7 +4697,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   originalFileName: Scalars['String']['input'];
 };
 
@@ -5269,6 +5347,8 @@ export type Snapshot = {
 /** A space where agents can interact. */
 export type Space = {
   __typename?: 'Space';
+  /** The 3D bloks placed in this space, each at its affine transform. */
+  blokPlacements: Array<SpacePlacement>;
   createdAt: Scalars['DateTime']['output'];
   creator: User;
   description?: Maybe<Scalars['String']['output']>;
@@ -5276,6 +5356,14 @@ export type Space = {
   name: Scalars['String']['output'];
   placements: Array<Placement>;
   updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** A space where agents can interact. */
+export type SpaceBlokPlacementsArgs = {
+  filters?: InputMaybe<SpacePlacementFilter>;
+  ordering?: Array<SpacePlacementOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -5302,6 +5390,35 @@ export type SpaceOrder =
   { createdAt: Ordering; name?: never; updatedAt?: never; }
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
   |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+
+/** A 3D blok placed in a space at an affine transform: a Model or Robot blok over a kulisse asset, with no agent of its own. */
+export type SpacePlacement = {
+  __typename?: 'SpacePlacement';
+  /** Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Null is the identity. */
+  affineMatrix?: Maybe<Scalars['Args']['output']>;
+  blok: MaterializedBlok;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+  space: Space;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** A way to filter blok placements in spaces */
+export type SpacePlacementFilter = {
+  AND?: InputMaybe<SpacePlacementFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<SpacePlacementFilter>;
+  OR?: InputMaybe<SpacePlacementFilter>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by space */
+  space?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type SpacePlacementOrder =
+  { createdAt: Ordering; name?: never; }
+  |  { createdAt?: never; name: Ordering; };
 
 export type State = {
   __typename?: 'State';
@@ -6229,37 +6346,6 @@ export type TestTargetInput = {
   version?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A 3D model file. */
-export type ThreeDModel = {
-  __typename?: 'ThreeDModel';
-  createdAt: Scalars['DateTime']['output'];
-  /** The agent this model shows (an agent-dependency declaration), as stored. */
-  dependency?: Maybe<Scalars['AnyDefault']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  file: MediaStore;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  transferFunction?: Maybe<Scalars['String']['output']>;
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-/** A way to filter 3D models */
-export type ThreeDModelFilter = {
-  AND?: InputMaybe<ThreeDModelFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<ThreeDModelFilter>;
-  OR?: InputMaybe<ThreeDModelFilter>;
-  /** Filter by IDs */
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Search by name */
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type ThreeDModelOrder =
-  { createdAt: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
-
 export type TimeBucket = {
   __typename?: 'TimeBucket';
   avg?: Maybe<Scalars['Float']['output']>;
@@ -6554,8 +6640,6 @@ export type UpdatePlacementInput = {
   affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
   /** The ID of the placement to update. */
   id: Scalars['ID']['input'];
-  /** The 3D model ID for the placement. This is used to identify the 3D model in the system. */
-  model?: InputMaybe<Scalars['ID']['input']>;
   /** The role of the placement. This is used to identify the placement in the system. */
   role?: InputMaybe<Scalars['String']['input']>;
 };
@@ -6592,20 +6676,14 @@ export type UpdateSpaceInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** The input for updating a 3D model. */
-export type UpdateThreeDModelInput = {
-  /** The agent this model shows. */
-  dependency?: InputMaybe<AgentDependencyInput>;
-  /** The new description of the 3D model. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** The ID of the 3D model to update. */
+/** Move or rename a placed 3D blok. */
+export type UpdateSpacePlacementInput = {
+  /** A new 4x4 affine matrix, row-major. */
+  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
+  /** The blok placement to change. */
   id: Scalars['ID']['input'];
-  /** The new media store file ID for the 3D model. */
-  media?: InputMaybe<Scalars['ID']['input']>;
-  /** The new name of the 3D model. */
+  /** A new name. */
   name?: InputMaybe<Scalars['String']['input']>;
-  /** How the agent's state maps onto the model's properties. */
-  transferFunction?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Change a trigger. Omitted fields stay as they are; the result is checked as a whole, like a new trigger. Give `agent: null` (with `interface: null`) to unpin it; give a policy as null to lift it. */
@@ -6977,10 +7055,7 @@ export type HoverAgentFragment = (
   & AgentLogoFragment
 );
 
-export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: (
-    { __typename?: 'MediaStore' }
-    & MediaStoreFragment
-  ) };
+export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'KulisseStore', id: string, key: string, bucket: string } | { __typename?: 'MediaStore', id: string, key: string, bucket: string } };
 
 export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size?: number | null, source?: string | null, asset?: (
     { __typename?: 'Asset' }
@@ -7187,6 +7262,10 @@ export type ListDashboardFragment = { __typename?: 'Dashboard', id: string, name
 
 export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
+export type AssetUploadGrantFragment = { __typename?: 'AssetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
+
+export type KulisseAccessGrantFragment = { __typename?: 'KulisseAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
+
 export type MediaAccessGrantFragment = { __typename?: 'MediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
 
 export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: string, bucket: string };
@@ -7307,17 +7386,11 @@ export type MemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, na
 
 export type ListMemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string } };
 
-export type PlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
-      { __typename?: 'MediaStore' }
-      & MediaStoreFragment
-    ) } | null, agent: { __typename?: 'Agent', id: string } };
+export type PlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string } };
 
 export type SpacePlacementFragment = { __typename?: 'Placement', id: string, name: string, role: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean }, blok?: { __typename?: 'MaterializedBlok', id: string, name?: string | null, blok: { __typename?: 'Blok', id: string, name: string, context: ComponentContext } } | null };
 
-export type AgentPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
-      { __typename?: 'MediaStore' }
-      & MediaStoreFragment
-    ) } | null, space: { __typename?: 'Space', id: string, name: string } };
+export type AgentPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, space: { __typename?: 'Space', id: string, name: string } };
 
 export type ListPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null };
 
@@ -8104,8 +8177,8 @@ export type RequestAssetUploadMutationVariables = Exact<{
 
 
 export type RequestAssetUploadMutation = { __typename?: 'Mutation', requestAssetUpload: (
-    { __typename?: 'MediaUploadGrant' }
-    & MediaUploadGrantFragment
+    { __typename?: 'AssetUploadGrant' }
+    & AssetUploadGrantFragment
   ) };
 
 export type CreateAssetMutationVariables = Exact<{
@@ -8893,6 +8966,19 @@ export type BloksForModelQuery = { __typename?: 'Query', bloksForModel: Array<(
     { __typename?: 'Blok' }
     & ModelBlokFragment
   )> };
+
+export type AssetAccessQueryVariables = Exact<{
+  ref: Scalars['String']['input'];
+}>;
+
+
+export type AssetAccessQuery = { __typename?: 'Query', asset?: { __typename?: 'Asset', id: string, file: { __typename?: 'KulisseStore', id: string, accessGrant: (
+        { __typename?: 'KulisseAccessGrant' }
+        & KulisseAccessGrantFragment
+      ) } | { __typename?: 'MediaStore', id: string, accessGrant: (
+        { __typename?: 'MediaAccessGrant' }
+        & MediaAccessGrantFragment
+      ) } } | null };
 
 export type ListSchedulesQueryVariables = Exact<{
   filters?: InputMaybe<ScheduleFilter>;
@@ -9749,14 +9835,6 @@ export type TaskBloksQuery = { __typename?: 'Query', task: { __typename?: 'Task'
       { __typename?: 'TaskBlok' }
       & TaskBlokFragment
     )> } };
-
-export type ThreeDModelOptionsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']>>;
-}>;
-
-
-export type ThreeDModelOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'ThreeDModel', value: string, label: string }> };
 
 export type ToolboxesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10910,31 +10988,17 @@ export const ListTaskFragmentDoc = gql`
   }
 }
     `;
-export const MediaStoreFragmentDoc = gql`
-    fragment MediaStore on MediaStore {
-  id
-  key
-  bucket
-}
-    `;
 export const AgentPlacementFragmentDoc = gql`
     fragment AgentPlacement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-    }
-    transferFunction
-  }
   space {
     id
     name
   }
   affineMatrix
 }
-    ${MediaStoreFragmentDoc}`;
+    `;
 export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   id
@@ -11069,10 +11133,19 @@ export const StoredAssetFragmentDoc = gql`
   width
   height
   file {
-    ...MediaStore
+    ... on KulisseStore {
+      id
+      key
+      bucket
+    }
+    ... on MediaStore {
+      id
+      key
+      bucket
+    }
   }
 }
-    ${MediaStoreFragmentDoc}`;
+    `;
 export const AgentAssetFragmentDoc = gql`
     fragment AgentAsset on AgentAsset {
   id
@@ -11786,6 +11859,32 @@ export const MediaUploadGrantFragmentDoc = gql`
   store
 }
     `;
+export const AssetUploadGrantFragmentDoc = gql`
+    fragment AssetUploadGrant on AssetUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  region
+  expiresIn
+  maxBytes
+  store
+}
+    `;
+export const KulisseAccessGrantFragmentDoc = gql`
+    fragment KulisseAccessGrant on KulisseAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  path
+  key
+  bucket
+}
+    `;
 export const MediaAccessGrantFragmentDoc = gql`
     fragment MediaAccessGrant on MediaAccessGrant {
   accessKey
@@ -11794,6 +11893,13 @@ export const MediaAccessGrantFragmentDoc = gql`
   expiresIn
   region
   path
+  key
+  bucket
+}
+    `;
+export const MediaStoreFragmentDoc = gql`
+    fragment MediaStore on MediaStore {
+  id
   key
   bucket
 }
@@ -12061,19 +12167,12 @@ export const PlacementFragmentDoc = gql`
     fragment Placement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-    }
-    transferFunction
-  }
   agent {
     id
   }
   affineMatrix
 }
-    ${MediaStoreFragmentDoc}`;
+    `;
 export const ListPlacementFragmentDoc = gql`
     fragment ListPlacement on Placement {
   id
@@ -13459,10 +13558,10 @@ export type UnblockMutationOptions = Apollo.BaseMutationOptions<UnblockMutation,
 export const RequestAssetUploadDocument = gql`
     mutation RequestAssetUpload($input: RequestAssetUploadInput!) {
   requestAssetUpload(input: $input) {
-    ...MediaUploadGrant
+    ...AssetUploadGrant
   }
 }
-    ${MediaUploadGrantFragmentDoc}`;
+    ${AssetUploadGrantFragmentDoc}`;
 export type RequestAssetUploadMutationFn = Apollo.MutationFunction<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>;
 
 /**
@@ -16246,6 +16345,56 @@ export function useBloksForModelLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type BloksForModelQueryHookResult = ReturnType<typeof useBloksForModelQuery>;
 export type BloksForModelLazyQueryHookResult = ReturnType<typeof useBloksForModelLazyQuery>;
 export type BloksForModelQueryResult = Apollo.QueryResult<BloksForModelQuery, BloksForModelQueryVariables>;
+export const AssetAccessDocument = gql`
+    query AssetAccess($ref: String!) {
+  asset(ref: $ref) {
+    id
+    file {
+      ... on KulisseStore {
+        id
+        accessGrant {
+          ...KulisseAccessGrant
+        }
+      }
+      ... on MediaStore {
+        id
+        accessGrant {
+          ...MediaAccessGrant
+        }
+      }
+    }
+  }
+}
+    ${KulisseAccessGrantFragmentDoc}
+${MediaAccessGrantFragmentDoc}`;
+
+/**
+ * __useAssetAccessQuery__
+ *
+ * To run a query within a React component, call `useAssetAccessQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAssetAccessQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAssetAccessQuery({
+ *   variables: {
+ *      ref: // value for 'ref'
+ *   },
+ * });
+ */
+export function useAssetAccessQuery(baseOptions: ApolloReactHooks.QueryHookOptions<AssetAccessQuery, AssetAccessQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AssetAccessQuery, AssetAccessQueryVariables>(AssetAccessDocument, options);
+      }
+export function useAssetAccessLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AssetAccessQuery, AssetAccessQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AssetAccessQuery, AssetAccessQueryVariables>(AssetAccessDocument, options);
+        }
+export type AssetAccessQueryHookResult = ReturnType<typeof useAssetAccessQuery>;
+export type AssetAccessLazyQueryHookResult = ReturnType<typeof useAssetAccessLazyQuery>;
+export type AssetAccessQueryResult = Apollo.QueryResult<AssetAccessQuery, AssetAccessQueryVariables>;
 export const ListSchedulesDocument = gql`
     query ListSchedules($filters: ScheduleFilter, $ordering: [ScheduleOrder!] = [], $pagination: OffsetPaginationInput) {
   schedules(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -19376,46 +19525,6 @@ export function useTaskBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type TaskBloksQueryHookResult = ReturnType<typeof useTaskBloksQuery>;
 export type TaskBloksLazyQueryHookResult = ReturnType<typeof useTaskBloksLazyQuery>;
 export type TaskBloksQueryResult = Apollo.QueryResult<TaskBloksQuery, TaskBloksQueryVariables>;
-export const ThreeDModelOptionsDocument = gql`
-    query ThreeDModelOptions($search: String, $values: [ID!]) {
-  options: threedModels(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useThreeDModelOptionsQuery__
- *
- * To run a query within a React component, call `useThreeDModelOptionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useThreeDModelOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useThreeDModelOptionsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useThreeDModelOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ThreeDModelOptionsQuery, ThreeDModelOptionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ThreeDModelOptionsQuery, ThreeDModelOptionsQueryVariables>(ThreeDModelOptionsDocument, options);
-      }
-export function useThreeDModelOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ThreeDModelOptionsQuery, ThreeDModelOptionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ThreeDModelOptionsQuery, ThreeDModelOptionsQueryVariables>(ThreeDModelOptionsDocument, options);
-        }
-export type ThreeDModelOptionsQueryHookResult = ReturnType<typeof useThreeDModelOptionsQuery>;
-export type ThreeDModelOptionsLazyQueryHookResult = ReturnType<typeof useThreeDModelOptionsLazyQuery>;
-export type ThreeDModelOptionsQueryResult = Apollo.QueryResult<ThreeDModelOptionsQuery, ThreeDModelOptionsQueryVariables>;
 export const ToolboxesDocument = gql`
     query Toolboxes($pagination: OffsetPaginationInput, $filters: ToolboxFilter, $ordering: [ToolboxOrder!]) {
   toolboxes(ordering: $ordering, pagination: $pagination, filters: $filters) {

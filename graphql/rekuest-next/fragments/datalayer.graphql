@@ -12,6 +12,32 @@ fragment MediaUploadGrant on MediaUploadGrant {
   store
 }
 
+# One grant whatever kind of asset is uploaded: the server decides the store
+# (kulisse for MODEL_3D, media for IMAGE) from the declared ref.
+fragment AssetUploadGrant on AssetUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  region
+  expiresIn
+  maxBytes
+  store
+}
+
+fragment KulisseAccessGrant on KulisseAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  path
+  key
+  bucket
+}
+
 fragment MediaAccessGrant on MediaAccessGrant {
   accessKey
   secretKey

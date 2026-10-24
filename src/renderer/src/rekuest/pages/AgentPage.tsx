@@ -33,7 +33,6 @@ import {
   applyTaskChangeScalars,
   hydrateAndInsertAgentTask,
 } from "../lib/taskCache";
-import { AgentHeroScene } from "../components/AgentHeroScene";
 import MaterializedBlokById from "../components/MaterializedBlokById";
 import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
@@ -284,18 +283,7 @@ export const AgentPage = asDetailQueryRoute(
         <div className="relative h-full w-full overflow-hidden  shadow-[0_30px_120px_-48px_rgba(15,23,42,0.55)]">
 
 
-          {defaultScene.id ? (
-            <AgentBackgroundScene materializedBlok={defaultScene.id} />
-          ) : defaultScene.settled && (
-            <div>
-              {data.agent.placements.map(
-                (plc) =>
-                  plc.model?.file && (
-                    <AgentHeroScene key={plc.id} placement={plc} />
-                  ),
-              )}
-            </div>
-          )}
+          {defaultScene.id && <AgentBackgroundScene materializedBlok={defaultScene.id} />}
 
           <div className="absolute inset-y-0 left-0 z-20 flex w-full max-w-[620px] items-stretch">
             <div className="flex w-full flex-col justify-between gap-6 p-6">

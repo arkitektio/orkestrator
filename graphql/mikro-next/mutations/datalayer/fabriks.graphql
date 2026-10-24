@@ -8,8 +8,8 @@ mutation RequestGeneralFabriksAccess($input: RequestGeneralFabriksAccessInput!) 
 # fabriksUpload.ts): mint a scoped prefix grant, PUT every file, land
 # `fabriks.json` LAST, then finish — the server reads the manifest and
 # refuses a prefix without one.
-mutation RequestFabriksUpload($input: RequestFabriksUploadInput!) {
-  requestFabriksUpload(input: $input) {
+mutation RequestFabriksUpload {
+  requestFabriksUpload {
     ...FabriksUploadGrant
   }
 }

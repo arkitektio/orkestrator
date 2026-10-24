@@ -10,6 +10,10 @@
       "AgentSnapshotEvent",
       "StatePatchEvent"
     ],
+    "AssetFile": [
+      "KulisseStore",
+      "MediaStore"
+    ],
     "AssignWidget": [
       "ChoiceAssignWidget",
       "CustomAssignWidget",

@@ -17,7 +17,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
-  ByteCount: { input: any; output: any; }
+  ByteCount: { input: number; output: number; }
   /** Date (isoformat) */
   Date: { input: string; output: string; }
   /** Date with time (isoformat) */
@@ -287,6 +287,8 @@ export type BankAccountFilter = {
   connection?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<AccountKind>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -360,6 +362,8 @@ export type BankConnectionFilter = {
   OR?: InputMaybe<BankConnectionFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   provider?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   status?: InputMaybe<ConnectionStatus>;
 };
 
@@ -433,6 +437,8 @@ export type BankProviderFilter = {
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<Provider>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
 
 /** Temporary S3 credentials for reading a big file. */
@@ -462,19 +468,14 @@ export type BigFileStore = {
   id: Scalars['ID']['output'];
   /** The object key/path within the datalayer bucket. */
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The original client-provided file name. */
   originalFileName?: Maybe<Scalars['String']['output']>;
   /** The object-store URI of the file */
   path: Scalars['String']['output'];
-  presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
-};
-
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Temporary S3 credentials for uploading a big file. */
@@ -494,7 +495,6 @@ export type BigFileUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** A map viewport: the WGS84 box between south/north latitudes and west/east longitudes. */
@@ -533,6 +533,8 @@ export type BudgetFilter = {
   OR?: InputMaybe<BudgetFilter>;
   activeIn?: InputMaybe<Scalars['Date']['input']>;
   category?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
 
 export type BudgetOrder =
@@ -673,6 +675,8 @@ export type CategoryFilter = {
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<CategoryKind>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   roots?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by text: a substring of name or description, or semantic similarity to both. */
   search?: InputMaybe<Scalars['String']['input']>;
@@ -968,6 +972,29 @@ export type DayTotals = {
   expense: Scalars['Decimal']['output'];
   income: Scalars['Decimal']['output'];
 };
+
+/** One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@bank/direction`); a key it does not declare is refused. */
+export type DescriptorConstraintInput = {
+  /** The descriptor key, e.g. `@bank/direction` */
+  key: Scalars['String']['input'];
+  /** How the object's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: InputMaybe<Scalars['JSON']['input']>;
+};
+
+/** How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` is written in, with the same meaning. */
+export enum DescriptorOperator {
+  Contains = 'CONTAINS',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  Gte = 'GTE',
+  In = 'IN',
+  Lte = 'LTE',
+  Matches = 'MATCHES',
+  NotEquals = 'NOT_EQUALS',
+  NotIn = 'NOT_IN'
+}
 
 /** Money in or money out. */
 export enum Direction {
@@ -1343,6 +1370,8 @@ export type MerchantFilter = {
   /** Only merchants with a located store within `radiusMeters` of a point, nearest first (`distanceMeters` on each). */
   near?: InputMaybe<NearInput>;
   online?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by text: a substring of name, description or an alias, or semantic similarity to name and description. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2596,6 +2625,7 @@ export type QueryStatementImportArgs = {
 
 
 export type QueryStatementImportsArgs = {
+  filters?: InputMaybe<StatementImportFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -2723,6 +2753,8 @@ export type RecurringPaymentFilter = {
   NOT?: InputMaybe<RecurringPaymentFilter>;
   OR?: InputMaybe<RecurringPaymentFilter>;
   accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   status?: InputMaybe<RecurringStatus>;
 };
 
@@ -2746,9 +2778,7 @@ export type RequestBigFileAccessInput = {
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
-  port?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Which transactions a rule applies to, by sign. */
@@ -2882,6 +2912,23 @@ export type StatementImport = {
   unmappedCategories: Array<UnmappedImportCategory>;
   /** What was odd about the file (skipped lines, split parts that do not add up, unknown columns). */
   warnings: Array<Scalars['String']['output']>;
+};
+
+/**
+ * One uploaded statement export (a Finanzguru file), previewed and then applied.
+ *
+ * Preview parses the file and matches every row against the accounts and their synced history
+ * without writing a transaction; ``report`` says what applying would do. Applying writes it — idempotently:
+ * a row already imported (by its ``import_ref``) is updated, never duplicated.
+ */
+export type StatementImportFilter = {
+  AND?: InputMaybe<StatementImportFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<StatementImportFilter>;
+  OR?: InputMaybe<StatementImportFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
 
 /** Which transactions a view looks at: a booking-date range (the last 12 months by default) and optionally some accounts. */
@@ -3049,6 +3096,8 @@ export type TransactionFilter = {
   near?: InputMaybe<NearInput>;
   /** Keep transactions that look like they belong to this category — close to what the organization put there, or to one of its terms — closest first. */
   nearCategory?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by text: a case-insensitive substring of counterparty, remittance or note; semantic similarity to them; or a category whose terms mean the text ("supermarket" finds what is in Groceries). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Order by similarity to the given transaction, nearest first (no cut-off, composes with other filters and pagination). Empty when it is not in this organization or has no embedding yet. */

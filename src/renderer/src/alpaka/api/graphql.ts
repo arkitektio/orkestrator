@@ -221,6 +221,8 @@ export type ChromaCollection = {
   count?: Maybe<Scalars['Int']['output']>;
   createdAt: Scalars['DateTime']['output'];
   description: Scalars['String']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The model used to embed this collection's documents */
   embedder: LlmModel;
   id: Scalars['ID']['output'];
@@ -236,6 +238,8 @@ export type ChromaCollectionFilter = {
   NOT?: InputMaybe<ChromaCollectionFilter>;
   OR?: InputMaybe<ChromaCollectionFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -267,6 +271,39 @@ export type Client = {
   release?: Maybe<Release>;
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
 /** A budget to create */
 export type CreateBudgetInput = {
   hard?: Scalars['Boolean']['input'];
@@ -275,6 +312,12 @@ export type CreateBudgetInput = {
   model?: InputMaybe<Scalars['ID']['input']>;
   period?: BudgetPeriod;
   user?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
 };
 
 /** The room to create */
@@ -356,6 +399,29 @@ export type DeleteRoomInput = {
   id: Scalars['ID']['input'];
 };
 
+/** One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@alpaka/provider_kind`); a key it does not declare is refused. */
+export type DescriptorConstraintInput = {
+  /** The descriptor key, e.g. `@alpaka/provider_kind` */
+  key: Scalars['String']['input'];
+  /** How the object's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: InputMaybe<Scalars['JSON']['input']>;
+};
+
+/** How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning. */
+export enum DescriptorOperator {
+  Contains = 'CONTAINS',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  Gte = 'GTE',
+  In = 'IN',
+  Lte = 'LTE',
+  Matches = 'MATCHES',
+  NotEquals = 'NOT_EQUALS',
+  NotIn = 'NOT_IN'
+}
+
 /** A document stored in a collection */
 export type Document = {
   __typename?: 'Document';
@@ -435,6 +501,8 @@ export type ImageResponse = {
 /** A LLM model to chage with */
 export type LlmModel = {
   __typename?: 'LLMModel';
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The collections that can be embedded with this model */
   embedderFor: Array<ChromaCollection>;
   /** The features supported by the model */
@@ -470,6 +538,8 @@ export type LlmModelFilter = {
   inputModalities?: InputMaybe<Array<Modality>>;
   outputModalities?: InputMaybe<Array<Modality>>;
   provider?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -489,6 +559,8 @@ export type Message = {
   createdAt: Scalars['DateTime']['output'];
   /** The rich-text representation of the message */
   descendants: Scalars['JSON']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The message this one replies to, if any */
   isReplyTo?: Maybe<Message>;
@@ -534,6 +606,8 @@ export type MessageFilter = {
   NOT?: InputMaybe<MessageFilter>;
   OR?: InputMaybe<MessageFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -553,12 +627,16 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Embed documents and add them to a collection */
   addDocumentsToCollection: Array<Document>;
+  /** Put a room or a message in a collaboration, with what it needs to be seen: a room comes with its agents and messages */
+  addToCollaboration: Collaboration;
   /** Append a delta to a streaming message. Batch deltas (every ~100-250 ms or ~30 characters) and await each call before sending the next, so they arrive in order. */
   appendMessage: Message;
   /** Send a chat completion request */
   chat: ChatResponse;
   /** Cap this organization's LLM consumption, optionally for one user and/or model */
   createBudget: Budget;
+  /** Create an empty collaboration, to put rooms in and grant a guest */
+  createCollaboration: Collaboration;
   /** Create a searchable collection of documents */
   createCollection: ChromaCollection;
   /** Configure a new LLM provider and list the models it offers */
@@ -569,6 +647,8 @@ export type Mutation = {
   decide: Decision;
   /** Remove a budget */
   deleteBudget: Scalars['ID']['output'];
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete a collection and its documents */
   deleteCollection: Scalars['ID']['output'];
   /** Delete a provider and the models it offers */
@@ -585,6 +665,8 @@ export type Mutation = {
   pull: OllamaPullResult;
   /** Re-list the models a provider offers */
   refreshProvider: Provider;
+  /** Take a room or a message out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Post a complete message into a room */
   send: Message;
   /** Open a message to stream text into. Only the starting agent (same user and client) can append to or finish it. */
@@ -605,6 +687,12 @@ export type MutationAddDocumentsToCollectionArgs = {
 
 
 /** The root mutation type */
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
+/** The root mutation type */
 export type MutationAppendMessageArgs = {
   input: AppendMessageInput;
 };
@@ -619,6 +707,12 @@ export type MutationChatArgs = {
 /** The root mutation type */
 export type MutationCreateBudgetArgs = {
   input: CreateBudgetInput;
+};
+
+
+/** The root mutation type */
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
 };
 
 
@@ -649,6 +743,12 @@ export type MutationDecideArgs = {
 /** The root mutation type */
 export type MutationDeleteBudgetArgs = {
   input: DeleteBudgetInput;
+};
+
+
+/** The root mutation type */
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -697,6 +797,12 @@ export type MutationPullArgs = {
 /** The root mutation type */
 export type MutationRefreshProviderArgs = {
   input: RefreshProviderInput;
+};
+
+
+/** The root mutation type */
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -790,6 +896,8 @@ export type Provider = {
   /** Provider configuration, with credential-bearing keys redacted. */
   additionalConfig?: Maybe<Scalars['JSON']['output']>;
   apiBase?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** Whether an API key is configured for this provider. The key itself is never exposed. */
   hasApiKey: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
@@ -814,6 +922,8 @@ export type ProviderFilter = {
   NOT?: InputMaybe<ProviderFilter>;
   OR?: InputMaybe<ProviderFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -878,6 +988,10 @@ export type Query = {
   chromaCollection: ChromaCollection;
   /** List this organization's Chroma collections */
   chromaCollections: Array<ChromaCollection>;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** The model the caller uses by default for one kind of task, if any */
   defaultModelFor?: Maybe<LlmModel>;
   /** The models the caller has registered as defaults */
@@ -940,6 +1054,11 @@ export type QueryChromaCollectionsArgs = {
   filters?: InputMaybe<ChromaCollectionFilter>;
   ordering?: Array<ChromaCollectionOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1072,6 +1191,8 @@ export type Room = {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   messages: Array<Message>;
   /** The organization this room belongs to */
@@ -1129,6 +1250,8 @@ export type RoomFilter = {
   NOT?: InputMaybe<RoomFilter>;
   OR?: InputMaybe<RoomFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   talkingAbout?: InputMaybe<StructureInput>;
@@ -1486,9 +1609,23 @@ export type UseModelForInput = {
 export type User = {
   __typename?: 'User';
   activeOrganization?: Maybe<Organization>;
+  /** The family name, if the issuer sends one. */
+  familyName?: Maybe<Scalars['String']['output']>;
+  /** The given name, if the issuer sends one. */
+  givenName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  /** The user's locale (BCP47), if the issuer sends one. */
+  locale?: Maybe<Scalars['String']['output']>;
+  /** The full name, if the issuer sends one. */
+  name?: Maybe<Scalars['String']['output']>;
+  /** A casual name, if the issuer sends one. */
+  nickname?: Maybe<Scalars['String']['output']>;
+  /** URL of the profile picture, if the issuer sends one. */
+  picture?: Maybe<Scalars['String']['output']>;
   preferredUsername: Scalars['String']['output'];
   sub: Scalars['String']['output'];
+  /** The user's IANA time zone, if the issuer sends one. */
+  zoneinfo?: Maybe<Scalars['String']['output']>;
 };
 
 export type _Entity = Agent | App | Client | Message | Organization | Release | Room | User;

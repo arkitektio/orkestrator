@@ -6,7 +6,7 @@ import { ClippingGroup } from "three/webgpu";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { bindField } from "@/core/data/scene/stores/bindStore";
 import { useMikro } from "@/mikro/api/funcs";
-import { getMikroMediaUrl } from "@/mikro/datalayer/mikroAccess";
+import { getMikroKulisseUrl } from "@/mikro/datalayer/mikroAccess";
 
 import { collectionSlabThickness, useCollectionPlacement } from "../../platform/collections/useCollectionPlacement";
 import { CROP_PLANE_FAR, createCropPlanes, updateCropPlanes } from "../../platform/coords/cropBox";
@@ -91,7 +91,7 @@ const FixtureGroup = ({ layer, model }: { layer: FixtureLayerFragment; model: Fi
     if (!datalayer) return;
     let cancelled = false;
     let adopted: FixtureMeshRecord[] = [];
-    acquireGltf(storeKey, () => getMikroMediaUrl(model.store, client, datalayer))
+    acquireGltf(storeKey, () => getMikroKulisseUrl(model.store, client, datalayer))
       .then((gltf) => {
         if (cancelled) return;
         const scene = gltf.scene.clone(true);

@@ -1,3 +1,7 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
+
 """What a call is now also about"""
 input AddToCallInput {
   about: [StructureInput!]!
@@ -135,6 +139,55 @@ type Client {
   release: Release
 }
 
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """What is in the collaboration; what is part of these is in it too"""
+  items: [CollaborationItem!]!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""A new collaboration"""
+input CreateCollaborationInput {
+  description: String = null
+  name: String!
+}
+
 """Date with time (isoformat)"""
 scalar DateTime
 
@@ -179,9 +232,24 @@ type Mutation {
   addToCall(input: AddToCallInput!): Call!
 
   """
+  Put an agent or a stream in a collaboration: an agent brings every stream it offers
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
+  Create an empty collaboration, to put agents and streams in and grant a guest
+  """
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
+
+  """
   Offer exactly these streams as the caller's agent: undeclared ones are removed, unchanged ones untouched
   """
   declareStreams(input: DeclareStreamsInput!): [Stream!]!
+
+  """
+  Delete a collaboration: whoever was granted it sees nothing of it any more
+  """
+  deleteCollaboration(id: ID!): ID!
 
   """Put an invitation away, on every device"""
   dismissCallInvite(input: DismissCallInviteInput!): ID!
@@ -200,11 +268,16 @@ type Mutation {
   """
   publishToken: String!
 
-  """A token to watch every stream of an agent"""
+  """Take an agent or a stream out of a collaboration"""
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
+  A token to watch every stream of an agent. A guest needs the agent in one of their collaborations
+  """
   watchAgent(input: WatchAgentInput!): String!
 
   """
-  A token to watch a stream: its agent's room, where it is the track named by its key
+  A token to watch a stream: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations
   """
   watchStream(input: WatchStreamInput!): String!
 }
@@ -243,6 +316,14 @@ type Query {
 
   """The organization's calls; filter `live` for the ones in progress"""
   calls(filters: CallFilter, order: CallOrder, pagination: OffsetPaginationInput): [Call!]!
+
+  """Get a single collaboration by ID"""
+  collaboration(id: ID!): Collaboration!
+
+  """
+  List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
+  """
+  collaborations: [Collaboration!]!
 
   """Your pending invitations to calls that are still live"""
   myCallInvites: [CallInvite!]!

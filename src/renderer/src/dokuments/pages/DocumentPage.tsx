@@ -2,8 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
-import { Image } from "@/core/ui/image";
-import { useResolve } from "@/core/datalayer/hooks/useResolve";
+import { DokumentsImage, useDokumentsMediaUrl } from "../datalayer/dokumentsAccess";
 import { DokumentsDocument, DokumentsPage, LovekitStream } from "@/core/linkers";
 import { Eye, FileTextIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -15,8 +14,8 @@ export const DocumentPage = asDetailQueryRoute(
   useGetDocumentQuery,
   ({ data }) => {
     const document = data?.document;
-    const resolve = useResolve();
     const [selectedPage, setSelectedPage] = useState<PageFragment | null>(null);
+    const selectedImageUrl = useDokumentsMediaUrl(selectedPage?.image);
     const [showOcrOverlay, setShowOcrOverlay] = useState(true);
     const imageRef = useRef<HTMLImageElement>(null);
 
@@ -75,16 +74,15 @@ export const DocumentPage = asDetailQueryRoute(
                             <CardContent className="p-2">
                               {/* Page Thumbnail */}
                               <div className="aspect-[3/4] bg-muted rounded-md overflow-hidden mb-2">
-                                {page.image?.presignedUrl ? (
-                                  <Image
-                                    src={resolve(page.image.presignedUrl)}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                                    <FileTextIcon className="w-6 h-6 text-muted-foreground/50" />
-                                  </div>
-                                )}
+                                <DokumentsImage
+                                  store={page.image}
+                                  className="w-full h-full object-cover"
+                                  fallback={
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                                      <FileTextIcon className="w-6 h-6 text-muted-foreground/50" />
+                                    </div>
+                                  }
+                                />
                               </div>
 
                               {/* Page Info */}
@@ -145,11 +143,11 @@ export const DocumentPage = asDetailQueryRoute(
                   <div className="h-full flex flex-col">
                     {/* Large Preview Image with OCR Overlay */}
                     <div className="flex-1 bg-muted rounded-lg overflow-hidden relative">
-                      {selectedPage!.image?.presignedUrl ? (
+                      {selectedImageUrl ? (
                         <div className="relative w-full h-full flex items-center justify-center">
                           <img
                             ref={imageRef}
-                            src={resolve(selectedPage!.image!.presignedUrl)}
+                            src={selectedImageUrl}
                             className="max-w-full max-h-full object-contain"
                             alt={`Page ${selectedPage!.index + 1}`}
                           />

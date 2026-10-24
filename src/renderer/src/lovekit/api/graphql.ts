@@ -150,6 +150,45 @@ export type Client = {
   release?: Maybe<Release>;
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
 /** Every stream an agent offers */
 export type DeclareStreamsInput = {
   streams: Array<StreamDeclarationInput>;
@@ -182,8 +221,14 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Turn a call to these structures: they become what it is about last, and what it was about stays */
   addToCall: Call;
+  /** Put an agent or a stream in a collaboration: an agent brings every stream it offers */
+  addToCollaboration: Collaboration;
+  /** Create an empty collaboration, to put agents and streams in and grant a guest */
+  createCollaboration: Collaboration;
   /** Offer exactly these streams as the caller's agent: undeclared ones are removed, unchanged ones untouched */
   declareStreams: Array<Stream>;
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Put an invitation away, on every device */
   dismissCallInvite: Scalars['ID']['output'];
   /** The live call about these structures, or a new one */
@@ -194,9 +239,11 @@ export type Mutation = {
   joinCall: Scalars['String']['output'];
   /** A token for the caller's agent to publish its streams; a newer connection replaces an older one */
   publishToken: Scalars['String']['output'];
-  /** A token to watch every stream of an agent */
+  /** Take an agent or a stream out of a collaboration */
+  removeFromCollaboration: Collaboration;
+  /** A token to watch every stream of an agent. A guest needs the agent in one of their collaborations */
   watchAgent: Scalars['String']['output'];
-  /** A token to watch a stream: its agent's room, where it is the track named by its key */
+  /** A token to watch a stream: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations */
   watchStream: Scalars['String']['output'];
 };
 
@@ -206,8 +253,23 @@ export type MutationAddToCallArgs = {
 };
 
 
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
+};
+
+
 export type MutationDeclareStreamsArgs = {
   input: DeclareStreamsInput;
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -228,6 +290,11 @@ export type MutationInviteToCallArgs = {
 
 export type MutationJoinCallArgs = {
   input: JoinCallInput;
+};
+
+
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -272,6 +339,10 @@ export type Query = {
   call: Call;
   /** The organization's calls; filter `live` for the ones in progress */
   calls: Array<Call>;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** Your pending invitations to calls that are still live */
   myCallInvites: Array<CallInvite>;
   /** Get a stream by ID */
@@ -306,6 +377,11 @@ export type QueryCallsArgs = {
   filters?: InputMaybe<CallFilter>;
   order?: InputMaybe<CallOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 

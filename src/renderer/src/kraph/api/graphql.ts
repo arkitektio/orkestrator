@@ -18,6 +18,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** The `AnyScalar` scalar type represents an arbitrary JSON-like value */
   AnyScalar: { input: any; output: any; }
+  /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
+  ByteCount: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
@@ -585,61 +587,6 @@ export type AttestStructureInput = {
   confidence?: InputMaybe<Scalars['Float']['input']>;
   /** The ID of the structure to attest — a bare uuid, its evidence primary key */
   id: Scalars['String']['input'];
-};
-
-/** Temporary S3 credentials for reading a big file. */
-export type BigFileAccessGrant = {
-  __typename?: 'BigFileAccessGrant';
-  accessKey: Scalars['String']['output'];
-  bucket: Scalars['String']['output'];
-  expiresIn: Scalars['Int']['output'];
-  key: Scalars['String']['output'];
-  path: Scalars['String']['output'];
-  region: Scalars['String']['output'];
-  secretKey: Scalars['String']['output'];
-  sessionToken: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
-};
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStore = {
-  __typename?: 'BigFileStore';
-  /** Get temporary S3 read credentials for the object. */
-  accessGrant: BigFileAccessGrant;
-  bucket: Scalars['String']['output'];
-  contentType?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  key: Scalars['String']['output'];
-  originalFileName?: Maybe<Scalars['String']['output']>;
-  path: Scalars['String']['output'];
-  presignedUrl: Scalars['String']['output'];
-};
-
-
-/** A BigFileStore represents a large object stored behind the S3 datalayer. */
-export type BigFileStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** Temporary S3 credentials for uploading a big file. */
-export type BigFileUploadGrant = {
-  __typename?: 'BigFileUploadGrant';
-  accessKey: Scalars['String']['output'];
-  bucket: Scalars['String']['output'];
-  expiresIn: Scalars['Int']['output'];
-  key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
-  originalFileName?: Maybe<Scalars['String']['output']>;
-  path: Scalars['String']['output'];
-  region: Scalars['String']['output'];
-  secretKey: Scalars['String']['output'];
-  sessionToken: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  store: Scalars['String']['output'];
-  uploadContentType?: Maybe<Scalars['String']['output']>;
-  uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** Builder arguments for generating a graph table query */
@@ -1864,19 +1811,23 @@ export type EventRoleInput = {
   role: Scalars['String']['input'];
 };
 
-export type FinishBigFileUploadInput = {
-  storeId: Scalars['String']['input'];
-  valid?: Scalars['Boolean']['input'];
-};
-
 export type FinishMediaUploadInput = {
   storeId: Scalars['String']['input'];
   valid?: Scalars['Boolean']['input'];
 };
 
-export type FinishZarrUploadInput = {
-  storeId: Scalars['String']['input'];
-  valid?: Scalars['Boolean']['input'];
+/** Temporary S3 credentials for reading a media object. */
+export type GeneralMediaAccessGrant = {
+  __typename?: 'GeneralMediaAccessGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** One view over the organization's evidence log */
@@ -2578,30 +2529,22 @@ export type MediaStore = {
   contentType?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
-  /** Compatibility field returning the canonical S3 object path. */
-  presignedUrl: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
-
-export type MediaStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type MediaStorePresignedUrlArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** A presigned PUT grant for uploading a media object. */
+/** Temporary S3 credentials for uploading a media object. */
 export type MediaUploadGrant = {
   __typename?: 'MediaUploadGrant';
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -2611,7 +2554,6 @@ export type MediaUploadGrant = {
   store: Scalars['String']['output'];
   uploadContentType?: Maybe<Scalars['String']['output']>;
   uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
 };
 
 /** A mention of a subject — the same id `Assertion.subject` carries, never a user row: a comment is evidence, and the evidence layer knows actors by subject */
@@ -2869,20 +2811,16 @@ export type Mutation = {
   deleteStructureKind: Scalars['ID']['output'];
   /** Delete a structure relation category from the graph */
   deleteStructureRelationCategory: Scalars['ID']['output'];
-  /** Finalize a big file upload after the client has written the object */
-  finishBigFileUpload: BigFileStore;
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
-  /** Finalize a Zarr upload after the client has written the object */
-  finishZarrUpload: ZarrStore;
   /** Record measurements against a datum already on the record, as one act (was `updateStructure`) */
   recordMetrics: AssertedStructure;
-  /** Request an upload grant for a big file store */
-  requestBigFileUpload: BigFileUploadGrant;
+  /** Request temporary S3 read credentials for media files in the organization */
+  requestGeneralMediaAccess: GeneralMediaAccessGrant;
+  /** Request temporary S3 read credentials for a media file */
+  requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
   requestMediaUpload: MediaUploadGrant;
-  /** Request an upload grant for a Zarr store */
-  requestZarrUpload: ZarrUploadGrant;
   /** Claim a remark no longer stands — resolved by a reviewer or withdrawn by its author; the assertion records whose position it is. The row survives */
   retractComment: AssertedComment;
   /** Withdraw one difference claim. The sameness it vetoed counts again, and the component is rebuilt */
@@ -3227,20 +3165,8 @@ export type MutationDeleteStructureRelationCategoryArgs = {
 
 
 /** Graph Engine Mutations */
-export type MutationFinishBigFileUploadArgs = {
-  input: FinishBigFileUploadInput;
-};
-
-
-/** Graph Engine Mutations */
 export type MutationFinishMediaUploadArgs = {
   input: FinishMediaUploadInput;
-};
-
-
-/** Graph Engine Mutations */
-export type MutationFinishZarrUploadArgs = {
-  input: FinishZarrUploadInput;
 };
 
 
@@ -3251,20 +3177,20 @@ export type MutationRecordMetricsArgs = {
 
 
 /** Graph Engine Mutations */
-export type MutationRequestBigFileUploadArgs = {
-  input: RequestBigFileUploadInput;
+export type MutationRequestGeneralMediaAccessArgs = {
+  input: RequestGeneralMediaAccessInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationRequestMediaAccessArgs = {
+  input: RequestMediaAccessInput;
 };
 
 
 /** Graph Engine Mutations */
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
-};
-
-
-/** Graph Engine Mutations */
-export type MutationRequestZarrUploadArgs = {
-  input: RequestZarrUploadInput;
 };
 
 
@@ -4966,30 +4892,18 @@ export type RenderGraphTablePagination = {
   offset: Scalars['Int']['input'];
 };
 
-export type RequestBigFileUploadInput = {
-  contentType?: InputMaybe<Scalars['String']['input']>;
-  datalayer?: Scalars['String']['input'];
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
-  host?: InputMaybe<Scalars['String']['input']>;
-  originalFileName: Scalars['String']['input'];
-  port?: InputMaybe<Scalars['Int']['input']>;
-  protocol?: Scalars['String']['input'];
+export type RequestGeneralMediaAccessInput = {
+  expiresIn?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type RequestMediaAccessInput = {
+  storeId: Scalars['String']['input'];
 };
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   originalFileName: Scalars['String']['input'];
-};
-
-export type RequestZarrUploadInput = {
-  chunks?: InputMaybe<Array<Scalars['Int']['input']>>;
-  datalayer?: Scalars['String']['input'];
-  host?: InputMaybe<Scalars['String']['input']>;
-  port?: InputMaybe<Scalars['Int']['input']>;
-  protocol?: Scalars['String']['input'];
-  shape?: InputMaybe<Array<Scalars['Int']['input']>>;
-  version?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for claiming a remark no longer stands — withdrawn or resolved; the assertion records whose position it is */
@@ -6159,67 +6073,7 @@ export enum WhereOperator {
   StartsWith = 'STARTS_WITH'
 }
 
-/** Temporary S3 credentials for reading a Zarr store. */
-export type ZarrAccessGrant = {
-  __typename?: 'ZarrAccessGrant';
-  accessKey: Scalars['String']['output'];
-  bucket: Scalars['String']['output'];
-  expiresIn: Scalars['Int']['output'];
-  key: Scalars['String']['output'];
-  path: Scalars['String']['output'];
-  region: Scalars['String']['output'];
-  secretKey: Scalars['String']['output'];
-  sessionToken: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
-};
-
-export type ZarrStore = {
-  __typename?: 'ZarrStore';
-  /** Get temporary S3 read credentials for the Zarr object. */
-  accessGrant: ZarrAccessGrant;
-  attributes?: Maybe<Scalars['JSON']['output']>;
-  bucket: Scalars['String']['output'];
-  chunkKeyEncoding?: Maybe<Scalars['JSON']['output']>;
-  chunks: Array<Scalars['Int']['output']>;
-  codecs?: Maybe<Scalars['JSON']['output']>;
-  dimensionNames?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  dtype?: Maybe<Scalars['String']['output']>;
-  fillValue: Scalars['JSON']['output'];
-  id: Scalars['ID']['output'];
-  key: Scalars['String']['output'];
-  path: Scalars['String']['output'];
-  shape: Array<Scalars['Int']['output']>;
-  storageTransformers?: Maybe<Scalars['JSON']['output']>;
-  version?: Maybe<Scalars['String']['output']>;
-};
-
-
-export type ZarrStoreAccessGrantArgs = {
-  host?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** Temporary S3 credentials for uploading a Zarr store. */
-export type ZarrUploadGrant = {
-  __typename?: 'ZarrUploadGrant';
-  accessKey: Scalars['String']['output'];
-  action: Scalars['String']['output'];
-  bucket: Scalars['String']['output'];
-  expiresIn: Scalars['Int']['output'];
-  key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
-  originalFileName?: Maybe<Scalars['String']['output']>;
-  path: Scalars['String']['output'];
-  secretKey: Scalars['String']['output'];
-  sessionToken: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  store: Scalars['String']['output'];
-  uploadContentType?: Maybe<Scalars['String']['output']>;
-  uploadFileName: Scalars['String']['output'];
-  uploadFormField: Scalars['String']['output'];
-};
-
-export type _Entity = Assertion | BigFileStore | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term | ZarrStore;
+export type _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term;
 
 export type _Service = {
   __typename?: '_Service';

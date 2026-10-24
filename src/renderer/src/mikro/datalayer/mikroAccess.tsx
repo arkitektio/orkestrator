@@ -4,7 +4,7 @@ import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import React from "react";
 import { useNearViewport } from "@/core/data/s3/useNearViewport";
-import { GeneralMediaAccessGrantFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables } from "@/mikro/api/graphql";
+import { GeneralMediaAccessGrantFragment, KulisseStoreFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables, RequestKulisseAccessDocument, RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables } from "@/mikro/api/graphql";
 
 /** A grant plus the absolute expiry derived from its `expiresIn` — computed
  * once on arrival so the presign memo (keyed on it) stays stable. */
@@ -81,6 +81,26 @@ export const getMikroMediaUrl = async (
 ): Promise<string> => {
   const credentials = await getCredentials(client);
   return createMediaUrl(media, datalayer, credentials);
+};
+
+/**
+ * A URL for a fixture's model, signed from a read grant on its one kulisse
+ * store. A grant per call: a model is fetched once and then held by the glTF
+ * cache (`lib/fixtures/gltfCache`), so there is nothing to amortize.
+ */
+export const getMikroKulisseUrl = async (
+  store: KulisseStoreFragment,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: ApolloClient<any>,
+  datalayer: string,
+): Promise<string> => {
+  const { data } = await client.mutate<RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables>({
+    mutation: RequestKulisseAccessDocument,
+    variables: { input: { storeId: store.id } },
+  });
+  const grant = data?.requestKulisseAccess;
+  if (!grant) throw new Error("Failed to get read credentials for the model");
+  return presignS3Url(datalayer + "/" + grant.bucket + "/" + grant.key, { ...grant, expiresAt: grantExpiresAt(grant) });
 };
 
 /**

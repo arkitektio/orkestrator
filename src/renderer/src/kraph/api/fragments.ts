@@ -97,7 +97,6 @@
     ],
     "_Entity": [
       "Assertion",
-      "BigFileStore",
       "Comment",
       "EntityCategory",
       "Graph",
@@ -114,8 +113,7 @@
       "Standing",
       "StructureKind",
       "StructureRelationCategory",
-      "Term",
-      "ZarrStore"
+      "Term"
     ]
   }
 };
