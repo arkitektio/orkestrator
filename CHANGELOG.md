@@ -1,3 +1,10 @@
+# [4.8.0](https://github.com/arkitektio/orkestrator/compare/v4.7.0...v4.8.0) (2026-10-24)
+
+
+### Features
+
+* **rekuest:** place a 3D blok in a space on its own ([5bffc64](https://github.com/arkitektio/orkestrator/commit/5bffc649ae532c7760b1ba502452c9a58f25d280))
+
 # [4.7.0](https://github.com/arkitektio/orkestrator/compare/v4.6.0...v4.7.0) (2026-10-24)
 
 
