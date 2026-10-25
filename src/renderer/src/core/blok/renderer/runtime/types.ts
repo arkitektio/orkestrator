@@ -197,6 +197,8 @@ export type BlokRuntimeContext = {
   initialDataModel: unknown;
   dataModel: unknown;
   runtimePathValues: Record<string, unknown>;
+  /** Top-level keys whose runtime values a reset keeps: the locals the host keeps between openings. */
+  keptRoots: ReadonlySet<string>;
   agentMappingStateUpdates: BlokAgentMappingStateUpdates;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
@@ -204,6 +206,7 @@ export type BlokRuntimeContext = {
   unavailableDependencies: BlokUnavailableDependencies;
   setInitialDataModel: (dataModel: unknown) => void;
   resetRuntimeValues: () => void;
+  setKeptRoots: (roots: ReadonlySet<string>) => void;
   setRuntimeValue: (path: string, value: unknown) => void;
   clearRuntimeValue: (path: string) => void;
   setAgentMappingStateUpdates: (updates: BlokAgentMappingStateUpdates) => void;

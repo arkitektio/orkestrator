@@ -4,7 +4,7 @@ import {sceneBlokComponents} from './bloks/scene';
 import {structureBlokComponents} from './bloks/structure';
 import {shadcnComposableComponents} from './bloks';
 import {baseBlokCatalog} from './baseCatalog';
-import {effectFunctions, variadicBlokFunctions} from './functions';
+import {effectFunctions, persistFunctions, variadicBlokFunctions} from './functions';
 import {extendBlokCatalog, type BlokCatalog, type BlokComponentDefinition} from './runtime';
 
 /**
@@ -35,7 +35,7 @@ export const defaultBlokCatalog: BlokCatalog = extendBlokCatalog(
     ...logoBlokComponents,
     RawInspector,
   ],
-  [...variadicBlokFunctions, ...effectFunctions],
+  [...variadicBlokFunctions, ...effectFunctions, ...persistFunctions],
 );
 
 /**

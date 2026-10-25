@@ -12,6 +12,8 @@ export type KeyedStore<T> = {
   load: (id: string, hash: string) => Promise<T | null>;
   /** Keeps `value` as `id`'s rendering of `hash`, replacing whatever was kept for it. */
   save: (id: string, hash: string, value: T) => Promise<void>;
+  /** Forgets what was kept as `id`, in memory and stored. */
+  forget: (id: string) => Promise<void>;
   /** Forgets every entry, in memory and stored. */
   clear: () => Promise<void>;
 };
@@ -98,6 +100,14 @@ export const createKeyedStore = <T>({
       } catch (error) {
         // Kept for this window only; the next one draws it again.
         console.warn(`[${label}] could not store the rendering of`, id, error);
+      }
+    },
+    forget: async (id) => {
+      memory.delete(id);
+      try {
+        await run("readwrite", (store) => store.delete(id));
+      } catch (error) {
+        console.warn(`[${label}] could not forget`, id, error);
       }
     },
     clear: async () => {

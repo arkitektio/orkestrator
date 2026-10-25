@@ -1319,6 +1319,11 @@ type Blok {
   """
   originHash: String
 
+  """
+  The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demoState` key, whose demo value is the default. Empty for a blok that keeps nothing.
+  """
+  persist: [BlokPersist!]!
+
   """Whether an app's agents provide this blok (see `app`)."""
   provided: Boolean!
 
@@ -1530,6 +1535,11 @@ input BlokImplementationInput {
   key: String!
 
   """
+  The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demo_state` key, whose demo value is the default.
+  """
+  persist: [BlokPersistInput!]! = []
+
+  """
   The backend services this Blok reads from (its `query` components name them), each frozen at the version it was written against.
   """
   services: [BlokServiceInput!]! = []
@@ -1538,6 +1548,27 @@ input BlokImplementationInput {
   The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.
   """
   source: String = null
+}
+
+"""
+A local a renderer may keep between openings, on the device (never on a server): its demo value is the default.
+"""
+type BlokPersist {
+  description: String
+  key: String!
+}
+
+"""
+A local a renderer may keep between openings, on the device: its demo value is the default.
+"""
+input BlokPersistInput {
+  """What the kept value is, for whoever resets it."""
+  description: String = null
+
+  """
+  The local: a top-level `demo_state` key that is neither a dependency nor a reserved root.
+  """
+  key: String!
 }
 
 """
@@ -1586,6 +1617,11 @@ type BlokRevision {
 
   """The revision this one was made from; null for the first."""
   parent: BlokRevision
+
+  """
+  The locals this revision lets a renderer keep between openings, on the device.
+  """
+  persist: [BlokPersist!]!
 
   """The task that wrote it, e.g. the assistant turn that designed it."""
   task: Task
@@ -2063,6 +2099,11 @@ input CreateBlokInput {
   The hash its origin gives what it draws, kept to tell when the origin has an update.
   """
   originHash: String = null
+
+  """
+  The locals a renderer may keep between openings, on the device: each a top-level `demo_state` key. Kept when omitted (a blok created again keeps its own); an empty list removes them.
+  """
+  persist: [BlokPersistInput!] = null
 
   """
   The backend services the blok's queries read from, each frozen at the version it was written against. Every `query`'s `schema` must name one.
@@ -2807,6 +2848,11 @@ input EditBlokInput {
 
   """What changed and why, in a sentence; kept with the revision."""
   message: String = null
+
+  """
+  The full list of the locals a renderer may keep between openings, on the device: each a top-level `demo_state` key. Kept when omitted; an empty list removes them.
+  """
+  persist: [BlokPersistInput!] = null
 
   """
   The full list of the backend services the blok's queries read from, each frozen at its version. Kept when omitted; an empty list removes them.

@@ -16,6 +16,7 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestBlok } from "@/core/linkers";
 import { useTheme } from "@/core/settings/theme/ThemeProvider";
 import { Button } from "@/core/ui/button";
+import { Checkbox } from "@/core/ui/checkbox";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
@@ -63,7 +64,11 @@ type EditorDraft = {
   /** The demo state as JSON text. */
   demoState: string;
   dependencies: DependencyDraft[];
+  /** The locals a renderer keeps on the device between openings. */
+  persist: PersistDraft[];
 };
+
+type PersistDraft = { key: string; description: string };
 
 const CONTEXT_LABEL: Record<ComponentContext, string> = {
   [ComponentContext.Html]: "Interface (HTML)",
@@ -161,6 +166,69 @@ const DetailsPanel = (props: {
     </div>
   </div>
 );
+
+/**
+ * Which of the blok's locals a renderer keeps on the device between openings
+ * (`persist`): a local is a top-level key of the demo state that no
+ * dependency and no arg takes, and its demo value is the default. The values
+ * never reach the server.
+ */
+const PersistPanel = (props: {
+  persist: PersistDraft[];
+  locals: string[];
+  onChange: (persist: PersistDraft[]) => void;
+}) => {
+  const kept = new Map(props.persist.map((local) => [local.key, local]));
+  const gone = props.persist.filter((local) => !props.locals.includes(local.key));
+  const toggle = (key: string, on: boolean) =>
+    props.onChange(on ? [...props.persist, { key, description: "" }] : props.persist.filter((local) => local.key !== key));
+  const describe = (key: string, description: string) =>
+    props.onChange(props.persist.map((local) => (local.key === key ? { ...local, description } : local)));
+  return (
+    <div className="flex flex-col gap-3 p-3 text-sm">
+      <p className="text-xs text-muted-foreground">
+        Locals kept on the device between openings, e.g. a pose set once with a gizmo. Each starts as its demo value;
+        what someone sets stays on their machine only, and <span className="font-mono">persist.reset(key)</span> forgets it.
+      </p>
+      {props.locals.length === 0 && gone.length === 0 ? (
+        <p className="text-muted-foreground">The demo state has no locals: add a top-level key to keep one.</p>
+      ) : null}
+      {props.locals.map((key) => {
+        const local = kept.get(key);
+        return (
+          <div key={key} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Checkbox id={`persist-${key}`} checked={!!local} onCheckedChange={(on) => toggle(key, on === true)} />
+              <Label htmlFor={`persist-${key}`} className="font-mono">
+                {key}
+              </Label>
+            </div>
+            {local ? (
+              <Input
+                value={local.description}
+                placeholder="What is kept, for whoever resets it"
+                onChange={(event) => describe(key, event.target.value)}
+              />
+            ) : null}
+          </div>
+        );
+      })}
+      {gone.map((local) => (
+        <div key={local.key} className="flex items-center gap-2 text-destructive">
+          <span className="flex-1">
+            <span className="font-mono">{local.key}</span> is kept but is no longer a local of the demo state.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => toggle(local.key, false)}>
+            Remove
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const persistInput = (persist: PersistDraft[]) =>
+  persist.map((local) => ({ key: local.key, description: local.description.trim() || null }));
 
 const ArgsPanel = ({ args }: { args: ArgPortFragment[] }) => (
   <div className="flex flex-col gap-2 p-3 text-sm">
@@ -278,10 +346,13 @@ const BlokEditorWorkspace = (props: {
       base: props.provided ? null : base,
       source: draft.source,
       demoState: demo.value ?? {},
+      persist: persistInput(draft.persist),
       ...(sendDependencies ? { dependencies: draft.dependencies.map(dependencyInput) } : {}),
     }),
-    [props.blokId, props.provided, draft.source, draft.dependencies, demo.value, sendDependencies],
+    [props.blokId, props.provided, draft.source, draft.dependencies, draft.persist, demo.value, sendDependencies],
   );
+  // The blok's own top-level keys, but the root its args are read under: what it can keep.
+  const locals = useMemo(() => localRoots.filter((key) => key !== "args"), [localRoots]);
 
   // What the server makes of the draft, once it parses here and the blok exists.
   const check = useServerCheck(
@@ -322,6 +393,7 @@ const BlokEditorWorkspace = (props: {
               source: draft.source,
               demoState: demo.value ?? {},
               dependencies: draft.dependencies.map(dependencyInput),
+              persist: persistInput(draft.persist),
             },
           },
         });
@@ -330,7 +402,11 @@ const BlokEditorWorkspace = (props: {
       }
 
       const contentChanged =
-        draft.source !== saved.source || draft.demoState !== saved.demoState || dependenciesTouched || props.provided;
+        draft.source !== saved.source ||
+        draft.demoState !== saved.demoState ||
+        JSON.stringify(draft.persist) !== JSON.stringify(saved.persist) ||
+        dependenciesTouched ||
+        props.provided;
       let target = props.blokId;
       if (contentChanged) {
         const { data } = await edit({ variables: { input: { ...editInput(base), message: message.trim() || null } } });
@@ -439,6 +515,9 @@ const BlokEditorWorkspace = (props: {
           <Sidebars.Tab label="Demo state">
             <DemoStateEditor value={draft.demoState} error={demo.error} onChange={(demoState) => change({ demoState })} />
           </Sidebars.Tab>
+          <Sidebars.Tab label="Kept">
+            <PersistPanel persist={draft.persist} locals={locals} onChange={(persist) => change({ persist })} />
+          </Sidebars.Tab>
           <Sidebars.Tab label="Args">
             <ArgsPanel args={props.args} />
           </Sidebars.Tab>
@@ -504,6 +583,7 @@ export const NewBlokEditorPage = () => (
       source: STARTER[ComponentContext.Html],
       demoState: "{}",
       dependencies: [],
+      persist: [],
     }}
   />
 );
@@ -536,6 +616,7 @@ const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () =>
             source: printed.source,
             demoState: JSON.stringify(blok.demoState ?? {}, null, 2),
             dependencies: blok.dependencies.map(dependencyDraft),
+            persist: blok.persist.map((local) => ({ key: local.key, description: local.description ?? "" })),
           },
     // Read once per generation: the cache moving under a draft must not reset it.
     // eslint-disable-next-line react-hooks/exhaustive-deps

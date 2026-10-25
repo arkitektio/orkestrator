@@ -129,6 +129,11 @@ fragment Blok on Blok {
     version
     schemaHash
   }
+  # The locals kept on this device between openings (core/blok/renderer/persist).
+  persist {
+    key
+    description
+  }
   diagnostics {
     ...BlokDiagnostic
   }
@@ -156,6 +161,10 @@ fragment MaterializedBlok on MaterializedBlok {
     number
     componentTree
     demoState
+    persist {
+      key
+      description
+    }
   }
   pinnedRevision {
     id
@@ -345,6 +354,10 @@ fragment BlokEditor on Blok {
   demoState
   args {
     ...ArgPort
+  }
+  persist {
+    key
+    description
   }
   dependencies {
     ...BlokEditorDependency

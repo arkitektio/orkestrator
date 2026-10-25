@@ -1056,6 +1056,8 @@ export type Blok = {
   origin?: Maybe<Scalars['String']['output']>;
   /** The hash its origin gave what it draws when it was installed. When the origin's hash differs now, it has an update. */
   originHash?: Maybe<Scalars['String']['output']>;
+  /** The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demoState` key, whose demo value is the default. Empty for a blok that keeps nothing. */
+  persist: Array<BlokPersist>;
   /** Whether an app's agents provide this blok (see `app`). */
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
@@ -1201,10 +1203,27 @@ export type BlokImplementationInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
+  /** The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demo_state` key, whose demo value is the default. */
+  persist?: Array<BlokPersistInput>;
   /** The backend services this Blok reads from (its `query` components name them), each frozen at the version it was written against. */
   services?: Array<BlokServiceInput>;
   /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
   source?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A local a renderer may keep between openings, on the device (never on a server): its demo value is the default. */
+export type BlokPersist = {
+  __typename?: 'BlokPersist';
+  description?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+};
+
+/** A local a renderer may keep between openings, on the device: its demo value is the default. */
+export type BlokPersistInput = {
+  /** What the kept value is, for whoever resets it. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The local: a top-level `demo_state` key that is neither a dependency nor a reserved root. */
+  key: Scalars['String']['input'];
 };
 
 /** One state of a custom blok, never changed once written. Every write to a custom blok commits one; the blok is a copy of its head. */
@@ -1236,6 +1255,8 @@ export type BlokRevision = {
   number: Scalars['Int']['output'];
   /** The revision this one was made from; null for the first. */
   parent?: Maybe<BlokRevision>;
+  /** The locals this revision lets a renderer keep between openings, on the device. */
+  persist: Array<BlokPersist>;
   /** The task that wrote it, e.g. the assistant turn that designed it. */
   task?: Maybe<Task>;
 };
@@ -1612,6 +1633,8 @@ export type CreateBlokInput = {
   origin?: InputMaybe<Scalars['String']['input']>;
   /** The hash its origin gives what it draws, kept to tell when the origin has an update. */
   originHash?: InputMaybe<Scalars['String']['input']>;
+  /** The locals a renderer may keep between openings, on the device: each a top-level `demo_state` key. Kept when omitted (a blok created again keeps its own); an empty list removes them. */
+  persist?: InputMaybe<Array<BlokPersistInput>>;
   /** The backend services the blok's queries read from, each frozen at the version it was written against. Every `query`'s `schema` must name one. */
   services?: InputMaybe<Array<BlokServiceInput>>;
   /** The blok as BSX, which the server parses into `components`: send one of the two. */
@@ -2123,6 +2146,8 @@ export type EditBlokInput = {
   materializedBlok?: InputMaybe<Scalars['ID']['input']>;
   /** What changed and why, in a sentence; kept with the revision. */
   message?: InputMaybe<Scalars['String']['input']>;
+  /** The full list of the locals a renderer may keep between openings, on the device: each a top-level `demo_state` key. Kept when omitted; an empty list removes them. */
+  persist?: InputMaybe<Array<BlokPersistInput>>;
   /** The full list of the backend services the blok's queries read from, each frozen at its version. Kept when omitted; an empty list removes them. */
   services?: InputMaybe<Array<BlokServiceInput>>;
   /** The full component tree as BSX, which the server parses: send it or `components`, not both. */
@@ -7184,7 +7209,7 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
   )>, returns: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
-  )>, services: Array<{ __typename?: 'BlokService', key: string, service?: string | null, version?: string | null, schemaHash?: string | null }>, diagnostics: Array<(
+  )>, services: Array<{ __typename?: 'BlokService', key: string, service?: string | null, version?: string | null, schemaHash?: string | null }>, persist: Array<{ __typename?: 'BlokPersist', key: string, description?: string | null }>, diagnostics: Array<(
     { __typename?: 'Diagnostic' }
     & BlokDiagnosticFragment
   )> };
@@ -7192,7 +7217,7 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
 export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, args: any, taskRole?: TaskBlokRole | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
     { __typename?: 'Blok', hash: string }
     & BlokFragment
-  ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, demoState: any } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+  ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, demoState: any, persist: Array<{ __typename?: 'BlokPersist', key: string, description?: string | null }> } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
@@ -7237,7 +7262,7 @@ export type BlokEditorDependencyFragment = { __typename?: 'BlokDependency', id: 
 export type BlokEditorFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, provided: boolean, componentTree: any, demoState: any, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
-  )>, dependencies: Array<(
+  )>, persist: Array<{ __typename?: 'BlokPersist', key: string, description?: string | null }>, dependencies: Array<(
     { __typename?: 'BlokDependency' }
     & BlokEditorDependencyFragment
   )> };
@@ -11698,6 +11723,10 @@ export const BlokEditorFragmentDoc = gql`
   args {
     ...ArgPort
   }
+  persist {
+    key
+    description
+  }
   dependencies {
     ...BlokEditorDependency
   }
@@ -11782,6 +11811,10 @@ export const BlokFragmentDoc = gql`
     version
     schemaHash
   }
+  persist {
+    key
+    description
+  }
   diagnostics {
     ...BlokDiagnostic
   }
@@ -11810,6 +11843,10 @@ export const MaterializedBlokFragmentDoc = gql`
     number
     componentTree
     demoState
+    persist {
+      key
+      description
+    }
   }
   pinnedRevision {
     id

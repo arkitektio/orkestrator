@@ -26,6 +26,8 @@ import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
 import {defaultBlokCatalog} from '@/core/blok/renderer/catalog';
 import {returningInvokeFunction} from '@/core/blok/renderer/returns';
 import type {BlokInvokeFunctionHandler} from '@/core/blok/renderer/runtime';
+import {persistingInvokeFunction, type BlokPersistedLocal, type BlokPersistence} from '@/core/blok/renderer/persist';
+import {useBlokPersistence} from './useBlokPersistence';
 
 /** Where an asking blok's tree reads its answer, and where its ask stands. */
 export const BLOK_RETURNS_ROOT = 'returns';
@@ -40,13 +42,15 @@ type MaterializedBlokData = {
     dependencies?: Array<{key: string}> | null;
     /** What the blok is opened for, read at `@args.<key>`. */
     args?: Array<{key: string}> | null;
+    /** The locals this device keeps between openings (`core/blok/renderer/persist`). */
+    persist?: ReadonlyArray<BlokPersistedLocal> | null;
   };
   /**
    * The revision it shows (the pinned one, else its blok's head); null for a
    * provided blok, which has none. Drawn in place of the blok's own tree, so a
    * pinned materialization stays as it was.
    */
-  revision?: {componentTree?: unknown; demoState: unknown} | null;
+  revision?: {componentTree?: unknown; demoState: unknown; persist?: ReadonlyArray<BlokPersistedLocal> | null} | null;
   agentMappings: Array<{
     key: string;
     agent: {
@@ -334,12 +338,48 @@ export const unavailableDependenciesOf = (
   return unavailable;
 };
 
+/**
+ * Writes the kept locals back as the tree changes them (`BlokPersistence.attach`),
+ * and what is pending when the blok closes.
+ */
+const BlokPersistSync = ({persistence}: {persistence: BlokPersistence}) => {
+  const store = useBlokRuntimeStoreApi();
+  React.useEffect(() => persistence.attach(store), [persistence, store]);
+  return null;
+};
+
 /** What a materialization draws: the revision it shows, else (a provided blok) its blok. */
 export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>) =>
   materializedBlok.revision ?? materializedBlok.blok;
 
+/** The locals a materialization keeps, read before it renders; `children` draws it once they are. */
+const WithKeptLocals = (props: {
+  materializedBlok: MaterializedBlokData;
+  declared: ReadonlyArray<BlokPersistedLocal>;
+  children: (persistence: BlokPersistence | null) => React.ReactNode;
+}) => {
+  const persistence = useBlokPersistence(
+    props.materializedBlok.id,
+    props.declared,
+    shownContent(props.materializedBlok).demoState,
+  );
+  return persistence === undefined ? null : <>{props.children(persistence)}</>;
+};
+
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
-  const {materializedBlok, args, onArgsChange, ask, onReturn, ...rendererProps} = props;
+  const shown = shownContent(props.materializedBlok);
+  const declared = shown.persist ?? props.materializedBlok.blok.persist ?? [];
+  // A blok that keeps nothing renders at once, and needs no one signed in to keep it for.
+  if (declared.length === 0) return <MaterializedBlokView {...props} persistence={null} />;
+  return (
+    <WithKeptLocals materializedBlok={props.materializedBlok} declared={declared}>
+      {persistence => <MaterializedBlokView {...props} persistence={persistence} />}
+    </WithKeptLocals>
+  );
+};
+
+const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
+  const {materializedBlok, args, onArgsChange, ask, onReturn, persistence, ...rendererProps} = props;
   const invokeFunction = useReturningInvoke(rendererProps.catalog ?? defaultBlokCatalog, onReturn);
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
@@ -374,16 +414,29 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shown.demoState],
   );
+  // The locals kept on this device were read before the first render, so the blok opens as it was left.
+  const keptRoots = React.useMemo(() => (persistence ? persistence.keys : undefined), [persistence]);
+  const catalog = rendererProps.catalog ?? defaultBlokCatalog;
+  const persistingInvoke = React.useMemo(() => {
+    if (!persistence) return undefined;
+    const inner: BlokInvokeFunctionHandler =
+      invokeFunction ?? rendererProps.invokeFunction ?? ((name, args, options) => catalog.invokeFunction(name, args, options));
+    return persistingInvokeFunction(inner, persistence);
+  }, [catalog, invokeFunction, persistence, rendererProps.invokeFunction]);
 
   return (
     <RekuestSceneHost>
      <RekuestAssetHost agents={boundAgents}>
       <BlokRenderer
+        // Opened again when what it keeps changes: the kept values seed a new runtime.
+        key={persistence ? [...persistence.keys].join('\u0000') : undefined}
         {...rendererProps}
         uiComponents={roots}
         initialState={initialState}
+        keptValues={persistence?.initial}
+        keptRoots={keptRoots}
         dispatchAction={dispatchAction}
-        invokeFunction={invokeFunction ?? rendererProps.invokeFunction}
+        invokeFunction={persistingInvoke ?? invokeFunction ?? rendererProps.invokeFunction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
         unavailableDependencies={unavailableDependencies}
       >
@@ -392,6 +445,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
         {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
         {ask && <AskSync ask={ask} />}
+        {persistence && <BlokPersistSync persistence={persistence} />}
       </BlokRenderer>
      </RekuestAssetHost>
     </RekuestSceneHost>

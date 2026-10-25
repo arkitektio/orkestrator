@@ -78,6 +78,13 @@ const composeRuntimeDataModel = (
 };
 
 const NONE_UNAVAILABLE: BlokUnavailableDependencies = new Map();
+const NONE_KEPT: ReadonlySet<string> = new Set();
+
+/** Whether a runtime value is written below one of `roots`: a top-level key, and what is under it. */
+const isUnderRoot = (path: string, roots: ReadonlySet<string>): boolean => {
+  const [root] = splitPathSegments(path);
+  return root !== undefined && roots.has(root);
+};
 
 export const createBlokRuntimeStore = (config?: {
   initialDataModel?: unknown;
@@ -86,16 +93,26 @@ export const createBlokRuntimeStore = (config?: {
   dispatchAction?: BlokDispatchActionHandler;
   refuseAction?: BlokRefuseActionHandler;
   unavailableDependencies?: BlokUnavailableDependencies;
+  /**
+   * Locals the host kept from an earlier opening, by top-level key: written
+   * as runtime values over the initial data model, so the first render shows
+   * them and clearing one shows its default again.
+   */
+  keptValues?: Record<string, unknown>;
+  /** The top-level keys a reset of the runtime values leaves alone (`keptValues`' and later edits of them). */
+  keptRoots?: ReadonlySet<string>;
 }): BlokRuntimeStore => {
   const initialDataModel = config?.initialDataModel;
+  const keptValues = config?.keptValues ?? {};
   const initialAgentMappingStateUpdates = config?.agentMappingStateUpdates ?? {};
   const invokeFunction = config?.invokeFunction ?? defaultInvokeFunction;
   const dispatchAction = config?.dispatchAction ?? defaultDispatchAction;
 
   return createStore<BlokRuntimeContext>(set => ({
     initialDataModel,
-    dataModel: initialDataModel,
-    runtimePathValues: {},
+    dataModel: composeRuntimeDataModel(initialDataModel, keptValues),
+    runtimePathValues: {...keptValues},
+    keptRoots: config?.keptRoots ?? NONE_KEPT,
     agentMappingStateUpdates: initialAgentMappingStateUpdates,
     invokeFunction,
     dispatchAction,
@@ -115,15 +132,22 @@ export const createBlokRuntimeStore = (config?: {
     },
     resetRuntimeValues: () => {
       set(currentState => {
-        if (Object.keys(currentState.runtimePathValues).length === 0) {
+        const paths = Object.keys(currentState.runtimePathValues);
+        // What the host keeps between openings outlives a reset, as it outlives a reload.
+        const kept = paths.filter(path => isUnderRoot(path, currentState.keptRoots));
+        if (kept.length === paths.length) {
           return currentState;
         }
 
+        const nextRuntimePathValues = Object.fromEntries(kept.map(path => [path, currentState.runtimePathValues[path]]));
         return {
-          runtimePathValues: {},
-          dataModel: currentState.initialDataModel,
+          runtimePathValues: nextRuntimePathValues,
+          dataModel: composeRuntimeDataModel(currentState.initialDataModel, nextRuntimePathValues),
         };
       });
+    },
+    setKeptRoots: nextKeptRoots => {
+      set({keptRoots: nextKeptRoots});
     },
     setRuntimeValue: (path, value) => {
       set(currentState => {

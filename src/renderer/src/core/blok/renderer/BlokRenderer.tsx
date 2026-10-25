@@ -43,6 +43,13 @@ type BlokRendererProps = {
   embedded?: boolean;
   /** Shows the floating runtime-state inspector. Off by default. */
   debug?: boolean;
+  /**
+   * Locals kept from an earlier opening, by top-level key, shown from the
+   * first render on (`./persist.ts`). Read once, when the renderer mounts.
+   */
+  keptValues?: Record<string, unknown>;
+  /** The top-level keys kept between openings: swapping the payload leaves their values alone. */
+  keptRoots?: ReadonlySet<string>;
   children?: React.ReactNode;
 };
 
@@ -90,6 +97,8 @@ export default function BlokRenderer({
   sizing = 'fill',
   embedded = false,
   debug = false,
+  keptValues,
+  keptRoots,
   children,
 }: BlokRendererProps) {
   const preflight = useMemo(
@@ -136,8 +145,14 @@ export default function BlokRenderer({
       dispatchAction: resolvedDispatchAction,
       refuseAction,
       unavailableDependencies,
+      keptValues,
+      keptRoots,
     }),
   );
+
+  useEffect(() => {
+    if (keptRoots) runtimeStore.getState().setKeptRoots(keptRoots);
+  }, [keptRoots, runtimeStore]);
 
   useEffect(() => {
     runtimeStore.getState().setInitialDataModel(initialState);
