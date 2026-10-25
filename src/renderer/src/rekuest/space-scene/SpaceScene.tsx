@@ -5,10 +5,12 @@ import {useFrame} from '@react-three/fiber';
 import {Box, Check, Magnet, Move3d, Plus, Replace, Rotate3d, Scale3d, Scan, Trash2} from 'lucide-react';
 import {
   BlokSceneInertProvider,
+  SceneOwnerProvider,
   SceneSurface,
   useSceneNotice,
   useSceneOverlay,
 } from '@/core/blok/renderer/bloks/scene';
+import {BlokSpaceHostProvider, type BlokSpaceHost} from '@/core/blok/renderer/bloks/run';
 import {describeError, reportErrorAs, toast} from '@/core/notify';
 import {useSmartDrop} from '@/core/smart/hooks';
 import {Button} from '@/core/ui/button';
@@ -34,6 +36,8 @@ import {
 } from '@/rekuest/api/graphql';
 import MaterializedBlokRenderer from '@/rekuest/components/MaterializedBlokRenderer';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
+import {ActionBlokRenderer, RunHost} from '@/rekuest/run/ActionBlokRenderer';
+import type {SpaceRun} from '@/rekuest/run/useRun';
 import {
   autoFitScale,
   fitScale,
@@ -248,7 +252,10 @@ const Placed = ({item, editing}: {item: Standing; editing?: Editing}) => {
         }
       >
         {view ? (
-          <PlacedView id={view.id} name={viewName(view)} />
+          // Its models stand for its agent: an overlay anchored at the agent binds to them.
+          <SceneOwnerProvider value={item.kind === 'agent' ? item.placement.agent.id : null}>
+            <PlacedView id={view.id} name={viewName(view)} />
+          </SceneOwnerProvider>
         ) : (
           <Marker title={item.name} detail={item.hasView ? 'Its view is a panel, not a 3D view' : 'No 3D view'} />
         )}
@@ -304,32 +311,67 @@ const Hint = ({children}: {children: React.ReactNode}) => (
   </div>
 );
 
+/** Where each agent stands in the space, for an overlay's `At` and `Route`. */
+const useSpaceHost = (placements: readonly SpacePlacementFragment[]): BlokSpaceHost =>
+  React.useMemo(() => {
+    const byAgent = new Map(placements.map(placement => [placement.agent.id, placement.affineMatrix] as const));
+    return {placementOf: agentId => byAgent.get(agentId) ?? null};
+  }, [placements]);
+
+/**
+ * The run layer: the overlay of the action a run belongs to, drawn over the
+ * agents placed here, in the room's own coordinates. The run is provided
+ * around the whole surface, so a card it opens (the run's ask) has it too.
+ */
+const RunLayer = ({spaceId, run}: {spaceId: string; run: SpaceRun}) => (
+  <ActionBlokRenderer
+    embedded
+    surfaceId={`space-${spaceId}-run-${run.run.task?.id ?? 'preview'}`}
+    actionBlok={run.actionBlok}
+    run={run.run}
+  />
+);
+
 const Room = ({
   items,
+  placements,
+  spaceId,
+  run,
   editing,
   inert = false,
   overlay,
 }: {
   items: readonly Standing[];
+  placements: readonly SpacePlacementFragment[];
+  spaceId: string;
+  /** A run whose action's overlay is drawn over the room. */
+  run?: SpaceRun | null;
   editing?: Editing;
   /** Whether the devices ignore the pointer although nothing is being arranged. */
   inert?: boolean;
   overlay?: React.ReactNode;
-}) => (
-  <SceneSurface
-    className="relative h-full w-full overflow-hidden bg-muted/20"
-    onPointerMissed={() => {
-      if (editing && !editing.gizmoHeld.current) editing.onSelect(null);
-    }}
-    overlay={overlay}
-  >
-    <BlokSceneInertProvider value={Boolean(editing) || inert}>
-      {items.map(item => (
-        <Placed key={item.key} item={item} editing={editing} />
-      ))}
-    </BlokSceneInertProvider>
-  </SceneSurface>
-);
+}) => {
+  const space = useSpaceHost(placements);
+  const surface = (
+    <BlokSpaceHostProvider value={space}>
+      <SceneSurface
+        className="relative h-full w-full overflow-hidden bg-muted/20"
+        onPointerMissed={() => {
+          if (editing && !editing.gizmoHeld.current) editing.onSelect(null);
+        }}
+        overlay={overlay}
+      >
+        <BlokSceneInertProvider value={Boolean(editing) || inert}>
+          {items.map(item => (
+            <Placed key={item.key} item={item} editing={editing} />
+          ))}
+        </BlokSceneInertProvider>
+        {run ? <RunLayer spaceId={spaceId} run={run} /> : null}
+      </SceneSurface>
+    </BlokSpaceHostProvider>
+  );
+  return run ? <RunHost run={run.run}>{surface}</RunHost> : surface;
+};
 
 /**
  * The room as it is: every 3D view where it was placed, live unless a travel
@@ -337,21 +379,28 @@ const Room = ({
  *
  * `overlay` is the host's own HTML over the scene. `readOnly` is a room to
  * look at: the devices ignore the pointer, so nothing in it can be run.
+ * `run` draws a run of an action into the room (its overlay blok, bound to the
+ * run's agents), or previews one from a dry run.
  */
 export const SpaceScene = ({
   space,
   overlay,
   readOnly = false,
+  run,
 }: {
   space: SpaceFragment;
   overlay?: React.ReactNode;
   readOnly?: boolean;
+  run?: SpaceRun | null;
 }) => {
   const items = React.useMemo(() => standingsOf(space), [space]);
   return (
     <RekuestSceneHost>
       <Room
         items={items}
+        placements={space.placements}
+        spaceId={space.id}
+        run={run}
         inert={readOnly}
         overlay={
           <>
@@ -799,6 +848,8 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
         <div ref={dropRef} className={cn('relative min-w-0 flex-1', isOver && 'ring-2 ring-inset ring-primary')}>
           <Room
             items={items}
+            placements={placements}
+            spaceId={space.id}
             editing={editing}
             overlay={
               <>

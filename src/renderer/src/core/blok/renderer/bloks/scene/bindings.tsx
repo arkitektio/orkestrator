@@ -14,12 +14,26 @@ import {ownMaterials} from './loadModel';
 /** Every binding sits somewhere under the model whose nodes it names. */
 const IN_MODEL: BlokComponentPlacement = {context: 'scene', downstreamOf: ['Model', 'Robot']};
 
+/**
+ * Bindings an action's overlay may also use under an `At`, on the model the
+ * anchored device's scene blok loaded.
+ */
+const IN_MODEL_OR_AT: BlokComponentPlacement = {context: 'scene', downstreamOf: ['Model', 'Robot', 'At']};
+
 const nodeProp = z.string().describe('The name of the node in the enclosing model that this binds.');
 
 /** The node a binding names, and a notice beside the scene while the model has no such node. */
 const useNode = (name: string | undefined): THREE.Object3D | undefined => {
   const model = useModel();
   const node = name ? model.instance.nodes.get(name) : undefined;
+  useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
+  return node;
+};
+
+/** The node a binding names, or the whole model when it names none. */
+const useNodeOrRoot = (name: string | undefined): THREE.Object3D | undefined => {
+  const model = useModel();
+  const node = name ? model.instance.nodes.get(name) : model.instance.root;
   useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
   return node;
 };
@@ -198,16 +212,16 @@ type Colored = THREE.Material & {color?: THREE.Color};
 
 const glowSchema = z
   .object({
-    node: nodeProp,
+    node: describedString('The name of the node in the enclosing model that glows; the whole model when unset.'),
     on: z.boolean().optional().describe('Whether the node glows.'),
     intensity: z.number().optional().describe('How strongly. Defaults to 1 for materials, and to the authored intensity for a light.'),
     color: describedString('The color of the glow, as a CSS color. Defaults to the material\'s own emissive color, or white.'),
   })
   .describe('Switches the emissive output of a node\'s materials, or the intensity of a punctual light attached to it.');
 
-export const GlowBlok = createBlokComponent({name: 'Glow', placement: IN_MODEL, schema: glowSchema}, ({component}) => {
+export const GlowBlok = createBlokComponent({name: 'Glow', placement: IN_MODEL_OR_AT, schema: glowSchema}, ({component}) => {
   const blok = useBlok(component, glowSchema);
-  const node = useNode(useValue(blok.node));
+  const node = useNodeOrRoot(useValue(blok.node));
   const on = useValue(blok.on) ?? false;
   const intensity = useValue(blok.intensity);
   const color = useValue(blok.color);

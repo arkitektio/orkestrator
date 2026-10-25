@@ -4,7 +4,7 @@ import {ModelBlok, RobotBlok} from './Model';
 import {SceneBlok} from './Scene';
 import {TransformBlok} from './Transform';
 
-export {useSceneNotice, useSceneOverlay} from './context';
+export {SceneOwnerProvider, useSceneNotice, useSceneOverlay} from './context';
 export {SceneSurface} from './Scene';
 
 export * from './host';

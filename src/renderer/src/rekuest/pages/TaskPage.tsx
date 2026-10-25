@@ -56,6 +56,7 @@ import { TaskFiredBy } from "../components/task/TaskFiredBy";
 import { HoldCard } from "../components/task/HoldCard";
 import { pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
+import { OpenRunInSpace, TaskRunPanel } from "../run/TaskRun";
 
 // Only stats the main column doesn't already show — status, progress and
 // delegations live in the hero / Delegations section.
@@ -188,6 +189,8 @@ export const TPage = asDetailQueryRoute(
     const body = (
       <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto p-4">
         <TaskFiredBy task={data.task} />
+        {/* The run as its action draws it, when the action declared a blok for the panel. */}
+        <TaskRunPanel taskId={data.task.id} />
         <TaskLane
           task={data.task}
           selection={
@@ -243,6 +246,7 @@ export const TPage = asDetailQueryRoute(
                 </RekuestTask.DetailLink>
               )}
             </PageActionGroup>
+            <OpenRunInSpace taskId={data.task.id} priority={-6} />
             {tabs.length > 0 && (
               <PageAction
                 priority={-5}

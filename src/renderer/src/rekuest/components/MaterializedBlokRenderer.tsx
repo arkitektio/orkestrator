@@ -80,6 +80,11 @@ type MaterializedBlokRendererProps = Omit<
    */
   ask?: {status: string; values?: unknown};
   onReturn?: (values: Record<string, unknown>) => unknown;
+  /**
+   * What else writes into the blok's runtime, rendered inside it: an action's
+   * own blok follows its run with this (`@task`, `rekuest/run`).
+   */
+  syncs?: React.ReactNode;
 };
 
 const RECORD_FIELDS = ['status', 'running', 'done', 'failed', 'progress', 'message', 'error', 'result', 'returns'] as const;
@@ -379,7 +384,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
 };
 
 const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
-  const {materializedBlok, args, onArgsChange, ask, onReturn, persistence, ...rendererProps} = props;
+  const {materializedBlok, args, onArgsChange, ask, onReturn, persistence, syncs, ...rendererProps} = props;
   const invokeFunction = useReturningInvoke(rendererProps.catalog ?? defaultBlokCatalog, onReturn);
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
@@ -446,6 +451,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
         {ask && <AskSync ask={ask} />}
         {persistence && <BlokPersistSync persistence={persistence} />}
+        {syncs}
       </BlokRenderer>
      </RekuestAssetHost>
     </RekuestSceneHost>

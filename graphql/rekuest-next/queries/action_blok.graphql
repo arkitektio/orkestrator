@@ -1,0 +1,21 @@
+query RunTask($id: ID!) {
+  task(id: $id) {
+    ...RunTask
+  }
+}
+
+query ActionBloks($id: ID!) {
+  action(id: $id) {
+    id
+    bloks {
+      ...ActionBlok
+    }
+  }
+}
+
+# Where to show a run over these agents: the spaces placing the most of them first.
+query SpacesForAgents($agents: [ID!]!) {
+  spacesForAgents(agents: $agents) {
+    ...SpaceForAgents
+  }
+}

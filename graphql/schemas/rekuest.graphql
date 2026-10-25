@@ -20,6 +20,11 @@ type Action {
   """
   assignable: Boolean!
 
+  """
+  The action's own bloks, at most one per context (HTML for a task panel, OVERLAY drawn into the space that hosts a run): declared with the action, the latest registration's. Not part of its hash.
+  """
+  bloks: [ActionBlok!]!
+
   """Collections to which this action belongs."""
   collections: [Collection!]!
 
@@ -167,6 +172,61 @@ input ActionArgumentInput {
   JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically.
   """
   valuePath: String = null
+}
+
+"""
+An action's own blok for one context: how a client shows a run of the action there. It names devices only by the action's dependency keys: a run binds them through `Task.dependencyAgents`, a preview through the `dependencyTree` dry run.
+"""
+type ActionBlok {
+  """The action whose runs it shows."""
+  action: Action!
+
+  """
+  What it draws: a blok held by its actions only (`heldByAction`), shared by every action of the app declaring the same.
+  """
+  blok: Blok!
+
+  """
+  Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run, over the agents placed there.
+  """
+  context: ComponentContext!
+  id: ID!
+}
+
+"""
+An action's own blok: how a client shows a run of it in one context, naming devices by the action's dependency keys.
+"""
+input ActionBlokInput {
+  """
+  The UI catalog the blok renders against; the Orkestrator's when absent.
+  """
+  catalog: String = null
+
+  """The UI component tree, unless the blok is sent as its `source`."""
+  components: [ComponentNodeInput!] = null
+
+  """
+  Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`).
+  """
+  context: ComponentContext! = HTML
+
+  """
+  The blok's own locals and their initial values: path roots beside the action's dependency keys, `self`, `task` and `args`.
+  """
+  demoState: JSONSerializable = null
+
+  """What the blok shows of a run."""
+  description: String = null
+
+  """
+  The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demo_state` key, whose demo value is the default.
+  """
+  persist: [BlokPersistInput!]! = []
+
+  """
+  The blok as BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
 }
 
 """
@@ -1091,6 +1151,11 @@ input AssignInput {
   resolution: ID = null
 
   """
+  The space (in the caller's organization) the run is started in: where a client draws the action's overlay over the placed agents (`Task.space`). Only a UI reads it; nothing runs differently. Honoured on a root only.
+  """
+  space: ID = null
+
+  """
   What the agent's state must hold for the task to run. Refused unless the agent says it tests them, and for a state or path its declaration does not have.
   """
   stateRequires: [StateRequirementInput!] = null
@@ -1301,6 +1366,11 @@ type Blok {
   The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead.
   """
   head: BlokRevision
+
+  """
+  Whether this blok is an action's own (`Action.bloks`): declared with the action, never listed, materialized or edited on its own.
+  """
+  heldByAction: Boolean!
   id: ID!
 
   """
@@ -1957,12 +2027,13 @@ type Collection {
 }
 
 """
-The renderer a catalog component lives in. A component may only be placed where its context is in force.
+The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run.
 """
 enum ComponentContext {
   ACTION_LOGO
   HTML
   LOGO
+  OVERLAY
   SCENE
 }
 
@@ -2490,6 +2561,11 @@ input DefinitionInput {
 
   """The args of the definition. This is the input ports of the definition"""
   args: [ArgPortInput!]! = []
+
+  """
+  The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash.
+  """
+  bloks: [ActionBlokInput!]! = []
 
   """
   Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error.
@@ -5022,6 +5098,11 @@ type Query {
   """List all spaces."""
   spaces(filters: SpaceFilter, ordering: [SpaceOrder!]! = [], pagination: OffsetPaginationInput): [Space!]!
 
+  """
+  The spaces that place any of these agents (e.g. the ones a dependencyTree dry run binds), those placing the most first, then the most recently changed: where to run a workflow over them.
+  """
+  spacesForAgents(agents: [ID!]!): [SpaceForAgents!]!
+
   """Get a specific state by ID."""
   state(id: ID!): State!
 
@@ -6046,6 +6127,15 @@ input SpaceFilter {
   search: String
 }
 
+"""A space and how many of the agents asked about it places."""
+type SpaceForAgents {
+  """How many of the agents asked about this space places."""
+  placed: Int!
+
+  """The space."""
+  space: Space!
+}
+
 input SpaceOrder @oneOf {
   createdAt: Ordering
   name: Ordering
@@ -6631,6 +6721,11 @@ type Task {
   """Action assigned."""
   action: Action!
 
+  """
+  Its action's own bloks (`Action.bloks`), at most one per context: how a client shows this run, with each dependency key bound by `dependencyAgents`.
+  """
+  actionBloks: [ActionBlok!]!
+
   """Agent responsible for this task."""
   agent: Agent
 
@@ -6670,6 +6765,11 @@ type Task {
 
   """The dependency thats linked to the parents execution if applicable."""
   dependency: String
+
+  """
+  The agents this run got for its action's dependencies, by key: the top level of the tree resolved when it was assigned. What an action blok's `<At dependency>` anchors at.
+  """
+  dependencyAgents: [TaskDependencyAgent!]!
 
   """The method of the dependency that caused this task, if applicable."""
   dependencyMethod: String
@@ -6754,6 +6854,11 @@ type Task {
 
   """The signal that caused this task, if a trigger fired it."""
   signal: Signal
+
+  """
+  The space the caller started this run in (the assign's `space`): where a client draws the action's overlay. Null when none was named, or the space is gone.
+  """
+  space: Space
 
   """The trigger that fired this task, if any."""
   trigger: Trigger
@@ -6842,6 +6947,21 @@ type TaskChange {
 type TaskChangeEvent {
   create: TaskChange
   event: TaskEventChange
+}
+
+"""
+An agent a task got for one of its action's dependencies, as it was resolved when the task was assigned.
+"""
+type TaskDependencyAgent {
+  """
+  The agent bound to it for this run. A key bound to several agents comes once per agent.
+  """
+  agent: Agent!
+
+  """
+  The dependency key, as the action's implementation declares it and the action's bloks name it.
+  """
+  key: String!
 }
 
 """An event that occurred during a task."""
@@ -7443,7 +7563,9 @@ input TriggerOrder @oneOf {
 A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization.
 """
 type UICatalog {
-  """Bloks rendered against this catalog."""
+  """
+  Bloks rendered against this catalog, but the ones a task made to show and an action's own (`Action.bloks`).
+  """
   bloks(filters: BlokFilter, pagination: OffsetPaginationInput): [Blok!]!
 
   """Registered components. Empty until a UI app registers the catalog."""

@@ -49,13 +49,15 @@ export type BsxCatalogView = {
 };
 
 /** The blok contexts (`ComponentContext`), as the renderer names them. */
-export type BsxBlokContext = "HTML" | "SCENE" | "LOGO" | "ACTION_LOGO";
+export type BsxBlokContext = "HTML" | "SCENE" | "LOGO" | "ACTION_LOGO" | "OVERLAY";
 
 export const RENDER_CONTEXT: Record<BsxBlokContext, BlokComponentContext> = {
   HTML: "html",
   SCENE: "scene",
   LOGO: "logo",
   ACTION_LOGO: "logo",
+  // An overlay starts in html like any blok; its `Overlay` root opens the scene it is drawn into.
+  OVERLAY: "html",
 };
 
 /** The root a blok of each context must have; HTML takes any html component. */
@@ -63,6 +65,7 @@ export const CONTEXT_ROOT: Partial<Record<BsxBlokContext, string>> = {
   SCENE: "Scene",
   LOGO: "SVG",
   ACTION_LOGO: "ActionLogo",
+  OVERLAY: "Overlay",
 };
 
 type ZodDef = { type?: string; in?: z.ZodTypeAny; options?: z.ZodTypeAny[]; values?: unknown[]; entries?: Record<string, unknown>; format?: string };

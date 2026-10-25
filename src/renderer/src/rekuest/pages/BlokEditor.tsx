@@ -75,6 +75,7 @@ const CONTEXT_LABEL: Record<ComponentContext, string> = {
   [ComponentContext.Scene]: "3D scene",
   [ComponentContext.Logo]: "Agent logo",
   [ComponentContext.ActionLogo]: "Action logo",
+  [ComponentContext.Overlay]: "Run overlay",
 };
 
 /** What a new blok of each context starts as. */
@@ -83,7 +84,11 @@ const STARTER: Record<ComponentContext, string> = {
   [ComponentContext.Scene]: '<Scene height="24rem">\n</Scene>',
   [ComponentContext.Logo]: '<SVG viewBox="0 0 24 24" title="Logo">\n</SVG>',
   [ComponentContext.ActionLogo]: '<ActionLogo viewBox="0 0 24 24" title="Logo">\n</ActionLogo>',
+  [ComponentContext.Overlay]: '<Overlay>\n</Overlay>',
 };
+
+/** An overlay is an action's own blok, declared with the action: never made here. */
+const EDITABLE_CONTEXTS = Object.values(ComponentContext).filter((context) => context !== ComponentContext.Overlay);
 
 const bsxContext = (context: ComponentContext): BsxBlokContext => context as unknown as BsxBlokContext;
 
@@ -155,7 +160,7 @@ const DetailsPanel = (props: {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {Object.values(ComponentContext).map((context) => (
+          {EDITABLE_CONTEXTS.map((context) => (
             <SelectItem key={context} value={context}>
               {CONTEXT_LABEL[context]}
             </SelectItem>

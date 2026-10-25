@@ -63,6 +63,13 @@ export type SceneState = {
   togglePinned: (id: string) => void;
   dismiss: () => void;
   setModel: (id: string, model: ModelInstance | null) => void;
+  /**
+   * The models of the scene by who they stand for (`SceneOwnerProvider`: an
+   * agent, in a space), each under the id of the model that registered it, in
+   * the order they arrived. What an overlay anchored at that owner binds to.
+   */
+  owned: ReadonlyMap<string, ReadonlyMap<string, ModelContextValue>>;
+  setOwnedModel: (owner: string, id: string, model: ModelContextValue | null) => void;
   setNotice: (notice: SceneNotice) => void;
   removeNotice: (id: string) => void;
 };
@@ -108,6 +115,12 @@ export const createSceneStore = (
       });
     },
     setModel: (id, model) => set(state => ({models: withEntry(state.models, id, model)})),
+    owned: new Map(),
+    setOwnedModel: (owner, id, model) =>
+      set(state => {
+        const models = withEntry(state.owned.get(owner) ?? new Map<string, ModelContextValue>(), id, model);
+        return {owned: withEntry(state.owned, owner, models.size ? models : null)};
+      }),
     setNotice: notice => set(state => ({notices: withEntry(state.notices, notice.id, notice)})),
     removeNotice: id => set(state => ({notices: withEntry(state.notices, id, null)})),
   }));
@@ -133,6 +146,24 @@ export const useSceneState = <T,>(selector: (state: SceneState) => T): T =>
 const SceneModelScopeContext = React.createContext('');
 
 export const SceneModelScopeProvider = SceneModelScopeContext.Provider;
+
+/**
+ * Who the models below stand for: an agent, where a space shows each placed
+ * agent through its own scene blok. A model registers itself under it
+ * (`SceneState.owned`), so an overlay can find the device by its agent.
+ */
+const SceneOwnerContext = React.createContext<string | null>(null);
+
+export const SceneOwnerProvider = SceneOwnerContext.Provider;
+
+export const useSceneOwner = (): string | null => React.useContext(SceneOwnerContext);
+
+/** The first model registered for `owner`, the one its scene blok placed first; null while it has none. */
+export const useOwnedModel = (owner: string | null): ModelContextValue | null =>
+  useSceneState(state => {
+    const models = owner ? state.owned.get(owner) : undefined;
+    return models ? (models.values().next().value ?? null) : null;
+  });
 
 /** The key a model id is kept under in the scene, for the blok it is used in. */
 export const useSceneModelKey = (): ((id: string) => string) => {

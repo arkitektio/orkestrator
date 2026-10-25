@@ -16,8 +16,12 @@ import {
 import {actionProp, describedString} from '../shared/schemas';
 import {useModel, useSceneNotice, useSceneOverlay, useSceneStoreApi} from './context';
 import {useBlokSceneHost} from './host';
+import {useBlokTray} from '../run/host';
 
-const nodeProp = z.string().describe('The name of the node in the enclosing model.');
+const nodeProp = describedString('The name of the node in the enclosing model; the whole model when unset.');
+
+/** Under a model, or under an action overlay's `At` (the anchored device's model). */
+const IN_MODEL_OR_AT = {context: 'scene', downstreamOf: ['Model', 'Robot', 'At']} as const;
 const titleProp = describedString('The heading of the card; it shows the node name when unset.');
 const descriptionProp = describedString('A line under the heading of the card.');
 
@@ -45,7 +49,7 @@ const onClickSchema = z
   );
 
 export const OnClickBlok = createBlokComponent(
-  {name: 'OnClick', placement: {context: 'scene', downstreamOf: ['Model', 'Robot']}, schema: onClickSchema},
+  {name: 'OnClick', placement: IN_MODEL_OR_AT, schema: onClickSchema},
   ({component}) => {
     const blok = useBlok(component, onClickSchema);
     const model = useModel();
@@ -56,7 +60,7 @@ export const OnClickBlok = createBlokComponent(
     const description = useValue(blok.description);
     const mode = useValue(blok.mode) ?? 'popout';
     const onClick = useEventAction(blok, 'onClick');
-    const node = name ? model.instance.nodes.get(name) : undefined;
+    const node = name ? model.instance.nodes.get(name) : model.instance.root;
     useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
 
     const store = useSceneStoreApi();
@@ -120,7 +124,7 @@ export const PopoutBlok = createBlokComponent(
   {
     name: 'Popout',
     acceptsChildren: true,
-    placement: {context: 'scene', childrenContext: 'html', downstreamOf: ['Model', 'Robot']},
+    placement: {...IN_MODEL_OR_AT, childrenContext: 'html'},
     schema: popoutSchema,
   },
   ({component, buildChild}) => {
@@ -131,15 +135,18 @@ export const PopoutBlok = createBlokComponent(
     const controlled = useValue(blok.open);
     const title = useValue(blok.title);
     const description = useValue(blok.description);
-    const node = name ? model.instance.nodes.get(name) : undefined;
+    const node = name ? model.instance.nodes.get(name) : model.instance.root;
     useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
+    // Under an `At` whose device the space does not place: nothing to point at,
+    // so the card shows in the side tray, as long as it would show at all.
+    const tray = useBlokTray();
 
     const store = useSceneStoreApi();
     const [toggled, setToggled] = React.useState(false);
     // The spot a click opened the card on; the node's origin otherwise.
     const [point, setPoint] = React.useState<THREE.Vector3 | null>(null);
     const [hovered, setHovered] = React.useState(false);
-    const interactive = controlled === undefined && trigger !== 'always';
+    const interactive = controlled === undefined && trigger !== 'always' && tray === null;
     const openRef = React.useRef(toggled);
     React.useEffect(() => {
       openRef.current = toggled;
@@ -163,7 +170,8 @@ export const PopoutBlok = createBlokComponent(
     }, [interactive, model, node, store, trigger]);
 
     const visible =
-      controlled ?? (trigger === 'always' ? true : trigger === 'hover' ? hovered || toggled : toggled);
+      controlled ??
+      (tray !== null || trigger === 'always' ? true : trigger === 'hover' ? hovered || toggled : toggled);
     const anchor = React.useCallback(() => node ?? null, [node]);
     const close = React.useCallback(() => setToggled(false), []);
 
@@ -192,11 +200,11 @@ export const PopoutBlok = createBlokComponent(
       visible: Boolean(node) && visible,
       anchor,
       point: trigger === 'click' ? point : null,
-      title: title ?? name,
+      title: title ?? name ?? tray ?? undefined,
       description,
       content,
-      mode: 'popout',
-      dismissable: controlled === undefined && trigger === 'click',
+      mode: tray === null ? 'popout' : 'panel',
+      dismissable: tray === null && controlled === undefined && trigger === 'click',
       onDismiss: close,
     });
     return null;

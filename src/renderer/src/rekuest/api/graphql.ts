@@ -56,6 +56,8 @@ export type Action = {
   args: Array<ArgPort>;
   /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
   assignable: Scalars['Boolean']['output'];
+  /** The action's own bloks, at most one per context (HTML for a task panel, OVERLAY drawn into the space that hosts a run): declared with the action, the latest registration's. Not part of its hash. */
+  bloks: Array<ActionBlok>;
   /** Collections to which this action belongs. */
   collections: Array<Collection>;
   /** Timestamp when the action was defined. */
@@ -219,6 +221,36 @@ export type ActionArgumentInput = {
   valueLiteral?: InputMaybe<Scalars['JSONSerializable']['input']>;
   /** JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically. */
   valuePath?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** An action's own blok for one context: how a client shows a run of the action there. It names devices only by the action's dependency keys: a run binds them through `Task.dependencyAgents`, a preview through the `dependencyTree` dry run. */
+export type ActionBlok = {
+  __typename?: 'ActionBlok';
+  /** The action whose runs it shows. */
+  action: Action;
+  /** What it draws: a blok held by its actions only (`heldByAction`), shared by every action of the app declaring the same. */
+  blok: Blok;
+  /** Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run, over the agents placed there. */
+  context: ComponentContext;
+  id: Scalars['ID']['output'];
+};
+
+/** An action's own blok: how a client shows a run of it in one context, naming devices by the action's dependency keys. */
+export type ActionBlokInput = {
+  /** The UI catalog the blok renders against; the Orkestrator's when absent. */
+  catalog?: InputMaybe<Scalars['String']['input']>;
+  /** The UI component tree, unless the blok is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`). */
+  context?: ComponentContext;
+  /** The blok's own locals and their initial values: path roots beside the action's dependency keys, `self`, `task` and `args`. */
+  demoState?: InputMaybe<Scalars['JSONSerializable']['input']>;
+  /** What the blok shows of a run. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The locals a renderer may keep between openings, on the device (never on a server): each a top-level `demo_state` key, whose demo value is the default. */
+  persist?: Array<BlokPersistInput>;
+  /** The blok as BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Pure matching criteria for an action (app/key preferred; matches loosen). */
@@ -924,6 +956,8 @@ export type AssignInput = {
   reference?: InputMaybe<Scalars['String']['input']>;
   /** The resolution ID to assign to when assining to a implementation with dependencies */
   resolution?: InputMaybe<Scalars['ID']['input']>;
+  /** The space (in the caller's organization) the run is started in: where a client draws the action's overlay over the placed agents (`Task.space`). Only a UI reads it; nothing runs differently. Honoured on a root only. */
+  space?: InputMaybe<Scalars['ID']['input']>;
   /** What the agent's state must hold for the task to run. Refused unless the agent says it tests them, and for a state or path its declaration does not have. */
   stateRequires?: InputMaybe<Array<StateRequirementInput>>;
   /** Whether the task should step. Ie. go to the next breakpoint */
@@ -1048,6 +1082,8 @@ export type Blok = {
   hash: Scalars['String']['output'];
   /** The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead. */
   head?: Maybe<BlokRevision>;
+  /** Whether this blok is an action's own (`Action.bloks`): declared with the action, never listed, materialized or edited on its own. */
+  heldByAction: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   /** Materialized bloks that are instances of this blok, but the ones made for a message. */
   materializedBloks: Array<MaterializedBlok>;
@@ -1545,11 +1581,12 @@ export type CollectionActionsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
+/** The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run. */
 export enum ComponentContext {
   ActionLogo = 'ACTION_LOGO',
   Html = 'HTML',
   Logo = 'LOGO',
+  Overlay = 'OVERLAY',
   Scene = 'SCENE'
 }
 
@@ -1917,6 +1954,8 @@ export type DefinitionInput = {
   allowProbe?: Scalars['Boolean']['input'];
   /** The args of the definition. This is the input ports of the definition */
   args?: Array<ArgPortInput>;
+  /** The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash. */
+  bloks?: Array<ActionBlokInput>;
   /** Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error. */
   catalogs?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The collections of the definition. This is used to group definitions together in the UI */
@@ -4111,6 +4150,8 @@ export type Query = {
   spacePlacements: Array<SpacePlacement>;
   /** List all spaces. */
   spaces: Array<Space>;
+  /** The spaces that place any of these agents (e.g. the ones a dependencyTree dry run binds), those placing the most first, then the most recently changed: where to run a workflow over them. */
+  spacesForAgents: Array<SpaceForAgents>;
   /** Get a specific state by ID. */
   state: State;
   /** Get state at global revision. */
@@ -4558,6 +4599,11 @@ export type QuerySpacesArgs = {
   filters?: InputMaybe<SpaceFilter>;
   ordering?: Array<SpaceOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QuerySpacesForAgentsArgs = {
+  agents: Array<Scalars['ID']['input']>;
 };
 
 
@@ -5411,6 +5457,15 @@ export type SpaceFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A space and how many of the agents asked about it places. */
+export type SpaceForAgents = {
+  __typename?: 'SpaceForAgents';
+  /** How many of the agents asked about this space places. */
+  placed: Scalars['Int']['output'];
+  /** The space. */
+  space: Space;
+};
+
 export type SpaceOrder =
   { createdAt: Ordering; name?: never; updatedAt?: never; }
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
@@ -5880,6 +5935,8 @@ export type Task = {
   actedOn: Array<Scalars['String']['output']>;
   /** Action assigned. */
   action: Action;
+  /** Its action's own bloks (`Action.bloks`), at most one per context: how a client shows this run, with each dependency key bound by `dependencyAgents`. */
+  actionBloks: Array<ActionBlok>;
   /** Agent responsible for this task. */
   agent?: Maybe<Agent>;
   /** Get a specific argument by key. */
@@ -5904,6 +5961,8 @@ export type Task = {
   dependencies: Scalars['AnyDefault']['output'];
   /** The dependency thats linked to the parents execution if applicable. */
   dependency?: Maybe<Scalars['String']['output']>;
+  /** The agents this run got for its action's dependencies, by key: the top level of the tree resolved when it was assigned. What an action blok's `<At dependency>` anchors at. */
+  dependencyAgents: Array<TaskDependencyAgent>;
   /** The method of the dependency that caused this task, if applicable. */
   dependencyMethod?: Maybe<Scalars['String']['output']>;
   /** The events */
@@ -5952,6 +6011,8 @@ export type Task = {
   schedule?: Maybe<Schedule>;
   /** The signal that caused this task, if a trigger fired it. */
   signal?: Maybe<Signal>;
+  /** The space the caller started this run in (the assign's `space`): where a client draws the action's overlay. Null when none was named, or the space is gone. */
+  space?: Maybe<Space>;
   /** The trigger that fired this task, if any. */
   trigger?: Maybe<Trigger>;
   /** Last update timestamp. */
@@ -6047,6 +6108,15 @@ export type TaskChangeEvent = {
   __typename?: 'TaskChangeEvent';
   create?: Maybe<TaskChange>;
   event?: Maybe<TaskEventChange>;
+};
+
+/** An agent a task got for one of its action's dependencies, as it was resolved when the task was assigned. */
+export type TaskDependencyAgent = {
+  __typename?: 'TaskDependencyAgent';
+  /** The agent bound to it for this run. A key bound to several agents comes once per agent. */
+  agent: Agent;
+  /** The dependency key, as the action's implementation declares it and the action's bloks name it. */
+  key: Scalars['String']['output'];
 };
 
 /** An event that occurred during a task. */
@@ -6565,7 +6635,7 @@ export type TriggerOrder =
 /** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
 export type UiCatalog = {
   __typename?: 'UICatalog';
-  /** Bloks rendered against this catalog. */
+  /** Bloks rendered against this catalog, but the ones a task made to show and an action's own (`Action.bloks`). */
   bloks: Array<Blok>;
   /** Registered components. Empty until a UI app registers the catalog. */
   components: Array<CatalogComponent>;
@@ -7022,6 +7092,26 @@ export type HoverActionFragment = { __typename?: 'Action', id: string, name: str
     { __typename?: 'Blok' }
     & BlokLogoFragment
   ) | null, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
+
+export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, demoState: any, persist: Array<{ __typename?: 'BlokPersist', key: string, description?: string | null }> } };
+
+export type TaskDependencyAgentFragment = { __typename?: 'TaskDependencyAgent', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } };
+
+export type RunTaskFragment = { __typename?: 'Task', id: string, args: any, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, isDone: boolean, events: Array<(
+    { __typename?: 'TaskEvent' }
+    & TaskEventFragment
+  )>, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } } | null, actionBloks: Array<(
+    { __typename?: 'ActionBlok' }
+    & ActionBlokFragment
+  )>, dependencyAgents: Array<(
+    { __typename?: 'TaskDependencyAgent' }
+    & TaskDependencyAgentFragment
+  )>, space?: { __typename?: 'Space', id: string, name: string } | null };
+
+export type SpaceForAgentsFragment = { __typename?: 'SpaceForAgents', placed: number, space: (
+    { __typename?: 'Space' }
+    & ListSpaceFragment
+  ) };
 
 export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: string, app: { __typename?: 'App', identifier: string }, states: Array<(
     { __typename?: 'State' }
@@ -8921,6 +9011,36 @@ export type ActionSignatureByHashQuery = { __typename?: 'Query', action: (
     & PortsFragment
   ) };
 
+export type RunTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RunTaskQuery = { __typename?: 'Query', task: (
+    { __typename?: 'Task' }
+    & RunTaskFragment
+  ) };
+
+export type ActionBloksQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ActionBloksQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, bloks: Array<(
+      { __typename?: 'ActionBlok' }
+      & ActionBlokFragment
+    )> } };
+
+export type SpacesForAgentsQueryVariables = Exact<{
+  agents: Array<Scalars['ID']['input']>;
+}>;
+
+
+export type SpacesForAgentsQuery = { __typename?: 'Query', spacesForAgents: Array<(
+    { __typename?: 'SpaceForAgents' }
+    & SpaceForAgentsFragment
+  )> };
+
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<AgentFilter>;
@@ -10298,6 +10418,119 @@ export const HoverActionFragmentDoc = gql`
   }
 }
     ${BlokLogoFragmentDoc}`;
+export const TaskEventFragmentDoc = gql`
+    fragment TaskEvent on TaskEvent {
+  id
+  kind
+  level
+  returns
+  task {
+    id
+    reference
+  }
+  progress
+  reference
+  createdAt
+  message
+  step
+  agentTs
+  effect
+  key
+  value
+  delegatedTo {
+    id
+    action {
+      name
+    }
+    implementation {
+      id
+      interface
+      action {
+        name
+      }
+    }
+  }
+}
+    `;
+export const ActionBlokFragmentDoc = gql`
+    fragment ActionBlok on ActionBlok {
+  id
+  context
+  blok {
+    id
+    context
+    heldByAction
+    componentTree
+    demoState
+    persist {
+      key
+      description
+    }
+  }
+}
+    `;
+export const TaskDependencyAgentFragmentDoc = gql`
+    fragment TaskDependencyAgent on TaskDependencyAgent {
+  key
+  agent {
+    id
+    name
+    connected
+  }
+}
+    `;
+export const RunTaskFragmentDoc = gql`
+    fragment RunTask on Task {
+  id
+  args
+  latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
+  isDone
+  events(ordering: {createdAt: DESC}) {
+    ...TaskEvent
+  }
+  action {
+    id
+    name
+  }
+  implementation {
+    id
+    agent {
+      id
+      name
+      connected
+    }
+  }
+  actionBloks {
+    ...ActionBlok
+  }
+  dependencyAgents {
+    ...TaskDependencyAgent
+  }
+  space {
+    id
+    name
+  }
+}
+    ${TaskEventFragmentDoc}
+${ActionBlokFragmentDoc}
+${TaskDependencyAgentFragmentDoc}`;
+export const ListSpaceFragmentDoc = gql`
+    fragment ListSpace on Space {
+  id
+  name
+}
+    `;
+export const SpaceForAgentsFragmentDoc = gql`
+    fragment SpaceForAgents on SpaceForAgents {
+  placed
+  space {
+    ...ListSpace
+  }
+}
+    ${ListSpaceFragmentDoc}`;
 export const PortCallLeafArgumentFragmentDoc = gql`
     fragment PortCallLeafArgument on ActionArgument {
   key
@@ -12368,40 +12601,6 @@ export const DetailActionFragmentDoc = gql`
     ${GraphNodeActionFragmentDoc}
 ${BlokLogoFragmentDoc}
 ${MinimalImplementationFragmentDoc}`;
-export const TaskEventFragmentDoc = gql`
-    fragment TaskEvent on TaskEvent {
-  id
-  kind
-  level
-  returns
-  task {
-    id
-    reference
-  }
-  progress
-  reference
-  createdAt
-  message
-  step
-  agentTs
-  effect
-  key
-  value
-  delegatedTo {
-    id
-    action {
-      name
-    }
-    implementation {
-      id
-      interface
-      action {
-        name
-      }
-    }
-  }
-}
-    `;
 export const PostmanTaskFragmentDoc = gql`
     fragment PostmanTask on Task {
   id
@@ -12713,12 +12912,6 @@ export const SpaceFragmentDoc = gql`
 }
     ${SpacePlacementFragmentDoc}
 ${SpaceBlokPlacementFragmentDoc}`;
-export const ListSpaceFragmentDoc = gql`
-    fragment ListSpace on Space {
-  id
-  name
-}
-    `;
 export const StateEventFragmentDoc = gql`
     fragment StateEvent on State {
   id
@@ -16157,6 +16350,114 @@ export function useActionSignatureByHashLazyQuery(baseOptions?: ApolloReactHooks
 export type ActionSignatureByHashQueryHookResult = ReturnType<typeof useActionSignatureByHashQuery>;
 export type ActionSignatureByHashLazyQueryHookResult = ReturnType<typeof useActionSignatureByHashLazyQuery>;
 export type ActionSignatureByHashQueryResult = Apollo.QueryResult<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>;
+export const RunTaskDocument = gql`
+    query RunTask($id: ID!) {
+  task(id: $id) {
+    ...RunTask
+  }
+}
+    ${RunTaskFragmentDoc}`;
+
+/**
+ * __useRunTaskQuery__
+ *
+ * To run a query within a React component, call `useRunTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRunTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRunTaskQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRunTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RunTaskQuery, RunTaskQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RunTaskQuery, RunTaskQueryVariables>(RunTaskDocument, options);
+      }
+export function useRunTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RunTaskQuery, RunTaskQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RunTaskQuery, RunTaskQueryVariables>(RunTaskDocument, options);
+        }
+export type RunTaskQueryHookResult = ReturnType<typeof useRunTaskQuery>;
+export type RunTaskLazyQueryHookResult = ReturnType<typeof useRunTaskLazyQuery>;
+export type RunTaskQueryResult = Apollo.QueryResult<RunTaskQuery, RunTaskQueryVariables>;
+export const ActionBloksDocument = gql`
+    query ActionBloks($id: ID!) {
+  action(id: $id) {
+    id
+    bloks {
+      ...ActionBlok
+    }
+  }
+}
+    ${ActionBlokFragmentDoc}`;
+
+/**
+ * __useActionBloksQuery__
+ *
+ * To run a query within a React component, call `useActionBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionBloksQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useActionBloksQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionBloksQuery, ActionBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionBloksQuery, ActionBloksQueryVariables>(ActionBloksDocument, options);
+      }
+export function useActionBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionBloksQuery, ActionBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionBloksQuery, ActionBloksQueryVariables>(ActionBloksDocument, options);
+        }
+export type ActionBloksQueryHookResult = ReturnType<typeof useActionBloksQuery>;
+export type ActionBloksLazyQueryHookResult = ReturnType<typeof useActionBloksLazyQuery>;
+export type ActionBloksQueryResult = Apollo.QueryResult<ActionBloksQuery, ActionBloksQueryVariables>;
+export const SpacesForAgentsDocument = gql`
+    query SpacesForAgents($agents: [ID!]!) {
+  spacesForAgents(agents: $agents) {
+    ...SpaceForAgents
+  }
+}
+    ${SpaceForAgentsFragmentDoc}`;
+
+/**
+ * __useSpacesForAgentsQuery__
+ *
+ * To run a query within a React component, call `useSpacesForAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSpacesForAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSpacesForAgentsQuery({
+ *   variables: {
+ *      agents: // value for 'agents'
+ *   },
+ * });
+ */
+export function useSpacesForAgentsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
+      }
+export function useSpacesForAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
+        }
+export type SpacesForAgentsQueryHookResult = ReturnType<typeof useSpacesForAgentsQuery>;
+export type SpacesForAgentsLazyQueryHookResult = ReturnType<typeof useSpacesForAgentsLazyQuery>;
+export type SpacesForAgentsQueryResult = Apollo.QueryResult<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {

@@ -1,0 +1,79 @@
+# An action's own blok for one context (`Action.bloks`, `Task.actionBloks`):
+# how a client shows a run of the action. It names devices only by the action's
+# dependency keys; a run binds them through `Task.dependencyAgents`, a preview
+# through the `dependencyTree` dry run. Kept out of `DetailTask` and
+# `DetailAction`: a server without action bloks then fails only these reads.
+fragment ActionBlok on ActionBlok {
+  id
+  context
+  blok {
+    id
+    context
+    heldByAction
+    componentTree
+    demoState
+    # The locals kept on this device between openings (core/blok/renderer/persist).
+    persist {
+      key
+      description
+    }
+  }
+}
+
+# The agent a run got for one dependency key; a key bound to several agents
+# comes once per agent.
+fragment TaskDependencyAgent on TaskDependencyAgent {
+  key
+  agent {
+    id
+    name
+    connected
+  }
+}
+
+# A run as an action blok draws it: what it reports (`@task`), its open asks
+# (from its HELD / DECIDED events, the same window `PostmanTask` reads), the
+# agent that runs it (`@self`), the agents its keys are bound to, and the
+# space it was started in.
+fragment RunTask on Task {
+  id
+  args
+  latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
+  isDone
+  events(ordering: {createdAt: DESC}) {
+    ...TaskEvent
+  }
+  action {
+    id
+    name
+  }
+  implementation {
+    id
+    agent {
+      id
+      name
+      connected
+    }
+  }
+  actionBloks {
+    ...ActionBlok
+  }
+  dependencyAgents {
+    ...TaskDependencyAgent
+  }
+  space {
+    id
+    name
+  }
+}
+
+# A space that places some of the agents asked about, and how many.
+fragment SpaceForAgents on SpaceForAgents {
+  placed
+  space {
+    ...ListSpace
+  }
+}

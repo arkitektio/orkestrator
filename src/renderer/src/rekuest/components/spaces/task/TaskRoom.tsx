@@ -1,9 +1,10 @@
 import { QueryError } from '@/core/layout/fallbacks/ErrorPage'
 import { cn } from '@/core/util/utils'
 import { useSpaceQuery } from '@/rekuest/api/graphql'
+import type { SpaceRun } from '@/rekuest/run/useRun'
 import { SpaceScene } from '@/rekuest/space-scene'
 import { BlokTravelProvider, useRekuestTravelSource } from '@/rekuest/travel/context'
-import { useLayoutEffect, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSpaceViewStore, useSpaceViewStoreApi } from './store'
 import { bindTravelClock } from './travelClock'
 
@@ -23,21 +24,33 @@ export const TaskTravel = ({ children }: { children: ReactNode }) => {
   return <BlokTravelProvider source={isLive ? null : source}>{children}</BlokTravelProvider>
 }
 
-/** One space as the task sees it: the real room, to look at. */
-const TaskRoom = ({ spaceId, overlay }: { spaceId: string; overlay?: ReactNode }) => {
+/** One space as the task sees it: the real room, to look at, with the run drawn into it. */
+const TaskRoom = ({ spaceId, overlay, run }: { spaceId: string; overlay?: ReactNode; run?: SpaceRun | null }) => {
   const { data, error, refetch } = useSpaceQuery({ variables: { id: spaceId } })
 
-  if (data?.space) return <SpaceScene space={data.space} overlay={overlay} readOnly />
+  if (data?.space) return <SpaceScene space={data.space} overlay={overlay} run={run} readOnly />
   if (error) return <QueryError error={error} onRetry={() => refetch()} />
   return null
 }
 
 /**
  * The rooms of the task, one at a time: a room is a whole 3D scene, so only
- * the one that is looked at is mounted.
+ * the one that is looked at is mounted. `run` is the task's action overlay,
+ * drawn into whichever room is shown; `startedIn` (the space the run was
+ * started in) is shown first.
  */
-export const TaskRooms = () => {
-  const rooms = useSpaceViewStore((s) => s.rooms)
+export const TaskRooms = ({ run, startedIn }: { run?: SpaceRun | null; startedIn?: { id: string; name: string } | null } = {}) => {
+  const placedIn = useSpaceViewStore((s) => s.rooms)
+  const rooms = useMemo(() => {
+    if (!startedIn) return placedIn
+    const own = placedIn.find((room) => room.spaceId === startedIn.id) ?? {
+      spaceId: startedIn.id,
+      spaceName: startedIn.name,
+      agentIds: [],
+      hasRoot: false
+    }
+    return [own, ...placedIn.filter((room) => room.spaceId !== startedIn.id)]
+  }, [placedIn, startedIn])
   const [picked, setPicked] = useState<string | null>(null)
   const room = rooms.find((candidate) => candidate.spaceId === picked) ?? rooms[0]
 
@@ -47,6 +60,7 @@ export const TaskRooms = () => {
     <TaskRoom
       key={room.spaceId}
       spaceId={room.spaceId}
+      run={run}
       overlay={
         rooms.length > 1 ? (
           <div

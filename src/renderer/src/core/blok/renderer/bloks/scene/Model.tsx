@@ -18,6 +18,7 @@ import {actionProp, describedString} from '../shared/schemas';
 import {
   ModelProvider,
   useSceneModelKey,
+  useSceneOwner,
   useSceneNotice,
   useSceneOverlay,
   useSceneStoreApi,
@@ -391,6 +392,15 @@ const LoadedModel = ({
     store.getState().setModel(key, instance);
     return () => store.getState().setModel(key, null);
   }, [id, instance, modelKey, store]);
+
+  // Who the model stands for (an agent, in a space): an overlay anchored there binds to it.
+  const owner = useSceneOwner();
+  const ownedKey = React.useId();
+  React.useEffect(() => {
+    if (!owner) return;
+    store.getState().setOwnedModel(owner, ownedKey, model);
+    return () => store.getState().setOwnedModel(owner, ownedKey, null);
+  }, [model, owner, ownedKey, store]);
 
   const placedKey = React.useId();
   React.useEffect(() => {

@@ -1,5 +1,6 @@
 import {RawInspector} from './bloks/inspector/Inspector';
 import {logoBlokComponents} from './bloks/logo';
+import {runBlokComponents} from './bloks/run';
 import {sceneBlokComponents} from './bloks/scene';
 import {structureBlokComponents} from './bloks/structure';
 import {shadcnComposableComponents} from './bloks';
@@ -32,6 +33,7 @@ export const defaultBlokCatalog: BlokCatalog = extendBlokCatalog(
     ...shadcnComposableComponents,
     ...structureBlokComponents,
     ...sceneBlokComponents,
+    ...runBlokComponents,
     ...logoBlokComponents,
     RawInspector,
   ],
