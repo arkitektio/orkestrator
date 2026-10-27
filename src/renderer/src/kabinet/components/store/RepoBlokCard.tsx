@@ -1,4 +1,5 @@
 import { type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
+import { parseBlokDeclarations } from "@/core/blok/renderer/declarations";
 import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
 import { useDialog } from "@/core/dialogs/registry";
 import { KabinetRepo, RekuestBlok } from "@/core/linkers";
@@ -19,7 +20,8 @@ const CACHE_PREFIX = "kabinet-repo:";
 /** A repository blok's tree, fetched only for a first drawing. */
 const useRepoBlokTree = (cacheId: string): LogoTree | null => {
   const { data } = useRepoBlokTreeQuery({ variables: { id: cacheId.slice(CACHE_PREFIX.length) } });
-  return data?.repoBlok ?? null;
+  const blok = data?.repoBlok;
+  return blok ? { ...parseBlokDeclarations(blok), componentTree: blok.componentTree, hash: blok.hash } : null;
 };
 
 /** What a tile can do with its blok: install it, update it, or use the installed copy. */

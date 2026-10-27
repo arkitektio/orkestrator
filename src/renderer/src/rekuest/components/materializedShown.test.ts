@@ -2,8 +2,8 @@
 import { describe, expect, it } from "vitest";
 import { shownContent } from "./MaterializedBlokRenderer";
 
-const blok = { componentTree: [{ id: "head", component: "Text" }], demoState: { at: "head" } };
-const revision = { componentTree: [{ id: "pinned", component: "Text" }], demoState: { at: "pinned" } };
+const blok = { componentTree: [{ id: "head", component: "Text" }], demo: { at: "head" } };
+const revision = { componentTree: [{ id: "pinned", component: "Text" }], demo: { at: "pinned" } };
 
 describe("shownContent", () => {
   it("draws the revision a materialization shows", () => {

@@ -1,13 +1,15 @@
 import * as React from 'react';
 import {Arkitekt} from '@/core/connection/arkitekt/host';
 import {
+  componentStateStore,
   openBlokPersistence,
+  type BlokComponentStateStore,
+  type BlokLocal,
   type BlokPersistScope,
-  type BlokPersistedLocal,
   type BlokPersistence,
 } from '@/core/blok/renderer/persist';
 
-/** Whose kept locals these are: the hub (its id, else its address) and the user of the active profile. */
+/** Whose kept values these are: the hub (its id, else its address) and the user of the active profile. */
 const usePersistScope = (): Omit<BlokPersistScope, 'materializedBlok'> | null => {
   const identity = Arkitekt.useActiveProfile()?.identity;
   const hub = identity?.hubId ?? identity?.baseUrl;
@@ -16,36 +18,32 @@ const usePersistScope = (): Omit<BlokPersistScope, 'materializedBlok'> | null =>
 };
 
 /**
- * The locals this device keeps for a materialization: `undefined` while they
- * are read, `null` when there is nothing to keep (the blok persists nothing,
- * or nobody is signed in to keep it for). Opened again when the declared keys,
- * the hub or the user change; the demo state is read as the defaults then.
+ * The locals this device keeps for a materialization (those declared
+ * `Local(persist=True)`): `undefined` while they are read, `null` when there is
+ * nothing to keep (the blok persists no local, or nobody is signed in to keep
+ * it for). Opened again when the persisted keys, the hub or the user change.
  */
 export const useBlokPersistence = (
   materializedBlok: string,
-  declared: ReadonlyArray<BlokPersistedLocal> | null | undefined,
-  demoState: unknown,
+  locals: ReadonlyArray<BlokLocal> | null | undefined,
 ): BlokPersistence | null | undefined => {
   const scope = usePersistScope();
-  const keys = (declared ?? []).map(local => local.key).join('\u0000');
+  const keys = (locals ?? [])
+    .filter(local => local.persist)
+    .map(local => local.key)
+    .join('\u0000');
   const wanted = scope && keys ? `${JSON.stringify([scope.hub, scope.user, materializedBlok])}\u0000${keys}` : null;
   const [opened, setOpened] = React.useState<{for: string; persistence: BlokPersistence} | null>(null);
-  // Read when the blok is opened, not followed: a new demo state alone opens nothing again.
-  const defaults = React.useRef(demoState);
-  const locals = React.useRef(declared);
+  // Read when the blok is opened, not followed: new defaults alone open nothing again.
+  const declared = React.useRef(locals);
   React.useEffect(() => {
-    defaults.current = demoState;
-    locals.current = declared;
+    declared.current = locals;
   });
 
   React.useEffect(() => {
     if (!wanted || !scope) return;
     let cancelled = false;
-    void openBlokPersistence({
-      scope: {...scope, materializedBlok},
-      declared: locals.current ?? [],
-      defaults: (defaults.current as Record<string, unknown> | null) ?? {},
-    }).then(persistence => {
+    void openBlokPersistence({scope: {...scope, materializedBlok}, locals: declared.current ?? []}).then(persistence => {
       if (!cancelled) setOpened({for: wanted, persistence});
     });
     return () => {
@@ -55,4 +53,14 @@ export const useBlokPersistence = (
 
   if (!wanted) return null;
   return opened?.for === wanted ? opened.persistence : undefined;
+};
+
+/**
+ * Where the components of a materialization keep their own state by id
+ * (`<Scene id="main" persist>`): per (hub, user, materialized blok, component
+ * id) on this device. Null when nobody is signed in to keep it for.
+ */
+export const useBlokComponentStore = (materializedBlok: string): BlokComponentStateStore | null => {
+  const scope = usePersistScope();
+  return React.useMemo(() => (scope ? componentStateStore({...scope, materializedBlok}) : null), [materializedBlok, scope]);
 };

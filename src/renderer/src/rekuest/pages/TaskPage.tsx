@@ -57,6 +57,7 @@ import { HoldCard } from "../components/task/HoldCard";
 import { pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
 import { OpenRunInSpace, TaskRunPanel } from "../run/TaskRun";
+import { TaskBloks } from "../components/TaskBloks";
 
 // Only stats the main column doesn't already show — status, progress and
 // delegations live in the hero / Delegations section.
@@ -175,6 +176,11 @@ export const TPage = asDetailQueryRoute(
     const [selection, setSelection] = useState<LaneSelection>(null);
     // What waits for a decision: this task's own hold, or a child it asked for.
     const holds = useMemo(() => pendingHolds(data.task.events), [data.task.events]);
+    // An ask through a blok is answered on its hold card: the blok list leaves it out.
+    const onCards = useMemo(
+      () => new Set(holds.flatMap((hold) => (hold.blok ? [hold.blok] : []))),
+      [holds],
+    );
     const resolved = useMemo(
       () => resolveSelection(data.task, selection),
       [data.task, selection],
@@ -191,6 +197,8 @@ export const TPage = asDetailQueryRoute(
         <TaskFiredBy task={data.task} />
         {/* The run as its action draws it, when the action declared a blok for the panel. */}
         <TaskRunPanel taskId={data.task.id} />
+        {/* What the task showed: its informs, and its asks once answered. */}
+        <TaskBloks task={data.task.id} answeredElsewhere={onCards} />
         <TaskLane
           task={data.task}
           selection={

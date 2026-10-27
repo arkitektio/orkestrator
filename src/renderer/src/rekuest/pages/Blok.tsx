@@ -93,11 +93,11 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             <div className="grid gap-3 rounded-2xl border border-border/60 bg-background/70 p-4">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Catalog
+                  Module
                 </p>
                 <p className="mt-1 text-sm font-medium">
-                  {data.blok.catalog.name}
-                  {!data.blok.catalog.isRegistered && (
+                  {data.blok.module.name}
+                  {!data.blok.module.isRegistered && (
                     <span className="ml-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs text-muted-foreground">
                       not registered
                     </span>
@@ -124,7 +124,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                   <ArgPortRows ports={data.blok.args} />
                 </SignatureColumn>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Offered under "Tailored Interfaces" on what these take, and read at <span className="font-mono">@args.&lt;key&gt;</span>.
+                  Offered under "Tailored Interfaces" on what these take, and read at <span className="font-mono">args.&lt;key&gt;</span>.
                 </p>
               </div>
             )}

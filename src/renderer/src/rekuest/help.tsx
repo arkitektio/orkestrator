@@ -162,14 +162,15 @@ export const REKUEST_HELP = {
   ),
   blokEditor: (
     <PageHelp
-      intro="Write a blok in BSX: tags for the components, attributes for their props. The preview on the right follows as you type, drawn against the demo state."
+      intro="Write a blok in BSX: tags for the components, attributes for their props. The preview on the right follows as you type, drawn against its demo."
       steps={[
         <>Type <b>&lt;</b> to see the components that fit where the cursor is; a part of its parent (a <b>SelectItem</b> in a <b>Select</b>) comes first. Accepting one fills in the props it needs.</>,
         <>Inside a tag, start typing to see its props; hover a tag or a prop to read what it does.</>,
-        <>A value starting with <b>@</b> reads or calls something: <b>@stage.position</b> reads a state, <b>@stage.move(x=event.value)</b> calls an action when a handler fires, <b>@utils.…</b> calls a util function, <b>@args.…</b> reads what the blok is opened for.</>,
-        <>Add <b>.into(run)</b> after an action call to keep its task under <b>run</b>, and read <b>@run.running</b> or <b>@run.result</b> elsewhere.</>,
+        <>An attribute in quotes is a literal (<b>label=&quot;Go&quot;</b>); one in braces is an expression: <b>{"{deps.stage.position.x}"}</b> reads a state, <b>{"{args.image}"}</b> what the blok is opened for, <b>{"{str.upper(x)}"}</b> calls a function. Text between tags fills the component's text prop: <b>&lt;Button&gt;Go&lt;/Button&gt;</b>.</>,
+        <>A callback does exactly one thing: <b>{"onClick={deps.stage.move(x: event.value) into move}"}</b> calls an action and keeps its task as <b>move</b> (read <b>move.running</b>, <b>move.returns</b>); <b>{"queries.<name>.refetch()"}</b>, <b>ui.copy</b> and <b>task.answer</b> are the other things it may do.</>,
         <>Declare the agents it draws from in the <b>Dependencies</b> tab: a key, the app, and the actions and states it uses. Completion offers exactly those.</>,
-        <>Fill the <b>Demo state</b> tab with JSON to see the preview with values, keyed by dependency.</>,
+        <>Declare <b>Locals</b> (form state, each a typed port a control binds with <b>{"bind={name}"}</b>, kept on this device when ticked) and <b>Reads</b> (GraphQL queries and subscriptions, read as <b>queries.&lt;name&gt;</b>; pass <b>then</b> as a variable to read the moment viewed while time-travelling).</>,
+        <>Fill the <b>Demo</b> tab with JSON to see the preview with values: <b>{"{deps, args, task, queries}"}</b>, as the blok reads them.</>,
         <>Press <b>Create blok</b> or <b>Save</b>, say in a sentence what changed if you like, and press <b>Save revision</b>. Every save is a revision of its own.</>,
         <>A moment after you stop typing the server checks the draft too: the line under the editor says what it found, and its warnings are underlined.</>,
         <>If someone saved while you were editing, a yellow bar says so: press <b>Save on top</b> to save yours after theirs, or <b>Load it</b> to drop your changes and take theirs.</>,
@@ -177,7 +178,7 @@ export const REKUEST_HELP = {
       ]}
       tips={[
         <>A red underline marks what will not save: BSX that does not parse, a prop the component does not have, or a name no dependency declares.</>,
-        <>Text between tags is not shown: pass it as a prop, e.g. <b>&lt;Text text="Hello" /&gt;</b>.</>,
+        <>Wrap what loads in <b>&lt;suspense&gt;</b> with a <b>&lt;fallback&gt;</b> and an <b>&lt;error&gt;</b>; without one each component shows its own skeleton.</>,
         <>A blok an app provides can be edited too: its first save makes a copy of your own, and the editor moves to the copy.</>,
       ]}
     />

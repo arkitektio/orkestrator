@@ -1,32 +1,33 @@
 import * as React from 'react';
+import {dependencyKeysRead} from '@/core/blok/bsx/infer';
+import {normalizeBlokArgument, normalizeBlokComponentTree, type BlokActionArgument, type BlokComponentNode} from '@/core/blok/renderer/runtime';
 import {BlokRunHostProvider, type BlokRunHost} from '@/core/blok/renderer/bloks/run';
-import {useBlokRuntime} from '@/core/blok/renderer/runtime';
-import type {ActionBlokFragment, RunTaskFragment} from '../api/graphql';
+import {TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer} from '../components/MaterializedBlokRenderer';
 import {HoldCard} from '../components/task/HoldCard';
 import {agentMappingsOf, agentsByKey, type RunBinding, type RunBoundAgent} from './binding';
-import {IDLE_TASK_ROOT, openAsks, taskRoot, type TaskRoot} from './taskRoot';
+import {useBlokTravelMoment} from '../travel/context';
+import {parseTimestamp} from '../travel/travelSource';
+import {shownAsk, taskRecordOf} from './taskRoot';
 
 /**
  * An action's own blok, drawn for one run of it: its dependency keys bound to
- * the agents the run got, `@self` to the agent running it, `@task` following
- * the task and `@args` what it was started with. Before a run (a preview) the
- * keys come from the dry run and `@task` stays idle, or as the blok's
- * demo state has it.
+ * the agents the run got (`deps.<key>`), `self` the agent running it, `task`
+ * following the task (the one task record, at the viewed moment while
+ * travelling) and `args` what it was started with. Before a run (a preview)
+ * the keys come from the dry run and `task` is as the blok's `demo.task` has
+ * it, else idle.
  */
 
 /** What an action's blok is drawn for. */
 export type ActionBlokRun = {
   binding: RunBinding;
-  /** The agent running the action (`@self`); null when not known yet. */
+  /** The agent running the action (`self`); null when not known yet. */
   self: RunBoundAgent | null;
   /** The run; null for a preview. */
   task: RunTaskFragment | null;
 };
-
-/** The root `@task` is kept under. */
-export const TASK_ROOT = 'task';
 
 /** The run as `Task.dependencyAgents` and `Task.implementation` describe it. */
 export const runOfTask = (task: RunTaskFragment): ActionBlokRun => ({
@@ -44,11 +45,10 @@ export const runOfTask = (task: RunTaskFragment): ActionBlokRun => ({
   task,
 });
 
-/** The run's open ask, newest, answered in place: answering resumes the run. */
+/** The ask `task.ask` shows, answered in place: answering resumes the run. */
 export const RunAsk = ({task}: {task: RunTaskFragment}) => {
-  const asks = React.useMemo(() => openAsks(task), [task]);
-  const hold = asks.at(-1);
-  if (!hold || task.isDone) return null;
+  const hold = React.useMemo(() => shownAsk(task), [task]);
+  if (!hold) return null;
   return <HoldCard key={hold.task} hold={hold} />;
 };
 
@@ -59,8 +59,8 @@ const AskPlaceholder = () => (
 );
 
 /**
- * The run host the run components (`At`, `Route`, `TaskAsk`) read, for `run`.
- * `showAsk: false` leaves `TaskAsk` empty where the page shows the run's asks already.
+ * The run host the run components (`Anchor`, `Route`, `ask`) read, for `run`.
+ * `showAsk: false` leaves `ask` empty where the page shows the run's asks already.
  */
 export const useRunHost = (run: ActionBlokRun, showAsk = true): BlokRunHost => {
   const byKey = React.useMemo(() => agentsByKey(run.binding, run.self), [run.binding, run.self]);
@@ -79,46 +79,41 @@ export const RunHost = ({run, showAsk, children}: {run: ActionBlokRun; showAsk?:
   <BlokRunHostProvider value={useRunHost(run, showAsk)}>{children}</BlokRunHostProvider>
 );
 
-const sameRoot = (a: TaskRoot | undefined, b: TaskRoot): boolean =>
-  a !== undefined && (Object.keys(b) as Array<keyof TaskRoot>).every(key => a[key] === b[key]);
+/** A normalized root that is a node (the normalizer passes anything else through, for preflight to refuse). */
+const isComponentNode = (value: unknown): value is BlokComponentNode =>
+  typeof value === 'object' && value !== null && typeof (value as {id?: unknown}).id === 'string' && typeof (value as {component?: unknown}).component === 'string';
 
-/** Keeps `@task` on the run as it moves, written only when something it shows changed. */
-const TaskSync = ({task}: {task: RunTaskFragment}) => {
-  const setRuntimeValue = useBlokRuntime(state => state.setRuntimeValue);
-  const clearRuntimeValue = useBlokRuntime(state => state.clearRuntimeValue);
-  const root = React.useMemo(() => taskRoot(task), [task]);
-  const written = React.useRef<TaskRoot | undefined>(undefined);
-  React.useEffect(() => {
-    if (sameRoot(written.current, root)) return;
-    written.current = root;
-    setRuntimeValue(TASK_ROOT, root);
-  }, [root, setRuntimeValue]);
-  React.useEffect(
-    () => () => {
-      written.current = undefined;
-      clearRuntimeValue(TASK_ROOT);
-    },
-    [clearRuntimeValue],
+/** The dependency keys `actionBlok`'s tree reads that `binding` binds to no agent. */
+export const unboundOfRun = (actionBlok: ActionBlokFragment, binding: RunBinding): string[] => {
+  const {roots} = normalizeBlokComponentTree(actionBlok.blok.componentTree as unknown[] | null);
+  const variables = [...(actionBlok.blok.queries ?? []), ...(actionBlok.blok.subscriptions ?? [])].flatMap(read =>
+    (Array.isArray(read.variables) ? read.variables : []).map(argument => normalizeBlokArgument(argument) as BlokActionArgument),
   );
-  return null;
+  const bound = new Set(binding.map(({key}) => key));
+  const nodes = roots.filter(isComponentNode);
+  return dependencyKeysRead(nodes, variables).filter(key => !bound.has(key));
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Its locals, with `@task` idle unless the blok's demo state says how a run looks. */
-const demoStateOf = (demoState: unknown): Record<string, unknown> => {
-  const state = isRecord(demoState) ? demoState : {};
-  return TASK_ROOT in state ? state : {...state, [TASK_ROOT]: IDLE_TASK_ROOT};
+/** `task.answer(values)`: the ask `task.ask` shows, approved with what the blok answered. */
+const useAnswerShownAsk = (task: RunTaskFragment | null): ((values: Record<string, unknown>) => Promise<unknown>) | undefined => {
+  const [decide] = useDecideMutation();
+  const held = React.useMemo(() => (task ? shownAsk(task)?.task : undefined), [task]);
+  return React.useMemo(
+    () => (held ? (values: Record<string, unknown>) => decide({variables: {input: {task: held, approved: true, values}}}) : undefined),
+    [decide, held],
+  );
 };
 
 type ActionBlokRendererProps = Omit<
   React.ComponentProps<typeof MaterializedBlokRenderer>,
-  'materializedBlok' | 'args' | 'onArgsChange' | 'ask' | 'onReturn' | 'syncs'
+  'materializedBlok' | 'args' | 'onArgsChange' | 'task' | 'onAnswer' | 'syncs'
 > & {
   actionBlok: ActionBlokFragment;
   run: ActionBlokRun;
-  /** Whether `TaskAsk` shows the run's open ask; off where the page shows it already. */
+  /** Whether `ask` shows the run's open ask; off where the page shows it already. */
   showAsk?: boolean;
 };
 
@@ -129,25 +124,43 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, ...rendererProps}:
       id: `action-blok:${actionBlok.id}`,
       blok: {
         componentTree: actionBlok.blok.componentTree,
-        demoState: demoStateOf(actionBlok.blok.demoState),
-        persist: actionBlok.blok.persist,
+        vocab: actionBlok.blok.vocab,
+        resolvedLocals: actionBlok.blok.resolvedLocals,
+        demo: actionBlok.blok.demo,
+        queries: actionBlok.blok.queries,
+        subscriptions: actionBlok.blok.subscriptions,
       },
       revision: null,
       agentMappings: agentMappingsOf(run.binding, run.self),
+      // A run's binding is final: a key its tree reads that the run left unbound (an optional
+      // dependency left out) reads as failed, `deps.unbound`. A preview's binding is still coming.
+      unboundDependencies: run.task ? unboundOfRun(actionBlok, run.binding) : [],
     }),
-    [actionBlok, run.binding, run.self],
+    [actionBlok, run.binding, run.self, run.task],
   );
   const args = React.useMemo<BlokArgs | undefined>(
     () => (run.task && isRecord(run.task.args) ? run.task.args : undefined),
     [run.task],
   );
+  const moment = useBlokTravelMoment();
+  const task = React.useMemo(() => {
+    if (!run.task) {
+      const demo = isRecord(actionBlok.blok.demo) && isRecord(actionBlok.blok.demo.task) ? actionBlok.blok.demo.task : null;
+      return demo ? {...taskRecordOf({id: '', latestEventKind: TaskEventKind.Queued, isDone: false, events: []}), ...demo} : null;
+    }
+    const at = moment === null ? undefined : parseTimestamp(moment);
+    return taskRecordOf(run.task, at);
+  }, [actionBlok.blok.demo, moment, run.task]);
+  const answer = useAnswerShownAsk(run.task);
   return (
     <RunHost run={run} showAsk={showAsk}>
       <MaterializedBlokRenderer
         {...rendererProps}
         materializedBlok={materializedBlok}
         args={args}
-        syncs={run.task ? <TaskSync task={run.task} /> : null}
+        task={task}
+        // `task.answer` answers the ask `task.ask` shows; the past is not answered.
+        onAnswer={moment === null ? answer : undefined}
       />
     </RunHost>
   );

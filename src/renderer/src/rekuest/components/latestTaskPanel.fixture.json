@@ -1,1 +1,113 @@
-[{"id": "Card", "props": null, "children": [{"id": "Card/CardHeader[0]", "props": null, "children": [{"id": "Card/CardHeader[0]/CardTitle[0]", "props": [{"key": "text", "util_call": null, "agent_call": null, "static_value": "Fake starmist", "dynamic_value": null, "declares_value": null}], "children": null, "component": "CardTitle"}], "component": "CardHeader"}, {"id": "Card/CardContent[0]", "props": null, "children": [{"id": "Card/CardContent[0]/Row[0]", "props": null, "children": [{"id": "Card/CardContent[0]/Row[0]/Button[0]", "props": [{"key": "label", "util_call": null, "agent_call": null, "static_value": "Segment fluorescent nuclei", "dynamic_value": null, "declares_value": null}, {"key": "onClick", "util_call": null, "agent_call": {"arguments": null, "operation": "predict_flou2", "dependency": "self"}, "static_value": null, "dynamic_value": null, "declares_value": null}, {"key": "disabled", "util_call": null, "agent_call": null, "static_value": null, "dynamic_value": {"path": "self.predict_flou2.latest.running", "literal": null}, "declares_value": null}], "children": null, "component": "Button"}, {"id": "Card/CardContent[0]/Row[0]/Button[1]", "props": [{"key": "label", "util_call": null, "agent_call": null, "static_value": "Segment H&E nuclei", "dynamic_value": null, "declares_value": null}, {"key": "onClick", "util_call": null, "agent_call": {"arguments": null, "operation": "predict_stardist_he", "dependency": "self"}, "static_value": null, "dynamic_value": null, "declares_value": null}, {"key": "disabled", "util_call": null, "agent_call": null, "static_value": null, "dynamic_value": {"path": "self.predict_stardist_he.latest.running", "literal": null}, "declares_value": null}], "children": null, "component": "Button"}], "component": "Row"}, {"id": "Card/CardContent[0]/Progress[0]", "props": [{"key": "value", "util_call": {"arguments": [{"key": "a", "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_flou2.latest.progress", "value_literal": null}, {"key": null, "util_call": {"arguments": [{"key": "value", "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_flou2.latest.running", "value_literal": null}], "operation": "type.toNumber"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.multiply"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}, {"key": null, "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_stardist_he.latest.progress", "value_literal": null}, {"key": null, "util_call": {"arguments": [{"key": "value", "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_stardist_he.latest.running", "value_literal": null}], "operation": "type.toNumber"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.multiply"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.max"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}, {"key": "b", "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_flou2.latest.progress", "value_literal": null}, {"key": null, "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_stardist_he.latest.progress", "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.max"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}, {"key": null, "util_call": {"arguments": [{"key": "a", "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": 1}, {"key": "b", "util_call": {"arguments": [{"key": "values", "util_call": null, "agent_call": null, "value_dict": null, "value_list": [{"key": null, "util_call": {"arguments": [{"key": "value", "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_flou2.latest.running", "value_literal": null}], "operation": "type.toNumber"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}, {"key": null, "util_call": {"arguments": [{"key": "value", "util_call": null, "agent_call": null, "value_dict": null, "value_list": null, "value_path": "self.predict_stardist_he.latest.running", "value_literal": null}], "operation": "type.toNumber"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.max"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "operation": "sub"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "value_path": null, "value_literal": null}], "operation": "math.multiply"}, "agent_call": null, "value_dict": null, "value_list": null, "value_path": null, "value_literal": null}], "operation": "add"}, "agent_call": null, "static_value": null, "dynamic_value": null, "declares_value": null}], "children": null, "component": "Progress"}], "component": "CardContent"}], "component": "Card"}]
+[
+  {
+    "id": "Html[0]",
+    "component": "Html",
+    "children": [
+      {
+        "id": "Html[0]/Card[0]",
+        "component": "Card",
+        "children": [
+          {
+            "id": "Html[0]/Card[0]/CardHeader[0]",
+            "component": "CardHeader",
+            "children": [
+              {
+                "id": "Html[0]/Card[0]/CardHeader[0]/CardTitle[0]",
+                "component": "CardTitle",
+                "props": [
+                  {
+                    "key": "text",
+                    "static_value": "Fake starmist"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "Html[0]/Card[0]/CardContent[0]",
+            "component": "CardContent",
+            "children": [
+              {
+                "id": "Html[0]/Card[0]/CardContent[0]/Row[0]",
+                "component": "Row",
+                "children": [
+                  {
+                    "id": "Html[0]/Card[0]/CardContent[0]/Row[0]/Button[0]",
+                    "component": "Button",
+                    "props": [
+                      {
+                        "key": "disabled",
+                        "dynamic_value": {
+                          "path": "self.tasks.predict_flou2.running"
+                        }
+                      },
+                      {
+                        "key": "onClick",
+                        "agent_call": {
+                          "dependency": "self",
+                          "operation": "predict_flou2"
+                        }
+                      },
+                      {
+                        "key": "label",
+                        "static_value": "Segment fluorescent nuclei"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "Html[0]/Card[0]/CardContent[0]/Row[0]/Button[1]",
+                    "component": "Button",
+                    "props": [
+                      {
+                        "key": "disabled",
+                        "dynamic_value": {
+                          "path": "self.tasks.predict_stardist_he.running"
+                        }
+                      },
+                      {
+                        "key": "onClick",
+                        "agent_call": {
+                          "dependency": "self",
+                          "operation": "predict_stardist_he"
+                        }
+                      },
+                      {
+                        "key": "label",
+                        "static_value": "Segment H&E nuclei"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "Html[0]/Card[0]/CardContent[0]/Progress[0]",
+                "component": "Progress",
+                "props": [
+                  {
+                    "key": "value",
+                    "util_call": {
+                      "operation": "math.max",
+                      "arguments": [
+                        {
+                          "key": "values",
+                          "value_list": [
+                            {
+                              "value_path": "self.tasks.predict_flou2.progress"
+                            },
+                            {
+                              "value_path": "self.tasks.predict_stardist_he.progress"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

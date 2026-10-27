@@ -1,12 +1,12 @@
 /**
- * The items a blok is opened for (`Blok.args`), read by its tree at `@args.<key>`.
+ * The items a blok is opened for (`Blok.args`), read by its tree at `args.<key>`.
  *
  * They travel in the page's URL, `?args=<json>`, so a reload or a shared link
  * opens the blok on the same item. Values are what an action takes for the
  * same port: a structure is `{__identifier, object}`, a list a list of them.
  */
 
-/** Where a blok reads the items it is opened for: `@args.<key>`, null until it is opened for one. */
+/** Where a blok reads the items it is opened for: `args.<key>`, null until it is opened for one. */
 export const BLOK_ARGS_ROOT = "args";
 
 export const BLOK_ARGS_PARAM = "args";

@@ -17,13 +17,13 @@ import {
   type CatalogComponentInput,
   type CatalogOperationInput,
   type CatalogPropInput,
-  type RegisterUiCatalogInput,
-  type UiCatalogFragment,
+  type RegisterModuleInput,
+  type ModuleFragment,
 } from "@/rekuest/api/graphql";
 
 /**
  * Maps the renderer's blok catalog (`defaultBlokCatalog`) onto rekuest's
- * `RegisterUiCatalogInput`, so the server can validate bloks and definitions
+ * `RegisterModuleInput`, so the server can validate bloks and definitions
  * against what this client actually renders and evaluates.
  *
  * Lives under rekuest because it emits rekuest input types; the blok runtime
@@ -39,6 +39,7 @@ type ZodDef = {
   in?: z.ZodTypeAny;
   options?: z.ZodTypeAny[];
   values?: unknown[];
+  entries?: Record<string, unknown>;
 };
 
 const defOf = (schema: z.ZodTypeAny): ZodDef =>
@@ -56,6 +57,14 @@ const unwrapForKind = (schema: z.ZodTypeAny): z.ZodTypeAny => {
     return current;
   }
   return current;
+};
+
+/** The closed set of strings a `z.enum` prop takes, through its wrappers; null for any other schema. */
+export const zodEnumValues = (schema: z.ZodTypeAny): string[] | null => {
+  const def = defOf(unwrapForKind(schema));
+  if (def.type !== "enum" || !def.entries) return null;
+  const values = Object.values(def.entries);
+  return values.every((value): value is string => typeof value === "string") ? values : null;
 };
 
 /** Best-effort `CatalogValueKind` for a zod schema; unknown shapes are `ANY`. */
@@ -135,12 +144,13 @@ const RETURN_KIND: Record<BlokFunctionReturnType, CatalogValueKind> = {
 };
 
 /**
- * `RegisterUiCatalogInput` marks the lists optional (server defaults to `[]`);
+ * `RegisterModuleInput` marks the lists optional (server defaults to `[]`);
  * the builder always fills them, and consumers rely on that.
  */
-export type BuiltUiCatalogInput = RegisterUiCatalogInput & {
+export type BuiltModuleInput = RegisterModuleInput & {
   components: CatalogComponentInput[];
   operations: CatalogOperationInput[];
+  catalogs: string[];
 };
 
 const sortByKey = <T extends { key: string }>(items: T[]): T[] =>
@@ -222,7 +232,7 @@ export const operationInputs = (fn: BlokFunctionDefinition): CatalogOperationInp
   ];
 };
 
-export type BuildUiCatalogOptions = {
+export type BuildModuleOptions = {
   /**
    * Operation names the server's built-in base catalog already defines. A UI
    * catalog may not redefine them (the server rejects the whole registration),
@@ -231,17 +241,25 @@ export type BuildUiCatalogOptions = {
    */
   reservedOperations?: ReadonlySet<string>;
   /**
-   * Component names the server's base catalog already defines (its control
-   * flow: `foreach`, `if`, `match`, …). Left out for the same reason.
+   * Component names the catalog does not publish: the server's base catalog
+   * (`foreach`, `if`, `match`, …) and the spec's standard catalogs (`ui@1`,
+   * `scene@1`, …), which this UI implements whole (`implementedCatalogs`).
+   * What is left is the UI's own extras.
    */
   reservedComponents?: ReadonlySet<string>;
+  /**
+   * The spec's standard catalogs this UI implements whole, as `name@version`
+   * (`implementedCatalogs`): the server resolves their components from the
+   * spec, so `components` only carries the extras.
+   */
+  catalogs?: readonly string[];
 };
 
-export const buildRegisterUiCatalogInput = (
+export const buildRegisterModuleInput = (
   catalog: BlokCatalog,
   meta: { name: string; description?: string | null },
-  options: BuildUiCatalogOptions = {},
-): BuiltUiCatalogInput => ({
+  options: BuildModuleOptions = {},
+): BuiltModuleInput => ({
   name: meta.name,
   description: meta.description ?? null,
   components: [...catalog.components.values()]
@@ -252,6 +270,7 @@ export const buildRegisterUiCatalogInput = (
     .flatMap(operationInputs)
     .filter((operation) => !options.reservedOperations?.has(operation.name))
     .sort((left, right) => left.name.localeCompare(right.name)),
+  catalogs: [...(options.catalogs ?? [])].sort(),
   // The client's per-PortKind fallbacks are built-in React widgets, not
   // catalog components, so there is nothing meaningful to publish yet.
   widgetDefaults: [],
@@ -307,7 +326,7 @@ const canonicalFields = (
   );
 
 const canonicalize = (
-  catalog: Pick<BuiltUiCatalogInput, "components" | "operations"> | UiCatalogFragment,
+  catalog: Pick<BuiltModuleInput, "components" | "operations"> | ModuleFragment,
 ): CanonicalCatalog => ({
   components: [...catalog.components]
     .map((component) => ({
@@ -336,14 +355,17 @@ const canonicalize = (
  * so the startup registrar can skip the mutation. Compared structurally after
  * normalizing ordering, `__typename` markers and server-side input defaults.
  */
-export const catalogMatches = (
-  remote: UiCatalogFragment | null | undefined,
-  input: BuiltUiCatalogInput,
+export const moduleMatches = (
+  remote: ModuleFragment | null | undefined,
+  input: BuiltModuleInput,
 ): boolean => {
   if (!remote || !remote.isRegistered || remote.name !== input.name) {
     return false;
   }
   if ((remote.description ?? null) !== (input.description ?? null)) {
+    return false;
+  }
+  if (JSON.stringify([...remote.catalogs].sort()) !== JSON.stringify([...input.catalogs].sort())) {
     return false;
   }
   return JSON.stringify(canonicalize(remote)) === JSON.stringify(canonicalize(input));

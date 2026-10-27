@@ -1,14 +1,14 @@
-import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@/core/blok/renderer/runtime';
+import {applyTaskUpdate, idleTaskRecord, withTaskStatus, type BlokTaskRecord} from '@/core/blok/renderer/runtime';
 import type {TaskEventFragment} from '../api/graphql';
 import {parseTimestamp} from '../travel/travelSource';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
 
 /**
- * What follows an action's key in the path of its latest task
- * (`self.blur.latest.progress`): the same record a bound call holds
- * (`runtime/task.ts`), for a run the blok did not start itself.
+ * Where a blok reads the latest task of an action of a bound agent:
+ * `deps.<key>.tasks.<action>` (`self.tasks.<action>` for `deps.self`), the one
+ * task record (`runtime/task.ts`) for a run the blok did not start itself.
  */
-export const LATEST_SEGMENT = 'latest';
+export const latestTaskPath = (dependencyKey: string, action: string) => `deps.${dependencyKey}.tasks.${action}`;
 
 type ReportedEvent = Pick<TaskEventFragment, 'kind' | 'progress' | 'message' | 'returns'> & {createdAt?: unknown};
 
@@ -59,7 +59,7 @@ export const pickLatestTask = <T extends LatestTaskSource>(
 export const latestTaskRecord = (task: LatestTaskSource | undefined, at?: number): BlokTaskRecord => {
   if (!task) return idleTaskRecord();
 
-  let record: BlokTaskRecord = {...idleTaskRecord(), status: 'running', running: true};
+  let record: BlokTaskRecord = {...withTaskStatus(idleTaskRecord(), 'running'), id: task.id};
   for (let index = task.events.length - 1; index >= 0; index -= 1) {
     // A task that has ended reports nothing further worth showing.
     if (!record.running) break;

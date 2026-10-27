@@ -5,20 +5,23 @@ import {MemoryRouter} from 'react-router-dom';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import MaterializedBlokById from './MaterializedBlokById';
 
-/** `<Text text="@args.note" />`, opened for a `note`. */
+/** `<Text text={args.note} />`, opened for a `note`. */
 const materializedBlok = {
   id: '21',
   name: 'Notes',
   blok: {
     name: 'notes',
     componentTree: [{id: 'root', component: 'Text', props: [{key: 'text', dynamic_value: {path: 'args.note'}}]}],
-    demoState: {args: {note: null}},
+    resolvedLocals: [],
     dependencies: [],
     args: [{key: 'note', nullable: false}],
   },
   agentMappings: [],
 };
 
+vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
+vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));
+vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
 vi.mock('@/rekuest/api/graphql', async importOriginal => ({
   ...(await importOriginal<object>()),
   useMaterializedBlokQuery: () => ({data: {materializedBlok}, loading: false, error: undefined}),

@@ -18,8 +18,8 @@ import { blokArgsFromStructures } from "./blokArgsFromStructures";
 import MaterializedBlokRenderer from "./MaterializedBlokRenderer";
 import { RekuestBlokPreview } from "./preview/RekuestBlokPreview";
 import { PortValue } from "./task/PortValue";
-import { BlokServiceNotice } from "@/core/blok/services/BlokServiceNotice";
-import { BlokServiceChips, BlokServicesGuard } from "./BlokServices";
+import { idleTaskRecord, withTaskStatus, type BlokTaskRecord } from "@/core/blok/renderer/runtime";
+import { BlokServiceChips, BlokServicesGuard, blokServicesOf } from "./BlokServices";
 
 /** Where an ask through a blok stands, and its answer once there is one. */
 export type BlokAsk = {
@@ -48,6 +48,18 @@ const useOnScreen = (ref: React.RefObject<Element | null>) => {
 };
 
 /** What a person answered through the blok, each value as itself (an image as the image). */
+/** An ask through a blok as the `task` record its tree reads: asking while it waits, then settled with the answer. */
+const askRecord = (status: TaskBlokStatus, values: unknown): BlokTaskRecord => {
+  const answer = values && typeof values === "object" && !Array.isArray(values) ? (values as Record<string, unknown>) : null;
+  if (status === TaskBlokStatus.Waiting) {
+    return { ...withTaskStatus(idleTaskRecord(), "asking"), ask: { question: "", form: {} } };
+  }
+  // Shown: an inform blok, beside a task that goes on.
+  if (status === TaskBlokStatus.Shown) return withTaskStatus(idleTaskRecord(), "running");
+  const settled = status === TaskBlokStatus.Dismissed || status === TaskBlokStatus.Gone ? "cancelled" : "done";
+  return { ...withTaskStatus(idleTaskRecord(), settled), answer };
+};
+
 const AnswerLine = ({ ask, returns }: { ask: BlokAsk; returns: readonly ArgPortFragment[] }) => {
   const by = ask.decidedBy ? (
     <StructureDisplay identifier="@lok/user" id={ask.decidedBy} variant="inline" fallback="someone" />
@@ -76,9 +88,10 @@ const AnswerLine = ({ ask, returns }: { ask: BlokAsk; returns: readonly ArgPortF
  * live while on screen and its kept preview otherwise.
  *
  * It opens on the args its task gave it, else on the objects shown with it
- * (`alongside`, matched by identifier). With an `ask`, its tree reads
- * `@ask.status` / `@returns`; while the ask waits `blok.answer(...)` goes to
- * `onReturn`, and once settled the blok is frozen with the answer under it.
+ * (`alongside`, matched by identifier). With an `ask`, its tree reads it as
+ * `task` (`task.ask` while it waits, `task.answer` once answered); while the
+ * ask waits `task.answer(...)` goes to `onReturn`, and once settled the blok is
+ * frozen with the answer under it.
  */
 export const MaterializedBlokEmbed = ({
   materialized,
@@ -113,17 +126,18 @@ export const MaterializedBlokEmbed = ({
   const scene = blok.context === ComponentContext.Scene;
   const waiting = ask?.status === TaskBlokStatus.Waiting;
   const frozen = ask !== undefined && !waiting;
-  const shownAsk = React.useMemo(
-    () => (ask ? { status: ask.status, values: ask.values ?? null } : undefined),
+  const task = React.useMemo<BlokTaskRecord | undefined>(
+    () => (ask ? askRecord(ask.status, ask.values) : undefined),
     [ask?.status, ask?.values], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const services = React.useMemo(() => blokServicesOf(blok), [blok]);
 
   return (
     <div ref={box} className={cn("flex flex-col gap-1", className)}>
       <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
         <LayoutDashboard className="size-3.5 shrink-0" />
         <span className="truncate">{name}</span>
-        <BlokServiceChips services={blok.services} />
+        <BlokServiceChips services={services} />
         <Link className="ml-auto shrink-0 underline-offset-2 hover:underline" to={page}>
           Open
         </Link>
@@ -149,16 +163,14 @@ export const MaterializedBlokEmbed = ({
           aria-disabled={frozen || undefined}
         >
           {/* Its queries read these services: from the outside, so none runs without its client. */}
-          <BlokServicesGuard services={blok.services}>
-            {/* Inside the guards: a service the blok was written for may now serve another schema. */}
-            <BlokServiceNotice services={blok.services} className="px-1 pb-1" />
+          <BlokServicesGuard services={services}>
             <MaterializedBlokRenderer
               materializedBlok={materialized}
               surfaceId={`embed-${materialized.id}`}
               args={args}
               onArgsChange={setArgs}
-              ask={shownAsk}
-              onReturn={waiting ? onReturn : undefined}
+              task={task}
+              onAnswer={waiting ? onReturn : undefined}
               chrome={scene ? "none" : "minimal"}
               sizing={scene ? "fill" : "intrinsic"}
             />

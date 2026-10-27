@@ -14,7 +14,7 @@ export const BlokDisplay = (props: DisplayWidgetProps) => {
       {...props}
       icon={LayoutTemplate}
       title={blok.name}
-      meta={[blok.catalog?.name, countOf(blok.materializedBloks.length, "instance")]}
+      meta={[blok.module?.name, countOf(blok.materializedBloks.length, "instance")]}
     />
   );
 };

@@ -195,8 +195,8 @@ const DependencyRow = (props: {
 };
 
 /**
- * The agents a blok draws from, as keys its BSX names (`@stage.move()`,
- * `@stage.position`): one row per dependency, with the app it must be, the
+ * The agents a blok draws from, as keys its BSX names (`deps.stage.move()`,
+ * `deps.stage.position`): one row per dependency, with the app it must be, the
  * actions it calls and the states it reads. What is declared here is what
  * completion offers and the reference check accepts.
  */

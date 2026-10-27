@@ -23,6 +23,9 @@ const client = {
   }),
 };
 
+vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
+vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));
+vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
 vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => client}));
 vi.mock('@/rekuest/hooks/useAssign', () => ({useAssign: () => ({assign: vi.fn()})}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
@@ -45,7 +48,7 @@ describe('a blok that reads the latest task of its agent\'s actions', () => {
           id: '12',
           blok: {
             componentTree: tree,
-            demoState: {self: {predict_flou2: {latest: {status: 'idle', running: false, progress: 0}}, predict_stardist_he: {latest: {status: 'idle', running: false, progress: 0}}}},
+            resolvedLocals: [],
             dependencies: [{key: 'self'}],
           },
           agentMappings: [{key: 'self', agent: {id: '34549'}}],

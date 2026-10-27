@@ -144,3 +144,23 @@ export const useRekuestTravelSource = (options?: { onReachedLive?: () => void })
 
   return source;
 };
+
+const noClock = () => () => undefined;
+const noMoment = () => null;
+
+/**
+ * The moment the bloks below show, as the `travelAt` a blok renderer takes:
+ * the travel clock (ISO 8601, to the second) while a source is set, null live.
+ * Inputs are read at it, queries with `at` get it as `$at`, `now` is it, and
+ * commands and toasts are off.
+ */
+export const useBlokTravelMoment = (): string | null => {
+  const source = useBlokTravelSource();
+  const subscribe = React.useCallback((listener: () => void) => (source ? source.subscribe(listener) : noClock()), [source]);
+  const getSnapshot = React.useCallback(() => {
+    if (!source) return null;
+    const at = source.getClock().at;
+    return Number.isFinite(at) ? new Date(Math.floor(at / 1000) * 1000).toISOString() : null;
+  }, [source]);
+  return React.useSyncExternalStore(subscribe, source ? getSnapshot : noMoment, source ? getSnapshot : noMoment);
+};

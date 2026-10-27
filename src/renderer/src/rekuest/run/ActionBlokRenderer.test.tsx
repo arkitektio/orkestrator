@@ -5,6 +5,9 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 
 const decide = vi.fn(() => Promise.resolve({}));
 
+vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
+vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));
+vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
 vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => ({subscribe: () => ({subscribe: () => ({unsubscribe: () => {}})})})}));
 vi.mock('@/rekuest/hooks/useAssign', () => ({useAssign: () => ({assign: vi.fn()})}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
@@ -27,7 +30,7 @@ vi.mock('@/rekuest/travel/context', async importOriginal => ({
 }));
 
 import {ComponentContext, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
-import {ActionBlokRenderer, runOfTask} from './ActionBlokRenderer';
+import {ActionBlokRenderer, runOfTask, unboundOfRun} from './ActionBlokRenderer';
 
 const frame = () => act(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
 
@@ -50,13 +53,16 @@ const actionBlok: ActionBlokFragment = {
           text('progress', 'task.progress'),
           text('slide', 'args.slide'),
           text('self', 'self.helsinki_state.stage'),
-          text('robot', 'robot.arm_state.stage'),
-          {id: 'ask', component: 'TaskAsk'},
+          text('robot', 'deps.robot.arm_state.stage'),
+          {id: 'ask', component: 'ask'},
         ],
       },
     ],
-    demoState: {},
-    persist: [],
+    vocab: 2,
+    resolvedLocals: [],
+    demo: null,
+    queries: [],
+    subscriptions: [],
   },
 };
 
@@ -97,7 +103,7 @@ afterEach(() => {
 });
 
 describe('an action\'s html blok drawn for a run', () => {
-  it('reads the run at @task and @args, the running agent at @self, and a key\'s first bound agent', async () => {
+  it('reads the run as task and args, the running agent as self, and a key\'s first bound agent', async () => {
     render(<ActionBlokRenderer surfaceId="panel" actionBlok={actionBlok} run={runOfTask(task())} />);
     await frame();
     expect(screen.getByText('staining')).toBeTruthy();
@@ -115,9 +121,59 @@ describe('an action\'s html blok drawn for a run', () => {
     expect(decide).toHaveBeenCalledWith({variables: {input: {task: 't1', approved: true, answer: null, values: null}}});
   });
 
+  it("answers the ask task.ask shows with task.answer, and nothing while none is open", async () => {
+    const answering: ActionBlokFragment = {
+      ...actionBlok,
+      blok: {
+        ...actionBlok.blok,
+        componentTree: [
+          {
+            id: 'yes',
+            component: 'Button',
+            props: [
+              {key: 'label', static_value: 'In place'},
+              {
+                key: 'onClick',
+                util_call: {
+                  operation: 'task.answer',
+                  arguments: [{key: 'values', value_dict: [{key: 'ok', value_literal: true}]}],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const {unmount} = render(<ActionBlokRenderer surfaceId="panel" actionBlok={answering} run={runOfTask(task([held]))} />);
+    await frame();
+    fireEvent.click(screen.getByRole('button', {name: 'In place'}));
+    expect(decide).toHaveBeenCalledWith({variables: {input: {task: 't1', approved: true, values: {ok: true}}}});
+    unmount();
+
+    decide.mockClear();
+    render(<ActionBlokRenderer surfaceId="panel" actionBlok={answering} run={runOfTask(task())} />);
+    await frame();
+    fireEvent.click(screen.getByRole('button', {name: 'In place'}));
+    expect(decide).not.toHaveBeenCalled();
+  });
+
   it('shows no ask while none is open', async () => {
     render(<ActionBlokRenderer surfaceId="panel" actionBlok={actionBlok} run={runOfTask(task())} />);
     await frame();
     expect(screen.queryByText('Waiting for you')).toBeNull();
+  });
+});
+
+describe('an optional dependency a run left out', () => {
+  it('is unbound: its keys the tree reads that the run bound to no agent', () => {
+    expect(unboundOfRun(actionBlok, [])).toEqual(['robot']);
+    expect(unboundOfRun(actionBlok, [{key: 'robot', agent: agent('a1')}])).toEqual([]);
+  });
+
+  it('reads as failed in the run, not as ready with null', async () => {
+    const run = {...runOfTask(task()), binding: []};
+    render(<ActionBlokRenderer actionBlok={actionBlok} run={run} />);
+    await frame();
+    expect(document.body.textContent).toContain('bound to no agent');
   });
 });

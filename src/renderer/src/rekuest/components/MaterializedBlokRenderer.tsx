@@ -6,51 +6,58 @@ import {
   useBlokRuntimeStoreApi,
   type BlokDispatchActionHandler,
   type BlokRefuseActionHandler,
+  type BlokSourceStatus,
   type BlokTaskRecord,
 } from '@/core/blok/renderer/runtime';
+import {
+  declaredLocals,
+  declaredQueries,
+  declaredSubscriptions,
+  liveModel,
+  type BlokDeclarations,
+} from '@/core/blok/renderer/declarations';
 import {describeError, toast} from '@/core/notify';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
 import {useLatestTask} from '@/rekuest/hooks/useLatestTask';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
-import {useBlokTravelSource} from '@/rekuest/travel/context';
-import {BlokStateSync} from './blokStateSync';
+import {useBlokTravelMoment, useBlokTravelSource} from '@/rekuest/travel/context';
+import {useServiceReads} from '@/core/modules/hooks/useServiceReads';
+import {BlokStateSync, depsStatePath} from './blokStateSync';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
 import {collectDemandedLatestTasks, collectDemandedStateInterfaces} from './blokDemands';
-import {LATEST_SEGMENT, latestTaskRecord, pickLatestTask} from './blokLatestTask';
+import {latestTaskPath, latestTaskRecord, pickLatestTask} from './blokLatestTask';
 import {usePastLatestTasks} from './usePastLatestTasks';
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
-import {defaultBlokCatalog} from '@/core/blok/renderer/catalog';
-import {returningInvokeFunction} from '@/core/blok/renderer/returns';
-import type {BlokInvokeFunctionHandler} from '@/core/blok/renderer/runtime';
-import {persistingInvokeFunction, type BlokPersistedLocal, type BlokPersistence} from '@/core/blok/renderer/persist';
-import {useBlokPersistence} from './useBlokPersistence';
+import type {BlokPersistence} from '@/core/blok/renderer/persist';
+import {useBlokComponentStore, useBlokPersistence} from './useBlokPersistence';
+import {useBlokViewer} from './useBlokViewer';
 
-/** Where an asking blok's tree reads its answer, and where its ask stands. */
-export const BLOK_RETURNS_ROOT = 'returns';
-export const BLOK_ASK_ROOT = 'ask';
+/** Where a task or action blok reads the task it is about. */
+export const BLOK_TASK_ROOT = 'task';
 
-type MaterializedBlokData = {
+/** What a blok draws, v2: its tree and what it declares beside it. */
+export type MaterializedContent = BlokDeclarations & {
+  /** Typed `ComponentNode` tree, in the wire spelling. */
+  componentTree?: unknown;
+};
+
+export type MaterializedBlokData = {
   id: string;
-  blok: {
-    /** Typed `ComponentNode` tree from the Blok fragment. */
-    componentTree?: unknown;
-    demoState: unknown;
+  blok: MaterializedContent & {
     dependencies?: Array<{key: string}> | null;
-    /** What the blok is opened for, read at `@args.<key>`. */
+    /** What the blok is opened for, read at `args.<key>`. */
     args?: Array<{key: string}> | null;
-    /** The locals this device keeps between openings (`core/blok/renderer/persist`). */
-    persist?: ReadonlyArray<BlokPersistedLocal> | null;
   };
   /**
    * The revision it shows (the pinned one, else its blok's head); null for a
    * provided blok, which has none. Drawn in place of the blok's own tree, so a
    * pinned materialization stays as it was.
    */
-  revision?: {componentTree?: unknown; demoState: unknown; persist?: ReadonlyArray<BlokPersistedLocal> | null} | null;
+  revision?: MaterializedContent | null;
   agentMappings: Array<{
     key: string;
     agent: {
@@ -66,60 +73,54 @@ type MaterializedBlokData = {
 
 type MaterializedBlokRendererProps = Omit<
   React.ComponentProps<typeof BlokRenderer>,
-  'uiComponents' | 'initialState' | 'dispatchAction' | 'refuseAction' | 'children'
+  | 'uiComponents'
+  | 'initialState'
+  | 'dispatchAction'
+  | 'refuseAction'
+  | 'children'
+  | 'statuses'
+  | 'travelAt'
+  | 'viewer'
+  | 'queries'
+  | 'subscriptions'
+  | 'readExecutor'
+  | 'answerTask'
+  | 'componentState'
+  | 'keptValues'
+  | 'keptRoots'
 > & {
   materializedBlok: MaterializedBlokData;
   /** The items the blok is opened for, by arg key; a declared arg left out reads null. */
   args?: BlokArgs;
   /** The tree changed what it is opened for (a picker bound to `args.<key>`). */
   onArgsChange?: (args: BlokArgs) => void;
-  /**
-   * The ask this blok answers, when a task holds on it: its tree reads
-   * `@ask.status` and, once answered, `@returns`. `onReturn` takes the answer
-   * `blok.answer(...)` gives, and only while the ask waits.
-   */
-  ask?: {status: string; values?: unknown};
-  onReturn?: (values: Record<string, unknown>) => unknown;
-  /**
-   * What else writes into the blok's runtime, rendered inside it: an action's
-   * own blok follows its run with this (`@task`, `rekuest/run`).
-   */
+  /** The task this blok is about (a task or action blok): read as `task`. */
+  task?: BlokTaskRecord | null;
+  /** Answers the open ask of `task`: what `task.answer(values)` calls. */
+  onAnswer?: (values: Record<string, unknown>) => unknown;
+  /** What else writes into the blok's runtime, rendered inside it. */
   syncs?: React.ReactNode;
 };
 
-const RECORD_FIELDS = ['status', 'running', 'done', 'failed', 'progress', 'message', 'error', 'result', 'returns'] as const;
+const RECORD_FIELDS = ['id', 'status', 'progress', 'message', 'error', 'returns', 'ask', 'answer', 'args'] as const;
 
-/** Whether two records say the same. `result` and `returns` are the events' own values, kept by reference. */
+/** Whether two records say the same; `returns`, `args`, `ask` and `answer` are the events' own values, kept by reference. */
 const sameRecord = (a: BlokTaskRecord | undefined, b: BlokTaskRecord): boolean =>
   a !== undefined && RECORD_FIELDS.every(field => a[field] === b[field]);
 
 /**
- * Keeps `<dependency>/<action>/latest` on the task the bound agent last ran the
- * action as, whoever started it. Live, that is what `latestTaskStore` holds for
- * the agent and the action: one subscription shared by every blok that reads
- * it, heard of once per frame, and written here only when the task changed.
- *
- * Below a travel source it is the task the action last ran as at the source's
- * moment, with what that task had reported by then. Until that is answered
- * the path keeps what it shows, like a state does (`BlokStateSync`).
- *
- * `name` is an action only if the agent implements it. A state of that name
- * with a field called `latest` is spelled the same, so until the server has
- * answered nothing is synced, and where the agent has no such action
- * `children` (the state sync) takes over.
+ * Keeps `deps.<key>.tasks.<action>` on the task the bound agent last ran the
+ * action as, whoever started it. Live, that is what `latestTaskStore` holds;
+ * below a travel source it is the task the action last ran as at the source's
+ * moment, with what that task had reported by then.
  */
-const MaterializedLatestTaskSync = (props: {
-  dependencyKey: string;
-  name: string;
-  agentId: string;
-  children: React.ReactNode;
-}) => {
-  const {agentId, dependencyKey, name} = props;
-  const latest = useLatestTask({agentID: agentId, name});
+const LatestTaskSync = (props: {dependencyKey: string; action: string; agentId: string}) => {
+  const {agentId, dependencyKey, action} = props;
+  const latest = useLatestTask({agentID: agentId, name: action});
   const source = useBlokTravelSource();
   const setRuntimeValue = useBlokRuntime(state => state.setRuntimeValue);
   const clearRuntimeValue = useBlokRuntime(state => state.clearRuntimeValue);
-  const runtimePath = `${dependencyKey}/${name}/${LATEST_SEGMENT}`;
+  const runtimePath = latestTaskPath(dependencyKey, action);
 
   const implementation = latest?.implementation ?? undefined;
   const past = usePastLatestTasks(source, implementation);
@@ -145,72 +146,47 @@ const MaterializedLatestTaskSync = (props: {
     [clearRuntimeValue, runtimePath],
   );
 
-  // Not answered yet, or an action: the state sync has nothing to do here.
-  if (latest === null || latest.implementation !== null) return null;
-  return <>{props.children}</>;
+  return null;
 };
 
 const MaterializedBlokRuntimeSync = (props: {
   materializedBlok: MaterializedBlokData;
-  roots: ReadonlyArray<unknown>;
-}) => {
-  const dependencyKeys = React.useMemo(
-    () => new Set(props.materializedBlok.agentMappings.map(mapping => mapping.key)),
-    [props.materializedBlok.agentMappings],
-  );
-  const demandedStateInterfaces = React.useMemo(
-    () => collectDemandedStateInterfaces(props.roots, dependencyKeys),
-    [dependencyKeys, props.roots],
-  );
-  const demandedLatestTasks = React.useMemo(
-    () => collectDemandedLatestTasks(props.roots, dependencyKeys),
-    [dependencyKeys, props.roots],
-  );
-
-  return (
-    <>
-      {props.materializedBlok.agentMappings.flatMap(mapping => {
-        const interfaces = demandedStateInterfaces.get(mapping.key);
-
-        if (!interfaces || interfaces.size === 0) {
-          return [];
-        }
-
-        const latest = demandedLatestTasks.get(mapping.key);
-
-        return [...interfaces].map(stateInterface => {
-          const key = `${mapping.key}-${mapping.agent.id}-${stateInterface}`;
-          const stateSync = (
-            <BlokStateSync
-              key={key}
-              dependencyKey={mapping.key}
-              stateInterface={stateInterface}
-              agentId={mapping.agent.id}
-            />
-          );
-
-          if (!latest?.has(stateInterface)) return stateSync;
-          return (
-            <MaterializedLatestTaskSync key={key} dependencyKey={mapping.key} name={stateInterface} agentId={mapping.agent.id}>
-              {stateSync}
-            </MaterializedLatestTaskSync>
-          );
-        });
-      })}
-    </>
-  );
-};
+  demandedStates: ReadonlyMap<string, ReadonlySet<string>>;
+  demandedTasks: ReadonlyMap<string, ReadonlySet<string>>;
+}) => (
+  <>
+    {props.materializedBlok.agentMappings.flatMap(mapping => [
+      ...[...(props.demandedStates.get(mapping.key) ?? [])].map(stateInterface => (
+        <BlokStateSync
+          key={`state-${mapping.key}-${mapping.agent.id}-${stateInterface}`}
+          dependencyKey={mapping.key}
+          stateInterface={stateInterface}
+          agentId={mapping.agent.id}
+          connected={mapping.agent.connected !== false}
+        />
+      )),
+      ...[...(props.demandedTasks.get(mapping.key) ?? [])].map(action => (
+        <LatestTaskSync
+          key={`task-${mapping.key}-${mapping.agent.id}-${action}`}
+          dependencyKey={mapping.key}
+          action={action}
+          agentId={mapping.agent.id}
+        />
+      )),
+    ])}
+  </>
+);
 
 /**
  * Agent calls go straight to the bound agent: `agent` + `interface`. The
  * `operation` names an implementation interface on that agent (for `self`, the
- * registering agent's own interface), never an Action id — so `action:` is
- * never set here.
+ * registering agent's own interface), never an Action id.
  *
- * A blok button is the blok's own interaction: no toast, and the task is
- * silenced so it never surfaces in the rail's task island. The returned
- * promise settles when the task ends, which is what makes a `Button` pulse
- * while its task runs (`usePendingAction`).
+ * A blok button is the blok's own interaction: no toast (a blok declares a
+ * `<Toast>` for that), and the task is silenced so it never surfaces in the
+ * rail's task island. The returned promise settles when the task ends, which
+ * is what keeps the control busy while its task runs. The record a named call
+ * writes learns the task's id as soon as the assign answers.
  */
 const useMaterializedDispatchAction = (
   agentMappings: MaterializedBlokData['agentMappings'],
@@ -239,7 +215,6 @@ const useMaterializedDispatchAction = (
         // Registered before the assign so no early event is missed; the
         // tracker unregisters itself on the terminal event.
         const untrack = trackTask(reference, event => {
-          // A call bound to a name (`.into(job)`) shows these in the blok.
           const update = observe && taskUpdateFromEvent(event);
           if (update) observe(update);
           if (isTerminalEvent(event.kind)) resolve();
@@ -252,13 +227,16 @@ const useMaterializedDispatchAction = (
             args: action.arguments ?? {},
             reference,
           }),
-        ).catch((error: unknown) => {
-          const reason = describeError(error).message;
-          untrack();
-          observe?.({end: 'failed', error: reason});
-          resolve();
-          console.error(`Blok action ${action.operation} failed: ${reason}`);
-        });
+        ).then(
+          task => observe?.({id: task.id, status: 'queued'}),
+          (error: unknown) => {
+            const reason = describeError(error).message;
+            untrack();
+            observe?.({end: 'failed', error: reason});
+            resolve();
+            console.error(`Blok action ${action.operation} failed: ${reason}`);
+          },
+        );
       });
     },
     [agentIdByDependency, assign],
@@ -268,7 +246,7 @@ const useMaterializedDispatchAction = (
 const sameArgs = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 /**
- * Keeps `@args` on what the blok is opened for, and tells the page when the
+ * Keeps `args` on what the blok is opened for, and tells the page when the
  * tree changed it. The page's args win: when they change (another item opened
  * in the same blok), what the tree wrote below `args` is cleared first.
  */
@@ -295,24 +273,17 @@ const BlokArgsSync = (props: {args: BlokArgs; onArgsChange?: (args: BlokArgs) =>
   return null;
 };
 
-/** Keeps `@ask` and `@returns` on where the ask stands as it moves (answered elsewhere, gone). */
-const AskSync = (props: {ask: {status: string; values?: unknown}}) => {
+/** Keeps `task` on the task this blok is about, as it moves. */
+const TaskRecordSync = ({task}: {task: BlokTaskRecord}) => {
   const store = useBlokRuntimeStoreApi();
-  const {status, values} = props.ask;
+  const written = React.useRef<BlokTaskRecord | undefined>(undefined);
   React.useEffect(() => {
-    const state = store.getState();
-    state.setRuntimeValue(BLOK_ASK_ROOT, {status});
-    state.setRuntimeValue(BLOK_RETURNS_ROOT, values ?? null);
-  }, [status, values, store]);
+    if (sameRecord(written.current, task)) return;
+    written.current = task;
+    store.getState().setRuntimeValue(BLOK_TASK_ROOT, task);
+  }, [store, task]);
   return null;
 };
-
-/** `blok.answer(...)` to `onReturn`, while there is one (`returningInvokeFunction`). */
-const useReturningInvoke = (
-  catalog: typeof defaultBlokCatalog,
-  onReturn: ((values: Record<string, unknown>) => unknown) | undefined,
-): BlokInvokeFunctionHandler | undefined =>
-  React.useMemo(() => (onReturn ? returningInvokeFunction(catalog, onReturn) : undefined), [catalog, onReturn]);
 
 /**
  * The past cannot be acted on: while the blok shows a moment from it, its
@@ -343,10 +314,7 @@ export const unavailableDependenciesOf = (
   return unavailable;
 };
 
-/**
- * Writes the kept locals back as the tree changes them (`BlokPersistence.attach`),
- * and what is pending when the blok closes.
- */
+/** Writes the kept locals back as the tree changes them, and what is pending when the blok closes. */
 const BlokPersistSync = ({persistence}: {persistence: BlokPersistence}) => {
   const store = useBlokRuntimeStoreApi();
   React.useEffect(() => persistence.attach(store), [persistence, store]);
@@ -354,40 +322,26 @@ const BlokPersistSync = ({persistence}: {persistence: BlokPersistence}) => {
 };
 
 /** What a materialization draws: the revision it shows, else (a provided blok) its blok. */
-export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>) =>
+export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>): MaterializedContent =>
   materializedBlok.revision ?? materializedBlok.blok;
-
-/** The locals a materialization keeps, read before it renders; `children` draws it once they are. */
-const WithKeptLocals = (props: {
-  materializedBlok: MaterializedBlokData;
-  declared: ReadonlyArray<BlokPersistedLocal>;
-  children: (persistence: BlokPersistence | null) => React.ReactNode;
-}) => {
-  const persistence = useBlokPersistence(
-    props.materializedBlok.id,
-    props.declared,
-    shownContent(props.materializedBlok).demoState,
-  );
-  return persistence === undefined ? null : <>{props.children(persistence)}</>;
-};
 
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const shown = shownContent(props.materializedBlok);
-  const declared = shown.persist ?? props.materializedBlok.blok.persist ?? [];
-  // A blok that keeps nothing renders at once, and needs no one signed in to keep it for.
-  if (declared.length === 0) return <MaterializedBlokView {...props} persistence={null} />;
-  return (
-    <WithKeptLocals materializedBlok={props.materializedBlok} declared={declared}>
-      {persistence => <MaterializedBlokView {...props} persistence={persistence} />}
-    </WithKeptLocals>
-  );
+  const locals = React.useMemo(() => declaredLocals(shown), [shown]);
+  const persistence = useBlokPersistence(props.materializedBlok.id, locals);
+  // The kept locals are read before the first render, so the blok opens as it was left.
+  if (persistence === undefined) return null;
+  return <MaterializedBlokView {...props} persistence={persistence} />;
 };
 
 const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
-  const {materializedBlok, args, onArgsChange, ask, onReturn, persistence, syncs, ...rendererProps} = props;
-  const invokeFunction = useReturningInvoke(rendererProps.catalog ?? defaultBlokCatalog, onReturn);
+  const {materializedBlok, args, onArgsChange, task, onAnswer, persistence, syncs, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
+  const travelAt = useBlokTravelMoment();
   const travelling = useBlokTravelSource() !== null;
+  const viewer = useBlokViewer();
+  const readExecutor = useServiceReads();
+  const componentState = useBlokComponentStore(materializedBlok.id);
   const shown = shownContent(materializedBlok);
   const unavailableDependencies = React.useMemo(
     () => unavailableDependenciesOf(materializedBlok),
@@ -399,35 +353,50 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
     [materializedBlok.agentMappings],
   );
+  const queries = React.useMemo(() => declaredQueries(shown), [shown]);
+  const subscriptions = React.useMemo(() => declaredSubscriptions(shown), [shown]);
+  const readVariables = React.useMemo(
+    () => [...queries, ...subscriptions].flatMap(read => read.variables ?? []),
+    [queries, subscriptions],
+  );
+  const dependencyKeys = React.useMemo(() => new Set(boundAgents.keys()), [boundAgents]);
+  const demandedStates = React.useMemo(
+    () => collectDemandedStateInterfaces(roots, dependencyKeys, readVariables),
+    [dependencyKeys, readVariables, roots],
+  );
+  const demandedTasks = React.useMemo(
+    () => collectDemandedLatestTasks(roots, dependencyKeys, readVariables),
+    [dependencyKeys, readVariables, roots],
+  );
   const ports = materializedBlok.blok.args;
   // A blok a task made from its BSX declares no arg ports: it reads what the task opened it on.
   const seeded = React.useMemo(
     () => (ports?.length ? seededBlokArgs(ports, args ?? {}) : args && Object.keys(args).length > 0 ? args : undefined),
     [args, ports],
   );
-  // Seeded once with what it is opened for (and its ask); the syncs follow later changes.
-  const initialState = React.useMemo(
-    () => {
-      const state = (shown.demoState as Record<string, unknown> | null) ?? {};
-      if (!seeded && !ask) return shown.demoState;
-      return {
-        ...state,
-        ...(seeded ? {[BLOK_ARGS_ROOT]: seeded} : {}),
-        ...(ask ? {[BLOK_ASK_ROOT]: {status: ask.status}, [BLOK_RETURNS_ROOT]: ask.values ?? null} : {}),
-      };
-    },
+
+  // Seeded once: the syncs follow later changes.
+  const {initialState, statuses} = React.useMemo(() => {
+    const live = liveModel(roots, shown);
+    const deps = Object.fromEntries(
+      materializedBlok.agentMappings.map(mapping => [
+        mapping.key,
+        {id: mapping.agent.id, name: mapping.agent.name ?? null, tasks: {}},
+      ]),
+    );
+    const pending: Record<string, BlokSourceStatus> = {...live.statuses};
+    demandedStates.forEach((states, key) => states.forEach(state => (pending[depsStatePath(key, state)] = {status: 'pending'})));
+    return {
+      initialState: {
+        ...live.data,
+        deps,
+        args: seeded ?? {},
+        ...(task ? {[BLOK_TASK_ROOT]: task} : {}),
+      },
+      statuses: pending,
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown.demoState],
-  );
-  // The locals kept on this device were read before the first render, so the blok opens as it was left.
-  const keptRoots = React.useMemo(() => (persistence ? persistence.keys : undefined), [persistence]);
-  const catalog = rendererProps.catalog ?? defaultBlokCatalog;
-  const persistingInvoke = React.useMemo(() => {
-    if (!persistence) return undefined;
-    const inner: BlokInvokeFunctionHandler =
-      invokeFunction ?? rendererProps.invokeFunction ?? ((name, args, options) => catalog.invokeFunction(name, args, options));
-    return persistingInvokeFunction(inner, persistence);
-  }, [catalog, invokeFunction, persistence, rendererProps.invokeFunction]);
+  }, [shown, roots]);
 
   return (
     <RekuestSceneHost>
@@ -438,18 +407,30 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         {...rendererProps}
         uiComponents={roots}
         initialState={initialState}
+        statuses={statuses}
         keptValues={persistence?.initial}
-        keptRoots={keptRoots}
+        keptRoots={persistence?.keys}
         dispatchAction={dispatchAction}
-        invokeFunction={persistingInvoke ?? invokeFunction ?? rendererProps.invokeFunction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
         unavailableDependencies={unavailableDependencies}
+        unboundDependencies={materializedBlok.unboundDependencies}
+        travelAt={travelAt}
+        viewer={viewer}
+        queries={queries}
+        subscriptions={subscriptions}
+        readExecutor={readExecutor}
+        answerTask={onAnswer}
+        componentState={componentState}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
-        <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
+        <MaterializedBlokRuntimeSync
+          materializedBlok={materializedBlok}
+          demandedStates={demandedStates}
+          demandedTasks={demandedTasks}
+        />
         {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
-        {ask && <AskSync ask={ask} />}
+        {task && <TaskRecordSync task={task} />}
         {persistence && <BlokPersistSync persistence={persistence} />}
         {syncs}
       </BlokRenderer>

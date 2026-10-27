@@ -1,10 +1,10 @@
 {
  "logo": {
   "hash": "sha256:f84d2a13b9c6caa9c6f75615c4efbdee82a86dd3af80d327892897eff1c4f6a7",
-  "demoState": {},
+  "demo": {},
   "componentTree": [
    {
-    "id": "SVG",
+    "id": "AgentLogo[0]",
     "props": [
      {
       "key": "viewBox",
@@ -17,7 +17,7 @@
     ],
     "children": [
      {
-      "id": "SVG/Defs[0]",
+      "id": "AgentLogo[0]/Defs[0]",
       "children": [
        {
         "id": "ground",
@@ -49,7 +49,7 @@
            },
            {
             "key": "stopColor",
-            "static_value": "#111827"
+            "static_value": "ink"
            }
           ],
           "component": "Stop"
@@ -63,7 +63,7 @@
            },
            {
             "key": "stopColor",
-            "static_value": "#1e293b"
+            "static_value": "brand-strong"
            }
           ],
           "component": "Stop"
@@ -75,7 +75,7 @@
       "component": "Defs"
      },
      {
-      "id": "SVG/Rect[0]",
+      "id": "AgentLogo[0]/Rect[0]",
       "props": [
        {
         "key": "x",
@@ -105,7 +105,7 @@
       "component": "Rect"
      },
      {
-      "id": "SVG/Rect[1]",
+      "id": "AgentLogo[0]/Rect[1]",
       "props": [
        {
         "key": "x",
@@ -129,13 +129,13 @@
        },
        {
         "key": "fill",
-        "static_value": "#2dd4bf"
+        "static_value": "success"
        }
       ],
       "component": "Rect"
      },
      {
-      "id": "SVG/Rect[2]",
+      "id": "AgentLogo[0]/Rect[2]",
       "props": [
        {
         "key": "x",
@@ -159,13 +159,13 @@
        },
        {
         "key": "fill",
-        "static_value": "#fbbf24"
+        "static_value": "warning"
        }
       ],
       "component": "Rect"
      },
      {
-      "id": "SVG/Rect[3]",
+      "id": "AgentLogo[0]/Rect[3]",
       "props": [
        {
         "key": "x",
@@ -189,13 +189,13 @@
        },
        {
         "key": "fill",
-        "static_value": "#a78bfa"
+        "static_value": "brand"
        }
       ],
       "component": "Rect"
      },
      {
-      "id": "SVG/Rect[4]",
+      "id": "AgentLogo[0]/Rect[4]",
       "props": [
        {
         "key": "x",
@@ -219,22 +219,22 @@
        },
        {
         "key": "fill",
-        "static_value": "#fb7185"
+        "static_value": "info"
        }
       ],
       "component": "Rect"
      },
      {
-      "id": "SVG/G[0]",
+      "id": "AgentLogo[0]/G[0]",
       "props": [
        {
         "key": "fill",
-        "static_value": "#0b1220"
+        "static_value": "ink"
        }
       ],
       "children": [
        {
-        "id": "SVG/G[0]/Rect[0]",
+        "id": "AgentLogo[0]/G[0]/Rect[0]",
         "props": [
          {
           "key": "x",
@@ -260,7 +260,7 @@
         "component": "Rect"
        },
        {
-        "id": "SVG/G[0]/Rect[1]",
+        "id": "AgentLogo[0]/G[0]/Rect[1]",
         "props": [
          {
           "key": "x",
@@ -286,7 +286,7 @@
         "component": "Rect"
        },
        {
-        "id": "SVG/G[0]/Rect[2]",
+        "id": "AgentLogo[0]/G[0]/Rect[2]",
         "props": [
          {
           "key": "x",
@@ -315,7 +315,7 @@
       "component": "G"
      },
      {
-      "id": "SVG/Circle[0]",
+      "id": "AgentLogo[0]/Circle[0]",
       "props": [
        {
         "key": "cx",
@@ -335,7 +335,7 @@
        },
        {
         "key": "stroke",
-        "static_value": "#0b1220"
+        "static_value": "ink"
        },
        {
         "key": "strokeWidth",
@@ -345,7 +345,7 @@
       "component": "Circle"
      },
      {
-      "id": "SVG/Path[0]",
+      "id": "AgentLogo[0]/Path[0]",
       "props": [
        {
         "key": "d",
@@ -353,22 +353,22 @@
        },
        {
         "key": "fill",
-        "static_value": "#0b1220"
+        "static_value": "ink"
        }
       ],
       "component": "Path"
      },
      {
-      "id": "SVG/G[1]",
+      "id": "AgentLogo[0]/G[1]",
       "props": [
        {
         "key": "fill",
-        "static_value": "#0b1220"
+        "static_value": "ink"
        }
       ],
       "children": [
        {
-        "id": "SVG/G[1]/Rect[0]",
+        "id": "AgentLogo[0]/G[1]/Rect[0]",
         "props": [
          {
           "key": "x",
@@ -394,7 +394,7 @@
         "component": "Rect"
        },
        {
-        "id": "SVG/G[1]/Rect[1]",
+        "id": "AgentLogo[0]/G[1]/Rect[1]",
         "props": [
          {
           "key": "x",
@@ -420,7 +420,7 @@
         "component": "Rect"
        },
        {
-        "id": "SVG/G[1]/Rect[2]",
+        "id": "AgentLogo[0]/G[1]/Rect[2]",
         "props": [
          {
           "key": "x",
@@ -449,7 +449,7 @@
       "component": "G"
      },
      {
-      "id": "SVG/G[2]",
+      "id": "AgentLogo[0]/G[2]",
       "props": [
        {
         "key": "fill",
@@ -457,7 +457,7 @@
        },
        {
         "key": "stroke",
-        "static_value": "#0b1220"
+        "static_value": "ink"
        },
        {
         "key": "strokeWidth",
@@ -470,7 +470,7 @@
       ],
       "children": [
        {
-        "id": "SVG/G[2]/Polygon[0]",
+        "id": "AgentLogo[0]/G[2]/Polygon[0]",
         "props": [
          {
           "key": "points",
@@ -478,7 +478,7 @@
          },
          {
           "key": "fill",
-          "static_value": "#0b1220"
+          "static_value": "ink"
          },
          {
           "key": "fillOpacity",
@@ -488,7 +488,7 @@
         "component": "Polygon"
        },
        {
-        "id": "SVG/G[2]/Polygon[1]",
+        "id": "AgentLogo[0]/G[2]/Polygon[1]",
         "props": [
          {
           "key": "points",
@@ -501,7 +501,7 @@
       "component": "G"
      },
      {
-      "id": "SVG/Rect[5]",
+      "id": "AgentLogo[0]/Rect[5]",
       "props": [
        {
         "key": "x",
@@ -529,7 +529,7 @@
        },
        {
         "key": "stroke",
-        "static_value": "#94a3b8"
+        "static_value": "muted"
        },
        {
         "key": "strokeOpacity",
@@ -543,18 +543,18 @@
       "component": "Rect"
      }
     ],
-    "component": "SVG"
+    "component": "AgentLogo"
    }
   ]
  },
  "actionLogo": {
   "hash": "sha256:1b9b0629a6d07082320cf843b7977e1d239bc673cb54ba1299d7519661bf42c7",
-  "demoState": {
+  "demo": {
    "task": null
   },
   "componentTree": [
    {
-    "id": "ActionLogo",
+    "id": "ActionLogo[0]",
     "props": [
      {
       "key": "viewBox",
@@ -567,7 +567,7 @@
     ],
     "children": [
      {
-      "id": "ActionLogo/Circle[0]",
+      "id": "ActionLogo[0]/Circle[0]",
       "props": [
        {
         "key": "cx",
@@ -589,7 +589,7 @@
       "component": "Circle"
      },
      {
-      "id": "ActionLogo/Path[0]",
+      "id": "ActionLogo[0]/Path[0]",
       "props": [
        {
         "key": "d",
@@ -603,7 +603,7 @@
       "component": "Path"
      },
      {
-      "id": "ActionLogo/Circle[1]",
+      "id": "ActionLogo[0]/Circle[1]",
       "props": [
        {
         "key": "cx",

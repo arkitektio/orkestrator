@@ -9,7 +9,7 @@ import {
   sizeSchema,
   structureValueSchema,
 } from "@/core/blok/renderer/bloks/shared";
-import { createBlokComponent, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
 
 import { lazily } from "./lazily";
 import { MIKRO_TABLE_BLOKS } from "./table";
@@ -18,11 +18,11 @@ import { MIKRO_TABLE_BLOKS } from "./table";
  * The mikro scene, as blok components an app's blok composes: a `MikroScene`
  * owns one scene, and the parts placed inside it share it (its viewport, its
  * layer list, its shapes, its probe readout), laid out beside the app's own
- * controls. What happens in the scene runs the app's actions, the event as
- * `$event` (`event.annotation` in BSX):
+ * controls. What happens in the scene runs the app's actions, which read the
+ * event as `event.<field>`:
  *
- *     <MikroScene value="@args.scene" bind="form.selected"
- *       onAnnotation="@self.segment(scene=args.scene, path=event.annotation, lens=event.lens).into(run)">
+ *     <MikroScene value={args.scene} bind={form.selected}
+ *       onAnnotation={self.segment(scene: args.scene, path: event.annotation, lens: event.lens) into run}>
  *       <MikroSceneViewport height="36rem" />
  *       <MikroSceneLayers />
  *     </MikroScene>
@@ -52,28 +52,28 @@ const INSIDE = { downstreamOf: ["MikroScene"] } as const;
 
 export const mikroSceneSchema = z
   .object({
-    value: structureValueSchema.describe("The scene, a structure reference: typically @args.scene."),
-    bind: bindSchema.describe(
+    value: structureValueSchema.describe("The scene, a structure reference: typically `{args.scene}`."),
+    bind: markBindSchema(bindSchema.describe(
       'Where the selection is written: {"annotation", "lens"} (structure references), or null when nothing is selected.',
-    ),
-    bindWorld: bindSchema.describe(
+    )),
+    bindWorld: markBindSchema(bindSchema.describe(
       'Where the scene\'s world coordinate system is written, a structure reference ({"object", "__identifier": "@mikro/coordinatesystem"}), once the scene has loaded. What a picker of what this scene can show asks the server with: `lenses(filters: {placeableIn: {space: $world}})`, `$world` read from this path.',
-    ),
+    )),
     live: boolSchema.describe(
       "Follow the scene as others change it, an action writing a layer included. Defaults to true.",
     ),
     className: classNameSchema,
     onAnnotation: actionProp(
-      'Runs when a shape is drawn. $event is {"annotation", "kind", "lens", "descriptors"}: the shape and the lens under the probe as structure references (lens null when none was under it).',
+      'Runs when a shape is drawn. event.annotation, event.kind, event.lens and event.descriptors: the shape and the lens under the probe as structure references (lens null when none was under it).',
     ),
     onSelect: actionProp(
-      'Runs when the user changes the selection (the selection a draw makes is reported as onAnnotation, not here). $event is {"annotation", "annotations", "lens"}.',
+      'Runs when the user changes the selection (the selection a draw makes is reported as onAnnotation, not here). event.annotation, event.annotations and event.lens.',
     ),
     onPick: actionProp(
-      'Runs on a deliberate click that reads a voxel (probe mode, not a vertex being placed). $event is {"layer", "world", "voxel", "lens"}.',
+      'Runs on a deliberate click that reads a voxel (probe mode, not a vertex being placed). event.layer, event.world, event.voxel and event.lens.',
     ),
     onLayersChange: actionProp(
-      'Runs when a layer comes, goes or draws another lens. $event is {"layers", "added"}; an action here that writes layers is told again, `added` names the new ones.',
+      'Runs when a layer comes, goes or draws another lens. event.layers and event.added; an action here that writes layers is told again, `added` names the new ones.',
     ),
   })
   .describe(

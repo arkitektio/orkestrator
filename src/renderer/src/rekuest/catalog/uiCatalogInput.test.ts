@@ -9,10 +9,11 @@ import {
   BlokPropSchemas,
 } from "@/core/blok/renderer/runtime";
 import { defaultBlokCatalog, UI_CATALOG_NAME } from "@/core/blok/renderer/catalog";
-import { CatalogValueKind, type UiCatalogFragment } from "@/rekuest/api/graphql";
+import { implementedCatalogs } from "@/core/blok/renderer/modules";
+import { CatalogValueKind, type ModuleFragment } from "@/rekuest/api/graphql";
 import {
-  buildRegisterUiCatalogInput,
-  catalogMatches,
+  buildRegisterModuleInput,
+  moduleMatches,
   componentInput,
   operationInputs,
   zodToCatalogKind,
@@ -197,9 +198,9 @@ describe("operationInputs", () => {
   });
 });
 
-describe("buildRegisterUiCatalogInput", () => {
+describe("buildRegisterModuleInput", () => {
   it("maps the real default catalog without throwing, each component once", () => {
-    const input = buildRegisterUiCatalogInput(defaultBlokCatalog, { name: UI_CATALOG_NAME });
+    const input = buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME });
 
     expect(input.name).toBe(UI_CATALOG_NAME);
     expect(input.widgetDefaults).toEqual([]);
@@ -215,7 +216,7 @@ describe("buildRegisterUiCatalogInput", () => {
 
   it("leaves out operations the server's base catalog reserves", () => {
     const reserved = new Set(["eq", "if", "get"]);
-    const input = buildRegisterUiCatalogInput(
+    const input = buildRegisterModuleInput(
       defaultBlokCatalog,
       { name: UI_CATALOG_NAME },
       { reservedOperations: reserved },
@@ -228,9 +229,16 @@ describe("buildRegisterUiCatalogInput", () => {
     // Everything else stays registered.
     expect(names.has("gt")).toBe(true);
   });
+
+  it("sends the standard catalogs it implements, sorted, and none unless told", () => {
+    expect(buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME }).catalogs).toEqual([]);
+    const input = buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME }, { catalogs: implementedCatalogs(defaultBlokCatalog) });
+    expect(input.catalogs).toEqual([...implementedCatalogs(defaultBlokCatalog)].sort());
+    expect(input.catalogs).toContain("ui@1");
+  });
 });
 
-describe("catalogMatches", () => {
+describe("moduleMatches", () => {
   const catalog = createBlokCatalog(
     "test",
     [
@@ -246,14 +254,15 @@ describe("catalogMatches", () => {
       ),
     ],
   );
-  const input = buildRegisterUiCatalogInput(catalog, { name: "orkestrator", description: "d" });
+  const input = buildRegisterModuleInput(catalog, { name: "orkestrator", description: "d" }, { catalogs: ["ui@1", "html@1"] });
 
-  const roundTrip = (): UiCatalogFragment => ({
-    __typename: "UICatalog",
+  const roundTrip = (): ModuleFragment => ({
+    __typename: "Module",
     id: "1",
     name: input.name,
     description: input.description ?? null,
     isRegistered: true,
+    catalogs: ["html@1", "ui@1"],
     // Server echoes in its own order with __typename markers.
     components: [...input.components].reverse().map((component) => ({
       __typename: "CatalogComponent",
@@ -284,19 +293,22 @@ describe("catalogMatches", () => {
   });
 
   it("is true for an identical server copy regardless of ordering", () => {
-    expect(catalogMatches(roundTrip(), input)).toBe(true);
+    expect(moduleMatches(roundTrip(), input)).toBe(true);
   });
 
   it("is false when missing, unregistered, or different", () => {
-    expect(catalogMatches(undefined, input)).toBe(false);
-    expect(catalogMatches({ ...roundTrip(), isRegistered: false }, input)).toBe(false);
+    expect(moduleMatches(undefined, input)).toBe(false);
+    expect(moduleMatches({ ...roundTrip(), isRegistered: false }, input)).toBe(false);
 
     const changedKind = roundTrip();
     changedKind.components[0].props[0].kind = CatalogValueKind.Any;
-    expect(catalogMatches(changedKind, input)).toBe(false);
+    expect(moduleMatches(changedKind, input)).toBe(false);
 
     const missingOperation = roundTrip();
     missingOperation.operations = [];
-    expect(catalogMatches(missingOperation, input)).toBe(false);
+    expect(moduleMatches(missingOperation, input)).toBe(false);
+
+    expect(moduleMatches({ ...roundTrip(), catalogs: ["ui@1"] }, input)).toBe(false);
+    expect(moduleMatches({ ...roundTrip(), catalogs: [] }, input)).toBe(false);
   });
 });

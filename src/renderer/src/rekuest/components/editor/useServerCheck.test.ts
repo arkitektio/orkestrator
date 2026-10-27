@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCheckScheduler, type ServerCheck } from "./useServerCheck";
+import { LocalKind } from "@/rekuest/api/graphql";
+import { createCheckScheduler, type ServerAnswer, type ServerCheck } from "./useServerCheck";
 
 describe("createCheckScheduler", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it("checks once, after the draft stops changing", async () => {
-    const run = vi.fn(async () => []);
+    const run = vi.fn(async () => ({ diagnostics: [], resolvedLocals: [{ key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] }));
     const results: ServerCheck[] = [];
     const scheduler = createCheckScheduler(run, (check) => results.push(check), 1000);
     scheduler.schedule("a");
@@ -17,23 +18,25 @@ describe("createCheckScheduler", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(run).toHaveBeenCalledExactlyOnceWith("ab");
     expect(results.map((check) => check.status)).toEqual(["checking", "ok"]);
+    // An answer names the draft it is for, with the locals as the server resolves them.
+    expect(results[1]).toEqual({ status: "ok", checked: '"ab"', resolvedLocals: [{ key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] });
   });
 
   it("drops a slow answer to an older draft", async () => {
-    let resolveFirst: (value: { code: string; message: string }[]) => void = () => {};
+    let resolveFirst: (value: ServerAnswer) => void = () => {};
     const run = vi
       .fn()
       .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
-      .mockImplementationOnce(async () => []);
+      .mockImplementationOnce(async () => ({ diagnostics: [], resolvedLocals: [] }));
     const results: ServerCheck[] = [];
     const scheduler = createCheckScheduler(run, (check) => results.push(check), 100);
     scheduler.schedule("old");
     await vi.advanceTimersByTimeAsync(100);
     scheduler.schedule("new");
     await vi.advanceTimersByTimeAsync(100);
-    resolveFirst([{ code: "x", message: "stale" }]);
+    resolveFirst({ diagnostics: [{ code: "x", message: "stale" }], resolvedLocals: [] });
     await vi.runAllTimersAsync();
-    expect(results.at(-1)).toEqual({ status: "ok" });
+    expect(results.at(-1)).toEqual({ status: "ok", checked: '"new"', resolvedLocals: [] });
     expect(results.some((check) => check.status === "warnings")).toBe(false);
   });
 

@@ -43,15 +43,15 @@ const makeSource = () => {
   };
 };
 
-const Harness = ({store, source}: {store: BlokRuntimeStore; source: TravelSource | null}) => (
+const Harness = ({store, source, connected}: {store: BlokRuntimeStore; source: TravelSource | null; connected?: boolean}) => (
   <BlokRuntimeProvider store={store}>
     <BlokTravelProvider source={source}>
-      <BlokStateSync dependencyKey="self" stateInterface="Stage" agentId="agent-1" />
+      <BlokStateSync dependencyKey="self" stateInterface="Stage" agentId="agent-1" connected={connected} />
     </BlokTravelProvider>
   </BlokRuntimeProvider>
 );
 
-const shown = (store: BlokRuntimeStore) => store.getState().runtimePathValues['self/Stage'];
+const shown = (store: BlokRuntimeStore) => store.getState().runtimePathValues['deps.self.Stage'];
 
 describe('BlokStateSync', () => {
   beforeEach(() => {
@@ -68,6 +68,23 @@ describe('BlokStateSync', () => {
     expect(shown(store)).toEqual({x: 1});
     expect(store.getState().agentMappingStateUpdates.self.interfaces.Stage).toEqual({value: {x: 1}, revision: 3});
     expect(live.skipped).not.toContain(true);
+  });
+
+  it('carries the status with the value: pending until known, stale while the agent is offline', () => {
+    const store = createBlokRuntimeStore();
+    const view = render(<Harness store={store} source={null} />);
+    expect(store.getState().statuses['deps.self.Stage']).toEqual({status: 'pending'});
+
+    live.state = {value: {x: 1}, revision: 3};
+    view.rerender(<Harness store={store} source={null} />);
+    expect(store.getState().statuses['deps.self.Stage']).toEqual({status: 'ready'});
+
+    view.rerender(<Harness store={store} source={null} connected={false} />);
+    expect(store.getState().statuses['deps.self.Stage']).toEqual({status: 'stale'});
+    expect(shown(store)).toEqual({x: 1});
+
+    view.unmount();
+    expect(store.getState().statuses['deps.self.Stage']).toBeUndefined();
   });
 
   it('writes nothing while the live state has not arrived', () => {

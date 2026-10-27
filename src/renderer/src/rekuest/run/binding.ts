@@ -13,7 +13,7 @@ export type RunBoundAgent = {id: string; name: string; connected?: boolean};
 
 export type RunBinding = ReadonlyArray<{key: string; agent: RunBoundAgent}>;
 
-/** The key an action blok reads the agent running the action under (`@self`). */
+/** The key an action blok reads the agent running the action under (`self`, i.e. `deps.self`). */
 export const SELF_KEY = 'self';
 
 /** `Task.dependencyAgents`, as the binding of the run. */

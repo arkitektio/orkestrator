@@ -4,6 +4,9 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import MaterializedBlokRenderer from './MaterializedBlokRenderer';
 
+vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
+vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));
+vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
 vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => ({subscribe: () => ({subscribe: () => ({unsubscribe: () => {}})})})}));
 vi.mock('@/rekuest/hooks/useAssign', () => ({useAssign: () => ({assign: vi.fn()})}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
@@ -11,7 +14,7 @@ vi.mock('@/rekuest/scene/RekuestAssetHost', () => ({RekuestAssetHost: ({children
 
 const frame = () => act(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
 
-/** `<Text text="@args.dataset.object" />`, as the server stores it. */
+/** `<Text text={args.dataset.object} />`, as the server stores it. */
 const tree = [{id: 'root', component: 'Text', props: [{key: 'text', dynamic_value: {path: 'args.dataset.object'}}]}];
 const dataset = (object: string) => ({__identifier: '@mikro/arraydataset', object});
 
@@ -20,10 +23,10 @@ afterEach(() => {
 });
 
 describe('a blok opened for an item', () => {
-  it('reads the item at @args, and follows when it is opened for another', async () => {
+  it('reads the item at args, and follows when it is opened for another', async () => {
     const materializedBlok = {
       id: '12',
-      blok: {componentTree: tree, demoState: {args: {dataset: null}}, dependencies: [], args: [{key: 'dataset'}]},
+      blok: {componentTree: tree, resolvedLocals: [], dependencies: [], args: [{key: 'dataset'}]},
       agentMappings: [],
     };
     const onArgsChange = vi.fn();
@@ -50,8 +53,8 @@ describe('a blok opened for an item', () => {
         materializedBlok={{
           id: '13',
           blok: {
-            componentTree: [{id: 'note', component: 'Input', props: [{key: 'bind', static_value: 'args/note'}]}],
-            demoState: {args: {note: null}},
+            componentTree: [{id: 'note', component: 'Input', props: [{key: 'bind', dynamic_value: {path: 'args.note'}}]}],
+            resolvedLocals: [],
             dependencies: [],
             args: [{key: 'note'}],
           },

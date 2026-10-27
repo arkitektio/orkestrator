@@ -14,7 +14,7 @@ import {actionBlokFor, useSpacesForAgents, type SpaceRun} from './useRun';
 
 /**
  * How a run of the action will look, before there is one: its own bloks with
- * each dependency key bound as the dry run of an assign binds it, `@task`
+ * each dependency key bound as the dry run of an assign binds it, `task`
  * idle (or as their demo state has it). The overlay is drawn into the space
  * placing the most of those agents.
  */

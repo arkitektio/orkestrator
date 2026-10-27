@@ -1,3 +1,4 @@
+import { demoModel, parseBlokDeclarations } from "@/core/blok/renderer/declarations";
 import * as React from "react";
 import { AlertTriangle, Box, LayoutPanelTop, Loader2 } from "lucide-react";
 import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
@@ -58,7 +59,7 @@ const hostOf = (source: string): string => {
   }
 };
 
-/** Answers `@self.assets.<name>` from what the flavour declares: known, not stored. */
+/** Answers `self.assets.<name>` from what the flavour declares: known, not stored. */
 export const useInspectedAssetHost = (assets: InspectedAsset[]): BlokAssetHost =>
   React.useMemo(() => {
     const byName = new Map(assets.map((asset) => [asset.name, asset]));
@@ -111,12 +112,13 @@ const BlokPreview = ({ blok }: { blok: KabinetBlokFragment }) => {
     () => normalizeBlokComponentTree((blok.componentTree as unknown[] | null) ?? null).roots,
     [blok.componentTree],
   );
+  const initialState = React.useMemo(() => demoModel(roots, parseBlokDeclarations(blok)), [roots, blok]);
   return (
     <AsyncBoundary loadingFallback={null} errorFallback={(error) => <RenderFailure error={error} />}>
       <BlokRenderer
         surfaceId={`kabinet-preview-${blok.id}`}
         uiComponents={roots}
-        initialState={blok.demoState ?? {}}
+        initialState={initialState}
         chrome="minimal"
         refuseAction={REFUSE_EVERY_ACTION}
       />
@@ -277,7 +279,7 @@ export const FlavourBloks = ({ flavourId }: { flavourId: string }) => {
       new Map(
         bloks.map((blok) => [
           `kabinet:${blok.id}`,
-          { componentTree: blok.componentTree, demoState: blok.demoState, hash: blok.hash },
+          { ...parseBlokDeclarations(blok), componentTree: blok.componentTree, hash: blok.hash },
         ]),
       ),
     [bloks],
