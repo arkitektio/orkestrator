@@ -82,7 +82,7 @@ export const statusCopyText = ({
     .filter(Boolean)
     .join("\n");
 
-const CopyDetailsButton = ({ text }: { text: () => string }) => {
+export const CopyDetailsButton = ({ text }: { text: () => string }) => {
   const [copied, setCopied] = useState(false);
   return (
     <Button

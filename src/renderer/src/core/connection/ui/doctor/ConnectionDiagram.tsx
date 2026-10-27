@@ -317,7 +317,7 @@ type NoteNode = Node<NoteData, "note">;
  * app does not run can only be explained by that Tailscale, and reading it
  * means running its CLI on the user's machine — so it is asked, once.
  */
-const TailscaleQuestion = ({ onAnswer }: { onAnswer: (allow: boolean, remember: boolean) => void }) => {
+export const TailscaleQuestion = ({ onAnswer }: { onAnswer: (allow: boolean, remember: boolean) => void }) => {
   const [remember, setRemember] = useState(false);
   return (
     <div
@@ -851,6 +851,20 @@ const Refit = ({ signature }: { signature: string }) => {
   }, [fitView, width, height, signature, ready]);
   return null;
 };
+
+/** What the colours in the picture mean, for a surface that frames it. */
+export const DiagramLegend = ({ className }: { className?: string }) => (
+  <ul className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground", className)}>
+    {([["ok", "working"], ["warning", "degraded"], ["failed", "broken"], ["unknown", "not checked"]] as const).map(
+      ([state, label]) => (
+        <li key={state} className="inline-flex items-center gap-1">
+          {STATE_ICON[state]}
+          {label}
+        </li>
+      ),
+    )}
+  </ul>
+);
 
 export const ConnectionDiagram = ({
   diagram,

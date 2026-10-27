@@ -42,6 +42,12 @@ export type Finding = {
   /** The raw lines — URL, errno, status — shown folded away, in mono. */
   evidence?: string[];
   remedy?: Remedy;
+  /**
+   * What the user can try, a short line each, when this is the verdict. The
+   * unreachable page shows these instead of the diagram; without them it
+   * falls back to `detail`.
+   */
+  steps?: string[];
   docs?: string;
   /** Which alias this is about, when it is about one. */
   targetLabel?: string;
@@ -138,10 +144,11 @@ const SEVERITY_ORDER: Record<FindingSeverity, number> = {
 /**
  * Within a severity, cause before symptom. A computer that cannot reach the
  * coordination server explains everything, a hub that is down explains its
- * mesh peer going offline, a mesh problem explains every timeout below it, so
- * they lead; the per-target network noise sorts last.
+ * mesh peer going offline, a server that refuses on an address the machine
+ * answers on outranks the mesh (rejoining would not start it), a mesh problem
+ * explains every timeout below it, so they lead; the per-target network noise sorts last.
  */
-const FAMILY_ORDER = ["upstream.", "hub.", "mesh.", "discovery.", "net.tls.", "net.http.", "net.tcp.", "net."];
+const FAMILY_ORDER = ["upstream.", "hub.", "service.", "mesh.", "discovery.", "net.tls.", "net.http.", "net.tcp.", "net."];
 
 const familyRank = (id: string): number => {
   const index = FAMILY_ORDER.findIndex((prefix) => id.startsWith(prefix));
