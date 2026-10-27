@@ -222,8 +222,8 @@ export class OrkestratorAgent {
         description: logo.description,
         source: logo.source,
         context: ComponentContext.ActionLogo,
-        // An action logo reads only `@task`, the viewer's own last task of it: none yet.
-        demoState: { task: null },
+        // Blok language v2. An action logo reads only `task`, the viewer's own last task of it.
+        vocab: 2,
       }));
   }
 

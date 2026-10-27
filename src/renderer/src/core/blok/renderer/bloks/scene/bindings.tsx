@@ -9,6 +9,7 @@ import {createBlokComponent, useBlok, useValue, type BlokComponentPlacement} fro
 import {describedString} from '../shared/schemas';
 import {useModel, useSceneModelKey, useSceneNotice, useSceneState, type ModelContextValue} from './context';
 import {useBlokSceneStill} from './host';
+import {useThemeColour} from './colour';
 import {ownMaterials} from './loadModel';
 
 /** Every binding sits somewhere under the model whose nodes it names. */
@@ -18,7 +19,7 @@ const IN_MODEL: BlokComponentPlacement = {context: 'scene', downstreamOf: ['Mode
  * Bindings an action's overlay may also use under an `At`, on the model the
  * anchored device's scene blok loaded.
  */
-const IN_MODEL_OR_AT: BlokComponentPlacement = {context: 'scene', downstreamOf: ['Model', 'Robot', 'At']};
+const IN_MODEL_OR_AT: BlokComponentPlacement = {context: 'scene', downstreamOf: ['Model', 'Robot', 'Anchor']};
 
 const nodeProp = z.string().describe('The name of the node in the enclosing model that this binds.');
 
@@ -185,25 +186,25 @@ const motionComponent = (name: 'Move' | 'Rotate', schema: typeof moveSchema, dim
 export const MoveBlok = motionComponent('Move', moveSchema, 'length');
 export const RotateBlok = motionComponent('Rotate', rotateSchema, 'angle');
 
-const showSchema = z
+const visibleSchema = z
   .object({
     node: nodeProp,
-    when: z.boolean().optional().describe('Whether the node is visible. Hiding a node hides everything beneath it.'),
+    on: z.boolean().nullish().describe('Whether the node is visible. Hiding a node hides everything beneath it.'),
   })
   .describe('Shows or hides a node and its whole subtree.');
 
-export const ShowBlok = createBlokComponent({name: 'Show', placement: IN_MODEL, schema: showSchema}, ({component}) => {
-  const blok = useBlok(component, showSchema);
+export const VisibleBlok = createBlokComponent({name: 'Visible', placement: IN_MODEL, schema: visibleSchema}, ({component}) => {
+  const blok = useBlok(component, visibleSchema);
   const node = useNode(useValue(blok.node));
-  const when = useValue(blok.when);
+  const on = useValue(blok.on);
   React.useEffect(() => {
     if (!node) return;
     const authored = node.visible;
-    node.visible = when ?? authored;
+    node.visible = on ?? authored;
     return () => {
       node.visible = authored;
     };
-  }, [node, when]);
+  }, [node, on]);
   return null;
 });
 
@@ -215,7 +216,7 @@ const glowSchema = z
     node: describedString('The name of the node in the enclosing model that glows; the whole model when unset.'),
     on: z.boolean().optional().describe('Whether the node glows.'),
     intensity: z.number().optional().describe('How strongly. Defaults to 1 for materials, and to the authored intensity for a light.'),
-    color: describedString('The color of the glow, as a CSS color. Defaults to the material\'s own emissive color, or white.'),
+    color: describedString('The colour of the glow: a colour role of the theme (`brand`, `success`, `chart-1`). Defaults to the material\'s own emissive colour, or white.'),
   })
   .describe('Switches the emissive output of a node\'s materials, or the intensity of a punctual light attached to it.');
 
@@ -224,7 +225,7 @@ export const GlowBlok = createBlokComponent({name: 'Glow', placement: IN_MODEL_O
   const node = useNodeOrRoot(useValue(blok.node));
   const on = useValue(blok.on) ?? false;
   const intensity = useValue(blok.intensity);
-  const color = useValue(blok.color);
+  const color = useThemeColour(useValue(blok.color));
   React.useEffect(() => {
     if (!node) return;
     const lights: Array<[THREE.Light, number]> = [];
@@ -264,14 +265,14 @@ export const GlowBlok = createBlokComponent({name: 'Glow', placement: IN_MODEL_O
 const tintSchema = z
   .object({
     node: nodeProp,
-    color: describedString('The base color to give the node, as a CSS color. Without it the authored color shows.'),
+    color: describedString('The base colour to give the node: a colour role of the theme (`brand`, `muted`, `chart-3`). Without it the authored colour shows.'),
   })
   .describe('Overrides the base color of a node. Its materials are copied first, so nodes sharing them are unaffected.');
 
 export const TintBlok = createBlokComponent({name: 'Tint', placement: IN_MODEL, schema: tintSchema}, ({component}) => {
   const blok = useBlok(component, tintSchema);
   const node = useNode(useValue(blok.node));
-  const color = useValue(blok.color);
+  const color = useThemeColour(useValue(blok.color));
   React.useEffect(() => {
     if (!node || !color) return;
     const materials = ownMaterials(node).filter((material): material is Colored => 'color' in material);
@@ -293,24 +294,24 @@ const attachSchema = z
     to: z
       .string()
       .describe('What to attach it to: a node of this model, or "<model id>:<node>" for a node of another model in the scene.'),
-    when: z.boolean().optional().describe('Whether it is attached. When false the node returns to where it was authored.'),
+    on: z.boolean().nullish().describe('Whether it is attached. When false the node returns to where it was authored.'),
   })
-  .describe('While `when` holds, carries a node with another node, keeping its place in the world at the moment of attaching. For picked-up objects.');
+  .describe('While `on` holds, carries a node with another node, keeping its place in the world at the moment of attaching. For picked-up objects.');
 
 export const AttachBlok = createBlokComponent({name: 'Attach', placement: IN_MODEL, schema: attachSchema}, ({component}) => {
   const blok = useBlok(component, attachSchema);
   const model = useModel();
   const node = useNode(useValue(blok.node));
   const target = useAddressedNode(useValue(blok.to));
-  const when = useValue(blok.when) ?? false;
+  const on = useValue(blok.on) ?? false;
   React.useEffect(() => {
     const home = node ? model.instance.rest.get(node)?.parent : undefined;
-    if (!node || !target || !home || !when) return;
+    if (!node || !target || !home || !on) return;
     target.attach(node);
     return () => {
       home.attach(node);
     };
-  }, [model, node, target, when]);
+  }, [model, node, target, on]);
   return null;
 });
 
@@ -321,7 +322,7 @@ const beamSchema = z
     length: z.number().optional().describe('How far the beam reaches along the start node\'s own Z axis, in meters. Use this or end.'),
     on: z.boolean().optional().describe('Whether the beam is drawn. Defaults to true.'),
     wavelength: z.number().optional().describe('The wavelength in nanometers, shown as its color.'),
-    color: describedString('The color of the beam as a CSS color. Takes precedence over wavelength.'),
+    color: describedString('The colour of the beam: a colour role of the theme (`info`, `chart-2`, `destructive`). Takes precedence over wavelength.'),
     width: z.number().optional().describe('The diameter of the beam in meters. Defaults to 2 mm.'),
   })
   .describe('Draws a beam from one anchor to another, or for a length along an anchor\'s Z axis, following both as they move.');
@@ -338,7 +339,7 @@ export const BeamBlok = createBlokComponent({name: 'Beam', placement: IN_MODEL, 
   const length = useValue(blok.length);
   const on = useValue(blok.on) ?? true;
   const wavelength = useValue(blok.wavelength);
-  const color = useValue(blok.color) ?? (wavelength ? wavelengthToColor(wavelength) : '#ff3b30');
+  const color = useThemeColour(useValue(blok.color)) ?? (wavelength ? wavelengthToColor(wavelength) : '#ff3b30');
   const width = useValue(blok.width) ?? 0.002;
   const mesh = React.useRef<THREE.Mesh>(null);
 

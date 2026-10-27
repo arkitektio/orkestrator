@@ -1,162 +1,140 @@
 // @vitest-environment jsdom
 import {act, cleanup, fireEvent, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import * as z from 'zod';
-import {createBlokCatalog, createBlokFunction} from '../runtime';
-import {shadcnComposableComponents} from './index';
-import {renderBlokDocument} from './testing';
+import {defaultBlokCatalog} from '../catalog';
+import type {BlokResolvedAgentCall, BlokTaskObserver} from '../runtime';
+import {renderBsx} from './testing';
+
+/**
+ * Callbacks, blok language v2: exactly one task call (or refetch, `ui.copy`,
+ * `task.answer`), its arguments reading `event` as the component's catalog
+ * shapes it, and a control busy while its call's task runs.
+ */
 
 afterEach(cleanup);
 
-const record = vi.fn();
+const render = (source: string, state?: unknown) => renderBsx(defaultBlokCatalog, source, state);
 
-/**
- * A catalog whose one effect function records what it was called with, so a
- * change handler's resolved arguments are observable.
- */
-const catalog = createBlokCatalog(
-  'event-test-catalog',
-  shadcnComposableComponents,
-  [
-    createBlokFunction(
-      {
-        name: 'test.record',
-        description: 'Records its arguments.',
-        schema: z.object({value: z.unknown()}),
-      },
-      args => {
-        record(args.value);
-        return null;
-      },
-    ),
-  ],
-);
+const dispatched = () => {
+  const calls: BlokResolvedAgentCall[] = [];
+  return {calls, handler: (action: BlokResolvedAgentCall) => void calls.push(action)};
+};
 
-describe('$event', () => {
-  it('hands a change handler the new value', () => {
-    record.mockClear();
-
-    renderBlokDocument(catalog, [
-      {
-        id: 'name',
-        component: 'Input',
-        props: [
-          {
-            key: 'action',
-            util_call: {
-              operation: 'test.record',
-              arguments: [{key: 'value', value_path: '$event'}],
-            },
-          },
-        ],
-      },
-    ]);
+describe('event', () => {
+  it('hands a change handler the new value as event.value', () => {
+    const {store} = render('<Input action={deps.stage.set(x: event.value)} />');
+    const sink = dispatched();
+    act(() => store.getState().setDispatchAction(sink.handler));
 
     fireEvent.change(screen.getByRole('textbox'), {target: {value: 'beta'}});
 
-    expect(record).toHaveBeenCalledWith('beta');
+    expect(sink.calls.at(-1)).toEqual({dependency: 'stage', operation: 'set', arguments: {x: 'beta'}});
   });
 
-  it('resolves into a structured event value', () => {
-    record.mockClear();
-
-    renderBlokDocument(
-      catalog,
-      [
-        {
-          id: 'flag',
-          component: 'Checkbox',
-          props: [
-            {key: 'bind', static_value: 'settings/enabled'},
-            {
-              key: 'onChange',
-              util_call: {
-                operation: 'test.record',
-                // The bound path is written before the action fires, so both
-                // spellings see the new value.
-                arguments: [{key: 'value', value_path: 'settings/enabled'}],
-              },
-            },
-          ],
-        },
-      ],
-      {settings: {enabled: false}},
-    );
+  it('writes a bound local before the callback reads it', () => {
+    const {store} = render('<Checkbox bind={enabled} onChange={self.toggle(on: enabled, value: event.value)} />', {enabled: false});
+    const sink = dispatched();
+    act(() => store.getState().setDispatchAction(sink.handler));
 
     fireEvent.click(screen.getByRole('checkbox'));
 
-    expect(record).toHaveBeenCalledWith(true);
+    expect(sink.calls.at(-1)?.arguments).toEqual({on: true, value: true});
+    expect((store.getState().dataModel as {enabled: boolean}).enabled).toBe(true);
   });
 
-  it('leaves a handler without arguments working', () => {
-    record.mockClear();
-
-    renderBlokDocument(catalog, [
-      {
-        id: 'go',
-        component: 'Button',
-        props: [
-          {key: 'label', static_value: 'Go'},
-          {
-            key: 'onClick',
-            util_call: {
-              operation: 'test.record',
-              arguments: [{key: 'value', value_literal: 'clicked'}],
-            },
-          },
-        ],
-      },
-    ]);
+  it('leaves a callback that reads no event working', () => {
+    const {store} = render('<Button onClick={self.go(to: "dock")}>Go</Button>');
+    const sink = dispatched();
+    act(() => store.getState().setDispatchAction(sink.handler));
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(record).toHaveBeenCalledWith('clicked');
+    expect(sink.calls).toEqual([{dependency: 'self', operation: 'go', arguments: {to: 'dock'}}]);
   });
 });
 
-describe('Button pending', () => {
-  const agentButton = [
-    {
-      id: 'go',
-      component: 'Button',
-      props: [
-        {key: 'label', static_value: 'Go'},
-        {key: 'onClick', agent_call: {dependency: 'self', operation: 'move', arguments: []}},
-      ],
-    },
-  ];
-
-  it('pulses until the dispatched task settles', async () => {
+describe('a control is busy while its task runs', () => {
+  it('sets data-busy and does not dispatch again until the task settles', async () => {
     let settle: () => void = () => undefined;
-    const {store} = renderBlokDocument(catalog, agentButton);
-    act(() => {
-      store.getState().setDispatchAction(
-        () => new Promise<void>(resolve => {
-          settle = resolve;
+    const dispatch = vi.fn(
+      (_action: BlokResolvedAgentCall, _component: unknown, observe?: BlokTaskObserver) =>
+        new Promise<void>(resolve => {
+          settle = () => {
+            observe?.({end: 'done'});
+            resolve();
+          };
         }),
-      );
-    });
+    );
+    const {store} = render('<Button onClick={self.move(to: 1) into move}>Go</Button>');
+    act(() => store.getState().setDispatchAction(dispatch));
 
     const button = screen.getByRole('button');
     fireEvent.click(button);
+    expect(button.hasAttribute('data-busy')).toBe(true);
     expect(button.getAttribute('aria-busy')).toBe('true');
-    expect(button.className).toContain('animate-pulse');
+
+    fireEvent.click(button);
+    expect(dispatch).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       settle();
     });
-    expect(button.getAttribute('aria-busy')).toBeNull();
-    expect(button.className).not.toContain('animate-pulse');
+    expect(button.hasAttribute('data-busy')).toBe(false);
+    fireEvent.click(button);
+    expect(dispatch).toHaveBeenCalledTimes(2);
   });
 
-  it('does not pulse when the host returns nothing', () => {
-    const {store} = renderBlokDocument(catalog, agentButton);
-    act(() => {
-      store.getState().setDispatchAction(() => undefined);
+  it('is busy while the record its call writes says running', () => {
+    const {store} = render('<Button onClick={self.move(to: 1) into move}>Go</Button>', {
+      move: {status: 'running', running: true},
     });
+    const button = screen.getByRole('button');
+    expect(button.hasAttribute('data-busy')).toBe(true);
+    act(() => store.getState().setRuntimeValue('move', {status: 'done', running: false}));
+    expect(button.hasAttribute('data-busy')).toBe(false);
+  });
 
+  it('is not busy when the host follows no task', () => {
+    const {store} = render('<Button onClick={self.move(to: 1)}>Go</Button>');
+    act(() => store.getState().setDispatchAction(() => undefined));
     const button = screen.getByRole('button');
     fireEvent.click(button);
-    expect(button.getAttribute('aria-busy')).toBeNull();
+    expect(button.hasAttribute('data-busy')).toBe(false);
+  });
+
+  it('records what the call was made with on its record', () => {
+    const {store} = render('<Button onClick={deps.robot.move_to(position: 3) into move}>Go</Button>');
+    act(() => store.getState().setDispatchAction(() => new Promise<void>(() => undefined)));
+    fireEvent.click(screen.getByRole('button'));
+    expect((store.getState().dataModel as {move: {args: unknown; status: string}}).move).toMatchObject({
+      status: 'queued',
+      args: {position: 3},
+    });
+  });
+});
+
+describe('refetch and effects as a callback', () => {
+  it('re-reads a declared query', () => {
+    const {store} = render('<Button onClick={queries.positions.refetch()}>Reload</Button>');
+    const refetch = vi.fn();
+    act(() => store.getState().setRefetchQuery(refetch));
+    fireEvent.click(screen.getByRole('button'));
+    expect(refetch).toHaveBeenCalledWith('positions');
+  });
+
+  it('answers the open ask with task.answer', () => {
+    const {store} = render('<Button onClick={task.answer(values: {pick: args.pick})}>Answer</Button>', {args: {pick: 2}});
+    const answer = vi.fn();
+    act(() => store.getState().setAnswerTask(answer));
+    fireEvent.click(screen.getByRole('button'));
+    expect(answer).toHaveBeenCalledWith({pick: 2});
+  });
+
+  it('copies with ui.copy', () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true});
+    render('<Button onClick={ui.copy(task.id)}>Copy</Button>', {task: {id: 't9'}});
+    fireEvent.click(screen.getByRole('button'));
+    expect(writeText).toHaveBeenCalledWith('t9');
   });
 });

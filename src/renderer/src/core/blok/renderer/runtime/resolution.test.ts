@@ -34,14 +34,25 @@ describe("resolvePropValue", () => {
     });
   });
 
-  it("decodes a static literal", () => {
+  it("decodes a static literal of a v1 payload (a port's widget)", () => {
     const resolved = resolvePropValue(
       {key: "count", static_value: "42"},
       stringSchema,
-      createContext({}),
+      createContext({}, {decodeLiterals: true}),
     );
 
     expect(resolved).toEqual({ok: true, value: 42});
+  });
+
+  it("keeps a v2 literal as written: attr=\"42\" is the string", () => {
+    expect(resolvePropValue({key: "count", static_value: "42"}, stringSchema, createContext({}))).toEqual({ok: true, value: "42"});
+  });
+
+  it("reads a missing path as null (v2)", () => {
+    expect(resolvePropValue({key: "text", dynamic_value: {path: "user.missing"}}, stringSchema, createContext({user: {}}))).toEqual({
+      ok: true,
+      value: null,
+    });
   });
 
   it("reads a dynamic path", () => {
@@ -58,7 +69,7 @@ describe("resolvePropValue", () => {
     const resolved = resolvePropValue(
       {key: "text", dynamic_value: {path: "user/missing", literal: "fallback"}},
       stringSchema,
-      createContext({user: {}}),
+      createContext({user: {}}, {decodeLiterals: true}),
     );
 
     expect(resolved).toEqual({ok: true, value: "fallback"});
@@ -181,7 +192,7 @@ describe("runActionCall", () => {
 
     runActionCall(actionCall, createContext({}, {dispatchAction, bindTask}), {id: "btn", component: "Button"});
 
-    expect(bindTask).toHaveBeenCalledWith("job");
+    expect(bindTask).toHaveBeenCalledWith("job", {});
     expect(dispatchAction.mock.calls[0][2]).toBe(observe);
   });
 
@@ -235,7 +246,7 @@ describe("runActionCall", () => {
 
     runActionCall(
       {type: "util", call: {operation: "log"}},
-      createContext({}, {invokeFunction, refuseAction}),
+      createContext({}, {invokeFunction, refuseAction, decodeLiterals: true}),
       {id: "btn", component: "Button"},
     );
 
@@ -243,12 +254,12 @@ describe("runActionCall", () => {
     expect(invokeFunction).toHaveBeenCalled();
   });
 
-  it("allows an effectful util call in action position", () => {
+  it("allows an effectful util call in action position of a v1 payload", () => {
     const invokeFunction = vi.fn(() => ({ok: true as const, value: "logged"}));
 
     const result = runActionCall(
       {type: "util", call: {operation: "logger.info", arguments: [{key: "m", value_literal: "hi"}]}},
-      createContext({}, {invokeFunction}),
+      createContext({}, {invokeFunction, decodeLiterals: true}),
       {id: "btn", component: "Button"},
     );
 
@@ -336,5 +347,157 @@ describe("scope resolution", () => {
 
   it("reads a by-value scope entry that has no address", () => {
     expect(readScopedPath({}, "loose/name", scope)).toBe("literal");
+  });
+});
+
+describe("statuses travel with values (v2)", () => {
+  const pending = (prefix: string) => (path: string) =>
+    path.startsWith(prefix) ? {status: "pending" as const} : {status: "ready" as const};
+
+  it("a pending read is a pending null", () => {
+    const resolved = resolvePropValue(
+      {key: "text", dynamic_value: {path: "deps.robot.arm.mode"}},
+      stringSchema,
+      createContext({}, {statusOf: pending("deps.robot")}),
+    );
+    expect(resolved).toEqual({ok: true, value: null, status: {status: "pending"}});
+  });
+
+  it("a function never sees a pending argument", () => {
+    const invokeFunction = vi.fn(() => ({ok: true as const, value: "X"}));
+    const resolved = resolvePropValue(
+      {key: "text", util_call: {operation: "str.upper", arguments: [{key: "value", value_path: "deps.robot.name"}]}},
+      stringSchema,
+      createContext({}, {invokeFunction, statusOf: pending("deps.robot")}),
+    );
+    expect(invokeFunction).not.toHaveBeenCalled();
+    expect(resolved.ok && resolved.status?.status).toBe("pending");
+  });
+
+  it("logic.choose reads only the branch taken", () => {
+    const choose = (cond: boolean) =>
+      resolvePropValue(
+        {
+          key: "text",
+          util_call: {
+            operation: "logic.choose",
+            arguments: [
+              {key: "cond", value_literal: cond},
+              {key: "then", value_literal: "on"},
+              {key: "otherwise", value_path: "deps.robot.mode"},
+            ],
+          },
+        },
+        stringSchema,
+        createContext({}, {statusOf: pending("deps.robot")}),
+      );
+    expect(choose(true)).toEqual({ok: true, value: "on"});
+    expect(choose(false).ok && (choose(false) as {status?: {status: string}}).status?.status).toBe("pending");
+  });
+
+  it("logic.all and logic.any keep JavaScript's semantics and stop where it is decided", () => {
+    const call = (operation: string, values: unknown[]) =>
+      resolvePropValue(
+        {key: "text", util_call: {operation, arguments: [{key: "values", value_list: values.map(value => (typeof value === "string" && value.startsWith("@") ? {value_path: value.slice(1)} : {value_literal: value}))}]}},
+        stringSchema,
+        createContext({}, {statusOf: pending("deps")}),
+      );
+    expect(call("logic.all", [true, "a", "b"])).toEqual({ok: true, value: "b"});
+    expect(call("logic.all", [0, "@deps.x"])).toEqual({ok: true, value: 0});
+    expect(call("logic.any", ["", "x", "@deps.x"])).toEqual({ok: true, value: "x"});
+    expect(call("logic.any", [false, "@deps.x"]).ok && (call("logic.any", [false, "@deps.x"]) as {status?: {status: string}}).status?.status).toBe("pending");
+  });
+
+  it("val.status sees the status instead of suspending", () => {
+    const invokeFunction = vi.fn((_name: string, _args: Record<string, unknown>, options?: {argumentStatus?: Record<string, string>}) => ({
+      ok: true as const,
+      value: options?.argumentStatus?.value,
+    }));
+    const resolved = resolvePropValue(
+      {key: "text", util_call: {operation: "val.status", arguments: [{key: "value", value_path: "deps.robot.arm"}]}},
+      stringSchema,
+      createContext({}, {invokeFunction, statusOf: pending("deps.robot")}),
+    );
+    expect(resolved).toEqual({ok: true, value: "pending"});
+  });
+});
+
+describe("a callback does exactly one thing (v2)", () => {
+  const component = {id: "btn", component: "Button"};
+
+  const refetch = (query: string) => ({type: "util" as const, call: {operation: "query.refetch", arguments: [{key: "query", value_literal: query}]}});
+
+  it("refetches a declared query: query.refetch, named by a literal", () => {
+    const refetchQuery = vi.fn();
+    expect(runActionCall(refetch("positions"), createContext({}, {refetchQuery}), component)).toEqual({ok: true, value: undefined});
+    expect(refetchQuery).toHaveBeenCalledWith("positions");
+  });
+
+  it("fetches more of a declared query, its variables resolved against live state", () => {
+    const fetchMoreQuery = vi.fn();
+    const call = {
+      type: "util" as const,
+      call: {
+        operation: "query.fetch_more",
+        arguments: [
+          {key: "query", value_literal: "positions"},
+          {key: "variables", value_dict: [{key: "after", value_path: "queries.positions.value.cursor"}, {key: "first", value_literal: 20}]},
+        ],
+      },
+    };
+    const context = createContext({queries: {positions: {value: {cursor: "c2"}}}}, {fetchMoreQuery});
+    expect(runActionCall(call, context, component)).toEqual({ok: true, value: undefined});
+    expect(fetchMoreQuery).toHaveBeenCalledWith("positions", {after: "c2", first: 20});
+    // Without variables it fetches with the query's own.
+    runActionCall({type: "util", call: {operation: "query.fetch_more", arguments: [{key: "query", value_literal: "positions"}]}}, context, component);
+    expect(fetchMoreQuery).toHaveBeenLastCalledWith("positions", {});
+  });
+
+  it("refuses a query effect that names no query, or where no query runs", () => {
+    expect(runActionCall({type: "util", call: {operation: "query.refetch", arguments: []}}, createContext({}, {refetchQuery: vi.fn()}), component).ok).toBe(false);
+    expect(runActionCall(refetch("positions"), createContext({}), component).ok).toBe(false);
+  });
+
+  it("answers the task's ask with task.answer", () => {
+    const answerTask = vi.fn(() => "answered");
+    const result = runActionCall(
+      {type: "util", call: {operation: "task.answer", arguments: [{key: "values", value_dict: [{key: "image", value_path: "args.image"}]}]}},
+      createContext({args: {image: "7"}}, {answerTask}),
+      component,
+    );
+    expect(result).toEqual({ok: true, value: "answered"});
+    expect(answerTask).toHaveBeenCalledWith({image: "7"});
+  });
+
+  it("refuses a pure function as a callback", () => {
+    const result = runActionCall({type: "util", call: {operation: "str.upper", arguments: []}}, createContext({}), component);
+    expect(result.ok).toBe(false);
+  });
+
+  it("runs no command while the blok shows the past, but still re-reads", () => {
+    const dispatchAction = vi.fn();
+    const answerTask = vi.fn();
+    const refetchQuery = vi.fn();
+    const context = createContext({}, {dispatchAction, answerTask, refetchQuery, travelling: true});
+    runActionCall({type: "agent", call: {dependency: "robot", operation: "move"}}, context, component);
+    runActionCall({type: "util", call: {operation: "task.answer", arguments: [{key: "values", value_dict: []}]}}, context, component);
+    const fetchMoreQuery = vi.fn();
+    const travelling = {...context, fetchMoreQuery};
+    runActionCall(refetch("q"), travelling, component);
+    runActionCall({type: "util", call: {operation: "query.fetch_more", arguments: [{key: "query", value_literal: "q"}]}}, travelling, component);
+    expect(dispatchAction).not.toHaveBeenCalled();
+    expect(answerTask).not.toHaveBeenCalled();
+    expect(refetchQuery).toHaveBeenCalledWith("q");
+    expect(fetchMoreQuery).toHaveBeenCalledWith("q", {});
+  });
+
+  it("fills in what a task was called with on its record", () => {
+    const bindTask = vi.fn(() => ({observe: vi.fn(), release: vi.fn()}));
+    runActionCall(
+      {type: "agent", call: {dependency: "robot", operation: "move_to", arguments: [{key: "position", value_literal: 3}]}, into: "move"},
+      createContext({}, {bindTask, dispatchAction: () => Promise.resolve()}),
+      component,
+    );
+    expect(bindTask).toHaveBeenCalledWith("move", {position: 3});
   });
 });

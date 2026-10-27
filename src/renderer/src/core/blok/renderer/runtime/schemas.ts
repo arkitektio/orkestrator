@@ -91,6 +91,18 @@ export const isActionSchema = (schema: z.ZodTypeAny | undefined): boolean => {
   return actionSchemaRegistry.has(unwrapSchema(schema));
 };
 
+/** `bind` props resolve to the path they name, never to what it holds. */
+const bindSchemaRegistry = new WeakSet<object>();
+
+export const markBindSchema = <TSchema extends z.ZodTypeAny>(schema: TSchema): TSchema => {
+  bindSchemaRegistry.add(schema);
+  bindSchemaRegistry.add(unwrapSchema(schema));
+  return schema;
+};
+
+export const isBindSchema = (schema: z.ZodTypeAny | undefined): boolean =>
+  schema !== undefined && (bindSchemaRegistry.has(schema) || bindSchemaRegistry.has(unwrapSchema(schema)));
+
 const actionValueSchema = markActionSchema(
   z.custom<() => void>(value => typeof value === 'function', {
     message: 'Expected action handler',

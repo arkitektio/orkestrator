@@ -62,10 +62,10 @@ describe("createBlokRuntimeStore", () => {
     const store = createBlokRuntimeStore({initialDataModel: {user: {name: "Ada"}}});
 
     store.getState().setRuntimeValue("user/name", "Grace");
-    expect(store.getState().dataModel).toEqual({user: {name: "Grace"}});
+    expect(store.getState().dataModel).toEqual({user: {name: "Grace"}, then: null});
 
     store.getState().clearRuntimeValue("user/name");
-    expect(store.getState().dataModel).toEqual({user: {name: "Ada"}});
+    expect(store.getState().dataModel).toEqual({user: {name: "Ada"}, then: null});
   });
 
   it("keeps runtime overrides when the initial model is replaced", () => {
@@ -74,7 +74,7 @@ describe("createBlokRuntimeStore", () => {
     store.getState().setRuntimeValue("b", 99);
     store.getState().setInitialDataModel({a: 2, b: 2});
 
-    expect(store.getState().dataModel).toEqual({a: 2, b: 99});
+    expect(store.getState().dataModel).toEqual({a: 2, b: 99, then: null});
   });
 
   it("does not produce a new state object for an unchanged write", () => {
@@ -94,8 +94,25 @@ describe("createBlokRuntimeStore", () => {
     store.getState().setRuntimeValue("a", 2);
     store.getState().resetRuntimeValues();
 
+    // `then` is the host's, never among the values the blok writes.
     expect(store.getState().runtimePathValues).toEqual({});
-    expect(store.getState().dataModel).toBe(initial);
+    expect(store.getState().dataModel).toEqual({...initial, then: null});
+  });
+
+  it("holds then: null live, the travel moment while travelling, through a reset", () => {
+    const store = createBlokRuntimeStore({initialDataModel: {a: 1}});
+    expect((store.getState().dataModel as {then: unknown}).then).toBeNull();
+
+    store.getState().setTravelAt("2026-10-25T12:00:00.000Z");
+    expect(store.getState().travelAt).toBe("2026-10-25T12:00:00.000Z");
+    expect((store.getState().dataModel as {then: unknown}).then).toBe("2026-10-25T12:00:00.000Z");
+
+    store.getState().resetRuntimeValues();
+    expect((store.getState().dataModel as {then: unknown}).then).toBe("2026-10-25T12:00:00.000Z");
+
+    store.getState().setTravelAt(null);
+    expect((store.getState().dataModel as {then: unknown}).then).toBeNull();
+    expect(createBlokRuntimeStore({travelAt: "2026-01-01T00:00:00.000Z"}).getState().dataModel).toEqual({then: "2026-01-01T00:00:00.000Z"});
   });
 
   it("drops a mapping once its last interface is cleared", () => {

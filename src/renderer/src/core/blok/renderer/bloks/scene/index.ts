@@ -1,4 +1,4 @@
-import {AnimateBlok, AttachBlok, BeamBlok, GlowBlok, MoveBlok, RotateBlok, ShowBlok, TintBlok} from './bindings';
+import {AnimateBlok, AttachBlok, BeamBlok, GlowBlok, MoveBlok, RotateBlok, VisibleBlok, TintBlok} from './bindings';
 import {OnClickBlok, PopoutBlok} from './interaction';
 import {ModelBlok, RobotBlok} from './Model';
 import {SceneBlok} from './Scene';
@@ -22,7 +22,7 @@ export const sceneBlokComponents = [
   MoveBlok,
   RotateBlok,
   AnimateBlok,
-  ShowBlok,
+  VisibleBlok,
   GlowBlok,
   TintBlok,
   AttachBlok,

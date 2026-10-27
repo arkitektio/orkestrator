@@ -15,7 +15,7 @@ import {useBinding} from '../../runtime';
  *
  * `setValue` always writes through to the binding when there is one. Callers
  * fire their change action *after* it, so an action argument reading the bound
- * path — or `$event` — sees the new value.
+ * path — or `event.value` — sees the new value.
  */
 export type ControlledValue<T> = {
   value: T;

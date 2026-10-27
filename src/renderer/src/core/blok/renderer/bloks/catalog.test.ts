@@ -2,8 +2,9 @@
 import {describe, expect, it} from 'vitest';
 import * as z from 'zod';
 import {defaultBlokCatalog} from '../catalog';
-import {describeBlokCatalog, isActionSchema} from '../runtime';
-import {zodToCatalogKind} from '@/rekuest/catalog/uiCatalogInput';
+import {defaultBlokView} from '../../spec/catalogs';
+import {isActionSchema} from '../runtime';
+import {zodEnumValues, zodToCatalogKind} from '@/rekuest/catalog/uiCatalogInput';
 import {CatalogValueKind} from '@/rekuest/api/graphql';
 
 /**
@@ -66,80 +67,57 @@ describe('the blok catalog', () => {
     expect(zodToCatalogKind(buttonSchema.onClick)).toBe(CatalogValueKind.Callback);
   });
 
-  it('offers the HTML and shadcn families a payload can rely on', () => {
-    const manifest = describeBlokCatalog(defaultBlokCatalog);
-    const names = new Set(manifest.components.map(component => component.name));
-
-    // A rename or an accidental drop of one of these breaks stored payloads,
-    // so the list is spelled out rather than counted.
-    for (const name of [
-      // control flow and layout
-      'foreach',
-      'if',
-      'fragment',
-      'Flex',
-      'Grid',
-      'BentoGrid',
-      'BentoItem',
-      'ScrollArea',
-      'Separator',
-      // html
-      'div',
-      'span',
-      'p',
-      'a',
-      'img',
-      'ul',
-      'li',
-      'table',
-      'section',
-      'h1',
-      'h6',
-      // forms
-      'Button',
-      'Input',
-      'Textarea',
-      'Checkbox',
-      'Switch',
-      'Slider',
-      'Select',
-      'SelectItem',
-      'RadioGroup',
-      'ToggleGroup',
-      'Field',
-      'Calendar',
-      // overlays and navigation
-      'Dialog',
-      'DialogContent',
-      'Sheet',
-      'Popover',
-      'Tooltip',
-      'DropdownMenu',
-      'ContextMenu',
-      'Tabs',
-      'TabsTrigger',
-      'Accordion',
-      'Collapsible',
-      'Breadcrumb',
-      'Pagination',
-      'Menubar',
-      // feedback and data
-      'Alert',
-      'Badge',
-      'Progress',
-      'Skeleton',
-      'Spinner',
-      'Empty',
-      'Card',
-      'Table',
-      'TableCell',
-      'Avatar',
-      'Item',
-      'Carousel',
-      'Chart',
-      'Icon',
-    ]) {
-      expect(names, `catalog is missing "${name}"`).toContain(name);
+  it('implements every component the spec catalogs hold, with every prop', () => {
+    const view = defaultBlokView();
+    // Drawn by a module (mikro) that installs them: not in the core catalog.
+    const moduleProvided = new Set(['MikroScene', 'MikroSceneAnnotations', 'MikroSceneLayers', 'MikroSceneProbe', 'MikroSceneViewport']);
+    const missing: string[] = [];
+    const props: string[] = [];
+    const callbacks: string[] = [];
+    for (const [name, spec] of view.components) {
+      if (moduleProvided.has(name)) continue;
+      const definition = defaultBlokCatalog.components.get(name);
+      if (!definition) {
+        missing.push(`${name} (${spec.catalog})`);
+        continue;
+      }
+      const shape = definition.schema.shape as Record<string, z.ZodTypeAny>;
+      for (const prop of spec.props) {
+        if (!(prop.key in shape)) props.push(`${name}.${prop.key}`);
+        else if (prop.kind === 'CALLBACK' && !isActionSchema(shape[prop.key])) callbacks.push(`${name}.${prop.key}`);
+      }
     }
+    expect(missing).toEqual([]);
+    expect(props).toEqual([]);
+    expect(callbacks).toEqual([]);
+  });
+
+  /**
+   * The spec's `values` are what an author (or a model) is told a prop takes, and what the spec
+   * warns about (`catalog.value`): they must be exactly the options the zod enum draws.
+   */
+  it('holds the values every enum prop draws, and no others', () => {
+    const view = defaultBlokView();
+    const drift: string[] = [];
+    for (const [name, spec] of view.components) {
+      const definition = defaultBlokCatalog.components.get(name);
+      if (!definition) continue;
+      const shape = definition.schema.shape as Record<string, z.ZodTypeAny>;
+      for (const prop of spec.props) {
+        if (!(prop.key in shape)) continue;
+        const drawn = zodEnumValues(shape[prop.key]);
+        const held = prop.values ? [...prop.values] : null;
+        if (JSON.stringify(drawn) !== JSON.stringify(held)) {
+          drift.push(`${name}.${prop.key}: draws ${JSON.stringify(drawn)}, the spec holds ${JSON.stringify(held)}`);
+        }
+      }
+    }
+    expect(drift).toEqual([]);
+  });
+
+  it('draws nothing the spec catalogs do not hold, but for its own extras', () => {
+    const view = defaultBlokView();
+    const extra = [...defaultBlokCatalog.components.keys()].filter(name => !view.components.has(name));
+    expect(extra).toEqual([]);
   });
 });

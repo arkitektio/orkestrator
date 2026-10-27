@@ -28,8 +28,8 @@ const sourceTree = (source: string): { cacheId: string; hash: string } => {
   if (!trees.has(cacheId)) {
     const parsed = parseBsxSafe(source);
     if (!parsed.ok) console.error("A logo's BSX does not parse:", parsed.error, source);
-    // An action logo reads only `@task`: none, when it is drawn to be kept.
-    trees.set(cacheId, parsed.ok ? { componentTree: [parsed.tree], demoState: { task: null }, hash } : null);
+    // An action logo reads only `task`: none, when it is drawn to be kept.
+    trees.set(cacheId, parsed.ok ? { componentTree: [parsed.tree], resolvedLocals: [], demo: { task: null }, hash } : null);
   }
   return { cacheId, hash };
 };

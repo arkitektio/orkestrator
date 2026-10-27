@@ -3,8 +3,9 @@ import * as z from 'zod';
 import {
   BlokNodeErrorSurface,
   createBlokComponent,
-  useAction,
   useBlok,
+  useBlokDataAttributes,
+  usePendingAction,
   useValue,
   type Blok,
   type BlokComponentPlacement,
@@ -12,20 +13,23 @@ import {
   type BlokObjectSchema,
   type BlokRenderArgs,
 } from '../../runtime';
+import {loadVocabulary} from '../../../spec/vocabulary';
 import {actionProp, describedString} from '../shared/schemas';
 
 /**
- * SVG drawing: an `SVG` root and the classic SVG elements as components.
+ * The `logo@1` module of the blok language: the `AgentLogo` and `ActionLogo`
+ * roots and the classic SVG elements as components.
  *
- * `SVG` sits in html like `Scene` does and opens the `logo` context, so a
- * `Path` or a `Circle` is only ever placed inside one. A blok whose context is
- * LOGO has exactly one root, an `SVG`; any html blok may draw one too.
+ * A logo root sits in html like `Scene` does and opens the `logo` context, so a
+ * `Path` or a `Circle` is only ever placed inside one. The root names the
+ * blok's context: an `AgentLogo` root is a LOGO blok, an `ActionLogo` root an
+ * ACTION_LOGO blok (it reads `task`, the viewer's last task of the action); any
+ * html blok may draw either too.
  *
- * `ActionLogo` is the root of an action's logo (blok context ACTION_LOGO): the
- * same shapes, painted with the palette only. A paint is a palette token
- * (`ink`, `brand`, ...) drawn from the viewer's brand hue as `var(--logo-*)`;
- * under an `SVG` any SVG colour works beside them, under an `ActionLogo`
- * anything else is drawn in `ink`.
+ * A logo paints with the viewer's pens only (vocabulary `theme.logo_pens`:
+ * `ink`, `brand`, ..., the status roles `success`, `warning`, `info`), drawn
+ * from the brand hue as `var(--logo-*)`, or with `url(#id)` into the drawing.
+ * Anything else is drawn in `ink`; the server refuses it at save.
  *
  * A shape may `animate`. It plays while the logo is hovered, and while an
  * action logo's task runs (`[data-logo-active]`); see `index.css`.
@@ -60,41 +64,40 @@ const useReference = (value: string | undefined) => {
   return match ? `url(#${prefix ?? 'svg'}-${safeId(match[1])})` : value;
 };
 
-/** The palette: what `var(--logo-<token>)` in `index.css` draws from the brand hue. */
-export const LOGO_PAINT_TOKENS = ['ink', 'muted', 'brand', 'brand-strong', 'brand-soft', 'surface', 'none'] as const;
+/** The pens: what `var(--logo-<pen>)` in `index.css` draws from the brand hue (vocabulary `theme.logo_pens`). */
+export const LOGO_PAINT_TOKENS: readonly string[] = loadVocabulary().theme.logoPens;
 
 /** What a shape may play: a class `logo-anim-<name>` the stylesheet animates. */
 export const LOGO_ANIMATIONS = ['spin', 'pulse', 'float', 'draw', 'march', 'blink'] as const;
 type LogoAnimation = (typeof LOGO_ANIMATIONS)[number];
 
-/** `free` under an `SVG`, `palette` under an `ActionLogo`. */
-type PaintMode = 'free' | 'palette';
-const PaintModeContext = React.createContext<PaintMode>('free');
+const isPaletteToken = (value: string) => LOGO_PAINT_TOKENS.includes(value);
 
-const isPaletteToken = (value: string) => (LOGO_PAINT_TOKENS as readonly string[]).includes(value);
-
-/** A paint as drawn: a token from the palette, a reference into the drawing, or (under an `SVG` only) a colour. */
+/** A paint as drawn: a pen, a reference into the drawing; anything else in `ink`. */
 const usePaint = (value: string | undefined) => {
-  const mode = React.useContext(PaintModeContext);
   const reference = useReference(value);
   if (value === undefined || value === null) return undefined;
   const paint = String(value).trim();
   if (paint === 'none') return 'none';
   if (isPaletteToken(paint)) return `var(--logo-${paint})`;
   if (URL_REFERENCE.test(paint)) return reference;
-  return mode === 'palette' ? 'var(--logo-ink)' : value;
+  return 'var(--logo-ink)';
 };
 
 const length = (description: string) =>
   z.union([z.number(), z.string()]).optional().describe(description);
 
-const IN_SVG: BlokComponentPlacement = {context: 'logo', downstreamOf: ['SVG', 'ActionLogo']};
+export const AGENT_LOGO_ROOT = 'AgentLogo';
+export const ACTION_LOGO_ROOT = 'ActionLogo';
+export const LOGO_ROOTS = [AGENT_LOGO_ROOT, ACTION_LOGO_ROOT];
+
+const IN_SVG: BlokComponentPlacement = {context: 'logo', downstreamOf: LOGO_ROOTS};
 
 /* -------------------------------------------------------------------------- */
 /* Presentation: what every shape and group may set                           */
 /* -------------------------------------------------------------------------- */
 
-const PAINT_HELP = `${LOGO_PAINT_TOKENS.join(', ')} (the viewer's palette), url(#gradient), or under an SVG any colour`;
+const PAINT_HELP = `${LOGO_PAINT_TOKENS.join(', ')} (the viewer's pens), or url(#gradient)`;
 
 const presentationFields = {
   fill: describedString(`Fill paint: ${PAINT_HELP}.`),
@@ -126,7 +129,8 @@ const usePresentation = (blok: PresentationBlok) => {
   const fill = usePaint(useValue(blok.fill));
   const stroke = usePaint(useValue(blok.stroke));
   const clipPath = useReference(useValue(blok.clipPath));
-  const onClick = useAction(blok.onClick);
+  // Busy while the call it started runs: a shape cannot dispatch twice (`data-busy`).
+  const {run: onClick, pending} = usePendingAction(blok.onClick);
   const requested = useValue(blok.animate);
   // A bound or computed value may name anything: only a known animation plays.
   const animate = (LOGO_ANIMATIONS as readonly string[]).includes(requested as string)
@@ -139,6 +143,7 @@ const usePresentation = (blok: PresentationBlok) => {
   return {
     animate,
     props: {
+      'data-busy': pending ? '' : undefined,
       fill,
       fillOpacity: useValue(blok.fillOpacity),
       fillRule: useValue(blok.fillRule),
@@ -202,8 +207,6 @@ const SvgNodeError = ({componentId, title, detail}: BlokNodeErrorProps) => (
   </g>
 );
 
-const ROOTS = ['SVG', 'ActionLogo'];
-
 const rootSchema = (description: string) =>
   z
     .object({
@@ -215,13 +218,13 @@ const rootSchema = (description: string) =>
     })
     .describe(description);
 
-/** A drawing's root: an `<svg>` whose shapes paint in `mode`. */
-const createSvgRoot = (name: string, mode: PaintMode, description: string) =>
+/** A drawing's root: an `<svg>` whose shapes paint with the pens. */
+const logoRoot = (name: string, description: string) =>
   createBlokComponent(
     {
       name,
       acceptsChildren: true,
-      placement: {childrenContext: 'logo', notDownstreamOf: ROOTS},
+      placement: {childrenContext: 'logo', notDownstreamOf: LOGO_ROOTS},
       schema: rootSchema(description),
     },
     args => {
@@ -232,9 +235,11 @@ const createSvgRoot = (name: string, mode: PaintMode, description: string) =>
       const preserveAspectRatio = useValue(blok.preserveAspectRatio);
       const title = useValue(blok.title);
       const prefix = `svg${React.useId().replace(/[^A-Za-z0-9]/g, '')}`;
+      const attributes = useBlokDataAttributes();
 
       return (
         <svg
+          {...attributes}
           viewBox={viewBox}
           width={width ?? '100%'}
           height={height ?? '100%'}
@@ -243,29 +248,25 @@ const createSvgRoot = (name: string, mode: PaintMode, description: string) =>
           aria-label={title}
           data-blok-svg={args.component.id}
           data-blok-prefix={prefix}
-          data-logo-palette={mode === 'palette' ? '' : undefined}
+          data-logo-palette=""
         >
           {title ? <title>{title}</title> : null}
           <SvgDrawingContext.Provider value={prefix}>
-            <PaintModeContext.Provider value={mode}>
-              <BlokNodeErrorSurface.Provider value={SvgNodeError}>{childrenOf(args)}</BlokNodeErrorSurface.Provider>
-            </PaintModeContext.Provider>
+            <BlokNodeErrorSurface.Provider value={SvgNodeError}>{childrenOf(args)}</BlokNodeErrorSurface.Provider>
           </SvgDrawingContext.Provider>
         </svg>
       );
     },
   );
 
-export const SvgBlok = createSvgRoot(
-  'SVG',
-  'free',
-  'An SVG drawing. Its children are SVG shapes; the root of a logo blok.',
+export const AgentLogoBlok = logoRoot(
+  AGENT_LOGO_ROOT,
+  "The root of an agent's logo: a drawing in the viewer's pens. Its children are SVG shapes.",
 );
 
-export const ActionLogoBlok = createSvgRoot(
-  'ActionLogo',
-  'palette',
-  "An action's logo: an SVG drawing whose shapes paint with the viewer's palette only. The root of an action logo blok, which reads @task: the viewer's last task of the action, null until they run it.",
+export const ActionLogoBlok = logoRoot(
+  ACTION_LOGO_ROOT,
+  "The root of an action's logo: a drawing in the viewer's pens that reads task (the viewer's last task of the action, idle until they run it). Its children are SVG shapes.",
 );
 
 /* -------------------------------------------------------------------------- */
@@ -507,9 +508,9 @@ export const ClipPathBlok = createBlokComponent(
   },
 );
 
-/** The SVG vocabulary: the two roots, seven shapes, text, and what shapes reference. */
+/** The `logo@1` module: the root, seven shapes, text, and what shapes reference. */
 export const logoBlokComponents = [
-  SvgBlok,
+  AgentLogoBlok,
   ActionLogoBlok,
   PathBlok,
   CircleBlok,

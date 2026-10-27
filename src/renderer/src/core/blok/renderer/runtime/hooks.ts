@@ -2,16 +2,24 @@ import * as React from 'react';
 import {z} from 'zod';
 import {useShallow} from 'zustand/react/shallow';
 import {evaluateChecks, getChecksDependencyPaths, type BlokChecksState} from './checks';
-import {useBlokRuntime, useBlokRuntimeStoreApi} from './context';
+import {statusAtPath, useBlokRuntime, useBlokRuntimeStoreApi} from './context';
 import {
+  getActionArgumentsRuntimeDependencies,
   getComponentPropRuntimeDependencies,
   getPropActionCall,
   getPropMap,
+  isCommand,
+  resolveActionArguments,
   resolvePropValue,
   runActionCall,
+  statusOfResult,
+  type BlokResolved,
 } from './resolution';
 import {isActionSchema} from './schemas';
-import {readScopedPath, resolveScopedPath, useBlokScope} from './scope';
+import {isWritableScopedPath, readScopedPath, resolveScopedPath, useBlokScope} from './scope';
+import {defaultBlokView} from '../../spec/catalogs';
+import {useBlokNodeState} from './nodeState';
+import {combineStatus, READY, type BlokSourceStatus} from './status';
 import {bindTask} from './task';
 import type {
   BlokActionArgument,
@@ -153,15 +161,23 @@ const getCachedDependencies = (
  * an invariant that held only by coincidence. Paths outside the snapshot fall
  * back to a live read.
  */
+/** The status a read of `path` has here: a scope value (a loop item handed down by value) is ready. */
+const scopedStatus = (state: BlokRuntimeContext, path: string, scope: BlokScope): BlokSourceStatus => {
+  if (!isWritableScopedPath(path, scope)) return READY;
+  return statusAtPath(state.statuses, resolveScopedPath(path, scope));
+};
+
 const createSnapshotResolutionContext = (
   store: BlokRuntimeStore,
   scope: BlokScope,
-  snapshot: ReadonlyMap<string, unknown>,
+  snapshot: PathSnapshot,
 ): BlokResolutionContext => ({
   readPath: path =>
-    snapshot.has(path)
-      ? snapshot.get(path)
+    snapshot.values.has(path)
+      ? snapshot.values.get(path)
       : readScopedPath(store.getState().dataModel, path, scope),
+  statusOf: path => snapshot.statuses.get(path) ?? scopedStatus(store.getState(), path, scope),
+  decodeLiterals: store.getState().decodeLiterals,
   resolvePath: path => resolveScopedPath(path, scope),
   invokeFunction: (name, args, options) => store.getState().invokeFunction(name, args, options),
   dispatchAction: () => undefined,
@@ -173,22 +189,32 @@ const createLiveResolutionContext = (
   scope: BlokScope,
 ): BlokResolutionContext => ({
   readPath: path => readScopedPath(store.getState().dataModel, path, scope),
+  statusOf: path => scopedStatus(store.getState(), path, scope),
+  decodeLiterals: store.getState().decodeLiterals,
   resolvePath: path => resolveScopedPath(path, scope),
+  refetchQuery: name => store.getState().refetchQuery?.(name),
+  fetchMoreQuery: (name, variables) => store.getState().fetchMoreQuery?.(name, variables),
+  answerTask: values => store.getState().answerTask?.(values),
+  travelling: store.getState().travelAt !== null,
   invokeFunction: (name, args, options) => store.getState().invokeFunction(name, args, options),
   dispatchAction: (action, component, observe) =>
     observe
       ? store.getState().dispatchAction(action, component, observe)
       : store.getState().dispatchAction(action, component),
   refuseAction: (action, component) => store.getState().refuseAction?.(action, component) ?? false,
-  bindTask: name => bindTask(store, name),
+  bindTask: (name, args) => bindTask(store, name, args),
 });
 
-const usePathSnapshot = (paths: ReadonlyArray<string>): ReadonlyMap<string, unknown> => {
+type PathSnapshot = {values: ReadonlyMap<string, unknown>; statuses: ReadonlyMap<string, BlokSourceStatus>};
+
+const usePathSnapshot = (paths: ReadonlyArray<string>): PathSnapshot => {
   const scope = useBlokScope();
   const pathKey = paths.join(' ');
 
+  // Values and statuses interleaved, so one shallow comparison covers both.
   const selector = React.useCallback(
-    (state: BlokRuntimeContext) => paths.map(path => readScopedPath(state.dataModel, path, scope)),
+    (state: BlokRuntimeContext) =>
+      paths.flatMap(path => [readScopedPath(state.dataModel, path, scope), scopedStatus(state, path, scope)]),
     // `pathKey` stands in for the array's contents: callers rebuild the path
     // array each render, but its contents are stable for a given payload.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,8 +225,12 @@ const usePathSnapshot = (paths: ReadonlyArray<string>): ReadonlyMap<string, unkn
 
   return React.useMemo(() => {
     const snapshot = new Map<string, unknown>();
-    paths.forEach((path, index) => snapshot.set(path, values[index]));
-    return snapshot;
+    const statuses = new Map<string, BlokSourceStatus>();
+    paths.forEach((path, index) => {
+      snapshot.set(path, values[index * 2]);
+      statuses.set(path, values[index * 2 + 1] as BlokSourceStatus);
+    });
+    return {values: snapshot, statuses};
     // `pathKey` stands in for `paths`, whose identity changes each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathKey, values]);
@@ -269,6 +299,121 @@ export function useValue(
   }, [handle, scope, snapshot, store]);
 }
 
+/** The scope names a callback's arguments read the payload its component hands it by (`event.value`). */
+export const BLOK_EVENT_ROOT = 'event';
+/** The v1 spelling, still read by a port's CUSTOM widget payload. */
+export const BLOK_EVENT_SCOPE_KEY = '$event';
+
+/**
+ * The payload a component's callback is called with, shaped as its catalog
+ * declares it: a callback whose event is `{value}` gets a bare value wrapped,
+ * every other event is handed over as the component built it.
+ */
+export const shapeEvent = (component: string, key: string, payload: unknown): unknown => {
+  const fields = defaultBlokView().components.get(component)?.props.find(prop => prop.key === key)?.event;
+  if (fields && fields.length === 1 && fields[0].key === 'value') {
+    const wrapped =
+      payload !== null && typeof payload === 'object' && !Array.isArray(payload) && Object.keys(payload).length === 1 && 'value' in payload;
+    return wrapped ? payload : {value: payload};
+  }
+  return payload === undefined ? {} : payload;
+};
+
+type CallbackRunner = {
+  run: ((payload?: unknown) => void) | undefined;
+  /** Its call's task is running: the control will not dispatch again. */
+  busy: boolean;
+  /** Why it cannot run now (an agent offline, the past), or undefined. */
+  unavailable: string | undefined;
+};
+
+const TRAVEL_REASON = 'Viewing the past: actions are paused';
+
+/**
+ * A callback prop as something a component can call: exactly one task call,
+ * one `queries.<name>.refetch()`, `ui.copy` or `task.answer` (the one-thing
+ * rule; the parser and the validator refuse anything else).
+ *
+ * The control is busy while the task its call started runs, so it cannot
+ * double-dispatch: until every promise the host returned has settled, and
+ * while the record the call writes (`into`) says it is running.
+ */
+const useCallbackRunner = (handle: BlokPropHandle<z.ZodTypeAny> | undefined): CallbackRunner => {
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  const prop = handle?.prop;
+  const actionCall = React.useMemo(() => getPropActionCall(prop), [prop]);
+  const component = handle?.component;
+  const key = handle?.key;
+  const [inFlight, setInFlight] = React.useState(0);
+  const dependencies = React.useMemo(() => actionDependenciesOf(prop), [prop]);
+  const into = actionCall?.type === 'agent' ? actionCall.into : undefined;
+  const command = isCommand(actionCall);
+
+  const recordRunning = useBlokRuntime(state => {
+    if (!into) return false;
+    const record = readScopedPath(state.dataModel, into, scope);
+    return typeof record === 'object' && record !== null && (record as {running?: unknown}).running === true;
+  });
+  const unavailable = useBlokRuntime(state => {
+    if (command && state.travelAt !== null) return TRAVEL_REASON;
+    for (const dependency of dependencies) {
+      const reason = state.unavailableDependencies.get(dependency);
+      if (reason) return reason;
+    }
+    return undefined;
+  });
+
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const node = useBlokNodeState();
+  const busy = inFlight > 0 || recordRunning || (command && node.busy);
+  const busyRef = React.useRef(busy);
+  React.useEffect(() => {
+    busyRef.current = busy;
+  });
+
+  const run = React.useMemo(() => {
+    if (!actionCall || !component) {
+      return undefined;
+    }
+
+    return (payload?: unknown) => {
+      // One run at a time: a busy control does not dispatch again.
+      if (command && busyRef.current) return;
+      const event = shapeEvent(component.component, key ?? '', payload);
+      const eventScope: BlokScope = {
+        ...scope,
+        values: {...scope.values, [BLOK_EVENT_ROOT]: event, [BLOK_EVENT_SCOPE_KEY]: payload},
+      };
+      const context = createLiveResolutionContext(store, eventScope);
+      const result = runActionCall(actionCall, context, component);
+
+      if (!result.ok) {
+        console.error(`[blok] callback on "${component.id}" failed: ${result.error}`);
+        return;
+      }
+
+      if (result.value instanceof Promise) {
+        node.track(result.value);
+        setInFlight(count => count + 1);
+        const settle = () => {
+          if (mountedRef.current) setInFlight(count => Math.max(0, count - 1));
+        };
+        result.value.then(settle, settle);
+      }
+    };
+  }, [actionCall, command, component, key, node, scope, store]);
+
+  return {run, busy, unavailable};
+};
+
 export function useAction<TSchema extends z.ZodTypeAny>(
   handle: BlokPropHandle<TSchema> | undefined,
 ): (() => void) | undefined;
@@ -280,32 +425,11 @@ export function useAction(
   handleOrBlok: BlokPropHandle<z.ZodTypeAny> | AnyBlok | undefined,
   key?: string,
 ): (() => void) | undefined {
-  const handle = resolveHandle(handleOrBlok, key);
-  const store = useBlokRuntimeStoreApi();
-  const scope = useBlokScope();
-  const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
-  const component = handle?.component;
-
-  // Identity depends only on the payload and the scope, never on the data
-  // model: arguments resolve live when the action fires, so a handler prop
-  // does not invalidate on every store update.
-  return React.useMemo(() => {
-    if (!actionCall || !component) {
-      return undefined;
-    }
-
-    return () => {
-      const context = createLiveResolutionContext(store, scope);
-      const result = runActionCall(actionCall, context, component);
-
-      if (!result.ok) {
-        console.error(`[blok] action on "${component.id}" failed: ${result.error}`);
-      }
-    };
-  }, [actionCall, component, scope, store]);
+  const {run} = useCallbackRunner(resolveHandle(handleOrBlok, key));
+  return React.useMemo(() => (run ? () => run() : undefined), [run]);
 }
 
-/** Every dependency an action prop calls, nested calls in its arguments included. */
+/** Every dependency a callback prop calls. */
 export const actionDependenciesOf = (prop: BlokComponentProp | undefined): string[] => {
   const found = new Set<string>();
   const visit = (argument: BlokActionArgument) => {
@@ -326,89 +450,34 @@ export const actionDependenciesOf = (prop: BlokComponentProp | undefined): strin
 };
 
 /**
- * Why an action prop cannot run right now, or `undefined` when it can: it
- * calls a dependency the host marks unavailable (offline, not bound). A
- * control shows itself disabled with this as its tooltip.
+ * Why a callback prop cannot run right now, or `undefined` when it can: it
+ * calls a dependency the host marks unavailable (offline, not bound), or it is
+ * a command and the blok shows the past. A control shows itself disabled with
+ * this as its tooltip.
  */
 export function useActionUnavailable<TSchema extends z.ZodTypeAny>(
   handle: BlokPropHandle<TSchema> | undefined,
 ): string | undefined {
-  const prop = handle?.prop;
-  const dependencies = React.useMemo(() => actionDependenciesOf(prop), [prop]);
-  return useBlokRuntime(state => {
-    for (const dependency of dependencies) {
-      const reason = state.unavailableDependencies.get(dependency);
-      if (reason) return reason;
-    }
-    return undefined;
-  });
+  return useCallbackRunner(handle).unavailable;
 }
 
 /**
- * `useAction` plus whether what it started is still running: `pending` stays
- * true until every promise the host returned for this handler's calls has
- * settled (an agent call whose task has not ended yet). Synchronous actions
- * and hosts that return nothing never set it.
+ * `useAction` plus whether what it started is still running (`pending`, the
+ * control's `data-busy`): a busy control does not dispatch again.
  */
 export function usePendingAction<TSchema extends z.ZodTypeAny>(
   handle: BlokPropHandle<TSchema> | undefined,
 ): {run: (() => void) | undefined; pending: boolean; unavailable: string | undefined} {
-  const unavailable = useActionUnavailable(handle);
-  const store = useBlokRuntimeStoreApi();
-  const scope = useBlokScope();
-  const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
-  const component = handle?.component;
-  const [inFlight, setInFlight] = React.useState(0);
-
-  const mountedRef = React.useRef(true);
-  React.useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const run = React.useMemo(() => {
-    if (!actionCall || !component) {
-      return undefined;
-    }
-
-    return () => {
-      const context = createLiveResolutionContext(store, scope);
-      const result = runActionCall(actionCall, context, component);
-
-      if (!result.ok) {
-        console.error(`[blok] action on "${component.id}" failed: ${result.error}`);
-        return;
-      }
-
-      if (result.value instanceof Promise) {
-        setInFlight(count => count + 1);
-        const settle = () => {
-          if (mountedRef.current) setInFlight(count => Math.max(0, count - 1));
-        };
-        result.value.then(settle, settle);
-      }
-    };
-  }, [actionCall, component, scope, store]);
-
-  return {run, pending: inFlight > 0, unavailable};
+  const {run, busy, unavailable} = useCallbackRunner(handle);
+  const bare = React.useMemo(() => (run ? () => run() : undefined), [run]);
+  return {run: bare, pending: busy, unavailable};
 }
 
-/** The scope name a change handler's arguments address the new value by. */
-export const BLOK_EVENT_SCOPE_KEY = '$event';
-
 /**
- * An action handler that carries the value that triggered it.
- *
- * A bare `useAction` handler takes no arguments, so a change handler could only
- * see a new value by first writing it to the data model and reading it back.
- * Here the value is published as a scope value under `$event` for the duration
- * of the call, which makes `{value_path: "$event"}` — or `"$event/id"` for a
- * structured value — resolvable in the action's arguments.
- *
- * Scope values are read-only by design (`isWritableScopedPath`), which is
- * exactly right: `$event` exists only while the handler runs.
+ * A callback that carries the payload that triggered it, read as `event`
+ * (`deps.stage.set(x: event.value)`). The payload is shaped as the
+ * component's catalog declares its event (`shapeEvent`), and exists only
+ * while the callback runs.
  */
 export function useEventAction<TSchema extends z.ZodTypeAny>(
   handle: BlokPropHandle<TSchema> | undefined,
@@ -421,31 +490,54 @@ export function useEventAction(
   handleOrBlok: BlokPropHandle<z.ZodTypeAny> | AnyBlok | undefined,
   key?: string,
 ): ((value?: unknown) => void) | undefined {
-  const handle = resolveHandle(handleOrBlok, key);
+  return useCallbackRunner(resolveHandle(handleOrBlok, key)).run;
+}
+
+/** `useEventAction` with whether its task runs and why it cannot run. */
+export function usePendingEventAction<TSchema extends z.ZodTypeAny>(
+  handle: BlokPropHandle<TSchema> | undefined,
+): CallbackRunner {
+  return useCallbackRunner(handle);
+}
+
+/**
+ * The combined status of a node's value props (callbacks and children left
+ * out): pending if any read is not known yet, failed if one cannot be known,
+ * stale if one stopped updating. What decides whether a node renders, shows a
+ * skeleton, or suspends its boundary.
+ */
+export const useNodeStatus = <TSchema extends BlokObjectSchema>(
+  component: BlokComponentNode,
+  schema: TSchema,
+): BlokSourceStatus => {
   const store = useBlokRuntimeStoreApi();
   const scope = useBlokScope();
-  const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
-  const component = handle?.component;
+
+  const {propMap, valueFields, paths} = React.useMemo(() => {
+    const nextPropMap = getPropMap(component.props);
+    const shape = schema.shape as Record<string, z.ZodTypeAny>;
+    const nextValueFields = Object.entries(shape).filter(
+      ([key, fieldSchema]) => !isActionSchema(fieldSchema) && nextPropMap.has(key),
+    );
+    const nextPaths = new Set<string>();
+    nextValueFields.forEach(([key, fieldSchema]) => {
+      getCachedDependencies(nextPropMap.get(key), fieldSchema).paths.forEach(path => nextPaths.add(path));
+    });
+    return {propMap: nextPropMap, valueFields: nextValueFields, paths: [...nextPaths]};
+  }, [component, schema]);
+
+  const snapshot = usePathSnapshot(paths);
 
   return React.useMemo(() => {
-    if (!actionCall || !component) {
-      return undefined;
+    if (paths.length === 0) return READY;
+    const context = createSnapshotResolutionContext(store, scope, snapshot);
+    let status = READY;
+    for (const [key, fieldSchema] of valueFields) {
+      status = combineStatus(status, statusOfResult(resolvePropValue(propMap.get(key), fieldSchema, context)));
     }
-
-    return (value?: unknown) => {
-      const eventScope: BlokScope = {
-        ...scope,
-        values: {...scope.values, [BLOK_EVENT_SCOPE_KEY]: value},
-      };
-      const context = createLiveResolutionContext(store, eventScope);
-      const result = runActionCall(actionCall, context, component);
-
-      if (!result.ok) {
-        console.error(`[blok] action on "${component.id}" failed: ${result.error}`);
-      }
-    };
-  }, [actionCall, component, scope, store]);
-}
+    return status;
+  }, [paths.length, propMap, scope, snapshot, store, valueFields]);
+};
 
 /**
  * Schema validity of a node's *value* props. Action props are skipped: they
@@ -534,15 +626,16 @@ export const useChecks = (rawChecks: unknown): BlokChecksState => {
  * reading the variables its query names.
  */
 export const useDataPaths = (paths: ReadonlyArray<string>): ReadonlyMap<string, unknown> =>
-  usePathSnapshot(paths);
+  usePathSnapshot(paths).values;
 
 export const useBinding = (
   path: string | undefined,
-): {value: unknown; setValue: (value: unknown) => void} | undefined => {
+): {value: unknown; setValue: (value: unknown) => void; readOnly: boolean} | undefined => {
   const store = useBlokRuntimeStoreApi();
   const scope = useBlokScope();
   const paths = React.useMemo(() => (path ? [path] : EMPTY_PATHS), [path]);
   const snapshot = usePathSnapshot(paths);
+  const travelling = useBlokRuntime(state => state.travelAt !== null);
 
   return React.useMemo(() => {
     if (!path) {
@@ -552,10 +645,84 @@ export const useBinding = (
     const absolutePath = resolveScopedPath(path, scope);
 
     return {
-      value: snapshot.get(path),
-      setValue: (value: unknown) => store.getState().setRuntimeValue(absolutePath, value),
+      value: snapshot.values.get(path),
+      // The past is read-only: a bound control shows what was, and writes nothing.
+      setValue: (value: unknown) => {
+        if (!travelling) store.getState().setRuntimeValue(absolutePath, value);
+      },
+      readOnly: travelling,
     };
-  }, [path, scope, snapshot, store]);
+  }, [path, scope, snapshot, store, travelling]);
 };
 
 export type {BlokChecksState};
+
+/**
+ * One prop of a node resolved with its status (a guard, an `else`'s
+ * condition), without throwing on a payload problem: `ok: false` is returned.
+ * With no key, it resolves nothing and is ready.
+ */
+export const useResolvedProp = (
+  component: BlokComponentNode,
+  key: string | undefined,
+  schema: z.ZodTypeAny,
+): BlokResolved => {
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  const prop = React.useMemo(() => (key ? component.props?.find(candidate => candidate.key === key) : undefined), [component, key]);
+  const dependencies = getCachedDependencies(prop, schema);
+  const snapshot = usePathSnapshot(dependencies.paths);
+
+  return React.useMemo(() => {
+    if (!prop) return {ok: true, value: undefined};
+    return resolvePropValue(prop, schema, createSnapshotResolutionContext(store, scope, snapshot));
+  }, [prop, schema, scope, snapshot, store]);
+};
+
+/**
+ * Resolves props against the live store with extra scope values (a loop's
+ * item while working out its `key`), outside render subscriptions: the caller
+ * re-renders when what it iterates changes.
+ */
+export const useScopedResolver = (): ((
+  prop: BlokComponentProp | undefined,
+  values: Readonly<Record<string, unknown>>,
+  aliases?: Readonly<Record<string, string>>,
+) => BlokResolved) => {
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  return React.useCallback(
+    (prop, values, aliases) =>
+      resolvePropValue(
+        prop,
+        z.unknown(),
+        createLiveResolutionContext(store, {
+          ...scope,
+          aliases: aliases ? {...scope.aliases, ...aliases} : scope.aliases,
+          values: {...scope.values, ...values},
+        }),
+      ),
+    [scope, store],
+  );
+};
+
+const NO_ARGUMENTS: readonly BlokActionArgument[] = Object.freeze([]);
+
+/**
+ * Stored arguments resolved against the data model, subscribed to what they
+ * read: a declared query's variables. Re-renders when one of them changes.
+ */
+export const useResolvedArguments = (
+  argumentsList: readonly BlokActionArgument[] | null,
+): {values: Record<string, unknown>; status: BlokSourceStatus} => {
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  const list = argumentsList ?? NO_ARGUMENTS;
+  const paths = React.useMemo(() => getActionArgumentsRuntimeDependencies([...list]).paths, [list]);
+  const snapshot = usePathSnapshot(paths);
+  return React.useMemo(() => {
+    const resolved = resolveActionArguments([...list], createSnapshotResolutionContext(store, scope, snapshot), true);
+    if (!resolved.ok) return {values: {}, status: {status: 'failed', error: resolved.error}};
+    return {values: resolved.value, status: resolved.status ?? READY};
+  }, [list, scope, snapshot, store]);
+};

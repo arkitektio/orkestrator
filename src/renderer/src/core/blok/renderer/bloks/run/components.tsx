@@ -5,15 +5,16 @@ import {Line} from '@react-three/drei';
 import {createBlokComponent, useBlok, useValue, type BlokRenderArgs} from '../../runtime';
 import {describedString} from '../shared/schemas';
 import {ModelProvider, useOwnedModel, useSceneNotice, useSceneOverlay, type ModelContextValue} from '../scene/context';
+import {FALLBACK_SCENE_RGB, useThemeColour} from '../scene/colour';
 import {useBlokSceneEmbedded} from '../scene/host';
 import {BlokTrayProvider, useBlokRunHost, useBlokSpaceHost, type BlokRunAgent} from './host';
 import {progressFraction, resolveAnchors, routePoints, splitRoute, throughKeys} from './math';
 
 /**
  * The components only an action's own blok holds: they read the run it is
- * shown for. `Overlay` is the root of one drawn into the space hosting the
- * run, `At` anchors at the agent a dependency is bound to, `Route` draws a
- * line through several, and `TaskAsk` shows the run's open ask.
+ * shown for (scene@1). `Overlay` is the root of one drawn into the space
+ * hosting the run, `Anchor` anchors at the agent a dependency is bound to,
+ * and `Route` draws a line through several.
  */
 
 const Children = ({component, buildChild}: Pick<BlokRenderArgs, 'component' | 'buildChild'>) => (
@@ -27,7 +28,7 @@ const Children = ({component, buildChild}: Pick<BlokRenderArgs, 'component' | 'b
 const overlaySchema = z
   .object({})
   .describe(
-    'Root of an action\'s overlay: drawn into the space that hosts a run of the action, in its world coordinates, over the agents placed there. It owns no canvas. Place At and Route inside.',
+    'Root of an action\'s overlay: drawn into the space that hosts a run of the action, in its world coordinates, over the agents placed there. It owns no canvas. Place Anchor and Route inside.',
   );
 
 export const OverlayBlok = createBlokComponent(
@@ -111,19 +112,19 @@ const TrayAt = ({agent, dependency, children}: {agent: BlokRunAgent; dependency:
   );
 };
 
-const atSchema = z
+const anchorSchema = z
   .object({
-    dependency: z.string().describe('The dependency key of the action whose agent this anchors at.'),
+    dep: z.string().describe('The dependency key of the action whose agent this anchors at.'),
   })
   .describe(
     'Anchors its children at the agent the run got for a dependency, where it stands in the hosting space; Glow, Popout and OnClick inside it bind to that device\'s model as its scene blok loaded it. A key bound to several agents anchors at each; an agent the space does not place shows in a side tray.',
   );
 
-export const AtBlok = createBlokComponent(
-  {name: 'At', acceptsChildren: true, placement: {context: 'scene', downstreamOf: ['Overlay']}, schema: atSchema},
+export const AnchorBlok = createBlokComponent(
+  {name: 'Anchor', acceptsChildren: true, placement: {context: 'scene', downstreamOf: ['Overlay']}, schema: anchorSchema},
   ({component, buildChild}) => {
-    const blok = useBlok(component, atSchema);
-    const dependency = useValue(blok.dependency);
+    const blok = useBlok(component, anchorSchema);
+    const dependency = useValue(blok.dep);
     const run = useBlokRunHost();
     const space = useBlokSpaceHost();
     const agents = React.useMemo(() => (dependency ? run.agentsFor(dependency) : []), [dependency, run]);
@@ -154,18 +155,18 @@ const routeSchema = z
   .object({
     through: z
       .unknown()
-      .describe('The dependency keys the line runs through, in order: a list, or as BSX writes one, "[\'robot\', \'frame\', \'robot\']".'),
+      .describe('The dependency keys the line runs through, in order: `through={["robot", "frame", "robot"]}`.'),
     progress: z
       .number()
-      .optional()
-      .describe('How far along the run is, from 0 to 100 (as @task.progress): the way behind is drawn solid, a marker stands at the head.'),
-    color: describedString('The color of the line, as a CSS color. Defaults to a sky blue.'),
+      .nullish()
+      .describe('How far along the run is, from 0 to 100 (`task.progress`): the way behind is drawn solid, a marker stands at the head.'),
+    color: describedString('The colour of the line: a colour role of the theme, usually a chart role (`chart-2`). Defaults to `chart-1`.'),
   })
   .describe(
     'Draws a line through the agents the run got for these dependencies, where they stand in the hosting space. A dependency whose agent is not placed there is skipped.',
   );
 
-const ROUTE_COLOR = '#38bdf8';
+const ROUTE_COLOR = 'chart-1';
 
 /** Corners as plain triples: `Line` reads a Vector3 by `instanceof`, which a second copy of three fails. */
 const triples = (points: readonly THREE.Vector3[]): Array<[number, number, number]> =>
@@ -176,8 +177,8 @@ export const RouteBlok = createBlokComponent(
   ({component}) => {
     const blok = useBlok(component, routeSchema);
     const through = useValue(blok.through);
-    const progress = useValue(blok.progress);
-    const color = useValue(blok.color) ?? ROUTE_COLOR;
+    const progress = useValue(blok.progress) ?? undefined;
+    const color = useThemeColour(useValue(blok.color) || ROUTE_COLOR) ?? FALLBACK_SCENE_RGB;
     const run = useBlokRunHost();
     const space = useBlokSpaceHost();
     const keys = React.useMemo(() => throughKeys(through), [through]);
@@ -208,14 +209,4 @@ export const RouteBlok = createBlokComponent(
   },
 );
 
-const taskAskSchema = z
-  .object({})
-  .describe(
-    'The open ask of the run this blok shows: answered right here, which resumes the run. Shows nothing while no ask is open.',
-  );
-
-export const TaskAskBlok = createBlokComponent({name: 'TaskAsk', schema: taskAskSchema}, () => (
-  <>{useBlokRunHost().renderAsk()}</>
-));
-
-export const runBlokComponents = [OverlayBlok, AtBlok, RouteBlok, TaskAskBlok];
+export const runBlokComponents = [OverlayBlok, AnchorBlok, RouteBlok];

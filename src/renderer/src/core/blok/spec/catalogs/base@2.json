@@ -1,0 +1,210 @@
+{
+ "name": "base",
+ "version": 2,
+ "description": "The language: control flow, async boundaries and the task protocol. Every renderer implements it; functions and effects are in vocabulary.json.",
+ "components": [
+  {
+   "name": "Html",
+   "description": "The root of an html blok (a panel, a dashboard, a popout's page): lays its children out as a fragment does, and names the blok's context.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [
+    "Html"
+   ],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "ask",
+   "description": "The open ask of the task this blok is about (`task.ask`), as the form its ports generate: answered right here, which resumes the task. Shows nothing while no ask is open. Replaces TaskAsk.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "case",
+   "description": "One branch of a `match`: its children render when the matched value is `is`.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [
+    "match"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "is",
+     "kind": "ANY",
+     "required": false,
+     "description": "The literal this case matches, or a list of them."
+    }
+   ]
+  },
+  {
+   "name": "default",
+   "description": "The branch of a `match` that renders when no `case` matches.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [
+    "match"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "else",
+   "description": "A branch of its `if`: an else-if with `when`, the default without. Only the last `else` may go without `when`.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [
+    "if"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "when",
+     "kind": "BOOL",
+     "required": false,
+     "description": "The else-if condition; the default branch when absent."
+    }
+   ]
+  },
+  {
+   "name": "error",
+   "description": "What a `suspense` shows when a read inside it failed; the error is readable as `error` (`error.message`).",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [
+    "suspense"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "fallback",
+   "description": "What a `suspense` shows while a read inside it is pending.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [
+    "suspense"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "foreach",
+   "description": "Renders its children once per item, the item bound to `let`; each item's subtree takes its ids from `key`, or from its position without one.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "items",
+     "kind": "ANY",
+     "required": true,
+     "description": "The list to iterate."
+    },
+    {
+     "key": "key",
+     "kind": "ANY",
+     "required": false,
+     "description": "A stable key per item (`key={p.id}`): what an item's ids, kept values and diffs follow. Left out, items are keyed by their position (<id>@#<n>), which suits scalars only."
+    },
+    {
+     "key": "let",
+     "kind": "STRING",
+     "required": true,
+     "description": "The loop variable: a plain name, read bare inside."
+    }
+   ]
+  },
+  {
+   "name": "fragment",
+   "description": "Groups children without rendering anything of its own.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "if",
+   "description": "Renders its children (the then-branch) when `when` holds; its trailing `else` children are the else-if and default branches. Only the active branch is rendered and read.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "when",
+     "kind": "BOOL",
+     "required": true,
+     "description": "The condition."
+    }
+   ]
+  },
+  {
+   "name": "match",
+   "description": "Renders the first `case` whose `is` equals `value`, else its `default`.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "value",
+     "kind": "ANY",
+     "required": true,
+     "description": "The value matched."
+    }
+   ]
+  },
+  {
+   "name": "suspense",
+   "description": "A boundary: while any read inside is pending it shows its `fallback`, when one failed its `error` (with the error as `error`); stale values render, dimmed. The nearest boundary catches.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": true,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  }
+ ]
+}

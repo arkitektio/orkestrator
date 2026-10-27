@@ -136,18 +136,19 @@ describe('StructurePicker', () => {
     expect(form).toHaveProperty('image', null);
   });
 
-  it('hands its change handler the reference as $event', () => {
+  it('hands its change handler the reference as event.value', () => {
     record.mockClear();
-    renderBlokDocument(
+    const {store} = renderBlokDocument(
       catalog,
       picker([
         {
           key: 'onChange',
-          util_call: {operation: 'test.record', arguments: [{key: 'value', value_path: '$event'}]},
+          agent_call: {dependency: 'self', operation: 'open', arguments: [{key: 'image', value_path: 'event.value'}]},
         },
       ]),
       {form: {image: null}},
     );
+    act(() => store.getState().setDispatchAction(action => void record(action.arguments?.image)));
 
     fireEvent.click(screen.getByText('pick'));
 
@@ -327,7 +328,7 @@ describe('StructureDisplay', () => {
   ];
 
   it('shows the structure through its module, as a card unless told otherwise', () => {
-    renderBlokDocument(catalog, display(), {self: {run: {result: DATASET}}});
+    renderBlokDocument(catalog, display(), {deps: {self: {run: {result: DATASET}}}});
 
     const shown = screen.getByTestId('display');
     expect(shown).toHaveTextContent('@mikro/arraydataset:42');
@@ -336,7 +337,7 @@ describe('StructureDisplay', () => {
 
   it('is a placeholder while the value is unset', () => {
     renderBlokDocument(catalog, display([{key: 'emptyText', static_value: 'No result yet.'}]), {
-      self: {run: {result: null}},
+      deps: {self: {run: {result: null}}},
     });
 
     expect(screen.getByText('No result yet.')).toBeInTheDocument();
@@ -354,7 +355,7 @@ describe('StructureViewer', () => {
   ];
 
   it('opens the structure in a box with a height of its own', () => {
-    renderBlokDocument(catalog, viewer(), {self: {run: {result: DATASET}}});
+    renderBlokDocument(catalog, viewer(), {deps: {self: {run: {result: DATASET}}}});
 
     const opened = screen.getByTestId('viewer');
     expect(opened).toHaveTextContent('@mikro/arraydataset:42');
@@ -367,9 +368,9 @@ describe('StructureViewer', () => {
       catalog,
       viewer([
         {key: 'height', static_value: '100%'},
-        {key: 'controls', static_value: 'false'},
+        {key: 'controls', static_value: false},
       ]),
-      {self: {run: {result: DATASET}}},
+      {deps: {self: {run: {result: DATASET}}}},
     );
 
     const opened = screen.getByTestId('viewer');
@@ -380,7 +381,7 @@ describe('StructureViewer', () => {
   it('is a placeholder, at the same height, while the value is unset', () => {
     // What a nullable structure field of an agent state seeds the model with.
     for (const result of [null, '', {}]) {
-      renderBlokDocument(catalog, viewer(), {self: {run: {result}}});
+      renderBlokDocument(catalog, viewer(), {deps: {self: {run: {result}}}});
 
       expect(screen.getByText('Nothing to show yet.').parentElement?.style.height).toBe('24rem');
       expect(screen.queryByTestId('viewer')).toBeNull();

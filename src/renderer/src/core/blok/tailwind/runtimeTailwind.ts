@@ -2,6 +2,7 @@ import tailwindTheme from "tailwindcss/theme.css?raw";
 import tailwindUtilities from "tailwindcss/utilities.css?raw";
 
 import appTheme from "@/theme.css?raw";
+import { loadVocabulary } from "../spec/vocabulary";
 
 /**
  * Tailwind for the classes bloks bring at run time.
@@ -16,14 +17,48 @@ import appTheme from "@/theme.css?raw";
  * Unlike `@tailwindcss/browser` it never looks at the page: it compiles the
  * classes it is handed (`useBlokTailwind` hands it a blok's), each once, and
  * adds no second preflight, since base styles come from the build. Classes of
- * `tw-animate-css` (`animate-in`) and shadcn's variants (`data-open:`) are not
- * known here; the app's own components get them from the build.
+ * `tw-animate-css` (`animate-in`) are not known here; shadcn's custom variants
+ * (`data-open:`, ...) are, written below as `shadcn/tailwind.css` writes them
+ * for the build.
  */
 
+/**
+ * shadcn's custom variants, as `shadcn/tailwind.css` defines them (the build
+ * imports that file in `index.css`). The blok language publishes the variants
+ * a blok may use (vocabulary `theme.custom_variants`); those the app's theme
+ * does not define itself are taken from here.
+ */
+const SHADCN_VARIANTS: Readonly<Record<string, readonly string[]>> = {
+  "data-open": ['&:where([data-state="open"])', '&:where([data-open]:not([data-open="false"]))'],
+  "data-closed": ['&:where([data-state="closed"])', '&:where([data-closed]:not([data-closed="false"]))'],
+  "data-checked": ['&:where([data-state="checked"])', '&:where([data-checked]:not([data-checked="false"]))'],
+  "data-unchecked": ['&:where([data-state="unchecked"])', '&:where([data-unchecked]:not([data-unchecked="false"]))'],
+  "data-selected": ['&:where([data-selected="true"])'],
+  "data-disabled": ['&:where([data-disabled="true"])', '&:where([data-disabled]:not([data-disabled="false"]))'],
+  "data-active": ['&:where([data-state="active"])', '&:where([data-active]:not([data-active="false"]))'],
+  "data-horizontal": ['&:where([data-orientation="horizontal"])'],
+  "data-vertical": ['&:where([data-orientation="vertical"])'],
+};
+
+const definedByTheme = (name: string): boolean => new RegExp(`@custom-variant\\s+${name}[\\s({]`).test(appTheme);
+
+/** The vocabulary's custom variants the theme leaves to us, as `@custom-variant` rules. */
+export const runtimeVariants = (): string => {
+  const rules: string[] = [];
+  for (const name of loadVocabulary().theme.customVariants) {
+    if (definedByTheme(name)) continue;
+    const selectors = SHADCN_VARIANTS[name];
+    if (!selectors) throw new Error(`The blok vocabulary names the custom variant ${name}, which neither theme.css nor shadcn defines`);
+    rules.push(`@custom-variant ${name} {\n${selectors.join(",\n")} {\n@slot;\n}\n}`);
+  }
+  return rules.join("\n");
+};
+
 /** The theme and utilities layers only: no preflight, which the build already applied. */
-const ENTRY = `@import "tailwindcss/theme.css" layer(theme);
+const entry = () => `@import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
-${appTheme}`;
+${appTheme}
+${runtimeVariants()}`;
 
 const STYLESHEETS: Record<string, string> = {
   "tailwindcss/theme.css": tailwindTheme,
@@ -42,7 +77,7 @@ const compilerOf = (): Promise<Compiler> => {
   if (!compiler) {
     // Lazily: the catalog export and an app that never shows a blok never load it.
     compiler = import("tailwindcss").then(({ compile }) =>
-      compile(ENTRY, {
+      compile(entry(), {
         base: "/",
         loadStylesheet: async (id: string, base: string) => {
           const content = STYLESHEETS[id];

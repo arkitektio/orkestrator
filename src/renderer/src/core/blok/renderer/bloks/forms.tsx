@@ -49,6 +49,8 @@ import {
   usePendingAction,
   useValidation,
   useValue,
+  markBindSchema,
+  useBlokDataAttributes,
 } from '../runtime';
 import {renderIcon, iconNameSchema} from './icons';
 import {
@@ -63,7 +65,6 @@ import {
   buttonVariantSchema,
   checksSchema,
   childListSchema,
-  childSchema,
   classNameSchema,
   contentSchema,
   disabledSchema,
@@ -84,7 +85,7 @@ import {
  *   `value`/`defaultValue` are the controlled/uncontrolled alternatives.
  *   `useControlledValue` resolves the three into one value plus a setter.
  * - the change action fires *after* the write, so its arguments can read the
- *   bound path — or `$event`, which carries the new value directly.
+ *   bound path — or `event.value`, which carries the new value directly.
  *
  * Multi-part controls (`Select`, `RadioGroup`, `ToggleGroup`) are composed
  * from subcomponents exactly as in shadcn. That works because a child blok is
@@ -98,7 +99,6 @@ export const Button = createBlokComponent(
     schema: z
       .object({
         label: BlokPropSchemas.DynamicString.optional().describe('Button text.'),
-        child: childSchema,
         children: contentSchema,
         icon: iconNameSchema.describe('Icon rendered before the label.'),
         onClick: actionProp('Runs when the button is clicked.'),
@@ -115,7 +115,6 @@ export const Button = createBlokComponent(
     const blok = useBlok(component, schema);
     const validation = useValidation(component, schema);
     const label = useValue(blok.label);
-    const child = useValue(blok.child);
     const children = useValue(blok.children);
     const icon = useValue(blok.icon);
     const {run: onClick, pending, unavailable} = usePendingAction(blok.onClick);
@@ -139,8 +138,11 @@ export const Button = createBlokComponent(
     const blockingReason = checks.failures[0] ?? validation.validationErrors[0] ?? unavailable;
     const isDisabled = disabled === true || Boolean(blockingReason);
 
+    const attributes = useBlokDataAttributes({busy: pending});
+
     return (
       <ShadButton
+        {...attributes}
         variant={resolvedVariant ?? 'default'}
         size={size ?? 'default'}
         // `ShadButton` already applies `buttonVariants({variant, size,
@@ -152,7 +154,7 @@ export const Button = createBlokComponent(
         aria-busy={pending || undefined}
       >
         {renderIcon(icon)}
-        {child ? buildChild(child) : renderContent(children ?? label, buildChild)}
+        {renderContent(children ?? label, buildChild)}
       </ShadButton>
     );
   },
@@ -202,7 +204,7 @@ export const Input = createBlokComponent(
         disabled: disabledSchema,
         readOnly: boolSchema.describe('Show the value but refuse edits.'),
         fullWidth: boolSchema.describe('Stretch to the full width of the parent.'),
-        action: actionProp('Runs after each edit. Arguments may read $event.'),
+        action: actionProp('Runs after each edit. Arguments may read event.value.'),
       })
       .describe('A single-line text input.'),
   },
@@ -260,7 +262,7 @@ export const Textarea = createBlokComponent(
         className: classNameSchema,
         disabled: disabledSchema,
         readOnly: boolSchema.describe('Show the value but refuse edits.'),
-        onChange: actionProp('Runs after each edit. Arguments may read $event.'),
+        onChange: actionProp('Runs after each edit. Arguments may read event.value.'),
       })
       .describe('A multi-line text input.'),
   },
@@ -346,7 +348,7 @@ const createBooleanControl = (
           label: BlokPropSchemas.DynamicString.optional().describe('Text shown beside the control.'),
           disabled: disabledSchema,
           className: classNameSchema,
-          onChange: actionProp('Runs on toggle. Arguments may read $event.'),
+          onChange: actionProp('Runs on toggle. Arguments may read event.value.'),
           checks: checksSchema,
         })
         .describe(description),
@@ -426,9 +428,9 @@ export const Slider = createBlokComponent(
         disabled: disabledSchema,
         className: classNameSchema,
         onChange: actionProp(
-          'Runs while dragging, at most every 150 ms and always with the final value. Arguments may read $event.',
+          'Runs while dragging, at most every 150 ms and always with the final value. Arguments may read event.value.',
         ),
-        onCommit: actionProp('Runs when the drag ends. Arguments may read $event.'),
+        onCommit: actionProp('Runs when the drag ends. Arguments may read event.value.'),
       })
       .describe('A slider bound to a numeric value.'),
   },
@@ -502,7 +504,7 @@ export const RadioGroup = createBlokComponent(
         orientation: orientationSchema,
         disabled: disabledSchema,
         className: classNameSchema,
-        onChange: actionProp('Runs on selection. Arguments may read $event.'),
+        onChange: actionProp('Runs on selection. Arguments may read event.value.'),
       })
       .describe('A group of mutually exclusive options.'),
   },
@@ -589,7 +591,7 @@ export const Select = createBlokComponent(
         ),
         children: childListSchema.describe('SelectTrigger and SelectContent children.'),
         disabled: disabledSchema,
-        onChange: actionProp('Runs on selection. Arguments may read $event.'),
+        onChange: actionProp('Runs on selection. Arguments may read event.value.'),
       })
       .describe('A dropdown select. Compose SelectTrigger and SelectContent inside it.'),
   },
@@ -763,7 +765,7 @@ export const Toggle = createBlokComponent(
         size: z.enum(['default', 'sm', 'lg']).optional().describe('Toggle size.'),
         disabled: disabledSchema,
         className: classNameSchema,
-        onChange: actionProp('Runs on toggle. Arguments may read $event.'),
+        onChange: actionProp('Runs on toggle. Arguments may read event.value.'),
       })
       .describe('A two-state toggle button.'),
   },
@@ -819,7 +821,7 @@ export const ToggleGroup = createBlokComponent(
         size: z.enum(['default', 'sm', 'lg']).optional().describe('Item size.'),
         disabled: disabledSchema,
         className: classNameSchema,
-        onChange: actionProp('Runs on change. Arguments may read $event.'),
+        onChange: actionProp('Runs on change. Arguments may read event.value.'),
       })
       .describe('A set of toggle buttons. Binds to a string, or to a list when multiple.'),
   },
@@ -931,7 +933,7 @@ export const InputOTP = createBlokComponent(
         length: numberSchema.describe('Number of slots. Defaults to 6.'),
         disabled: disabledSchema,
         className: classNameSchema,
-        onComplete: actionProp('Runs once every slot is filled. Arguments may read $event.'),
+        onComplete: actionProp('Runs once every slot is filled. Arguments may read event.value.'),
       })
       .describe('A one-time-code input.'),
   },
@@ -1110,12 +1112,12 @@ export const Calendar = createBlokComponent(
     name: 'Calendar',
     schema: z
       .object({
-        bind: bindSchema.describe('Data-model path holding an ISO date string (YYYY-MM-DD).'),
+        bind: markBindSchema(bindSchema.describe('Data-model path holding an ISO date string (YYYY-MM-DD).')),
         value: BlokPropSchemas.DynamicString.optional().describe('Controlled ISO date.'),
         defaultValue: BlokPropSchemas.DynamicString.optional().describe('Initial ISO date.'),
         disabled: disabledSchema,
         className: classNameSchema,
-        onChange: actionProp('Runs on selection. Arguments may read $event.'),
+        onChange: actionProp('Runs on selection. Arguments may read event.value.'),
       })
       .describe('An inline date picker.'),
   },

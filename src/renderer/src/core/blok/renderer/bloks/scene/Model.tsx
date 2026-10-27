@@ -29,12 +29,12 @@ import {ASSET_KIND_LABELS, AssetSourceNotice, useBlokAsset, type BlokAssetSource
 import {useBlokSceneHost, useBlokSceneInert, useBlokSceneStill, type BlokModelDecoration} from './host';
 import {instantiate, loadModel, type ModelInstance} from './loadModel';
 import {useBlokReady, type BlokReadiness} from '@/core/blok/preview/snapshotMode';
+import {isExplicitId} from '@/core/blok/spec/vocabulary';
 
 const modelShape = {
   src: z
     .string()
-    .describe('The 3D model to show: an asset its app registered, as in "@self.assets.scope".'),
-  id: describedString('A name other models in the scene address this one by, as in to="arm:tool0".'),
+    .describe('The 3D model to show: an asset its app registered, as in `{self.assets.scope}`.'),
   origin: describedString('Where the model sits in the scene, as "x y z" in meters.'),
   rotation: describedString('How the model is turned, as "x y z" Euler angles in radians.'),
   scale: z.number().optional().describe('Uniform scale. Defaults to 1; a model is authored in meters.'),
@@ -478,7 +478,8 @@ const LoadedModel = ({
 
 const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'component' | 'buildChild'> & {robot: boolean}) => {
   const blok = useBlok(component, modelSchema);
-  const id = useValue(blok.id);
+  // Other models address this one by its explicit node id, as in to="arm:tool0".
+  const id = isExplicitId(component.id) ? component.id : undefined;
   const origin = parseVector(useValue(blok.origin)) ?? [0, 0, 0];
   const rotation = parseVector(useValue(blok.rotation)) ?? [0, 0, 0];
   const scale = useValue(blok.scale) ?? 1;
@@ -507,7 +508,7 @@ const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'compone
   const current = load && loaded.reference === reference ? loaded : undefined;
   const reason =
     asset === null
-      ? 'A model names an asset its app registered: src="@self.assets.<name>".'
+      ? 'A model names an asset its app registered: src={self.assets.<name>}.'
       : asset.status === 'unknown'
         ? asset.reason
         : asset.status === 'awaited'

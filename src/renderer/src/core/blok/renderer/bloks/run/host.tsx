@@ -3,7 +3,7 @@ import * as React from 'react';
 /**
  * What an action's own blok needs from the app that shows a run of it.
  *
- * The blok core draws `At`, `Route` and `TaskAsk`; it does not know which
+ * The blok core draws `Anchor`, `Route` and `ask`; it does not know which
  * agents a run got, where they stand, or how an ask is answered. The host
  * answers those through these contexts: the run (rekuest, from the task or a
  * dry run) and the space it is drawn into (rekuest's space scene).

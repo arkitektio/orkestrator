@@ -3,12 +3,13 @@ import {describe, expect, it} from 'vitest';
 import {baseBlokCatalog} from '../baseCatalog';
 import {defaultBlokCatalog} from '../catalog';
 import manifest from '../base_v1.json';
+import {baseCatalog as baseV2} from '../../spec/catalogs';
 
 /**
- * The server's base catalog, vendored byte for byte: rekuest
- * `rekuest_core/catalogs/base_v1.json` (arkitekt-spec keeps the same copy).
- * When the server's base grows, copy it here and this test says what the
- * client still has to implement.
+ * base@1's operations, vendored byte for byte (rekuest
+ * `rekuest_core/catalogs/base_v1.json`): what port definitions (validators,
+ * effects, CUSTOM widgets) still evaluate, since they feed `definition_hash`.
+ * The language components are base@2's (`core/blok/spec/base_v2.json`).
  */
 const BASE_V1 = manifest as {
   operations: {name: string; arguments: {key: string}[]}[];
@@ -32,19 +33,19 @@ describe('the base catalog', () => {
     }
   });
 
-  it('draws every base@1 component with its props, and has nothing base does not', () => {
-    for (const component of BASE_V1.components) {
+  it('draws every base@2 component with its props, and has nothing base does not', () => {
+    for (const component of baseV2().components) {
       const definition = baseBlokCatalog.components.get(component.name);
       expect(definition, component.name).toBeDefined();
       expect(Object.keys(definition!.schema.shape).sort(), component.name).toEqual(component.props.map(prop => prop.key).sort());
     }
-    expect([...baseBlokCatalog.components.keys()].sort()).toEqual(BASE_V1.components.map(component => component.name).sort());
+    expect([...baseBlokCatalog.components.keys()].sort()).toEqual(baseV2().components.map(component => component.name).sort());
     expect(baseBlokCatalog.functionDefinitions.map(fn => fn.name).sort()).toEqual(BASE_V1.operations.map(operation => operation.name).sort());
   });
 
   it('is what the orkestrator catalog extends', () => {
     expect(defaultBlokCatalog.base).toBe(baseBlokCatalog);
-    for (const name of ['foreach', 'if', 'when', 'match', 'case', 'default', 'pending', 'failed', 'empty', 'ready']) {
+    for (const name of ['foreach', 'if', 'else', 'match', 'case', 'default', 'suspense', 'fallback', 'error', 'ask']) {
       expect(baseBlokCatalog.components.has(name), name).toBe(true);
       expect(defaultBlokCatalog.components.get(name)).toBe(baseBlokCatalog.components.get(name));
     }

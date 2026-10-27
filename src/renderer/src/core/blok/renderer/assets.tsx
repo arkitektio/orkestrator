@@ -55,14 +55,19 @@ export const ASSETS_SEGMENT = 'assets';
 
 export const ASSET_KIND_LABELS: Record<BlokAssetKind, string> = {MODEL_3D: '3D model', IMAGE: 'image'};
 
-/** The `(dependency, name)` a prop names when it is bound to `<dependency>.assets.<name>`; `null` otherwise. */
+/**
+ * The `(dependency, name)` a prop names when it is bound to an agent's asset,
+ * `deps.<key>.assets.<name>` or `self.assets.<name>` (the agent the blok
+ * belongs to, `deps.self`); `null` otherwise.
+ */
 export const assetNamedBy = (
   component: BlokComponentNode,
   key: string,
 ): {dependency: string; name: string} | null => {
   const path = component.props?.find(candidate => candidate.key === key)?.dynamic_value?.path;
   if (typeof path !== 'string') return null;
-  const [dependency, segment, name, ...rest] = path.split('.');
+  const parts = path.split('.');
+  const [dependency, segment, name, ...rest] = parts[0] === 'deps' ? parts.slice(1) : parts[0] === 'self' ? parts : [];
   if (segment !== ASSETS_SEGMENT || !dependency || !name || rest.length) return null;
   return {dependency, name};
 };

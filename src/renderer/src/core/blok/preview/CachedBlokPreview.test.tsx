@@ -9,7 +9,7 @@ import {useBlokReady} from './snapshotMode';
 afterEach(cleanup);
 
 const text = (value: string) => [{id: 'p', component: 'Text', props: [{key: 'text', static_value: value}]}];
-const treeOf = (componentTree: unknown, hash: string): UseBlokTree => () => ({componentTree, demoState: {}, hash});
+const treeOf = (componentTree: unknown, hash: string): UseBlokTree => () => ({componentTree, resolvedLocals: [], demo: {}, hash});
 
 /** Stands for a part that never becomes what the blok looks like (a model that cannot load). */
 const FailingHost = ({children}: {children: React.ReactNode}) => {

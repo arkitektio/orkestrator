@@ -4,21 +4,30 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {defaultBlokCatalog} from '../../catalog';
 import {normalizeBlokComponentTree, preflightBlokDocument} from '../../runtime';
 import {serializeDrawing} from '@/core/blok/logo/logoCache';
+import {parseBsx} from '../../../bsx/parse';
+import {printBsx} from '../../../bsx/print';
+import type {BlokComponentNode} from '../../runtime';
 import {renderBlokDocument} from '../testing';
 import tree from './logo.fixture.json';
 
 /**
- * `logo.fixture.json` is what arkitekt-spec emits for a logo blok written in
- * BSX: a gradient and a clip path referenced by id, every shape, text, and a
- * `foreach` over state drawing one lamp per item.
+ * `logo.fixture.json` is a v2 logo blok as it is stored: a gradient and a clip
+ * path referenced by id, every shape, text, and a keyed `foreach` over state
+ * drawing one lamp per item, all painted with the viewer's pens.
  */
-const DEMO_STATE = {self: {Status: {lamps: [{color: 'lime'}, {color: 'red'}]}}};
+/** `self` reads `deps.self`: the agent the logo belongs to. */
+const DEMO_STATE = {deps: {self: {status: {lamps: [{name: 'a', pen: 'success'}, {name: 'b', pen: 'warning'}]}}}};
 
 afterEach(cleanup);
 
 const roots = () => normalizeBlokComponentTree(tree).roots;
 
-describe('a logo blok from the Python client', () => {
+describe('a v2 logo blok', () => {
+  it('reads back from its BSX unchanged', () => {
+    const [root] = tree as BlokComponentNode[];
+    expect(parseBsx(printBsx(root)).tree).toEqual(root);
+  });
+
   it('is a tree this catalog knows', () => {
     const preflight = preflightBlokDocument(roots(), defaultBlokCatalog);
     expect(preflight.errors).toEqual([]);
@@ -36,8 +45,8 @@ describe('a logo blok from the Python client', () => {
         'Path',
         'Polygon',
         'Polyline',
+        'AgentLogo',
         'Rect',
-        'SVG',
         'Stop',
         'SvgText',
         'foreach',
@@ -75,14 +84,14 @@ describe('a logo blok from the Python client', () => {
     const parsed = new DOMParser().parseFromString(svg, 'image/svg+xml');
     expect(parsed.querySelector('parsererror')).toBeNull();
     expect(parsed.documentElement.namespaceURI).toBe('http://www.w3.org/2000/svg');
-    expect(parsed.querySelectorAll('circle[fill="lime"], circle[fill="red"]')).toHaveLength(2);
+    expect(parsed.querySelectorAll('circle[fill="var(--logo-success)"], circle[fill="var(--logo-warning)"]')).toHaveLength(2);
   });
 
   it('draws its state from the state it is given', () => {
     renderBlokDocument(defaultBlokCatalog, roots(), DEMO_STATE);
 
     const lamps = [...document.querySelectorAll('circle')].filter(circle => circle.getAttribute('cx') === '20');
-    expect(lamps.map(lamp => lamp.getAttribute('fill'))).toEqual(['lime', 'red']);
+    expect(lamps.map(lamp => lamp.getAttribute('fill'))).toEqual(['var(--logo-success)', 'var(--logo-warning)']);
   });
 
   it('gives two drawings of one blok ids of their own', () => {
@@ -98,7 +107,7 @@ describe('a logo blok from the Python client', () => {
     renderBlokDocument(defaultBlokCatalog, [
       {
         id: 'logo',
-        component: 'SVG',
+        component: 'AgentLogo',
         children: [
           {id: 'ok', component: 'Circle', props: [{key: 'r', static_value: '2'}]},
           {id: 'broken', component: 'Circle', props: [{key: 'r', util_call: {operation: 'no_such_function'}}]},
@@ -108,7 +117,7 @@ describe('a logo blok from the Python client', () => {
 
     const svg = document.querySelector('svg');
     expect(svg?.querySelectorAll('circle')).toHaveLength(1);
-    expect(svg?.querySelector('[data-blok-error="broken"] title')?.textContent).toMatch(/r/);
+    expect(svg?.querySelector('[data-blok-error="broken"] title')?.textContent).toMatch(/no_such_function/);
     expect(svg?.querySelector('div')).toBeNull();
   });
 });
@@ -120,19 +129,33 @@ const circle = (id: string, props: Record<string, string>) => ({
 });
 
 describe('paint', () => {
-  it('draws palette tokens from the brand under either root, and colours only under an SVG', () => {
-    const shapes = [circle('token', {fill: 'brand-soft', stroke: 'ink'}), circle('colour', {fill: '#fbbf24'}), circle('empty', {fill: 'none'})];
-    renderBlokDocument(defaultBlokCatalog, [{id: 'logo', component: 'SVG', children: shapes}]);
-    renderBlokDocument(defaultBlokCatalog, [{id: 'action', component: 'ActionLogo', children: shapes}]);
+  it('draws the pens from the brand and the status roles, and anything else in ink', () => {
+    const shapes = [
+      circle('token', {fill: 'brand-soft', stroke: 'ink'}),
+      circle('status', {fill: 'success', stroke: 'info'}),
+      circle('colour', {fill: '#fbbf24'}),
+      circle('empty', {fill: 'none'}),
+    ];
+    renderBlokDocument(defaultBlokCatalog, [{id: 'logo', component: 'AgentLogo', children: shapes}]);
 
-    const [free, palette] = [...document.querySelectorAll('svg')];
-    const fills = (svg: Element) => [...svg.querySelectorAll('circle')].map(shape => shape.getAttribute('fill'));
-    expect(fills(free)).toEqual(['var(--logo-brand-soft)', '#fbbf24', 'none']);
-    // An action logo paints with the palette only: anything else is drawn in ink.
-    expect(fills(palette)).toEqual(['var(--logo-brand-soft)', 'var(--logo-ink)', 'none']);
-    expect(palette.querySelector('circle')?.getAttribute('stroke')).toBe('var(--logo-ink)');
-    expect(palette.hasAttribute('data-logo-palette')).toBe(true);
-    expect(free.hasAttribute('data-logo-palette')).toBe(false);
+    const svg = document.querySelector('svg')!;
+    const fills = [...svg.querySelectorAll('circle')].map(shape => shape.getAttribute('fill'));
+    expect(fills).toEqual(['var(--logo-brand-soft)', 'var(--logo-success)', 'var(--logo-ink)', 'none']);
+    expect(svg.querySelectorAll('circle')[1].getAttribute('stroke')).toBe('var(--logo-info)');
+    expect(svg.hasAttribute('data-logo-palette')).toBe(true);
+  });
+
+  it('draws the spectral pens, not their soft roles', () => {
+    const shapes = [
+      circle('green', {fill: 'spectrum-green', stroke: 'spectrum-violet'}),
+      circle('soft', {fill: 'spectrum-green-soft'}),
+    ];
+    renderBlokDocument(defaultBlokCatalog, [{id: 'logo', component: 'AgentLogo', children: shapes}]);
+
+    const [green, soft] = [...document.querySelectorAll('svg circle')];
+    expect(green.getAttribute('fill')).toBe('var(--logo-spectrum-green)');
+    expect(green.getAttribute('stroke')).toBe('var(--logo-spectrum-violet)');
+    expect(soft.getAttribute('fill')).toBe('var(--logo-ink)');
   });
 
   it('keeps an action logo a tree this catalog knows, its shapes placed under it', () => {

@@ -37,6 +37,7 @@ import {
 } from './context';
 import {BlokSceneEmbedProvider, useBlokSceneEmbedded, useBlokSceneFill} from './host';
 import { useKeepTabLive } from "@/core/tabs/keepLive";
+import {usePersistedComponentState} from '../../persist';
 import {useBlokReady, useBlokSnapshotMode} from '@/core/blok/preview/snapshotMode';
 
 /** The direction each view looks from, toward what it frames. */
@@ -63,7 +64,20 @@ const sphere = new THREE.Sphere();
  * is framed when a view is asked for, and once when its first model arrives —
  * not on every change, which would take the camera out of the viewer's hands.
  */
-const CameraRig = () => {
+/** Where the viewer left the camera: what a `persist` scene keeps by its id. */
+export type ScenePose = {position: [number, number, number]; target: [number, number, number]; grid: boolean};
+
+const isTriple = (value: unknown): value is [number, number, number] =>
+  Array.isArray(value) && value.length === 3 && value.every(item => typeof item === 'number' && Number.isFinite(item));
+
+export const isScenePose = (value: unknown): value is ScenePose =>
+  typeof value === 'object' &&
+  value !== null &&
+  isTriple((value as ScenePose).position) &&
+  isTriple((value as ScenePose).target) &&
+  typeof (value as ScenePose).grid === 'boolean';
+
+const CameraRig = ({pose}: {pose?: ScenePose | null}) => {
   const store = useSceneStoreApi();
   const view = useSceneState(state => state.view);
   const placed = useSceneState(state => state.placed);
@@ -97,13 +111,31 @@ const CameraRig = () => {
     [ready, store, three],
   );
 
-  React.useEffect(() => frame(view.name), [frame, view]);
+  // A kept pose stands until the viewer asks for a view: it is where they left the camera.
+  const restore = React.useCallback(() => {
+    const controls = three().controls as unknown as {target: THREE.Vector3; update: () => void} | null;
+    if (!ready || !controls || !pose) return false;
+    const camera = three().camera;
+    controls.target.set(...pose.target);
+    camera.position.set(...pose.position);
+    const distance = camera.position.distanceTo(controls.target);
+    camera.near = Math.max(distance / 200, 0.001);
+    camera.far = distance * 200;
+    camera.updateProjectionMatrix();
+    controls.update();
+    return true;
+  }, [pose, ready, three]);
+
+  React.useEffect(() => {
+    if (view.serial === 0 && restore()) return;
+    frame(view.name);
+  }, [frame, restore, view]);
 
   const framedFor = React.useRef(0);
   React.useEffect(() => {
-    if (placed.size > framedFor.current) frame(store.getState().view.name);
+    if (placed.size > framedFor.current && !(pose && store.getState().view.serial === 0)) frame(store.getState().view.name);
     framedFor.current = placed.size;
-  }, [frame, placed, store]);
+  }, [frame, placed, pose, store]);
 
   return null;
 };
@@ -624,6 +656,41 @@ const SceneControls = () => {
   );
 };
 
+/** Reports where the viewer leaves the camera (and the grid), for a scene that keeps its pose. */
+const PoseKeeper = ({onPoseChange}: {onPoseChange: (pose: ScenePose) => void}) => {
+  const controls = useThree(state => state.controls) as unknown as
+    | (THREE.EventDispatcher<{end: object}> & {target: THREE.Vector3; object: THREE.Camera})
+    | null;
+  const grid = useSceneState(state => state.settings.grid);
+  const report = React.useRef(onPoseChange);
+  React.useEffect(() => {
+    report.current = onPoseChange;
+  });
+  const latest = React.useCallback(() => {
+    if (!controls) return;
+    const {position} = controls.object;
+    report.current({
+      position: [position.x, position.y, position.z],
+      target: [controls.target.x, controls.target.y, controls.target.z],
+      grid,
+    });
+  }, [controls, grid]);
+  React.useEffect(() => {
+    if (!controls) return;
+    controls.addEventListener('end', latest);
+    return () => controls.removeEventListener('end', latest);
+  }, [controls, latest]);
+  const first = React.useRef(true);
+  React.useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    latest();
+  }, [grid, latest]);
+  return null;
+};
+
 /** The ground grid, drawn or not as the viewer chose. */
 const SceneGrid = () =>
   useSceneState(state => state.settings.grid) ? (
@@ -644,6 +711,10 @@ type SceneSurfaceProps = {
   overlay?: React.ReactNode;
   /** What stands in the scene: rendered inside the canvas. */
   children?: React.ReactNode;
+  /** Where the viewer left the camera last time (a `persist` scene): it starts there. */
+  pose?: ScenePose | null;
+  /** Hears where the viewer leaves the camera. */
+  onPoseChange?: (pose: ScenePose) => void;
 };
 
 /** How many frames a preview waits for before the canvas counts as painted. */
@@ -677,10 +748,12 @@ export const SceneSurface = ({
   onPointerMissed,
   overlay,
   children,
+  pose,
+  onPoseChange,
 }: SceneSurfaceProps) => {
   // What is asked for is where the scene starts; from then on it is the viewer's.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const store = React.useMemo(() => createSceneStore({view, grid}), []);
+  const store = React.useMemo(() => createSceneStore({view, grid: pose?.grid ?? grid}), []);
   const cards = React.useRef(new Map<string, CardHandle>());
   // A frozen tab would drop the GPU context: stay live hidden.
   useKeepTabLive();
@@ -707,7 +780,8 @@ export const SceneSurface = ({
                 <directionalLight position={[-3, 2, -2]} intensity={0.5} />
                 <SceneGrid />
                 <SceneOrbitControls />
-                <CameraRig />
+                <CameraRig pose={pose} />
+                {onPoseChange ? <PoseKeeper onPoseChange={onPoseChange} /> : null}
                 {children}
                 <OverlayTracker cards={cards} />
                 {snapshot && <FirstFrames />}
@@ -733,6 +807,10 @@ const sceneSchema = z
     height: describedString(
       'CSS height of the view, e.g. "24rem". Omit to fit the element the scene is in (24rem where that has no height of its own).',
     ),
+    persist: z
+      .boolean()
+      .optional()
+      .describe('Keep where the viewer leaves the camera (and the grid) on this device, by the scene\'s explicit id.'),
   })
   .describe(
     'Root of a 3D view: one renderer, camera and light rig. Y is up and one unit is one meter. Place Model and Robot inside.',
@@ -765,11 +843,18 @@ const StandaloneScene = ({component, schema, buildChild}: SceneRenderArgs) => {
     if (fits && !fill && frameRef.current?.clientHeight === 0) setUnsized(true);
   }, [fits, fill]);
   const height = fits ? (unsized && !fill ? FALLBACK_HEIGHT : '100%') : declaredHeight;
+  const persist = useValue(blok.persist) === true;
+  const kept = usePersistedComponentState(component.id, persist, isScenePose);
+
+  // A kept pose is read before the scene starts: it starts where the viewer left it.
+  if (!kept.loaded) return <div ref={frameRef} className="relative w-full" style={{height}} />;
 
   return (
     <SceneSurface
       view={camera}
       grid={grid}
+      pose={kept.initial}
+      onPoseChange={persist ? kept.save : undefined}
       frameRef={frameRef}
       className={fill ? 'relative w-full overflow-hidden' : 'relative w-full overflow-hidden rounded-xl bg-muted/20'}
       style={{height}}

@@ -1,3 +1,4 @@
+import {markBindSchema} from '../../runtime/schemas';
 import * as z from 'zod';
 import {BlokPropSchemas} from '../../runtime';
 
@@ -154,10 +155,13 @@ export const childSchema = BlokPropSchemas.ComponentId.optional().describe(
   'Id of a single child component to render here.',
 );
 
-export const bindSchema = z
-  .string()
-  .optional()
-  .describe('Data-model path this control reads from and writes back to.');
+/**
+ * A control's `bind`: the local (or field of one) it writes, `bind={iterations}`.
+ * The prop resolves to the *path*, not the value: `useBinding(path)` reads and writes it.
+ */
+export const bindSchema = markBindSchema(
+  z.string().optional().describe('The local this control reads from and writes back to: `bind={name}` or `bind={name.field}`.'),
+);
 
 /**
  * A reference to one object of some module, the shape structure ports carry.

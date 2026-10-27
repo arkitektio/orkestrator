@@ -71,7 +71,6 @@ import {
   boolSchema,
   buildLayoutStyle,
   childListSchema,
-  childSchema,
   classNameSchema,
   contentSchema,
   justifySchema,
@@ -99,7 +98,6 @@ export const Card = createBlokComponent(
     name: 'Card',
     schema: z
       .object({
-        child: childSchema,
         children: childListSchema,
         size: z.enum(['default', 'sm']).optional().describe('Card density.'),
         className: classNameSchema,
@@ -116,7 +114,6 @@ export const Card = createBlokComponent(
   ({buildChild, component, schema}) => {
     const blok = useBlok(component, schema);
     const layoutProps = useBaseLayoutProps(blok);
-    const child = useValue(blok.child);
     const children = useValue(blok.children);
     const size = useValue(blok.size);
     const className = useValue(blok.className);
@@ -127,7 +124,6 @@ export const Card = createBlokComponent(
         style={buildLayoutStyle(layoutProps)}
         className={cn('min-w-0', className)}
       >
-        {child ? buildChild(child) : null}
         {renderChildList(children, buildChild)}
       </ShadCard>
     );
@@ -411,7 +407,7 @@ export const Avatar = createBlokComponent(
     schema: z
       .object({
         src: BlokPropSchemas.DynamicString.optional().describe(
-          'Image URL, or an image its app registered as an asset: "@self.assets.logo".',
+          'Image URL, or an image its app registered as an asset: `{self.assets.logo}`.',
         ),
         alt: BlokPropSchemas.DynamicString.optional().describe('Alternative text.'),
         fallback: BlokPropSchemas.DynamicString.optional().describe(

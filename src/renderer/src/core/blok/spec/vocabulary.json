@@ -1,0 +1,411 @@
+{
+ "vocab": 2,
+ "description": "The blok language, version 2: what a blok may read, call and store. The spec's parser, the server (rekuest_core, takt) and the renderer (orkestrator) load this file or are generated from it. The design is the blok-vocab-v2 proposal of 2026-10-25.",
+ "roots": {
+  "data": {
+   "self": "The agent the blok belongs to: the declaring agent (agent blok), the sending agent (task blok), the executing agent (action blok). Shorthand for deps.self.",
+   "deps": "deps.<key>: an agent bound to a dependency of the blok, a custom blok or an action.",
+   "queries": "queries.<name>: a declared query's record (status, value, error, refetching, fetching_more).",
+   "subscriptions": "subscriptions.<name>: a declared subscription's record (status, value, error); value is the latest payload, or the last `keep` payloads.",
+   "args": "args.<key>: what the blok is opened on: the item for an agent or custom blok, the task's args for a task or action blok.",
+   "task": "The task this blok is about: the sending task, or the run. A task record.",
+   "event": "The payload a component hands its callback. Only inside a callback.",
+   "viewer": "{user, org, roles} of whoever is looking.",
+   "then": "The moment being viewed while time-travelling (an ISO 8601 datetime), null while live. A blok never reads the wall clock: a query passes then as an ordinary variable (variables={at: \"then\"}), <Time> measures relative time from it, and while it is set subscriptions pause (their history query, or the value at travel start, stale)."
+  },
+  "scoped": {
+   "event": "Bound only inside a callback prop.",
+   "error": "Bound only inside the <error> slot of a <suspense>: the error that made it show."
+  },
+  "functions": ["cmp", "logic", "math", "str", "list", "obj", "val", "fmt", "time", "ui", "query"],
+  "future": ["mutations"]
+ },
+ "reserved": ["self", "deps", "queries", "subscriptions", "args", "task", "event", "viewer", "then", "error", "cmp", "logic", "math", "str", "list", "obj", "val", "fmt", "time", "ui", "query", "mutations"],
+ "agent_segments": {
+  "description": "What follows an agent (self or deps.<key>): .<state>.<field> is state, .tasks.<action> the latest task of that action, .assets.<name> one of the agent's assets; deps.<key>.<action>(...) calls it.",
+  "tasks": "tasks",
+  "assets": "assets",
+  "fields": {"id": "The agent's id (a query variable: deps.robot.id).", "name": "The agent's name."},
+  "reserved_state_names": ["tasks", "assets", "id", "name"]
+ },
+ "kinds": {
+  "agent": {
+   "description": "Declared by an app for its own agent (app.blok).",
+   "roots": ["self", "args", "queries", "subscriptions", "viewer", "then"],
+   "locals": true,
+   "contexts": ["HTML", "SCENE", "LOGO"]
+  },
+  "custom": {
+   "description": "Built by a user and materialized onto agents.",
+   "roots": ["deps", "args", "queries", "subscriptions", "viewer", "then"],
+   "locals": true,
+   "contexts": ["HTML", "SCENE"]
+  },
+  "task": {
+   "description": "A task's ask or inform blok; its dependencies are the sending task's, mapped.",
+   "roots": ["self", "deps", "args", "task", "queries", "subscriptions", "viewer", "then"],
+   "locals": true,
+   "contexts": ["HTML"]
+  },
+  "action": {
+   "description": "An action's own blok, declared inline with the action (ActionBlok); its dependencies are the action's.",
+   "roots": ["self", "deps", "args", "task", "queries", "subscriptions", "viewer", "then"],
+   "locals": true,
+   "contexts": ["HTML", "SCENE", "OVERLAY"]
+  },
+  "action_logo": {
+   "description": "An action's logo, drawn against the task the viewer last ran of it (null until then).",
+   "roots": ["task"],
+   "locals": false,
+   "contexts": ["LOGO"]
+  }
+ },
+ "contexts": {
+  "HTML": {"text": true, "description": "Panels, dashboards and popouts."},
+  "SCENE": {"text": false, "description": "A 3D view."},
+  "OVERLAY": {"text": false, "description": "An action's blok drawn into the space that hosts a run; its children are scene components."},
+  "LOGO": {"text": false, "description": "An SVG drawing in the viewer's palette: an agent's logo, or an action's (an ACTION_LOGO blok is drawn in LOGO)."}
+ },
+ "blok_roots": {
+  "description": "A blok's root component names its context: every blok starts with one of these, and nothing else declares the context.",
+  "roots": {"Html": "HTML", "Scene": "SCENE", "Overlay": "OVERLAY", "AgentLogo": "LOGO", "ActionLogo": "ACTION_LOGO"}
+ },
+ "records": {
+  "task": {
+   "description": "One shape for task, deps.<key>.tasks.<action>, self.tasks.<action> and every into name.",
+   "fields": [
+    {"key": "id", "kind": "STRING", "nullable": true, "description": "The task's id; null before it was started."},
+    {"key": "status", "kind": "STRING", "choices": ["idle", "queued", "running", "asking", "done", "failed", "cancelled"], "description": "Lowercase."},
+    {"key": "running", "kind": "BOOL", "description": "queued, running or asking."},
+    {"key": "done", "kind": "BOOL"},
+    {"key": "failed", "kind": "BOOL"},
+    {"key": "progress", "kind": "INT", "description": "0 to 100."},
+    {"key": "message", "kind": "STRING", "nullable": true},
+    {"key": "error", "kind": "STRING", "nullable": true},
+    {"key": "args", "kind": "DICT", "description": "What it was called with, filled in by the renderer at dispatch."},
+    {"key": "ask", "kind": "DICT", "nullable": true, "children": [{"key": "question", "kind": "STRING"}, {"key": "form", "kind": "DICT"}], "description": "The open ask, or null."},
+    {"key": "answer", "kind": "DICT", "nullable": true, "description": "The values returned for the ask."},
+    {"key": "returns", "kind": "DICT", "description": "The latest yield, by return port key."}
+   ],
+   "idle": {"id": null, "status": "idle", "running": false, "done": false, "failed": false, "progress": 0, "message": null, "error": null, "args": {}, "ask": null, "answer": null, "returns": {}}
+  },
+  "query": {
+   "description": "A declared query's record.",
+   "fields": [
+    {"key": "status", "kind": "STRING", "choices": ["pending", "ready", "stale", "failed"]},
+    {"key": "value", "kind": "DICT", "nullable": true, "description": "The data the query answered."},
+    {"key": "error", "kind": "STRING", "nullable": true},
+    {"key": "refetching", "kind": "BOOL", "description": "True while query.refetch runs; a refetch never suspends (stale-while-revalidate)."},
+    {"key": "fetching_more", "kind": "BOOL", "description": "True while query.fetch_more runs; the pages already shown stay."}
+   ]
+  },
+  "subscription": {
+   "description": "A declared subscription's record. Has no refetch or fetch_more. While then is set the stream pauses: the value is its history query's at then, or the value at travel start, stale.",
+   "fields": [
+    {"key": "status", "kind": "STRING", "choices": ["pending", "ready", "stale", "failed"]},
+    {"key": "value", "kind": "ANY", "nullable": true, "description": "The latest payload, or the list of the last `keep` payloads."},
+    {"key": "error", "kind": "STRING", "nullable": true}
+   ]
+  },
+  "viewer": {
+   "description": "Exposes nothing beyond what the viewer's own token says.",
+   "fields": [
+    {"key": "user", "kind": "DICT", "children": [{"key": "id", "kind": "STRING"}, {"key": "username", "kind": "STRING", "nullable": true}]},
+    {"key": "org", "kind": "DICT", "nullable": true, "children": [{"key": "id", "kind": "STRING"}]},
+    {"key": "roles", "kind": "LIST", "children": [{"key": "...", "kind": "STRING"}]}
+   ]
+  },
+  "error": {
+   "description": "What <error> binds as `error`.",
+   "fields": [
+    {"key": "message", "kind": "STRING"},
+    {"key": "code", "kind": "STRING", "nullable": true}
+   ]
+  }
+ },
+ "async": {
+  "statuses": {
+   "pending": "Not known yet (loading, connecting, first sync).",
+   "ready": "Known. It may be null, which then means known absence and nothing else.",
+   "stale": "Known, but the source stopped updating (agent offline): the last value, flagged.",
+   "failed": "Cannot be known (no access, agent gone, query error), with an error."
+  },
+  "always_ready": ["locals", "event", "let", "literals"],
+  "propagation": [
+   "If any input of an expression is pending, the result is pending; else if any failed, the result is failed; else if any is stale, the result is stale.",
+   "logic.choose and <if> read only the branch taken; logic.all and logic.any stop at the first operand that decides them.",
+   "Functions never see a pending or failed value, except those with sees_status.",
+   "Inside a <suspense> every read is its value: a pending read shows <fallback>, a failed one <error> (binding error); stale never suspends, the value renders with data-stale.",
+   "Without a boundary each component shows its own skeleton or inline error; a blok never blanks entirely.",
+   "A dependency bound to no agent (a custom blok's dependency the viewer has not bound, an optional one left out) reads as failed, its error code deps.unbound; never as ready with null. deps.<key>.tasks.<action> and deps.<key>.assets.<name> of it read failed too, and a call to it renders disabled.",
+   "Inactive <if> branches never suspend anything."
+  ]
+ },
+ "functions": {
+  "description": "Pure functions by namespace, snake_case. Positional arguments map onto params in order. `lazy`: arguments are read only as needed. `effect`: allowed only as a callback's one thing (ui.*, task.answer, query.*). `sees_status`: sees pending/failed instead of suspending. No function reads the wall clock. `null` says what the function does with a null argument (known absence); a missing path reads as null.",
+  "cmp.eq": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "Deep JSON equality.", "null": "null equals only null"},
+  "cmp.ne": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "Not deep-equal.", "null": "null equals only null"},
+  "cmp.gt": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "a > b, numbers or strings.", "null": "false"},
+  "cmp.gte": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "a >= b.", "null": "false"},
+  "cmp.lt": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "a < b.", "null": "false"},
+  "cmp.lte": {"params": [["a", "ANY"], ["b", "ANY"]], "returns": "BOOL", "description": "a <= b.", "null": "false"},
+  "cmp.between": {"params": [["value", "ANY"], ["min", "ANY"], ["max", "ANY"]], "returns": "BOOL", "description": "min <= value <= max.", "null": "false"},
+  "logic.all": {"params": [["values", "LIST"]], "returns": "ANY", "lazy": true, "description": "JavaScript &&: the first falsy value, else the last value (true for none).", "null": "null is falsy"},
+  "logic.any": {"params": [["values", "LIST"]], "returns": "ANY", "lazy": true, "description": "JavaScript ||: the first truthy value, else the last value (false for none).", "null": "null is falsy"},
+  "logic.negate": {"params": [["a", "ANY"]], "returns": "BOOL", "description": "!a.", "null": "true"},
+  "logic.choose": {"params": [["cond", "ANY"], ["then", "ANY"], ["otherwise", "ANY", false]], "returns": "ANY", "lazy": true, "description": "cond ? then : otherwise; only the branch taken is read.", "null": "a null cond takes otherwise; a missing otherwise is null"},
+  "logic.coalesce": {"params": [["values", "LIST"]], "returns": "ANY", "lazy": true, "description": "The first value that is not null.", "null": "skipped; null when all are"},
+  "math.add": {"params": [["a", "FLOAT"], ["b", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.sub": {"params": [["a", "FLOAT"], ["b", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.mul": {"params": [["a", "FLOAT"], ["b", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.div": {"params": [["a", "FLOAT"], ["b", "FLOAT"]], "returns": "FLOAT", "null": "null; division by zero is null"},
+  "math.mod": {"params": [["a", "FLOAT"], ["b", "FLOAT"]], "returns": "FLOAT", "null": "null; modulo zero is null"},
+  "math.neg": {"params": [["a", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.abs": {"params": [["value", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.round": {"params": [["value", "FLOAT"], ["digits", "INT", false]], "returns": "FLOAT", "description": "Half away from zero, to `digits` decimals (0).", "null": "null"},
+  "math.floor": {"params": [["value", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.ceil": {"params": [["value", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.clamp": {"params": [["value", "FLOAT"], ["min", "FLOAT"], ["max", "FLOAT"]], "returns": "FLOAT", "null": "null"},
+  "math.min": {"params": [["values", "LIST"]], "returns": "FLOAT", "null": "nulls are skipped; null when none is left"},
+  "math.max": {"params": [["values", "LIST"]], "returns": "FLOAT", "null": "nulls are skipped; null when none is left"},
+  "math.sum": {"params": [["values", "LIST"]], "returns": "FLOAT", "null": "nulls are skipped; 0 when none is left"},
+  "str.upper": {"params": [["value", "STRING"]], "returns": "STRING", "null": "null"},
+  "str.lower": {"params": [["value", "STRING"]], "returns": "STRING", "null": "null"},
+  "str.trim": {"params": [["value", "STRING"]], "returns": "STRING", "null": "null"},
+  "str.capitalize": {"params": [["value", "STRING"]], "returns": "STRING", "null": "null"},
+  "str.slice": {"params": [["value", "STRING"], ["start", "INT"], ["end", "INT", false]], "returns": "STRING", "null": "null"},
+  "str.truncate": {"params": [["value", "STRING"], ["length", "INT"], ["suffix", "STRING", false]], "returns": "STRING", "description": "At most `length` characters, ending in `suffix` (an ellipsis) when cut.", "null": "null"},
+  "str.replace": {"params": [["value", "STRING"], ["search", "STRING"], ["replacement", "STRING"]], "returns": "STRING", "description": "Every occurrence.", "null": "null"},
+  "str.split": {"params": [["value", "STRING"], ["separator", "STRING", false]], "returns": "LIST", "description": "Into characters when separator is left out.", "null": "[]"},
+  "str.concat": {"params": [["values", "LIST"]], "returns": "STRING", "description": "The string forms of the values, joined.", "null": "renders as an empty string"},
+  "str.template": {"params": [["template", "STRING"], ["values", "LIST"]], "returns": "STRING", "description": "Fills {0}, {1}, ... with the string forms of values; {{ and }} are literal braces. What text children with {...} desugar to.", "null": "renders as an empty string"},
+  "str.classes": {"params": [["values", "ANY"]], "returns": "STRING", "description": "clsx: a list drops falsy entries and joins the rest with spaces; an object keeps the keys whose value is truthy. What a className list or object desugars to.", "null": "dropped"},
+  "str.starts_with": {"params": [["value", "STRING"], ["prefix", "STRING"]], "returns": "BOOL", "null": "false"},
+  "str.ends_with": {"params": [["value", "STRING"], ["suffix", "STRING"]], "returns": "BOOL", "null": "false"},
+  "str.contains": {"params": [["value", "STRING"], ["search", "STRING"]], "returns": "BOOL", "null": "false"},
+  "str.matches": {"params": [["value", "STRING"], ["pattern", "STRING"]], "returns": "BOOL", "description": "A regular expression search (ECMAScript syntax).", "null": "false"},
+  "str.length": {"params": [["value", "STRING"]], "returns": "INT", "null": "0"},
+  "list.len": {"params": [["value", "LIST"]], "returns": "INT", "null": "0"},
+  "list.contains": {"params": [["value", "LIST"], ["item", "ANY"]], "returns": "BOOL", "description": "Deep equality.", "null": "false"},
+  "list.first": {"params": [["value", "LIST"]], "returns": "ANY", "null": "null"},
+  "list.last": {"params": [["value", "LIST"]], "returns": "ANY", "null": "null"},
+  "list.at": {"params": [["value", "LIST"], ["index", "INT"]], "returns": "ANY", "description": "A negative index counts from the end.", "null": "null"},
+  "list.join": {"params": [["value", "LIST"], ["separator", "STRING", false]], "returns": "STRING", "description": "Separator ', ' when left out.", "null": "empty string"},
+  "list.slice": {"params": [["value", "LIST"], ["start", "INT"], ["end", "INT", false]], "returns": "LIST", "null": "[]"},
+  "list.reverse": {"params": [["value", "LIST"]], "returns": "LIST", "null": "[]"},
+  "list.unique": {"params": [["value", "LIST"]], "returns": "LIST", "null": "[]"},
+  "list.compact": {"params": [["value", "LIST"]], "returns": "LIST", "description": "Without null entries.", "null": "[]"},
+  "list.pluck": {"params": [["value", "LIST"], ["key", "STRING"]], "returns": "LIST", "null": "[]"},
+  "list.sort": {"params": [["value", "LIST"], ["key", "STRING", false], ["descending", "BOOL", false]], "returns": "LIST", "null": "[]; null entries sort last"},
+  "list.range": {"params": [["start", "INT"], ["end", "INT"], ["step", "INT", false]], "returns": "LIST", "null": "[]"},
+  "obj.get": {"params": [["value", "DICT"], ["key", "STRING"], ["default", "ANY", false]], "returns": "ANY", "description": "A dotted key reads a nested field.", "null": "default"},
+  "obj.has": {"params": [["value", "DICT"], ["key", "STRING"]], "returns": "BOOL", "null": "false"},
+  "obj.keys": {"params": [["value", "DICT"]], "returns": "LIST", "null": "[]"},
+  "obj.values": {"params": [["value", "DICT"]], "returns": "LIST", "null": "[]"},
+  "obj.entries": {"params": [["value", "DICT"]], "returns": "LIST", "description": "[{key, value}, ...].", "null": "[]"},
+  "val.is_null": {"params": [["value", "ANY"]], "returns": "BOOL", "null": "true"},
+  "val.is_set": {"params": [["value", "ANY"]], "returns": "BOOL", "null": "false"},
+  "val.is_empty": {"params": [["value", "ANY"]], "returns": "BOOL", "description": "null, an empty string, list or object.", "null": "true"},
+  "val.type": {"params": [["value", "ANY"]], "returns": "STRING", "description": "null|bool|number|string|list|object.", "null": "'null'"},
+  "val.to_string": {"params": [["value", "ANY"]], "returns": "STRING", "null": "empty string"},
+  "val.to_number": {"params": [["value", "ANY"]], "returns": "FLOAT", "null": "null; unparseable is null"},
+  "val.to_bool": {"params": [["value", "ANY"]], "returns": "BOOL", "description": "JavaScript truthiness.", "null": "false"},
+  "val.status": {"params": [["value", "ANY"]], "returns": "STRING", "sees_status": true, "description": "pending|ready|stale|failed.", "null": "'ready'"},
+  "val.is_pending": {"params": [["value", "ANY"]], "returns": "BOOL", "sees_status": true, "null": "false"},
+  "val.is_ready": {"params": [["value", "ANY"]], "returns": "BOOL", "sees_status": true, "description": "ready or stale.", "null": "true"},
+  "fmt.number": {"params": [["value", "FLOAT"], ["digits", "INT", false]], "returns": "STRING", "description": "In the viewer's locale.", "null": "empty string"},
+  "fmt.percent": {"params": [["value", "FLOAT"], ["digits", "INT", false]], "returns": "STRING", "description": "0.42 -> 42%.", "null": "empty string"},
+  "fmt.currency": {"params": [["value", "FLOAT"], ["currency", "STRING"]], "returns": "STRING", "null": "empty string"},
+  "fmt.bytes": {"params": [["value", "FLOAT"], ["digits", "INT", false]], "returns": "STRING", "description": "1536 -> 1.5 KB.", "null": "empty string"},
+  "fmt.date": {"params": [["value", "STRING"], ["format", "STRING", false]], "returns": "STRING", "null": "empty string"},
+  "fmt.datetime": {"params": [["value", "STRING"], ["format", "STRING", false]], "returns": "STRING", "null": "empty string"},
+  "fmt.json": {"params": [["value", "ANY"], ["indent", "INT", false]], "returns": "STRING", "null": "'null'"},
+  "fmt.quantity": {"params": [["value", "ANY"], ["unit", "STRING", false]], "returns": "STRING", "description": "A quantity ({magnitude, unit} or a number in `unit`), in its unit.", "null": "empty string"},
+  "fmt.duration": {"params": [["seconds", "FLOAT"]], "returns": "STRING", "description": "90 -> 1m 30s; negative durations keep their sign.", "null": "empty string"},
+  "time.diff": {"params": [["start", "STRING"], ["end", "STRING"]], "returns": "FLOAT", "description": "Seconds from start to end (ISO 8601 datetimes); negative when end is earlier. Pure: relative time to the viewed moment is the <Time> component's.", "null": "null"},
+  "ui.copy": {"params": [["text", "ANY"]], "returns": "ANY", "effect": true, "description": "Copies text to the viewer's clipboard: the only non-task effect.", "null": "copies an empty string"},
+  "task.answer": {"params": [["values", "DICT"]], "returns": "ANY", "effect": true, "task_operation": true, "description": "Answers the open ask of `task`. Counts as a task operation.", "null": "answers with no values"},
+  "query.refetch": {"params": [["query", "STRING"]], "returns": "ANY", "effect": true, "description": "Re-reads the declared query named by the literal `query`; never suspends, queries.<name>.refetching is true meanwhile. BSX writes it queries.<name>.refetch().", "null": "refused: the query is named by a literal"},
+  "query.fetch_more": {"params": [["query", "STRING"], ["variables", "DICT", false]], "returns": "ANY", "effect": true, "description": "Reads the next page of the declared query named by the literal `query`, its variables overridden by `variables`, and appends the page's list at the query's `more` field to what is shown; queries.<name>.fetching_more is true meanwhile. BSX writes it queries.<name>.fetch_more(name: value, ...). Refused on a query without `more`.", "null": "refused: the query is named by a literal; null variables fetch with the query's own"}
+ },
+ "operators": {
+  "description": "Operators desugar to stored calls; there is no operator in the stored tree.",
+  "==": "cmp.eq", "!=": "cmp.ne", ">": "cmp.gt", ">=": "cmp.gte", "<": "cmp.lt", "<=": "cmp.lte",
+  "&&": "logic.all", "||": "logic.any", "!": "logic.negate", "?:": "logic.choose", "??": "logic.coalesce",
+  "precedence": ["?:", "??", "||", "&&", "== !=", "> >= < <=", "!"],
+  "notes": "a && b && c is one logic.all over [a, b, c] (likewise || and ??: a ?? b ?? c is one logic.coalesce over [a, b, c]); a parenthesized group stays one operand ((a ?? b) ?? c nests). ?? binds looser than || and && and may be mixed with them unparenthesized (a || b ?? c is (a || b) ?? c), tighter than ?: (a ?? b ? c : d is (a ?? b) ? c : d). Comparisons do not chain; arithmetic (+ - * / %), subscripts (a[0]), optional chaining (?.), lambdas (=>), assignment (=) and sequences (;) are refused."
+ },
+ "calls": {
+  "description": "What a prop or an argument may hold besides a literal, a path or a util call.",
+  "kinds": {
+   "agent_call": "A task call: self.<action>(...) or deps.<key>.<action>(...), only as a callback's one thing, optionally named with `into <name>` (stored as the prop's declares_value).",
+   "util_call": "A pure function, or an effect (ui.copy, task.answer, query.refetch, query.fetch_more) as a callback's one thing."
+  },
+  "reserved_kinds": {
+   "service_call": "Reserved for mutations, should they ever exist. Renderers refuse a call kind they do not know."
+  },
+  "callback_one_thing": ["agent_call", "effect"],
+  "query_effects": "queries.<name>.refetch() is stored as util_call {operation: query.refetch, arguments: [{key: query, value_literal: <name>}]}; queries.<name>.fetch_more(k: v, ...) as util_call {operation: query.fetch_more, arguments: [{key: query, value_literal: <name>}, {key: variables, value_dict: [{key: k, ...}, ...]}]}, the variables argument left out when the call names none. The query is always a literal name.",
+  "task_arguments": "A task call names every argument (name: value); positional arguments are refused, the parser cannot know the action's parameters."
+ },
+ "stored_tree": {
+  "description": "How a v2 blok is stored: ComponentNodeInput {id, component, props?, children?}; ComponentPropInput {key, static_value? | dynamic_value {path} | util_call | agent_call (+ declares_value)}; ActionArgumentInput {key?, value_literal? | value_path? | util_call? | value_list? | value_dict?}. A prop or argument with no value field is null.",
+  "ids": "An explicit id matches explicit_id; a derived id is the parent's id plus /<Component>[<n>] (n: occurrence among same-named siblings), the root's <Component>[0]. A derived id always ends in ']'. An implicit Text node is <parent>/#<n> (n: text-run index) and nothing may target it.",
+  "explicit_id": "^[A-Za-z_][A-Za-z0-9_.:-]*$",
+  "foreach": "foreach props: items (expression), let (static_value and declares_value the name), key (expression, optional). With a key each item's subtree takes its runtime ids from it: <id>@<key>; without one, from its position: <id>@#<n> (n: the 0-based index). A foreach without key is stored with no key prop at all; the validator warns foreach.position_key when its items are known not to be scalars.",
+  "if": "if props: when; children: the then-branch, then the else nodes (component else, an else-if with a when prop; only the last else may lack when).",
+  "into": "agent_call prop with declares_value <name>: a task record only that call writes. Allowed inside foreach; one name is written by one call site.",
+  "text": "Text children fill the component's text_prop; mixed with elements they become implicit Text nodes. Several parts desugar to str.template(template, values)."
+ },
+ "locals": {
+  "description": "Blok-level form state that feeds a call: a local is an arg port (key, kind, identifier, nullable, default, children, choices, validators, description, ...) plus persist, written only through `bind` on controls, read bare. persist remembers the last input on this device. Its kind is a port kind or ANY; left out on the wire it is inferred (kind_inference) and the stored local always carries one.",
+  "fields": ["persist"],
+  "any": "ANY is a local's kind only (no action port is ever ANY): an untyped value. It is never an error and gets no warning; it skips the bind_kinds and arg_kinds checks and a path below it is taken as written. A renderer treats it as an untyped value.",
+  "kind_inference": ["A given kind (ANY included) is kept; only a left-out kind is inferred, by the first rule that gives one:", "1. the default: a bool BOOL, an integer INT, any other number FLOAT, a string STRING; a non-empty list of one scalar kind LIST of it, a non-empty object of one scalar kind DICT of it (the item port keyed ...); null, [], {} and mixed items tell nothing;", "2. the port of the task argument the local is passed to whole (an argument whose value is exactly the local's path), at the first such call in tree order whose arg port is known and makes a valid local: its kind, identifier, nullable, choices, reference_unit, proposed_units, dimension and children (from a demand's arg match: kind, identifier, nullable and children, every child with a kind);", "3. the bind kind of the first control bound to the local whole, when it is STRING, INT, FLOAT or BOOL (LIST, DICT and ANY controls tell too little);", "4. else ANY.", "The SDK's Local[T]() / Local(type=T) and Local.like(action, arg) come before rule 1. Tree order is the walk order: nodes depth first, each node's props in order, a call's arguments in order. Every field the local sets (choices, nullable, widget, identifier, children, description, ...) wins over the inferred type, which only fills what it leaves out; a candidate whose merge is no valid port is skipped. The other call sites and binds are then checked against the kind found (local.arg_kind, local.bind_kind). A left-out kind stays distinguishable from a given ANY until inference ran (no default filled in at deserialization; null is left out)."],
+  "bind": "bind={<local>} or bind={<local>.<field>...}: the control writes the local; nothing else does. The catalog's kind of the bind prop is what the control writes: the local (or the field of it bound) must be a port kind bind_kinds lists for it.",
+  "bind_kinds": {"description": "Per catalog kind of a bind prop, the port kinds of the locals it may write. A kind not listed (ANY) writes any local.", "STRING": ["STRING", "ENUM", "DATE"], "FLOAT": ["FLOAT", "INT", "QUANTITY"], "INT": ["INT"], "BOOL": ["BOOL"], "LIST": ["LIST"], "DICT": ["DICT", "MODEL"]},
+  "arg_kinds": {"description": "Per port kind of a local passed whole as a task call's argument, the kinds of the action's arg port that take it, where the action is known (agent self.<action> demands, an action's dependencies). STRUCTURE also needs the same identifier. An ANY local is not checked.", "STRING": ["STRING"], "INT": ["INT", "FLOAT"], "FLOAT": ["FLOAT"], "BOOL": ["BOOL"], "ENUM": ["ENUM", "STRING"], "DATE": ["DATE", "STRING"], "QUANTITY": ["QUANTITY", "FLOAT"], "LIST": ["LIST"], "DICT": ["DICT"], "MODEL": ["MODEL", "DICT"], "STRUCTURE": ["STRUCTURE"]}
+ },
+ "theme": {
+  "colour_roles": ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive", "border", "input", "ring", "brand", "brand-light", "brand-soft", "chart-1", "chart-2", "chart-3", "chart-4", "chart-5", "success", "success-foreground", "success-soft", "warning", "warning-foreground", "warning-soft", "info", "info-foreground", "info-soft", "spectrum-violet", "spectrum-violet-soft", "spectrum-blue", "spectrum-blue-soft", "spectrum-cyan", "spectrum-cyan-soft", "spectrum-green", "spectrum-green-soft", "spectrum-yellow", "spectrum-yellow-soft", "spectrum-orange", "spectrum-orange-soft", "spectrum-red", "spectrum-red-soft"],
+  "status_roles": ["success", "warning", "info"],
+  "spectral_roles": ["spectrum-violet", "spectrum-blue", "spectrum-cyan", "spectrum-green", "spectrum-yellow", "spectrum-orange", "spectrum-red"],
+  "spectrum": {
+   "description": "Fixed-hue roles for data that has a colour of its own (a fluorophore's emission, a laser line, a spectral band): spectrum-<band> and spectrum-<band>-soft. Their hue is fixed (they stay recognisable under any brand); their chroma follows the brand's intensity like the status roles', and unlike those they never shift near the brand hue. theme.css defines --spectrum-<band>, --spectrum-<band>-soft and the Tailwind --color-spectrum-<band>(-soft); logo pens --logo-spectrum-<band> = var(--spectrum-<band>).",
+   "chroma": "--spectrum-chroma: clamp(0.1, calc(var(--brand-chroma) * 1.1), 0.2)",
+   "role": {"light": "oklch(<light> var(--spectrum-chroma) <hue>)", "dark": "oklch(<dark> var(--spectrum-chroma) <hue>)"},
+   "soft": {"light": "oklch(0.95 calc(var(--spectrum-chroma) * 0.35) <hue>)", "dark": "oklch(0.3 calc(var(--spectrum-chroma) * 0.45) <hue>)"},
+   "bands": {
+    "violet": {"hue": 300, "light": 0.55, "dark": 0.7, "nm": [380, 450]},
+    "blue": {"hue": 260, "light": 0.58, "dark": 0.72, "nm": [450, 490]},
+    "cyan": {"hue": 215, "light": 0.68, "dark": 0.8, "nm": [490, 520]},
+    "green": {"hue": 145, "light": 0.64, "dark": 0.78, "nm": [520, 565]},
+    "yellow": {"hue": 100, "light": 0.8, "dark": 0.88, "nm": [565, 590]},
+    "orange": {"hue": 60, "light": 0.7, "dark": 0.8, "nm": [590, 625]},
+    "red": {"hue": 27, "light": 0.6, "dark": 0.72, "nm": [625, 750]}
+   },
+   "wavelength": "A wavelength maps to the band whose nm range [low, high) holds it; below 380 nm is violet, from 750 nm red (optikit wavelength_pen)."
+  },
+  "colour_utilities": ["bg", "text", "border", "border-t", "border-r", "border-b", "border-l", "border-x", "border-y", "ring", "ring-offset", "outline", "fill", "stroke", "from", "via", "to", "divide", "placeholder", "caret", "accent", "decoration", "shadow"],
+  "palette_colours": ["slate", "gray", "zinc", "neutral", "stone", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose", "black", "white"],
+  "palette_role_hints": {"red": "destructive", "rose": "destructive", "orange": "warning", "amber": "warning", "yellow": "warning", "lime": "success", "green": "success", "emerald": "success", "teal": "success", "cyan": "info", "sky": "info", "blue": "info", "indigo": "primary", "violet": "brand", "purple": "brand", "fuchsia": "brand", "pink": "brand", "slate": "muted", "gray": "muted", "zinc": "muted", "neutral": "muted", "stone": "muted", "black": "foreground", "white": "background"},
+  "logo_pens": ["ink", "muted", "brand", "brand-strong", "brand-soft", "surface", "none", "success", "warning", "info", "spectrum-violet", "spectrum-blue", "spectrum-cyan", "spectrum-green", "spectrum-yellow", "spectrum-orange", "spectrum-red"],
+  "logo_paint_props": ["fill", "stroke", "stopColor"],
+  "scene_paint_props": ["color"],
+  "custom_variants": ["dark", "data-open", "data-closed", "data-checked", "data-unchecked", "data-selected", "data-active", "data-inactive", "data-disabled", "data-horizontal", "data-vertical", "data-busy", "data-stale"],
+  "data_attributes": {"busy": "The control's call is running: it will not dispatch again.", "stale": "A value it shows is stale."},
+  "data_attributes_rule": "Every component sets exactly data-busy and data-stale, a fixed convention of the language; a catalog declares none."
+ },
+ "limits": {
+  "logo_max_nodes": 200,
+  "logo_max_depth": 12,
+  "logo_max_path_data": 16384,
+  "logo_max_foreach_items": 64,
+  "logo_path_data_props": ["d", "points"]
+ },
+ "catalogs": {
+  "description": "Catalogs are the spec-owned, versioned sets a blok renders with: base (every renderer) and the standard catalogs (opt-in). A blok declares the catalogs it needs (catalogs: [\"ui@1\", \"scene@1\"]); a renderer lacking one renders its children or a placeholder, and reports it. A module is an app's own unversioned extras (the server's Module, registered by an app such as the Orkestrator with the catalogs it implements in full); a blok names at most one, as its module.",
+  "base": 2,
+  "standard": {"ui": 1, "scene": 1, "logo": 1, "structure": 1, "html": 1}
+ },
+ "diagnostics": {
+  "description": "One table of stable codes, the same in Python, Rust and TypeScript. level: error refuses the blok, warning is reported; runtime: true marks a code no checker raises, the renderer's error code of a record (deps.unbound). Messages are str.format templates; parity compares codes, never text.",
+  "bsx.syntax": {"level": "error", "message": "{detail}", "hint": "Fix the markup at the line and column given; every attribute is name=\"text\" or name={{expression}}."},
+  "bsx.empty": {"level": "error", "message": "A blok has one root element; this source has none.", "hint": "Write one root element, the one the blok's context names (<Html> for an html blok)."},
+  "bsx.multiple_roots": {"level": "error", "message": "A blok has one root element; found another after it: <{component}>.", "hint": "Wrap everything in the one root element (<Html>...</Html>); siblings go inside it."},
+  "bsx.unclosed": {"level": "error", "message": "<{component}> is never closed.", "hint": "Close it with </{component}>, or write it self-closing as <{component} ... />."},
+  "bsx.mismatched_tag": {"level": "error", "message": "</{found}> closes <{expected}>.", "hint": "Close <{expected}> before </{found}>: tags nest, the last one opened closes first."},
+  "bsx.duplicate_attribute": {"level": "error", "message": "<{component}> sets {key} twice.", "hint": "Keep one {key}; to choose between values, write one expression (c ? a : b)."},
+  "bsx.id": {"level": "error", "message": "id {id!r} is not an explicit id: letters, digits and _ . : -, starting with a letter or _."},
+  "bsx.duplicate_id": {"level": "error", "message": "Two components have the id {id!r}.", "hint": "Give each component its own id, or drop id= and let the structure name it."},
+  "bsx.text_not_accepted": {"level": "error", "message": "<{component}> takes no text (it declares no text_prop): {text!r}. Wrap the text in a component that does, such as <p>, <span> or <Text>."},
+  "bsx.text_unknown_component": {"level": "error", "message": "<{component}> is in no catalog the parser knows, so its text has nowhere to go: {text!r}. Pass it as a prop."},
+  "bsx.text_in_context": {"level": "error", "message": "Text in <{component}> is in the {context} context, which draws no text: {text!r}."},
+  "bsx.text_and_prop": {"level": "error", "message": "<{component}> sets {key} as an attribute and as its text.", "hint": "Set {key} once: either as the attribute or as the text between the tags."},
+  "bsx.text_callback": {"level": "error", "message": "Text holds a call or an effect; only a callback prop may.", "hint": "Put the call in a callback prop (onClick={{...}}), never between tags."},
+  "bsx.else_outside_if": {"level": "error", "message": "<else> is a child of <if>, after its then-branch.", "hint": "Move the <else> inside its <if>, after the then-branch children."},
+  "bsx.else_order": {"level": "error", "message": "<else> comes after the then-branch, and only the last <else> may lack when.", "hint": "Put the <else> branches last in the <if>; only the final one may leave out when."},
+  "bsx.foreach": {"level": "error", "message": "<foreach> needs items={{...}} and let=\"name\" (key={{...}} is optional): {missing}."},
+  "bsx.let": {"level": "error", "message": "let={let!r} is not a name.", "hint": "Write let=\"name\": a plain identifier the children read as name.field."},
+  "expr.syntax": {"level": "error", "message": "{detail}", "hint": "Expressions are a JavaScript subset: paths, literals, calls with name: value arguments, == != > >= < <=, && || !, ?? and c ? a : b."},
+  "expr.arithmetic": {"level": "error", "message": "{operator} is not an operator of the blok language; call math.{function}(a, b)."},
+  "expr.subscript": {"level": "error", "message": "Subscripts are not supported; call list.at(value, index) or obj.get(value, key)."},
+  "expr.chained_comparison": {"level": "error", "message": "Comparisons do not chain; combine them with &&.", "hint": "Write a < b && b < c, or cmp.between(value: b, min: a, max: c)."},
+  "expr.lambda": {"level": "error", "message": "Lambdas are excluded by design; use <foreach>."},
+  "expr.dynamic_container": {"level": "error", "message": "A list or object holding expressions can only be a call's argument (className excepted).", "hint": "Pass the list or object as a function argument, or read it from state instead of building it inline."},
+  "expr.unknown_callee": {"level": "error", "message": "{callee}(...) calls nothing: a function is <namespace>.<name>, a task self.<action> or deps.<key>.<action>, a read queries.<name>.refetch() or queries.<name>.fetch_more(...)."},
+  "expr.unknown_function": {"level": "warning", "message": "{function} is not a function of the blok language or the catalogs in force.", "hint": "Look the function up in the catalog; functions are <namespace>.<name> (fmt.number, str.template, math.max)."},
+  "expr.arguments": {"level": "error", "message": "{function}: {detail}.", "hint": "Name the function's own parameters, as its signature lists them."},
+  "expr.duplicate_key": {"level": "error", "message": "{key} is given twice.", "hint": "Give {key} once."},
+  "callback.sequence": {"level": "error", "message": "A callback does exactly one thing; for several steps, declare a workflow and call it."},
+  "callback.assignment": {"level": "error", "message": "A callback cannot assign: derive it from the call's record (move.args, move.returns), or bind a control to a local."},
+  "callback.await": {"level": "error", "message": "A callback does not await; a control is busy while its call's task runs."},
+  "callback.nested": {"level": "error", "message": "{what} runs only as a callback's one thing, not inside an expression.", "hint": "Move {what} into a callback prop of its own (onClick={{...}}); an expression only reads."},
+  "callback.positional": {"level": "error", "message": "{call}: a task call names its arguments (name: value)."},
+  "callback.into": {"level": "error", "message": "into names the record of a task call: `<call> into <name>`.", "hint": "Write `deps.<key>.<action>(name: value) into run`, then read run.running, run.returns.<port>."},
+  "callback.not_callback": {"level": "error", "message": "{key} of <{component}> is not a callback prop, so it cannot hold {what}.", "hint": "Use a callback prop of <{component}> (the catalog lists them as CALLBACK), or compute {key} without a call."},
+  "callback.unbound": {"level": "error", "message": "{key} of <{component}> is a callback prop: it holds one task call or one effect (queries.<name>.refetch(), queries.<name>.fetch_more(...), ui.copy, task.answer).", "hint": "Give {key} a task call (deps.<key>.<action>(name: value)) or one effect, not a value."},
+  "callback.event_field": {"level": "error", "message": "event has no field {field!r} in {key} of <{component}> (its fields: {fields}).", "hint": "Read one of the fields listed for {key}: {fields}."},
+  "roots.unknown": {"level": "error", "message": "{path} reads {root!r}, which is no root, local, loop variable or record of this blok.", "hint": "Read a root this blok has (deps.<key>, args.<key>, queries.<name>, ...), a declared local, a foreach let, or an into record."},
+  "roots.not_in_kind": {"level": "error", "message": "{path}: a{n} {kind} blok has no {root!r} (it reads {roots}).", "hint": "Read one of {roots} instead."},
+  "roots.reserved": {"level": "error", "message": "{name!r} is reserved: no local, let or into may use it."},
+  "roots.shadow": {"level": "error", "message": "{name!r} is declared twice: as {first} and as {second}."},
+  "roots.event_outside_callback": {"level": "error", "message": "{path} reads event outside a callback.", "hint": "Read event only inside a callback prop; outside one, bind a control to a local and read the local."},
+  "roots.error_outside_boundary": {"level": "error", "message": "{path} reads error outside an <error> slot.", "hint": "Read error only inside the <error> slot of a <suspense>."},
+  "roots.whole": {"level": "error", "message": "{path} reads {root!r} whole; read one of it ({root}.<name>).", "hint": "Read a field of it, as {root}.<name>."},
+  "deps.unknown": {"level": "error", "message": "{path}: {key!r} is not a dependency of the blok (its dependencies: {keys}). Fix: {hint}."},
+  "deps.unknown_state": {"level": "error", "message": "{path}: {key!r} has no state {state!r} (its states: {states}).", "hint": "Read one of the states listed, or add the agent that has it as a dependency."},
+  "deps.unknown_action": {"level": "error", "message": "{path}: {key!r} has no action {action!r} (its actions: {actions}).", "hint": "Call one of the actions listed, by its exact name."},
+  "path.unknown": {"level": "error", "message": "{path}: {detail}"},
+  "deps.reserved_state": {"level": "error", "message": "A state cannot be called {name!r}: it is the {name} segment of an agent."},
+  "deps.asset": {"level": "error", "message": "{path}: an asset is <agent>.assets.<name>, of an asset the app registered."},
+  "args.unknown": {"level": "error", "message": "{path} reads args.{key}, which the blok does not declare (declared: {keys}).", "hint": "Read one of the declared args, or declare args.{key} (only when the user asks what the blok is opened for)."},
+  "into.twice": {"level": "error", "message": "{name!r} is written by two calls: {first} and {second}. Each call site needs a record of its own."},
+  "local.unknown": {"level": "error", "message": "bind={{{path}}} writes {root!r}, which is no declared local.", "hint": "Declare {root!r} in locals (its default, or null), then bind it."},
+  "local.bind": {"level": "error", "message": "bind holds a local's path ({{name}} or {{name.field}}), not {what}.", "hint": "Write bind={{name}} with a declared local's name."},
+  "local.default": {"level": "error", "message": "local {name!r}: its default {default!r} is not a {kind}.", "hint": "Give a default of that kind, or leave the kind out so the default sets it."},
+  "local.kind": {"level": "error", "message": "local {name!r}: type={type!r} is a name, not an annotation; give the type itself (int, list[str], a registered structure)."},
+  "local.like": {"level": "error", "message": "local {name!r}: Local.like names {action!r}, which {problem}."},
+  "local.bind_kind": {"level": "error", "message": "{key} of <{component}> writes a {prop_kind}, but {path} is a {kind} local (a {prop_kind} control writes {kinds}).", "hint": "Bind a local of a kind the control writes, or leave the local's kind out so the control sets it."},
+  "local.arg_kind": {"level": "error", "message": "{call}: {argument} takes a {port_kind}, but {path} is a {kind} local.", "hint": "Pass a local of the argument's kind, or leave the local's kind out so the argument sets it."},
+  "local.unused_persist": {"level": "warning", "message": "local {name!r} persists, but no control binds it.", "hint": "Bind a control to it, or drop persist."},
+  "query.unknown": {"level": "error", "message": "{path} reads queries.{name}, which the blok does not declare (declared: {names}).", "hint": "Read one of the declared queries: {names}."},
+  "query.read_only": {"level": "error", "message": "{kind} {name!r}: {problem}"},
+  "query.schema": {"level": "warning", "message": "{kind} {name!r}: {problem}"},
+  "query.variable": {"level": "error", "message": "{kind} {name!r}: variable {variable!r} {problem}"},
+  "query.history": {"level": "error", "message": "subscription {name!r} replays from {history!r}, which is no declared query."},
+  "query.kind": {"level": "error", "message": "{kind} {name!r} is a {operation}, not a {kind}."},
+  "query.more": {"level": "error", "message": "query {name!r}: more {more!r} {problem}."},
+  "query.fetch_more": {"level": "error", "message": "{path}: query {name!r} declares no more (the list field new pages append to), so it cannot fetch more."},
+  "query.effect_target": {"level": "error", "message": "{function} names its query by a literal name (queries.<name>.{verb}()), not {what}."},
+  "subscription.unknown": {"level": "error", "message": "{path} reads subscriptions.{name}, which the blok does not declare (declared: {names}).", "hint": "Read one of the declared subscriptions: {names}."},
+  "subscription.refetch": {"level": "error", "message": "subscriptions have no refetch or fetch_more; they stream."},
+  "toast.task": {"level": "error", "message": "<Toast task={{...}}> watches the blok's own into records or task, not {what}."},
+  "palette.raw_colour": {"level": "warning", "message": "{token}: a blok picks a colour role, not a colour; try {suggestion}."},
+  "palette.logo_paint": {"level": "error", "message": "<{component}> paints {prop}={value!r}; a logo paints with {pens} or url(#id)."},
+  "palette.scene_colour": {"level": "warning", "message": "<{component}> {prop}={value!r} is no colour of the theme; a scene picks a colour role ({roles}).", "hint": "Pick one of the colour roles listed."},
+  "props.literal_type": {"level": "error", "message": "<{component}> {key}={value!r} is a string, but {key} takes a {kind}; write {hint}.", "hint": "Write the value as an expression in braces: {key}={{...}}."},
+  "foreach.position_key": {"level": "warning", "message": "<foreach let=\"{let}\"> has no key, so its items are keyed by their position; they are not scalars, so key them by a stable field (key={{{let}.id}})."},
+  "returns.unnamed": {"level": "warning", "message": "{path} reads {port}, a return the action left unnamed; name it in the action, as Annotated[T, Key(\"name\")] or as a field of a NamedTuple return, and read it by that name."},
+  "context.root": {"level": "error", "message": "The root of a {context} blok is <{root}>, not <{component}>.", "hint": "Make <{root}> the root and put <{component}> inside it."},
+  "context.root_unknown": {"level": "error", "message": "A blok's root names its context ({roots}), not <{component}>.", "hint": "Make the root one of {roots} and put <{component}> inside it."},
+  "context.kind": {"level": "error", "message": "A{n} {kind} blok is drawn in {contexts}, not {context}."},
+  "logo.complexity": {"level": "error", "message": "{detail}"},
+  "catalog.unknown_component": {"level": "warning", "message": "<{component}> is in no catalog in force ({catalogs}).", "hint": "Look the component up in the catalog; names are case-sensitive."},
+  "catalog.undeclared": {"level": "warning", "message": "<{component}> is from {catalog}, which the blok does not declare in its catalogs.", "hint": "Add {catalog} to the blok's catalogs."},
+  "catalog.children": {"level": "warning", "message": "<{component}> takes no children.", "hint": "Close <{component}> without children (<{component} ... />), or put them beside it."},
+  "catalog.props": {"level": "warning", "message": "<{component}> {detail}", "hint": "Use the props the catalog lists for <{component}>, exactly as named."},
+  "catalog.placement": {"level": "warning", "message": "<{component}> {detail}", "hint": "Move <{component}> where the catalog places it (its inside / never inside rules)."},
+  "catalog.value": {"level": "warning", "message": "{key}=\"{value}\" is not a value <{component}> draws: one of {values}.", "hint": "Write one of {values}."},
+  "catalog.asset": {"level": "warning", "message": "{key} of <{component}> names an asset as <agent>.assets.<name>.", "hint": "Write {key}={{self.assets.<name>}} with an asset the app registered."},
+  "catalog.shadow": {"level": "warning", "message": "<{component}> is defined by {catalog} and by {module}; {winner}'s definition is used."},
+  "module.unknown": {"level": "warning", "message": "module {module!r} is neither declared by the app nor registered in the organization ({modules}), so its components are not checked."},
+  "deps.unbound": {"level": "error", "runtime": true, "message": "deps.{key} is bound to no agent, so it reads as failed."},
+  "manifest.sent": {"level": "error", "message": "A blok is sent as its components or as its BSX source, {problem}."},
+  "manifest.catalog": {"level": "error", "message": "Catalog {catalog!r} is not name@version (ui@1)."},
+  "manifest.duplicate": {"level": "error", "message": "{what}: {key!r} is declared twice."},
+  "manifest.name": {"level": "error", "message": "{what}: {key!r} is not a name."},
+  "manifest.action_logo": {"level": "error", "message": "An action logo reads only the task it is drawn against: no locals, queries, subscriptions or dependencies."},
+  "manifest.demo": {"level": "error", "message": "demo.deps names {keys}, which are not dependencies of the blok."}
+ }
+}

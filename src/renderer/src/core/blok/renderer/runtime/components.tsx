@@ -1,5 +1,10 @@
 import * as React from 'react';
-import {BlokResolutionError} from './hooks';
+import {z} from 'zod';
+import {BlokResolutionError, useNodeStatus, useResolvedProp} from './hooks';
+import {useBlokRuntime} from './context';
+import {BlokNodeStateContext, type BlokNodeState} from './nodeState';
+import {readScopedPath, useBlokScope} from './scope';
+import {READY, combineStatus, type BlokSourceStatus} from './status';
 import type {BlokComponentNode, BlokComponentProp, BlokObjectSchema} from './types';
 
 export type BlokRenderArgs<TSchema extends BlokObjectSchema = BlokObjectSchema> = {
@@ -152,6 +157,101 @@ export class BlokNodeBoundary extends React.Component<
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Statuses, guards and boundaries                                            */
+/* -------------------------------------------------------------------------- */
+
+/** The renderer a node draws in: what decides how a pending node shows (a skeleton only in html). */
+export const BlokDrawContext = React.createContext<BlokComponentContext>('html');
+
+export const useBlokDrawContext = (): BlokComponentContext => React.useContext(BlokDrawContext);
+
+/**
+ * What the nearest `<suspense>` collects: each node below it that is pending
+ * or failed. A node reports while it is mounted, and withdraws on unmount.
+ */
+export type BlokSuspenseReporter = {report: (nodeId: string, status: BlokSourceStatus | null) => void};
+
+export const BlokSuspenseContext = React.createContext<BlokSuspenseReporter | null>(null);
+
+/** Reports a node's status to the nearest boundary; returns whether one caught it. */
+export const useSuspenseReport = (nodeId: string, status: BlokSourceStatus): boolean => {
+  const boundary = React.useContext(BlokSuspenseContext);
+  const suspends = status.status === 'pending' || status.status === 'failed';
+  React.useEffect(() => {
+    if (!boundary) return;
+    boundary.report(nodeId, suspends ? status : null);
+  }, [boundary, nodeId, status, suspends]);
+  React.useEffect(() => {
+    if (!boundary) return;
+    return () => boundary.report(nodeId, null);
+  }, [boundary, nodeId]);
+  return boundary !== null;
+};
+
+/** `when={...}` on any component guards that one component; `if` and `else` read it as their condition. */
+export const WHEN_PROP = 'when';
+const OWN_WHEN = new Set(['if', 'else']);
+const WHEN_SCHEMA = z.unknown();
+
+const NodeSkeleton = ({componentId}: {componentId: string}) => (
+  <div
+    data-blok-pending={componentId}
+    aria-busy="true"
+    className="h-5 w-full max-w-48 animate-pulse rounded-md bg-muted"
+  />
+);
+
+const NodeGuard = (props: {
+  component: BlokComponentNode;
+  definition: BlokComponentDefinition;
+  children: React.ReactNode;
+}) => {
+  const {component, definition} = props;
+  const drawContext = React.useContext(BlokDrawContext);
+  const guarded = !OWN_WHEN.has(component.component) && (component.props ?? []).some(prop => prop.key === WHEN_PROP);
+  const guard = useResolvedProp(component, guarded ? WHEN_PROP : undefined, WHEN_SCHEMA);
+  const nodeStatus = useNodeStatus(component, definition.schema);
+  const guardStatus = guard.ok ? (guard.status ?? READY) : READY;
+  const status = combineStatus(nodeStatus, guardStatus);
+  const caught = useSuspenseReport(component.id, status);
+
+  // Busy while a task one of its callbacks started runs: a promise the host returned, or a record it writes.
+  const [inFlight, setInFlight] = React.useState(0);
+  const track = React.useCallback((pending: Promise<unknown>) => {
+    setInFlight(count => count + 1);
+    const settle = () => setInFlight(count => Math.max(0, count - 1));
+    pending.then(settle, settle);
+  }, []);
+  const scope = useBlokScope();
+  const intoNames = React.useMemo(
+    () => (component.props ?? []).flatMap(prop => (prop.agent_call && prop.declares_value ? [prop.declares_value] : [])),
+    [component.props],
+  );
+  const intoRunning = useBlokRuntime(state =>
+    intoNames.some(name => {
+      const record = readScopedPath(state.dataModel, name, scope);
+      return typeof record === 'object' && record !== null && (record as {running?: unknown}).running === true;
+    }),
+  );
+  const stale = status.status === 'stale';
+  const busy = inFlight > 0 || intoRunning;
+  const nodeState = React.useMemo<BlokNodeState>(() => ({stale, busy, track}), [busy, stale, track]);
+
+  if (status.status === 'pending' || status.status === 'failed') {
+    // Inside a boundary its fallback or error shows; on its own a node shows
+    // its own skeleton or inline error, so a blok never blanks entirely.
+    if (caught || definition.placement?.inheritsContext || drawContext !== 'html') return null;
+    if (status.status === 'failed') {
+      return <BlokNodeError componentId={component.id} title="Could not load" detail={status.error ?? undefined} />;
+    }
+    return <NodeSkeleton componentId={component.id} />;
+  }
+  if (guarded && guard.ok && !guard.value) return null;
+
+  return <BlokNodeStateContext.Provider value={nodeState}>{props.children}</BlokNodeStateContext.Provider>;
+};
+
 const BlokComponentRendererInner = (props: {
   definition: BlokComponentDefinition;
   props: ReadonlyArray<BlokComponentProp>;
@@ -159,18 +259,28 @@ const BlokComponentRendererInner = (props: {
   component: BlokComponentNode;
 }) => {
   const RenderComponent = props.definition.render;
+  const parentContext = React.useContext(BlokDrawContext);
+  const placement = props.definition.placement ?? {};
+  const own = placement.inheritsContext ? parentContext : (placement.context ?? 'html');
+  const forChildren = placement.inheritsContext ? parentContext : (placement.childrenContext ?? own);
 
   return (
     <BlokNodeBoundary
       componentId={props.component.id}
       componentName={props.definition.name}
     >
-      <RenderComponent
-        props={props.props}
-        buildChild={props.buildChild}
-        component={props.component}
-        schema={props.definition.schema}
-      />
+      <BlokDrawContext.Provider value={own}>
+        <NodeGuard component={props.component} definition={props.definition}>
+          <BlokDrawContext.Provider value={forChildren}>
+            <RenderComponent
+              props={props.props}
+              buildChild={props.buildChild}
+              component={props.component}
+              schema={props.definition.schema}
+            />
+          </BlokDrawContext.Provider>
+        </NodeGuard>
+      </BlokDrawContext.Provider>
     </BlokNodeBoundary>
   );
 };

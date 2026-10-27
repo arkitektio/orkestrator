@@ -5,13 +5,18 @@ import BlokDebugState from './BlokDebugState';
 import {SceneModelScopeProvider, useSceneNotice} from './bloks/scene/context';
 import {BlokSceneFillProvider} from './bloks/scene/host';
 import {defaultBlokCatalog} from './catalog';
+import {invokeBlokFunction} from './functions/v2/handler';
+import {BlokComponentStateContext, type BlokComponentStateStore} from './persist';
 import {
   BlokNode,
   BlokNodeErrorSurface,
   BlokRuntimeProvider,
   BlokTreeProvider,
   createBlokRuntimeStore,
+  dependencyStatusPath,
   preflightBlokDocument,
+  unboundDependencyStatus,
+  unboundDependencyStatuses,
   type BlokCatalog,
   type BlokNodeErrorProps,
   type BlokDispatchActionHandler,
@@ -19,6 +24,13 @@ import {
   type BlokRefuseActionHandler,
   type BlokUnavailableDependencies,
   type BlokTree,
+  BlokReads,
+  BlokViewerSync,
+  type BlokQuery,
+  type BlokReadExecutor,
+  type BlokSourceStatus,
+  type BlokSubscription,
+  type BlokViewer,
 } from './runtime';
 
 type BlokRendererProps = {
@@ -33,6 +45,11 @@ type BlokRendererProps = {
   refuseAction?: BlokRefuseActionHandler;
   /** Dependencies it cannot act through now, with why: controls calling them show disabled. */
   unavailableDependencies?: BlokUnavailableDependencies;
+  /**
+   * Dependencies bound to no agent: each reads as failed (`deps.unbound`),
+   * its tasks and assets too, never as ready with null.
+   */
+  unboundDependencies?: readonly string[] | null;
   /** `none` draws no frame at all and lets a scene fill the surface: the blok is a backdrop. */
   chrome?: 'default' | 'minimal' | 'none';
   sizing?: 'fill' | 'intrinsic';
@@ -50,8 +67,25 @@ type BlokRendererProps = {
   keptValues?: Record<string, unknown>;
   /** The top-level keys kept between openings: swapping the payload leaves their values alone. */
   keptRoots?: ReadonlySet<string>;
+  /** Source statuses known before the first render, by data-model path (`deps.robot.arm`: pending). */
+  statuses?: Readonly<Record<string, BlokSourceStatus>>;
+  /** The moment the blok shows while travelling (ISO 8601): commands and toasts are off, inputs read-only. */
+  travelAt?: string | null;
+  /** Who is looking: `viewer`. */
+  viewer?: BlokViewer | null;
+  /** The blok's declared reads, and how they run; a preview runs none (it seeds `demo.queries`). */
+  queries?: readonly BlokQuery[];
+  subscriptions?: readonly BlokSubscription[];
+  readExecutor?: BlokReadExecutor;
+  /** Answers the open ask of `task` (`task.answer(values)`). */
+  answerTask?: (values: Record<string, unknown>) => unknown;
+  /** Where `persist` components keep their state by id; none: they keep nothing. */
+  componentState?: BlokComponentStateStore | null;
   children?: React.ReactNode;
 };
+
+const NO_QUERIES: readonly BlokQuery[] = Object.freeze([]);
+const NO_SUBSCRIPTIONS: readonly BlokSubscription[] = Object.freeze([]);
 
 const DEFAULT_SURFACE_ID = 'blok-preview';
 
@@ -93,12 +127,21 @@ export default function BlokRenderer({
   dispatchAction,
   refuseAction,
   unavailableDependencies,
+  unboundDependencies,
   chrome = 'default',
   sizing = 'fill',
   embedded = false,
   debug = false,
   keptValues,
   keptRoots,
+  statuses,
+  travelAt = null,
+  viewer = null,
+  queries = NO_QUERIES,
+  subscriptions = NO_SUBSCRIPTIONS,
+  readExecutor,
+  answerTask,
+  componentState = null,
   children,
 }: BlokRendererProps) {
   const preflight = useMemo(
@@ -116,10 +159,8 @@ export default function BlokRenderer({
   );
 
   const resolvedInvokeFunction = useMemo<BlokInvokeFunctionHandler>(
-    () =>
-      invokeFunction ??
-      ((name, args, options) => catalog.invokeFunction(name, args, options)),
-    [catalog, invokeFunction],
+    () => invokeFunction ?? invokeBlokFunction,
+    [invokeFunction],
   );
 
   const resolvedDispatchAction = useMemo<BlokDispatchActionHandler>(
@@ -138,8 +179,8 @@ export default function BlokRenderer({
 
   // Seeded with the handlers, not just synced in the effects below: nodes
   // resolve their props during the first render, before any effect has run.
-  const [runtimeStore] = useState(() =>
-    createBlokRuntimeStore({
+  const [runtimeStore] = useState(() => {
+    const store = createBlokRuntimeStore({
       initialDataModel: initialState,
       invokeFunction: resolvedInvokeFunction,
       dispatchAction: resolvedDispatchAction,
@@ -147,8 +188,31 @@ export default function BlokRenderer({
       unavailableDependencies,
       keptValues,
       keptRoots,
-    }),
-  );
+      statuses: unboundDependencies?.length ? {...statuses, ...unboundDependencyStatuses(unboundDependencies)} : statuses,
+      travelAt,
+      answerTask,
+    });
+    return store;
+  });
+
+  // A dependency bound later reads its agent again; one unbound later reads failed.
+  const unboundKey = (unboundDependencies ?? []).join('\u0000');
+  const unboundRef = useRef<readonly string[]>(unboundDependencies ?? []);
+  useEffect(() => {
+    const next = unboundKey ? unboundKey.split('\u0000') : [];
+    const {setStatus} = runtimeStore.getState();
+    for (const key of unboundRef.current) if (!next.includes(key)) setStatus(dependencyStatusPath(key), null);
+    for (const key of next) setStatus(dependencyStatusPath(key), unboundDependencyStatus(key));
+    unboundRef.current = next;
+  }, [unboundKey, runtimeStore]);
+
+  useEffect(() => {
+    runtimeStore.getState().setTravelAt(travelAt);
+  }, [travelAt, runtimeStore]);
+
+  useEffect(() => {
+    runtimeStore.getState().setAnswerTask(answerTask);
+  }, [answerTask, runtimeStore]);
 
   useEffect(() => {
     if (keptRoots) runtimeStore.getState().setKeptRoots(keptRoots);
@@ -211,11 +275,22 @@ export default function BlokRenderer({
   const containerRef = useRef<HTMLDivElement>(null);
   useBlokTailwind(preflight.nodes, embedded ? undefined : containerRef);
 
+  const syncs = (
+    <>
+      <BlokViewerSync viewer={viewer} />
+      {readExecutor && (queries.length > 0 || subscriptions.length > 0) ? (
+        <BlokReads queries={queries} subscriptions={subscriptions} executor={readExecutor} />
+      ) : null}
+    </>
+  );
+
   if (embedded) {
     return (
+      <BlokComponentStateContext.Provider value={componentState}>
       <BlokRuntimeProvider store={runtimeStore}>
         <BlokTreeProvider tree={tree}>
           {children}
+          {syncs}
           <BlokNodeErrorSurface.Provider value={EmbeddedNodeError}>
             <SceneModelScopeProvider value={modelScope}>
               <EmbeddedRoots
@@ -227,13 +302,16 @@ export default function BlokRenderer({
           </BlokNodeErrorSurface.Provider>
         </BlokTreeProvider>
       </BlokRuntimeProvider>
+      </BlokComponentStateContext.Provider>
     );
   }
 
   return (
+    <BlokComponentStateContext.Provider value={componentState}>
     <BlokRuntimeProvider store={runtimeStore}>
       <BlokTreeProvider tree={tree}>
         {children}
+        {syncs}
         <BlokSceneFillProvider value={chrome === 'none'}>
         <div ref={containerRef} className={containerClassName}>
           {debug && <BlokDebugState surfaceId={surfaceId} />}
@@ -276,5 +354,6 @@ export default function BlokRenderer({
         </BlokSceneFillProvider>
       </BlokTreeProvider>
     </BlokRuntimeProvider>
+    </BlokComponentStateContext.Provider>
   );
 }

@@ -1,3 +1,4 @@
+import { demoModel } from "@/core/blok/renderer/declarations";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
@@ -249,6 +250,8 @@ const Drawing = ({
     [tree?.componentTree],
   );
   // A blok that changed since its list was fetched is not kept under the old hash.
+  // A preview shows the blok's demo: every read answered by it, nothing pending.
+  const demoState = React.useMemo(() => (tree ? demoModel(roots, tree) : {}), [roots, tree]);
   const stale = !!tree && tree.hash !== hash;
   const empty = !!tree && roots.length === 0;
   // `undefined` is still coming; `null` will not come (failed, or no such blok).
@@ -318,7 +321,7 @@ const Drawing = ({
               <BlokRenderer
                 surfaceId={`preview-${cacheId}`}
                 uiComponents={roots}
-                initialState={tree.demoState ?? {}}
+                initialState={demoState}
                 chrome="none"
                 refuseAction={REFUSE_EVERY_ACTION}
               />

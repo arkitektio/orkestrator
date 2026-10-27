@@ -46,24 +46,28 @@ const registerLanguage = (monaco: Monaco) => {
     ],
     wordPattern: /[A-Za-z_][\w\-]*/,
   });
-  // Tags and attributes as in XML; inside an `@…` / `$…` value the expression
-  // is coloured as code: names, calls, literals.
-  const expression = (quote: string, other: string) => [
-    [new RegExp(quote), { token: "attribute.value", next: "@pop" }],
-    [new RegExp(`${other}[^${other}]*${other}`), "string"],
-    [/[@$]/, "keyword"],
-    [/\b(True|False)\b/, "keyword"],
+  // Tags and attributes as in XML; `{...}` (an attribute's value, or among a
+  // component's children) is an expression, coloured as code: roots, calls,
+  // operators, literals. Braces nest (object literals, clsx objects).
+  const expression = [
+    [/\{/, { token: "delimiter.bracket", next: "@expression" }],
+    [/\}/, { token: "delimiter.bracket", next: "@pop" }],
+    [/"([^"\\]|\\.)*"/, "string"],
+    [/'([^'\\]|\\.)*'/, "string"],
+    [/\b(true|false|null|into)\b/, "keyword"],
+    [/\b(self|deps|queries|subscriptions|args|task|event|viewer|then|error)\b/, "keyword"],
     [/-?\d+(\.\d+)?([eE][+-]?\d+)?/, "number"],
     [/[A-Za-z_]\w*(?=\s*\()/, "type.identifier"],
     [/[A-Za-z_]\w*/, "variable"],
-    [new RegExp(`[^${quote}${other}A-Za-z_0-9@$]+`), "delimiter"],
+    [/[^{}"'A-Za-z_0-9]+/, "delimiter"],
   ];
   monaco.languages.setMonarchTokensProvider(BSX_LANGUAGE, {
     tokenizer: {
       root: [
         [/<!--/, { token: "comment", next: "@comment" }],
         [/(<\/?)([A-Za-z_][\w:.\-]*)/, ["delimiter", { token: "tag", next: "@tag" }]],
-        [/[^<]+/, ""],
+        [/\{/, { token: "delimiter.bracket", next: "@expression" }],
+        [/[^<{]+/, ""],
       ],
       comment: [
         [/-->/, { token: "comment", next: "@pop" }],
@@ -74,14 +78,12 @@ const registerLanguage = (monaco: Monaco) => {
         [/\s+/, ""],
         [/[A-Za-z_][\w:.\-]*/, "attribute.name"],
         [/=/, "delimiter"],
-        [/"(?=\s*[@$])/, { token: "attribute.value", next: "@expressionDouble" }],
-        [/'(?=\s*[@$])/, { token: "attribute.value", next: "@expressionSingle" }],
+        [/\{/, { token: "delimiter.bracket", next: "@expression" }],
         [/"[^"]*"/, "attribute.value"],
         [/'[^']*'/, "attribute.value"],
         [/\/?>/, { token: "delimiter", next: "@pop" }],
       ],
-      expressionDouble: expression('"', "'"),
-      expressionSingle: expression("'", '"'),
+      expression,
     },
   } as Parameters<Monaco["languages"]["setMonarchTokensProvider"]>[1]);
 };
@@ -89,7 +91,7 @@ const registerLanguage = (monaco: Monaco) => {
 export type BsxEditorProps = {
   value: string;
   onChange?: (value: string) => void;
-  /** What completion offers: the catalog, the blok's context, its dependencies and args. */
+  /** What completion offers: what the blok declares (its scope) and the catalogs that draw it. */
   environment: BsxEnvironment;
   markers?: readonly BsxMarker[];
   readOnly?: boolean;
@@ -132,7 +134,7 @@ export const BsxEditor = (props: BsxEditorProps) => {
 
     disposables.current.push(
       monaco.languages.registerCompletionItemProvider(BSX_LANGUAGE, {
-        triggerCharacters: ["<", " ", '"', "'", "@", "$", ".", "(", ",", "/"],
+        triggerCharacters: ["<", " ", '"', "'", "{", ".", "(", ",", "/", ":", "["],
         provideCompletionItems: (model, position) => {
           if (!own(model)) return { suggestions: [] };
           const offset = model.getOffsetAt(position);
@@ -212,6 +214,7 @@ export const BsxEditor = (props: BsxEditorProps) => {
           severity: marker.severity === "error" ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
           message: marker.message,
           source: "bsx",
+          code: marker.code,
           startLineNumber: start.lineNumber,
           startColumn: start.column,
           endLineNumber: end.lineNumber,

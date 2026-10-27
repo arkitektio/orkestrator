@@ -1,172 +1,204 @@
-// @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
-import { defaultBlokCatalog } from "../renderer/catalog";
-import { analyzeBsx } from "./analyze";
-import { viewCatalog } from "./catalogView";
-import { completeBsx, hoverBsx, scanCursor, signatureBsx, type BsxEnvironment } from "./language";
-import { parseBsx } from "./parse";
-import { checkBsxReferences, localRootsOf, type BsxDependency } from "./references";
+import {describe, expect, it} from 'vitest';
+import {analyzeBsx} from './analyze';
+import {completeBsx, hoverBsx, scanCursor, signatureBsx, type BsxEnvironment} from './language';
+import {emptyBlokScope, type BlokCheckScope} from './references';
 
-const dependencies: BsxDependency[] = [
-  { key: "stage", app: "stagecontrol", actions: ["move", "home"], states: ["position"] },
-];
+const scope: BlokCheckScope = {
+  ...emptyBlokScope('custom'),
+  dependencies: [
+    {
+      key: 'stage',
+      action_dependencies: [{key: 'move', demand: {arg_matches: [{key: 'x'}, {key: 'y'}], return_matches: [{key: 'arrived', kind: 'BOOL'}]}}],
+      state_dependencies: [{key: 'position', demand: {matches: [{key: 'x', kind: 'FLOAT'}, {key: 'y', kind: 'FLOAT'}]}}],
+    },
+  ],
+  locals: [
+    {key: 'speed', kind: 'INT', default: 1},
+    {key: 'form', kind: 'DICT', children: [{key: 'name', kind: 'STRING'}, {key: 'count', kind: 'INT'}]},
+  ],
+  queries: [
+    {key: 'positions', service: 'mikro', document: 'query { positions { id } }'},
+    {key: 'pages', service: 'mikro', document: 'query { pages { id } }', more: 'pages'},
+  ],
+  args: ['image'],
+};
 
-const env = (overrides: Partial<BsxEnvironment> = {}): BsxEnvironment => ({
-  catalog: viewCatalog(defaultBlokCatalog),
-  context: "HTML",
-  dependencies,
-  args: ["image"],
-  ...overrides,
-});
+const env = (overrides: Partial<BlokCheckScope> = {}): BsxEnvironment => ({scope: {...scope, ...overrides}});
 
 /** Completions at `|` in the source. */
-const at = (marked: string, environment = env()) => {
-  const offset = marked.indexOf("|");
-  return completeBsx(marked.replace("|", ""), offset, environment);
-};
-const labels = (marked: string, environment = env()) => at(marked, environment).map((item) => item.label);
+const at = (marked: string, environment = env()) => completeBsx(marked.replace('|', ''), marked.indexOf('|'), environment);
+const labels = (marked: string, environment = env()) => at(marked, environment).map(item => item.label);
 
-describe("scanCursor", () => {
-  it("knows where the cursor is", () => {
-    expect(scanCursor("<Car", 4)).toMatchObject({ kind: "tag", prefix: "Car" });
-    expect(scanCursor("<Card><Butt", 11)).toMatchObject({ kind: "tag", prefix: "Butt", stack: [{ tag: "Card" }] });
-    expect(scanCursor('<Card padding="2" ', 18)).toMatchObject({ kind: "attrName", tag: "Card", prefix: "" });
-    expect(scanCursor('<Card pad', 9)).toMatchObject({ kind: "attrName", prefix: "pad" });
-    expect(scanCursor('<Card padding="2', 16)).toMatchObject({ kind: "attrValue", attr: "padding", value: "2" });
-    expect(scanCursor("<Card></Ca", 10)).toMatchObject({ kind: "close", prefix: "Ca", stack: [{ tag: "Card" }] });
-    expect(scanCursor("<Card><Text /></Card>", 21)).toMatchObject({ kind: "text", stack: [] });
-    expect(scanCursor("<!-- <Car", 9)).toEqual({ kind: "none" });
+describe('scanCursor', () => {
+  it('knows where the cursor is', () => {
+    expect(scanCursor('<Car', 4)).toMatchObject({kind: 'tag', prefix: 'Car'});
+    expect(scanCursor('<Card><Butt', 11)).toMatchObject({kind: 'tag', prefix: 'Butt', stack: [{tag: 'Card'}]});
+    expect(scanCursor('<Card className="p-2" ', 22)).toMatchObject({kind: 'attrName', tag: 'Card', prefix: ''});
+    expect(scanCursor('<Card cla', 9)).toMatchObject({kind: 'attrName', prefix: 'cla'});
+    expect(scanCursor('<Card className="p-2', 20)).toMatchObject({kind: 'attrValue', attr: 'className', value: 'p-2'});
+    expect(scanCursor('<Text text={deps.st', 19)).toMatchObject({kind: 'attrExpression', attr: 'text', expression: 'deps.st'});
+    expect(scanCursor('<Text>Hi {task.', 15)).toMatchObject({kind: 'textExpression', expression: 'task.', stack: [{tag: 'Text'}]});
+    expect(scanCursor('<Card></Ca', 10)).toMatchObject({kind: 'close', prefix: 'Ca', stack: [{tag: 'Card'}]});
+    expect(scanCursor('<Card><Text /></Card>', 21)).toMatchObject({kind: 'text', stack: []});
+    expect(scanCursor('<!-- <Car', 9)).toEqual({kind: 'none'});
   });
 
-  it("counts attributes written after the cursor as present", () => {
+  it('skips nested braces and strings in expressions', () => {
+    const source = '<Badge className={{"a}": x}} text={';
+    expect(scanCursor(source, source.length)).toMatchObject({kind: 'attrExpression', attr: 'text', expression: ''});
+  });
+
+  it('counts attributes written after the cursor as present', () => {
     const cursor = scanCursor('<Text  tone="muted" />', 6);
-    expect(cursor.kind === "attrName" && [...cursor.present]).toEqual(["tone"]);
+    expect(cursor.kind === 'attrName' && [...cursor.present]).toEqual(['tone']);
   });
 });
 
-describe("completeBsx", () => {
-  it("offers components, with their required props filled in", () => {
-    const button = at("<Card><Butt|").find((item) => item.label === "Button");
-    expect(button?.insertText).toContain("</Button>");
-    const selectItem = at("<Select><|").find((item) => item.label === "SelectItem");
-    expect(selectItem?.insertText).toMatch(/^SelectItem value="\$\{1\}" \/>$/);
+describe('completeBsx: components and props', () => {
+  it('offers components, text children where they take text', () => {
+    const button = at('<Card><Butt|').find(item => item.label === 'Button');
+    expect(button?.insertText).toBe('Button>$0</Button>');
+    const selectItem = at('<Select><|').find(item => item.label === 'SelectItem');
+    expect(selectItem?.insertText).toMatch(/^SelectItem value="\$\{1\}">\$0<\/SelectItem>$/);
   });
 
-  it("offers only what may sit where the cursor is", () => {
-    expect(labels("<Scene><|")).toContain("Model");
-    expect(labels("<Card><|")).not.toContain("Model");
-    expect(labels("<Scene><Model><|")).toContain("OnClick");
-    expect(labels("<Scene><|")).not.toContain("OnClick");
-    expect(labels("<|", env({ context: "SCENE" }))).toEqual(["Scene"]);
-    expect(labels("<Card><SelectItem><|")).toEqual([]);
+  it('offers only what may sit where the cursor is', () => {
+    expect(labels('<Scene><|')).toContain('Model');
+    expect(labels('<Card><|')).not.toContain('Model');
+    expect(labels('<Scene><Model><|')).toContain('OnClick');
+    expect(labels('<Scene><|')).not.toContain('OnClick');
+    expect(labels('<|', env({context: 'SCENE'}))).toEqual(['Scene']);
+    expect(labels('<|', env({context: 'LOGO'}))).toEqual(['AgentLogo']);
+    expect(labels('<|', env({context: 'ACTION_LOGO'}))).toEqual(['ActionLogo']);
+    expect(labels('<|', env({context: 'HTML'}))).toEqual(['Html']);
   });
 
-  it("offers the props not yet set, required first", () => {
-    const items = labels('<SelectItem disabled="true" |');
-    expect(items[0]).toBe("value");
-    expect(items).not.toContain("disabled");
-    expect(items).toContain("id");
-    // A scene node's `id` prop is the node id BSX writes: offered once.
-    expect(labels("<Model |").filter((label) => label === "id")).toHaveLength(1);
+  it('offers the props not yet set, required first, then id and when', () => {
+    const items = labels('<SelectItem disabled |');
+    expect(items[0]).toBe('value');
+    expect(items).not.toContain('disabled');
+    expect(items).toEqual(expect.arrayContaining(['id', 'when']));
+    expect(at('<Button |').find(item => item.label === 'onClick')?.insertText).toBe('onClick={${1}}');
   });
 
-  it("offers an enum's values", () => {
-    expect(labels('<Text tone="|')).toEqual(["default", "muted", "destructive", "success"]);
+  it('offers colour roles, theme variants and the data attributes a component sets', () => {
+    const items = labels('<Button className="px-2 |');
+    expect(items).toEqual(expect.arrayContaining(['bg-success-soft', 'text-brand', 'data-open:', 'data-[busy]:']));
+    expect(labels('<Button className="data-[busy]:|')).toContain('data-[busy]:bg-muted');
+    expect(labels('<Badge className={["px-2", task.running && "bg-|')).toContain('bg-warning-soft');
   });
 
-  it("offers what a value can name", () => {
-    expect(labels('<Text text="@|')).toEqual(expect.arrayContaining(["stage", "args", "utils", "state"]));
-    expect(labels('<Text text="@stage.|')).toEqual(["position", "assets"]);
-    expect(labels('<Button onClick="@stage.|')).toEqual(["move", "home", "position", "assets"]);
-    expect(labels('<Text text="@stagecontrol.|')).toEqual(["position", "assets"]);
-    expect(labels('<Text text="@args.|')).toEqual(["image"]);
-    expect(labels('<Text text="$state.stage.|')).toEqual(["position"]);
-    expect(labels('<Text text="@stage.move.|')).toEqual(["latest"]);
-    expect(labels('<Button onClick="@stage.move(x=|')).toEqual(expect.arrayContaining(["event", "True"]));
-    expect(labels('<Button onClick="@stage.move().|')).toEqual(["into"]);
-    expect(labels('<Button onClick="@stage.move().into(run)" /><Text text="@run.|')).toContain("running");
-    expect(labels('<Button onClick="@stage.move(\'@|')).toEqual([]);
-  });
-
-  it("offers pure util functions in values, any in handlers", () => {
-    const view = viewCatalog(defaultBlokCatalog);
-    const effect = [...view.functions.values()].find((fn) => !fn.pure);
-    const pure = [...view.functions.values()].find((fn) => fn.pure)!;
-    expect(labels('<Text text="@utils.|')).toContain(pure.name);
-    if (effect) {
-      expect(labels('<Text text="@utils.|')).not.toContain(effect.name);
-      expect(labels('<Button onClick="@utils.|')).toContain(effect.name);
-    }
-  });
-
-  it("closes the open tag", () => {
-    expect(at("<Card></|")).toMatchObject([{ insertText: "Card>" }]);
+  it('closes the open tag', () => {
+    expect(at('<Card></|')).toMatchObject([{insertText: 'Card>'}]);
   });
 });
 
-describe("hover and signatures", () => {
-  it("describes the component and prop under the cursor", () => {
-    expect(hoverBsx('<Text tone="muted" />', 2, env())?.contents).toContain("<Text>");
-    expect(hoverBsx('<Text tone="muted" />', 7, env())?.contents).toContain("**tone**");
+describe('completeBsx: expressions', () => {
+  it('offers the roots of the kind, locals, records and namespaces', () => {
+    const items = labels('<Text text={|');
+    expect(items).toEqual(expect.arrayContaining(['deps', 'args', 'queries', 'viewer', 'speed', 'str', 'true']));
+    expect(items).not.toContain('self');
+    expect(items).not.toContain('task');
+    expect(items).not.toContain('event');
+    expect(labels('<Text text={|', env({kind: 'agent'}))).toContain('self');
   });
 
-  it("says which parameter of a util call the cursor is on", () => {
-    const view = viewCatalog(defaultBlokCatalog);
-    const fn = [...view.functions.values()].find((candidate) => !candidate.variadic && candidate.params.length >= 2)!;
-    const source = `<Text text="@utils.${fn.name}(a, `;
+  it('walks agents: states, tasks, assets, fields, and actions only in callbacks', () => {
+    expect(labels('<Text text={deps.|')).toEqual(['stage']);
+    expect(labels('<Text text={deps.stage.|')).toEqual(['position', 'tasks', 'assets', 'id', 'name']);
+    expect(labels('<Button onClick={deps.stage.|')).toContain('move');
+    expect(at('<Button onClick={deps.stage.|').find(item => item.label === 'move')?.insertText).toBe('move(x: ${1}, y: ${2})');
+    expect(labels('<Text text={deps.stage.position.|')).toEqual(['x', 'y']);
+    expect(labels('<Text text={deps.stage.tasks.|')).toEqual(['move']);
+    expect(labels('<Text text={deps.stage.tasks.move.|')).toEqual(expect.arrayContaining(['status', 'running', 'returns', 'args']));
+    expect(labels('<Text text={deps.stage.tasks.move.returns.|')).toEqual(['arrived']);
+  });
+
+  it('offers query records and refetch in a callback', () => {
+    expect(labels('<Text text={queries.|')).toEqual(['positions', 'pages']);
+    expect(labels('<Text text={queries.positions.|')).toEqual(['status', 'value', 'error', 'refetching', 'fetching_more']);
+    expect(labels('<Button onClick={queries.positions.|')).toContain('refetch');
+    // fetch_more only of a query that declares `more`.
+    expect(labels('<Button onClick={queries.positions.|')).not.toContain('fetch_more');
+    expect(labels('<Button onClick={queries.pages.|')).toEqual(expect.arrayContaining(['refetch', 'fetch_more']));
+    expect(labels('<Button onClick={query.|')).toEqual(expect.arrayContaining(['refetch', 'fetch_more']));
+    expect(labels('<Text text={query.|')).toEqual([]);
+  });
+
+  it('offers then, never now, and the fields of a local port', () => {
+    const roots = labels('<Text text={|');
+    expect(roots).toContain('then');
+    expect(roots).not.toContain('now');
+    expect(labels('<Input bind={form.|')).toEqual(['name', 'count']);
+  });
+
+  it('offers into names, lets and event fields where they are bound', () => {
+    expect(labels('<Card><Button onClick={deps.stage.move(x: 1, y: 2) into run} /><Text>{run.|')).toContain('progress');
+    expect(labels('<Card><Button onClick={deps.stage.move(x: 1, y: 2) into run} /><Text>{|')).toContain('run');
+    expect(labels('<foreach items={args.image} let="p" key={p}><Text text={|')).toContain('p');
+    expect(labels('<Slider onChange={deps.stage.move(x: |')).toContain('event');
+    expect(labels('<Slider onChange={deps.stage.move(x: event.|')).toEqual(['value']);
+    expect(labels('<suspense><error><Text text={|')).toContain('error');
+  });
+
+  it('offers functions by namespace, effects only as a callback’s one thing', () => {
+    expect(labels('<Text text={str.|')).toEqual(expect.arrayContaining(['upper', 'template', 'classes']));
+    expect(labels('<Text text={|')).not.toContain('ui');
+    expect(labels('<Button onClick={ui.|')).toEqual(['copy']);
+    expect(labels('<Button onClick={task.|', env({kind: 'task'}))).toContain('answer');
+  });
+
+  it('offers into after a task call', () => {
+    expect(labels('<Button onClick={deps.stage.move(x: 1, y: 2) |')).toEqual(['into']);
+    expect(labels("<Text text={str.upper('|")).toEqual([]);
+  });
+});
+
+describe('hover and signatures', () => {
+  it('describes the component, prop, function and root under the cursor', () => {
+    expect(hoverBsx('<Text tone="muted" />', 2, env())?.contents).toContain('<Text>');
+    expect(hoverBsx('<Text tone="muted" />', 7, env())?.contents).toContain('**tone**');
+    const source = '<Text text={str.upper(deps.stage.id)} />';
+    expect(hoverBsx(source, source.indexOf('upper') + 1, env())?.contents).toContain('str.upper(value)');
+    expect(hoverBsx(source, source.indexOf('deps') + 1, env())?.contents).toContain('**deps**');
+    expect(hoverBsx('<Time value={then} relative />', 2, env())?.contents).toContain('ui@1');
+    const then = '<Time value={then} />';
+    expect(hoverBsx(then, then.indexOf('then') + 1, env())?.contents).toContain('**then**');
+  });
+
+  it('says which parameter of a call the cursor is on', () => {
+    const source = '<Text text={str.truncate(task.message, ';
     const signature = signatureBsx(source, source.length, env());
-    expect(signature?.label.startsWith(fn.name)).toBe(true);
+    expect(signature?.label).toBe('str.truncate(value, length, suffix?)');
     expect(signature?.activeParameter).toBe(1);
+    const task = '<Button onClick={deps.stage.move(x: 1, y: ';
+    expect(signatureBsx(task, task.length, env())).toMatchObject({activeParameter: 1, parameters: [{label: 'x'}, {label: 'y'}]});
   });
 });
 
-describe("checkBsxReferences", () => {
-  const check = (source: string, context = { dependencies, args: ["image"] }) =>
-    checkBsxReferences(parseBsx(source).tree, context).map((finding) => finding.message);
+describe('analyzeBsx', () => {
+  const analyze = (source: string, overrides: Partial<BlokCheckScope> = {}) => analyzeBsx(source, {scope: {...scope, ...overrides}});
 
-  it("accepts what resolves", () => {
-    expect(
-      check(`<Card>
-        <Text text="@stage.position.x" />
-        <Text text="@args.image" />
-        <Text text="@stage.assets.scope" />
-        <Text text="@run.running" />
-        <Button onClick="@stage.move(x=event.value).into(run)" />
-        <foreach items="@stage.position" let="#item"><Text text="@item.x" /></foreach>
-      </Card>`),
-    ).toEqual([]);
-  });
-
-  it("finds what does not", () => {
-    expect(check('<Text text="@lamp.on" />')[0]).toMatch(/Unknown reference 'lamp.on'/);
-    expect(check('<Text text="@stage.speed" />')[0]).toMatch(/not a state of 'stage'/);
-    expect(check('<Button onClick="@stage.fly()" />')[0]).toMatch(/not an action of 'stage'/);
-    expect(check('<Text text="@args.scene" />')[0]).toMatch(/not an arg/);
-    expect(check('<Text text="@item.x" />')[0]).toMatch(/Unknown reference/);
-  });
-
-  it("takes the demo state's own keys as the blok's state", () => {
-    expect(localRootsOf(dependencies, { form: {}, stage: {} })).toEqual(["form"]);
-    expect(check('<Text text="@form.selected" />', { dependencies, args: [], localRoots: ["form"] } as never)).toEqual([]);
-  });
-});
-
-describe("analyzeBsx", () => {
-  const analyze = (source: string, context: "HTML" | "SCENE" = "HTML") =>
-    analyzeBsx(source, { catalog: defaultBlokCatalog, context, references: { dependencies, args: [] } });
-
-  it("marks catalog errors at the prop", () => {
-    const source = '<Text bogus="1" />';
-    const { markers } = analyze(source);
+  it('marks a finding at its prop, with its code', () => {
+    const source = '<Html><Text text={deps.stage.speed} /></Html>';
+    const {markers} = analyze(source);
     expect(markers).toHaveLength(1);
-    expect(source.slice(markers[0].range.start, markers[0].range.end)).toBe("1");
+    expect(markers[0]).toMatchObject({code: 'deps.unknown_state', severity: 'error'});
+    expect(source.slice(markers[0].range.start, markers[0].range.end)).toBe('deps.stage.speed');
   });
 
-  it("marks a root the context does not take", () => {
-    expect(analyze("<Card />", "SCENE").markers[0].message).toMatch(/root is <Scene>/);
+  it('marks warnings as warnings', () => {
+    const {markers} = analyze('<Html><Badge className="bg-green-500" /></Html>');
+    expect(markers).toMatchObject([{code: 'palette.raw_colour', severity: 'warning'}]);
   });
 
-  it("returns no tree for text that does not parse", () => {
-    expect(analyze("<Card>").tree).toBeNull();
+  it('marks a root the context does not take', () => {
+    expect(analyze('<Card />', {context: 'SCENE'}).markers.map(marker => marker.code)).toContain('context.root');
+  });
+
+  it('returns no tree for text that does not parse, and the refusal', () => {
+    const analysis = analyze('<Card>');
+    expect(analysis.tree).toBeNull();
+    expect(analysis.markers).toMatchObject([{code: 'bsx.unclosed', severity: 'error'}]);
   });
 });

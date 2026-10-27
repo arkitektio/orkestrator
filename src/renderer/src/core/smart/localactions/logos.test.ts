@@ -10,7 +10,7 @@ const attributes = (source: string, name: string) =>
   [...source.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((match) => match[1]);
 
 describe("the host actions' logos", () => {
-  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an ActionLogo this catalog draws, in the palette", (_, source) => {
+  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an ActionLogo this catalog draws, in the pens", (_, source) => {
     const parsed = parseBsxSafe(source);
     if (!parsed.ok) throw parsed.error;
     expect(parsed.tree.component).toBe("ActionLogo");
@@ -20,7 +20,7 @@ describe("the host actions' logos", () => {
     expect(preflight.invalidNodes.size).toBe(0);
 
     const paints = [...attributes(source, "fill"), ...attributes(source, "stroke")];
-    expect(paints.filter((paint) => !(LOGO_PAINT_TOKENS as readonly string[]).includes(paint))).toEqual([]);
+    expect(paints.filter((paint) => !LOGO_PAINT_TOKENS.includes(paint))).toEqual([]);
     expect(
       attributes(source, "animate").filter((name) => !(LOGO_ANIMATIONS as readonly string[]).includes(name)),
     ).toEqual([]);

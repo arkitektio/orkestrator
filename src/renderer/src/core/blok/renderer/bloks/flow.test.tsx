@@ -1,236 +1,202 @@
 // @vitest-environment jsdom
-import {act, cleanup, screen, waitFor} from '@testing-library/react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
-
-const run = vi.fn<(query: string, variables: Record<string, unknown>) => Promise<Record<string, unknown>>>();
-vi.mock('@/core/modules/hooks/useServiceQuery', () => ({useServiceQuery: () => run}));
-
+import {act, cleanup, screen} from '@testing-library/react';
+import {afterEach, describe, expect, it} from 'vitest';
 import {defaultBlokCatalog} from '../catalog';
-import {checkReadOnlyQueries, checkRecordWriters} from '../../bsx/analyze';
-import {parseBsxSafe} from '../../bsx/parse';
-import {recordPhase} from '../runtime';
-import {renderBlokDocument} from './testing';
+import {foreachItemIds} from './control';
+import {renderBsx} from './testing';
 
-afterEach(() => {
-  cleanup();
-  run.mockReset();
+/**
+ * The language of base@2 rendered end to end, from BSX: branches, loops, the
+ * `when` guard, and the async model (suspense, fallback, error, stale).
+ */
+
+afterEach(() => cleanup());
+
+const render = (source: string, state?: unknown, options?: Parameters<typeof renderBsx>[3]) =>
+  renderBsx(defaultBlokCatalog, source, state, options);
+
+describe('if / else', () => {
+  const source =
+    '<if when={run.failed}><Text>Failed</Text><else when={run.done}><Text>Done</Text></else><else><Text>Running</Text></else></if>';
+
+  it('renders the then-branch, an else-if, or the last else', () => {
+    const {store} = render(source, {run: {failed: false, done: false}});
+    expect(screen.queryByText('Running')).not.toBeNull();
+    act(() => store.getState().setRuntimeValue('run.done', true));
+    expect(screen.queryByText('Done')).not.toBeNull();
+    expect(screen.queryByText('Running')).toBeNull();
+    act(() => store.getState().setRuntimeValue('run.failed', true));
+    expect(screen.queryByText('Failed')).not.toBeNull();
+    expect(screen.queryByText('Done')).toBeNull();
+  });
+
+  it('never reads an inactive branch: a pending read there suspends nothing', () => {
+    render('<if when={flag}><Text>{deps.robot.arm.mode}</Text><else><Text>Off</Text></else></if>', {flag: false}, {
+      statuses: {'deps.robot.arm': {status: 'pending'}},
+    });
+    expect(screen.queryByText('Off')).not.toBeNull();
+    expect(document.querySelector('[data-blok-pending]')).toBeNull();
+  });
 });
 
-const text = (id: string, value: string) => ({id, component: 'p', props: [{key: 'text', static_value: value}]});
-const render = (roots: unknown[], state?: unknown) => renderBlokDocument(defaultBlokCatalog, roots, state);
-
-describe('when', () => {
-  it('renders its children while the condition holds, and the opposite with not', () => {
-    render(
-      [
-        {id: 'on', component: 'when', props: [{key: 'test', dynamic_value: {path: 'flag'}}], children: [text('a', 'shown')]},
-        {
-          id: 'off',
-          component: 'when',
-          props: [{key: 'test', dynamic_value: {path: 'flag'}}, {key: 'not', static_value: true}],
-          children: [text('b', 'hidden')],
-        },
-      ],
-      {flag: true},
-    );
-
-    expect(screen.queryByText('shown')).not.toBeNull();
-    expect(screen.queryByText('hidden')).toBeNull();
+describe('the when guard', () => {
+  it('guards the one component it is on', () => {
+    const {store} = render('<Card><Text when={move.failed}>Move failed</Text><Text>Always</Text></Card>', {move: {failed: false}});
+    expect(screen.queryByText('Move failed')).toBeNull();
+    expect(screen.queryByText('Always')).not.toBeNull();
+    act(() => store.getState().setRuntimeValue('move.failed', true));
+    expect(screen.queryByText('Move failed')).not.toBeNull();
   });
 });
 
 describe('match', () => {
-  const tree = [
-    {
-      id: 'switch',
-      component: 'match',
-      props: [{key: 'value', dynamic_value: {path: 'job.status'}}],
-      children: [
-        {id: 'running', component: 'case', props: [{key: 'is', static_value: 'running'}], children: [text('r', 'Running')]},
-        {id: 'over', component: 'case', props: [{key: 'is', static_value: ['done', 'failed']}], children: [text('o', 'Over')]},
-        {id: 'default', component: 'default', children: [text('d', 'Idle')]},
-      ],
-    },
-  ];
+  const source =
+    '<match value={job.status}><case is="running"><Text>Running</Text></case><case is={3}><Text>Three</Text></case><default><Text>Idle</Text></default></match>';
 
-  it('renders the first matching case', () => {
-    const {errors} = render(tree, {job: {status: 'running'}});
-    expect(errors).toEqual([]);
+  it('renders the first case equal to the value, else the default', () => {
+    const {store} = render(source, {job: {status: 'running'}});
     expect(screen.queryByText('Running')).not.toBeNull();
-    expect(screen.queryByText('Idle')).toBeNull();
-  });
-
-  it('matches one of a list, and falls back to Default', () => {
-    render(tree, {job: {status: 'failed'}});
-    expect(screen.queryByText('Over')).not.toBeNull();
-    cleanup();
-    render(tree, {job: {status: 'idle'}});
+    act(() => store.getState().setRuntimeValue('job.status', 3));
+    expect(screen.queryByText('Three')).not.toBeNull();
+    // A literal is a literal: "3" is not 3.
+    act(() => store.getState().setRuntimeValue('job.status', '3'));
     expect(screen.queryByText('Idle')).not.toBeNull();
   });
+});
 
-  it('matches a number written as text', () => {
-    render(
-      [
-        {
-          id: 's',
-          component: 'match',
-          props: [{key: 'value', dynamic_value: {path: 'n'}}],
-          children: [{id: 'c', component: 'case', props: [{key: 'is', static_value: '3'}], children: [text('t', 'three')]}],
-        },
-      ],
-      {n: 3},
-    );
-    expect(screen.queryByText('three')).not.toBeNull();
+describe('foreach', () => {
+  it('renders once per item, keyed by key', () => {
+    render('<Card><foreach items={args.positions} let="p" key={p.id}><Text>{p.name}</Text></foreach></Card>', {
+      args: {positions: [{id: 'a', name: 'Home'}, {id: 'b', name: 'Dock'}]},
+    });
+    expect(screen.queryByText('Home')).not.toBeNull();
+    expect(screen.queryByText('Dock')).not.toBeNull();
+  });
+
+  it('iterates a computed list, its items read by value', () => {
+    render('<Card><foreach items={list.reverse(xs)} let="x" key={x}><Text>{x}</Text></foreach></Card>', {xs: ['one', 'two']});
+    const texts = [...document.querySelectorAll('p')].map(element => element.textContent);
+    expect(texts).toEqual(['two', 'one']);
+  });
+
+  it('renders without key, its items keyed by position', () => {
+    const {store} = render('<Card><foreach items={xs} let="x"><Text>{x}</Text></foreach></Card>', {xs: ['one', 'two']});
+    expect([...document.querySelectorAll('p')].map(element => element.textContent)).toEqual(['one', 'two']);
+    act(() => store.getState().setRuntimeValue('xs', ['one', 'two', 'three']));
+    expect([...document.querySelectorAll('p')].map(element => element.textContent)).toEqual(['one', 'two', 'three']);
+  });
+
+  it('names its items <id>@<key>, or <id>@#<n> without key', () => {
+    expect(foreachItemIds('Card[0]/foreach[0]', 2, null)).toEqual(['Card[0]/foreach[0]@#0', 'Card[0]/foreach[0]@#1']);
+    expect(foreachItemIds('f', 3, ['a', 'b', 'a'])).toEqual(['f@a', 'f@b', 'f@a#1']);
+    expect(foreachItemIds('f', 1, [null])).toEqual(['f@#0']);
   });
 });
 
-describe('record slots', () => {
-  it('reads either kind of record', () => {
-    expect(recordPhase({loading: true, data: null})).toBe('pending');
-    expect(recordPhase({loading: true, stale: true, data: {a: 1}})).toBe('ready');
-    expect(recordPhase({ready: true, empty: true})).toBe('empty');
-    expect(recordPhase({failed: true})).toBe('failed');
-    expect(recordPhase({running: true, result: null})).toBe('pending');
-    expect(recordPhase({done: true})).toBe('ready');
-    expect(recordPhase(undefined)).toBe('idle');
-  });
+describe('suspense', () => {
+  const source =
+    '<suspense><fallback><Text>Loading</Text></fallback><error><Text>Could not load: {error.message}</Text></error><Text>{deps.robot.arm.mode}</Text></suspense>';
 
-  it('follows a task record named with of', () => {
-    render(
-      [
-        {id: 'p', component: 'pending', props: [{key: 'of', dynamic_value: {path: 'job'}}], children: [text('a', 'Working')]},
-        {id: 'r', component: 'ready', props: [{key: 'of', dynamic_value: {path: 'job'}}], children: [text('b', 'Done')]},
-      ],
-      {job: {status: 'running', running: true, done: false, failed: false}},
-    );
-    expect(screen.queryByText('Working')).not.toBeNull();
-    expect(screen.queryByText('Done')).toBeNull();
-  });
-});
-
-describe('query', () => {
-  const query = (props: unknown[] = []) => ({
-    id: 'q',
-    component: 'query',
-    props: [
-      {key: 'schema', static_value: 'mikro'},
-      {key: 'query', static_value: 'query($folder: ID!) { datasets { id name } }'},
-      {key: 'bind', static_value: 'cells'},
-      ...props,
-    ],
-    children: [
-      {id: 'pending', component: 'pending', children: [text('l', 'Loading')]},
-      {id: 'failed', component: 'failed', children: [text('f', 'Failed')]},
-      {id: 'empty', component: 'empty', children: [text('e', 'Nothing')]},
-      {
-        id: 'ready',
-        component: 'ready',
-        children: [
-          {
-            id: 'each',
-            component: 'foreach',
-            props: [
-              {key: 'items', dynamic_value: {path: 'cells.data.datasets'}},
-              {key: 'let', static_value: 'ds', declares_value: 'ds'},
-            ],
-            children: [{id: 'name', component: 'p', props: [{key: 'text', dynamic_value: {path: 'ds.name'}}]}],
-          },
-        ],
-      },
-    ],
-  });
-
-  it('waits for a required variable, then writes its record and its answer', async () => {
-    let resolve!: (value: Record<string, unknown>) => void;
-    run.mockReturnValue(new Promise(done => (resolve = done)));
-
-    const {store, errors} = render([query()], {folder: null});
-    expect(errors).toEqual([]);
-    expect(run).not.toHaveBeenCalled();
-
-    act(() => store.getState().setRuntimeValue('folder', {object: '7', __identifier: '@mikro/folder'}));
-    await waitFor(() => expect(run).toHaveBeenCalledWith(expect.any(String), {folder: '7'}));
+  it('shows its fallback while a read inside is pending, then the value', () => {
+    const {store} = render(source, {deps: {robot: {}}}, {statuses: {'deps.robot.arm': {status: 'pending'}}});
     expect(screen.queryByText('Loading')).not.toBeNull();
-
-    await act(async () => resolve({datasets: [{id: '1', name: 'alpha'}]}));
-    await waitFor(() => expect(screen.queryByText('alpha')).not.toBeNull());
+    act(() => {
+      store.getState().setRuntimeValue('deps.robot.arm', {mode: 'idle'});
+      store.getState().setStatus('deps.robot.arm', {status: 'ready'});
+    });
     expect(screen.queryByText('Loading')).toBeNull();
-    expect(store.getState().dataModel).toMatchObject({cells: {status: 'ready', ready: true, empty: false}});
+    expect(screen.queryByText('idle')).not.toBeNull();
   });
 
-  it('says an empty answer and a failure apart', async () => {
-    run.mockResolvedValueOnce({datasets: []});
-    render([query([{key: 'variables', static_value: {folder: '1'}}])]);
-    await waitFor(() => expect(screen.queryByText('Nothing')).not.toBeNull());
-    cleanup();
-
-    run.mockRejectedValueOnce(new Error('The mikro service is not connected.'));
-    const {store} = render([query([{key: 'variables', static_value: {folder: '1'}}])]);
-    await waitFor(() => expect(screen.queryByText('Failed')).not.toBeNull());
-    expect((store.getState().dataModel as {cells: {error: string}}).cells.error).toMatch(/not connected/);
+  it('shows its error, with the error bound as error', () => {
+    render(source, {}, {statuses: {'deps.robot.arm': {status: 'failed', error: 'robot is gone'}}});
+    expect(screen.queryByText('Could not load: robot is gone')).not.toBeNull();
+    expect(screen.queryByText('Loading')).toBeNull();
   });
 
-  it('keeps a demo_state record until it has something to replace it with', () => {
-    const seeded = {status: 'ready', ready: true, empty: false, data: {datasets: [{id: '1', name: 'seeded'}]}};
-    run.mockReturnValue(new Promise(() => undefined));
-    render([query()], {folder: null, cells: seeded});
-    expect(screen.queryByText('seeded')).not.toBeNull();
+  it('never suspends on stale: the last value renders, marked data-stale', () => {
+    render(source, {deps: {robot: {arm: {mode: 'parked'}}}}, {statuses: {'deps.robot.arm': {status: 'stale'}}});
+    expect(screen.queryByText('Loading')).toBeNull();
+    const shown = screen.getByText('parked');
+    expect(shown.hasAttribute('data-stale')).toBe(true);
   });
-});
 
-describe('read-only GraphQL', () => {
-  it('never sends a mutation, and the editor marks one', async () => {
-    const {store} = render([
-      {
-        id: 'q',
-        component: 'query',
-        props: [
-          {key: 'schema', static_value: 'mikro'},
-          {key: 'query', static_value: 'mutation { deleteEverything }'},
-          {key: 'bind', static_value: 'cells'},
-        ],
-      },
-    ]);
-    await waitFor(() =>
-      expect((store.getState().dataModel as {cells?: {error: string}}).cells?.error).toMatch(/never a mutation/),
+  it('the nearest boundary catches', () => {
+    render(
+      '<suspense><fallback><Text>Outer</Text></fallback><Text>{a.x}</Text><suspense><fallback><Text>Inner</Text></fallback><Text>{b.x}</Text></suspense></suspense>',
+      {a: {x: 'A'}},
+      {statuses: {b: {status: 'pending'}}},
     );
-    expect(run).not.toHaveBeenCalled();
-
-    const parsed = parseBsxSafe('<div><query schema="mikro" query="mutation { x }" bind="a" /><query schema="mikro" query="query { y }" bind="b" /></div>');
-    if (!parsed.ok) throw parsed.error;
-    expect(checkReadOnlyQueries(parsed.tree)).toHaveLength(1);
+    expect(screen.queryByText('Inner')).not.toBeNull();
+    expect(screen.queryByText('Outer')).toBeNull();
   });
 });
 
-describe('list.range', () => {
-  it('counts from start by step, capped', () => {
-    expect(defaultBlokCatalog.invokeFunction('list.range', {count: 3})).toEqual({ok: true, value: [0, 1, 2]});
-    expect(defaultBlokCatalog.invokeFunction('list.range', {count: 3, start: 1, step: 2})).toEqual({ok: true, value: [1, 3, 5]});
-    const big = defaultBlokCatalog.invokeFunction('list.range', {count: 1e9});
-    expect(big.ok && (big.value as unknown[]).length).toBe(10_000);
+describe('without a boundary', () => {
+  it('a pending node shows its own skeleton and its siblings render', () => {
+    render('<Card><Text>{deps.robot.arm.mode}</Text><Text>Beside</Text></Card>', {}, {statuses: {'deps.robot.arm': {status: 'pending'}}});
+    expect(document.querySelector('[data-blok-pending]')).not.toBeNull();
+    expect(screen.queryByText('Beside')).not.toBeNull();
+  });
+
+  it('a failed node shows an inline error', () => {
+    render('<Card><Text>{queries.cells.value.count}</Text></Card>', {}, {
+      statuses: {'queries.cells.value': {status: 'failed', error: 'no access'}},
+    });
+    expect(screen.queryByText('no access')).not.toBeNull();
+  });
+
+  it('a record field never suspends', () => {
+    render('<Card><Text>{queries.cells.status}</Text></Card>', {queries: {cells: {status: 'pending', value: null}}}, {
+      statuses: {'queries.cells.value': {status: 'pending'}},
+    });
+    expect(screen.queryByText('pending')).not.toBeNull();
   });
 });
 
-describe('one writer per record', () => {
-  const findings = (source: string) => {
-    const parsed = parseBsxSafe(source);
-    if (!parsed.ok) throw parsed.error;
-    return checkRecordWriters(parsed.tree, defaultBlokCatalog);
-  };
-
-  it('warns about a control bound to a query record, and about two queries on one path', () => {
-    const result = findings(`<div>
-      <query schema="mikro" query="query { a }" bind="cells" />
-      <query schema="mikro" query="query { b }" bind="cells" />
-      <Input bind="cells" />
-      <Input bind="other" />
-    </div>`);
-    expect(result).toHaveLength(2);
-    expect(result.map(finding => finding.message).join(' ')).toMatch(/race/);
-    expect(result.map(finding => finding.message).join(' ')).toMatch(/overwrite/);
+describe('lazy operators', () => {
+  it('a ternary reads only the branch taken', () => {
+    render('<Text>{flag ? "on" : deps.robot.arm.mode}</Text>', {flag: true}, {statuses: {'deps.robot.arm': {status: 'pending'}}});
+    expect(screen.queryByText('on')).not.toBeNull();
   });
 
-  it('is quiet for distinct paths', () => {
-    expect(findings('<div><query schema="mikro" query="query { a }" bind="a" /><Input bind="b" /></div>')).toEqual([]);
+  it('&& stops at the first operand that decides it', () => {
+    render('<Text when={flag && deps.robot.arm.on}>Shown</Text>', {flag: false}, {statuses: {'deps.robot.arm': {status: 'pending'}}});
+    expect(document.querySelector('[data-blok-pending]')).toBeNull();
+    expect(screen.queryByText('Shown')).toBeNull();
+  });
+});
+
+describe('className lists (str.classes)', () => {
+  it('drops falsy entries and keeps the true keys of an object', () => {
+    render('<Text className={["px-2", task.running && "animate-pulse", task.failed && "text-destructive"]}>Status</Text>', {
+      task: {running: true, failed: false},
+    });
+    const element = screen.getByText('Status');
+    expect(element.className).toContain('px-2');
+    expect(element.className).toContain('animate-pulse');
+    expect(element.className).not.toContain('text-destructive');
+  });
+
+  it('keeps the keys of an object whose values are true', () => {
+    render('<Text className={{"font-bold": task.done, italic: !task.done}}>Done?</Text>', {task: {done: true}});
+    const element = screen.getByText('Done?');
+    expect(element.className).toContain('font-bold');
+    expect(element.className).not.toContain('italic');
+  });
+});
+
+describe('then', () => {
+  it('is the viewed moment: null live, the travel time while travelling', () => {
+    render('<Text>{then ? "past" : "live"}</Text>');
+    expect(screen.queryByText('live')).not.toBeNull();
+    cleanup();
+    render('<Text>{then}</Text>', undefined, {travelAt: '2026-10-25T12:00:00.000Z'});
+    expect(screen.queryByText('2026-10-25T12:00:00.000Z')).not.toBeNull();
+  });
+
+  it('measures between two moments with pure functions only', () => {
+    render('<Text>{fmt.duration(time.diff(args.start, then))}</Text>', {args: {start: '2026-10-25T11:58:30Z'}}, {travelAt: '2026-10-25T12:00:00Z'});
+    expect(screen.queryByText('1m 30s')).not.toBeNull();
   });
 });

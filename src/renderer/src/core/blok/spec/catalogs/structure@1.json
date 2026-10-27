@@ -1,0 +1,185 @@
+{
+ "name": "structure",
+ "version": 1,
+ "description": "Pick, show and view structures, typed by `\"@package/key\"`.",
+ "components": [
+  {
+   "name": "StructureDisplay",
+   "description": "Shows a structure through the display of the module that owns it.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "emptyText",
+     "kind": "ANY",
+     "required": false,
+     "description": "Shown while there is no structure."
+    },
+    {
+     "key": "link",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Link to the structure's own page."
+    },
+    {
+     "key": "value",
+     "kind": "DICT",
+     "required": false,
+     "description": "The structure to show."
+    },
+    {
+     "key": "variant",
+     "kind": "STRING",
+     "required": false,
+     "description": "How much of it to show. Defaults to \"card\".",
+     "values": [
+      "inline",
+      "avatar",
+      "chip",
+      "card"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "StructurePicker",
+   "description": "A search-backed picker for one structure of a given identifier. Writes {\"object\", \"__identifier\"}, or null when cleared. The candidates come from its `query`, or from the module that owns the structure when it has none.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "ANY",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "identifier",
+     "kind": "STRING",
+     "required": false,
+     "description": "The kind of structure to pick, e.g. \"@mikro/arraydataset\". As the widget of an action input it defaults to the structure the input is typed on."
+    },
+    {
+     "key": "onChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs on selection. event.value is the structure reference, or null when cleared.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "DICT",
+       "description": "The structure reference picked, or null when cleared."
+      }
+     ]
+    },
+    {
+     "key": "placeholder",
+     "kind": "ANY",
+     "required": false,
+     "description": "Shown while nothing is selected."
+    },
+    {
+     "key": "query",
+     "kind": "STRING",
+     "required": false,
+     "description": "The GraphQL query that lists the candidates, run on `ward`. It selects a list aliased `options` with `value` (the id), `label` and optionally `description`, and may declare: $search: String (what the user typed), $values: [ID!] (ids to resolve), $limit: Int and $offset: Int (a page), $requires (the constraints of the action input being filled). Any other variable is read from `variables`, else from the data path of the same name; a structure held there is passed as its id. A nullable one narrows the list while it has a value and the user may lift it; the picker waits for one declared non-null. Without a query the module that owns the structure answers."
+    },
+    {
+     "key": "value",
+     "kind": "DICT",
+     "required": false,
+     "description": "Controlled value, a structure reference."
+    },
+    {
+     "key": "variables",
+     "kind": "DICT",
+     "required": false,
+     "description": "Values for the variables `query` declares beyond the ones the picker supplies."
+    },
+    {
+     "key": "ward",
+     "kind": "STRING",
+     "required": false,
+     "description": "The service that runs `query`, by its key, e.g. \"mikro\"."
+    }
+   ]
+  },
+  {
+   "name": "StructureViewer",
+   "description": "An interactive viewer for a structure (a mikro image or scene), provided by the module that owns it.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "controls",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show the viewer's own controls. Defaults to true."
+    },
+    {
+     "key": "emptyText",
+     "kind": "ANY",
+     "required": false,
+     "description": "Shown while there is no structure."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the viewer. Defaults to \"24rem\"."
+    },
+    {
+     "key": "minHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS minimum height of the viewer."
+    },
+    {
+     "key": "value",
+     "kind": "DICT",
+     "required": false,
+     "description": "The structure to open."
+    }
+   ]
+  }
+ ]
+}

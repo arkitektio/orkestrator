@@ -1,115 +1,144 @@
 import * as React from 'react';
 import * as z from 'zod';
 import {
-  BlokPropSchemas,
   BlokScopeProvider,
+  BlokSuspenseContext,
   createBlokComponent,
-  recordPhase,
   useBlok,
+  useBlokDrawContext,
+  useResolvedProp,
+  useScopedResolver,
+  useSuspenseReport,
   useValue,
   type BlokComponentNode,
-  type BlokRecordPhase,
+  type BlokSourceStatus,
+  type BlokSuspenseReporter,
 } from '../runtime';
-import {childListSchema, childSchema, renderChildList} from './shared';
+import {useBlokRunHost} from './run/host';
 
 /**
- * Control-flow bloks: components that decide *whether* and *how often* their
- * children render, rather than drawing anything themselves. They are the base
- * catalog's components (`../baseCatalog.ts`), named in lowercase like every
- * base element; a UI catalog such as orkestrator's extends them.
+ * The language of base@2 (`core/blok/spec/base_v2.json`): components that
+ * decide *whether* and *how often* their children render, rather than drawing
+ * anything themselves. Lowercase names are reserved for language.
+ *
+ * - `<if when={...}>`: its children are the then-branch, then `<else when>`
+ *   (else-if) and a last `<else>`; only the active branch is rendered and read.
+ * - `<foreach items={...} let="p" key={p.id}>`: once per item, keyed; without
+ *   `key`, keyed by position.
+ * - `<match value={...}>` with `<case is={...}>` and `<default>`.
+ * - `<suspense>` with `<fallback>` and `<error>`: React's model, the error
+ *   boundary folded in; a pending read inside shows the fallback, a failed
+ *   one the error (bound as `error`); stale never suspends.
+ * - `<fragment>`; `<ask>`, the task's open ask.
  */
 
+const renderNodes = (nodes: readonly BlokComponentNode[], buildChild: (id: string) => React.ReactNode) => (
+  <>
+    {nodes.map(child => (
+      <React.Fragment key={child.id}>{buildChild(child.id)}</React.Fragment>
+    ))}
+  </>
+);
+
+const renderDeclaredChildren = (component: BlokComponentNode, buildChild: (id: string) => React.ReactNode) =>
+  renderNodes(component.children ?? [], buildChild);
+
+/* -------------------------------------------------------------------------- */
+/* foreach                                                                    */
+/* -------------------------------------------------------------------------- */
+
 const ForeachIteration = (props: {
-  scopeName?: string;
+  scopeName: string;
   /** Absolute path of this item, when the items came from a data binding. */
   itemPath?: string;
   /** The item itself, for sources that have no addressable path. */
   item: unknown;
   childIds: string[];
   buildChild: (id: string, basePath?: string) => React.ReactNode;
-  iterationKey: string;
 }) => {
-  const {buildChild, childIds, item, itemPath, iterationKey, scopeName} = props;
+  const {buildChild, childIds, item, itemPath, scopeName} = props;
 
-  // A named scope backed by a real path aliases to it, so reads *and* writes
-  // from inside the loop body hit the shared data model. Without a path we can
-  // only hand the value down, which is read-only but still correct.
-  const aliases = React.useMemo(
-    () => (scopeName && itemPath ? {[scopeName]: itemPath} : undefined),
-    [itemPath, scopeName],
-  );
-  const values = React.useMemo(
-    () => (scopeName && !itemPath ? {[scopeName]: item} : undefined),
-    [item, itemPath, scopeName],
-  );
-
-  const renderedChildren = childIds.map(childId => (
-    <React.Fragment key={`${iterationKey}-${childId}`}>{buildChild(childId)}</React.Fragment>
-  ));
-
-  if (!aliases && !values && !itemPath) {
-    return <>{renderedChildren}</>;
-  }
+  // A path-backed item aliases to its path, so a bound control inside the loop
+  // writes the real backing list. Without a path the item is handed down by value.
+  const aliases = React.useMemo(() => (itemPath ? {[scopeName]: itemPath} : undefined), [itemPath, scopeName]);
+  const values = React.useMemo(() => (itemPath ? undefined : {[scopeName]: item}), [item, itemPath, scopeName]);
 
   return (
-    <BlokScopeProvider
-      aliases={aliases}
-      values={values}
-      basePath={scopeName ? undefined : itemPath}
-    >
-      {renderedChildren}
+    <BlokScopeProvider aliases={aliases} values={values}>
+      {childIds.map(childId => (
+        <React.Fragment key={childId}>{buildChild(childId)}</React.Fragment>
+      ))}
     </BlokScopeProvider>
   );
 };
 
+const foreachSchema = z
+  .object({
+    items: z.array(z.unknown()).nullish().describe('The list to iterate.'),
+    let: z.string().describe('The name each item is read by inside the loop (`let="p"`, read as `p.name`).'),
+    key: z
+      .unknown()
+      .optional()
+      .describe('What identifies an item (`key={p.id}`): a reorder never reshuffles its subtree. Left out, items are keyed by position.'),
+  })
+  .describe('Renders its children once per item of a list, each keyed by `key`, or by its position without one.');
+
+const keyText = (value: unknown, index: number): string => {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value === null || value === undefined) return `#${index}`;
+  return JSON.stringify(value);
+};
+
+/**
+ * The runtime ids of a foreach's items (vocabulary `stored_tree.foreach`):
+ * `<id>@<key>` with a key, `<id>@#<n>` without one (n the 0-based index).
+ * `keys` is null for a foreach without `key`; two items with one key are told
+ * apart by position, so they never share a subtree.
+ */
+export const foreachItemIds = (id: string, count: number, keys: readonly unknown[] | null): string[] => {
+  const seen = new Map<string, number>();
+  return Array.from({length: count}, (_, index) => {
+    if (keys === null) return `${id}@#${index}`;
+    let key = keyText(keys[index], index);
+    const repeats = seen.get(key) ?? 0;
+    seen.set(key, repeats + 1);
+    if (repeats > 0) key = `${key}#${repeats}`;
+    return `${id}@${key}`;
+  });
+};
+
 export const Foreach = createBlokComponent(
-  {
-    name: 'foreach',
-    acceptsChildren: true,
-    placement: {inheritsContext: true},
-    schema: z
-      .object({
-        items: z
-          .array(z.unknown())
-          .optional()
-          .describe('The list to iterate. Bind it to a data-model path to make it writable.'),
-        let: z
-          .string()
-          .optional()
-          .describe('Scope name each item is addressable by inside the loop body.'),
-      })
-      .describe('Renders its declared children once per item of a list.'),
-  },
+  {name: 'foreach', acceptsChildren: true, placement: {inheritsContext: true}, schema: foreachSchema},
   ({buildChild, component, schema}) => {
     const blok = useBlok(component, schema);
     const items = useValue(blok.items);
-    const scopeName = useValue(blok['let']);
-    const childIds = React.useMemo(
-      () => component.children?.map(child => child.id) ?? [],
-      [component],
-    );
-
-    // Only a data-bound `items` has an addressable path. A literal or
-    // util-call source still iterates correctly — the item is passed down by
-    // value instead of by path — where it used to silently fall through to the
-    // unscoped path and render the wrong data.
+    const scopeName = blok['let'].prop?.declares_value ?? (typeof blok['let'].prop?.static_value === 'string' ? blok['let'].prop.static_value : '');
+    const resolve = useScopedResolver();
+    const childIds = React.useMemo(() => component.children?.map(child => child.id) ?? [], [component]);
     const itemsPath = blok.items.prop?.dynamic_value?.path?.replace(/[/.]+$/, '');
+    const keyProp = blok.key.prop;
 
-    if (!Array.isArray(items) || childIds.length === 0) {
+    if (!Array.isArray(items) || childIds.length === 0 || !scopeName) {
       return null;
     }
 
+    const itemPath = (index: number): string | undefined => (itemsPath ? `${itemsPath}/${index}` : undefined);
+    const keys = keyProp
+      ? items.map((item, index) => {
+          const path = itemPath(index);
+          const resolved = resolve(keyProp, path ? {} : {[scopeName]: item}, path ? {[scopeName]: path} : undefined);
+          return resolved.ok ? resolved.value : null;
+        })
+      : null;
+    const ids = foreachItemIds(component.id, items.length, keys);
     return (
       <>
         {items.map((item, index) => {
-          const iterationKey = `${component.id}-${index}`;
-
           return (
             <ForeachIteration
-              key={iterationKey}
-              iterationKey={iterationKey}
+              key={ids[index]}
               scopeName={scopeName}
-              itemPath={itemsPath ? `${itemsPath}/${index}` : undefined}
+              itemPath={itemPath(index)}
               item={item}
               childIds={childIds}
               buildChild={buildChild}
@@ -121,110 +150,106 @@ export const Foreach = createBlokComponent(
   },
 );
 
+/* -------------------------------------------------------------------------- */
+/* if / else                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const IF_COMPONENT = 'if';
+const ELSE_COMPONENT = 'else';
+const conditionSchema = z.unknown();
+
+/** One `<else>` of a chain: taken when it has no `when` or its `when` holds, else the next one is asked. */
+const ElseBranch = (props: {elses: readonly BlokComponentNode[]; index: number; buildChild: (id: string) => React.ReactNode}) => {
+  const {elses, index, buildChild} = props;
+  const node = elses[index];
+  const hasWhen = (node.props ?? []).some(prop => prop.key === 'when');
+  const condition = useResolvedProp(node, hasWhen ? 'when' : undefined, conditionSchema);
+  const status: BlokSourceStatus = condition.ok ? (condition.status ?? {status: 'ready'}) : {status: 'ready'};
+  useSuspenseReport(node.id, status);
+  if (status.status === 'pending' || status.status === 'failed') return null;
+  const taken = !hasWhen || (condition.ok && Boolean(condition.value));
+  if (taken) return <>{buildChild(node.id)}</>;
+  if (index + 1 < elses.length) return <ElseBranch elses={elses} index={index + 1} buildChild={buildChild} />;
+  return null;
+};
+
 export const If = createBlokComponent(
   {
-    name: 'if',
+    name: IF_COMPONENT,
+    acceptsChildren: true,
     placement: {inheritsContext: true},
     schema: z
       .object({
-        when: BlokPropSchemas.DynamicBoolean.optional().describe(
-          'Condition. Bind it to a path or compute it with a pure util call.',
-        ),
-        then: childSchema.describe('Rendered when the condition holds.'),
-        else: childSchema.describe('Rendered when it does not.'),
+        when: z.unknown().describe('The condition: its children render while it holds (JavaScript truthiness).'),
       })
-      .describe('Renders one of two children depending on a condition.'),
+      .describe('Renders its then-branch while a condition holds, else its first `<else>` whose `when` holds (or that has none).'),
   },
   ({buildChild, component, schema}) => {
     const blok = useBlok(component, schema);
     const when = useValue(blok.when);
-    const thenChild = useValue(blok['then']);
-    const elseChild = useValue(blok['else']);
-
-    const selected = when === true ? thenChild : elseChild;
-    return selected ? <>{buildChild(selected)}</> : null;
+    const children = component.children ?? [];
+    const branch = children.filter(child => child.component !== ELSE_COMPONENT);
+    const elses = children.filter(child => child.component === ELSE_COMPONENT);
+    if (when) return renderNodes(branch, buildChild);
+    if (elses.length === 0) return null;
+    return <ElseBranch elses={elses} index={0} buildChild={buildChild} />;
   },
+);
+
+export const Else = createBlokComponent(
+  {
+    name: ELSE_COMPONENT,
+    acceptsChildren: true,
+    placement: {inheritsContext: true, downstreamOf: [IF_COMPONENT]},
+    schema: z
+      .object({
+        when: z.unknown().optional().describe('Makes it an else-if: taken when this holds. Only the last `<else>` may leave it out.'),
+      })
+      .describe('A branch of an `<if>`: rendered when the `if` and every `<else>` before it did not hold.'),
+  },
+  ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
 );
 
 export const Fragment = createBlokComponent(
   {
     name: 'fragment',
-    placement: {inheritsContext: true},
-    schema: z
-      .object({
-        children: childListSchema,
-      })
-      .describe('Renders its children without introducing an element.'),
-  },
-  ({buildChild, component, schema}) => {
-    const blok = useBlok(component, schema);
-    const children = useValue(blok.children);
-
-    return <>{renderChildList(children, buildChild)}</>;
-  },
-);
-
-const renderDeclaredChildren = (
-  component: BlokComponentNode,
-  buildChild: (id: string) => React.ReactNode,
-) => (
-  <>
-    {component.children?.map(child => (
-      <React.Fragment key={child.id}>{buildChild(child.id)}</React.Fragment>
-    ))}
-  </>
-);
-
-export const When = createBlokComponent(
-  {
-    name: 'when',
     acceptsChildren: true,
     placement: {inheritsContext: true},
-    schema: z
-      .object({
-        test: BlokPropSchemas.DynamicBoolean.optional().describe(
-          'Condition. Bind it to a path (`@cells.ready`) or compute it with a pure util call (`@utils.gt(count, 0)`).',
-        ),
-        not: z.boolean().optional().describe('Render when the condition does NOT hold.'),
-      })
-      .describe('Renders its declared children while a condition holds: an `if` without naming the children by id.'),
+    schema: z.object({}).describe('Renders its children without introducing an element.'),
   },
-  ({buildChild, component, schema}) => {
-    const blok = useBlok(component, schema);
-    const test = useValue(blok.test) === true;
-    const not = useValue(blok.not) === true;
+  ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
+);
 
-    return test !== not ? renderDeclaredChildren(component, buildChild) : null;
+export const Html = createBlokComponent(
+  {
+    name: 'Html',
+    acceptsChildren: true,
+    placement: {childrenContext: 'html', notDownstreamOf: ['Html']},
+    schema: z.object({}).describe("The root of an html blok (a panel, a dashboard, a popout's page): lays its children out as a fragment does, and names the blok's context."),
   },
+  ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
 );
 
 /* -------------------------------------------------------------------------- */
-/* Match                                                                      */
+/* match                                                                      */
 /* -------------------------------------------------------------------------- */
 
 const MATCH_COMPONENT = 'match';
 const CASE_COMPONENT = 'case';
 const DEFAULT_COMPONENT = 'default';
 
-const caseValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-
-/**
- * Whether a case's literal names the value. BSX writes every literal as a
- * string, so `is="3"` must match a `3` and `is="true"` a `true`: primitives
- * compare by their text.
- */
-export const caseMatches = (value: unknown, literal: unknown): boolean => {
-  if (Object.is(value, literal)) return true;
-  if (value == null || literal == null) return value == null && (literal == null || literal === 'null');
-  if (typeof value === 'object' || typeof literal === 'object') return false;
-  return String(value) === String(literal);
+const deepEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((item, index) => deepEqual(item, b[index]));
+  const left = Object.entries(a as Record<string, unknown>);
+  const right = b as Record<string, unknown>;
+  return left.length === Object.keys(right).length && left.every(([key, value]) => key in right && deepEqual(value, right[key]));
 };
 
-/** A case's `is`, read off the node: one literal or a list of them. */
-const caseLiterals = (node: BlokComponentNode): unknown[] => {
-  const raw = node.props?.find(prop => prop.key === 'is')?.static_value;
-  return Array.isArray(raw) ? raw : [raw];
-};
+/** Whether a case's literal names the value: deep equality, as `==` (`cmp.eq`). */
+export const caseMatches = (value: unknown, literal: unknown): boolean => deepEqual(value ?? null, literal ?? null);
 
 export const Match = createBlokComponent(
   {
@@ -233,25 +258,17 @@ export const Match = createBlokComponent(
     placement: {inheritsContext: true},
     schema: z
       .object({
-        value: z
-          .unknown()
-          .optional()
-          .describe('The value to match, typically a path: `@job.status`.'),
+        value: z.unknown().describe('The value to match (`value={task.status}`).'),
       })
-      .describe(
-        'Renders the first `case` child whose `is` names the value, else its `default` child. The way to compare against several values, since a blok expression has no `==`.',
-      ),
+      .describe('Renders the first `<case>` whose `is` equals the value, else its `<default>`.'),
   },
   ({buildChild, component, schema}) => {
     const blok = useBlok(component, schema);
     const value = useValue(blok.value);
     const children = component.children ?? [];
-
     const chosen =
-      children.find(
-        child => child.component === CASE_COMPONENT && caseLiterals(child).some(literal => caseMatches(value, literal)),
-      ) ?? children.find(child => child.component === DEFAULT_COMPONENT);
-
+      children.find(child => child.component === CASE_COMPONENT && caseMatches(value, child.props?.find(prop => prop.key === 'is')?.static_value)) ??
+      children.find(child => child.component === DEFAULT_COMPONENT);
     return chosen ? <>{buildChild(chosen.id)}</> : null;
   },
 );
@@ -263,12 +280,9 @@ export const Case = createBlokComponent(
     placement: {inheritsContext: true, downstreamOf: [MATCH_COMPONENT]},
     schema: z
       .object({
-        is: z
-          .union([caseValueSchema, z.array(caseValueSchema)])
-          .optional()
-          .describe('The literal this case matches, or a list of them. A literal: it is read off the blok, not resolved.'),
+        is: z.unknown().optional().describe('The literal this case matches (`is="done"`, `is={3}`).'),
       })
-      .describe('One branch of a `match`: its children render when the matched value is `is`.'),
+      .describe('One branch of a `<match>`: its children render when the matched value equals `is`.'),
   },
   ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
 );
@@ -278,71 +292,121 @@ export const Default = createBlokComponent(
     name: DEFAULT_COMPONENT,
     acceptsChildren: true,
     placement: {inheritsContext: true, downstreamOf: [MATCH_COMPONENT]},
-    schema: z.object({}).describe('The branch of a `match` that renders when no `case` matches.'),
+    schema: z.object({}).describe('The branch of a `<match>` that renders when no `<case>` matches.'),
   },
   ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
 );
 
 /* -------------------------------------------------------------------------- */
-/* Record slots                                                               */
+/* suspense                                                                   */
 /* -------------------------------------------------------------------------- */
 
-/**
- * The record a reading component (`query`) hands the slots inside it, so they
- * need no `of`. Outside one, a slot names its record with `of`.
- */
-export const BlokRecordContext = React.createContext<unknown>(undefined);
+const SUSPENSE_COMPONENT = 'suspense';
+const FALLBACK_COMPONENT = 'fallback';
+const ERROR_COMPONENT = 'error';
+/** What `<error>` binds: the error that made it show. */
+export const ERROR_ROOT = 'error';
 
-const slot = (name: string, phases: readonly BlokRecordPhase[], description: string) =>
+/** Children stay mounted while the boundary shows its fallback, so they keep reporting; html hides them. */
+const Hidden = ({hidden, children}: {hidden: boolean; children: React.ReactNode}) => {
+  const draw = useBlokDrawContext();
+  if (draw !== 'html') return hidden ? null : <>{children}</>;
+  return <div style={{display: hidden ? 'none' : 'contents'}}>{children}</div>;
+};
+
+export const Suspense = createBlokComponent(
+  {
+    name: SUSPENSE_COMPONENT,
+    acceptsChildren: true,
+    placement: {inheritsContext: true},
+    schema: z
+      .object({})
+      .describe(
+        'A boundary: while any read inside is pending it shows its `<fallback>`, when one failed its `<error>` (with `error`); stale values never suspend.',
+      ),
+  },
+  ({buildChild, component}) => {
+    const [statuses, setStatuses] = React.useState<ReadonlyMap<string, BlokSourceStatus>>(() => new Map());
+    const reporter = React.useMemo<BlokSuspenseReporter>(
+      () => ({
+        report: (nodeId, status) =>
+          setStatuses(previous => {
+            const current = previous.get(nodeId);
+            const same = current?.status === status?.status && current?.error === status?.error && current?.code === status?.code;
+            if (status === null ? current === undefined : same) {
+              return previous;
+            }
+            const next = new Map(previous);
+            if (status === null) next.delete(nodeId);
+            else next.set(nodeId, status);
+            return next;
+          }),
+      }),
+      [],
+    );
+    const children = component.children ?? [];
+    const fallback = children.find(child => child.component === FALLBACK_COMPONENT);
+    const errorSlot = children.find(child => child.component === ERROR_COMPONENT);
+    const body = children.filter(child => child.component !== FALLBACK_COMPONENT && child.component !== ERROR_COMPONENT);
+    const all = [...statuses.values()];
+    const failed = all.find(status => status.status === 'failed');
+    const pending = all.some(status => status.status === 'pending');
+    const error = React.useMemo(
+      () => (failed ? {[ERROR_ROOT]: {message: failed.error ?? 'Could not load.', code: failed.code ?? null}} : undefined),
+      [failed],
+    );
+
+    return (
+      <>
+        {failed && errorSlot ? <BlokScopeProvider values={error}>{buildChild(errorSlot.id)}</BlokScopeProvider> : null}
+        {!failed && pending && fallback ? buildChild(fallback.id) : null}
+        <BlokSuspenseContext.Provider value={reporter}>
+          <Hidden hidden={Boolean(failed) || pending}>{renderNodes(body, buildChild)}</Hidden>
+        </BlokSuspenseContext.Provider>
+      </>
+    );
+  },
+);
+
+const slot = (name: string, description: string) =>
   createBlokComponent(
     {
       name,
       acceptsChildren: true,
-      placement: {inheritsContext: true},
-      schema: z
-        .object({
-          of: z
-            .unknown()
-            .optional()
-            .describe(
-              'The record to follow: a read bound with `bind` (`@cells`) or a run bound with `.into(job)` (`@job`). Inside a `query` it defaults to the query\'s.',
-            ),
-        })
-        .describe(description),
+      placement: {inheritsContext: true, downstreamOf: [SUSPENSE_COMPONENT]},
+      schema: z.object({}).describe(description),
     },
-    ({buildChild, component, schema}) => {
-      const blok = useBlok(component, schema);
-      const of = useValue(blok.of);
-      const inherited = React.useContext(BlokRecordContext);
-      const phase = recordPhase(of !== undefined ? of : inherited);
-
-      return phases.includes(phase) ? renderDeclaredChildren(component, buildChild) : null;
-    },
+    ({buildChild, component}) => renderDeclaredChildren(component, buildChild),
   );
 
-export const Pending = slot(
-  'pending',
-  ['pending'],
-  'Renders its children while a read (or a run) is under way and there is no earlier answer to show.',
-);
-export const Failed = slot('failed', ['failed'], 'Renders its children when a read (or a run) failed. The reason is `<record>.error`.');
-export const Empty = slot('empty', ['empty'], 'Renders its children when a read answered with nothing: no rows, every field empty.');
-export const Ready = slot(
-  'ready',
-  ['ready'],
-  'Renders its children once a read answered with something (or a run is done), including while a newer read refreshes it.',
+export const Fallback = slot(FALLBACK_COMPONENT, 'What a `<suspense>` shows while a read inside it is pending.');
+export const ErrorSlot = slot(ERROR_COMPONENT, 'What a `<suspense>` shows when a read inside it failed; `error.message` says why.');
+
+/* -------------------------------------------------------------------------- */
+/* ask                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export const Ask = createBlokComponent(
+  {
+    name: 'ask',
+    schema: z
+      .object({})
+      .describe("The open ask of `task`, as a form generated from its ports: answered right here, which resumes the task. Nothing while none is open."),
+  },
+  () => <>{useBlokRunHost().renderAsk()}</>,
 );
 
 export const controlBlokComponents = [
   Foreach,
   If,
+  Else,
   Fragment,
-  When,
+  Html,
   Match,
   Case,
   Default,
-  Pending,
-  Failed,
-  Empty,
-  Ready,
+  Suspense,
+  Fallback,
+  ErrorSlot,
+  Ask,
 ];

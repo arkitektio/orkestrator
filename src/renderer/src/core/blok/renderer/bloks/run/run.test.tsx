@@ -62,8 +62,8 @@ const overlay = [
     children: [
       {
         id: 'robot',
-        component: 'At',
-        props: [prop('dependency', 'robot')],
+        component: 'Anchor',
+        props: [prop('dep', 'robot')],
         children: [
           {id: 'glow', component: 'Glow', props: [prop('on', true), prop('color', '#ff0000')]},
           {id: 'card', component: 'Popout', props: [prop('open', true), prop('title', 'Arm card')]},
@@ -71,11 +71,11 @@ const overlay = [
       },
       {
         id: 'frame',
-        component: 'At',
-        props: [prop('dependency', 'frame')],
+        component: 'Anchor',
+        props: [prop('dep', 'frame')],
         children: [{id: 'ask', component: 'Popout', props: [prop('open', true), prop('title', 'Scope card')]}],
       },
-      {id: 'route', component: 'Route', props: [prop('through', "['robot', 'frame']"), {key: 'progress', dynamic_value: {path: 'task.progress'}}]},
+      {id: 'route', component: 'Route', props: [prop('through', ['robot', 'frame']), {key: 'progress', dynamic_value: {path: 'task.progress'}}]},
     ],
   },
 ];
@@ -106,7 +106,7 @@ let unmount: (() => void) | undefined;
 afterEach(() => unmount?.());
 
 describe('an overlay drawn into a space', () => {
-  it('stands an At where its agent is placed, and a Glow without a node lights the device it anchors', async () => {
+  it('stands an Anchor where its agent is placed, and a Glow without a node lights the device it anchors', async () => {
     const model = armModel();
     const mounted = await mount(model);
     unmount = mounted.unmount;

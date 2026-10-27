@@ -1,0 +1,1673 @@
+{
+ "name": "logo",
+ "version": 1,
+ "description": "SVG drawing for logos and action logos; the palette is restricted to the logo pens.",
+ "components": [
+  {
+   "name": "ActionLogo",
+   "description": "The root of an action's logo: an SVG drawing that paints only with the palette (logo pens) and reads only the task the viewer last ran.",
+   "context": "HTML",
+   "children_context": "LOGO",
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "height",
+     "kind": "ANY",
+     "required": false,
+     "description": "Height; fills its box when left out."
+    },
+    {
+     "key": "preserveAspectRatio",
+     "kind": "STRING",
+     "required": false,
+     "description": "How the viewBox fits the box, e.g. \"xMidYMid meet\"."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "What the drawing shows, for screen readers and as a tooltip."
+    },
+    {
+     "key": "viewBox",
+     "kind": "STRING",
+     "required": false,
+     "description": "The user coordinate system, \"minX minY width height\", e.g. \"0 0 24 24\"."
+    },
+    {
+     "key": "width",
+     "kind": "ANY",
+     "required": false,
+     "description": "Width; fills its box when left out."
+    }
+   ]
+  },
+  {
+   "name": "AgentLogo",
+   "description": "The root of an agent's logo: an SVG drawing that paints only with the palette (logo pens).",
+   "context": "HTML",
+   "children_context": "LOGO",
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "height",
+     "kind": "ANY",
+     "required": false,
+     "description": "Height; fills its box when left out."
+    },
+    {
+     "key": "preserveAspectRatio",
+     "kind": "STRING",
+     "required": false,
+     "description": "How the viewBox fits the box, e.g. \"xMidYMid meet\"."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "What the drawing shows, for screen readers and as a tooltip."
+    },
+    {
+     "key": "viewBox",
+     "kind": "STRING",
+     "required": false,
+     "description": "The user coordinate system, \"minX minY width height\", e.g. \"0 0 24 24\"."
+    },
+    {
+     "key": "width",
+     "kind": "ANY",
+     "required": false,
+     "description": "Width; fills its box when left out."
+    }
+   ]
+  },
+  {
+   "name": "Circle",
+   "description": "An SVG circle.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "cx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre x."
+    },
+    {
+     "key": "cy",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre y."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "r",
+     "kind": "ANY",
+     "required": false,
+     "description": "Radius."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "ClipPath",
+   "description": "A clip path made of its shape children. Referenced as url(#id) by its BSX id.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "clipPathUnits",
+     "kind": "STRING",
+     "required": false,
+     "description": "Whether its shapes are in user units (the default) or fractions of the clipped shape.",
+     "values": [
+      "userSpaceOnUse",
+      "objectBoundingBox"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Defs",
+   "description": "Definitions (gradients, clip paths) that are referenced, not drawn.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "Ellipse",
+   "description": "An SVG ellipse.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "cx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre x."
+    },
+    {
+     "key": "cy",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre y."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "rx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Horizontal radius."
+    },
+    {
+     "key": "ry",
+     "kind": "ANY",
+     "required": false,
+     "description": "Vertical radius."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "G",
+   "description": "A group of SVG elements, which share its presentation and transform.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "Line",
+   "description": "An SVG line.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    },
+    {
+     "key": "x1",
+     "kind": "ANY",
+     "required": false,
+     "description": "Start x."
+    },
+    {
+     "key": "x2",
+     "kind": "ANY",
+     "required": false,
+     "description": "End x."
+    },
+    {
+     "key": "y1",
+     "kind": "ANY",
+     "required": false,
+     "description": "Start y."
+    },
+    {
+     "key": "y2",
+     "kind": "ANY",
+     "required": false,
+     "description": "End y."
+    }
+   ]
+  },
+  {
+   "name": "LinearGradient",
+   "description": "A linear gradient, filled by its Stop children. Referenced as url(#id) by its BSX id.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "gradientTransform",
+     "kind": "STRING",
+     "required": false,
+     "description": "Transform of the gradient."
+    },
+    {
+     "key": "gradientUnits",
+     "kind": "STRING",
+     "required": false,
+     "description": "Whether the coordinates are fractions of the shape (the default) or user units."
+    },
+    {
+     "key": "x1",
+     "kind": "ANY",
+     "required": false,
+     "description": "Start x."
+    },
+    {
+     "key": "x2",
+     "kind": "ANY",
+     "required": false,
+     "description": "End x."
+    },
+    {
+     "key": "y1",
+     "kind": "ANY",
+     "required": false,
+     "description": "Start y."
+    },
+    {
+     "key": "y2",
+     "kind": "ANY",
+     "required": false,
+     "description": "End y."
+    }
+   ]
+  },
+  {
+   "name": "Path",
+   "description": "An SVG path.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "d",
+     "kind": "STRING",
+     "required": false,
+     "description": "Path data, e.g. \"M2 12h20\"."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "Polygon",
+   "description": "A closed SVG polygon.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "points",
+     "kind": "STRING",
+     "required": false,
+     "description": "Points, e.g. \"0,0 10,5 20,0\"."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "Polyline",
+   "description": "An open SVG polyline.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "points",
+     "kind": "STRING",
+     "required": false,
+     "description": "Points, e.g. \"0,0 10,5 20,0\"."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    }
+   ]
+  },
+  {
+   "name": "RadialGradient",
+   "description": "A radial gradient, filled by its Stop children. Referenced as url(#id) by its BSX id.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "cx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre x."
+    },
+    {
+     "key": "cy",
+     "kind": "ANY",
+     "required": false,
+     "description": "Centre y."
+    },
+    {
+     "key": "fx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Focal point x."
+    },
+    {
+     "key": "fy",
+     "kind": "ANY",
+     "required": false,
+     "description": "Focal point y."
+    },
+    {
+     "key": "gradientTransform",
+     "kind": "STRING",
+     "required": false,
+     "description": "Transform of the gradient."
+    },
+    {
+     "key": "gradientUnits",
+     "kind": "STRING",
+     "required": false,
+     "description": "Whether the coordinates are fractions of the shape (the default) or user units."
+    },
+    {
+     "key": "r",
+     "kind": "ANY",
+     "required": false,
+     "description": "Radius."
+    }
+   ]
+  },
+  {
+   "name": "Rect",
+   "description": "An SVG rectangle.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "height",
+     "kind": "ANY",
+     "required": false,
+     "description": "Height."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "rx",
+     "kind": "ANY",
+     "required": false,
+     "description": "Corner radius, horizontal."
+    },
+    {
+     "key": "ry",
+     "kind": "ANY",
+     "required": false,
+     "description": "Corner radius, vertical."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    },
+    {
+     "key": "width",
+     "kind": "ANY",
+     "required": false,
+     "description": "Width."
+    },
+    {
+     "key": "x",
+     "kind": "ANY",
+     "required": false,
+     "description": "Left edge."
+    },
+    {
+     "key": "y",
+     "kind": "ANY",
+     "required": false,
+     "description": "Top edge."
+    }
+   ]
+  },
+  {
+   "name": "Stop",
+   "description": "One colour stop of a gradient.",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "LinearGradient",
+    "RadialGradient"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "offset",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where along the gradient, 0 to 1 or a percentage."
+    },
+    {
+     "key": "stopColor",
+     "kind": "STRING",
+     "required": false,
+     "description": "The colour at this stop: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "stopOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "The opacity at this stop, 0 to 1."
+    }
+   ]
+  },
+  {
+   "name": "SvgText",
+   "description": "Text in an SVG drawing (the SVG <text> element).",
+   "context": "LOGO",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "AgentLogo",
+    "ActionLogo"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "STRING",
+     "required": false,
+     "description": "Plays while the logo is hovered, and while an action logo's task runs: spin, pulse, float, draw (traces the stroke), march (moves a dashed stroke) or blink.",
+     "values": [
+      "spin",
+      "pulse",
+      "float",
+      "draw",
+      "march",
+      "blink"
+     ]
+    },
+    {
+     "key": "animateDelay",
+     "kind": "ANY",
+     "required": false,
+     "description": "Seconds before the animation starts, to stagger shapes."
+    },
+    {
+     "key": "clipPath",
+     "kind": "STRING",
+     "required": false,
+     "description": "url(#clip) of a ClipPath to clip by."
+    },
+    {
+     "key": "dominantBaseline",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where y is on the text.",
+     "values": [
+      "auto",
+      "middle",
+      "central",
+      "hanging",
+      "alphabetic"
+     ]
+    },
+    {
+     "key": "fill",
+     "kind": "STRING",
+     "required": false,
+     "description": "Fill paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "fillOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Fill opacity, 0 to 1."
+    },
+    {
+     "key": "fillRule",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which parts of a self-intersecting shape are inside.",
+     "values": [
+      "nonzero",
+      "evenodd"
+     ]
+    },
+    {
+     "key": "fontFamily",
+     "kind": "STRING",
+     "required": false,
+     "description": "Font family."
+    },
+    {
+     "key": "fontSize",
+     "kind": "ANY",
+     "required": false,
+     "description": "Font size, in user units."
+    },
+    {
+     "key": "fontWeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "Font weight, e.g. \"bold\" or \"600\"."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the element is clicked.",
+     "event": []
+    },
+    {
+     "key": "opacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Opacity of the whole element, 0 to 1."
+    },
+    {
+     "key": "stroke",
+     "kind": "STRING",
+     "required": false,
+     "description": "Stroke paint: ink, muted, brand, brand-strong, brand-soft, surface, none (the viewer's palette), url(#gradient), or under an SVG any colour."
+    },
+    {
+     "key": "strokeDasharray",
+     "kind": "STRING",
+     "required": false,
+     "description": "Dash pattern, e.g. \"4 2\"."
+    },
+    {
+     "key": "strokeLinecap",
+     "kind": "STRING",
+     "required": false,
+     "description": "How open line ends are drawn.",
+     "values": [
+      "butt",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "key": "strokeLinejoin",
+     "kind": "STRING",
+     "required": false,
+     "description": "How corners are drawn.",
+     "values": [
+      "miter",
+      "round",
+      "bevel"
+     ]
+    },
+    {
+     "key": "strokeOpacity",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke opacity, 0 to 1."
+    },
+    {
+     "key": "strokeWidth",
+     "kind": "ANY",
+     "required": false,
+     "description": "Stroke width, in user units."
+    },
+    {
+     "key": "text",
+     "kind": "STRING",
+     "required": false,
+     "description": "The text to draw."
+    },
+    {
+     "key": "textAnchor",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where x is on the text.",
+     "values": [
+      "start",
+      "middle",
+      "end"
+     ]
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "Tooltip text (an SVG <title>)."
+    },
+    {
+     "key": "transform",
+     "kind": "STRING",
+     "required": false,
+     "description": "SVG transform, e.g. \"rotate(45 12 12)\"."
+    },
+    {
+     "key": "x",
+     "kind": "ANY",
+     "required": false,
+     "description": "Anchor x."
+    },
+    {
+     "key": "y",
+     "kind": "ANY",
+     "required": false,
+     "description": "Baseline y."
+    }
+   ]
+  }
+ ]
+}

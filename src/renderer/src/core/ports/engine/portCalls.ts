@@ -108,6 +108,8 @@ const createContext = (scope: PortCallScope): BlokResolutionContext => ({
       : undefined;
   },
   resolvePath: (path) => path,
+  // Port calls are base@1 (they feed definition_hash): JSON-looking literals decode, functions are v1.
+  decodeLiterals: true,
   invokeFunction: portCallCatalog.invokeFunction,
   dispatchAction: async () => ({
     ok: false as const,

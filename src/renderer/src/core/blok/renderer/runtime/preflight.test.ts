@@ -36,7 +36,9 @@ const effectFn = createBlokFunction(
 
 const catalog = createBlokCatalog("test-catalog", [Box], [pureFn, effectFn]);
 
-const preflight = (roots: unknown[]) => preflightBlokDocument(roots, catalog);
+/** A port's CUSTOM widget payload is base@1: its util calls name the catalog's functions. */
+const preflight = (roots: unknown[]) => preflightBlokDocument(roots, catalog, 'v1');
+const preflightV2 = (roots: unknown[]) => preflightBlokDocument(roots, catalog);
 
 const validNode = (id: string, extra: Record<string, unknown> = {}) => ({
   id,
@@ -217,6 +219,7 @@ describe("preflightBlokDocument", () => {
         },
       ],
       variadicCatalog,
+      'v1',
     );
 
     expect(result.errors).toEqual([]);
@@ -302,5 +305,30 @@ describe("catalog invokeFunction", () => {
   it("leaves already-named args alone", () => {
     const schema = z.object({a: z.number(), b: z.number()});
     expect(normalizeFunctionArgs(schema, {a: 1, b: 2})).toEqual({a: 1, b: 2});
+  });
+});
+
+describe("preflightBlokDocument for a v2 blok", () => {
+  const box = (props: unknown[]) => ({id: "box", component: "Box", props: [{key: "title", static_value: "t"}, ...props]});
+
+  it("knows the vocabulary's functions, not the catalog's", () => {
+    expect(preflightV2([box([{key: "subtitle", util_call: {operation: "str.upper", arguments: [{key: "value", value_literal: "x"}]}}])]).nodes.has("box")).toBe(true);
+    const unknown = preflightV2([box([{key: "subtitle", util_call: {operation: "double", arguments: []}}])]);
+    expect(unknown.invalidNodes.get("box")?.[0]).toContain("not a function of the blok language");
+  });
+
+  it("allows an effect only as a callback's one thing", () => {
+    const copy = {operation: "ui.copy", arguments: [{key: "text", value_literal: "x"}]};
+    expect(preflightV2([box([{key: "onClick", util_call: copy}])]).nodes.has("box")).toBe(true);
+    expect(preflightV2([box([{key: "subtitle", util_call: copy}])]).invalidNodes.has("box")).toBe(true);
+  });
+
+  it("lets when guard any component", () => {
+    expect(preflightV2([box([{key: "when", dynamic_value: {path: "flag"}}])]).nodes.has("box")).toBe(true);
+  });
+
+  it("refuses a call kind it does not know, a reserved service_call above all", () => {
+    const result = preflightV2([box([{key: "onClick", service_call: {mutation: "drop"}}])]);
+    expect(result.invalidNodes.get("box")?.[0]).toContain("service_call");
   });
 });

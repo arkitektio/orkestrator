@@ -1,0 +1,2755 @@
+{
+ "name": "orkestrator",
+ "description": "What only the Orkestrator renders: the shadcn families beyond ui@1, charts and inspectors, and MikroScene.",
+ "components": [
+  {
+   "name": "AlertDialog",
+   "description": "A modal dialog that interrupts to confirm a decision.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogAction",
+   "description": "The confirming button of an AlertDialog; closes it when clicked.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Button text."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the action is confirmed.",
+     "event": []
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogCancel",
+   "description": "The dismissing button of an AlertDialog.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Button text."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogContent",
+   "description": "The modal panel of an AlertDialog.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogDescription",
+   "description": "Supporting text under an AlertDialogTitle.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogFooter",
+   "description": "The footer region of an AlertDialogContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogHeader",
+   "description": "The header region of an AlertDialogContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogTitle",
+   "description": "The accessible title of an AlertDialog.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "AlertDialogTrigger",
+   "description": "The control that opens an AlertDialog.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  },
+  {
+   "name": "AspectRatio",
+   "description": "Constrains its content to a fixed aspect ratio.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "ratio",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Width divided by height, e.g. 1.777."
+    }
+   ]
+  },
+  {
+   "name": "Avatar",
+   "description": "A user or entity avatar.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "alt",
+     "kind": "ANY",
+     "required": false,
+     "description": "Alternative text."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "fallback",
+     "kind": "ANY",
+     "required": false,
+     "description": "Initials shown while the image is missing."
+    },
+    {
+     "key": "size",
+     "kind": "STRING",
+     "required": false,
+     "description": "Avatar size.",
+     "values": [
+      "default",
+      "sm",
+      "lg"
+     ]
+    },
+    {
+     "key": "src",
+     "kind": "ANY",
+     "required": false,
+     "description": "Image URL, or an image its app registered as an asset: `{self.assets.logo}`."
+    }
+   ]
+  },
+  {
+   "name": "BentoGrid",
+   "description": "A bento grid: tiles in order, each sized as close to its preferred span as the columns allow, packed without holes.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animate",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Animate items entering, leaving and moving. Default true."
+    },
+    {
+     "key": "appear",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Also animate the items present on first render."
+    },
+    {
+     "key": "background",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS background value."
+    },
+    {
+     "key": "borderColor",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS border colour."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "color",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS text colour."
+    },
+    {
+     "key": "columns",
+     "kind": "ANY",
+     "required": false,
+     "description": "Column count, optionally per breakpoint: {\"base\":2,\"md\":4,\"lg\":6}. Defaults to 4."
+    },
+    {
+     "key": "gap",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "grow",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-grow."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "holeCost",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Cost per empty cell inside the layout. Default 10."
+    },
+    {
+     "key": "margin",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "maxHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "maxWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "overflow",
+     "kind": "STRING",
+     "required": false,
+     "description": "Overflow behaviour.",
+     "values": [
+      "visible",
+      "hidden",
+      "auto",
+      "scroll"
+     ]
+    },
+    {
+     "key": "padding",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "radius",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS border radius."
+    },
+    {
+     "key": "raggedCost",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Cost per empty cell along the bottom edge. Defaults to holeCost."
+    },
+    {
+     "key": "rowHeight",
+     "kind": "ANY",
+     "required": false,
+     "description": "Row height in px or a CSS length, optionally per breakpoint. Defaults to \"10rem\"."
+    },
+    {
+     "key": "shrink",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-shrink."
+    },
+    {
+     "key": "width",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    }
+   ]
+  },
+  {
+   "name": "BentoItem",
+   "description": "One tile of a BentoGrid; fills the cells the grid gives it.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "BentoGrid"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "background",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS background value."
+    },
+    {
+     "key": "borderColor",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS border colour."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "color",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS text colour."
+    },
+    {
+     "key": "cols",
+     "kind": "ANY",
+     "required": false,
+     "description": "Column span: 2, {\"min\":1,\"ideal\":2,\"max\":3}, {\"ideal\":\"50%\"}, or one per breakpoint ({\"base\":1,\"md\":2}). Static; read by the parent BentoGrid. Defaults to 1."
+    },
+    {
+     "key": "gap",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "grow",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-grow."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "margin",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "maxHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "maxWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "overflow",
+     "kind": "STRING",
+     "required": false,
+     "description": "Overflow behaviour.",
+     "values": [
+      "visible",
+      "hidden",
+      "auto",
+      "scroll"
+     ]
+    },
+    {
+     "key": "padding",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "priority",
+     "kind": "ANY",
+     "required": false,
+     "description": "How strongly the item holds its ideal size: 1 normal, 2-3 key tiles, 0.5 fillers that flex first, 0 takes whatever closes the layout. Static."
+    },
+    {
+     "key": "radius",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS border radius."
+    },
+    {
+     "key": "rows",
+     "kind": "ANY",
+     "required": false,
+     "description": "Row span, same forms as cols. Static; read by the parent BentoGrid. Defaults to 1."
+    },
+    {
+     "key": "show",
+     "kind": "ANY",
+     "required": false,
+     "description": "false leaves the item out, optionally per breakpoint. Static."
+    },
+    {
+     "key": "shrink",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-shrink."
+    },
+    {
+     "key": "width",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    }
+   ]
+  },
+  {
+   "name": "Breadcrumb",
+   "description": "A trail of links back up the hierarchy.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "BreadcrumbItem",
+   "description": "One crumb in a Breadcrumb.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "current",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Render as the current page rather than a link."
+    },
+    {
+     "key": "href",
+     "kind": "ANY",
+     "required": false,
+     "description": "Link target."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Crumb text."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the crumb is clicked.",
+     "event": []
+    }
+   ]
+  },
+  {
+   "name": "BreadcrumbSeparator",
+   "description": "The divider between two crumbs.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "ButtonGroup",
+   "description": "Groups related buttons into one connected control.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "orientation",
+     "kind": "STRING",
+     "required": false,
+     "description": "Orientation.",
+     "values": [
+      "horizontal",
+      "vertical"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Calendar",
+   "description": "An inline date picker.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "STRING",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}. It writes a STRING: the local is a STRING, ENUM or DATE port."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "defaultValue",
+     "kind": "ANY",
+     "required": false,
+     "description": "Initial ISO date."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "onChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs on selection. Arguments may read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "STRING",
+       "description": "The date picked, as an ISO date (YYYY-MM-DD)."
+      }
+     ]
+    },
+    {
+     "key": "value",
+     "kind": "ANY",
+     "required": false,
+     "description": "Controlled ISO date."
+    }
+   ]
+  },
+  {
+   "name": "Carousel",
+   "description": "A horizontally scrolling set of slides.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "orientation",
+     "kind": "STRING",
+     "required": false,
+     "description": "Scroll direction.",
+     "values": [
+      "horizontal",
+      "vertical"
+     ]
+    },
+    {
+     "key": "showControls",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show previous/next buttons. Defaults to true."
+    }
+   ]
+  },
+  {
+   "name": "CarouselItem",
+   "description": "One slide of a Carousel.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "Chart",
+   "description": "A line, bar, area or pie chart over tabular data.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "categoryKey",
+     "kind": "STRING",
+     "required": false,
+     "description": "Key holding the x-axis (or slice) label. Defaults to \"name\"."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "data",
+     "kind": "LIST",
+     "required": false,
+     "description": "One object per point, keyed by category and series key."
+    },
+    {
+     "key": "height",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Chart height in pixels."
+    },
+    {
+     "key": "series",
+     "kind": "LIST",
+     "required": false,
+     "description": "Series to plot: {key, label?, color?} per entry."
+    },
+    {
+     "key": "showGrid",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Draw the cartesian grid. Defaults to true."
+    },
+    {
+     "key": "showLegend",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show the legend."
+    },
+    {
+     "key": "stacked",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Stack bar or area series."
+    },
+    {
+     "key": "type",
+     "kind": "STRING",
+     "required": false,
+     "description": "Chart kind. Defaults to \"line\".",
+     "values": [
+      "line",
+      "bar",
+      "area",
+      "pie"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Collapsible",
+   "description": "A single region that can be shown or hidden.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when it opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "CollapsibleContent",
+   "description": "The region a Collapsible shows or hides.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "CollapsibleTrigger",
+   "description": "The control that shows or hides a Collapsible.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenu",
+   "description": "A menu opened by right-clicking its trigger.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuCheckboxItem",
+   "description": "A context-menu item bound to a boolean value.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "BOOL",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}. It writes a BOOL: the local is a BOOL port."
+    },
+    {
+     "key": "checked",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled checked state."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item text."
+    },
+    {
+     "key": "onChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs on toggle. Arguments may read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "The new checked state."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuContent",
+   "description": "The menu panel of a ContextMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuItem",
+   "description": "One selectable item in a ContextMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item text."
+    },
+    {
+     "key": "onSelect",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the item is chosen.",
+     "event": []
+    },
+    {
+     "key": "variant",
+     "kind": "STRING",
+     "required": false,
+     "description": "Item appearance."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuLabel",
+   "description": "A non-interactive heading inside a context menu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuSeparator",
+   "description": "A divider between context-menu groups.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "ContextMenuTrigger",
+   "description": "The region that opens a ContextMenu on right-click.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    }
+   ]
+  },
+  {
+   "name": "Drawer",
+   "description": "A panel that slides up from the bottom edge.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "DrawerContent",
+   "description": "The sliding panel of a Drawer.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "DrawerDescription",
+   "description": "Supporting text under a DrawerTitle.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "DrawerFooter",
+   "description": "The footer region of a DrawerContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "DrawerHeader",
+   "description": "The header region of a DrawerContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "DrawerTitle",
+   "description": "The accessible title of a Drawer.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "DrawerTrigger",
+   "description": "The control that opens a Drawer.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenu",
+   "description": "A menu opened from a button.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuCheckboxItem",
+   "description": "A menu item bound to a boolean value.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "BOOL",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}. It writes a BOOL: the local is a BOOL port."
+    },
+    {
+     "key": "checked",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled checked state."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item text."
+    },
+    {
+     "key": "onChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs on toggle. Arguments may read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "The new checked state."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuContent",
+   "description": "The menu panel of a DropdownMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuItem",
+   "description": "One selectable item in a DropdownMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item text."
+    },
+    {
+     "key": "onSelect",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the item is chosen.",
+     "event": []
+    },
+    {
+     "key": "variant",
+     "kind": "STRING",
+     "required": false,
+     "description": "Item appearance."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuLabel",
+   "description": "A non-interactive heading inside a menu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuSeparator",
+   "description": "A divider between menu groups.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "DropdownMenuTrigger",
+   "description": "The control that opens a DropdownMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  },
+  {
+   "name": "HoverCard",
+   "description": "A rich preview surface shown on hover.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "HoverCardContent",
+   "description": "The floating panel of a HoverCard.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "align",
+     "kind": "STRING",
+     "required": false,
+     "description": "Alignment of the surface against its trigger."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "side",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which edge the surface is anchored to."
+    },
+    {
+     "key": "sideOffset",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Distance from the trigger, in pixels."
+    }
+   ]
+  },
+  {
+   "name": "HoverCardTrigger",
+   "description": "The element a HoverCard previews.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  },
+  {
+   "name": "InputGroup",
+   "description": "Wraps an input with leading or trailing addons.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "InputGroupAddon",
+   "description": "A label, icon or button attached to an InputGroup.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "align",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the addon sits relative to the input.",
+     "values": [
+      "inline-start",
+      "inline-end",
+      "block-start",
+      "block-end"
+     ]
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Addon icon."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "Addon text."
+    }
+   ]
+  },
+  {
+   "name": "InputOTP",
+   "description": "A one-time-code input.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "STRING",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}. It writes a STRING: the local is a STRING, ENUM or DATE port."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "length",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Number of slots. Defaults to 6."
+    },
+    {
+     "key": "onComplete",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs once every slot is filled. Arguments may read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "STRING",
+       "description": "The code entered."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Item",
+   "description": "A list row with a title, description and actions.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "description",
+     "kind": "ANY",
+     "required": false,
+     "description": "Supporting text."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon shown in the media slot."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the item is clicked.",
+     "event": []
+    },
+    {
+     "key": "size",
+     "kind": "STRING",
+     "required": false,
+     "description": "Item density.",
+     "values": [
+      "default",
+      "sm"
+     ]
+    },
+    {
+     "key": "title",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item title."
+    },
+    {
+     "key": "variant",
+     "kind": "STRING",
+     "required": false,
+     "description": "Item appearance.",
+     "values": [
+      "default",
+      "outline",
+      "muted"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ItemGroup",
+   "description": "A vertical list of Items.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "Kbd",
+   "description": "A keyboard key or shortcut.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The key or chord to show."
+    }
+   ]
+  },
+  {
+   "name": "Menubar",
+   "description": "A horizontal bar of menus.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "MenubarItem",
+   "description": "One item inside a MenubarMenu.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Item text."
+    },
+    {
+     "key": "onSelect",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the item is chosen.",
+     "event": []
+    }
+   ]
+  },
+  {
+   "name": "MenubarMenu",
+   "description": "One menu in a Menubar, with its trigger and items.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Menu title in the bar."
+    }
+   ]
+  },
+  {
+   "name": "MenubarSeparator",
+   "description": "A divider between menu groups.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "MikroScene",
+   "description": "One mikro scene and its stores, shared by the MikroScene parts inside it. One per blok is the supported case: a second scene's viewport also hears the window's keyboard.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [
+    "MikroScene"
+   ],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "ANY",
+     "required": false,
+     "description": "The local (or a path below one) this control reads and writes: bind={name}."
+    },
+    {
+     "key": "bindWorld",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the scene's world coordinate system is written, a structure reference ({\"object\", \"__identifier\": \"@mikro/coordinatesystem\"}), once the scene has loaded. What a picker of what this scene can show asks the server with: `lenses(filters: {placeableIn: {space: $world}})`, `$world` read from this path."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "live",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Follow the scene as others change it, an action writing a layer included. Defaults to true."
+    },
+    {
+     "key": "onAnnotation",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when a shape is drawn. event.annotation, event.kind, event.lens and event.descriptors: the shape and the lens under the probe as structure references (lens null when none was under it).",
+     "event": [
+      {
+       "key": "annotation",
+       "kind": "DICT",
+       "description": "The drawn shape, as a structure reference."
+      },
+      {
+       "key": "kind",
+       "kind": "STRING",
+       "description": "The kind of shape."
+      },
+      {
+       "key": "lens",
+       "kind": "DICT",
+       "description": "The lens under the probe, or null."
+      },
+      {
+       "key": "descriptors",
+       "kind": "ANY",
+       "description": "The shape's descriptors, or null."
+      }
+     ]
+    },
+    {
+     "key": "onLayersChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when a layer comes, goes or draws another lens. event.layers and event.added; an action here that writes layers is told again, `added` names the new ones.",
+     "event": [
+      {
+       "key": "layers",
+       "kind": "LIST",
+       "description": "The layers now drawn."
+      },
+      {
+       "key": "added",
+       "kind": "LIST",
+       "description": "The layers that are new."
+      }
+     ]
+    },
+    {
+     "key": "onPick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs on a deliberate click that reads a voxel (probe mode, not a vertex being placed). event.layer, event.world, event.voxel and event.lens.",
+     "event": [
+      {
+       "key": "layer",
+       "kind": "STRING",
+       "description": "The layer read."
+      },
+      {
+       "key": "world",
+       "kind": "LIST",
+       "description": "The world point, or null."
+      },
+      {
+       "key": "voxel",
+       "kind": "LIST",
+       "description": "The voxel read."
+      },
+      {
+       "key": "lens",
+       "kind": "DICT",
+       "description": "The lens, or null."
+      }
+     ]
+    },
+    {
+     "key": "onSelect",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the user changes the selection (the selection a draw makes is reported as onAnnotation, not here). event.annotation, event.annotations and event.lens.",
+     "event": [
+      {
+       "key": "annotation",
+       "kind": "DICT",
+       "description": "The selected annotation."
+      },
+      {
+       "key": "annotations",
+       "kind": "LIST",
+       "description": "Every selected annotation."
+      },
+      {
+       "key": "lens",
+       "kind": "DICT",
+       "description": "The lens under the probe, or null."
+      }
+     ]
+    },
+    {
+     "key": "value",
+     "kind": "DICT",
+     "required": false,
+     "description": "The scene, a structure reference: typically `{args.scene}`."
+    }
+   ]
+  },
+  {
+   "name": "MikroSceneAnnotations",
+   "description": "The scene's shapes and the selection, as the scene page's Annotations tab lists them. Placed inside a MikroScene.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "MikroScene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the panel."
+    }
+   ]
+  },
+  {
+   "name": "MikroSceneLayers",
+   "description": "The scene's layers, as the scene page's Layers tab lists them. Placed inside a MikroScene.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "MikroScene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the panel."
+    }
+   ]
+  },
+  {
+   "name": "MikroSceneProbe",
+   "description": "What the probe reads under the cursor. Placed inside a MikroScene.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "MikroScene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the panel."
+    }
+   ]
+  },
+  {
+   "name": "MikroSceneViewport",
+   "description": "The scene's interactive view: draw, probe, navigate. Placed inside a MikroScene.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "MikroScene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "cards",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open a shape's action card on a click or a draw. Defaults to false here: the blok decides what a shape does."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the viewport. Defaults to \"32rem\"."
+    },
+    {
+     "key": "minHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS minimum height of the viewport."
+    },
+    {
+     "key": "sliders",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show the Z and dimension sliders. Defaults to true."
+    }
+   ]
+  },
+  {
+   "name": "Pagination",
+   "description": "Page navigation controls.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "PaginationItem",
+   "description": "One control inside a Pagination.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "active",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Mark as the current page."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "kind",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which control this item is. Defaults to \"page\".",
+     "values": [
+      "page",
+      "previous",
+      "next",
+      "ellipsis"
+     ]
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Page label."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the control is clicked.",
+     "event": []
+    }
+   ]
+  },
+  {
+   "name": "RawInspector",
+   "description": "Debug view of a node's raw props.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "name",
+     "kind": "STRING",
+     "required": true,
+     "description": "Label for the inspected node."
+    }
+   ]
+  },
+  {
+   "name": "Resizable",
+   "description": "A group of user-resizable panels.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "direction",
+     "kind": "STRING",
+     "required": false,
+     "description": "\"row\" splits left/right, \"column\" top/bottom.",
+     "values": [
+      "row",
+      "column"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ResizableHandle",
+   "description": "The drag handle between two ResizablePanels.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "withHandle",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show the grab affordance."
+    }
+   ]
+  },
+  {
+   "name": "ResizablePanel",
+   "description": "One panel inside a Resizable group.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "defaultSize",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Initial size as a percentage of the group."
+    },
+    {
+     "key": "maxSize",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Maximum size percentage."
+    },
+    {
+     "key": "minSize",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Minimum size percentage."
+    }
+   ]
+  },
+  {
+   "name": "Sheet",
+   "description": "A panel that slides in from an edge.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "defaultOpen",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Open on mount when uncontrolled."
+    },
+    {
+     "key": "onOpenChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Runs when the surface opens or closes. May read event.value.",
+     "event": [
+      {
+       "key": "value",
+       "kind": "BOOL",
+       "description": "Whether it is open now."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Controlled open state."
+    }
+   ]
+  },
+  {
+   "name": "SheetContent",
+   "description": "The sliding panel of a Sheet.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "showCloseButton",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Show the corner close button. Defaults to true."
+    },
+    {
+     "key": "side",
+     "kind": "STRING",
+     "required": false,
+     "description": "Which edge the surface is anchored to.",
+     "values": [
+      "top",
+      "right",
+      "bottom",
+      "left"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "SheetDescription",
+   "description": "Supporting text under a SheetTitle.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "SheetFooter",
+   "description": "The footer region of a SheetContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "SheetHeader",
+   "description": "The header region of a SheetContent.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    }
+   ]
+  },
+  {
+   "name": "SheetTitle",
+   "description": "The accessible title of a Sheet.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    }
+   ]
+  },
+  {
+   "name": "SheetTrigger",
+   "description": "The control that opens a Sheet.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "disabled",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Disables the control."
+    },
+    {
+     "key": "icon",
+     "kind": "STRING",
+     "required": false,
+     "description": "Icon rendered before the label."
+    },
+    {
+     "key": "label",
+     "kind": "ANY",
+     "required": false,
+     "description": "Trigger text."
+    }
+   ]
+  }
+ ]
+}

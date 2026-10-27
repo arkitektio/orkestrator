@@ -1,6 +1,7 @@
 import type {StoreApi} from 'zustand/vanilla';
 import {z} from 'zod';
-import type {BlokTaskBinding} from './task';
+import type {BlokSourceStatus} from './status';
+import type {BlokTaskAsk, BlokTaskBinding} from './task';
 
 export type ChildDescriptor = string | {id: string; basePath?: string};
 
@@ -95,7 +96,11 @@ export type BlokInvokeResult =
   | {ok: false; error: string};
 
 /** Set while resolving a prop value during render; refuses `effect` functions. */
-export type BlokInvokeOptions = {requirePure?: boolean};
+export type BlokInvokeOptions = {
+  requirePure?: boolean;
+  /** For functions that see statuses (`val.status`): each argument's status, by key. */
+  argumentStatus?: Readonly<Record<string, BlokSourceStatus['status']>>;
+};
 
 export type BlokInvokeFunctionHandler = (
   name: string,
@@ -108,6 +113,14 @@ export type BlokInvokeFunctionHandler = (
  * closes the task; nothing is reported after it.
  */
 export type BlokTaskUpdate = {
+  /** The task's id, once the host knows it. */
+  id?: string;
+  /** Where it stands while it has not ended. */
+  status?: 'queued' | 'running' | 'asking';
+  /** The ask it opened (null: answered or withdrawn). */
+  ask?: BlokTaskAsk | null;
+  /** The values given for its ask. */
+  answer?: Record<string, unknown>;
   progress?: number;
   message?: string;
   /** The task's returns so far, by port key. */
@@ -181,6 +194,21 @@ export type BlokScope = {
  */
 export type BlokResolutionContext = {
   readPath: (path: string) => unknown;
+  /** The status of the source a path reads (agent state, a query's value, ...); ready when none is known. */
+  statusOf?: (path: string) => BlokSourceStatus;
+  /**
+   * v1 payloads (a port's CUSTOM widget) spell every literal as a string and
+   * decode JSON-looking ones; a v2 blok's `attr="15"` is the string "15".
+   */
+  decodeLiterals?: boolean;
+  /** Re-reads a declared query (`query.refetch`). */
+  refetchQuery?: (name: string) => void;
+  /** Reads the next page of a declared query (`query.fetch_more`), its variables overridden. */
+  fetchMoreQuery?: (name: string, variables: Record<string, unknown>) => void;
+  /** Answers the open ask of `task` (`task.answer(values)`). */
+  answerTask?: (values: Record<string, unknown>) => unknown;
+  /** Set while the blok shows a moment in the past: no command runs. */
+  travelling?: boolean;
   resolvePath: (path: string) => string;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
@@ -190,7 +218,7 @@ export type BlokResolutionContext = {
    * Starts a run under a name a call is bound to. Only the live context of an
    * event handler has one: nothing is dispatched while rendering.
    */
-  bindTask?: (name: string) => BlokTaskBinding;
+  bindTask?: (name: string, args: Record<string, unknown>) => BlokTaskBinding;
 };
 
 export type BlokRuntimeContext = {
@@ -199,6 +227,27 @@ export type BlokRuntimeContext = {
   runtimePathValues: Record<string, unknown>;
   /** Top-level keys whose runtime values a reset keeps: the locals the host keeps between openings. */
   keptRoots: ReadonlySet<string>;
+  /**
+   * The status of each source, by the data-model path it is read under
+   * (`deps.robot.arm`, `queries.cells.value`, `args`). A read below a path
+   * takes its status; a path with none is ready.
+   */
+  statuses: Readonly<Record<string, BlokSourceStatus>>;
+  /** The moment the blok shows while travelling (ISO 8601); null live. */
+  travelAt: string | null;
+  /** A v1 payload (a port's CUSTOM widget): JSON-looking literals decode, functions are base@1. */
+  decodeLiterals: boolean;
+  /** Re-reads a declared query; set by the query runner. */
+  refetchQuery: ((name: string) => void) | undefined;
+  /** Reads the next page of a declared query; set by the query runner. */
+  fetchMoreQuery: ((name: string, variables: Record<string, unknown>) => void) | undefined;
+  /** Answers the open ask of `task`; set by a host that holds one. */
+  answerTask: ((values: Record<string, unknown>) => unknown) | undefined;
+  setStatus: (path: string, status: BlokSourceStatus | null) => void;
+  setTravelAt: (at: string | null) => void;
+  setRefetchQuery: (refetch: ((name: string) => void) | undefined) => void;
+  setFetchMoreQuery: (fetchMore: ((name: string, variables: Record<string, unknown>) => void) | undefined) => void;
+  setAnswerTask: (answer: ((values: Record<string, unknown>) => unknown) | undefined) => void;
   agentMappingStateUpdates: BlokAgentMappingStateUpdates;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;

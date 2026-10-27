@@ -1,7 +1,9 @@
+import type { BlokDeclarations } from "@/core/blok/renderer/declarations";
 import * as React from "react";
 import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
 import { normalizeBlokComponentTree } from "@/core/blok/renderer/runtime";
 import { cn } from "@/core/util/utils";
+import { logoDataModel } from "./demo";
 import { inlineDrawing, loadLogo, saveLogo, serializeDrawing } from "./logoCache";
 
 /** How long a first drawing must stay unchanged before it is kept. */
@@ -10,8 +12,12 @@ const SETTLE_MS = 150;
 /** Logos never act: whatever a logo blok binds to an agent is dropped. */
 const REFUSE_EVERY_ACTION = () => true;
 
-/** What a logo is drawn from: its tree (the wire spelling, a list of roots) and the demo state it shows. */
-export type LogoTree = { componentTree?: unknown; demoState?: unknown; hash: string };
+/**
+ * What a logo is drawn from: its tree (the wire spelling, a list of roots) and
+ * the demo it shows (v2 `demo`: `{deps, args, task, queries}`, see `demo.ts`).
+ */
+/** What a kept drawing is made from: its tree, what it declares beside it (`demo` above all), and its hash. */
+export type LogoTree = BlokDeclarations & { componentTree?: unknown; hash: string };
 
 /**
  * Fetches the tree of the logo `cacheId` names; called only when no drawing is
@@ -21,9 +27,9 @@ export type LogoTree = { componentTree?: unknown; demoState?: unknown; hash: str
 export type UseLogoTree = (cacheId: string) => LogoTree | null | undefined;
 
 /**
- * A logo blok (context LOGO or ACTION_LOGO), drawn in a box.
+ * A logo blok (context LOGO: an agent's logo or an action's), drawn in a box.
  *
- * A logo shows its demo state, so it is the same picture every time: it is
+ * A logo shows its demo, so it is the same picture every time: it is
  * drawn once and kept (`logoCache.ts`). The first showing renders the blok and
  * keeps the `<svg>` it drew under `cacheId` and `hash`; every later one places
  * it inline, without fetching the tree. A module prefixes its `cacheId`s so two
@@ -125,6 +131,7 @@ const FirstDrawing = ({
 }) => {
   const tree = useTree(cacheId);
   const container = React.useRef<HTMLSpanElement>(null);
+  const initialState = React.useMemo(() => logoDataModel(tree?.demo), [tree?.demo]);
   const roots = React.useMemo(
     () => normalizeBlokComponentTree((tree?.componentTree as unknown[] | null) ?? null).roots,
     [tree?.componentTree],
@@ -160,7 +167,7 @@ const FirstDrawing = ({
         <BlokRenderer
           surfaceId={`logo-${cacheId}`}
           uiComponents={roots}
-          initialState={tree.demoState ?? {}}
+          initialState={initialState}
           chrome="none"
           refuseAction={REFUSE_EVERY_ACTION}
         />

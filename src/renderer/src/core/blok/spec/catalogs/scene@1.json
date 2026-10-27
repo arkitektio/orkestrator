@@ -1,0 +1,806 @@
+{
+ "name": "scene",
+ "version": 1,
+ "description": "3D components: the Scene and Overlay roots, models, verb modifiers on a model's nodes, the HTML bridge (Popout) and run anchors.",
+ "components": [
+  {
+   "name": "Anchor",
+   "description": "Anchors its children at the agent the run got for a dependency, where it stands in the hosting space; Glow, Popout and OnClick inside it bind to that device's model as its scene blok loaded it. A key bound to several agents anchors at each; an agent the space does not place shows in a side tray. Was At.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "Overlay"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "dep",
+     "kind": "STRING",
+     "required": true,
+     "description": "The dependency key of the action whose agent this anchors at (was `dependency`)."
+    }
+   ]
+  },
+  {
+   "name": "Animate",
+   "description": "Scrubs a named animation clip of the model to a position, for mechanisms a single move or turn cannot describe. Never loops on its own.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animateTo",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "The position to play to, in the unit of whichever of progress or time is used."
+    },
+    {
+     "key": "clip",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of an animation clip in the enclosing model."
+    },
+    {
+     "key": "duration",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How long playing to animateTo takes, in seconds."
+    },
+    {
+     "key": "progress",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Where in the clip to show, from 0 (start) to 1 (end). Use this or time."
+    },
+    {
+     "key": "time",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Where in the clip to show, in seconds. Use this or progress."
+    }
+   ]
+  },
+  {
+   "name": "Attach",
+   "description": "While `when` holds, carries a node with another node, keeping its place in the world at the moment of attaching. For picked-up objects.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of the node in the enclosing model that this binds."
+    },
+    {
+     "key": "on",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether it is attached. When false the node returns to where it was authored."
+    },
+    {
+     "key": "to",
+     "kind": "STRING",
+     "required": true,
+     "description": "What to attach it to: a node of this model, or \"<model id>:<node>\" for a node of another model in the scene."
+    }
+   ]
+  },
+  {
+   "name": "Beam",
+   "description": "Draws a beam from one anchor to another, or for a length along an anchor's Z axis, following both as they move.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "color",
+     "kind": "STRING",
+     "required": false,
+     "description": "The colour of the beam: a colour role of the theme (`info`, `chart-2`, `destructive`). Takes precedence over wavelength."
+    },
+    {
+     "key": "end",
+     "kind": "STRING",
+     "required": false,
+     "description": "The node the beam ends at, in this model or as \"<model id>:<node>\". Use this or length."
+    },
+    {
+     "key": "length",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How far the beam reaches along the start node's own Z axis, in meters. Use this or end."
+    },
+    {
+     "key": "on",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether the beam is drawn. Defaults to true."
+    },
+    {
+     "key": "start",
+     "kind": "STRING",
+     "required": true,
+     "description": "The node the beam leaves from."
+    },
+    {
+     "key": "wavelength",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "The wavelength in nanometers, shown as its color."
+    },
+    {
+     "key": "width",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "The diameter of the beam in meters. Defaults to 2 mm."
+    }
+   ]
+  },
+  {
+   "name": "Glow",
+   "description": "Switches the emissive output of a node's materials, or the intensity of a punctual light attached to it.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Anchor",
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "color",
+     "kind": "STRING",
+     "required": false,
+     "description": "The colour of the glow: a colour role of the theme (`brand`, `success`, `chart-1`). Defaults to the material's own emissive colour, or white."
+    },
+    {
+     "key": "intensity",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How strongly. Defaults to 1 for materials, and to the authored intensity for a light."
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": false,
+     "description": "The name of the node in the enclosing model that this binds. Required under a Model or Robot; under an Anchor the anchored agent's model is meant."
+    },
+    {
+     "key": "on",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether the node glows."
+    }
+   ]
+  },
+  {
+   "name": "Model",
+   "description": "Places one GLB model in the scene. Its children bind the model's named nodes to state. A model that is missing or refused renders a placeholder that says why.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "Scene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "origin",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the model sits in the scene, as \"x y z\" in meters."
+    },
+    {
+     "key": "rotation",
+     "kind": "STRING",
+     "required": false,
+     "description": "How the model is turned, as \"x y z\" Euler angles in radians."
+    },
+    {
+     "key": "scale",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Uniform scale. Defaults to 1; a model is authored in meters."
+    },
+    {
+     "key": "src",
+     "kind": "ASSET",
+     "required": true,
+     "description": "The 3D model to show: an asset its app registered, as in `{self.assets.scope}`."
+    }
+   ]
+  },
+  {
+   "name": "Move",
+   "description": "Translates a node along an axis by value x scale + offset meters from its authored pose.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animateTo",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where the part is going. With it, the view moves there at speed (or over duration) and value corrects it."
+    },
+    {
+     "key": "axis",
+     "kind": "STRING",
+     "required": true,
+     "description": "The axis in the node's own frame: \"x\", \"y\", \"z\" or a vector as \"x y z\"."
+    },
+    {
+     "key": "duration",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How long a move to animateTo takes, in seconds. Ignored when speed is given."
+    },
+    {
+     "key": "gain",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Exaggerates the motion on screen only, for travel too small to see. Defaults to 1."
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of the node in the enclosing model that this binds."
+    },
+    {
+     "key": "offset",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Added after scale, in meters. Defaults to 0."
+    },
+    {
+     "key": "scale",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Multiplies the value before it is applied. Defaults to 1."
+    },
+    {
+     "key": "smooth",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether to ease toward each new value over 300 ms. Defaults to true."
+    },
+    {
+     "key": "speed",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How fast it moves to animateTo, in m/s."
+    },
+    {
+     "key": "value",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where the part is, in meters from the pose the model was authored in. A quantity ({magnitude, unit}) is converted."
+    }
+   ]
+  },
+  {
+   "name": "OnClick",
+   "description": "Makes a node and everything beneath it clickable, with a highlight on hover. A click runs an action, opens a blok, or both; a second click closes it, and opening one card closes the others that are not pinned.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Anchor",
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "description",
+     "kind": "STRING",
+     "required": false,
+     "description": "A line under the heading of the card."
+    },
+    {
+     "key": "mode",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the opened blok shows: \"popout\" as a card on the clicked spot (the viewer can drag it aside), \"panel\" beside the scene. Defaults to popout.",
+     "values": [
+      "popout",
+      "panel"
+     ]
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": false,
+     "description": "The name of the node in the enclosing model. Required under a Model or Robot; under an Anchor the anchored agent's model is meant."
+    },
+    {
+     "key": "onClick",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Called when the node is clicked (not when a drag of the view ends on it). Arguments may read event.node and event.point ([x, y, z] in meters, where it was hit).",
+     "event": [
+      {
+       "key": "node",
+       "kind": "STRING",
+       "description": "The node that was clicked."
+      },
+      {
+       "key": "point",
+       "kind": "LIST",
+       "description": "Where it was hit: [x, y, z] in meters."
+      }
+     ]
+    },
+    {
+     "key": "open",
+     "kind": "STRING",
+     "required": false,
+     "description": "The name of an html blok to show when the node is clicked."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "The heading of the card; it shows the node name when unset."
+    }
+   ]
+  },
+  {
+   "name": "Overlay",
+   "description": "Root of an action's overlay: drawn into the space that hosts a run of the action, in its world coordinates, over the agents placed there. It owns no canvas. Place Anchor and Route inside.",
+   "context": "HTML",
+   "children_context": "SCENE",
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [
+    "Overlay",
+    "Scene"
+   ],
+   "text_prop": null,
+   "props": []
+  },
+  {
+   "name": "Popout",
+   "description": "An HTML card anchored to a node that follows it as it moves; the viewer can drag it aside, and a line keeps pointing at the node. Its children are ordinary html components.",
+   "context": "SCENE",
+   "children_context": "HTML",
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "Anchor",
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "description",
+     "kind": "STRING",
+     "required": false,
+     "description": "A line under the heading of the card."
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": false,
+     "description": "The name of the node in the enclosing model. Required under a Model or Robot; under an Anchor the anchored agent's model is meant."
+    },
+    {
+     "key": "open",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether the card shows. When bound it decides alone and trigger is ignored."
+    },
+    {
+     "key": "title",
+     "kind": "STRING",
+     "required": false,
+     "description": "The heading of the card; it shows the node name when unset."
+    },
+    {
+     "key": "trigger",
+     "kind": "STRING",
+     "required": false,
+     "description": "What shows the card: a click on the node, the pointer over it, or always. Defaults to click.",
+     "values": [
+      "click",
+      "hover",
+      "always"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Robot",
+   "description": "A Model with a joint table (extras.arkitekt.joints): applies a joint state map to it, including mimic joints, and clamps to limits.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "Scene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animateTo",
+     "kind": "DICT",
+     "required": false,
+     "description": "Where each joint is going. Joints named here move at speed, or over duration."
+    },
+    {
+     "key": "duration",
+     "kind": "ANY",
+     "required": false,
+     "description": "How long a move to animateTo takes, in seconds: one number or a map by joint name. Ignored where speed is given."
+    },
+    {
+     "key": "joints",
+     "kind": "DICT",
+     "required": false,
+     "description": "Where each joint is: a map of joint name to radians (revolute, continuous) or meters (prismatic). A joint left out keeps its last value."
+    },
+    {
+     "key": "onJointChange",
+     "kind": "CALLBACK",
+     "required": false,
+     "description": "Called when the viewer sets a joint by hand. Arguments may read event.name and event.value.",
+     "event": [
+      {
+       "key": "name",
+       "kind": "STRING",
+       "description": "The joint the viewer set."
+      },
+      {
+       "key": "value",
+       "kind": "FLOAT",
+       "description": "Its new value."
+      }
+     ]
+    },
+    {
+     "key": "origin",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the model sits in the scene, as \"x y z\" in meters."
+    },
+    {
+     "key": "rotation",
+     "kind": "STRING",
+     "required": false,
+     "description": "How the model is turned, as \"x y z\" Euler angles in radians."
+    },
+    {
+     "key": "scale",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Uniform scale. Defaults to 1; a model is authored in meters."
+    },
+    {
+     "key": "speed",
+     "kind": "ANY",
+     "required": false,
+     "description": "How fast joints move to animateTo, in rad/s or m/s: one number for all joints or a map by joint name."
+    },
+    {
+     "key": "src",
+     "kind": "ASSET",
+     "required": true,
+     "description": "The 3D model to show: an asset its app registered, as in `{self.assets.scope}`."
+    }
+   ]
+  },
+  {
+   "name": "Rotate",
+   "description": "Rotates a node about an axis by value x scale + offset radians from its authored pose.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "animateTo",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where the part is going. With it, the view moves there at speed (or over duration) and value corrects it."
+    },
+    {
+     "key": "axis",
+     "kind": "STRING",
+     "required": true,
+     "description": "The axis in the node's own frame: \"x\", \"y\", \"z\" or a vector as \"x y z\"."
+    },
+    {
+     "key": "duration",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How long a move to animateTo takes, in seconds. Ignored when speed is given."
+    },
+    {
+     "key": "gain",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Exaggerates the motion on screen only, for travel too small to see. Defaults to 1."
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of the node in the enclosing model that this binds."
+    },
+    {
+     "key": "offset",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Added after scale, in radians. Defaults to 0."
+    },
+    {
+     "key": "scale",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "Multiplies the value before it is applied. Defaults to 1."
+    },
+    {
+     "key": "smooth",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether to ease toward each new value over 300 ms. Defaults to true."
+    },
+    {
+     "key": "speed",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How fast it moves to animateTo, in rad/s."
+    },
+    {
+     "key": "value",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where the part is, in radians from the pose the model was authored in. A quantity ({magnitude, unit}) is converted."
+    }
+   ]
+  },
+  {
+   "name": "Route",
+   "description": "Draws a line through the agents the run got for these dependencies, where they stand in the hosting space. A dependency whose agent is not placed there is skipped.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Overlay"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "color",
+     "kind": "STRING",
+     "required": false,
+     "description": "The colour of the line: a colour role of the theme, usually a chart role (`chart-2`). Defaults to `chart-1`."
+    },
+    {
+     "key": "progress",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "How far along the run is, from 0 to 100 (`task.progress`): the way behind is drawn solid, a marker stands at the head."
+    },
+    {
+     "key": "through",
+     "kind": "LIST",
+     "required": true,
+     "description": "The dependency keys the line runs through, in order (`through={[\"robot\", \"frame\"]}`)."
+    }
+   ]
+  },
+  {
+   "name": "Scene",
+   "description": "Root of a 3D view: one renderer, camera and light rig. Y is up and one unit is one meter. Place Model and Robot inside.",
+   "context": "HTML",
+   "children_context": "SCENE",
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [
+    "Scene"
+   ],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "camera",
+     "kind": "STRING",
+     "required": false,
+     "description": "Where the camera starts looking from; it frames the models whatever their size. Defaults to iso.",
+     "values": [
+      "iso",
+      "front",
+      "side",
+      "top"
+     ]
+    },
+    {
+     "key": "grid",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether the ground grid starts shown; the viewer can switch it. Defaults to true."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS height of the view, e.g. \"24rem\". Omit to fit the element the scene is in (24rem where that has no height of its own)."
+    },
+    {
+     "key": "persist",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Keep the camera on this device between openings, by the Scene's explicit id."
+    }
+   ]
+  },
+  {
+   "name": "Tint",
+   "description": "Overrides the base color of a node. Its materials are copied first, so nodes sharing them are unaffected.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "color",
+     "kind": "STRING",
+     "required": false,
+     "description": "The base colour to give the node: a colour role of the theme (`brand`, `muted`, `chart-3`). Without it the authored colour shows."
+    },
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of the node in the enclosing model that this binds."
+    }
+   ]
+  },
+  {
+   "name": "Transform",
+   "description": "Places its children by an affine matrix. A gizmo moves them; with `persist` (and an explicit id) the pose stays on this device between openings, bound to a local (`bind`) a call can read it.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [
+    "Overlay",
+    "Scene"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "bind",
+     "kind": "ANY",
+     "required": false,
+     "description": "The local (or a path below one) the gizmo writes the matrix to: bind={pose}."
+    },
+    {
+     "key": "gizmo",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether a gizmo moves the children. Defaults to true; never shown while viewing the past."
+    },
+    {
+     "key": "matrix",
+     "kind": "ANY",
+     "required": false,
+     "description": "Where the children stand: a 4x4 affine matrix as four rows, in meters with Y up (as a space placement keeps it). The identity when absent or malformed."
+    },
+    {
+     "key": "mode",
+     "kind": "STRING",
+     "required": false,
+     "description": "What the gizmo does: \"translate\" (the default), \"rotate\" or \"scale\".",
+     "values": [
+      "translate",
+      "rotate",
+      "scale"
+     ]
+    },
+    {
+     "key": "persist",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Keep the pose on this device between openings, by the Transform's explicit id."
+    },
+    {
+     "key": "size",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "The size of the gizmo on screen. Defaults to 0.7."
+    }
+   ]
+  },
+  {
+   "name": "Visible",
+   "description": "Shows or hides a node of its parent model. Hiding a node hides everything beneath it. Was Show.",
+   "context": "SCENE",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": false,
+   "downstream_of": [
+    "Model",
+    "Robot"
+   ],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "node",
+     "kind": "STRING",
+     "required": true,
+     "description": "The name of the node in the enclosing model that this binds."
+    },
+    {
+     "key": "on",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Whether the node is visible."
+    }
+   ]
+  }
+ ]
+}

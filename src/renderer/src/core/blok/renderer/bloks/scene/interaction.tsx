@@ -21,7 +21,7 @@ import {useBlokTray} from '../run/host';
 const nodeProp = describedString('The name of the node in the enclosing model; the whole model when unset.');
 
 /** Under a model, or under an action overlay's `At` (the anchored device's model). */
-const IN_MODEL_OR_AT = {context: 'scene', downstreamOf: ['Model', 'Robot', 'At']} as const;
+const IN_MODEL_OR_AT = {context: 'scene', downstreamOf: ['Model', 'Robot', 'Anchor']} as const;
 const titleProp = describedString('The heading of the card; it shows the node name when unset.');
 const descriptionProp = describedString('A line under the heading of the card.');
 

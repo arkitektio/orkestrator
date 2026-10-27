@@ -39,7 +39,6 @@ export const standardBlokFunctions: BlokFunctionDefinition[] = [
 export {baseFunctions} from './base';
 export {coerceFunctions} from './coerce';
 export {BLOK_ANSWER_FUNCTION, effectFunctions} from './effects';
-export {PERSIST_RESET_ALL_FUNCTION, PERSIST_RESET_FUNCTION, persistFunctions} from './persist';
 export {formatFunctions} from './format';
 export {listFunctions} from './lists';
 export {logicVariadicFunctions} from './logic';

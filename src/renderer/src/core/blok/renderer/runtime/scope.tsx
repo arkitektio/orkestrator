@@ -2,6 +2,9 @@ import * as React from 'react';
 import type {BlokScope} from './types';
 import {getValueAtPath, splitPathSegments} from './utils';
 
+/** The agent the blok belongs to; `self.x` reads `deps.self.x`. */
+export const SELF_ROOT = 'self';
+
 const EMPTY_SCOPE: BlokScope = Object.freeze({
   aliases: Object.freeze({}),
   values: Object.freeze({}),
@@ -62,7 +65,9 @@ export const resolveScopedPath = (path: string, scope: BlokScope): string => {
 
   const aliasedBasePath = scope.aliases[head];
   if (aliasedBasePath) {
-    const normalizedBasePath = splitPathSegments(aliasedBasePath).join('/');
+    const aliasSegments = splitPathSegments(aliasedBasePath);
+    if (aliasSegments[0] === SELF_ROOT) aliasSegments.splice(0, 1, 'deps', SELF_ROOT);
+    const normalizedBasePath = aliasSegments.join('/');
     return tail.length > 0 ? `${normalizedBasePath}/${tail.join('/')}` : normalizedBasePath;
   }
 
@@ -70,6 +75,11 @@ export const resolveScopedPath = (path: string, scope: BlokScope): string => {
     // Addressed by a scope value, which has no path. Callers check
     // `isWritableScopedPath` before treating the result as a write target.
     return segments.join('/');
+  }
+
+  // `self` is shorthand for `deps.self`: the agent the blok belongs to.
+  if (head === SELF_ROOT) {
+    return ['deps', SELF_ROOT, ...tail].join('/');
   }
 
   if (scope.basePath) {

@@ -1,288 +1,530 @@
-import { BsxSyntaxError, type BsxRange } from "./source";
+import {BsxSyntaxError} from './source';
 
 /**
- * The expressions inside an `@…` attribute: the subset of Python the
- * reference parser (arkitekt-spec, through `ast.parse(mode="eval")`) turns
- * into a blok — names and attribute chains, calls with positional and keyword
- * arguments, string / number / boolean literals, signed numbers, lists,
- * tuples and dicts. Anything else Python would parse is refused here
- * already, with the same outcome: the attribute does not make a blok.
+ * The blok expression language, version 2: a small JavaScript subset, parsed
+ * by hand. The port of arkitekt-spec's `arkitekt_spec/blok/expr.py`; the Rust
+ * (takt) and Python parsers implement the same grammar and all three are held
+ * to one corpus (`core/blok/spec/bsx_v2.json`):
+ *
+ *     callback   := expression ('into' name)?
+ *     expression := ternary
+ *     ternary    := coalesce ('?' expression ':' expression)?
+ *     coalesce   := or ('??' or)*
+ *     or         := and ('||' and)*
+ *     and        := equality ('&&' equality)*
+ *     equality   := relation (('==' | '!=') relation)?
+ *     relation   := unary (('>' | '>=' | '<' | '<=') unary)?
+ *     unary      := '!' unary | '-' number | primary
+ *     primary    := literal | path | call | list | object | '(' expression ')'
+ *     path       := name ('.' name)*
+ *     call       := path '(' (argument (',' argument)* ','?)? ')'
+ *     argument   := name ':' expression | expression
+ *     list       := '[' (expression (',' expression)* ','?)? ']'
+ *     object     := '{' ((name | string) ':' expression (',' ...)* ','?)? '}'
+ *     literal    := number | string | 'true' | 'false' | 'null'
+ *
+ * Offsets are UTF-16 indices into the whole source (what an editor marks);
+ * a refusal's line and column are counted in code points, as the corpus does.
  */
 
+export type Scalar = null | boolean | number | string;
+
+export type Literal = {type: 'literal'; value: Scalar; offset: number};
+export type ListExpr = {type: 'list'; items: Expr[]; offset: number};
+export type ObjectExpr = {type: 'object'; entries: Array<[string, Expr]>; offset: number};
+export type PathExpr = {type: 'path'; segments: string[]; offset: number};
+export type Argument = {name: string | null; value: Expr; offset: number};
+export type CallExpr = {type: 'call'; callee: string[]; arguments: Argument[]; offset: number};
+export type NotExpr = {type: 'not'; operand: Expr; offset: number};
+export type CompareExpr = {type: 'compare'; operator: string; left: Expr; right: Expr; offset: number};
+/** `a && b && c`, `a || b` or `a ?? b`: one operator over every operand (a parenthesized group stays one operand). */
+export type LogicalOperator = '&&' | '||' | '??';
+export type LogicalExpr = {type: 'logical'; operator: LogicalOperator; operands: Expr[]; offset: number};
+export type TernaryExpr = {type: 'ternary'; cond: Expr; then: Expr; otherwise: Expr; offset: number};
+export type IntoExpr = {type: 'into'; call: CallExpr; name: string; offset: number};
+
 export type Expr =
-  | { type: "name"; id: string; range: BsxRange }
-  | { type: "attribute"; value: Expr; attr: string; range: BsxRange }
-  | { type: "call"; func: Expr; args: Expr[]; keywords: { arg: string; value: Expr; range: BsxRange }[]; range: BsxRange }
-  | { type: "constant"; value: string | number | boolean | null; range: BsxRange }
-  | { type: "unary"; op: "-" | "+"; operand: Expr; range: BsxRange }
-  | { type: "list" | "tuple"; elements: Expr[]; range: BsxRange }
-  | { type: "dict"; keys: Expr[]; values: Expr[]; range: BsxRange };
+  | Literal
+  | ListExpr
+  | ObjectExpr
+  | PathExpr
+  | CallExpr
+  | NotExpr
+  | CompareExpr
+  | LogicalExpr
+  | TernaryExpr
+  | IntoExpr;
 
-/** Python's hard keywords: none of them is a name `ast` would accept. */
-export const PYTHON_KEYWORDS = new Set([
-  "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
-  "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in",
-  "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
-]);
+export const dotted = (path: PathExpr): string => path.segments.join('.');
+export const calleeName = (call: CallExpr): string => call.callee.join('.');
 
-const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+/* -------------------------------------------------------------------------- */
+/* Positions                                                                  */
+/* -------------------------------------------------------------------------- */
 
-/** `str.isidentifier() and not keyword.iskeyword()`, for ASCII names. */
-export const isPythonName = (name: string): boolean => IDENTIFIER.test(name) && !PYTHON_KEYWORDS.has(name);
+/** Turns a UTF-16 offset into the whole source into a 1-based line and code-point column. */
+export class Locator {
+  private readonly starts: number[] = [0];
 
-type Token =
-  | { kind: "name"; value: string; range: BsxRange }
-  | { kind: "number"; value: number; range: BsxRange }
-  | { kind: "string"; value: string; range: BsxRange }
-  | { kind: "op"; value: string; range: BsxRange }
-  | { kind: "end"; range: BsxRange };
-
-const OPERATORS = ["**", "==", "!=", "<=", ">=", "//", "(", ")", "[", "]", "{", "}", ",", ":", ".", "=", "+", "-", "*", "/", "%", "<", ">", "|", "&", "^", "~", "@"];
-
-const ESCAPES: Record<string, string> = { "\\": "\\", "'": "'", '"': '"', n: "\n", t: "\t", r: "\r", "0": "\0", a: "\x07", b: "\b", f: "\f", v: "\v", "\n": "" };
-
-const tokenize = (text: string, base: number): Token[] => {
-  const tokens: Token[] = [];
-  let index = 0;
-  const fail = (message: string, start = index, end = start + 1): never => {
-    throw new BsxSyntaxError(message, { start: base + start, end: base + end });
-  };
-
-  while (index < text.length) {
-    const char = text[index];
-    if (/\s/.test(char)) {
-      index += 1;
-      continue;
+  constructor(readonly source: string) {
+    for (let index = 0; index < source.length; index += 1) {
+      if (source.charCodeAt(index) === 10) this.starts.push(index + 1);
     }
-    const start = index;
-    if (/[A-Za-z_]/.test(char)) {
-      while (index < text.length && /[A-Za-z0-9_]/.test(text[index])) index += 1;
-      tokens.push({ kind: "name", value: text.slice(start, index), range: { start: base + start, end: base + index } });
-      continue;
+  }
+
+  locate(offset: number): {line: number; column: number} {
+    let low = 0;
+    let high = this.starts.length - 1;
+    while (low < high) {
+      const middle = (low + high + 1) >> 1;
+      if (this.starts[middle] <= offset) low = middle;
+      else high = middle - 1;
     }
-    if (/[0-9]/.test(char) || (char === "." && /[0-9]/.test(text[index + 1] ?? ""))) {
-      let raw: string;
-      if (/^0[xX]/.test(text.slice(index, index + 2))) {
-        index += 2;
-        while (index < text.length && /[0-9a-fA-F_]/.test(text[index])) index += 1;
-        raw = text.slice(start, index).replace(/_/g, "");
-        tokens.push({ kind: "number", value: Number.parseInt(raw.slice(2), 16), range: { start: base + start, end: base + index } });
+    const start = this.starts[low];
+    // Code points, not UTF-16 units: the corpus counts the way Python and Rust index.
+    const column = [...this.source.slice(start, Math.max(start, offset))].length + 1;
+    return {line: low + 1, column};
+  }
+}
+
+/** A refusal: a vocabulary code, where it is, and the fields its message is filled with. */
+export const blokError = (
+  locator: Locator,
+  code: string,
+  offset: number,
+  fields: Readonly<Record<string, unknown>> = {},
+  end?: number,
+): BsxSyntaxError => {
+  const {line, column} = locator.locate(offset);
+  return new BsxSyntaxError({code, fields, line, column, range: {start: offset, end: Math.max(end ?? offset + 1, offset)}});
+};
+
+/* -------------------------------------------------------------------------- */
+/* Tokens                                                                     */
+/* -------------------------------------------------------------------------- */
+
+type Token = {kind: 'name' | 'number' | 'string' | 'op' | 'end'; value: string; offset: number; literal: Scalar};
+
+const OPERATORS = [
+  '===', '!==', '=>', '==', '!=', '>=', '<=', '&&', '||', '??', '?.', '**',
+  '(', ')', '[', ']', '{', '}', ',', ':', '.', '?', '!', '>', '<', '=', ';',
+  '+', '-', '*', '/', '%', '&', '|', '^', '~', '`',
+];
+const ESCAPES: Readonly<Record<string, string>> = {
+  '\\': '\\', '"': '"', "'": "'", n: '\n', t: '\t', r: '\r', '/': '/', b: '\b', f: '\f',
+};
+const ARITHMETIC: Readonly<Record<string, string>> = {'+': 'add', '-': 'sub', '*': 'mul', '/': 'div', '%': 'mod', '**': 'pow'};
+const NOT_THE_LANGUAGE = new Set(['undefined', 'function', 'new', 'await', 'async', 'typeof', 'this', 'let', 'const', 'var']);
+
+const isNameStart = (char: string): boolean => /^[A-Za-z_]$/.test(char);
+const isNamePart = (char: string): boolean => /^[A-Za-z0-9_]$/.test(char);
+const isDigit = (char: string | undefined): boolean => char !== undefined && char >= '0' && char <= '9';
+
+class Lexer {
+  constructor(
+    private readonly text: string,
+    private readonly base: number,
+    readonly locator: Locator,
+  ) {}
+
+  fail(code: string, offset: number, fields: Readonly<Record<string, unknown>> = {}): BsxSyntaxError {
+    return blokError(this.locator, code, this.base + offset, fields);
+  }
+
+  tokens(): Token[] {
+    const {text} = this;
+    const out: Token[] = [];
+    let index = 0;
+    while (index < text.length) {
+      const char = text[index];
+      if (char === ' ' || char === '\t' || char === '\r' || char === '\n') {
+        index += 1;
         continue;
       }
-      while (index < text.length && /[0-9_]/.test(text[index])) index += 1;
-      if (text[index] === ".") {
-        index += 1;
-        while (index < text.length && /[0-9_]/.test(text[index])) index += 1;
+      if (isNameStart(char)) {
+        let end = index + 1;
+        while (end < text.length && isNamePart(text[end])) end += 1;
+        out.push({kind: 'name', value: text.slice(index, end), offset: this.base + index, literal: null});
+        index = end;
+        continue;
       }
-      if (/[eE]/.test(text[index] ?? "")) {
-        index += 1;
-        if (/[+-]/.test(text[index] ?? "")) index += 1;
-        if (!/[0-9]/.test(text[index] ?? "")) fail("Malformed number exponent", start, index);
-        while (index < text.length && /[0-9_]/.test(text[index])) index += 1;
+      if (isDigit(char)) {
+        const [end, value] = this.number(index);
+        out.push({kind: 'number', value: text.slice(index, end), offset: this.base + index, literal: value});
+        index = end;
+        continue;
       }
-      if (/[A-Za-z_]/.test(text[index] ?? "")) fail("Invalid number literal", start, index + 1);
-      raw = text.slice(start, index).replace(/_/g, "");
-      tokens.push({ kind: "number", value: Number(raw), range: { start: base + start, end: base + index } });
-      continue;
+      if (char === '"' || char === "'") {
+        const [end, value] = this.string(index);
+        out.push({kind: 'string', value: text.slice(index, end), offset: this.base + index, literal: value});
+        index = end;
+        continue;
+      }
+      const operator = OPERATORS.find(op => text.startsWith(op, index));
+      if (operator === undefined) throw this.fail('expr.syntax', index, {detail: `unexpected '${char}'`});
+      if (operator === '`') {
+        throw this.fail('expr.syntax', index, {detail: 'template literals are not supported; use text children or str.template'});
+      }
+      out.push({kind: 'op', value: operator, offset: this.base + index, literal: null});
+      index += operator.length;
     }
-    if (char === "'" || char === '"') {
+    out.push({kind: 'end', value: '', offset: this.base + text.length, literal: null});
+    return out;
+  }
+
+  private number(start: number): [number, number] {
+    const {text} = this;
+    let index = start;
+    while (index < text.length && isDigit(text[index])) index += 1;
+    if (text[start] === '0' && index - start > 1) throw this.fail('expr.syntax', start, {detail: 'a number has no leading zeros'});
+    if (text[index] === '.' && isDigit(text[index + 1])) {
       index += 1;
-      let value = "";
-      for (;;) {
-        if (index >= text.length) fail("Unterminated string literal", start, text.length);
-        const current = text[index];
-        if (current === char) {
-          index += 1;
-          break;
-        }
-        if (current === "\\") {
-          const next = text[index + 1];
-          if (next === undefined) fail("Unterminated string literal", start, text.length);
-          if (next === "x" || next === "u") {
-            const width = next === "x" ? 2 : 4;
-            const hex = text.slice(index + 2, index + 2 + width);
-            if (!new RegExp(`^[0-9a-fA-F]{${width}}$`).test(hex)) fail("Truncated escape sequence", index, index + 2 + width);
-            value += String.fromCharCode(Number.parseInt(hex, 16));
-            index += 2 + width;
-            continue;
-          }
-          if (next in ESCAPES) {
-            value += ESCAPES[next];
-          } else {
-            // Python keeps an unknown escape as written.
-            value += `\\${next}`;
-          }
-          index += 2;
+      while (index < text.length && isDigit(text[index])) index += 1;
+    }
+    if (text[index] === 'e' || text[index] === 'E') {
+      let exponent = index + 1;
+      if (text[exponent] === '+' || text[exponent] === '-') exponent += 1;
+      if (isDigit(text[exponent])) {
+        index = exponent;
+        while (index < text.length && isDigit(text[index])) index += 1;
+      }
+    }
+    if (index < text.length && isNamePart(text[index])) {
+      throw this.fail('expr.syntax', start, {detail: `'${text.slice(start, index + 1)}' is not a number`});
+    }
+    return [index, Number(text.slice(start, index))];
+  }
+
+  private string(start: number): [number, string] {
+    const {text} = this;
+    const quote = text[start];
+    let index = start + 1;
+    let out = '';
+    for (;;) {
+      if (index >= text.length) throw this.fail('expr.syntax', start, {detail: 'a string is never closed'});
+      const char = text[index];
+      if (char === quote) return [index + 1, out];
+      if (char === '\n') throw this.fail('expr.syntax', start, {detail: 'a string is never closed on its line'});
+      if (char === '\\') {
+        const escape = text[index + 1] ?? '';
+        if (escape === 'u') {
+          const digits = text.slice(index + 2, index + 6);
+          if (!/^[0-9a-fA-F]{4}$/.test(digits)) throw this.fail('expr.syntax', index, {detail: '\\u takes four hex digits'});
+          out += String.fromCharCode(parseInt(digits, 16));
+          index += 6;
           continue;
         }
-        value += current;
-        index += 1;
+        const replacement = ESCAPES[escape];
+        if (replacement === undefined) throw this.fail('expr.syntax', index, {detail: `unknown escape \\${escape}`});
+        out += replacement;
+        index += 2;
+        continue;
       }
-      tokens.push({ kind: "string", value, range: { start: base + start, end: base + index } });
-      continue;
+      out += char;
+      index += 1;
     }
-    const op = OPERATORS.find((candidate) => text.startsWith(candidate, index));
-    if (!op) fail(`Unexpected character '${char}'`);
-    index += op!.length;
-    tokens.push({ kind: "op", value: op!, range: { start: base + start, end: base + index } });
   }
-  tokens.push({ kind: "end", range: { start: base + text.length, end: base + text.length } });
-  return tokens;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Parser                                                                     */
+/* -------------------------------------------------------------------------- */
+
+class Parser {
+  private readonly lexer: Lexer;
+  private readonly tokens: Token[];
+  private index = 0;
+
+  constructor(text: string, base: number, locator: Locator) {
+    this.lexer = new Lexer(text, base, locator);
+    this.tokens = this.lexer.tokens();
+  }
+
+  get token(): Token {
+    return this.tokens[this.index];
+  }
+
+  peek(ahead = 1): Token {
+    return this.tokens[Math.min(this.index + ahead, this.tokens.length - 1)];
+  }
+
+  fail(code: string, offset?: number, fields: Readonly<Record<string, unknown>> = {}): BsxSyntaxError {
+    return blokError(this.lexer.locator, code, offset ?? this.token.offset, fields);
+  }
+
+  advance(): Token {
+    const token = this.token;
+    this.index += 1;
+    return token;
+  }
+
+  isOp(...values: string[]): boolean {
+    return this.token.kind === 'op' && values.includes(this.token.value);
+  }
+
+  expect(value: string): Token {
+    if (!this.isOp(value)) throw this.unexpected(`expected '${value}'`);
+    return this.advance();
+  }
+
+  unexpected(expected: string): BsxSyntaxError {
+    const token = this.token;
+    if (token.kind === 'end') return this.fail('expr.syntax', undefined, {detail: `${expected}, but the expression ends`});
+    if (token.kind === 'op') {
+      const refused = this.refused(token);
+      if (refused) return refused;
+    }
+    return this.fail('expr.syntax', undefined, {detail: `${expected}, not '${token.value}'`});
+  }
+
+  private refused(token: Token): BsxSyntaxError | null {
+    const value = token.value;
+    if (value in ARITHMETIC) return this.fail('expr.arithmetic', undefined, {operator: value, function: ARITHMETIC[value]});
+    if (value === '=>') return this.fail('expr.lambda');
+    if (value === '=') return this.fail('callback.assignment');
+    if (value === ';') return this.fail('callback.sequence');
+    if (value === '[') return this.fail('expr.subscript');
+    if (value === '===' || value === '!==') {
+      return this.fail('expr.syntax', undefined, {detail: `write ${value.slice(0, 2)}: equality is always deep`});
+    }
+    if (value === '?.') return this.fail('expr.syntax', undefined, {detail: '?. is not supported; missing paths read as null'});
+    return null;
+  }
+
+  isEmpty(): boolean {
+    return this.token.kind === 'end';
+  }
+
+  callback(): Expr {
+    if (this.token.kind === 'name' && this.token.value === 'await') throw this.fail('callback.await');
+    const expression = this.expression();
+    if (this.token.kind === 'name' && this.token.value === 'into') {
+      const into = this.advance();
+      if (expression.type !== 'call') throw this.fail('callback.into', into.offset);
+      const name = this.token;
+      if (name.kind !== 'name' || this.peek().kind !== 'end') throw this.fail('callback.into', into.offset);
+      this.advance();
+      return {type: 'into', call: expression, name: name.value, offset: into.offset};
+    }
+    this.finish();
+    return expression;
+  }
+
+  finish(): void {
+    if (this.token.kind !== 'end') throw this.unexpected('expected the end of the expression');
+  }
+
+  expression(): Expr {
+    return this.ternary();
+  }
+
+  private ternary(): Expr {
+    const cond = this.logical('??');
+    if (!this.isOp('?')) return cond;
+    const offset = this.advance().offset;
+    const then = this.expression();
+    this.expect(':');
+    const otherwise = this.expression();
+    return {type: 'ternary', cond, then, otherwise, offset};
+  }
+
+  private logical(operator: LogicalOperator): Expr {
+    const inner = (): Expr => (operator === '??' ? this.logical('||') : operator === '||' ? this.logical('&&') : this.equality());
+    const first = inner();
+    const operands = [first];
+    while (this.isOp(operator)) {
+      this.advance();
+      operands.push(inner());
+    }
+    if (operands.length === 1) return first;
+    return {type: 'logical', operator, operands, offset: first.offset};
+  }
+
+  private equality(): Expr {
+    const left = this.relation();
+    if (!this.isOp('==', '!=')) return left;
+    const operator = this.advance();
+    const right = this.relation();
+    if (this.isOp('==', '!=', '>', '>=', '<', '<=')) throw this.fail('expr.chained_comparison');
+    return {type: 'compare', operator: operator.value, left, right, offset: operator.offset};
+  }
+
+  private relation(): Expr {
+    const left = this.unary();
+    if (!this.isOp('>', '>=', '<', '<=')) return left;
+    const operator = this.advance();
+    const right = this.unary();
+    if (this.isOp('>', '>=', '<', '<=')) throw this.fail('expr.chained_comparison');
+    return {type: 'compare', operator: operator.value, left, right, offset: operator.offset};
+  }
+
+  private unary(): Expr {
+    if (this.isOp('!')) {
+      const offset = this.advance().offset;
+      return {type: 'not', operand: this.unary(), offset};
+    }
+    if (this.isOp('-')) {
+      const offset = this.advance().offset;
+      if (this.token.kind !== 'number') throw this.fail('expr.arithmetic', offset, {operator: '-', function: 'neg'});
+      const number = this.advance();
+      return {type: 'literal', value: -(number.literal as number), offset};
+    }
+    return this.postfix(this.primary());
+  }
+
+  private postfix(expression: Expr): Expr {
+    if (this.isOp('[')) throw this.fail('expr.subscript');
+    if (this.isOp('(') && expression.type !== 'call') throw this.fail('expr.syntax', undefined, {detail: 'only a path can be called'});
+    if (expression.type === 'call' && this.isOp('.')) {
+      throw this.fail('expr.syntax', undefined, {detail: "a call's result has no fields; read them from its record"});
+    }
+    return expression;
+  }
+
+  private primary(): Expr {
+    const token = this.token;
+    if (token.kind === 'number' || token.kind === 'string') {
+      this.advance();
+      return {type: 'literal', value: token.literal, offset: token.offset};
+    }
+    if (token.kind === 'name') {
+      if (token.value === 'true' || token.value === 'false') {
+        this.advance();
+        return {type: 'literal', value: token.value === 'true', offset: token.offset};
+      }
+      if (token.value === 'null') {
+        this.advance();
+        return {type: 'literal', value: null, offset: token.offset};
+      }
+      if (NOT_THE_LANGUAGE.has(token.value)) {
+        throw this.fail('expr.syntax', undefined, {detail: `'${token.value}' is not part of the blok language`});
+      }
+      return this.pathOrCall();
+    }
+    if (token.kind === 'op') {
+      if (token.value === '(') {
+        this.advance();
+        const inner = this.expression();
+        this.expect(')');
+        if (this.isOp('=>')) throw this.fail('expr.lambda');
+        return inner;
+      }
+      if (token.value === '[') return this.listLiteral();
+      if (token.value === '{') return this.objectLiteral();
+    }
+    throw this.unexpected('expected a value');
+  }
+
+  private pathOrCall(): Expr {
+    const first = this.advance();
+    const segments = [first.value];
+    while (this.isOp('.')) {
+      this.advance();
+      if (this.token.kind !== 'name') throw this.unexpected("expected a name after '.'");
+      segments.push(this.advance().value);
+    }
+    if (this.isOp('=>')) throw this.fail('expr.lambda');
+    if (!this.isOp('(')) return {type: 'path', segments, offset: first.offset};
+    this.advance();
+    const args: Argument[] = [];
+    while (!this.isOp(')')) {
+      args.push(this.argument());
+      if (!this.isOp(',')) break;
+      this.advance();
+    }
+    this.expect(')');
+    return {type: 'call', callee: segments, arguments: args, offset: first.offset};
+  }
+
+  private argument(): Argument {
+    const token = this.token;
+    const next = this.peek();
+    if (token.kind === 'name' && next.kind === 'op' && next.value === ':') {
+      this.advance();
+      this.advance();
+      return {name: token.value, value: this.expression(), offset: token.offset};
+    }
+    if (token.kind === 'name' && next.kind === 'op' && next.value === '=') {
+      throw this.fail('expr.syntax', next.offset, {detail: `name an argument with ':' (${token.value}: ...)`});
+    }
+    return {name: null, value: this.expression(), offset: token.offset};
+  }
+
+  private listLiteral(): ListExpr {
+    const offset = this.advance().offset;
+    const items: Expr[] = [];
+    while (!this.isOp(']')) {
+      items.push(this.expression());
+      if (!this.isOp(',')) break;
+      this.advance();
+    }
+    this.expect(']');
+    return {type: 'list', items, offset};
+  }
+
+  private objectLiteral(): ObjectExpr {
+    const offset = this.advance().offset;
+    const entries: Array<[string, Expr]> = [];
+    const seen = new Set<string>();
+    while (!this.isOp('}')) {
+      const key = this.token;
+      let name: string;
+      if (key.kind === 'name') name = key.value;
+      else if (key.kind === 'string' && typeof key.literal === 'string' && key.literal) name = key.literal;
+      else throw this.unexpected('expected a key (a name or a non-empty string)');
+      this.advance();
+      if (seen.has(name)) throw this.fail('expr.duplicate_key', key.offset, {key: name});
+      seen.add(name);
+      this.expect(':');
+      entries.push([name, this.expression()]);
+      if (!this.isOp(',')) break;
+      this.advance();
+    }
+    this.expect('}');
+    return {type: 'object', entries, offset};
+  }
+}
+
+const parser = (text: string, base: number, locator: Locator | undefined): Parser => {
+  const parsing = new Parser(text, base, locator ?? new Locator(text));
+  if (parsing.isEmpty()) throw parsing.fail('expr.syntax', undefined, {detail: 'the expression is empty'});
+  return parsing;
 };
 
-const span = (from: BsxRange, to: BsxRange): BsxRange => ({ start: from.start, end: to.end });
-
-/** Parses one expression; `base` is its offset in the document, for ranges. */
-export const parseExpression = (text: string, base = 0): Expr => {
-  const tokens = tokenize(text, base);
-  let at = 0;
-
-  const peek = () => tokens[at];
-  const next = () => tokens[at++];
-  const isOp = (value: string, token: Token = peek()) => token.kind === "op" && token.value === value;
-  const fail = (message: string, token: Token = peek()): never => {
-    throw new BsxSyntaxError(message, token.kind === "end" ? { start: token.range.start - 1, end: token.range.start } : token.range);
-  };
-  const expect = (value: string) => {
-    if (!isOp(value)) fail(`Expected '${value}'`);
-    return next();
-  };
-
-  const parseSequence = (close: string, first: Token): { elements: Expr[]; trailingComma: boolean; end: Token } => {
-    const elements: Expr[] = [];
-    let trailingComma = false;
-    while (!isOp(close)) {
-      if (peek().kind === "end") fail(`'${first.kind === "op" ? first.value : ""}' was never closed`, first);
-      elements.push(parseTest());
-      trailingComma = false;
-      if (isOp(",")) {
-        next();
-        trailingComma = true;
-      } else if (!isOp(close)) {
-        fail(`Expected ',' or '${close}'`);
-      }
-    }
-    return { elements, trailingComma, end: next() };
-  };
-
-  const parseAtom = (): Expr => {
-    const token = next();
-    if (token.kind === "name") {
-      if (token.value === "True" || token.value === "False") return { type: "constant", value: token.value === "True", range: token.range };
-      if (token.value === "None") return { type: "constant", value: null, range: token.range };
-      if (PYTHON_KEYWORDS.has(token.value)) fail(`'${token.value}' is a Python keyword, not a name`, token);
-      return { type: "name", id: token.value, range: token.range };
-    }
-    if (token.kind === "number") return { type: "constant", value: token.value, range: token.range };
-    if (token.kind === "string") return { type: "constant", value: token.value, range: token.range };
-    if (token.kind === "op" && token.value === "(") {
-      const { elements, trailingComma, end } = parseSequence(")", token);
-      if (elements.length === 1 && !trailingComma) return elements[0];
-      return { type: "tuple", elements, range: span(token.range, end.range) };
-    }
-    if (token.kind === "op" && token.value === "[") {
-      const { elements, end } = parseSequence("]", token);
-      return { type: "list", elements, range: span(token.range, end.range) };
-    }
-    if (token.kind === "op" && token.value === "{") {
-      const keys: Expr[] = [];
-      const values: Expr[] = [];
-      while (!isOp("}")) {
-        if (peek().kind === "end") fail("'{' was never closed", token);
-        if (isOp("**")) fail("Dictionaries cannot be unpacked with '**'");
-        keys.push(parseTest());
-        if (isOp(",") || isOp("}")) fail("Sets are not supported: a dict needs 'key: value'");
-        expect(":");
-        values.push(parseTest());
-        if (isOp(",")) next();
-        else if (!isOp("}")) fail("Expected ',' or '}'");
-      }
-      const end = next();
-      return { type: "dict", keys, values, range: span(token.range, end.range) };
-    }
-    if (token.kind === "end") return fail("Unexpected end of expression", token);
-    return fail(`Unexpected '${token.kind === "op" ? token.value : ""}'`, token);
-  };
-
-  const parseCallArguments = (open: Token) => {
-    const args: Expr[] = [];
-    const keywords: { arg: string; value: Expr; range: BsxRange }[] = [];
-    while (!isOp(")")) {
-      if (peek().kind === "end") fail("'(' was never closed", open);
-      if (isOp("**")) fail("Call arguments cannot be unpacked with '**'");
-      if (isOp("*")) fail("Call arguments cannot be unpacked with '*'");
-      const token = peek();
-      const after = tokens[at + 1];
-      if (token.kind === "name" && after && isOp("=", after)) {
-        if (!isPythonName(token.value)) fail(`'${token.value}' cannot name an argument`, token);
-        if (keywords.some((keyword) => keyword.arg === token.value)) fail(`Keyword argument repeated: ${token.value}`, token);
-        next();
-        next();
-        const value = parseTest();
-        keywords.push({ arg: token.value, value, range: span(token.range, value.range) });
-      } else {
-        if (keywords.length > 0) fail("Positional argument follows keyword argument", token);
-        args.push(parseTest());
-      }
-      if (isOp(",")) next();
-      else if (!isOp(")")) fail("Expected ',' or ')'");
-    }
-    return { args, keywords, end: next() };
-  };
-
-  const parsePostfix = (): Expr => {
-    let expr = parseAtom();
-    for (;;) {
-      if (isOp(".")) {
-        next();
-        const name = next();
-        if (name.kind !== "name") fail("Expected a name after '.'", name);
-        if (PYTHON_KEYWORDS.has((name as { value: string }).value)) fail(`'${(name as { value: string }).value}' is a Python keyword, not a name`, name);
-        expr = { type: "attribute", value: expr, attr: (name as { value: string }).value, range: span(expr.range, name.range) };
-      } else if (isOp("(")) {
-        const open = next();
-        const { args, keywords, end } = parseCallArguments(open);
-        expr = { type: "call", func: expr, args, keywords, range: span(expr.range, end.range) };
-      } else if (isOp("[")) {
-        fail("Subscripts are not supported: use a dotted path");
-      } else {
-        return expr;
-      }
-    }
-  };
-
-  const parseUnary = (): Expr => {
-    if (isOp("-") || isOp("+")) {
-      const op = next();
-      const operand = parseUnary();
-      return { type: "unary", op: (op as { value: "-" | "+" }).value, operand, range: span(op.range, operand.range) };
-    }
-    return parsePostfix();
-  };
-
-  const parseTest = (): Expr => {
-    const expr = parseUnary();
-    const token = peek();
-    if (token.kind === "op" && !["(", ")", "[", "]", "{", "}", ",", ":", "=", "."].includes(token.value)) {
-      fail(`Operator '${token.value}' is not supported in BSX`);
-    }
-    if (token.kind === "name" || token.kind === "number" || token.kind === "string") {
-      fail("Invalid syntax: two values in a row");
-    }
-    return expr;
-  };
-
-  const first = parseTest();
-  if (isOp(",")) {
-    const elements = [first];
-    while (isOp(",")) {
-      next();
-      if (peek().kind === "end") break;
-      elements.push(parseTest());
-    }
-    if (peek().kind !== "end") fail("Invalid syntax");
-    return { type: "tuple", elements, range: span(first.range, elements[elements.length - 1].range) };
-  }
-  if (peek().kind !== "end") fail("Invalid syntax");
-  return first;
+/** A value expression (no `into`). `base` is where `text` starts in the source `locator` reads. */
+export const parseExpression = (text: string, base = 0, locator?: Locator): Expr => {
+  const parsing = parser(text, base, locator);
+  const expression = parsing.expression();
+  parsing.finish();
+  return expression;
 };
+
+/** An attribute's expression: a value, or a callback (`<call> into <name>`). */
+export const parseAttribute = (text: string, base = 0, locator?: Locator): Expr => parser(text, base, locator).callback();
+
+/** The expressions directly inside `expression`. */
+export const childrenOf = (expression: Expr): Expr[] => {
+  switch (expression.type) {
+    case 'list':
+      return expression.items;
+    case 'object':
+      return expression.entries.map(([, value]) => value);
+    case 'not':
+      return [expression.operand];
+    case 'compare':
+      return [expression.left, expression.right];
+    case 'logical':
+      return expression.operands;
+    case 'ternary':
+      return [expression.cond, expression.then, expression.otherwise];
+    case 'call':
+      return expression.arguments.map(argument => argument.value);
+    case 'into':
+      return [expression.call];
+    default:
+      return [];
+  }
+};
+
+/** A name a local, let or into may take: `[A-Za-z_][A-Za-z0-9_]*`. */
+export const isLocalName = (value: string): boolean => /^[A-Za-z_][A-Za-z0-9_]*$/.test(value);

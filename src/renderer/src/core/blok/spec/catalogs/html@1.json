@@ -1,0 +1,308 @@
+{
+ "name": "html",
+ "version": 1,
+ "description": "Plain containers that translate directly to React Native: div (View), p and span (Text).",
+ "components": [
+  {
+   "name": "div",
+   "description": "A plain block container.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": null,
+   "props": [
+    {
+     "key": "background",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS background value."
+    },
+    {
+     "key": "borderColor",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS border colour."
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "color",
+     "kind": "ANY",
+     "required": false,
+     "description": "CSS text colour."
+    },
+    {
+     "key": "gap",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "grow",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-grow."
+    },
+    {
+     "key": "height",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "margin",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "maxHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "maxWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minHeight",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "minWidth",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    },
+    {
+     "key": "overflow",
+     "kind": "STRING",
+     "required": false,
+     "description": "Overflow behaviour.",
+     "values": [
+      "visible",
+      "hidden",
+      "auto",
+      "scroll"
+     ]
+    },
+    {
+     "key": "padding",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS spacing value, e.g. \"0.5rem\"."
+    },
+    {
+     "key": "radius",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS border radius."
+    },
+    {
+     "key": "shrink",
+     "kind": "FLOAT",
+     "required": false,
+     "description": "flex-shrink."
+    },
+    {
+     "key": "width",
+     "kind": "STRING",
+     "required": false,
+     "description": "CSS length, e.g. \"12rem\" or \"100%\"."
+    }
+   ]
+  },
+  {
+   "name": "p",
+   "description": "An HTML paragraph.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": "text",
+   "props": [
+    {
+     "key": "align",
+     "kind": "STRING",
+     "required": false,
+     "description": "Horizontal text alignment.",
+     "values": [
+      "start",
+      "center",
+      "end"
+     ]
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "italic",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Render italic."
+    },
+    {
+     "key": "mono",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Render in the monospace face."
+    },
+    {
+     "key": "size",
+     "kind": "STRING",
+     "required": false,
+     "description": "Text size step.",
+     "values": [
+      "xs",
+      "sm",
+      "base",
+      "lg"
+     ]
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    },
+    {
+     "key": "tone",
+     "kind": "STRING",
+     "required": false,
+     "description": "Semantic text colour.",
+     "values": [
+      "default",
+      "muted",
+      "destructive",
+      "success"
+     ]
+    },
+    {
+     "key": "truncate",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Truncate to a single line with an ellipsis."
+    },
+    {
+     "key": "weight",
+     "kind": "STRING",
+     "required": false,
+     "description": "Font weight.",
+     "values": [
+      "regular",
+      "medium",
+      "semibold",
+      "bold"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "span",
+   "description": "An inline run of text.",
+   "context": "HTML",
+   "children_context": null,
+   "inherits_context": false,
+   "accepts_children": true,
+   "downstream_of": [],
+   "not_downstream_of": [],
+   "text_prop": "text",
+   "props": [
+    {
+     "key": "align",
+     "kind": "STRING",
+     "required": false,
+     "description": "Horizontal text alignment.",
+     "values": [
+      "start",
+      "center",
+      "end"
+     ]
+    },
+    {
+     "key": "className",
+     "kind": "STRING",
+     "required": false,
+     "description": "Extra Tailwind classes appended to the element."
+    },
+    {
+     "key": "italic",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Render italic."
+    },
+    {
+     "key": "mono",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Render in the monospace face."
+    },
+    {
+     "key": "size",
+     "kind": "STRING",
+     "required": false,
+     "description": "Text size step.",
+     "values": [
+      "xs",
+      "sm",
+      "base",
+      "lg"
+     ]
+    },
+    {
+     "key": "text",
+     "kind": "ANY",
+     "required": false,
+     "description": "The text to render."
+    },
+    {
+     "key": "tone",
+     "kind": "STRING",
+     "required": false,
+     "description": "Semantic text colour.",
+     "values": [
+      "default",
+      "muted",
+      "destructive",
+      "success"
+     ]
+    },
+    {
+     "key": "truncate",
+     "kind": "BOOL",
+     "required": false,
+     "description": "Truncate to a single line with an ellipsis."
+    },
+    {
+     "key": "weight",
+     "kind": "STRING",
+     "required": false,
+     "description": "Font weight.",
+     "values": [
+      "regular",
+      "medium",
+      "semibold",
+      "bold"
+     ]
+    }
+   ]
+  }
+ ]
+}

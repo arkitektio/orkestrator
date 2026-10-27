@@ -4,170 +4,33 @@ import * as z from 'zod';
 import {
   BlokPropSchemas,
   createBlokComponent,
-  useAction,
   useBlok,
+  useBlokDataAttributes,
+  usePendingAction,
   useValue,
 } from '../runtime';
 import {AssetSourceNotice, useAssetImageUrl} from '../assets';
 import {
   actionProp,
   boolSchema,
-  buildLayoutStyle,
   classNameSchema,
   contentSchema,
   layoutFields,
-  numberSchema,
   renderContent,
   textFields,
   textPresentationClasses,
-  useBaseLayoutProps,
   useTextPresentationProps,
 } from './shared';
 
 /**
- * Raw HTML elements, registered under their exact lowercase tag names.
- *
- * These exist so a payload can express ordinary document structure — a list, a
- * link, a definition list, a semantic landmark — without reaching for a styled
- * shadcn component. The styled equivalents live in the other modules under
- * PascalCase names (`Table` vs `table`, `Separator` vs `hr`).
- *
- * `iframe` is deliberately absent: a blok payload is untrusted input from the
- * backend and must not be able to embed an arbitrary origin inside the app.
+ * ui@1's links and media: `Link`, `Image` and `Code`. Raw HTML tags are not
+ * part of the language; html@1 keeps only `div`, `p` and `span`, the
+ * containers that translate directly to React Native (View, Text).
  */
 
-type SimpleTag =
-  | 'strong'
-  | 'em'
-  | 'small'
-  | 'code'
-  | 'pre'
-  | 'mark'
-  | 'sub'
-  | 'sup'
-  | 'blockquote'
-  | 'ul'
-  | 'ol'
-  | 'li'
-  | 'dl'
-  | 'dt'
-  | 'dd'
-  | 'figure'
-  | 'figcaption'
-  | 'section'
-  | 'article'
-  | 'header'
-  | 'footer'
-  | 'main'
-  | 'nav'
-  | 'aside'
-  | 'table'
-  | 'thead'
-  | 'tbody'
-  | 'tfoot'
-  | 'tr'
-  | 'th'
-  | 'td'
-  | 'caption';
-
-const DEFAULT_TAG_CLASSES: Partial<Record<SimpleTag, string>> = {
-  ul: 'list-disc pl-5',
-  ol: 'list-decimal pl-5',
-  code: 'rounded bg-muted px-1 py-0.5 font-mono text-xs',
-  pre: 'overflow-x-auto rounded bg-muted p-3 font-mono text-xs',
-  blockquote: 'border-l-2 border-border pl-3 italic text-muted-foreground',
-  mark: 'bg-yellow-200/60 dark:bg-yellow-500/30',
-  dt: 'font-medium',
-  dd: 'pl-4 text-muted-foreground',
-  table: 'w-full border-collapse text-sm',
-  th: 'border border-border px-2 py-1 text-left font-medium',
-  td: 'border border-border px-2 py-1',
-  caption: 'py-1 text-xs text-muted-foreground',
-};
-
-/**
- * One factory for every element that is "a tag with content": the props are
- * always text-or-children plus the shared layout and text vocabulary, so each
- * element costs one line of registration.
- */
-const createElementBlok = (tag: SimpleTag, description: string) =>
-  createBlokComponent(
-    {
-      name: tag,
-      schema: z
-        .object({
-          text: BlokPropSchemas.DynamicString.optional().describe('Inline text content.'),
-          children: contentSchema,
-          className: classNameSchema,
-          ...textFields,
-          ...layoutFields,
-        })
-        .describe(description),
-    },
-    ({buildChild, component, schema}) => {
-      const blok = useBlok(component, schema);
-      const text = useValue(blok.text);
-      const children = useValue(blok.children);
-      const className = useValue(blok.className);
-      const presentation = useTextPresentationProps(blok);
-      const layoutProps = useBaseLayoutProps(blok);
-      const Element = tag as 'div';
-
-      return (
-        <Element
-          className={cn(
-            DEFAULT_TAG_CLASSES[tag],
-            ...textPresentationClasses(presentation),
-            className,
-          )}
-          style={buildLayoutStyle(layoutProps)}
-        >
-          {renderContent(children ?? text, buildChild)}
-        </Element>
-      );
-    },
-  );
-
-const ELEMENTS: ReadonlyArray<[SimpleTag, string]> = [
-  ['strong', 'Strongly emphasised text.'],
-  ['em', 'Emphasised text.'],
-  ['small', 'Small print.'],
-  ['code', 'An inline code span.'],
-  ['pre', 'Preformatted text.'],
-  ['mark', 'Highlighted text.'],
-  ['sub', 'Subscript text.'],
-  ['sup', 'Superscript text.'],
-  ['blockquote', 'A block quotation.'],
-  ['ul', 'An unordered list. Children should be li.'],
-  ['ol', 'An ordered list. Children should be li.'],
-  ['li', 'One list item.'],
-  ['dl', 'A description list.'],
-  ['dt', 'A description list term.'],
-  ['dd', 'A description list definition.'],
-  ['figure', 'A figure with optional caption.'],
-  ['figcaption', 'A figure caption.'],
-  ['section', 'A document section.'],
-  ['article', 'A self-contained article.'],
-  ['header', 'A header landmark.'],
-  ['footer', 'A footer landmark.'],
-  ['main', 'The main landmark.'],
-  ['nav', 'A navigation landmark.'],
-  ['aside', 'An aside landmark.'],
-  ['table', 'A plain HTML table. Use Table for the styled shadcn version.'],
-  ['thead', 'A table header group.'],
-  ['tbody', 'A table body group.'],
-  ['tfoot', 'A table footer group.'],
-  ['tr', 'A table row.'],
-  ['th', 'A table header cell.'],
-  ['td', 'A table cell.'],
-  ['caption', 'A table caption.'],
-];
-
-const elementBloks = ELEMENTS.map(([tag, description]) => createElementBlok(tag, description));
-
-export const Anchor = createBlokComponent(
+export const Link = createBlokComponent(
   {
-    name: 'a',
+    name: 'Link',
     schema: z
       .object({
         href: BlokPropSchemas.DynamicString.optional().describe('Link target URL.'),
@@ -186,12 +49,14 @@ export const Anchor = createBlokComponent(
     const text = useValue(blok.text);
     const children = useValue(blok.children);
     const newTab = useValue(blok.newTab);
-    const onClick = useAction(blok.onClick);
+    const {run: onClick, pending: busy} = usePendingAction(blok.onClick);
+    const attributes = useBlokDataAttributes({busy});
     const className = useValue(blok.className);
     const presentation = useTextPresentationProps(blok);
 
     return (
       <a
+        {...attributes}
         href={href}
         target={newTab ? '_blank' : undefined}
         // `noreferrer` also implies `noopener`, which matters for any
@@ -210,13 +75,13 @@ export const Anchor = createBlokComponent(
   },
 );
 
-export const Img = createBlokComponent(
+export const Image = createBlokComponent(
   {
-    name: 'img',
+    name: 'Image',
     schema: z
       .object({
         src: BlokPropSchemas.DynamicString.optional().describe(
-          'Image URL, or an image its app registered as an asset: "@self.assets.logo".',
+          'Image URL, or an image its app registered as an asset: `{self.assets.logo}`.',
         ),
         alt: BlokPropSchemas.DynamicString.optional().describe('Alternative text.'),
         blurhash: BlokPropSchemas.DynamicString.optional().describe(
@@ -244,6 +109,7 @@ export const Img = createBlokComponent(
     const maxWidth = useValue(blok.maxWidth);
     const maxHeight = useValue(blok.maxHeight);
     const radius = useValue(blok.radius);
+    const dataAttributes = useBlokDataAttributes();
 
     if (!src) {
       // An image its app only says where to fetch: whoever may add it is offered to.
@@ -251,6 +117,7 @@ export const Img = createBlokComponent(
     }
 
     return (
+      <span {...dataAttributes} className="contents">
       <ShadImage
         src={src}
         alt={alt}
@@ -258,111 +125,47 @@ export const Img = createBlokComponent(
         className={className}
         style={{width, height, maxWidth, maxHeight, borderRadius: radius}}
       />
+      </span>
     );
   },
 );
 
-const createMediaBlok = (tag: 'video' | 'audio', description: string) =>
-  createBlokComponent(
-    {
-      name: tag,
-      schema: z
-        .object({
-          src: BlokPropSchemas.DynamicString.optional().describe('Media URL.'),
-          controls: boolSchema.describe('Show playback controls. Defaults to true.'),
-          autoPlay: boolSchema.describe('Start playing on mount.'),
-          loop: boolSchema.describe('Restart when finished.'),
-          muted: boolSchema.describe('Start muted.'),
-          className: classNameSchema,
-        })
-        .describe(description),
-    },
-    ({component, schema}) => {
-      const blok = useBlok(component, schema);
-      const src = useValue(blok.src);
-      const controls = useValue(blok.controls);
-      const autoPlay = useValue(blok.autoPlay);
-      const loop = useValue(blok.loop);
-      const muted = useValue(blok.muted);
-      const className = useValue(blok.className);
-      const Element = tag as 'video';
 
-      if (!src) {
-        return null;
-      }
-
+export const Code = createBlokComponent(
+  {
+    name: 'Code',
+    schema: z
+      .object({
+        text: BlokPropSchemas.DynamicString.optional().describe('The code to show.'),
+        block: boolSchema.describe('A block of its own (preformatted), rather than inline.'),
+        className: classNameSchema,
+        ...textFields,
+      })
+      .describe('Code, in a monospaced face: inline, or as a block.'),
+  },
+  ({component, schema}) => {
+    const blok = useBlok(component, schema);
+    const text = useValue(blok.text);
+    const block = useValue(blok.block) === true;
+    const className = useValue(blok.className);
+    const presentation = useTextPresentationProps(blok);
+    const attributes = useBlokDataAttributes();
+    if (block) {
       return (
-        <Element
-          src={src}
-          controls={controls ?? true}
-          autoPlay={autoPlay}
-          loop={loop}
-          muted={muted}
-          className={className}
-        />
+        <pre
+          {...attributes}
+          className={cn('overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs', ...textPresentationClasses(presentation), className)}
+        >
+          <code>{text}</code>
+        </pre>
       );
-    },
-  );
-
-export const Video = createMediaBlok('video', 'A video player.');
-export const Audio = createMediaBlok('audio', 'An audio player.');
-
-export const LineBreak = createBlokComponent(
-  {
-    name: 'br',
-    schema: z.object({}).describe('A line break.'),
-  },
-  () => <br />,
-);
-
-export const HorizontalRule = createBlokComponent(
-  {
-    name: 'hr',
-    schema: z
-      .object({
-        className: classNameSchema,
-        margin: layoutFields.margin,
-      })
-      .describe('A thematic break. Use Separator for the styled shadcn version.'),
-  },
-  ({component, schema}) => {
-    const blok = useBlok(component, schema);
-    const className = useValue(blok.className);
-    const margin = useValue(blok.margin);
-
-    return <hr className={cn('border-border', className)} style={{margin}} />;
+    }
+    return (
+      <code {...attributes} className={cn('rounded bg-muted px-1 py-0.5 font-mono text-xs', ...textPresentationClasses(presentation), className)}>
+        {text}
+      </code>
+    );
   },
 );
 
-export const Progressbar = createBlokComponent(
-  {
-    name: 'progress',
-    schema: z
-      .object({
-        value: numberSchema.describe('Current value.'),
-        max: numberSchema.describe('Maximum value. Defaults to 100.'),
-        className: classNameSchema,
-      })
-      .describe('A native progress element. Use Progress for the styled version.'),
-  },
-  ({component, schema}) => {
-    const blok = useBlok(component, schema);
-    const value = useValue(blok.value);
-    const max = useValue(blok.max);
-    const className = useValue(blok.className);
-
-    return <progress value={value} max={max ?? 100} className={className} />;
-  },
-);
-
-export const htmlBlokComponents = [
-  ...elementBloks,
-  Anchor,
-  Img,
-  Video,
-  Audio,
-  LineBreak,
-  HorizontalRule,
-  Progressbar,
-];
-
+export const htmlBlokComponents = [Link, Image, Code];

@@ -9,44 +9,37 @@ afterEach(cleanup);
 const render = (roots: unknown[], initialState?: unknown) =>
   renderBlokDocument(defaultBlokCatalog, roots, initialState);
 
-describe('html bloks', () => {
-  it('renders a list, a link and an image', () => {
+describe('links and media (ui@1)', () => {
+  it('renders a link, inline code and a heading', () => {
     const {errors} = render([
       {
-        id: 'list',
-        component: 'ul',
-        props: [{key: 'children', static_value: ['first', 'second']}],
-        children: [
-          {id: 'first', component: 'li', props: [{key: 'text', static_value: 'alpha'}]},
-          {id: 'second', component: 'li', props: [{key: 'text', static_value: 'beta'}]},
-        ],
-      },
-      {
         id: 'link',
-        component: 'a',
+        component: 'Link',
         props: [
           {key: 'href', static_value: 'https://example.test'},
           {key: 'text', static_value: 'open'},
           {key: 'newTab', static_value: true},
         ],
       },
+      {id: 'code', component: 'Code', props: [{key: 'text', static_value: 'pip install arkitekt'}]},
+      {id: 'title', component: 'Heading', props: [{key: 'text', static_value: 'Overview'}, {key: 'level', static_value: 'h2'}]},
     ]);
 
     expect(errors).toEqual([]);
-    expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(2);
-    expect(screen.getByText('alpha')).not.toBeNull();
-
     const link = screen.getByText('open');
     expect(link.getAttribute('href')).toBe('https://example.test');
-    // `noreferrer` implies `noopener`, which matters for an externally
-    // authored href.
+    // `noreferrer` implies `noopener`, which matters for an externally authored href.
     expect(link.getAttribute('rel')).toBe('noreferrer');
+    expect(screen.getByText('pip install arkitekt').tagName).toBe('CODE');
+    expect(screen.getByRole('heading', {level: 2}).textContent).toBe('Overview');
   });
 
-  it('renders a heading at its fixed level', () => {
-    render([{id: 'title', component: 'h2', props: [{key: 'text', static_value: 'Overview'}]}]);
-
-    expect(screen.getByRole('heading', {level: 2}).textContent).toBe('Overview');
+  it('keeps raw html to the three containers html@1 has', () => {
+    expect(defaultBlokCatalog.components.has('div')).toBe(true);
+    expect(defaultBlokCatalog.components.has('p')).toBe(true);
+    expect(defaultBlokCatalog.components.has('span')).toBe(true);
+    expect(defaultBlokCatalog.components.has('ul')).toBe(false);
+    expect(defaultBlokCatalog.components.has('h1')).toBe(false);
   });
 });
 
@@ -68,7 +61,7 @@ describe('form bloks', () => {
 
     fireEvent.click(screen.getByRole('checkbox'));
 
-    expect(store.getState().dataModel).toEqual({settings: {enabled: true}});
+    expect(store.getState().dataModel).toEqual({settings: {enabled: true}, then: null});
   });
 
   it('shows a bound value and re-renders a sibling reading the same path', () => {
@@ -194,41 +187,36 @@ describe('navigation bloks', () => {
     expect(screen.queryByText('panel two')).not.toBeNull();
   });
 
-  it('keeps the active tab in the data model when bound', () => {
-    const {store} = render(
-      [
-        {
-          id: 'tabs',
-          component: 'Tabs',
-          props: [
-            {key: 'bind', static_value: 'ui/tab'},
-            {key: 'children', static_value: ['tabs-list']},
-          ],
-          children: [
-            {
-              id: 'tabs-list',
-              component: 'TabsList',
-              props: [{key: 'children', static_value: ['trigger-two']}],
-              children: [
-                {
-                  id: 'trigger-two',
-                  component: 'TabsTrigger',
-                  props: [
-                    {key: 'value', static_value: 'two'},
-                    {key: 'label', static_value: 'Second'},
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      {ui: {tab: 'one'}},
-    );
+  it('keeps the active tab its own state, and tells its callback', () => {
+    const {store} = render([
+      {
+        id: 'tabs',
+        component: 'Tabs',
+        props: [
+          {key: 'defaultValue', static_value: 'one'},
+          {key: 'onChange', agent_call: {dependency: 'self', operation: 'seen', arguments: [{key: 'tab', value_path: 'event.value'}]}},
+          {key: 'children', static_value: ['tabs-list']},
+        ],
+        children: [
+          {
+            id: 'tabs-list',
+            component: 'TabsList',
+            props: [{key: 'children', static_value: ['trigger-two']}],
+            children: [
+              {id: 'trigger-two', component: 'TabsTrigger', props: [{key: 'value', static_value: 'two'}, {key: 'label', static_value: 'Second'}]},
+            ],
+          },
+        ],
+      },
+    ]);
+    const calls: unknown[] = [];
+    store.getState().setDispatchAction(action => void calls.push(action.arguments));
 
     fireEvent.mouseDown(screen.getByText('Second'), {button: 0});
 
-    expect(store.getState().dataModel).toEqual({ui: {tab: 'two'}});
+    expect(calls).toEqual([{tab: 'two'}]);
+    // Interaction state is the component's own: nothing is written to the data model.
+    expect(store.getState().runtimePathValues).toEqual({});
   });
 });
 
@@ -269,31 +257,21 @@ describe('overlay bloks', () => {
     expect(screen.queryByText('Confirm')).not.toBeNull();
   });
 
-  it('reflects the open state into the bound path', () => {
-    const {store} = render(
-      [
-        {
-          id: 'dialog',
-          component: 'Dialog',
-          props: [
-            {key: 'bind', static_value: 'ui/open'},
-            {key: 'children', static_value: ['dialog-trigger']},
-          ],
-          children: [
-            {
-              id: 'dialog-trigger',
-              component: 'DialogTrigger',
-              props: [{key: 'label', static_value: 'Open'}],
-            },
-          ],
-        },
-      ],
-      {ui: {open: false}},
-    );
+  it('keeps its open state its own, and draws data-state', () => {
+    const {store} = render([
+      {
+        id: 'dialog',
+        component: 'Dialog',
+        props: [{key: 'children', static_value: ['dialog-trigger']}],
+        children: [{id: 'dialog-trigger', component: 'DialogTrigger', props: [{key: 'label', static_value: 'Open'}]}],
+      },
+    ]);
 
-    fireEvent.click(screen.getByText('Open'));
+    const trigger = screen.getByText('Open');
+    fireEvent.click(trigger);
 
-    expect(store.getState().dataModel).toEqual({ui: {open: true}});
+    expect(store.getState().runtimePathValues).toEqual({});
+    expect(trigger.closest('[data-state]')?.getAttribute('data-state')).toBe('open');
   });
 });
 
@@ -356,20 +334,16 @@ describe('feedback and data bloks', () => {
 });
 
 describe('control-flow bloks', () => {
-  it('picks a branch with if', () => {
+  it('picks a branch with if: the then-branch, else its else', () => {
     render(
       [
         {
           id: 'branch',
           component: 'if',
-          props: [
-            {key: 'when', dynamic_value: {path: 'flag'}},
-            {key: 'then', static_value: 'yes'},
-            {key: 'else', static_value: 'no'},
-          ],
+          props: [{key: 'when', dynamic_value: {path: 'flag'}}],
           children: [
             {id: 'yes', component: 'Text', props: [{key: 'text', static_value: 'enabled'}]},
-            {id: 'no', component: 'Text', props: [{key: 'text', static_value: 'disabled'}]},
+            {id: 'no', component: 'else', children: [{id: 'no-text', component: 'Text', props: [{key: 'text', static_value: 'disabled'}]}]},
           ],
         },
       ],

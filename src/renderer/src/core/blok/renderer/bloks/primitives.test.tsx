@@ -15,6 +15,7 @@ import {
   type BlokComponentNode,
   type BlokRuntimeStore,
 } from "../runtime";
+import {invokeBlokFunction} from "../functions/v2/handler";
 import {controlBlokComponents} from "./control";
 import {shadcnComposableComponents} from "./index";
 
@@ -62,10 +63,7 @@ const renderBlok = (
   initialState?: unknown,
 ): {store: BlokRuntimeStore; errors: ReturnType<typeof preflightBlokDocument>["errors"]} => {
   const preflight = preflightBlokDocument(roots, catalog);
-  const store = createBlokRuntimeStore({initialDataModel: initialState});
-  store.getState().setInvokeFunction((name, args, options) =>
-    catalog.invokeFunction(name, args, options),
-  );
+  const store = createBlokRuntimeStore({initialDataModel: initialState, invokeFunction: invokeBlokFunction});
 
   render(
     <BlokRuntimeProvider store={store}>
@@ -109,23 +107,6 @@ describe("foreach", () => {
     expect(screen.queryByText("beta")).not.toBeNull();
   });
 
-  it("resolves relatively when the iteration has no name", () => {
-    renderBlok(
-      [
-        {
-          id: "loop",
-          component: "foreach",
-          props: [{key: "items", dynamic_value: {path: "rows"}}],
-          children: [text("row-name", "name")],
-        },
-      ],
-      {rows: [{name: "alpha"}, {name: "beta"}]},
-    );
-
-    expect(screen.queryByText("alpha")).not.toBeNull();
-    expect(screen.queryByText("beta")).not.toBeNull();
-  });
-
   it("iterates a source that has no addressable path", () => {
     // `items` comes from a util call, so there is no path to alias — the item
     // is handed down by value. This used to fall through to the unscoped path
@@ -136,8 +117,9 @@ describe("foreach", () => {
           id: "loop",
           component: "foreach",
           props: [
-            {key: "items", static_value: '[{"name":"literal-a"},{"name":"literal-b"}]'},
-            {key: "let", static_value: "row"},
+            {key: "items", static_value: [{name: "literal-a"}, {name: "literal-b"}]},
+            {key: "let", static_value: "row", declares_value: "row"},
+            {key: "key", dynamic_value: {path: "row.name"}},
           ],
           children: [text("row-name", "row/name")],
         },
@@ -182,6 +164,7 @@ describe("foreach", () => {
     expect(store.getState().runtimePathValues).toEqual({"rows/1/name": "edited"});
     expect(store.getState().dataModel).toEqual({
       rows: [{name: "alpha"}, {name: "edited"}],
+      then: null,
     });
     expect((screen.getAllByRole("textbox")[1] as HTMLInputElement).value).toBe("edited");
   });
@@ -207,7 +190,7 @@ describe("Input", () => {
     expect((input as HTMLInputElement).value).toBe("Ada");
 
     fireEvent.change(input, {target: {value: "Grace"}});
-    expect(store.getState().dataModel).toEqual({user: {name: "Grace"}});
+    expect(store.getState().dataModel).toEqual({user: {name: "Grace"}, then: null});
   });
 
   it("keeps its own state when unbound", () => {
@@ -227,43 +210,37 @@ describe("Input", () => {
   });
 });
 
-describe("effectful functions", () => {
-  it("is rejected by preflight in value position", () => {
+describe("effects", () => {
+  it("are refused by preflight in value position", () => {
     const {errors} = renderBlok([
       {
         id: "label",
         component: "Text",
-        props: [{key: "text", util_call: {operation: "notify"}}],
+        props: [{key: "text", util_call: {operation: "ui.copy", arguments: [{key: "text", value_literal: "x"}]}}],
       },
     ]);
 
-    expect(errors.some(error => error.message.includes("side effects"))).toBe(true);
+    expect(errors.some(error => error.message.includes("callback's one thing"))).toBe(true);
   });
 
-  it("does not fire while rendering, and fires once per click from an action", () => {
-    sideEffect.mockClear();
-
-    renderBlok([
+  it("a task call does not fire while rendering, and fires once per click", () => {
+    const {store} = renderBlok([
       {
         id: "button",
         component: "Button",
         props: [
           {key: "label", static_value: "Go"},
-          {
-            key: "onClick",
-            util_call: {operation: "notify", arguments: [{key: "m", value_literal: "hi"}]},
-          },
+          {key: "onClick", agent_call: {dependency: "self", operation: "notify", arguments: [{key: "m", value_literal: "hi"}]}},
         ],
       },
     ]);
+    act(() => store.getState().setDispatchAction(action => void sideEffect(action)));
+    sideEffect.mockClear();
 
-    // The old renderer invoked value-position util calls straight from a
-    // render-phase `useMemo`, so a toast/log fired on every render.
     expect(sideEffect).not.toHaveBeenCalled();
-
     fireEvent.click(screen.getByRole("button", {name: "Go"}));
     expect(sideEffect).toHaveBeenCalledTimes(1);
-    expect(sideEffect).toHaveBeenCalledWith({m: "hi"});
+    expect(sideEffect).toHaveBeenCalledWith({dependency: "self", operation: "notify", arguments: {m: "hi"}});
   });
 });
 
@@ -274,12 +251,7 @@ describe("pure functions", () => {
         {
           id: "label",
           component: "Text",
-          props: [
-            {
-              key: "text",
-              util_call: {operation: "shout", arguments: [{key: "text", value_path: "name"}]},
-            },
-          ],
+          props: [{key: "text", util_call: {operation: "str.upper", arguments: [{key: "value", value_path: "name"}]}}],
         },
       ],
       {name: "quiet"},
