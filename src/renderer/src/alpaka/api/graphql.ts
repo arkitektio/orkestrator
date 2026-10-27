@@ -887,7 +887,6 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
 };
 
 /** A provider of LLMs */
@@ -1666,7 +1665,7 @@ export type ListProviderFragment = { __typename?: 'Provider', id: string, name: 
 
 export type ChatResponseFragment = { __typename?: 'ChatResponse', id: string, object: string, created: number, model: string, usage?: { __typename?: 'Usage', promptTokens: number, completionTokens: number, totalTokens: number } | null, choices: Array<{ __typename?: 'Choice', index: number, finishReason?: string | null, message: { __typename?: 'ChatMessage', role: Role, content?: string | null, name?: string | null, toolCallId?: string | null, functionCall?: { __typename?: 'FunctionCall', name: string, arguments: string } | null, toolCalls?: Array<{ __typename?: 'ToolCall', id: string, type: ToolType, function: { __typename?: 'FunctionCall', name: string, arguments: string } }> | null } }> };
 
-export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, slug: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
+export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
     { __typename?: 'Message' }
     & ListMessageFragment
   )> };
@@ -2152,7 +2151,6 @@ export const RoomFragmentDoc = gql`
   }
   organization {
     id
-    slug
   }
   agents {
     id

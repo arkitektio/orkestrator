@@ -30,14 +30,14 @@ export const useActiveScope = (): ShareScope | null => {
 
 /**
  * Where a profile's links are served, or null when one cannot be: the
- * deployment names no front door, the organization has no slug, or the
- * profile has not heard its slug or hub yet.
+ * deployment names no front door, or the profile has not heard its
+ * organization or hub yet.
  */
 export const profileLinkHost = (profile: StoredProfile): LinkHost | null => {
   const frontendUrl = profile.session?.endpoint?.frontend_url;
-  const slug = profile.label?.organizationSlug;
+  const org = profile.identity.organizationId;
   const hub = profile.identity.hubId;
-  return frontendUrl && slug && hub ? { frontendUrl, slug, hub, user: profile.identity.userId } : null;
+  return frontendUrl && org && hub ? { frontendUrl, org, hub, user: profile.identity.userId } : null;
 };
 
 /** The same for the connection we are on. */

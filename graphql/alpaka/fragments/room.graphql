@@ -9,7 +9,6 @@ fragment Room on Room {
   }
   organization {
     id
-    slug
   }
   agents {
     id

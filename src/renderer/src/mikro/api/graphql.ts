@@ -7802,7 +7802,6 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
 };
 
 /** The sample */
@@ -12752,7 +12751,7 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
   ), provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
-  )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+  )>, organization: { __typename?: 'Organization', id: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type DetailFileFragment = (
   { __typename?: 'File', creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
@@ -19533,7 +19532,7 @@ export const FileFragmentDoc = gql`
     ...ProvenanceEntry
   }
   organization {
-    slug
+    id
   }
   size
   contentType

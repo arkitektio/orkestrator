@@ -20,12 +20,12 @@ const nameOf = (profile: StoredProfile) =>
   profile.label.organizationName ?? profile.label.organizationSlug ?? profile.identity.baseUrl;
 
 /**
- * Whether a login is the one a smartlink names. The slug decides; the hub is
+ * Whether a login is the one a smartlink names. The organization's id decides; the hub is
  * only compared when the login knows its own (it is the link's untrusted
  * half, and an old profile may not have one).
  */
 const belongsTo = (profile: StoredProfile, link: SmartLink) =>
-  profile.label.organizationSlug === link.org && (!profile.identity.hubId || profile.identity.hubId === link.hub);
+  profile.identity.organizationId === link.org && (!profile.identity.hubId || profile.identity.hubId === link.hub);
 
 /**
  * Where a smartlink lands (`/smart/<org>/<hub>/<identifier>/<id>`) before it
@@ -122,8 +122,8 @@ export const SmartLinkPage = () => {
     );
   }
 
-  // A login that has not heard its organization's slug yet cannot be told apart.
-  if (active && !active.label.organizationSlug) {
+  // A login that has not heard its organization yet cannot be told apart.
+  if (active && !active.identity.organizationId) {
     return <StatusPage icon={Loader2} spin busy eyebrow="Link" title="Checking this link…" actions={leave} />;
   }
 
