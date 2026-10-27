@@ -24,6 +24,13 @@
 /* A drop target while any drag is in the window. The dnd engine marks the root
    for the length of a drag, so this costs no per-target state. */
 @custom-variant can-drop (:root[data-dnd-active] &[data-drop-target]);
+/* A blok component's own state (blok language v2 `data_attributes`): its call
+   is running, or a value it shows is stale. shadcn's `data-open:` & co. come
+   from `shadcn/tailwind.css` in the build and from the runtime compiler's
+   entry (`core/blok/tailwind/runtimeTailwind.ts`); these are not shadcn's. */
+@custom-variant data-busy (&:where([data-busy]:not([data-busy="false"])));
+@custom-variant data-stale (&:where([data-stale]:not([data-stale="false"])));
+@custom-variant data-inactive (&:where([data-state="inactive"]));
 
 @utility animate-task-sweep {
   animation: task-sweep 1.8s ease-in-out infinite;
@@ -78,6 +85,31 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  /* Status roles: values in index.css (:root, .dark). */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
+  /* Spectral roles: values in index.css (:root, .dark). */
+  --color-spectrum-violet: var(--spectrum-violet);
+  --color-spectrum-violet-soft: var(--spectrum-violet-soft);
+  --color-spectrum-blue: var(--spectrum-blue);
+  --color-spectrum-blue-soft: var(--spectrum-blue-soft);
+  --color-spectrum-cyan: var(--spectrum-cyan);
+  --color-spectrum-cyan-soft: var(--spectrum-cyan-soft);
+  --color-spectrum-green: var(--spectrum-green);
+  --color-spectrum-green-soft: var(--spectrum-green-soft);
+  --color-spectrum-yellow: var(--spectrum-yellow);
+  --color-spectrum-yellow-soft: var(--spectrum-yellow-soft);
+  --color-spectrum-orange: var(--spectrum-orange);
+  --color-spectrum-orange-soft: var(--spectrum-orange-soft);
+  --color-spectrum-red: var(--spectrum-red);
+  --color-spectrum-red-soft: var(--spectrum-red-soft);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
