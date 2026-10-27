@@ -11,11 +11,37 @@ fragment ActionBlok on ActionBlok {
     context
     heldByAction
     componentTree
-    demoState
-    # The locals kept on this device between openings (core/blok/renderer/persist).
-    persist {
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
       key
-      description
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
     }
   }
 }

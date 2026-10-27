@@ -4,7 +4,10 @@ query KabinetLogoTree($id: ID!) {
     id
     hash
     componentTree
-    demoState
+    vocab
+    locals
+    demo
+    queries
   }
 }
 
