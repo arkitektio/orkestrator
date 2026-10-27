@@ -49,21 +49,21 @@ export type ActionArgument = {
   valuePath?: Maybe<Scalars['String']['output']>;
 };
 
-/** A JSON-serializable argument entry for a multi-agent action trigger. */
+/** An argument of a call: a literal, a path, a nested call, a list or an object; null when it sets none. */
 export type ActionArgumentInput = {
   /** Defines a nested agent call if this argument should trigger an agent interaction. */
   agentCall?: InputMaybe<AgentProbeInput>;
   /** The argument property name. */
   key?: InputMaybe<Scalars['String']['input']>;
-  /** Defines a nested utility call if this argument should trigger a system utility interaction. */
+  /** A nested function call. */
   utilCall?: InputMaybe<UtilCallInput>;
   /** Defines a list of key-value pairs if this argument should be a dictionary. */
   valueDict?: InputMaybe<Array<ActionArgumentInput>>;
   /** Defines a list of values if this argument should be an array. */
   valueList?: InputMaybe<Array<ActionArgumentInput>>;
-  /** Static literal value if not dynamically bound. */
+  /** A JSON literal. */
   valueLiteral?: InputMaybe<Scalars['JSONSerializable']['input']>;
-  /** JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically. */
+  /** A path the argument reads, as a prop's dynamic_value does. */
   valuePath?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -83,11 +83,11 @@ export type AgentCall = {
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentProbeInput = {
-  /** Key-value arguments map compiled for the target agent call. */
+  /** Its arguments, each named. */
   arguments?: InputMaybe<Array<ActionArgumentInput>>;
-  /** The abstract agent dependency key declared in the Blok manifest (e.g., 'stage_dep'). */
+  /** `self`, or the dependency key the task goes to (`deps.<key>`). */
   dependency: Scalars['String']['input'];
-  /** The target function name registered on that specific agent's worker thread loop. */
+  /** The action called, by its key in the dependency's action demands. */
   operation: Scalars['String']['input'];
 };
 
@@ -398,7 +398,7 @@ export type CollaborationObjectInput = {
   object: Scalars['ID']['input'];
 };
 
-/** A single key-value prop configuration for a component layout node. */
+/** One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null). */
 export type ComponentProp = {
   __typename?: 'ComponentProp';
   agentCall?: Maybe<AgentCall>;
@@ -409,19 +409,19 @@ export type ComponentProp = {
   utilCall?: Maybe<UtilCall>;
 };
 
-/** A single key-value prop configuration for a component layout node. */
+/** One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect (`query.refetch`, `query.fetch_more`, `ui.copy`, `task.answer`), or nothing (null). */
 export type ComponentPropInput = {
-  /** Defines an imperative interactive network action callback loop if this prop should trigger an agent interaction. */
+  /** A task call: a callback's one thing. */
   agentCall?: InputMaybe<AgentProbeInput>;
-  /** If set, this prop declares a new 'value' in the Blok state that can be referenced by other props or actions. The value of this field should be the name of the declared value (e.g., 'selected_user'). */
+  /** The name a task call writes its record to (`... into move`), or the loop variable of a `foreach` (its `let`). */
   declaresValue?: InputMaybe<Scalars['String']['input']>;
-  /** A reactive state data-binding rule. */
+  /** A path the prop reads. */
   dynamicValue?: InputMaybe<DynamicValueInput>;
   /** The prop key name matching the target UI catalog constraint. */
   key: Scalars['String']['input'];
-  /** A raw scalar or JSON-stringified literal configuration parameter (e.g. '40x' or True). */
+  /** A JSON literal: a string, number, bool, list or object. */
   staticValue?: InputMaybe<Scalars['JSONSerializable']['input']>;
-  /** Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction. */
+  /** A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more). */
   utilCall?: InputMaybe<UtilCallInput>;
 };
 
@@ -550,7 +550,7 @@ export type DynamicValue = {
 export type DynamicValueInput = {
   /** A static fallback literal value (serialized string or JSON primitive) used when `path` does not resolve. */
   literal?: InputMaybe<Scalars['String']['input']>;
-  /** JSON Pointer to a variable inside the Blok's isolated data model (e.g., '/microscope/exposure'). */
+  /** The path the prop reads: a root (`self`, `deps`, `args`, `task`, `queries`, `subscriptions`, `viewer`, `then`, `event`, `error`), a local, a loop variable or a record, and what follows it. */
   path?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2173,7 +2173,7 @@ export type UtilCall = {
 export type UtilCallInput = {
   /** Key-value arguments map compiled for the target utility call. */
   arguments?: InputMaybe<Array<ActionArgumentInput>>;
-  /** The utility function name to invoke. */
+  /** The function called (`str.upper`), or in a callback the effect (`ui.copy`, `task.answer`). */
   operation: Scalars['String']['input'];
 };
 

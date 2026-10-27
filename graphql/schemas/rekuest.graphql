@@ -4607,6 +4607,11 @@ type Mutation {
   probe(input: ProbeInput!): Probe!
 
   """
+  Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshMediaUpload(input: RefreshUploadInput!): MediaUploadGrant!
+
+  """
   Register a module: the components and operations a UI app can render and evaluate beyond the spec's catalogs, and the catalogs it implements whole (upsert by name in the caller's organization). Bloks (`module`) and definitions (`catalogs`) that name it are validated against it.
   """
   registerModule(input: RegisterModuleInput!): Module!
@@ -4725,8 +4730,11 @@ enum Ordering {
 
 """Represents an organization in the system."""
 type Organization {
-  """Slug of the organization."""
-  slug: String!
+  """This service's id of the organization."""
+  id: ID!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 input ParamPair {
@@ -5533,6 +5541,10 @@ type Query {
   wiregrams(pagination: OffsetPaginationInput): [Wiregram!]!
 }
 
+input RefreshUploadInput {
+  storeId: String!
+}
+
 """
 Register a module (upsert by name, scoped to the caller's organization): the components and operations a UI app can render and evaluate beyond the spec's catalogs.
 """
@@ -5595,7 +5607,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

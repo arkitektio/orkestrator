@@ -15,7 +15,9 @@ type ActionArgument {
   valuePath: String
 }
 
-"""A JSON-serializable argument entry for a multi-agent action trigger."""
+"""
+An argument of a call: a literal, a path, a nested call, a list or an object; null when it sets none.
+"""
 input ActionArgumentInput {
   """
   Defines a nested agent call if this argument should trigger an agent interaction.
@@ -25,9 +27,7 @@ input ActionArgumentInput {
   """The argument property name."""
   key: String = null
 
-  """
-  Defines a nested utility call if this argument should trigger a system utility interaction.
-  """
+  """A nested function call."""
   utilCall: UtilCallInput = null
 
   """
@@ -38,12 +38,10 @@ input ActionArgumentInput {
   """Defines a list of values if this argument should be an array."""
   valueList: [ActionArgumentInput!] = null
 
-  """Static literal value if not dynamically bound."""
+  """A JSON literal."""
   valueLiteral: JSONSerializable = null
 
-  """
-  JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically.
-  """
+  """A path the argument reads, as a prop's dynamic_value does."""
   valuePath: String = null
 }
 
@@ -66,17 +64,13 @@ type AgentCall {
 Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest.
 """
 input AgentProbeInput {
-  """Key-value arguments map compiled for the target agent call."""
+  """Its arguments, each named."""
   arguments: [ActionArgumentInput!] = null
 
-  """
-  The abstract agent dependency key declared in the Blok manifest (e.g., 'stage_dep').
-  """
+  """`self`, or the dependency key the task goes to (`deps.<key>`)."""
   dependency: String!
 
-  """
-  The target function name registered on that specific agent's worker thread loop.
-  """
+  """The action called, by its key in the dependency's action demands."""
   operation: String!
 }
 
@@ -530,7 +524,9 @@ input CollaborationObjectInput {
   object: ID!
 }
 
-"""A single key-value prop configuration for a component layout node."""
+"""
+One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null).
+"""
 type ComponentProp {
   agentCall: AgentCall
   declaresValue: String
@@ -540,31 +536,29 @@ type ComponentProp {
   utilCall: UtilCall
 }
 
-"""A single key-value prop configuration for a component layout node."""
+"""
+One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect (`query.refetch`, `query.fetch_more`, `ui.copy`, `task.answer`), or nothing (null).
+"""
 input ComponentPropInput {
-  """
-  Defines an imperative interactive network action callback loop if this prop should trigger an agent interaction.
-  """
+  """A task call: a callback's one thing."""
   agentCall: AgentProbeInput = null
 
   """
-  If set, this prop declares a new 'value' in the Blok state that can be referenced by other props or actions. The value of this field should be the name of the declared value (e.g., 'selected_user').
+  The name a task call writes its record to (`... into move`), or the loop variable of a `foreach` (its `let`).
   """
   declaresValue: String = null
 
-  """A reactive state data-binding rule."""
+  """A path the prop reads."""
   dynamicValue: DynamicValueInput = null
 
   """The prop key name matching the target UI catalog constraint."""
   key: String!
 
-  """
-  A raw scalar or JSON-stringified literal configuration parameter (e.g. '40x' or True).
-  """
+  """A JSON literal: a string, number, bool, list or object."""
   staticValue: JSONSerializable = null
 
   """
-  Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction.
+  A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more).
   """
   utilCall: UtilCallInput = null
 }
@@ -728,7 +722,7 @@ input DynamicValueInput {
   literal: String = null
 
   """
-  JSON Pointer to a variable inside the Blok's isolated data model (e.g., '/microscope/exposure').
+  The path the prop reads: a root (`self`, `deps`, `args`, `task`, `queries`, `subscriptions`, `viewer`, `then`, `event`, `error`), a local, a loop variable or a record, and what follows it.
   """
   path: String = null
 }
@@ -2636,7 +2630,9 @@ input UtilCallInput {
   """Key-value arguments map compiled for the target utility call."""
   arguments: [ActionArgumentInput!] = null
 
-  """The utility function name to invoke."""
+  """
+  The function called (`str.upper`), or in a callback the effect (`ui.copy`, `task.answer`).
+  """
   operation: String!
 }
 

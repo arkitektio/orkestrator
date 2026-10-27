@@ -2570,8 +2570,11 @@ enum Ordering {
 
 """Represents an organization in the system."""
 type Organization {
-  """Slug of the organization."""
-  slug: String!
+  """This service's id of the organization."""
+  id: ID!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 """A running instance of a deployment on a backend."""

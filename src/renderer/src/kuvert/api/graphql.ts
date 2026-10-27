@@ -937,6 +937,8 @@ export type Mutation = {
   moveMessages: Array<Message>;
   /** Push a mailbox's due changes now. */
   pushMailChanges: PushResult;
+  /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
   /** Request temporary S3 credentials to upload one file (an attachment to send). */
   requestBigfileUpload: BigFileUploadGrant;
   /** The same login again (a fresh openUrl if the old one cannot be reused). */
@@ -1087,6 +1089,11 @@ export type MutationPushMailChangesArgs = {
 };
 
 
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
 export type MutationRequestBigfileUploadArgs = {
   input: RequestBigFileUploadInput;
 };
@@ -1233,7 +1240,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 /** A message sent through a mailbox's SMTP server. */
@@ -1549,6 +1557,10 @@ export type RecipientInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
 /** A recipient the SMTP server refused. */
 export type RefusedRecipient = {
   __typename?: 'RefusedRecipient';
@@ -1559,7 +1571,7 @@ export type RefusedRecipient = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

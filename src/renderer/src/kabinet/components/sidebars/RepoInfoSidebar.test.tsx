@@ -43,7 +43,7 @@ const repo = (overrides: Partial<Parameters<typeof RepoInfoSidebar>[0]["repo"]> 
   issueUrl: "https://github.com/arkitekt/app/issues",
   addedAt: "2026-09-01T00:00:00Z",
   updatedAt: "2026-09-02T00:00:00Z",
-  organization: { slug: "lab" },
+  organization: { id: "4", identifier: "lok#lab" },
   flavours: [flavour()],
   ...overrides,
 });
@@ -52,11 +52,11 @@ describe("RepoInfoSidebar", () => {
   it("names branch, owner and organization", () => {
     render(<RepoInfoSidebar repo={repo()} />);
     expect(screen.getByText("main")).toBeInTheDocument();
-    expect(screen.getByText("lab")).toBeInTheDocument();
+    expect(screen.getByText("lok#lab")).toBeInTheDocument();
   });
 
   it("calls a missing organization Global, like the file rail", () => {
-    render(<RepoInfoSidebar repo={repo({ organization: { slug: "" } })} />);
+    render(<RepoInfoSidebar repo={repo({ organization: { id: "4", identifier: "" } })} />);
     expect(screen.getByText("Global")).toBeInTheDocument();
   });
 

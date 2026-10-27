@@ -1822,12 +1822,11 @@ export type GeneralMediaAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** One view over the organization's evidence log */
@@ -2815,6 +2814,8 @@ export type Mutation = {
   finishMediaUpload: MediaStore;
   /** Record measurements against a datum already on the record, as one act (was `updateStructure`) */
   recordMetrics: AssertedStructure;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for media files in the organization */
   requestGeneralMediaAccess: GeneralMediaAccessGrant;
   /** Request temporary S3 read credentials for a media file */
@@ -3173,6 +3174,12 @@ export type MutationFinishMediaUploadArgs = {
 /** Graph Engine Mutations */
 export type MutationRecordMetricsArgs = {
   input: RecordMetricsInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
 };
 
 
@@ -4684,6 +4691,10 @@ export type RecordMetricsInput = {
   object: Scalars['String']['input'];
 };
 
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
 /** A relation edge between two entities */
 export type Relation = Edge & {
   __typename?: 'Relation';
@@ -4902,7 +4913,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

@@ -105,7 +105,7 @@ export const RepoInfoSidebar = ({ repo }: { repo: PageRepo }) => (
       <div className="flex items-baseline gap-2">
         <span className="text-xs text-muted-foreground">Organization</span>
         <span className="break-all font-mono text-xs">
-          {repo.organization?.id || "Global"}
+          {repo.organization?.identifier || "Global"}
         </span>
       </div>
     </div>

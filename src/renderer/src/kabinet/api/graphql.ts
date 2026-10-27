@@ -1966,8 +1966,10 @@ export enum Ordering {
 /** Represents an organization in the system. */
 export type Organization = {
   __typename?: 'Organization';
-  /** The issuer's id of the organization: the same in every service. */
+  /** This service's id of the organization. */
   id: Scalars['ID']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 /** A running instance of a deployment on a backend. */
@@ -3829,7 +3831,7 @@ export type StoreRepoBlokFragment = { __typename?: 'RepoBlok', id: string, key: 
 
 export type ListRepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string };
 
-export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, organization: { __typename?: 'Organization', id: string }, flavours: Array<(
+export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, organization: { __typename?: 'Organization', id: string, identifier: string }, flavours: Array<(
     { __typename?: 'Flavour', image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }
     & ListFlavourFragment
   )>, bloks: Array<(
@@ -5482,6 +5484,7 @@ export const RepoFragmentDoc = gql`
   updatedAt
   organization {
     id
+    identifier
   }
   flavours {
     ...ListFlavour

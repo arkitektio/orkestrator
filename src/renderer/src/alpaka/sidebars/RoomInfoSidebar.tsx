@@ -64,7 +64,7 @@ export const RoomInfoSidebar = ({ room }: { room: RoomFragment }) => {
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold">Organization</div>
         <div className="break-all font-mono text-xs text-muted-foreground">
-          {room.organization.id}
+          {room.organization.identifier}
         </div>
       </div>
 

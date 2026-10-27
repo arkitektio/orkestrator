@@ -3393,6 +3393,8 @@ export type Mutation = {
   pinMaterializedBlok: MaterializedBlok;
   /** Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks). */
   probe: Probe;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
   /** Register a module: the components and operations a UI app can render and evaluate beyond the spec's catalogs, and the catalogs it implements whole (upsert by name in the caller's organization). Bloks (`module`) and definitions (`catalogs`) that name it are validated against it. */
   registerModule: Module;
   /** A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy. */
@@ -3731,6 +3733,12 @@ export type MutationProbeArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationRegisterModuleArgs = {
   input: RegisterModuleInput;
 };
@@ -3889,8 +3897,10 @@ export enum Ordering {
 /** Represents an organization in the system. */
 export type Organization = {
   __typename?: 'Organization';
-  /** Slug of the organization. */
-  slug: Scalars['String']['output'];
+  /** This service's id of the organization. */
+  id: Scalars['ID']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 export type ParamPair = {
@@ -4966,6 +4976,10 @@ export type QueryWiregramsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
 /** Register a module (upsert by name, scoped to the caller's organization): the components and operations a UI app can render and evaluate beyond the spec's catalogs. */
 export type RegisterModuleInput = {
   /** The spec's versioned catalogs (blok language v2) this UI implements whole, as name@version ('ui@1', 'scene@1'). Its `components` are what it draws beyond them. */
@@ -5007,7 +5021,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

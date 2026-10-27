@@ -139,7 +139,7 @@ export const useMikroBigFileUpload = () => {
       >({
         mutation: RequestBigfileUploadDocument,
         variables: {
-          input: { originalFileName: file.name,  },
+          input: { originalFileName: file.name, fileSize: file.size },
         },
       });
 

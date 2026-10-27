@@ -324,7 +324,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>` */
+  identifier: Scalars['String']['output'];
 };
 
 export type Query = {

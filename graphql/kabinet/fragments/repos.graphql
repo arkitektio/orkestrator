@@ -18,6 +18,7 @@ fragment Repo on GithubRepo {
   updatedAt
   organization {
     id
+    identifier
   }
   # The same selection the flavour cards take, plus what the repo's Info rail
   # says about each flavour: which image it is and what it needs to run.

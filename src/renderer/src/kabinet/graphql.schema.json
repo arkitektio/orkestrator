@@ -12857,8 +12857,24 @@
         "isOneOf": null,
         "fields": [
           {
-            "name": "slug",
-            "description": "Slug of the organization.",
+            "name": "id",
+            "description": "This service's id of the organization.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": "The organization across issuers and services: `<issuer>#<org>`.",
             "args": [],
             "type": {
               "kind": "NON_NULL",

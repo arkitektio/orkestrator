@@ -2725,12 +2725,11 @@ type GeneralMediaAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """One view over the organization's evidence log"""
@@ -4052,6 +4051,11 @@ type Mutation {
   Record measurements against a datum already on the record, as one act (was `updateStructure`)
   """
   recordMetrics(input: RecordMetricsInput!): AssertedStructure!
+
+  """
+  Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshMediaUpload(input: RefreshUploadInput!): MediaUploadGrant!
 
   """
   Request temporary S3 read credentials for media files in the organization
@@ -5421,6 +5425,10 @@ input RecordMetricsInput {
   object: String!
 }
 
+input RefreshUploadInput {
+  storeId: String!
+}
+
 """A relation edge between two entities"""
 type Relation implements Edge {
   """Who claimed this, and when"""
@@ -5683,7 +5691,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

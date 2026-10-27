@@ -1692,6 +1692,8 @@ export type Mutation = {
   pinSecurityListing: SecurityListing;
   /** Run the rules over existing transactions. */
   reapplyRules: Scalars['Int']['output'];
+  /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
   /** Fetch and store daily closes from the enabled sources. */
   refreshSecurityPrices: Array<PriceRefresh>;
   /** Forget a merchant spelling. */
@@ -1912,6 +1914,11 @@ export type MutationReapplyRulesArgs = {
 };
 
 
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
 export type MutationRefreshSecurityPricesArgs = {
   dateFrom?: InputMaybe<Scalars['Date']['input']>;
   dateTo?: InputMaybe<Scalars['Date']['input']>;
@@ -2062,7 +2069,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 /** A dashboard for a window, compared with the previous period or the same period last year. */
@@ -2771,13 +2779,17 @@ export enum RecurringStatus {
   Ignored = 'IGNORED'
 }
 
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
 export type RequestBigFileAccessInput = {
   storeId: Scalars['String']['input'];
 };
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

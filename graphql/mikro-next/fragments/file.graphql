@@ -10,6 +10,7 @@ fragment File on File {
   }
   organization {
     id
+    identifier
   }
   size
   contentType
