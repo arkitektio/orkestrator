@@ -44,10 +44,15 @@ export function CodeBlock({ language, content }: CodeBlockProps) {
   );
 }
 
+/** Per fence language, what draws a code block instead of the plain one (```bsx -> a blok preview). */
+export type CodeRenderers = Readonly<Record<string, (content: string) => React.ReactNode>>;
+
 interface MarkdownProps {
   text: string;
   isOwn?: boolean;
   className?: string;
+  /** Keep the object stable (a module constant): the component is memoised on its props. */
+  codeRenderers?: CodeRenderers;
 }
 
 // ---------------------------------------------------------------------------
@@ -311,7 +316,7 @@ const renderInline = (nodes: InlineNode[], isOwn: boolean): React.ReactNode[] =>
     }
   });
 
-function MarkdownImpl({ text, isOwn = false, className }: MarkdownProps) {
+function MarkdownImpl({ text, isOwn = false, className, codeRenderers }: MarkdownProps) {
   const blocks = useMemo(() => parseBlocks(text), [text]);
 
   return (
@@ -366,7 +371,9 @@ function MarkdownImpl({ text, isOwn = false, className }: MarkdownProps) {
               </Tag>
             );
           }
-          case "code":
+          case "code": {
+            const draw = codeRenderers?.[block.language];
+            if (draw) return <React.Fragment key={idx}>{draw(block.content)}</React.Fragment>;
             return (
               <CodeBlock
                 key={idx}
@@ -374,6 +381,7 @@ function MarkdownImpl({ text, isOwn = false, className }: MarkdownProps) {
                 content={block.content}
               />
             );
+          }
           case "paragraph":
           default:
             return (

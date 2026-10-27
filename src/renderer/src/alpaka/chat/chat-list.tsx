@@ -18,7 +18,17 @@ import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import { Avatar, AvatarFallback } from "@/core/ui/avatar";
 import ChatBottombar from "./chat-bottombar";
-import { Markdown } from "@/core/ui/markdown";
+import { Markdown, type CodeRenderers } from "@/core/ui/markdown";
+
+/** A ```bsx fence in a message is a blok draft (the blok assistant streams one): drawn as a live preview. */
+const BsxDraftPreview = React.lazy(() => import("@/rekuest/components/BsxDraftPreview"));
+const CODE_RENDERERS: CodeRenderers = {
+  bsx: (content) => (
+    <React.Suspense fallback={null}>
+      <BsxDraftPreview source={content} />
+    </React.Suspense>
+  ),
+};
 
 interface ChatListProps {
   messages?: ListMessageFragment[];
@@ -195,7 +205,7 @@ const ChatMessage = React.memo(function ChatMessage({
             )}
           >
             <CardContent className="space-y-3 p-3">
-              {message.text && <Markdown text={message.text} />}
+              {message.text && <Markdown text={message.text} codeRenderers={CODE_RENDERERS} />}
               {isStreaming && (
                 <StreamingDots className="text-muted-foreground" />
               )}
