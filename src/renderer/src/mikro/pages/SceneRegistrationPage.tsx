@@ -32,7 +32,6 @@ const DetailPage = asDetailQueryRoute(
           must not end the session. */}
       <Registration.Provider>
         <MikroScene.ModelPage
-          variant={"black"}
           overlay
           actions={<MikroScene.Actions object={id} />}
           object={data.scene}
@@ -52,7 +51,7 @@ const DetailPage = asDetailQueryRoute(
         >
           <div className="relative h-full w-full">
             <Scene.Viewport inCanvas={<Registration.CanvasLayer />} />
-            <div className="pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
+            <div className="dark text-foreground pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
               <div className="text-xs font-medium uppercase tracking-wide text-amber-400">Aligning layers</div>
               {/* The way back: the scene itself. */}
               <MikroScene.DetailLink

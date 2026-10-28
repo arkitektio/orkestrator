@@ -25,7 +25,6 @@ export const SectionPage = asDetailQueryRoute(useDetailSectionQuery, ({ data }) 
       object={{ id: pageId }}
       title={section.id}
       help={ELEKTRO_HELP.section}
-      variant="black"
       overlay
       pageActions={
         section.cell?.compoundId && (

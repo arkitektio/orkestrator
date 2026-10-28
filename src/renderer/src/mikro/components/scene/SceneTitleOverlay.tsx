@@ -11,7 +11,7 @@ type PageScene = GetSceneQuery['scene']
  */
 export const SceneTitleOverlay = ({ scene }: { scene: PageScene }) => {
   return (
-    <div className="pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5 rounded-lg">
+    <div className="dark text-foreground pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5 rounded-lg">
       {/* `break-all` + `truncate` for the same reason as the dataset title: names
           are often one long token. */}
       <MikroScene.DetailLink

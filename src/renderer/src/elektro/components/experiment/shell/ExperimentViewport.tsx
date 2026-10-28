@@ -59,7 +59,7 @@ export const ExperimentViewport = ({ variant = "full" }: { variant?: ExperimentV
   const status = useExperimentScopeStatus();
   if (status.phase !== "ready") {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-black p-6 text-center">
+      <div className="dark text-foreground flex h-full w-full items-center justify-center rounded-lg bg-black p-6 text-center">
         <div className="max-w-sm text-sm text-muted-foreground">{phaseMessage(status)}</div>
       </div>
     );
@@ -78,7 +78,7 @@ const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
   const rowCount = useViewerStore((s) => s.rowCount);
 
   return (
-    <div className="relative h-full w-full select-none overflow-hidden bg-black [-webkit-user-select:none]">
+    <div className="dark text-foreground relative h-full w-full select-none overflow-hidden rounded-lg bg-black [-webkit-user-select:none]">
       {/* Headless: layout and URL follow the stores. */}
       <StackLayoutManager />
       {full && <TimeRangeUrlSync />}

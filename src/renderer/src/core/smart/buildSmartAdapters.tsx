@@ -17,8 +17,7 @@ export type SmartModelPage<T extends Object = Object> = {
   help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: unknown;
-  /** Seamless sidebar rail — see PageLayout's `overlay` prop. */
+  /** A canvas page — see PageLayout's `overlay` prop. */
   overlay?: boolean;
   /** The rail tab to open when nothing valid is remembered. */
   defaultSidebar?: string;
@@ -35,7 +34,6 @@ export type SmartListPageProps<T extends Object = Object> = {
   help?: React.ReactNode;
   sidebars?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: unknown;
   callback?: (object: T) => void;
 };
 

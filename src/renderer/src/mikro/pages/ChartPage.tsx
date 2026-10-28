@@ -33,7 +33,6 @@ export const ChartPage = asDetailQueryRoute(
       // area, unreachable from anything rendered inside it.
       <Chart.Provider chart={chart} placementErrors={placementErrors}>
         <MikroChart.ModelPage
-          variant={"black"}
           overlay
           object={chart}
           help={MIKRO_HELP.chart}

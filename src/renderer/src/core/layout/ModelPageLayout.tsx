@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { flattenChildren, Sidebars } from "./Sidebars";
-import { PageLayout, PageVariant } from "./PageLayout";
+import { PageLayout } from "./PageLayout";
 import { SlotSections } from "./PageSections";
 import { smartRegistry } from "@/core/smart/registry";
 
@@ -94,8 +94,7 @@ export type ModelPageLayoutProps = {
   help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: PageVariant;
-  /** Seamless sidebar rail — see PageLayout's `overlay` prop. */
+  /** A canvas page — see PageLayout's `overlay` prop. */
   overlay?: boolean;
   /** The rail tab to open when nothing valid is remembered. */
   defaultSidebar?: string;
@@ -122,7 +121,6 @@ export const ModelPageLayout = ({
   children,
   identifier,
   object,
-  variant,
   overlay,
   defaultSidebar,
   sidebarKey,
@@ -155,7 +153,6 @@ export const ModelPageLayout = ({
         <Sidebars
           sidebarKey={sidebarKey ?? "DetailModel"}
           defaultTab={defaultSidebar}
-          variant={overlay ? "overlay" : "default"}
         >
           {datum && (
             <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>{knowledgeSidebar}</Sidebars.Tab>
@@ -165,7 +162,6 @@ export const ModelPageLayout = ({
         </Sidebars>
       )}
       help={help}
-      variant={variant}
       overlay={overlay}
       actions={actions}
       // The menu is the page's way into everything a model can do, so

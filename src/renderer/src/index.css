@@ -305,11 +305,17 @@
   --logo-spectrum-red: var(--spectrum-red);
 }
 
-.dark {
+/* The brand defaults belong to the document, not to every `.dark`: the scene
+   canvas scopes `.dark` onto its own subtree in light mode (`SceneViewport`),
+   and redeclaring the brand there would hide the user's colour (set inline on
+   `<html>` by `brandTheme`) inside it. */
+:root.dark {
   /* --- MASTER THEME CONTROLS --- */
   --brand-hue: 165.057;
   --brand-chroma: 0.14384;
+}
 
+.dark {
   --background: oklch(0% 0 0);
   --backgroundpaired: oklch(34.846% 0.005 var(--brand-hue));
   --foreground: oklch(0.985 0.005 var(--brand-hue));

@@ -26,7 +26,6 @@ const DetailPage = asDetailQueryRoute(
       // area, unreachable from anything rendered inside it.
       <Scene.Provider scene={data.scene}>
         <MikroScene.ModelPage
-          variant={"black"}
           overlay
           actions={<MikroScene.Actions object={id} />}
           object={data.scene}

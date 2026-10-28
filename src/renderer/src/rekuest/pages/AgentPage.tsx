@@ -107,18 +107,19 @@ const useDefaultSceneBlok = (agent: string) => {
 
 /**
  * The agent's default scene, on the right of the page. It starts just inside
- * the content column (620px wide) and its left edge fades to black, so the
- * two meet in a soft seam rather than the scene running behind the lists.
+ * the content column (620px wide) and its left edge fades into the page, so
+ * the two meet in a soft seam rather than the scene running behind the lists.
+ * The scene itself is dark in either theme (`dark`), like every canvas.
  */
 const AgentBackgroundScene = (props: { materializedBlok: string }) => (
-  <div className="absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
+  <div className="dark text-foreground absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
     <MaterializedBlokById
       key={props.materializedBlok}
       materializedBlokId={props.materializedBlok}
       surfaceId={props.materializedBlok}
       chrome="none"
     />
-    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-[linear-gradient(90deg,black_0%,rgba(0,0,0,0.85)_35%,transparent_100%)]" />
+    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-linear-to-r from-background via-background/85 via-35% to-transparent" />
   </div>
 );
 
@@ -212,7 +213,6 @@ export const AgentPage = asDetailQueryRoute(
         title={data.agent.name}
         help={REKUEST_HELP.agent}
         object={data.agent}
-        variant={"black"}
         sidebars={
           <Sidebars>
             <Sidebars.Tab label="Knowledge">

@@ -88,7 +88,6 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
 
     return (
       <ElektroNeuronModel.ModelPage
-        variant="black"
         title={`Edit: ${data.neuronModel.name}`}
         help={ELEKTRO_HELP.neuronModelEditor}
         object={data.neuronModel}

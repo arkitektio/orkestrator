@@ -40,7 +40,6 @@ export const TableDatasetPage = asDetailQueryRoute(
           object={dataset}
           help={MIKRO_HELP.tableDataset}
           title={dataset.name}
-          variant={"black"}
           overlay
           actions={<MikroTableDataset.Actions object={dataset} />}
           additionalSidebars={

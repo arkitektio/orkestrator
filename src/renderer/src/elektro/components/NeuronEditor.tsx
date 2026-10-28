@@ -484,7 +484,7 @@ export const NeuronEditor = ({
   return (
     <MorphologyStoreContext.Provider value={viewStore}>
     <MechanismCatalogProvider>
-    <div className="w-full h-full relative overflow-hidden bg-black">
+    <div className="dark text-foreground w-full h-full relative overflow-hidden rounded-lg bg-black">
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 w-80 max-h-[calc(100vh-2rem)]">
         <Card className="p-4 flex flex-col gap-4 h-full bg-card/95 backdrop-blur-sm">
           <div className="flex-none space-y-3">

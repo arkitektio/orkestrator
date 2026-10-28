@@ -1,6 +1,5 @@
 import { ListPageLayout } from "@/core/layout/ListPageLayout";
 import { ModelPageLayout } from "@/core/layout/ModelPageLayout";
-import { PageVariant } from "@/core/layout/PageLayout";
 import {
   configureSmartBuilder,
   SmartListPageProps,
@@ -16,12 +15,6 @@ import { MODULE_HOVERS } from "../core/modules/registries";
 // (app/modules/registries). They run module-specific GraphQL, so the guard wraps
 // the component from the outside: its query hooks only mount once the backend
 // is `ready`, and nothing fires when the module is absent.
-
-// `SmartModelPage`/`SmartListPageProps` type `variant` as `unknown` since the
-// smart-adapter layer is generic over any page layout; narrow it down to the
-// concrete `PageVariant` union that the shadcn layouts actually accept.
-const asPageVariant = (variant: unknown): PageVariant | undefined =>
-  variant === "black" || variant === "default" ? variant : undefined;
 
 
 configureSmartBuilder({
@@ -50,7 +43,6 @@ configureSmartBuilder({
       <ModelPageLayout
         identifier={identifier}
         {...props}
-        variant={asPageVariant(props.variant)}
       >
         {children}
       </ModelPageLayout>
@@ -66,7 +58,6 @@ configureSmartBuilder({
       <ListPageLayout
         identifier={identifier}
         {...props}
-        variant={asPageVariant(props.variant)}
         callback={listCallback}
       >
         {children}

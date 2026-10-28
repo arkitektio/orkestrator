@@ -32,7 +32,6 @@ export const NeuronModelPage = asDetailQueryRoute(
           object={model}
           title={model.name}
           help={ELEKTRO_HELP.neuronModel}
-          variant="black"
           overlay
           actions={<ElektroNeuronModel.Actions object={model} />}
           pageActions={

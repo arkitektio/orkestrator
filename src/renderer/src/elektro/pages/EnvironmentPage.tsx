@@ -18,14 +18,13 @@ export const EnvironmentPage = asDetailQueryRoute(
 
     return (
       <ElektroEnvironment.ModelPage
-        variant="black"
         title={env?.name}
         help={ELEKTRO_HELP.environment}
         object={env}
       >
         <div className="h-full w-full grid grid-cols-12 gap-4 pointer-events-none p-4">
-          <div className="col-span-4 @container bg-black bg-clip-padding backdrop-filter backdrop-blur-2xl bg-opacity-10 z-100 rounded-lg overflow-hidden flex flex-col pointer-events-auto">
-            <div className="p-6 border-b border-white/10">
+          <div className="col-span-4 @container bg-muted/40 backdrop-blur-2xl z-100 rounded-lg overflow-hidden flex flex-col pointer-events-auto">
+            <div className="p-6 border-b border-border">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">
                 Model Environment
               </p>
@@ -55,9 +54,9 @@ export const EnvironmentPage = asDetailQueryRoute(
                   This environment exposes no mechanisms.
                 </p>
               ) : (
-                <ul className="divide-y divide-white/10">
+                <ul className="divide-y divide-border">
                   {mechanisms.map((mech) => (
-                    <li key={mech.id} className="p-6 hover:bg-white/5 transition-colors">
+                    <li key={mech.id} className="p-6 hover:bg-accent/50 transition-colors">
                       <ElektroMechanism.DetailLink
                         object={mech}
                         className="text-lg font-semibold tracking-tight hover:underline"

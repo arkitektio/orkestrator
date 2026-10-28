@@ -4,7 +4,6 @@ import { PageActionBar } from "./PageActionBar";
 import { useTabTitle } from "@/core/tabs/useTabTitle";
 import { useCopyUniversalLink } from "@/core/tabs/sharing/use-copy-universal-link";
 import { useReport } from "@/core/debug/use-report";
-import { cn } from "@/core/util/utils";
 import { ChevronDownIcon, PanelRight } from "lucide-react";
 import {
   cloneElement,
@@ -31,8 +30,6 @@ import {
 import { HelpSidebar } from "./help";
 import { Sidebars } from "./Sidebars";
 
-export type PageVariant = "black" | "default";
-
 export type PageLayoutProps = {
   title: React.ReactNode | undefined;
   children: React.ReactNode;
@@ -49,12 +46,10 @@ export type PageLayoutProps = {
   help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: "black" | "default";
   /**
-   * Seamless sidebar: the rail paints the page's own surface instead of
-   * `bg-sidebar` and the resize divider goes invisible (still draggable), so
-   * content and rail read as one surface. Meant for the black, canvas-style
-   * pages whose sidebar hosts scene chrome (the Layers tab).
+   * A canvas page: the content is one viewer sized `h-full w-full`, inset
+   * from the page edges and never scrolled. The rail is the same as on every
+   * other page.
    */
   overlay?: boolean;
 };
@@ -92,7 +87,6 @@ export const PageLayout = ({
   children,
   actions,
   pageActions,
-  variant = "default",
   overlay = false,
   title,
 }: PageLayoutProps) => {
@@ -167,27 +161,17 @@ export const PageLayout = ({
     >
       <ResizablePanel className="h-full w-full" defaultSize={80} id="page" order={1}>
         <div
-          className={cn(
-            "h-full w-full flex flex-col relative overflow-hidden",
-            variant == "default" ? "bg-radial-[at_100%_100%] from-background to-backgroundpaired" : "bg-black text-gray-300",
-          )}
+          className="h-full w-full flex flex-col relative overflow-hidden bg-radial-[at_100%_100%] from-background to-backgroundpaired"
         >
           {/* `min-h-16 shrink-0` pins the row to exactly 4rem. Without an
               explicit min-height the item's `min-height: auto` lets tall
               content (a breadcrumb trail wrapping to a second line) grow the
               row, and `items-center` then pushes the breadcrumbs down — model
               pages ended up a couple of pixels lower than list pages. */}
-          <div
-            className={cn(
-              "h-16 min-h-16 shrink-0 flex-row flex justify-between border-border px-2 py-2 items-center",
-              variant == "default"
-                ? ""
-                : "border-0 bg-black bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
-            )}
-          >
+          <div className="h-16 min-h-16 shrink-0 flex-row flex justify-between border-border px-2 py-1 items-center">
             {/* `min-w-0` lets this actually shrink below its content width so
                 the trail truncates instead of wrapping. */}
-            <div className="p-3 flex-grow min-w-[10rem] flex flex-col truncate">
+            <div className="p-2 flex-grow min-w-[10rem] flex flex-col truncate">
               <div className="flex-shrink min-w-0">
                 <BreadCrumbs />
               </div>
@@ -240,44 +224,36 @@ export const PageLayout = ({
             </div>
           </div>
 
-          {/* An overlay page paints its own full-bleed canvas and sizes it
-              `h-full w-full`; padding here would make that canvas 1.5rem taller
-              and wider than its box, overflowing the scroll container. */}
-          <div
-            className={cn(
-              "flex-grow @container flex flex-col overflow-y-auto",
-              overlay ? "p-0" : "p-3",
-            )}
-          >
-            {children}
-          </div>
+          {/* An overlay page paints its own canvas and sizes it
+              `h-full w-full`. Padding on the scroll container made that canvas
+              1.5rem taller and wider than its box, so the inset is an
+              absolutely placed box instead: its padded content box is a
+              definite size, and the canvas fills exactly that. */}
+          {overlay ? (
+            <div className="relative flex-grow min-h-0 @container">
+              <div className="absolute inset-0 flex flex-col px-3 pb-3">{children}</div>
+            </div>
+          ) : (
+            <div className="flex-grow @container flex flex-col overflow-y-auto p-3">
+              {children}
+            </div>
+          )}
         </div>
       </ResizablePanel>
       {pageSidebarShown && (
         <>
-          {/* Overlay: the handle root's `bg-border w-px` IS the divider line;
-              its `after:` hit area has no background, so making the root
-              transparent hides the line without losing the drag target. */}
-          <ResizableHandle className={overlay ? "bg-transparent" : undefined} />
+          <ResizableHandle />
           <ResizablePanel
             minSize={10}
             maxSize={80}
             defaultSize={20}
             order={2}
-            className={cn(
-              overlay
-                ? variant == "default"
-                  ? "bg-radial-[at_100%_100%] from-background to-backgroundpaired"
-                  : "bg-black text-gray-300"
-                : variant == "default"
-                  ? // Darker than the page in BOTH themes, which needs a pair:
-                    // `--muted` is a step under white in light mode, but in
-                    // dark mode it is 0.269 against `--sidebar`'s 0.205 -- i.e.
-                    // lighter. Dark mode drops to `--background` instead, the
-                    // black the page gradient starts from.
-                    "bg-muted dark:bg-background"
-                  : "border-0 bg-sidebar bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
-            )}
+            // Darker than the page in BOTH themes, which needs a pair:
+            // `--muted` is a step under white in light mode, but in dark mode
+            // it is 0.269 against `--sidebar`'s 0.205 -- i.e. lighter. Dark
+            // mode drops to `--background` instead, the black the page
+            // gradient starts from.
+            className="bg-muted dark:bg-background"
             id="sidebar"
 
           >

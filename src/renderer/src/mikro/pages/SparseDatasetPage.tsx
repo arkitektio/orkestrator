@@ -30,7 +30,6 @@ export const SparseDatasetPage = asDetailQueryRoute(
         object={dataset}
         help={MIKRO_HELP.sparseDataset}
         title={sparseDatasetTitle(dataset.name)}
-        variant="black"
         overlay
         actions={<MikroSparseDataset.Actions object={dataset} />}
         pageActions={<MikroSparseDataset.ObjectButton alwaysShow object={dataset} />}

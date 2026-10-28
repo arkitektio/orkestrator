@@ -100,7 +100,6 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         object={dataset}
         help={MIKRO_HELP.arrayDataset}
         title={dataset.name}
-        variant="black"
         overlay
         actions={<MikroArrayDataset.Actions object={dataset} />}
         pageActions={

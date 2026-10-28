@@ -139,7 +139,6 @@ export const CoordinateSystemPage = asDetailQueryRoute(
         object={system}
         help={MIKRO_HELP.coordinateSystem}
         title={system.name}
-        variant="black"
         overlay
         actions={<MikroCoordinateSystem.Actions object={system} />}
         pageActions={
