@@ -1,0 +1,11 @@
+query ListDeployments($filters: DeploymentFilter, $pagination: OffsetPaginationInput) {
+  deployments(filters: $filters, pagination: $pagination) {
+    ...ListDeployment
+  }
+}
+
+query GetDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...Deployment
+  }
+}

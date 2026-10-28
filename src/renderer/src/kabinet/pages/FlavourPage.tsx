@@ -6,10 +6,11 @@ import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/core/linkers";
 import { Boxes, Container, GitBranch, KeyRound, Layers, Server, Shapes } from "lucide-react";
 import { bringsBloks, FlavourBloks } from "../components/bloks/FlavourBloks";
 import { lazy, Suspense, useMemo } from "react";
-import { PodStatus, useGetFlavourQuery } from "../api/graphql";
+import { ListDeploymentFragment, PodStatus, useGetFlavourQuery } from "../api/graphql";
 import { hasOwnLogo, logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact } from "../components/AppTabs";
+import DeploymentCard from "../components/cards/DeploymentCard";
 import { InstallButton, SelectorBadges } from "../components/store/StoreParts";
 import { KABINET_HELP } from "../help";
 
@@ -63,7 +64,7 @@ const SourceTab = ({
 const DeploymentsTab = ({
   deployments,
 }: {
-  deployments: readonly { id: string; status: PodStatus }[];
+  deployments: readonly ListDeploymentFragment[];
 }) => {
   if (deployments.length === 0) {
     return (
@@ -74,11 +75,9 @@ const DeploymentsTab = ({
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
       {deployments.map((deployment) => (
-        <Badge key={deployment.id} variant="outline" className="rounded-full">
-          {deployment.status.toLowerCase()}
-        </Badge>
+        <DeploymentCard key={deployment.id} item={deployment} />
       ))}
     </div>
   );

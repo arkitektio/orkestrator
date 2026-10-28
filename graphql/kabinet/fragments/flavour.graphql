@@ -59,8 +59,7 @@ fragment Flavour on Flavour {
     url
   }
   deployments {
-    id
-    status
+    ...ListDeployment
   }
   definitions {
     ...ListDefinition

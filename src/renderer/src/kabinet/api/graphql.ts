@@ -3277,6 +3277,22 @@ export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, n
     & KabinetLogoBlokFragment
   ) | null };
 
+export type ListDeploymentFragment = { __typename?: 'Deployment', id: string, localId: string, name: string, status: PodStatus, backend: { __typename?: 'Backend', id: string, name: string, kind: string }, flavour: { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
+        { __typename?: 'FlavourBlok' }
+        & KabinetLogoBlokFragment
+      ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } } };
+
+export type DeploymentFragment = (
+  { __typename?: 'Deployment', backend: (
+    { __typename?: 'Backend' }
+    & ListBackendFragment
+  ), approval?: (
+    { __typename?: 'ReleaseApproval' }
+    & ListReleaseApprovalFragment
+  ) | null }
+  & ListDeploymentFragment
+);
+
 export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
       { __typename?: 'FlavourBlok' }
       & KabinetLogoBlokFragment
@@ -3307,7 +3323,10 @@ export type FlavourFragment = (
   ) | (
     { __typename?: 'RocmSelector' }
     & StoreSelector_RocmSelector_Fragment
-  )>, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }>, definitions: Array<(
+  )>, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, deployments: Array<(
+    { __typename?: 'Deployment' }
+    & ListDeploymentFragment
+  )>, definitions: Array<(
     { __typename?: 'Definition' }
     & ListDefinitionFragment
   )>, blokKeys: Array<{ __typename?: 'FlavourBlok', id: string, context: ComponentContext }>, release: { __typename?: 'Release', scopes: Array<string>, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, selectors: Array<{ __typename?: 'CPUSelector' } | (
@@ -3331,10 +3350,10 @@ export type PodFragment = { __typename?: 'Pod', id: string, podId: string, statu
   ), latestLogDump?: { __typename?: 'LogDump', logs: string, createdAt: any } | null, resource?: (
     { __typename?: 'Resource' }
     & ListResourceFragment
-  ) | null, deployment: { __typename?: 'Deployment', id: string, approval?: (
+  ) | null, deployment: { __typename?: 'Deployment', id: string, name: string, approval?: (
       { __typename?: 'ReleaseApproval' }
       & ListReleaseApprovalFragment
-    ) | null, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
+    ) | null, flavour: { __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
           { __typename?: 'FlavourBlok' }
           & KabinetLogoBlokFragment
         ) | null, app: { __typename?: 'App', identifier: string } } } } };
@@ -3985,6 +4004,17 @@ export type ListAppsQuery = { __typename?: 'Query', apps: Array<(
     & ShelfAppFragment
   )> };
 
+export type AppCatalogQueryVariables = Exact<{
+  filters?: InputMaybe<AppFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type AppCatalogQuery = { __typename?: 'Query', apps: Array<(
+    { __typename?: 'App' }
+    & AppFragment
+  )> };
+
 export type ListReleaseApprovalsQueryVariables = Exact<{
   filters?: InputMaybe<ReleaseApprovalFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -4112,6 +4142,27 @@ export type DefinitionReleaseQueryVariables = Exact<{
 
 
 export type DefinitionReleaseQuery = { __typename?: 'Query', definition: { __typename?: 'Definition', id: string, flavours: Array<{ __typename?: 'Flavour', id: string, release: { __typename?: 'Release', id: string, version: string } }> } };
+
+export type ListDeploymentsQueryVariables = Exact<{
+  filters?: InputMaybe<DeploymentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<(
+    { __typename?: 'Deployment' }
+    & ListDeploymentFragment
+  )> };
+
+export type GetDeploymentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: (
+    { __typename?: 'Deployment' }
+    & DeploymentFragment
+  ) };
 
 export type ListFlavoursQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4486,19 +4537,6 @@ export const ApprovableReleaseFragmentDoc = gql`
 }
     ${KabinetLogoBlokFragmentDoc}
 ${ListReleaseApprovalFragmentDoc}`;
-export const ListBackendFragmentDoc = gql`
-    fragment ListBackend on Backend {
-  id
-  user {
-    sub
-  }
-  client {
-    clientId
-  }
-  name
-  kind
-}
-    `;
 export const KabinetBlokFragmentDoc = gql`
     fragment KabinetBlok on FlavourBlok {
   id
@@ -5198,6 +5236,65 @@ export const SmartDefinitionFragmentDoc = gql`
   }
 }
     ${KabinetLogoBlokFragmentDoc}`;
+export const ListDeploymentFragmentDoc = gql`
+    fragment ListDeployment on Deployment {
+  id
+  localId
+  name
+  status
+  backend {
+    id
+    name
+    kind
+  }
+  flavour {
+    id
+    name
+    logo
+    originalLogo
+    release {
+      id
+      version
+      logo
+      originalLogo
+      logoBlok {
+        ...KabinetLogoBlok
+      }
+      app {
+        id
+        identifier
+        embedding
+      }
+    }
+  }
+}
+    ${KabinetLogoBlokFragmentDoc}`;
+export const ListBackendFragmentDoc = gql`
+    fragment ListBackend on Backend {
+  id
+  user {
+    sub
+  }
+  client {
+    clientId
+  }
+  name
+  kind
+}
+    `;
+export const DeploymentFragmentDoc = gql`
+    fragment Deployment on Deployment {
+  ...ListDeployment
+  backend {
+    ...ListBackend
+  }
+  approval {
+    ...ListReleaseApproval
+  }
+}
+    ${ListDeploymentFragmentDoc}
+${ListBackendFragmentDoc}
+${ListReleaseApprovalFragmentDoc}`;
 export const ListDefinitionFragmentDoc = gql`
     fragment ListDefinition on Definition {
   id
@@ -5254,8 +5351,7 @@ export const FlavourFragmentDoc = gql`
     url
   }
   deployments {
-    id
-    status
+    ...ListDeployment
   }
   definitions {
     ...ListDefinition
@@ -5279,6 +5375,7 @@ export const FlavourFragmentDoc = gql`
 }
     ${ListFlavourFragmentDoc}
 ${StoreSelectorFragmentDoc}
+${ListDeploymentFragmentDoc}
 ${ListDefinitionFragmentDoc}
 ${CudaSelectorFragmentDoc}
 ${RocmSelectorFragmentDoc}`;
@@ -5368,10 +5465,13 @@ export const PodFragmentDoc = gql`
   }
   deployment {
     id
+    name
     approval {
       ...ListReleaseApproval
     }
     flavour {
+      id
+      name
       release {
         id
         version
@@ -5866,6 +5966,42 @@ export function useListAppsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ListAppsQueryHookResult = ReturnType<typeof useListAppsQuery>;
 export type ListAppsLazyQueryHookResult = ReturnType<typeof useListAppsLazyQuery>;
 export type ListAppsQueryResult = Apollo.QueryResult<ListAppsQuery, ListAppsQueryVariables>;
+export const AppCatalogDocument = gql`
+    query AppCatalog($filters: AppFilter, $pagination: OffsetPaginationInput) {
+  apps(filters: $filters, pagination: $pagination) {
+    ...App
+  }
+}
+    ${AppFragmentDoc}`;
+
+/**
+ * __useAppCatalogQuery__
+ *
+ * To run a query within a React component, call `useAppCatalogQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAppCatalogQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAppCatalogQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useAppCatalogQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AppCatalogQuery, AppCatalogQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AppCatalogQuery, AppCatalogQueryVariables>(AppCatalogDocument, options);
+      }
+export function useAppCatalogLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AppCatalogQuery, AppCatalogQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AppCatalogQuery, AppCatalogQueryVariables>(AppCatalogDocument, options);
+        }
+export type AppCatalogQueryHookResult = ReturnType<typeof useAppCatalogQuery>;
+export type AppCatalogLazyQueryHookResult = ReturnType<typeof useAppCatalogLazyQuery>;
+export type AppCatalogQueryResult = Apollo.QueryResult<AppCatalogQuery, AppCatalogQueryVariables>;
 export const ListReleaseApprovalsDocument = gql`
     query ListReleaseApprovals($filters: ReleaseApprovalFilter, $pagination: OffsetPaginationInput) {
   releaseApprovals(filters: $filters, pagination: $pagination) {
@@ -6355,6 +6491,77 @@ export function useDefinitionReleaseLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type DefinitionReleaseQueryHookResult = ReturnType<typeof useDefinitionReleaseQuery>;
 export type DefinitionReleaseLazyQueryHookResult = ReturnType<typeof useDefinitionReleaseLazyQuery>;
 export type DefinitionReleaseQueryResult = Apollo.QueryResult<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>;
+export const ListDeploymentsDocument = gql`
+    query ListDeployments($filters: DeploymentFilter, $pagination: OffsetPaginationInput) {
+  deployments(filters: $filters, pagination: $pagination) {
+    ...ListDeployment
+  }
+}
+    ${ListDeploymentFragmentDoc}`;
+
+/**
+ * __useListDeploymentsQuery__
+ *
+ * To run a query within a React component, call `useListDeploymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListDeploymentsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListDeploymentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+      }
+export function useListDeploymentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+        }
+export type ListDeploymentsQueryHookResult = ReturnType<typeof useListDeploymentsQuery>;
+export type ListDeploymentsLazyQueryHookResult = ReturnType<typeof useListDeploymentsLazyQuery>;
+export type ListDeploymentsQueryResult = Apollo.QueryResult<ListDeploymentsQuery, ListDeploymentsQueryVariables>;
+export const GetDeploymentDocument = gql`
+    query GetDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...Deployment
+  }
+}
+    ${DeploymentFragmentDoc}`;
+
+/**
+ * __useGetDeploymentQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetDeploymentQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+      }
+export function useGetDeploymentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+        }
+export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQuery>;
+export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
+export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
 export const ListFlavoursDocument = gql`
     query ListFlavours {
   flavours {

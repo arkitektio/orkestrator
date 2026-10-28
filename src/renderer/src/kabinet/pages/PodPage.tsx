@@ -9,7 +9,7 @@ import {
 } from "@/core/ui/card";
 import { PageSections } from "@/core/layout/PageSections";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
-import { KabinetApproval, KabinetPod } from "@/core/linkers";
+import { KabinetApproval, KabinetDeployment, KabinetFlavour, KabinetPod, KabinetRelease } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
@@ -75,16 +75,31 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
                 <div className="font-medium break-all">{pod.backend.name}</div>
               </div>
               <div>
+                <div className="text-muted-foreground">Deployment</div>
+                <KabinetDeployment.DetailLink
+                  object={pod.deployment}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  {pod.deployment.name}
+                </KabinetDeployment.DetailLink>
+              </div>
+              <div>
                 <div className="text-muted-foreground">Flavour</div>
-                <div className="font-medium break-all">
-                  {pod.deployment.flavour.release.id}
-                </div>
+                <KabinetFlavour.DetailLink
+                  object={pod.deployment.flavour}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  {pod.deployment.flavour.name}
+                </KabinetFlavour.DetailLink>
               </div>
               <div>
                 <div className="text-muted-foreground">Release</div>
-                <div className="font-medium break-all">
-                  {pod.deployment.flavour.release.id}
-                </div>
+                <KabinetRelease.DetailLink
+                  object={pod.deployment.flavour.release}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  v{pod.deployment.flavour.release.version}
+                </KabinetRelease.DetailLink>
               </div>
               {pod.deployment.approval && (
                 <div>

@@ -174,6 +174,49 @@ export const KABINET_HELP = {
       ]}
     />
   ),
+  apps: (
+    <PageHelp
+      intro="Every app registered with your organization, one card per app with its newest version. Come here to find an app by its identifier; the App Store is where to browse."
+      steps={[
+        <>Type into the search field to find an app by its identifier.</>,
+        <>Click an app card to open its page with its actions, builds and versions.</>,
+        <>Press <b>Get</b> on a card to install the app’s newest release.</>,
+        <>Press <b>Add Repo</b> if the app you are looking for is not listed yet.</>,
+      ]}
+      tips={[<>An app whose repository has not published a release yet is not listed.</>]}
+    />
+  ),
+  deployments: (
+    <PageHelp
+      intro="Every deployment: one build of an app installed on one backend. Pods are started from a deployment."
+      steps={[
+        <>Type into the search field to find a deployment by its name.</>,
+        <>Read the line under a deployment’s name for its status and the backend it is installed on.</>,
+        <>Click a deployment to open it.</>,
+      ]}
+    />
+  ),
+  deployment: (
+    <PageHelp
+      intro="One deployment: which build of which app is installed on which backend, and who it runs as."
+      steps={[
+        <>Click the app, the release, the flavour or the backend in the facts below the header to open them.</>,
+        <>Read <b>Runs as</b> for the release approval the deployment was installed under; click it to open the approval.</>,
+      ]}
+    />
+  ),
+  bloks: (
+    <PageHelp
+      intro="The bloks your GitHub repositories publish on their own, in .arkitekt/bloks.yaml. Bloks an app brings come with the app and are shown in the App Store."
+      steps={[
+        <>Type into the search field to find a blok.</>,
+        <>Press <b>Panels</b> or <b>Scenes</b> to show only one kind.</>,
+        <>Press <b>Install</b> on a blok to make it a blok of your organization; the dialog asks which agents it draws from.</>,
+        <>When its repository has changed a blok you installed, its card says <b>Update</b>. <b>Materialize</b> binds an installed blok to agents again.</>,
+        <>Press <b>Add Repo</b> to add a repository that publishes bloks.</>,
+      ]}
+    />
+  ),
   resource: (
     <PageHelp
       intro="A resource is something a backend runs pods on. This page shows the pods it hosts and the properties it reports."

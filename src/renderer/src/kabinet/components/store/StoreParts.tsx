@@ -10,6 +10,30 @@ import { StoreFlavourFragment, useGetApprovableReleaseQuery } from "../../api/gr
 import { deployableApprovals } from "../../lib/approvals";
 import { selectorLabel, StoreApp } from "./storeModel";
 
+/** A filter toggle, as the store and the list pages draw them. */
+export const Chip = ({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors [&>svg]:size-3.5",
+      active
+        ? "border-foreground bg-foreground text-background"
+        : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+    )}
+  >
+    {children}
+  </button>
+);
+
 export const HardwareBadges = ({
   app,
   className,

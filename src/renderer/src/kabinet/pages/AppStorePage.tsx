@@ -6,7 +6,6 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { Input } from "@/core/ui/input";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Skeleton } from "@/core/ui/skeleton";
-import { cn } from "@/core/util/utils";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowRight,
@@ -21,7 +20,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppStoreQuery, useRepoBloksQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/AppStoreCard";
@@ -30,6 +29,7 @@ import { RepoBlokSection } from "../components/store/RepoBlokCard";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { KABINET_HELP } from "../help";
 import {
+  Chip,
   HardwareBadges,
   InstallButton,
   FeaturedBadge,
@@ -64,29 +64,6 @@ const SORTS: { value: StoreSort; label: string }[] = [
   { value: "actions", label: "Most actions" },
   { value: "name", label: "A–Z" },
 ];
-
-const Chip = ({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      "flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors [&>svg]:size-3.5",
-      active
-        ? "border-foreground bg-foreground text-background"
-        : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-    )}
-  >
-    {children}
-  </button>
-);
 
 const Stat = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col">

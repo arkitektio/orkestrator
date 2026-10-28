@@ -17,4 +17,6 @@ export const KabinetResource = smartOf(manifest, "@kabinet/resource");
 export const KabinetApp = smartOf(manifest, "@kabinet/app");
 export const KabinetRelease = smartOf(manifest, "@kabinet/release");
 export const KabinetFlavour = smartOf(manifest, "@kabinet/flavour");
+/** One flavour installed on one backend: what its pods are started from. */
+export const KabinetDeployment = smartOf(manifest, "@kabinet/deployment");
 export const KabinetApproval = smartOf(manifest, "@kabinet/approval");

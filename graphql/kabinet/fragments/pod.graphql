@@ -50,11 +50,14 @@ fragment Pod on Pod {
   }
   deployment {
     id
+    name
     # Who this pod acts as: the release approval it was installed under.
     approval {
       ...ListReleaseApproval
     }
     flavour {
+      id
+      name
       release {
         id
         version

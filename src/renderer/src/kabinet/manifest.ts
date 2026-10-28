@@ -23,6 +23,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@kabinet/app", name: "App", datum: false, path: "apps/:id" },
     { identifier: "@kabinet/release", name: "Release (Kabinet)", datum: false, path: "releases/:id" },
     { identifier: "@kabinet/flavour", name: "Flavour", datum: false, path: "flavours/:id" },
+    { identifier: "@kabinet/deployment", name: "Deployment", datum: false, path: "deployments/:id" },
     { identifier: "@kabinet/approval", name: "Release Approval", datum: false, path: "approvals/:id" },
   ],
 };
