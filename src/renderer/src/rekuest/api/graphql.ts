@@ -7453,7 +7453,7 @@ export type AgentLogoFragment = { __typename?: 'Agent', logo?: { __typename?: 'M
     ) } | null };
 
 export type AgentFragment = (
-  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, supervisor?: string | null, implementations: Array<(
+  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, declaredName: string, description?: string | null, kind: AgentKind, installedAt: any, active: boolean, connected: boolean, lastSeen?: any | null, supervisor?: string | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -11815,6 +11815,10 @@ export const AgentFragmentDoc = gql`
   blocked
   pinned
   name
+  declaredName
+  description
+  kind
+  installedAt
   active
   connected
   lastSeen

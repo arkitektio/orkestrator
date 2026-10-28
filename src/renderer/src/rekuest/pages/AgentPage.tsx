@@ -7,9 +7,8 @@ import { PageSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
-import { RekuestAgent, RekuestState } from "@/core/linkers";
+import { RekuestAgent } from "@/core/linkers";
 import { ObjectButton } from "@/core/smart/ObjectButton";
 import { agentStructure } from "@/rekuest/smart/agent";
 import {
@@ -34,9 +33,9 @@ import {
   hydrateAndInsertAgentTask,
 } from "../lib/taskCache";
 import MaterializedBlokById from "../components/MaterializedBlokById";
-import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
 import AgentTaskCard from "../components/cards/AgentTaskCard";
+import { AgentFacts } from "../sidebars/AgentInfoSidebar";
 import { AgentTasksSidebar } from "../sidebars/AgentTasksSidebar";
 import { REKUEST_HELP } from "../help";
 
@@ -214,30 +213,14 @@ export const AgentPage = asDetailQueryRoute(
         help={REKUEST_HELP.agent}
         object={data.agent}
         sidebars={
-          <Sidebars>
+          <Sidebars sidebarKey="AgentDetail" defaultTab="Info">
+            <Sidebars.Tab label="Info">
+              <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
+                <AgentFacts agent={data.agent} />
+              </div>
+            </Sidebars.Tab>
             <Sidebars.Tab label="Knowledge">
               <RekuestAgent.Knowledge object={data?.agent} />
-            </Sidebars.Tab>
-            <Sidebars.Tab label="States">
-              <>
-                {/* States Section */}
-                {data.agent.states.length > 0 && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                      Agent States
-                    </h3>
-                    <div className="space-y-3">
-                      {data.agent.states.map((state) => (
-                        <RekuestState.DetailLink object={state} key={state.id}>
-                          <Button variant="outline" size="sm">
-                            {state.id}
-                          </Button>
-                        </RekuestState.DetailLink>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
             </Sidebars.Tab>
             <Sidebars.Tab label="Tasks">
               <AgentTasksSidebar agent={data.agent.id} />
@@ -251,32 +234,8 @@ export const AgentPage = asDetailQueryRoute(
             <ObjectButton objects={[agentStructure(data.agent)]} />
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
-            <CopyAgentPythonButton agent={data.agent} />
-            {/* The agent's other views: one control, so they give way
-                together rather than leaving a stray link behind. */}
-            <PageActionGroup priority={-10}>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="states"
-                className="font-semibold"
-              >
-                <PageAction size="sm">States</PageAction>
-              </RekuestAgent.DetailLink>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="tasks"
-                className="font-semibold"
-              >
-                <PageAction size="sm">Tasks</PageAction>
-              </RekuestAgent.DetailLink>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="bloks"
-                className="font-semibold"
-              >
-                <PageAction size="sm">Bloks</PageAction>
-              </RekuestAgent.DetailLink>
-            </PageActionGroup>
+            {/* The agent's tasks, states and bloks pages and its Python
+                protocol are in the Info tab, to keep the header short. */}
           </>
         }
       >

@@ -1,56 +1,51 @@
-import { Button } from "@/core/ui/button";
+import { reportError } from "@/core/notify";
+import { useCopyToClipboard } from "@/core/ui/copy-button";
+import { cn } from "@/core/util/utils";
 import {
   AgentFragment,
   useAgentForProtocolLazyQuery,
 } from "@/rekuest/api/graphql";
-import { Clipboard, ClipboardCheck } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, Copy } from "lucide-react";
+import { useState } from "react";
 import { protocolAgentToPythonString } from "./protocolAgentToPythonString";
 
-export const CopyAgentPythonButton = (props: { agent: AgentFragment }) => {
-  const [copied, setCopied] = useState(false);
+/**
+ * Copies the agent as a Python protocol, a quiet link-sized control for the
+ * agent's Info tab. The protocol is fetched on click (it is a deep query the
+ * page does not need), so a failed fetch is reported; the copy confirms on
+ * the control itself, like every `CopyButton`.
+ */
+export const CopyAgentPythonButton = (props: { agent: AgentFragment; className?: string }) => {
+  const { copy, copied } = useCopyToClipboard();
   const [loading, setLoading] = useState(false);
   const [fetchProtocol] = useAgentForProtocolLazyQuery();
-  const copyTimer = useRef<number | undefined>(undefined);
-
-  // Clear the pending copy-reset timer on unmount to avoid a setState-after-unmount.
-  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
 
   const handleCopy = async () => {
     setLoading(true);
     try {
       const result = await fetchProtocol({ variables: { id: props.agent.id } });
-      if (result.data?.agent) {
-        await navigator.clipboard.writeText(
-          protocolAgentToPythonString(result.data.agent),
-        );
-        setCopied(true);
-        window.clearTimeout(copyTimer.current);
-        copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
-      }
+      if (!result.data?.agent) throw result.error ?? new Error("The agent's protocol came back empty");
+      await copy(protocolAgentToPythonString(result.data.agent));
+    } catch (error) {
+      reportError(error, "Couldn't copy the agent as Python");
     } finally {
       setLoading(false);
     }
   };
 
+  const Icon = copied ? Check : Copy;
   return (
-    <Button
-      variant="outline"
-      size="sm"
+    <button
+      type="button"
       disabled={loading}
       onClick={handleCopy}
-    >
-      {copied ? (
-        <>
-          <ClipboardCheck className="mr-2 h-4 w-4" />
-          Copied
-        </>
-      ) : (
-        <>
-          <Clipboard className="mr-2 h-4 w-4" />
-          {loading ? "Loading..." : "Copy Python"}
-        </>
+      className={cn(
+        "inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50",
+        props.className,
       )}
-    </Button>
+    >
+      <Icon className="size-3" />
+      {copied ? "Copied" : loading ? "Loading…" : "Copy as Python"}
+    </button>
   );
 };

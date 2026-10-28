@@ -67,6 +67,11 @@ fragment Agent on Agent {
   blocked
   pinned
   name
+  # What the agent registered as; `name` is the user's rename, if any.
+  declaredName
+  description
+  kind
+  installedAt
   active
   connected
   lastSeen
