@@ -70,8 +70,8 @@ export const manifest: Manifest = {
       optional: true,
     },
     {
-      key: "datalayer",
-      service: "live.arkitekt.datalayer",
+      key: "s3",
+      service: "live.arkitekt.s3",
       optional: false,
     },
     {
