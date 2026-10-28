@@ -127,7 +127,7 @@ describe("AnnotationPairActions", () => {
         { identifier: "@mikro/arraylens", id: "7", label: "DAPI", descriptors: { "@mikro/n_space_axes": 2 } },
       ],
     });
-    expect(sections).toEqual({ only: ["rekuest.shortcuts", "rekuest.actions"] });
+    expect(sections).toEqual({ only: ["rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"] });
   });
 
   it("names the image and keeps the search behind a magnifier — open at once on a click", () => {
@@ -198,7 +198,7 @@ describe("AnnotationPairActions", () => {
         },
       ],
       partners: [],
-      sections: { only: ["rekuest.shortcuts", "rekuest.actions"] },
+      sections: { only: ["rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"] },
     });
     expect(typeof materialize).toBe("function");
     expect(pairMenu().materialize).toBeUndefined();

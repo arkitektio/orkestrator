@@ -37,12 +37,14 @@ import {
 } from "./annotationActionTarget";
 
 /**
- * Only what takes the PAIR. By id, as strings: the sections are rekuest's,
- * and this module imports none of it — each brings its own guard, so a
- * deployment without rekuest shows an empty menu, not an error.
+ * Only what takes the PAIR: what runs on it, and what could be installed to
+ * run on it (kabinet's Installable, asked with the same demands). By id, as
+ * strings: the sections are rekuest's and kabinet's, and this module imports
+ * none of it — each brings its own guard, so a deployment without them shows
+ * an empty menu, not an error.
  */
 const PAIR_SECTIONS: SmartSectionSelection = {
-  only: ["rekuest.shortcuts", "rekuest.actions"],
+  only: ["rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"],
 };
 
 /**
