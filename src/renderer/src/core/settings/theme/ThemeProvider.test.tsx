@@ -85,6 +85,21 @@ describe("ThemeProvider", () => {
     renderWith("dark");
     expect(resolved()).toBe("dark");
   });
+
+  it("follows a choice made in another window, and ignores garbage from there", () => {
+    renderWith("dark");
+    const fromOtherWindow = (newValue: string) =>
+      act(() => {
+        window.dispatchEvent(new StorageEvent("storage", { key: "t", newValue }));
+      });
+
+    fromOtherWindow("light");
+    expect(screen.getByTestId("theme").textContent).toBe("light");
+    expect(document.documentElement.classList.contains("light")).toBe(true);
+
+    fromOtherWindow("sepia");
+    expect(screen.getByTestId("theme").textContent).toBe("light");
+  });
 });
 
 describe("the window frame follows the theme", () => {

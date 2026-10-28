@@ -55,3 +55,53 @@ describe("settings across windows", () => {
     expect(store.getState().settings?.brandHue).toBe(defaultSettings.brandHue);
   });
 });
+
+describe("settings never take over the colour mode", () => {
+  // Light/dark is `ThemeProvider`'s, on its own key. The store used to write
+  // "dark" there on every save — so a reload always came back dark.
+  it("leaves the theme key and the root class alone on boot and on save", () => {
+    localStorage.setItem("vite-ui-theme", "light");
+    document.documentElement.classList.add("light");
+    const store = createSettingsStore();
+    store.getState().hydrate();
+    store.getState().setSettings({ ...defaultSettings, brandHue: 100 });
+
+    expect(localStorage.getItem("vite-ui-theme")).toBe("light");
+    expect(document.documentElement.classList.contains("light")).toBe(true);
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    document.documentElement.classList.remove("light");
+  });
+});
+
+describe("one bad field costs only itself", () => {
+  it("keeps the rest of a stored blob when one field no longer validates", () => {
+    localStorage.setItem(
+      "wasser-settings",
+      JSON.stringify({ ...defaultSettings, brandHue: 145, menuShadow: "huge" }),
+    );
+    const store = createSettingsStore();
+    store.getState().hydrate();
+
+    expect(store.getState().settings?.brandHue).toBe(145);
+    expect(store.getState().settings?.menuShadow).toBe(defaultSettings.menuShadow);
+    expect(JSON.parse(localStorage.getItem("wasser-settings")!).brandHue).toBe(145);
+  });
+
+  it("keeps the value in force when a write carries an invalid one", () => {
+    const store = createSettingsStore();
+    store.getState().hydrate();
+    store.getState().setSettings({ ...defaultSettings, brandHue: 120 });
+    store.getState().setSettings({ ...defaultSettings, brandHue: 400 });
+
+    expect(store.getState().settings).toBeDefined();
+    expect(store.getState().settings?.brandHue).toBe(120);
+    expect(JSON.parse(localStorage.getItem("wasser-settings")!).brandHue).toBe(120);
+  });
+
+  it("refuses a write it cannot read at all, rather than dropping every setting", () => {
+    const store = createSettingsStore();
+    store.getState().hydrate();
+    store.getState().setSettings(null as never);
+    expect(store.getState().settings?.brandHue).toBe(defaultSettings.brandHue);
+  });
+});

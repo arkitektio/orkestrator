@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 
 /** What the user chose. `system` follows the OS and can change under us. */
 export type Theme = "light" | "dark" | "system";
@@ -64,9 +72,22 @@ export function ThemeProvider({
     return () => query.removeEventListener("change", sync);
   }, [theme]);
 
+  // Every window keeps its own copy of the choice over one localStorage key,
+  // and main's native theme is global — a window that stayed on the theme it
+  // booted with would fight the others over it. The `storage` event fires
+  // only in the OTHER windows, so this cannot ping-pong.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === storageKey && isTheme(event.newValue)) setThemeState(event.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [storageKey]);
+
   const resolvedTheme: ResolvedTheme = theme === "system" ? system : theme;
 
-  useEffect(() => {
+  // Before paint, so the first frame is already in the chosen mode.
+  useLayoutEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);

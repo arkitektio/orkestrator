@@ -61,4 +61,12 @@ describe("ThemeCustomizer", () => {
     fireEvent.click(screen.getByLabelText("Local colour"));
     expect(form.getValues("brandSource")).toBe("local");
   });
+
+  it("clamps a typed hue to the circle, so an invalid one is never stored", () => {
+    render(<Harness source="local" />);
+    const typed = screen.getAllByDisplayValue(String(defaultSettings.brandHue))
+      .find((input) => (input as HTMLInputElement).type === "number")!;
+    fireEvent.change(typed, { target: { value: "400" } });
+    expect(form.getValues("brandHue")).toBe(360);
+  });
 });
