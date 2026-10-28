@@ -15,6 +15,7 @@ import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
 import { AssignForm } from "../forms/assign/AssignForm";
+import { ShortcutBindings } from "../components/ShortcutBindings";
 
 export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const { latestTask } = useAction({ id: shortcut.action.id });
@@ -142,6 +143,7 @@ export const TPage = asDetailQueryRoute(useShortcutQuery, ({ data }) => {
             {data.shortcut.bindNumber ? `(${data.shortcut.bindNumber})` : ""}
           </p>
         </div>
+        <ShortcutBindings bindings={data.shortcut.bindings} />
         <ShortcutForm shortcut={data.shortcut} />
       </div>
     </RekuestShortcut.ModelPage>

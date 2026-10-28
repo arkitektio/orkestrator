@@ -603,6 +603,7 @@ export const REKUEST_HELP = {
       ]}
       tips={[
         <>Shortcuts that fit an object show up under <b>Shortcuts</b> when you right-click that object.</>,
+        <>A shortcut an admin pinned for you shows under <b>Pinned</b> at the top of that menu, and you cannot unpin it.</>,
       ]}
     />
   ),
@@ -614,9 +615,11 @@ export const REKUEST_HELP = {
         <>Read the result under <b>Outs</b> once the task has returned.</>,
         <>Click the title to copy the hash of the underlying action to the clipboard.</>,
         <>Open the menu button at the right end of the header and choose <b>Delete Shortcut</b> to remove it.</>,
+        <>As an admin, open the same menu and choose <b>Pin for members…</b> to pin it at the top of their menus, in one app or every app.</>,
       ]}
       tips={[
         <>A number in brackets after the description is the key bound to this shortcut.</>,
+        <><b>Pinned for</b> lists the members it is pinned for and the app; an admin removes one with the cross.</>,
         <>An <b>Errors</b> box appears next to the result when the run failed.</>,
       ]}
     />

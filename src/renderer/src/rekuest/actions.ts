@@ -87,6 +87,7 @@ import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteActi
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
 import { AlarmClock, Ban, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
+import { REKUEST_ADMIN } from './roles'
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
 import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
 
@@ -414,6 +415,16 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     typename: 'Shortcut',
     mutation: DeleteShortcutDocument
   }),
+  'rekuest-bind-shortcut': {
+    title: 'Pin for members…',
+    description: 'Pin this shortcut at the top of chosen members\' menus, in one app or every app',
+    icon: Pin,
+    roles: REKUEST_ADMIN,
+    conditions: only('@rekuest/shortcut'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('bindshortcut', { id: selected(state, '@rekuest/shortcut') })
+    },
+  },
    'rekuest-delete-space': buildDeleteAction({
     title: 'Delete Space',
     identifier: '@rekuest/space',

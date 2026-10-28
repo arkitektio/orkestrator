@@ -1051,6 +1051,16 @@ export type BaseCatalog = {
   version: Scalars['Int']['output'];
 };
 
+/** Pin a shortcut for users, in one app or in every app. The users cannot unpin it. */
+export type BindShortcutInput = {
+  /** The identifier of the app to pin it in; every app when not given. */
+  app?: InputMaybe<Scalars['String']['input']>;
+  /** The shortcut to pin. */
+  shortcut: Scalars['ID']['input'];
+  /** The users (their `sub`) to pin the shortcut for. */
+  users: Array<Scalars['ID']['input']>;
+};
+
 /** The input for bouncing an agent. */
 export type BlockInput = {
   /** The agent ID to bounce. */
@@ -1918,6 +1928,8 @@ export type CreateShortcutInput = {
   args: Scalars['Args']['input'];
   /** The bind number of the shortcut. This is used to identify the shortcut in the system. */
   bindNumber?: InputMaybe<Scalars['Int']['input']>;
+  /** Pin the new shortcut for these users (admins only). */
+  bindings?: InputMaybe<ShortcutBindingsInput>;
   /** The description of the shortcut.This can described the shortcut and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
   /** The name of the shortcut. This is used to identify the shortcut in the system. */
@@ -3299,6 +3311,8 @@ export type Mutation = {
   assign: Task;
   /** Automatically resolve dependencies for an implementation. */
   autoResolve: Resolution;
+  /** Pin a shortcut for users, in one app or in every app. They cannot unpin it. */
+  bindShortcut: Shortcut;
   /** Block an agent from connecting. */
   block: Agent;
   /** Bounce an agent so it reconnects. */
@@ -3413,6 +3427,8 @@ export type Mutation = {
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
   triggerSchedule: Task;
+  /** Remove a shortcut's binding to a user. */
+  unbindShortcut: Scalars['ID']['output'];
   /** Unblock a previously blocked agent. */
   unblock: Agent;
   /** Unshelve data from a memory drawer. */
@@ -3447,6 +3463,12 @@ export type MutationAssignArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationAutoResolveArgs = {
   input: AutoResolveInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationBindShortcutArgs = {
+  input: BindShortcutInput;
 };
 
 
@@ -3789,6 +3811,12 @@ export type MutationShelveInMemoryDrawerArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationTriggerScheduleArgs = {
   input: ScheduleIdInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationUnbindShortcutArgs = {
+  input: UnbindShortcutInput;
 };
 
 
@@ -5508,6 +5536,8 @@ export type Shortcut = {
   args: Array<ArgPort>;
   /** Which shortcut should be bound to this Action by default. 0 means no binding. */
   bindNumber?: Maybe<Scalars['Int']['output']>;
+  /** Who an admin pinned this shortcut for, and in which app. */
+  bindings: Array<ShortcutBinding>;
   /** Optional description. */
   description?: Maybe<Scalars['String']['output']>;
   /** Shortcut ID. */
@@ -5516,6 +5546,8 @@ export type Shortcut = {
   implementation?: Maybe<Implementation>;
   /** Name of the shortcut. */
   name: Scalars['String']['output'];
+  /** Whether an admin pinned this shortcut for the caller, in the app they signed in with or in every app. The caller cannot unpin it. */
+  pinned: Scalars['Boolean']['output'];
   /** Return ports from the shortcut's action. */
   returns: Array<ReturnPort>;
   /** Saved arguments for the shortcut. */
@@ -5524,6 +5556,31 @@ export type Shortcut = {
   toolbox: Toolbox;
   /** If true, shortcut uses return values. */
   useReturns: Scalars['Boolean']['output'];
+};
+
+/** An admin's pin of a shortcut for a user, in one app or in every app. */
+export type ShortcutBinding = {
+  __typename?: 'ShortcutBinding';
+  /** The identifier of the app it is pinned in; null for every app. */
+  app?: Maybe<Scalars['String']['output']>;
+  /** The admin who pinned it. */
+  boundBy: User;
+  /** When it was pinned. */
+  createdAt: Scalars['DateTime']['output'];
+  /** Binding ID. */
+  id: Scalars['ID']['output'];
+  /** The pinned shortcut. */
+  shortcut: Shortcut;
+  /** The user it is pinned for. */
+  user: User;
+};
+
+/** Users to pin a shortcut for, in one app or in every app. */
+export type ShortcutBindingsInput = {
+  /** The identifier of the app to pin it in; every app when not given. */
+  app?: InputMaybe<Scalars['String']['input']>;
+  /** The users (their `sub`) to pin the shortcut for. */
+  users: Array<Scalars['ID']['input']>;
 };
 
 export type ShortcutFilter = {
@@ -5535,14 +5592,18 @@ export type ShortcutFilter = {
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Whether an admin bound the shortcut to the caller, in the app they signed in with or in every app. */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   toolbox?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type ShortcutOrder =
   /** Runnable first (DESC) or last (ASC) by the shortcut's `Action.assignable`; the order the filters set is the tie-break. */
-  { assignable: Ordering; name?: never; }
-  |  { assignable?: never; name: Ordering; };
+  { assignable: Ordering; name?: never; pinned?: never; }
+  |  { assignable?: never; name: Ordering; pinned?: never; }
+  |  /** Pinned for the caller (an admin bound it to them in this app) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break. */
+  { assignable?: never; name?: never; pinned: Ordering; };
 
 /** Something a service announced: an object of a structure was created, updated or deleted. */
 export type Signal = {
@@ -6906,6 +6967,12 @@ export type TriggerOrder =
   { createdAt: Ordering; name?: never; updatedAt?: never; }
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
   |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+
+/** Remove a shortcut's binding to a user. */
+export type UnbindShortcutInput = {
+  /** The binding to remove. */
+  id: Scalars['ID']['input'];
+};
 
 /** The input for bouncing an agent. */
 export type UnblockInput = {
@@ -8294,7 +8361,7 @@ export type ListResolutionFragment = { __typename?: 'Resolution', id: string, na
 
 export type SessionFragment = { __typename?: 'Session', id: string, startedAt: any, agent: { __typename?: 'Agent', id: string, name: string }, snapshots: Array<{ __typename?: 'Snapshot', id: string, value: any, timestamp: any }> };
 
-export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: (
+export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
   ), args: Array<(
@@ -8303,9 +8370,14 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
   )>, returns: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
+  )>, bindings: Array<(
+    { __typename?: 'ShortcutBinding' }
+    & ShortcutBindingFragment
   )> };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
+export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, createdAt: any, user: { __typename?: 'User', id: string, sub: string }, boundBy: { __typename?: 'User', id: string, sub: string } };
+
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
       { __typename?: 'Blok' }
       & BlokLogoFragment
     ) | null }, args: Array<(
@@ -8315,6 +8387,8 @@ export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: 
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
   )> };
+
+export type ShortcutPinFragment = { __typename?: 'Shortcut', id: string, pinned: boolean };
 
 export type SpaceFragment = { __typename?: 'Space', id: string, name: string, placements: Array<(
     { __typename?: 'Placement' }
@@ -9040,6 +9114,23 @@ export type DeleteShortcutMutationVariables = Exact<{
 
 
 export type DeleteShortcutMutation = { __typename?: 'Mutation', deleteShortcut: string };
+
+export type BindShortcutMutationVariables = Exact<{
+  input: BindShortcutInput;
+}>;
+
+
+export type BindShortcutMutation = { __typename?: 'Mutation', bindShortcut: (
+    { __typename?: 'Shortcut' }
+    & ShortcutFragment
+  ) };
+
+export type UnbindShortcutMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UnbindShortcutMutation = { __typename?: 'Mutation', unbindShortcut: string };
 
 export type CreateSpaceMutationVariables = Exact<{
   input: CreateSpaceInput;
@@ -13322,6 +13413,21 @@ export const SessionFragmentDoc = gql`
   startedAt
 }
     `;
+export const ShortcutBindingFragmentDoc = gql`
+    fragment ShortcutBinding on ShortcutBinding {
+  id
+  app
+  createdAt
+  user {
+    id
+    sub
+  }
+  boundBy {
+    id
+    sub
+  }
+}
+    `;
 export const ShortcutFragmentDoc = gql`
     fragment Shortcut on Shortcut {
   id
@@ -13339,10 +13445,15 @@ export const ShortcutFragmentDoc = gql`
     ...ReturnPort
   }
   allowQuick
+  pinned
+  bindings {
+    ...ShortcutBinding
+  }
 }
     ${DetailActionFragmentDoc}
 ${ArgPortFragmentDoc}
-${ReturnPortFragmentDoc}`;
+${ReturnPortFragmentDoc}
+${ShortcutBindingFragmentDoc}`;
 export const ListShortcutFragmentDoc = gql`
     fragment ListShortcut on Shortcut {
   id
@@ -13364,10 +13475,17 @@ export const ListShortcutFragmentDoc = gql`
     ...ReturnPort
   }
   allowQuick
+  pinned
 }
     ${BlokLogoFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
+export const ShortcutPinFragmentDoc = gql`
+    fragment ShortcutPin on Shortcut {
+  id
+  pinned
+}
+    `;
 export const SpacePlacementFragmentDoc = gql`
     fragment SpacePlacement on Placement {
   id
@@ -15833,6 +15951,70 @@ export function useDeleteShortcutMutation(baseOptions?: ApolloReactHooks.Mutatio
 export type DeleteShortcutMutationHookResult = ReturnType<typeof useDeleteShortcutMutation>;
 export type DeleteShortcutMutationResult = Apollo.MutationResult<DeleteShortcutMutation>;
 export type DeleteShortcutMutationOptions = Apollo.BaseMutationOptions<DeleteShortcutMutation, DeleteShortcutMutationVariables>;
+export const BindShortcutDocument = gql`
+    mutation BindShortcut($input: BindShortcutInput!) {
+  bindShortcut(input: $input) {
+    ...Shortcut
+  }
+}
+    ${ShortcutFragmentDoc}`;
+export type BindShortcutMutationFn = Apollo.MutationFunction<BindShortcutMutation, BindShortcutMutationVariables>;
+
+/**
+ * __useBindShortcutMutation__
+ *
+ * To run a mutation, you first call `useBindShortcutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBindShortcutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bindShortcutMutation, { data, loading, error }] = useBindShortcutMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBindShortcutMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<BindShortcutMutation, BindShortcutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<BindShortcutMutation, BindShortcutMutationVariables>(BindShortcutDocument, options);
+      }
+export type BindShortcutMutationHookResult = ReturnType<typeof useBindShortcutMutation>;
+export type BindShortcutMutationResult = Apollo.MutationResult<BindShortcutMutation>;
+export type BindShortcutMutationOptions = Apollo.BaseMutationOptions<BindShortcutMutation, BindShortcutMutationVariables>;
+export const UnbindShortcutDocument = gql`
+    mutation UnbindShortcut($id: ID!) {
+  unbindShortcut(input: {id: $id})
+}
+    `;
+export type UnbindShortcutMutationFn = Apollo.MutationFunction<UnbindShortcutMutation, UnbindShortcutMutationVariables>;
+
+/**
+ * __useUnbindShortcutMutation__
+ *
+ * To run a mutation, you first call `useUnbindShortcutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnbindShortcutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unbindShortcutMutation, { data, loading, error }] = useUnbindShortcutMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useUnbindShortcutMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnbindShortcutMutation, UnbindShortcutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnbindShortcutMutation, UnbindShortcutMutationVariables>(UnbindShortcutDocument, options);
+      }
+export type UnbindShortcutMutationHookResult = ReturnType<typeof useUnbindShortcutMutation>;
+export type UnbindShortcutMutationResult = Apollo.MutationResult<UnbindShortcutMutation>;
+export type UnbindShortcutMutationOptions = Apollo.BaseMutationOptions<UnbindShortcutMutation, UnbindShortcutMutationVariables>;
 export const CreateSpaceDocument = gql`
     mutation CreateSpace($input: CreateSpaceInput!) {
   createSpace(input: $input) {

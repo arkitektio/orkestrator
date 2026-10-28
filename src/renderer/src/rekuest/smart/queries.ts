@@ -33,7 +33,11 @@ export const ACTIVE_IMPLEMENTATION_ORDERING = [
 ] as unknown as ImplementationOrder[];
 
 export const RUNNABLE_FIRST_ACTION_ORDERING: ActionOrder[] = [{ assignable: Ordering.Desc }];
-export const RUNNABLE_FIRST_SHORTCUT_ORDERING: ShortcutOrder[] = [{ assignable: Ordering.Desc }];
+/** What an admin pinned for the caller first, so the limit never cuts it; then what can run. */
+export const RUNNABLE_FIRST_SHORTCUT_ORDERING: ShortcutOrder[] = [
+  { pinned: Ordering.Desc },
+  { assignable: Ordering.Desc },
+];
 
 export type SearchOptions = { search?: string; limit?: number };
 

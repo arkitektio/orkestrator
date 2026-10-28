@@ -24,6 +24,7 @@ import { AssignButton, BatchAssignButton } from "./actions";
 import { OpenInBlokRow } from "./bloks";
 import { actionsVariables, openableBloksVariables, shortcutsVariables } from "./queries";
 import { ShortcutButton } from "./shortcuts";
+import { useShortcutPins } from "./pins";
 
 /**
  * The rekuest sections of the smart context menu: Shortcuts, Run, Batch
@@ -138,6 +139,8 @@ export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment
   useItems: useShortcutItems,
   itemKey: (shortcut) => shortcut.id,
   searchParts: (shortcut) => [shortcut.name, shortcut.description],
+  // What an admin pinned for the user in this app is pinned, and locked.
+  usePins: useShortcutPins,
   Row: ({ item, context }) => <ShortcutButton shortcut={item} {...context} />,
   // The variables `useShortcutItems` opens with (no search yet).
   prefetch: (target) => [

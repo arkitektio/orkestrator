@@ -33,6 +33,9 @@ import {
 } from "../../api/graphql";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { RoleGuard } from "@/core/connection/roles";
+import { REKUEST_ADMIN } from "../../roles";
+import { ShortcutBindingFields } from "./BindShortcutDialog";
 
 export type FilledGroup = PortGroup & {
   filledPorts: Port[];
@@ -168,12 +171,14 @@ export const CreateShortcutDialog = (props: {
       name: z.string().nonempty(),
       allowQuick: z.boolean().default(false),
       bindNumber: z.coerce.number().int().min(0).max(9).optional(),
+      users: z.array(z.string()).optional(),
+      app: z.string().nullable().optional(),
     }),
   });
 
   const { submit: onSubmit } = useDialogSubmit(
     async (data: any) => {
-      const { toolbox, name, allowQuick, bindNumber, ...rest } = data;
+      const { toolbox, name, allowQuick, bindNumber, users, app, ...rest } = data;
 
       return create({
         variables: {
@@ -184,6 +189,8 @@ export const CreateShortcutDialog = (props: {
             args: rest,
             bindNumber: bindNumber,
             allowQuick: allowQuick,
+            // Only an admin sees the fields; the server checks it again.
+            bindings: users?.length ? { users, app: app || null } : null,
           },
         },
       });
@@ -305,6 +312,18 @@ export const CreateShortcutDialog = (props: {
                   description="Quick access runs this shortcut without any confirmation"
                 />
               </div>
+
+              <RoleGuard require={REKUEST_ADMIN}>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <h3 className="text-sm font-medium">Pin for members</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Optional. Everyone sees the shortcut; for these members it is pinned.
+                    </p>
+                  </div>
+                  <ShortcutBindingFields />
+                </div>
+              </RoleGuard>
             </div>
           </ScrollArea>
 

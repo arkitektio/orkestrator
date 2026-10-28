@@ -12,7 +12,7 @@ import {
 const demands = buildDemands({ objects: [{ identifier: "@mikro/image", id: "1" }] });
 
 describe("query variables", () => {
-  it("omit an empty search and a missing collection, and ask for what can run first", () => {
+  it("omit an empty search and a missing collection, and ask for what is pinned and can run first", () => {
     expect(actionsVariables(demands.single, { search: "" })).toEqual({
       filters: { demands: demands.single },
       ordering: [{ assignable: Ordering.Desc }],
@@ -20,7 +20,7 @@ describe("query variables", () => {
     });
     expect(shortcutsVariables(demands.single)).toEqual({
       filters: { demands: demands.single },
-      ordering: [{ assignable: Ordering.Desc }],
+      ordering: [{ pinned: Ordering.Desc }, { assignable: Ordering.Desc }],
       pagination: { limit: SMART_SHORTCUT_LIMIT },
     });
   });

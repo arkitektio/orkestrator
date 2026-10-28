@@ -1306,6 +1306,20 @@ type BaseCatalog {
   version: Int!
 }
 
+"""
+Pin a shortcut for users, in one app or in every app. The users cannot unpin it.
+"""
+input BindShortcutInput {
+  """The identifier of the app to pin it in; every app when not given."""
+  app: String = null
+
+  """The shortcut to pin."""
+  shortcut: ID!
+
+  """The users (their `sub`) to pin the shortcut for."""
+  users: [ID!]!
+}
+
 """The input for bouncing an agent."""
 input BlockInput {
   """The agent ID to bounce."""
@@ -2540,6 +2554,9 @@ input CreateShortcutInput {
   The bind number of the shortcut. This is used to identify the shortcut in the system.
   """
   bindNumber: Int = null
+
+  """Pin the new shortcut for these users (admins only)."""
+  bindings: ShortcutBindingsInput = null
 
   """
   The description of the shortcut.This can described the shortcut and its purpose.
@@ -4433,6 +4450,11 @@ type Mutation {
   """Automatically resolve dependencies for an implementation."""
   autoResolve(input: AutoResolveInput!): Resolution!
 
+  """
+  Pin a shortcut for users, in one app or in every app. They cannot unpin it.
+  """
+  bindShortcut(input: BindShortcutInput!): Shortcut!
+
   """Block an agent from connecting."""
   block(input: BlockInput!): Agent!
 
@@ -4647,6 +4669,9 @@ type Mutation {
   Run a schedule now: its waiting run is moved to now. Refused while a run is executing.
   """
   triggerSchedule(input: ScheduleIdInput!): Task!
+
+  """Remove a shortcut's binding to a user."""
+  unbindShortcut(input: UnbindShortcutInput!): ID!
 
   """Unblock a previously blocked agent."""
   unblock(input: UnblockInput!): Agent!
@@ -6248,6 +6273,9 @@ type Shortcut {
   """
   bindNumber: Int
 
+  """Who an admin pinned this shortcut for, and in which app."""
+  bindings: [ShortcutBinding!]!
+
   """Optional description."""
   description: String
 
@@ -6259,6 +6287,11 @@ type Shortcut {
 
   """Name of the shortcut."""
   name: String!
+
+  """
+  Whether an admin pinned this shortcut for the caller, in the app they signed in with or in every app. The caller cannot unpin it.
+  """
+  pinned: Boolean!
 
   """Return ports from the shortcut's action."""
   returns: [ReturnPort!]!
@@ -6273,6 +6306,36 @@ type Shortcut {
   useReturns: Boolean!
 }
 
+"""An admin's pin of a shortcut for a user, in one app or in every app."""
+type ShortcutBinding {
+  """The identifier of the app it is pinned in; null for every app."""
+  app: String
+
+  """The admin who pinned it."""
+  boundBy: User!
+
+  """When it was pinned."""
+  createdAt: DateTime!
+
+  """Binding ID."""
+  id: ID!
+
+  """The pinned shortcut."""
+  shortcut: Shortcut!
+
+  """The user it is pinned for."""
+  user: User!
+}
+
+"""Users to pin a shortcut for, in one app or in every app."""
+input ShortcutBindingsInput {
+  """The identifier of the app to pin it in; every app when not given."""
+  app: String = null
+
+  """The users (their `sub`) to pin the shortcut for."""
+  users: [ID!]!
+}
+
 input ShortcutFilter {
   AND: ShortcutFilter
   DISTINCT: Boolean
@@ -6285,6 +6348,11 @@ input ShortcutFilter {
   assignable: Boolean
   demands: [PortDemandInput!]
   ids: [ID!]
+
+  """
+  Whether an admin bound the shortcut to the caller, in the app they signed in with or in every app.
+  """
+  pinned: Boolean
   search: String
   toolbox: ID
 }
@@ -6295,6 +6363,11 @@ input ShortcutOrder @oneOf {
   """
   assignable: Ordering
   name: Ordering
+
+  """
+  Pinned for the caller (an admin bound it to them in this app) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break.
+  """
+  pinned: Ordering
 }
 
 """
@@ -7949,6 +8022,12 @@ input TriggerOrder @oneOf {
   createdAt: Ordering
   name: Ordering
   updatedAt: Ordering
+}
+
+"""Remove a shortcut's binding to a user."""
+input UnbindShortcutInput {
+  """The binding to remove."""
+  id: ID!
 }
 
 """The input for bouncing an agent."""
