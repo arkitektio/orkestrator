@@ -38,7 +38,6 @@ import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions
 import { useSelf } from "@/core/connection/useSelf";
 import { AgentKind, ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
-import MaterializedBlokList from "@/rekuest/components/lists/MaterializedBlokList";
 import TaskList from "@/rekuest/components/lists/TaskList";
 import { Filter, Loader2, Podcast, Wifi, X } from "lucide-react";
 import { useMemo } from "react";
@@ -427,10 +426,6 @@ const Page = () => {
           </section>
         }
       >
-
-        <section>
-          <MaterializedBlokList pagination={{ limit: 12 }} />
-        </section>
 
         <section className="space-y-6">
           <TaskList
