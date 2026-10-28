@@ -147,7 +147,7 @@ const ColorByRow = memo(function ColorByRow({
       onClick={() => onRowClick(index)}
       leading={
         <span
-          className="h-3 w-6 shrink-0 rounded-sm border border-white/15"
+          className="h-3 w-6 shrink-0 rounded-sm border border-foreground/15"
           style={{
             background: entry.colormap
               ? colormapGradientCSS(entry.colormap, 18)
@@ -159,7 +159,7 @@ const ColorByRow = memo(function ColorByRow({
         <>
           {entryLabel(entry)}
           {(isJoinedEntry(entry) || !isColumnColorBy(entry)) && (
-            <span className="ml-1 text-amber-300/70">*</span>
+            <span className="ml-1 text-amber-700/70 dark:text-amber-300/70">*</span>
           )}
         </>
       }
@@ -330,7 +330,7 @@ export const ColorBySection = memo(function ColorBySection({
         onClick={defaultClick}
         leading={
           <span
-            className="h-3 w-6 shrink-0 rounded-sm border border-white/15"
+            className="h-3 w-6 shrink-0 rounded-sm border border-foreground/15"
             style={{ background: defaultRow.swatchCSS }}
           />
         }
@@ -398,15 +398,15 @@ const FilterByRow = memo(function FilterByRow({
               : "Apply this rule — combined with AND (stored)"
           }
           onClick={() => onToggleApply(index)}
-          className="grid h-4 w-4 shrink-0 place-items-center rounded transition-colors hover:bg-white/10"
+          className="grid h-4 w-4 shrink-0 place-items-center rounded transition-colors hover:bg-foreground/10"
         >
-          <Filter className={`h-3 w-3 ${applied ? "text-brand-light" : "text-white/30"}`} />
+          <Filter className={`h-3 w-3 ${applied ? "text-brand-light" : "text-foreground/30"}`} />
         </button>
       }
       label={
         <>
           {entryLabel(entry)}
-          {isJoinedEntry(entry) && <span className="ml-1 text-amber-300/70">*</span>}
+          {isJoinedEntry(entry) && <span className="ml-1 text-amber-700/70 dark:text-amber-300/70">*</span>}
         </>
       }
       detail={`${entry.exclude ? "drop" : "keep"} where ${describeFilterRule(entry)}`}
@@ -657,7 +657,7 @@ export const FilterBySection = memo(function FilterBySection({
       }
       hint={
         ruleError ? (
-          <span className="text-amber-300/80">{ruleError}</span>
+          <span className="text-amber-700/80 dark:text-amber-300/80">{ruleError}</span>
         ) : filterBys.length === 0 ? (
           "nothing added — every object draws"
         ) : activeFilterBys.length === 0 ? (

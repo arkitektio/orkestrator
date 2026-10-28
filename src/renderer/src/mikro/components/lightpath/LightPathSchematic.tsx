@@ -119,13 +119,10 @@ const ElementHover = ({ node }: { node: LayoutNode }) => {
 
 export const LightPathSchematic = ({
   graph,
-  tone = "overlay",
   onExpand,
   className,
 }: {
   graph: LightpathGraphFragment;
-  /** `overlay`: white on the dark viewport chrome; `surface`: theme tokens, for a page. */
-  tone?: "overlay" | "surface";
   /** Opens the 3D view; without it the picture is a still. */
   onExpand?: () => void;
   className?: string;
@@ -142,7 +139,7 @@ export const LightPathSchematic = ({
 
   if (layout.nodes.length === 0) {
     return (
-      <span className={cn("text-[9px]", tone === "overlay" ? "text-white/40" : "text-muted-foreground")}>
+      <span className="text-[9px] text-muted-foreground">
         no elements recorded
       </span>
     );
@@ -158,7 +155,7 @@ export const LightPathSchematic = ({
       data-lightpath
       className={cn(
         "group/lightpath relative w-full select-none text-left",
-        tone === "overlay" ? "text-white" : "text-foreground",
+        "text-foreground",
         onExpand && "cursor-pointer",
         className,
       )}

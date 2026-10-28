@@ -171,7 +171,7 @@ const StopsEditor = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-red-300"
+            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-red-700 dark:hover:text-red-300"
             title={stops.length <= 2 ? "A gradient needs at least two stops" : "Remove stop"}
             disabled={stops.length <= 2}
             onClick={() => commit(stops.filter((_, i) => i !== index))}
@@ -1016,7 +1016,7 @@ const ContainerNodeEditor = ({
           )}
         </div>
         {open && (
-          <div className="pt-2 flex flex-col gap-2 pl-3 border-l border-border/50 ml-1 bg-black/5">
+          <div className="pt-2 flex flex-col gap-2 pl-3 border-l border-border/50 ml-1 bg-background/5">
             {childEditors}
             {addMenu}
           </div>

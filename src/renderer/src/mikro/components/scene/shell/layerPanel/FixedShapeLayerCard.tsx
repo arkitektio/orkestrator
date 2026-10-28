@@ -343,7 +343,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
       {unplannable && <UnplannableNotice layer={layer} info={unplannable} />}
       {/* Snap open, no height animation — same reason as the image card. */}
       <CollapsibleContent className="overflow-hidden">
-        <div className="flex flex-col border-t border-white/10">
+        <div className="flex flex-col border-t border-foreground/10">
           {layer.__typename === "IntensityLayer" && (
             <CardSection
               title="projection"

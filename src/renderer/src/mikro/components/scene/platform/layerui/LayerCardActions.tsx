@@ -19,7 +19,7 @@ import { LensButton } from "./LensButton";
  */
 /** The lens button's look in a compact card header, for the cards that fill
  *  `actions` themselves. */
-export const LENS_BUTTON = "h-5 w-5 shrink-0 p-0 text-white/45 hover:text-white/90";
+export const LENS_BUTTON = "h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90";
 
 export const LayerCardActions = ({
   lens,
@@ -37,7 +37,7 @@ export const LayerCardActions = ({
     <Button
       variant="ghost"
       size="icon"
-      className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+      className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
       title={hidden ? "Show" : "Hide"}
       onClick={onToggleVisible}
     >
@@ -47,7 +47,7 @@ export const LayerCardActions = ({
       <Button
         variant="ghost"
         size="icon"
-        className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+        className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
         title="Remove layer from scene"
         onClick={onRemove}
       >

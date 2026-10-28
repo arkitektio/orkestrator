@@ -14,19 +14,19 @@ import { memo } from "react";
  */
 
 export const MetadataHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-[9px] uppercase tracking-widest text-white/40">{children}</div>
+  <div className="text-[9px] uppercase tracking-widest text-foreground/40">{children}</div>
 );
 
 export const MetadataRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex items-baseline gap-1.5">
-    <span className="shrink-0 text-white/40">{label}</span>
-    <span className="min-w-0 truncate font-mono text-white/85">{value}</span>
+    <span className="shrink-0 text-foreground/40">{label}</span>
+    <span className="min-w-0 truncate font-mono text-foreground/85">{value}</span>
   </div>
 );
 
 /** The channel label an anchor names, as a small chip. */
 export const MetadataChip = ({ children }: { children: React.ReactNode }) => (
-  <span className="shrink-0 rounded border border-white/15 bg-white/5 px-1 py-px text-[9px] text-white/85">
+  <span className="shrink-0 rounded border border-foreground/15 bg-foreground/5 px-1 py-px text-[9px] text-foreground/85">
     {children}
   </span>
 );
@@ -46,7 +46,7 @@ export const MetadataAnchorBox = ({
 }) => (
   <div
     className={cn(
-      "flex w-full min-w-0 flex-col gap-1.5 [&+&]:border-t [&+&]:border-white/10 [&+&]:pt-2",
+      "flex w-full min-w-0 flex-col gap-1.5 [&+&]:border-t [&+&]:border-foreground/10 [&+&]:pt-2",
       // Never wider than the host: one long unbreakable value (a device
       // label, a file name) would otherwise push every spoke out of the
       // side. Capped, the rows truncate.
@@ -64,11 +64,8 @@ export const MetadataAnchorBox = ({
  * without the memo every tick rebuilt one `<rect>` per bin per anchor. */
 export const HistogramSparkline = memo(function HistogramSparkline({
   histogram,
-  tone = "overlay",
 }: {
   histogram: readonly number[];
-  /** `overlay`: white on the dark viewport chrome; `surface`: theme tokens, for a card. */
-  tone?: "overlay" | "surface";
 }) {
   // reduce, not Math.max(...bins): a fine-grained histogram would blow the
   // argument limit.
@@ -78,7 +75,7 @@ export const HistogramSparkline = memo(function HistogramSparkline({
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className={cn("h-6 w-full rounded-sm", tone === "overlay" ? "bg-white/5" : "bg-muted")}
+      className="h-6 w-full rounded-sm bg-muted"
       aria-hidden
     >
       {histogram.map((count, index) => {
@@ -90,7 +87,7 @@ export const HistogramSparkline = memo(function HistogramSparkline({
             y={24 - height}
             width={step}
             height={height}
-            className={tone === "overlay" ? "fill-white/50" : "fill-foreground/50"}
+            className="fill-foreground/50"
           />
         );
       })}
@@ -128,7 +125,7 @@ export const ValueHistogramSpoke = ({
         <HistogramSparkline histogram={histogram.histogram} />
       )}
       {limits.length > 0 && (
-        <div className="font-mono text-[9px] text-white/50">{limits.join(" · ")}</div>
+        <div className="font-mono text-[9px] text-foreground/50">{limits.join(" · ")}</div>
       )}
     </div>
   );
@@ -178,7 +175,7 @@ export const DeviceRows = ({ devices }: { devices: readonly DeviceLike[] }) => (
               <>
                 {device.label}
                 {settings.length > 0 && (
-                  <span className="text-white/45"> · {settings.join(" · ")}</span>
+                  <span className="text-foreground/45"> · {settings.join(" · ")}</span>
                 )}
               </>
             }
@@ -219,7 +216,7 @@ export const MetadataOverlayFrame = ({
       <button
         type="button"
         className={cn(
-          "pointer-events-auto absolute z-30 flex h-6 w-6 items-center justify-center rounded-md border border-black/10 bg-black/40 text-white/70 backdrop-blur-md hover:text-white",
+          "pointer-events-auto absolute z-30 flex h-6 w-6 items-center justify-center rounded-md border border-background/10 bg-background/40 text-foreground/70 backdrop-blur-md hover:text-foreground",
           className,
         )}
         title={title}
@@ -235,22 +232,22 @@ export const MetadataOverlayFrame = ({
   return (
     <div
       className={cn(
-        "pointer-events-auto absolute z-30 flex max-h-[50vh] w-72 flex-col items-end overflow-hidden rounded-lg border border-black/10 bg-black/40 text-right backdrop-blur-md",
+        "pointer-events-auto absolute z-30 flex max-h-[50vh] w-72 flex-col items-end overflow-hidden rounded-lg border border-background/10 bg-background/40 text-right backdrop-blur-md",
         className,
       )}
     >
       <button
         type="button"
-        className="flex items-center gap-1.5 px-2 py-1 text-white/70 hover:text-white"
+        className="flex items-center gap-1.5 px-2 py-1 text-foreground/70 hover:text-foreground"
         title="Collapse metadata"
         aria-label="Hide metadata"
         aria-expanded
         onClick={() => setExpanded(false)}
       >
         <Tags className="h-3 w-3 shrink-0" />
-        <ChevronDown className="h-3 w-3 shrink-0 text-white/50" />
+        <ChevronDown className="h-3 w-3 shrink-0 text-foreground/50" />
       </button>
-      <div className="min-h-0 w-full overflow-y-auto border-t border-white/10 px-1 pt-1">
+      <div className="min-h-0 w-full overflow-y-auto border-t border-foreground/10 px-1 pt-1">
         {children}
       </div>
     </div>

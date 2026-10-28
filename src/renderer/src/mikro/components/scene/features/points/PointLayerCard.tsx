@@ -99,7 +99,7 @@ export const PointLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<CircleDot className="h-3 w-3 text-violet-300" />}
+        icon={<CircleDot className="h-3 w-3 text-violet-700 dark:text-violet-300" />}
         tile="bg-violet-400/15"
         title={layer.tableDataset?.name?.trim() || `Points ${layer.id}`}
         hidden={hidden}
@@ -126,7 +126,7 @@ export const PointLayerCard = memo(
               onValueCommit={([value]) => persist({ pointSize: value })}
               className="flex-1 py-1"
             />
-            <span className="w-7 shrink-0 text-right font-mono text-[9px] text-white/40">
+            <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/40">
               {pointSize}
             </span>
           </div>
@@ -175,7 +175,7 @@ export const PointLayerCard = memo(
 
         {/* What the layer IS. The coordinate and id columns come from the
             dataset's declared roles, so they are stated rather than offered. */}
-        <div className="flex flex-wrap items-center gap-1 border-t border-white/5 px-2 py-1">
+        <div className="flex flex-wrap items-center gap-1 border-t border-foreground/5 px-2 py-1">
           <RowLabel>from</RowLabel>
           <Badge title="The coordinate columns, resolved from the dataset's declared axes">
             {[layer.xColumn, layer.yColumn, layer.zColumn].filter(Boolean).join(" · ")}

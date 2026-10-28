@@ -200,7 +200,7 @@ const HistogramBars = ({
   const hi = xOf(selectionMax);
 
   return (
-    <div className="overflow-hidden rounded border border-white/10 bg-black/25" aria-hidden>
+    <div className="overflow-hidden rounded border border-foreground/10 bg-background/25" aria-hidden>
       <svg
         className="block w-full"
         viewBox={`0 0 100 ${HIST_PLOT_HEIGHT}`}
@@ -313,13 +313,13 @@ const BoundsControl = ({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[9px] uppercase tracking-[0.08em] text-white/35">{label}</span>
+        <span className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">{label}</span>
         <div className="flex items-baseline gap-2">
           {onAuto && (
             <button
               type="button"
               title="Drop the bounds — every slice rescales to its own range again"
-              className="text-[9px] text-white/40 underline-offset-2 hover:text-white/80 hover:underline"
+              className="text-[9px] text-foreground/40 underline-offset-2 hover:text-foreground/80 hover:underline"
               onClick={onAuto}
             >
               auto
@@ -327,7 +327,7 @@ const BoundsControl = ({
           )}
           <button
             type="button"
-            className="text-[9px] text-white/40 underline-offset-2 hover:text-white/80 hover:underline"
+            className="text-[9px] text-foreground/40 underline-offset-2 hover:text-foreground/80 hover:underline"
             onClick={() => commit(domain.min, domain.max)}
           >
             full range
@@ -365,7 +365,7 @@ const BoundsControl = ({
             commit(clampToDomain(event.target.value, clampTyped ? domain : null, domain.min), bounds.max)
           }
         />
-        <span className="text-[9px] text-white/40">…</span>
+        <span className="text-[9px] text-foreground/40">…</span>
         <Input
           key={`max:${stored.max ?? ""}`}
           type="number"
@@ -376,7 +376,7 @@ const BoundsControl = ({
           }
         />
       </div>
-      <div className="text-[9px] text-white/35">
+      <div className="text-[9px] text-foreground/35">
         {subject} runs {readable(domain.min)} … {readable(domain.max)}
       </div>
     </div>
@@ -483,7 +483,7 @@ const SparseSliceSettings = ({
 
   if (!datalayer) {
     return (
-      <div className="text-[9px] text-white/35">
+      <div className="text-[9px] text-foreground/35">
         {mode === "filter"
           ? "no datalayer is configured, so the slice cannot be read — the rule keeps its stored bounds"
           : "no datalayer is configured, so the slice cannot be read — it still rescales to its own range"}
@@ -492,12 +492,12 @@ const SparseSliceSettings = ({
   }
   if (error) {
     return (
-      <div className="text-[10px] text-amber-300/80">
+      <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">
         Could not read the slice: {error}
       </div>
     );
   }
-  if (!domain) return <div className="text-[10px] text-white/40">Reading the slice…</div>;
+  if (!domain) return <div className="text-[10px] text-foreground/40">Reading the slice…</div>;
 
   const isFilter = mode === "filter";
   const bounded = stored.min != null || stored.max != null;
@@ -514,7 +514,7 @@ const SparseSliceSettings = ({
         onAuto={!isFilter && bounded ? () => onCommit({ min: null, max: null }) : undefined}
         onCommit={(min, max) => onCommit({ min, max })}
       />
-      <div className="text-[9px] text-white/35">
+      <div className="text-[9px] text-foreground/35">
         {isFilter
           ? "an object the slice never mentions has value 0, and is kept or dropped by these bounds like any other"
           : bounded
@@ -667,12 +667,12 @@ export const ColumnEntrySettings = ({
     };
     return (
       <div className="space-y-2 text-xs">
-        <div className="truncate text-[9px] text-white/35">
+        <div className="truncate text-[9px] text-foreground/35">
           graph attribute “{graphAttribute}” — one value per node, off the collection itself
         </div>
         {!isFilter && (
           <div className="space-y-1.5">
-            <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">colormap</div>
+            <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">colormap</div>
             <ColormapSelect
               value={colouring.colormap ?? ColorMap.Viridis}
               choices={measureChoices}
@@ -682,7 +682,7 @@ export const ColumnEntrySettings = ({
           </div>
         )}
         <div className="space-y-1">
-          <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">
+          <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">
             {isFilter ? "keep between" : "clims"}
           </div>
           <div className="flex items-center gap-1.5">
@@ -694,7 +694,7 @@ export const ColumnEntrySettings = ({
                 placeholder={end}
                 defaultValue={(isFilter ? rule : clims)[end] ?? ""}
                 onBlur={(event) => onCommit({ [end]: parseBound(event.target.value) })}
-                className="w-full rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/80"
+                className="w-full rounded border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 font-mono text-[10px] text-foreground/80"
                 title={
                   isFilter
                     ? "Inclusive bound; leave empty for an open end"
@@ -705,7 +705,7 @@ export const ColumnEntrySettings = ({
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">applies to</div>
+          <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">applies to</div>
           <div className="flex gap-1">
             {(["NODE", "EDGE"] as const).map((choice) => (
               <button
@@ -714,8 +714,8 @@ export const ColumnEntrySettings = ({
                 onClick={() => onCommit({ target: choice } as never)}
                 className={`rounded border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.06em] ${
                   target === choice
-                    ? "border-white/30 bg-white/10 text-white/90"
-                    : "border-white/10 bg-white/5 text-white/45 hover:text-white/80"
+                    ? "border-foreground/30 bg-foreground/10 text-foreground/90"
+                    : "border-foreground/10 bg-foreground/5 text-foreground/45 hover:text-foreground/80"
                 }`}
                 title={
                   choice === "NODE"
@@ -729,8 +729,8 @@ export const ColumnEntrySettings = ({
           </div>
         </div>
         {isFilter && (
-          <label className="flex items-center justify-between gap-2 border-t border-white/5 pt-2 text-[10px]">
-            <span className="text-white/40">invert — drop what matches instead</span>
+          <label className="flex items-center justify-between gap-2 border-t border-foreground/5 pt-2 text-[10px]">
+            <span className="text-foreground/40">invert — drop what matches instead</span>
             <Switch
               checked={rule.exclude}
               onCheckedChange={(checked) => onCommit({ exclude: checked })}
@@ -766,7 +766,7 @@ export const ColumnEntrySettings = ({
         />
         {!isFilter && (
           <div className="space-y-1.5">
-            <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">colormap</div>
+            <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">colormap</div>
             <ColormapSelect
               value={colouring.colormap ?? ColorMap.Magma}
               choices={measureChoices}
@@ -785,8 +785,8 @@ export const ColumnEntrySettings = ({
           onCommit={onCommit}
         />
         {isFilter && (
-          <label className="flex items-center justify-between gap-2 border-t border-white/5 pt-2 text-[10px]">
-            <span className="text-white/40">invert — drop what matches instead</span>
+          <label className="flex items-center justify-between gap-2 border-t border-foreground/5 pt-2 text-[10px]">
+            <span className="text-foreground/40">invert — drop what matches instead</span>
             <Switch
               checked={rule.exclude}
               onCheckedChange={(checked) => onCommit({ exclude: checked })}
@@ -800,19 +800,19 @@ export const ColumnEntrySettings = ({
   return (
     <div className="space-y-2 text-xs">
       {column?.unit != null && (
-        <div className="truncate text-[9px] text-white/35">unit: {String(column.unit)}</div>
+        <div className="truncate text-[9px] text-foreground/35">unit: {String(column.unit)}</div>
       )}
 
       {tableResult.loading && (
-        <div className="text-[10px] text-white/40">Resolving column…</div>
+        <div className="text-[10px] text-foreground/40">Resolving column…</div>
       )}
       {!tableResult.loading && table && !column && (
-        <div className="text-[10px] text-amber-300/80">
+        <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">
           {table.name} no longer declares a column named “{entry.column}”.
         </div>
       )}
       {statsError && (
-        <div className="text-[10px] text-amber-300/80" title={statsError.detail}>
+        <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80" title={statsError.detail}>
           Could not read the column’s values: {statsError.summary}. The full error is in
           the console.
         </div>
@@ -821,7 +821,7 @@ export const ColumnEntrySettings = ({
       {/* ---------------------------------------------------- colouring --- */}
       {!isFilter && control === ColumnControl.Measure && (
         <div className="space-y-1.5">
-          <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">colormap</div>
+          <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">colormap</div>
           <ColormapSelect
             value={colouring.colormap ?? ColorMap.Viridis}
             choices={measureChoices}
@@ -829,7 +829,7 @@ export const ColumnEntrySettings = ({
             title="The ramp the column's values are painted with"
           />
           {domain === null && !statsError && (
-            <div className="text-[10px] text-white/40">Reading the column’s range…</div>
+            <div className="text-[10px] text-foreground/40">Reading the column’s range…</div>
           )}
           {domain && (
             <>
@@ -841,7 +841,7 @@ export const ColumnEntrySettings = ({
                 colormap={colouring.colormap ?? ColorMap.Viridis}
                 onCommit={(min, max) => onCommit({ min, max })}
               />
-              <div className="text-[9px] text-white/35">
+              <div className="text-[9px] text-foreground/35">
                 the ramp runs between these; values outside clamp to its ends
               </div>
             </>
@@ -850,7 +850,7 @@ export const ColumnEntrySettings = ({
       )}
       {!isFilter && control === ColumnControl.Categorical && (
         <div className="space-y-1.5">
-          <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">palette</div>
+          <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">palette</div>
           <ColormapSelect
             value={categoricalValue}
             choices={categoricalChoices}
@@ -858,7 +858,7 @@ export const ColumnEntrySettings = ({
             title="Each distinct value takes its own colour from this palette"
           />
           {distinct && (
-            <div className="text-[9px] text-white/35">
+            <div className="text-[9px] text-foreground/35">
               {distinct.values.length}
               {distinct.truncated ? "+" : ""} distinct values, a colour each
             </div>
@@ -870,7 +870,7 @@ export const ColumnEntrySettings = ({
       {isFilter && control === ColumnControl.Measure && (
         <div className="space-y-1.5">
           {domain === null && !statsError && (
-            <div className="text-[10px] text-white/40">Reading the column’s range…</div>
+            <div className="text-[10px] text-foreground/40">Reading the column’s range…</div>
           )}
           {domain && (
             <BoundsControl
@@ -886,13 +886,13 @@ export const ColumnEntrySettings = ({
       {isFilter && control === ColumnControl.Categorical && (
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[9px] uppercase tracking-[0.08em] text-white/35">
+            <span className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">
               keep these values
             </span>
             {distinct && distinct.values.length > 0 && (
               <button
                 type="button"
-                className="text-[9px] text-white/40 underline-offset-2 hover:text-white/80 hover:underline"
+                className="text-[9px] text-foreground/40 underline-offset-2 hover:text-foreground/80 hover:underline"
                 onClick={() => onCommit({ values: distinct.values })}
               >
                 all
@@ -900,7 +900,7 @@ export const ColumnEntrySettings = ({
             )}
           </div>
           {distinct === null && !statsError && (
-            <div className="text-[10px] text-white/40">Reading values…</div>
+            <div className="text-[10px] text-foreground/40">Reading values…</div>
           )}
           {distinct && (
             <div className="max-h-40 space-y-0.5 overflow-y-auto">
@@ -923,8 +923,8 @@ export const ColumnEntrySettings = ({
                           : `Also keep ${value}`
                     }
                     onClick={() => toggleValue(value)}
-                    className={`flex w-full items-center gap-2 rounded px-1 py-0.5 text-[10px] text-white/70 ${
-                      locked ? "opacity-60" : "hover:bg-white/5"
+                    className={`flex w-full items-center gap-2 rounded px-1 py-0.5 text-[10px] text-foreground/70 ${
+                      locked ? "opacity-60" : "hover:bg-foreground/5"
                     }`}
                   >
                     <span className="flex-1 truncate text-left">{value}</span>
@@ -937,7 +937,7 @@ export const ColumnEntrySettings = ({
           {/* A list cut at the cap read as complete is worse than no list: a
               rule authored against it silently drops what it never showed. */}
           {distinct?.truncated && (
-            <div className="text-[9px] text-amber-300/80">
+            <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80">
               More than {DISTINCT_LIMIT} distinct values — showing the first
               {" "}
               {DISTINCT_LIMIT}. Narrow with a bound instead if this is not the
@@ -948,8 +948,8 @@ export const ColumnEntrySettings = ({
       )}
 
       {isFilter && (
-        <label className="flex items-center justify-between gap-2 border-t border-white/5 pt-2 text-[10px]">
-          <span className="text-white/40">invert — drop what matches instead</span>
+        <label className="flex items-center justify-between gap-2 border-t border-foreground/5 pt-2 text-[10px]">
+          <span className="text-foreground/40">invert — drop what matches instead</span>
           <Switch
             checked={rule.exclude}
             onCheckedChange={(checked) => onCommit({ exclude: checked })}

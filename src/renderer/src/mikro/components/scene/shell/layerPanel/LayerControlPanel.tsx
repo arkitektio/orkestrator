@@ -16,7 +16,7 @@ import { UnplaceableNotice } from "./UnplaceableNotice";
 import { AddDerivedButton } from "./AddDerivedButton";
 
 const ADD_BUTTON =
-  "rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] text-white/60 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white/90";
+  "rounded-full border border-foreground/10 bg-background/40 px-2 py-0.5 text-[10px] text-foreground/60 backdrop-blur-md transition-colors hover:border-foreground/20 hover:text-foreground/90";
 
 // Viewport coverage is deliberately GONE from this panel (and from
 // LayerViewRange entirely). It used to arrive as a bucketed Record and flow

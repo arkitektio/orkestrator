@@ -70,16 +70,16 @@ export const VectorLayerCard = memo(
 
     return (
       <div
-        className={`@container/card rounded-lg border border-white/10 bg-black/40 backdrop-blur-md transition-opacity ${
+        className={`@container/card rounded-lg border border-foreground/10 bg-background/40 backdrop-blur-md transition-opacity ${
           hidden ? "opacity-50" : ""
         }`}
       >
         {/* ------------------------------------------------ header --------- */}
         <div className="flex items-center gap-1.5 px-2 py-1.5">
           <LayerTile tint="bg-teal-400/15">
-            <Wind className="h-3 w-3 text-teal-300" />
+            <Wind className="h-3 w-3 text-teal-700 dark:text-teal-300" />
           </LayerTile>
-          <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-white/90">
+          <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90">
             {layer.name?.trim() || layer.lens.dataset.name?.trim() || `Vectors ${layer.id}`}
           </span>
 
@@ -87,7 +87,7 @@ export const VectorLayerCard = memo(
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+            className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
             title={hidden ? "Show" : "Hide"}
             onClick={() => persist({ visible: hidden })}
           >
@@ -97,7 +97,7 @@ export const VectorLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+              className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
               title="Remove layer from scene"
               onClick={() => onRemove(layer.id)}
             >
@@ -116,8 +116,8 @@ export const VectorLayerCard = memo(
                 onClick={() => persist({ glyph: glyph.value })}
                 className={`h-6 flex-1 rounded border text-[10px] transition-colors ${
                   layer.glyph === glyph.value
-                    ? "border-teal-300/40 bg-teal-400/15 text-teal-200"
-                    : "border-white/10 bg-black/30 text-white/60 hover:text-white/90"
+                    ? "border-teal-300/40 bg-teal-400/15 text-teal-700 dark:text-teal-200"
+                    : "border-foreground/10 bg-background/30 text-foreground/60 hover:text-foreground/90"
                 }`}
               >
                 {glyph.label}
@@ -135,7 +135,7 @@ export const VectorLayerCard = memo(
                 const value = Number(event.target.value);
                 if (value >= 1) persist({ glyphStride: value });
               }}
-              className="h-6 min-w-0 flex-1 rounded border border-white/10 bg-black/30 px-1.5 text-[10px] text-white/80"
+              className="h-6 min-w-0 flex-1 rounded border border-foreground/10 bg-background/30 px-1.5 text-[10px] text-foreground/80"
               title="Sample every Nth voxel per spatial axis. 'auto' lets the renderer pick a stride from its glyph budget — and is a one-way door: a patch cannot say 'back to auto', only recreating the layer can."
             >
               {layer.glyphStride == null && <option value="">auto (renderer budget)</option>}
@@ -163,7 +163,7 @@ export const VectorLayerCard = memo(
             />
             {layer.glyphScale == null ? (
               <button
-                className="w-14 shrink-0 rounded border border-white/10 bg-black/30 text-right font-mono text-[9px] text-white/40 hover:text-white/80"
+                className="w-14 shrink-0 rounded border border-foreground/10 bg-background/30 text-right font-mono text-[9px] text-foreground/40 hover:text-foreground/80"
                 title="Auto-normalized: the longest sampled vector draws just short of one stride. Click to pin the current 1.0 scene-units-per-unit — a one-way door, like the stride."
                 onClick={() => persist({ glyphScale: 1 })}
               >
@@ -171,7 +171,7 @@ export const VectorLayerCard = memo(
               </button>
             ) : (
               <span
-                className="w-14 shrink-0 text-right font-mono text-[9px] text-white/40"
+                className="w-14 shrink-0 text-right font-mono text-[9px] text-foreground/40"
                 title="Scene units drawn per unit of magnitude, in the component axis's unit — a well-defined length from SIMILARITY up"
               >
                 {layer.glyphScale}
@@ -201,7 +201,7 @@ export const VectorLayerCard = memo(
         />
 
         {/* What the layer IS: derived, stated rather than offered. */}
-        <div className="flex flex-wrap items-center gap-1 border-t border-white/5 px-2 py-1">
+        <div className="flex flex-wrap items-center gap-1 border-t border-foreground/5 px-2 py-1">
           <RowLabel>from</RowLabel>
           <Badge title="The DISPLACEMENT value axis whose positions are the vector components — derived from the axis types, never stored on the layer">
             components on '{layer.vectorAxis}'

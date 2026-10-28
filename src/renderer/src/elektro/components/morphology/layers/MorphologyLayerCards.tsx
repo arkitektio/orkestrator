@@ -79,7 +79,7 @@ const SliderRow = ({
       onValueChange={([v]) => onChange(v)}
       className="flex-1 py-1"
     />
-    <span className="w-10 shrink-0 text-right font-mono text-[9px] text-white/40">
+    <span className="w-10 shrink-0 text-right font-mono text-[9px] text-foreground/40">
       {format(value)}
     </span>
   </div>
@@ -108,19 +108,19 @@ const ImportanceSection = ({ importance }: { importance: ImportanceColors }) => 
       hint="Each section's share of the cell, blended — derived from geometry and channels, no simulation."
     >
       <div className="flex items-center gap-1.5">
-        <span className="w-9 shrink-0 text-right font-mono text-[9px] text-white/40">
+        <span className="w-9 shrink-0 text-right font-mono text-[9px] text-foreground/40">
           {fmt(importance.min)}
         </span>
         <div className="h-1.5 flex-1 rounded-full" style={{ background: heatmapGradientCss() }} />
-        <span className="w-9 shrink-0 font-mono text-[9px] text-white/40">{fmt(importance.max)}</span>
+        <span className="w-9 shrink-0 font-mono text-[9px] text-foreground/40">{fmt(importance.max)}</span>
       </div>
       {WEIGHT_FIELDS.map((field) => {
         const raw = draft[field.key];
         return (
           <div key={field.key} className="flex flex-col gap-0.5" title={field.description}>
-            <span className="text-[9px] text-white/50">
+            <span className="text-[9px] text-foreground/50">
               {field.label}
-              {raw == null && <span className="text-white/25"> · default</span>}
+              {raw == null && <span className="text-foreground/25"> · default</span>}
             </span>
             <div className="flex items-center gap-1.5">
               <Slider
@@ -132,7 +132,7 @@ const ImportanceSection = ({ importance }: { importance: ImportanceColors }) => 
                 onValueCommit={([n]) => setWeights({ ...draft, [field.key]: n })}
                 className="flex-1 py-1"
               />
-              <span className="w-7 shrink-0 text-right font-mono text-[9px] text-white/40">
+              <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/40">
                 {(raw ?? field.defaultValue).toFixed(2)}
               </span>
             </div>
@@ -162,7 +162,7 @@ export const MorphologyLayerCard = ({
 
   return (
     <LayerCardShell
-      icon={<GitBranch className="h-3 w-3 text-emerald-300" />}
+      icon={<GitBranch className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
       tile="bg-emerald-400/15"
       title="Morphology"
       badges={
@@ -206,7 +206,7 @@ export const MorphologyLayerCard = ({
             type="color"
             value={settings.uniformColor}
             onChange={(e) => setMorphology({ uniformColor: e.target.value })}
-            className="h-5 w-10 cursor-pointer rounded border border-white/10 bg-transparent"
+            className="h-5 w-10 cursor-pointer rounded border border-foreground/10 bg-transparent"
             title="Morphology colour"
           />
         )}
@@ -260,7 +260,7 @@ export const MorphologyLayerCard = ({
 };
 
 const Swatch = ({ color, label }: { color: string; label: string }) => (
-  <span className="flex items-center gap-1 text-[9px] text-white/50">
+  <span className="flex items-center gap-1 text-[9px] text-foreground/50">
     <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
     {label}
   </span>
@@ -276,7 +276,7 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
 
   return (
     <LayerCardShell
-      icon={<Waypoints className="h-3 w-3 text-violet-300" />}
+      icon={<Waypoints className="h-3 w-3 text-violet-700 dark:text-violet-300" />}
       tile="bg-violet-400/15"
       title="Network"
       badges={

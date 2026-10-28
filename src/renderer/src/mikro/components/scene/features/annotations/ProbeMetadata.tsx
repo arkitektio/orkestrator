@@ -41,11 +41,11 @@ const sameLens = (prev: { layer: LayerState }, next: { layer: LayerState }) =>
   prev.layer.lens === next.layer.lens && prev.layer.phasorAxis === next.layer.phasorAxis;
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <span className="block truncate text-[10px] font-medium text-white/60">{children}</span>
+  <span className="block truncate text-[10px] font-medium text-foreground/60">{children}</span>
 );
 
 const ReadingDots = ({ readings }: { readings: readonly Reading[] }) => (
-  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-medium text-white/70">
+  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-medium text-foreground/70">
     {readings.map((reading) => (
       <span key={reading.id} className="inline-flex items-center gap-1">
         <span className="size-1.5 rounded-full" style={{ backgroundColor: reading.color }} />
@@ -83,10 +83,10 @@ const LayerProbeMetadata = ({
   if (anchors.length === 0) return null;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 text-[10px] text-white/85">
+    <div className="flex min-w-0 flex-col gap-1.5 text-[10px] text-foreground/85">
       <SectionTitle>Metadata · {layerDisplayLabel(layer)}</SectionTitle>
       {applying.length === 0 && (
-        <span className="text-white/40">Nothing anchored at the probed points.</span>
+        <span className="text-foreground/40">Nothing anchored at the probed points.</span>
       )}
       {applying.map(({ anchor, readings: matched }) => (
         <ActiveAnchor key={anchor.id} anchor={anchor} align="start">
@@ -96,7 +96,7 @@ const LayerProbeMetadata = ({
       {others.length > 0 && (
         <>
           <button
-            className="self-start text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+            className="self-start text-[9px] uppercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
             onClick={() => setShowOthers((previous) => !previous)}
           >
             {others.length} more anchored elsewhere
@@ -104,7 +104,7 @@ const LayerProbeMetadata = ({
           {showOthers && (
             <div className="flex flex-wrap gap-1">
               {others.map((anchor) => (
-                <span key={anchor.id} className="text-[9px] text-white/40">
+                <span key={anchor.id} className="text-[9px] text-foreground/40">
                   {anchor.channelLabel?.label ?? "unlabelled"}
                 </span>
               ))}
@@ -112,7 +112,7 @@ const LayerProbeMetadata = ({
           )}
         </>
       )}
-      {loading && <span className="text-[9px] text-white/30">Loading…</span>}
+      {loading && <span className="text-[9px] text-foreground/30">Loading…</span>}
     </div>
   );
 };
@@ -121,7 +121,7 @@ const LayerProbeMetadata = ({
 const ActiveLayerMetadata = memo(({ layer }: { layer: LayerState }) => {
   const { anchors, loading } = useLayerAnchors(layer);
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 text-white/85">
+    <div className="flex min-w-0 flex-col gap-1.5 text-foreground/85">
       <SectionTitle>Metadata · {layerDisplayLabel(layer)}</SectionTitle>
       <AnchorMetadata layer={layer} anchors={anchors} loading={loading} />
     </div>

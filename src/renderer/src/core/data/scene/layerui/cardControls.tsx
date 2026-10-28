@@ -32,15 +32,15 @@ import { Collapsible, CollapsibleContent } from "@/core/ui/collapsible";
 import { Slider } from "@/core/ui/slider";
 
 /**
- * The card surface, ONE dialect for every layer kind: `border-white/10
- * bg-black/40 backdrop-blur-md`, a slightly firmer border when unfolded, and
+ * The card surface, ONE dialect for every layer kind: `border-foreground/10
+ * bg-background/40 backdrop-blur-md`, a slightly firmer border when unfolded, and
  * `opacity-50` for a hidden layer. `@container/card` makes the card its own
  * query context, so rows adapt to the width the CARD got — which in a
  * multi-column list is not the panel's width.
  */
 export const layerCardShellClasses = (expanded: boolean, hidden: boolean): string =>
-  `@container/card overflow-hidden rounded-lg border bg-black/40 backdrop-blur-md transition-colors ${
-    expanded ? "border-white/25" : "border-white/10 hover:border-white/20"
+  `@container/card overflow-hidden rounded-lg border bg-background/40 backdrop-blur-md transition-colors ${
+    expanded ? "border-foreground/25" : "border-foreground/10 hover:border-foreground/20"
   } ${hidden ? "opacity-50" : ""}`;
 
 /**
@@ -112,7 +112,7 @@ export const LayerCardShell = ({
     >
       <LayerTile tint={tile}>{icon}</LayerTile>
       <span
-        className="min-w-0 flex-1 truncate text-[11px] font-medium text-white/90"
+        className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90"
         title={title}
       >
         {title}
@@ -127,14 +127,14 @@ export const LayerCardShell = ({
     </div>
     {pinned}
     <CollapsibleContent className="overflow-hidden">
-      <div className="flex flex-col border-t border-white/10">{children}</div>
+      <div className="flex flex-col border-t border-foreground/10">{children}</div>
     </CollapsibleContent>
   </Collapsible>
 );
 
 /** Fixed-width row label, aligning every control row. */
 export const RowLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="w-11 shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+  <span className="w-11 shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
     {children}
   </span>
 );
@@ -160,15 +160,15 @@ export const CardSection = ({
   hint?: React.ReactNode;
   children: React.ReactNode;
 }) => (
-  <div className="flex flex-col gap-1.5 border-t border-white/5 px-2 py-2">
+  <div className="flex flex-col gap-1.5 border-t border-foreground/5 px-2 py-2">
     <div className="flex min-h-4 items-center gap-1.5">
-      <span className="flex-1 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+      <span className="flex-1 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
         {title}
       </span>
       {action}
     </div>
     {children}
-    {hint && <span className="text-[9px] leading-tight text-white/25">{hint}</span>}
+    {hint && <span className="text-[9px] leading-tight text-foreground/25">{hint}</span>}
   </div>
 );
 
@@ -219,7 +219,7 @@ export const EntryRow = ({
     className={`rounded-md border transition-colors ${
       active
         ? "border-brand/40 bg-brand/15"
-        : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/5"
+        : "border-foreground/10 bg-background/30 hover:border-foreground/20 hover:bg-foreground/5"
     }`}
   >
     <div className="flex items-center gap-1.5 px-1.5 py-1">
@@ -234,20 +234,20 @@ export const EntryRow = ({
         <span className="min-w-0 flex-1">
           <span
             className={`block truncate text-[10px] leading-tight ${
-              active ? "font-medium text-brand-soft" : "text-white/70"
+              active ? "font-medium text-brand-soft" : "text-foreground/70"
             }`}
           >
             {label}
           </span>
           {detail && (
-            <span className="block truncate text-[9px] leading-tight text-white/35">
+            <span className="block truncate text-[9px] leading-tight text-foreground/35">
               {detail}
             </span>
           )}
         </span>
         {children != null && (
           <ChevronDown
-            className={`h-2.5 w-2.5 shrink-0 text-white/30 transition-transform ${
+            className={`h-2.5 w-2.5 shrink-0 text-foreground/30 transition-transform ${
               expanded ? "rotate-180" : ""
             }`}
           />
@@ -256,7 +256,7 @@ export const EntryRow = ({
       {actions}
     </div>
     {expanded && children != null && (
-      <div className="border-t border-white/10 bg-black/20 px-1.5 py-1.5">{children}</div>
+      <div className="border-t border-foreground/10 bg-background/20 px-1.5 py-1.5">{children}</div>
     )}
   </div>
 );
@@ -279,8 +279,8 @@ export const RowAction = ({
     onClick={onClick}
     className={`grid h-4 w-4 shrink-0 place-items-center rounded transition-colors ${
       danger
-        ? "text-white/30 hover:bg-red-400/10 hover:text-red-300"
-        : "text-white/30 hover:bg-white/10 hover:text-white/90"
+        ? "text-foreground/30 hover:bg-red-400/10 hover:text-red-700 dark:hover:text-red-300"
+        : "text-foreground/30 hover:bg-foreground/10 hover:text-foreground/90"
     }`}
   >
     {children}
@@ -305,7 +305,7 @@ export const Segment = ({
     className={`px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
         ? "bg-brand/25 font-medium text-brand-soft"
-        : "text-white/45 hover:bg-white/5 hover:text-white/80"
+        : "text-foreground/45 hover:bg-foreground/5 hover:text-foreground/80"
     }`}
   >
     {children}
@@ -313,7 +313,7 @@ export const Segment = ({
 );
 
 export const SegmentGroup = ({ children }: { children: React.ReactNode }) => (
-  <div className="inline-flex items-stretch overflow-hidden rounded-md border border-white/10 bg-black/30 divide-x divide-white/10">
+  <div className="inline-flex items-stretch overflow-hidden rounded-md border border-foreground/10 bg-background/30 divide-x divide-foreground/10">
     {children}
   </div>
 );
@@ -338,7 +338,7 @@ export const IconToggle = ({
     className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
         ? "border-brand/40 bg-brand/15 text-brand-soft"
-        : "border-white/10 bg-black/30 text-white/45 hover:text-white/80"
+        : "border-foreground/10 bg-background/30 text-foreground/45 hover:text-foreground/80"
     }`}
   >
     {icon}
@@ -380,7 +380,7 @@ export const OpacityRow = memo(function OpacityRow({
           onValueCommit={onCommit ? ([value]) => onCommit(value / 100) : undefined}
           className="flex-1 py-1"
         />
-        <span className="w-7 shrink-0 text-right font-mono text-[9px] text-white/40">
+        <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/40">
           {percent}%
         </span>
       </div>
@@ -397,7 +397,7 @@ export const Badge = ({
   title?: string;
 }) => (
   <span
-    className="shrink-0 rounded border border-white/10 bg-white/5 px-1 py-px text-[9px] text-white/50"
+    className="shrink-0 rounded border border-foreground/10 bg-foreground/5 px-1 py-px text-[9px] text-foreground/50"
     title={title}
   >
     {children}

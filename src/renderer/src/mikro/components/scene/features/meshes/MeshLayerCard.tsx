@@ -147,7 +147,7 @@ const MeshRenderSection = memo(function MeshRenderSection({
         />
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] uppercase tracking-[0.08em] text-white/35">slab</span>
+        <span className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">slab</span>
         <SegmentGroup>
           {SLAB_SCALES.map((scale) => (
             <Segment
@@ -210,7 +210,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
         {selected ? (
           <>
             <span
-              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] leading-none text-white"
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] leading-none text-foreground"
               style={{
                 background: `hsla(${instanceHue(selected.ordinal) * 360}, 70%, 45%, 0.35)`,
                 border: `1px solid hsla(${instanceHue(selected.ordinal) * 360}, 80%, 60%, 0.6)`,
@@ -220,7 +220,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
               {selected.objectId !== null ? `#${selected.objectId}` : `ord ${selected.ordinal}`}
             </span>
             {selected.stats && (
-              <span className="text-[9px] text-white/40">
+              <span className="text-[9px] text-foreground/40">
                 {formatCount(selected.stats.vertices)}v ·{" "}
                 {formatCount(Math.round(selected.stats.indices / 3))}t
               </span>
@@ -235,7 +235,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
             <button
               title="Clear selection"
               onClick={() => setMeshSelection(null)}
-              className="grid h-4 w-4 place-items-center rounded text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+              className="grid h-4 w-4 place-items-center rounded text-foreground/40 transition-colors hover:bg-foreground/10 hover:text-foreground/80"
             >
               <X className="h-3 w-3" />
             </button>
@@ -247,7 +247,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
               onChange={(event) => setIdQuery(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && selectById()}
               placeholder="object id"
-              className="h-5 w-16 rounded-md border border-white/10 bg-black/30 px-1.5 text-[9px] text-white/80 outline-none transition-colors placeholder:text-white/25 focus:border-brand/40"
+              className="h-5 w-16 rounded-md border border-foreground/10 bg-background/30 px-1.5 text-[9px] text-foreground/80 outline-none transition-colors placeholder:text-foreground/25 focus:border-brand/40"
             />
             <IconToggle
               active={false}
@@ -256,7 +256,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
               icon={<Crosshair className="h-2.5 w-2.5" />}
               label="select"
             />
-            <span className="text-[9px] text-white/25">or click a mesh in probe mode</span>
+            <span className="text-[9px] text-foreground/25">or click a mesh in probe mode</span>
           </>
         )}
       </div>
@@ -283,7 +283,7 @@ const MeshStatsFooter = memo(function MeshStatsFooter({
   const cellsPerLevel = counts.cellsPerLevel ?? [];
   const totalCells = cellsPerLevel.reduce((sum, n) => sum + n, 0);
   return (
-    <div className="flex flex-wrap items-center gap-1 border-t border-white/5 px-2 py-1">
+    <div className="flex flex-wrap items-center gap-1 border-t border-foreground/5 px-2 py-1">
       {counts.objects !== undefined && (
         <Badge title="Objects in the collection">{formatCount(counts.objects)} objects</Badge>
       )}
@@ -470,7 +470,7 @@ export const MeshLayerCard = memo(
         swatchCSS: byInstance ? instancePaletteCSS(activePalette) : uniformCSS,
         settings: (
           <div className="space-y-1.5">
-            <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">
+            <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">
               palette
             </div>
             <ColormapSelect
@@ -499,7 +499,7 @@ export const MeshLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Box className="h-3 w-3 text-sky-300" />}
+        icon={<Box className="h-3 w-3 text-sky-700 dark:text-sky-300" />}
         tile="bg-sky-400/15"
         title={collection ? `Mesh ${collection.id}` : "Mesh (no collection)"}
         hidden={hidden}
@@ -512,7 +512,7 @@ export const MeshLayerCard = memo(
                 graph save: visible only while there is something to save. */}
             {dirty && (
               <button
-                className="shrink-0 rounded p-0.5 text-yellow-300/90 transition-colors hover:text-yellow-200 disabled:opacity-50"
+                className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
                 title="Save changes"
                 disabled={saving}
                 onClick={save}
@@ -524,7 +524,7 @@ export const MeshLayerCard = memo(
               variant="ghost"
               size="icon"
               className={`h-5 w-5 shrink-0 ${
-                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-white/45 hover:text-white/90"
+                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/45 hover:text-foreground/90"
               }`}
               title={layer.wireframe ? "Solid surface (session)" : "Wireframe (session)"}
               onClick={() => patchSceneLayer(layerId, { wireframe: !layer.wireframe })}
@@ -534,7 +534,7 @@ export const MeshLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
               title={hidden ? "Show (session)" : "Hide (session)"}
               onClick={() => patchSceneLayer(layerId, { visible: hidden })}
             >
@@ -544,7 +544,7 @@ export const MeshLayerCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
                 title="Remove layer from scene"
                 onClick={() => onRemove(layerId)}
               >

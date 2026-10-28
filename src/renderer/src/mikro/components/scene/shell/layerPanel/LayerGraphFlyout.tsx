@@ -44,8 +44,8 @@ export const LayerGraphFlyout = ({
     <div
       className={
         inline
-          ? "flex min-w-0 flex-col gap-2 overflow-y-auto px-2 py-2 text-[10px] text-white/85"
-          : "flex min-w-0 flex-col gap-2 overflow-y-auto px-3 py-2 text-[10px] text-white/85"
+          ? "flex min-w-0 flex-col gap-2 overflow-y-auto px-2 py-2 text-[10px] text-foreground/85"
+          : "flex min-w-0 flex-col gap-2 overflow-y-auto px-3 py-2 text-[10px] text-foreground/85"
       }
     >
       <RenderGraphSection editor={editor} layer={layer} />
@@ -56,15 +56,15 @@ export const LayerGraphFlyout = ({
   if (inline) return body;
 
   return (
-    <div className="flex w-72 max-h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-2xl backdrop-blur-2xl">
-      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/90">
+    <div className="flex w-72 max-h-full flex-col overflow-hidden rounded-xl border border-foreground/10 bg-background/70 shadow-2xl backdrop-blur-2xl">
+      <div className="flex items-center gap-2 border-b border-foreground/10 px-3 py-2">
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground/90">
           {label}
         </span>
         <Button
           variant="ghost"
           size="xs"
-          className="h-6 w-6 p-0 text-white/60 hover:text-white"
+          className="h-6 w-6 p-0 text-foreground/60 hover:text-foreground"
           title="Close"
           onClick={onClose}
         >

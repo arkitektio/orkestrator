@@ -34,7 +34,7 @@ const RoiTargetAttributes = ({
   if (status === "idle") return null;
 
   const label = showLabel ? (
-    <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-white/40">
+    <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-foreground/40">
       {target.label}
     </span>
   ) : null;
@@ -43,7 +43,7 @@ const RoiTargetAttributes = ({
     return (
       <div className="flex items-center gap-1.5">
         {label}
-        <span className="text-[10px] text-white/40">…</span>
+        <span className="text-[10px] text-foreground/40">…</span>
       </div>
     );
   }
@@ -51,7 +51,7 @@ const RoiTargetAttributes = ({
     return (
       <div className="flex items-center gap-1.5">
         {label}
-        <span className="text-[10px] text-red-300/70">{error ?? "lookup failed"}</span>
+        <span className="text-[10px] text-red-700/70 dark:text-red-300/70">{error ?? "lookup failed"}</span>
       </div>
     );
   }

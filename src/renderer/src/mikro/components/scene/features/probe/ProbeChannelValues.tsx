@@ -15,20 +15,20 @@ const ProvenanceBadge = ({ probe }: { probe: ProbeResult }) => {
   const { source, level } = probe.provenance;
   if (source === "exact") {
     return (
-      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-300">
+      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
         exact
       </span>
     );
   }
   if (source === "resident") {
     return (
-      <span className="rounded bg-white/10 px-1 text-[9px] font-medium text-white/50">
+      <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/50">
         {level === 0 ? "level 0" : `~LOD ${level}`}
       </span>
     );
   }
   return (
-    <span className="rounded bg-white/10 px-1 text-[9px] font-medium text-white/40">…</span>
+    <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/40">…</span>
   );
 };
 
@@ -77,28 +77,28 @@ export const ProbeChannelValues = memo(
     return (
       <>
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-white/50">Voxel</span>
-          <span className="font-mono text-white/90">[{probe.voxelIndex.join(", ")}]</span>
+          <span className="text-foreground/50">Voxel</span>
+          <span className="font-mono text-foreground/90">[{probe.voxelIndex.join(", ")}]</span>
         </div>
         <ProbeTime layerId={probe.layerId} />
 
-        <div className="space-y-0.5 rounded border border-white/10 bg-white/5 px-2 py-1.5">
+        <div className="space-y-0.5 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
           {probe.strategy === "mesh" ? (
             // A mesh pick: the "value" is the instance's object id.
             <div className="flex items-center justify-between gap-3">
-              <span className="truncate text-[10px] text-white/60">Instance</span>
-              <span className="font-mono text-white/90">
+              <span className="truncate text-[10px] text-foreground/60">Instance</span>
+              <span className="font-mono text-foreground/90">
                 #{probe.values[0]?.value ?? "…"}
               </span>
             </div>
           ) : (
             probe.values.map((entry) => (
               <div key={entry.channel} className="flex items-center justify-between gap-3">
-                <span className="truncate text-[10px] text-white/60">
+                <span className="truncate text-[10px] text-foreground/60">
                   {labels.get(entry.channel) || `Ch ${entry.channel}`}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="font-mono text-white/90">
+                  <span className="font-mono text-foreground/90">
                     {formatProbeValue(entry.value, probe.dtype)}
                   </span>
                   <ProvenanceBadge probe={probe} />

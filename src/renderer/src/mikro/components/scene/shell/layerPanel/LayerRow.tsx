@@ -79,7 +79,7 @@ export const LayerRow = ({
   const buttonSize = compact
     ? "h-5 w-5 p-0"
     : "h-6 w-6 p-0 @md/card:h-7 @md/card:w-7";
-  const iconMuted = compact ? "text-white/45 hover:text-white/90" : "text-white/70 hover:text-white";
+  const iconMuted = compact ? "text-foreground/45 hover:text-foreground/90" : "text-foreground/70 hover:text-foreground";
 
   const row = (
     <div
@@ -88,8 +88,8 @@ export const LayerRow = ({
           ? "transition-colors"
           : `rounded-lg border backdrop-blur-md transition-colors ${
               isSelected
-                ? "border-white/40 bg-white/10"
-                : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                ? "border-foreground/40 bg-foreground/10"
+                : "border-foreground/10 bg-background/40 hover:border-foreground/20 hover:bg-foreground/5"
             }`
       } ${hidden ? "opacity-50" : ""}`}
       onClick={onSelect}
@@ -97,11 +97,11 @@ export const LayerRow = ({
       {/* The leading mark: what the layer paints, drawn (three disks for
           RGB, one in the channel's colour or colormap for an image), in the
           same squircle tile every other card leads with. */}
-      <LayerTile tint="bg-white/10">
+      <LayerTile tint="bg-foreground/10">
         <LayerGlyph layer={layer} className="h-3.5 w-3.5" />
       </LayerTile>
       <span
-        className={`min-w-0 flex-1 truncate font-medium text-white/90 ${
+        className={`min-w-0 flex-1 truncate font-medium text-foreground/90 ${
           compact ? "text-[11px]" : "text-xs"
         }`}
       >
@@ -109,7 +109,7 @@ export const LayerRow = ({
       </span>
       {graphDirty && onSaveGraph && (
         <button
-          className="shrink-0 rounded p-0.5 text-yellow-300/90 transition-colors hover:text-yellow-200 disabled:opacity-50"
+          className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
           title="Save changes"
           disabled={savingGraph}
           onClick={(e) => {
@@ -182,7 +182,7 @@ export const LayerRow = ({
           }}
         >
           {hidden ? (
-            <EyeOff className="h-3 w-3 text-white/50" />
+            <EyeOff className="h-3 w-3 text-foreground/50" />
           ) : (
             <Eye className="h-3 w-3" />
           )}
@@ -192,7 +192,7 @@ export const LayerRow = ({
             variant="ghost"
             size="xs"
             className={`${buttonSize} ${
-              compact ? "text-white/35" : "text-white/70"
+              compact ? "text-foreground/35" : "text-foreground/70"
             } hover:text-red-400`}
             title="Remove layer from scene"
             onClick={(e) => {

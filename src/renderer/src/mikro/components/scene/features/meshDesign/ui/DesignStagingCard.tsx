@@ -57,12 +57,12 @@ const MeshRow = ({ mesh, selected }: { mesh: DesignMesh; selected: boolean }) =>
   const triangles = mesh.current.indices.length / 3;
   return (
     <div
-      className={`flex items-center gap-2 rounded px-1 py-0.5 ${selected ? "bg-white/10" : ""}`}
+      className={`flex items-center gap-2 rounded px-1 py-0.5 ${selected ? "bg-foreground/10" : ""}`}
       onClick={() => api.getState().select(mesh.id)}
     >
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `hsl(${mesh.hue} 65% 55%)` }} />
       {selected && (
-        <span className="rounded bg-emerald-500/30 px-1 text-[9px] uppercase text-emerald-200" title="Reconstructions and edits go into this mesh">
+        <span className="rounded bg-emerald-500/30 px-1 text-[9px] uppercase text-emerald-700 dark:text-emerald-200" title="Reconstructions and edits go into this mesh">
           active
         </span>
       )}
@@ -144,11 +144,11 @@ export const DesignStagingCard = () => {
   return (
     <div className="pointer-events-auto mb-1 flex flex-col gap-0.5 rounded-md border border-emerald-500/25 bg-background/80 px-2 py-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-medium uppercase text-emerald-200/90" title="Uncommitted design session — commits as one mesh collection">
+        <span className="text-[10px] font-medium uppercase text-emerald-700/90 dark:text-emerald-200/90" title="Uncommitted design session — commits as one mesh collection">
           Design staging
         </span>
         <span
-          className={`text-[10px] tabular-nums ${triangles > DESIGN_TRIANGLE_BUDGET ? "text-amber-300/90" : "text-muted-foreground"}`}
+          className={`text-[10px] tabular-nums ${triangles > DESIGN_TRIANGLE_BUDGET ? "text-amber-700/90 dark:text-amber-300/90" : "text-muted-foreground"}`}
           title={
             triangles > DESIGN_TRIANGLE_BUDGET
               ? "A designed collection is drawn in full — simplify before committing"

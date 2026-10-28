@@ -74,7 +74,7 @@ export const AnnotationSelection = ({
   return (
     <div className="flex flex-col gap-1 border-t border-amber-400/20 bg-amber-400/5 px-2 py-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="min-w-0 flex-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-amber-200/80">
+        <span className="min-w-0 flex-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-amber-700/80 dark:text-amber-200/80">
           {selected.length} selected
         </span>
         <Button
@@ -94,7 +94,7 @@ export const AnnotationSelection = ({
         <Button
           size="xs"
           variant="ghost"
-          className="h-5 px-1.5 text-[10px] text-white/60 hover:text-white/90"
+          className="h-5 px-1.5 text-[10px] text-foreground/60 hover:text-foreground/90"
           onClick={() => clearSelectedRois()}
         >
           Clear
@@ -106,17 +106,17 @@ export const AnnotationSelection = ({
           // Spread: the Smart wrapper wants a JSON-shaped object, and the
           // store's `name` may be `undefined`, which JSON has no word for.
           <MikroAnnotation.Smart key={roi.id} object={{ ...roi, name: roi.name ?? null }}>
-            <div className="rounded-md border border-amber-400/30 bg-black/30 px-1.5 py-1">
+            <div className="rounded-md border border-amber-400/30 bg-background/30 px-1.5 py-1">
               <div className="flex items-center gap-1.5">
-                <span className="shrink-0 font-mono text-[10px] text-white/90">
+                <span className="shrink-0 font-mono text-[10px] text-foreground/90">
                   {index >= 0 ? indexLabel(index) : "—"}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[10px] text-white/50">
+                <span className="min-w-0 flex-1 truncate text-[10px] text-foreground/50">
                   {formatAnnotationKind(roi.kind)}
                 </span>
                 <button
                   type="button"
-                  className="grid h-4 w-4 shrink-0 place-items-center rounded text-white/40 hover:bg-white/10 hover:text-white/90"
+                  className="grid h-4 w-4 shrink-0 place-items-center rounded text-foreground/40 hover:bg-foreground/10 hover:text-foreground/90"
                   title="Deselect"
                   onClick={() => removeSelectedRoi(roi.id)}
                 >
@@ -172,7 +172,7 @@ export const AnnotationList = ({
 
   return (
     // Bounded: a collection can hold hundreds of shapes, the card must not.
-    <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto border-t border-white/5 px-2 py-1.5">
+    <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto border-t border-foreground/5 px-2 py-1.5">
       {annotations.map((annotation, index) => {
         const isSelected = selectedIds.has(annotation.id);
         const measure = measureOf(annotation);
@@ -183,13 +183,13 @@ export const AnnotationList = ({
               isSelected
                 ? // Amber — the same color the scene highlights the selected shape in.
                   "border-amber-400/40 bg-amber-400/10"
-                : "border-transparent hover:bg-white/5"
+                : "border-transparent hover:bg-foreground/5"
             }`}
             title={isSelected ? "Click to deselect" : "Click to select"}
             onClick={() => toggleSelectedRoi(toRoi(annotation))}
           >
-            <span className="shrink-0 font-mono text-[10px] text-white/80">{indexLabel(index)}</span>
-            <span className="min-w-0 flex-1 truncate text-[10px] text-white/45">
+            <span className="shrink-0 font-mono text-[10px] text-foreground/80">{indexLabel(index)}</span>
+            <span className="min-w-0 flex-1 truncate text-[10px] text-foreground/45">
               {formatAnnotationKind(annotation.kind)}
               {measure && ` · ${measure}`}
             </span>
@@ -202,13 +202,13 @@ export const AnnotationList = ({
               <MikroAnnotation.ObjectButton
                 object={annotation}
                 variant="ghost"
-                className="h-5 w-5 p-0 text-white/60 hover:text-white/90 [&_svg]:size-3"
+                className="h-5 w-5 p-0 text-foreground/60 hover:text-foreground/90 [&_svg]:size-3"
               />
             </span>
             <Button
               variant="ghost"
               size="xs"
-              className="h-5 w-5 shrink-0 p-0 text-white/45 hover:text-white/90"
+              className="h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90"
               title="Go to annotation"
               onClick={(event) => {
                 event.stopPropagation();

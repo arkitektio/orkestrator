@@ -128,7 +128,7 @@ const ColumnValues = ({ column, store }: { column: Column; store: Store }) => {
             <HoverRow label="Min" value={formatStat(stats.domain.min)} />
             <HoverRow label="Max" value={formatStat(stats.domain.max)} />
             {stats.histogram && (
-              <HistogramSparkline histogram={stats.histogram} tone="surface" />
+              <HistogramSparkline histogram={stats.histogram} />
             )}
           </>
         ) : (

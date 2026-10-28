@@ -21,7 +21,7 @@ import {
  */
 
 const PointDot = ({ point }: { point: ComparedPoint }) => (
-  <span className="inline-flex items-center justify-end gap-1 font-medium text-white/70">
+  <span className="inline-flex items-center justify-end gap-1 font-medium text-foreground/70">
     <span className="size-1.5 rounded-full" style={{ backgroundColor: point.color }} />
     {comparedPointName(point)}
   </span>
@@ -51,9 +51,9 @@ export const ComparisonGrid = ({
       ))}
       {rows.map((row) => (
         <div key={row.key} className="contents">
-          <span className="truncate text-white/50">{row.label}</span>
+          <span className="truncate text-foreground/50">{row.label}</span>
           {row.cells.map((cell, column) => (
-            <span key={points[column].id} className="text-right font-mono text-white/90">
+            <span key={points[column].id} className="text-right font-mono text-foreground/90">
               {cell}
             </span>
           ))}
@@ -85,7 +85,7 @@ const objectRow = (entries: readonly ComparedEntry[], empty: string) => ({
   label: "object",
   cells: entries.map((entry) => {
     const note = statusNote(entry.state, empty);
-    if (note) return <span className="font-sans text-white/40">{note}</span>;
+    if (note) return <span className="font-sans text-foreground/40">{note}</span>;
     const id = entry.state.sampledValue;
     return id === undefined || id === null ? "" : `#${String(id)}`;
   }),
@@ -112,9 +112,9 @@ const ComparedBody = ({ hop }: { hop: ComparedHop }) => {
       <>
         <ComparisonGrid points={points} rows={[objectRow(hop.entries, "no line")]} />
         {lines.length > 0 && (
-          <div className="text-white/80">
+          <div className="text-foreground/80">
             <TraceSparklineOverlay lines={lines} />
-            {axis && <span className="block text-[9px] text-white/35">along {axis}</span>}
+            {axis && <span className="block text-[9px] text-foreground/35">along {axis}</span>}
           </div>
         )}
       </>
@@ -130,7 +130,7 @@ const ComparedBody = ({ hop }: { hop: ComparedHop }) => {
           rows={[objectRow(hop.entries, "no entries"), ...valueRows(profileComparison(hop))]}
         />
         {capped && (
-          <span className="block text-right text-[9px] text-white/35">
+          <span className="block text-right text-[9px] text-foreground/35">
             each point’s strongest entries; blank is not zero
           </span>
         )}
@@ -147,7 +147,7 @@ const ComparedBody = ({ hop }: { hop: ComparedHop }) => {
         rows={[objectRow(hop.entries, "no row"), ...valueRows(table.rows)]}
       />
       {more.length > 0 && (
-        <span className="block text-right text-[9px] text-white/35">
+        <span className="block text-right text-[9px] text-foreground/35">
           first row shown for {more.map((entry) => comparedPointName(entry.point)).join(", ")}
         </span>
       )}
@@ -158,26 +158,26 @@ const ComparedBody = ({ hop }: { hop: ComparedHop }) => {
 export const ComparedHopBlock = ({ hop }: { hop: ComparedHop }) => {
   const { meta } = hop;
   return (
-    <div className="space-y-1 rounded border border-white/10 bg-white/5 px-2 py-1.5">
+    <div className="space-y-1 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-1">
         {meta.kind === "ARRAY" && meta.sourceId ? (
           <MikroArrayDataset.DetailLink
             object={{ id: meta.sourceId }}
-            className="pointer-events-auto truncate text-[10px] font-medium text-white/60 hover:text-white"
+            className="pointer-events-auto truncate text-[10px] font-medium text-foreground/60 hover:text-foreground"
           >
             {meta.name}
           </MikroArrayDataset.DetailLink>
         ) : (
-          <span className="truncate text-[10px] font-medium text-white/60">{meta.name}</span>
+          <span className="truncate text-[10px] font-medium text-foreground/60">{meta.name}</span>
         )}
-        {meta.via && <span className="truncate text-[9px] text-white/35">{meta.via}</span>}
+        {meta.via && <span className="truncate text-[9px] text-foreground/35">{meta.via}</span>}
         {meta.kind === "SPARSE" && (
-          <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-200/80">
+          <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-700/80 dark:text-sky-200/80">
             matrix
           </span>
         )}
         {meta.kind === "ARRAY" && (
-          <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-200/80">
+          <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-700/80 dark:text-amber-200/80">
             array
           </span>
         )}

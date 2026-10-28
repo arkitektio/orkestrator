@@ -186,19 +186,19 @@ const LegendRow = ({
   return (
     <div className="flex items-center gap-1.5 text-[10px]">
       <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: point.color }} />
-      <span className="font-medium text-white/80">{comparedPointName(point)}</span>
-      <span className="min-w-0 flex-1 truncate text-white/40">{layerName}</span>
-      {lookup?.status === "loading" && <span className="text-white/40">…</span>}
+      <span className="font-medium text-foreground/80">{comparedPointName(point)}</span>
+      <span className="min-w-0 flex-1 truncate text-foreground/40">{layerName}</span>
+      {lookup?.status === "loading" && <span className="text-foreground/40">…</span>}
       {lookup?.status === "error" && (
-        <span className="truncate text-red-300/70" title={lookup.error}>
+        <span className="truncate text-red-700/70 dark:text-red-300/70" title={lookup.error}>
           lookup failed
         </span>
       )}
-      <span className="font-mono text-white/60">[{probe.voxelIndex.join(", ")}]</span>
+      <span className="font-mono text-foreground/60">[{probe.voxelIndex.join(", ")}]</span>
       <ProbeTime layerId={probe.layerId} coords={pinnedCoords} compact />
       {onRemove ? (
         <button
-          className="rounded px-1 text-white/50 hover:bg-white/15 hover:text-white"
+          className="rounded px-1 text-foreground/50 hover:bg-foreground/15 hover:text-foreground"
           title="Remove this probe point"
           onClick={onRemove}
         >
@@ -244,15 +244,15 @@ const LayerValues = ({ layerId, points }: { layerId: string; points: readonly Re
         key: "source",
         label: "read from",
         cells: points.map(({ probe }) => (
-          <span className="font-sans text-white/40">{sourceOf(probe)}</span>
+          <span className="font-sans text-foreground/40">{sourceOf(probe)}</span>
         )),
       },
     ];
   }, [layer?.channels, points]);
 
   return (
-    <div className="space-y-1 rounded border border-white/10 bg-white/5 px-2 py-1.5">
-      <span className="block truncate text-[10px] font-medium text-white/60">
+    <div className="space-y-1 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
+      <span className="block truncate text-[10px] font-medium text-foreground/60">
         {layerName || "Values"}
       </span>
       <ComparisonGrid points={points.map((reading) => reading.point)} rows={rows} />
@@ -326,11 +326,11 @@ export const ProbePointList = () => {
   const notLoaded = readings.some((reading) => reading.probe.provenance.source === "pending");
 
   return (
-    <div className="mt-2 space-y-1.5 border-t border-white/10 pt-2">
-      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-white/60">
+    <div className="mt-2 space-y-1.5 border-t border-foreground/10 pt-2">
+      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-foreground/60">
         <span>Probe points</span>
         <button
-          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/70 hover:bg-white/15 hover:text-white"
+          className="rounded border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/70 hover:bg-foreground/15 hover:text-foreground"
           onClick={clearProbePoints}
         >
           Clear all
@@ -370,7 +370,7 @@ export const ProbePointList = () => {
         <LayerValues key={layerId} layerId={layerId} points={layerPoints} />
       ))}
       {notLoaded && (
-        <span className="block text-[10px] text-white/40">
+        <span className="block text-[10px] text-foreground/40">
           “not loaded”: the data there was not in memory yet when you clicked — click again to
           read it.
         </span>

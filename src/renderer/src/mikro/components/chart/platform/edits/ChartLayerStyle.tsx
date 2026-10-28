@@ -32,7 +32,7 @@ const toUnit = (rgba: readonly number[]) => rgba.map((v) => v / 255);
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex items-center gap-2">
-    <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+    <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
       {label}
     </span>
     <span className="ml-auto flex items-center gap-1.5">{children}</span>
@@ -40,7 +40,7 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
 );
 
 /** The scene cards' select look: a dark well, muted until hovered. */
-const SELECT = "h-5 rounded border border-white/10 bg-black/30 px-1.5 text-[10px] text-white/70";
+const SELECT = "h-5 rounded border border-foreground/10 bg-background/30 px-1.5 text-[10px] text-foreground/70";
 
 /**
  * How a trace or a series is drawn: colour, mark, widths, opacity. Each commits

@@ -478,7 +478,7 @@ export const LevelsEditor = ({
 
       <div
         ref={surfaceRef}
-        className={`${curve ? "cursor-crosshair" : "cursor-ew-resize"} touch-none select-none rounded border border-white/10 bg-black/25 px-0 pt-1`}
+        className={`${curve ? "cursor-crosshair" : "cursor-ew-resize"} touch-none select-none rounded border border-white/10 bg-black/85 px-0 pt-1`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

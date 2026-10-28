@@ -22,7 +22,7 @@ import { ProbePointList } from "./ProbePointList";
  */
 
 const smallButton =
-  "rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/70 hover:bg-white/15 hover:text-white";
+  "rounded border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/70 hover:bg-foreground/15 hover:text-foreground";
 
 export const ProbePanel = () => {
   perfMonitor.countRender("ProbePanel"); // no-op unless a perf recording is armed
@@ -42,7 +42,7 @@ export const ProbePanel = () => {
   return (
     // The tab (`SceneProbeSidebar`) owns the scroll and the padding.
     <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-white/60">
+      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-foreground/60">
         <span>Probe</span>
         <div className="flex gap-1">
           {/* The hover-to-probe toggle lives in `SceneModeControls`; target,
@@ -69,7 +69,7 @@ export const ProbePanel = () => {
       </div>
 
       {!probedCoordinate && !hasProbePoints && (
-        <p className="mt-2 text-[10px] leading-4 text-white/50">
+        <p className="mt-2 text-[10px] leading-4 text-foreground/50">
           {inProbeMode ? (
             <>
               {probeFollowsCursor ? "Hover a layer to read it. " : ""}Click to pin a probe point

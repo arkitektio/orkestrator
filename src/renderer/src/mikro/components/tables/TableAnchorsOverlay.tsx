@@ -84,7 +84,7 @@ const TableAnchorsPanel = ({
   return (
     <div className="flex max-h-64 min-w-0 flex-col items-end gap-1.5 overflow-y-auto text-right text-[10px]">
       {partition.inView.length === 0 ? (
-        <span className="text-white/40">
+        <span className="text-foreground/40">
           Nothing anchored to the rows on this page.
         </span>
       ) : (
@@ -100,7 +100,7 @@ const TableAnchorsPanel = ({
       {partition.outOfView.length > 0 && (
         <OutOfView entries={partition.outOfView} />
       )}
-      {loading && <span className="text-[9px] text-white/30">Loading…</span>}
+      {loading && <span className="text-[9px] text-foreground/30">Loading…</span>}
     </div>
   );
 };
@@ -120,7 +120,7 @@ const OutOfView = ({
   return (
     <div className="flex flex-col gap-1">
       <button
-        className="self-end text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+        className="self-end text-[9px] uppercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
         onClick={() => setOpen((previous) => !previous)}
       >
         {entries.length} more out of view
@@ -128,7 +128,7 @@ const OutOfView = ({
       {open &&
         entries.map(({ anchor, pins }) => (
           <div key={anchor.id} className="flex flex-wrap justify-end gap-1 pr-1">
-            <span className="text-[9px] text-white/40">
+            <span className="text-[9px] text-foreground/40">
               {anchor.channelLabel?.label ? `${anchor.channelLabel.label} · ` : ""}
               {describeTablePins(pins)}
             </span>

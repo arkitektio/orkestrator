@@ -39,7 +39,7 @@ export const ColormapSelect = ({
     <SelectTrigger
       size="sm"
       title={title}
-      className="h-6 w-full border-white/10 bg-black/30 px-1.5 text-[10px] text-white/80"
+      className="h-6 w-full border-foreground/10 bg-background/30 px-1.5 text-[10px] text-foreground/80"
     >
       <SelectValue />
     </SelectTrigger>
@@ -53,7 +53,7 @@ export const ColormapSelect = ({
         >
           <span className="flex items-center gap-1.5">
             <span
-              className="h-2.5 w-8 shrink-0 rounded-sm border border-white/15"
+              className="h-2.5 w-8 shrink-0 rounded-sm border border-foreground/15"
               style={{ background: choice.css }}
             />
             {choice.label}

@@ -74,7 +74,7 @@ export const MeshesPanel = ({
   const rootClass =
     variant === "sidebar"
       ? "flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
-      : "pointer-events-auto flex max-h-[60vh] w-72 flex-col gap-2 overflow-y-auto rounded-lg border border-black/10 bg-black/40 p-2 backdrop-blur-md";
+      : "pointer-events-auto flex max-h-[60vh] w-72 flex-col gap-2 overflow-y-auto rounded-lg border border-background/10 bg-background/40 p-2 backdrop-blur-md";
 
   return (
     <div className={rootClass}>
@@ -88,7 +88,7 @@ export const MeshesPanel = ({
             }
             onClear={() => setMeshSelection(null)}
           />
-          <div className="h-px shrink-0 bg-white/10" />
+          <div className="h-px shrink-0 bg-foreground/10" />
         </section>
       )}
 
@@ -403,7 +403,7 @@ const MeshLayerSection = ({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Filter by object id"
-            className="h-6 w-full rounded-md border border-white/10 bg-black/30 px-2 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand/40"
+            className="h-6 w-full rounded-md border border-foreground/10 bg-background/30 px-2 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand/40"
           />
           {matches.length > ROW_CAP && (
             <div className="px-0.5 text-[10px] text-muted-foreground/60">

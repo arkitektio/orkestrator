@@ -188,7 +188,7 @@ export const PhasorPlot = ({
         ref={canvasRef}
         style={{ width: SIZE, height: SIZE }}
         className={cn(
-          "rounded border border-border/40 bg-black/40",
+          "rounded border border-border/40 bg-black/85",
           tool ? "cursor-crosshair" : "cursor-pointer",
         )}
         onPointerDown={handlePointerDown}

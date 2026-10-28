@@ -53,7 +53,7 @@ const OutOfView = ({
   return (
     <div className="flex flex-col gap-1">
       <button
-        className="self-start text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+        className="self-start text-[9px] uppercase tracking-widest text-foreground/40 transition-colors hover:text-foreground/70"
         onClick={() => setOpen((previous) => !previous)}
       >
         {entries.length} more out of view
@@ -69,7 +69,7 @@ const OutOfView = ({
               .map((pin) => `${pin.axis}: showing ${pin.current}`)
               .join(", ") || undefined}
           >
-            <span className="text-[9px] text-white/40">
+            <span className="text-[9px] text-foreground/40">
               {anchor.channelLabel?.label ?? "unlabelled"}
             </span>
           </div>
@@ -134,14 +134,14 @@ export const AnchorMetadata = ({
     // No height of its own: the Probe sidebar it sits in scrolls.
     <div className="flex min-w-0 flex-col gap-2 text-[10px]">
       {active.length === 0 ? (
-        <span className="text-white/40">
+        <span className="text-foreground/40">
           Nothing anchored to what this layer is showing.
         </span>
       ) : (
         active.map(({ anchor }) => <ActiveAnchor key={anchor.id} anchor={anchor} align="start" />)
       )}
       {hidden.length > 0 && <OutOfView entries={hidden} />}
-      {loading && <span className="text-[9px] text-white/30">Loading…</span>}
+      {loading && <span className="text-[9px] text-foreground/30">Loading…</span>}
     </div>
   );
 };

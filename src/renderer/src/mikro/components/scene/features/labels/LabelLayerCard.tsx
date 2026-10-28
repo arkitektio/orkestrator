@@ -143,7 +143,7 @@ const OutlineSection = memo(function OutlineSection({
               className={`rounded-md border px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
                 Math.round(contourWidth) === width
                   ? "border-brand/40 bg-brand/15 text-brand-soft"
-                  : "border-white/10 bg-black/30 text-white/45 hover:text-white/80"
+                  : "border-foreground/10 bg-background/30 text-foreground/45 hover:text-foreground/80"
               }`}
             >
               {width}px
@@ -346,7 +346,7 @@ export const LabelLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Puzzle className="h-3 w-3 text-emerald-300" />}
+        icon={<Puzzle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
         tile="bg-emerald-400/15"
         title={lens.dataset?.name?.trim() || `Labels ${layerId}`}
         hidden={hidden}
@@ -359,7 +359,7 @@ export const LabelLayerCard = memo(
                 graph save: visible only while there is something to save. */}
             {dirty && (
               <button
-                className="shrink-0 rounded p-0.5 text-yellow-300/90 transition-colors hover:text-yellow-200 disabled:opacity-50"
+                className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
                 title="Save changes"
                 disabled={saving}
                 onClick={save}
@@ -370,7 +370,7 @@ export const LabelLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
               title={hidden ? "Show" : "Hide"}
               onClick={() => persistLayer({ visible: hidden })}
             >
@@ -380,7 +380,7 @@ export const LabelLayerCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
                 title="Remove layer from scene"
                 onClick={() => onRemove(layerId)}
               >
