@@ -225,7 +225,7 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       }
       defaultSidebar="Info"
     >
-      <div className="flex flex-col gap-8">
+      <div className="flex w-full flex-col gap-8 p-3">
         <div className="flex items-center gap-4">
           <div className={`rounded-xl border p-3 shadow-sm ${fileTypeColorClass}`}>
             <FileIcon className="h-8 w-8" />
