@@ -48,7 +48,7 @@ export const ActionsTab = ({
   );
 
   if (definitions.length === 0) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">{empty}</p>;
+    return <p className="py-2 text-sm text-muted-foreground">{empty}</p>;
   }
 
   return (
@@ -191,7 +191,7 @@ export const AccessTab = ({
   }, [flavours]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       <section className="flex flex-col gap-2">
         <h4 className="flex items-center gap-2 text-sm font-semibold">
           <Plug className="size-4" /> Services it talks to

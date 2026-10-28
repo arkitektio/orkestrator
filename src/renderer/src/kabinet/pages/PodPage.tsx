@@ -32,19 +32,19 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
         />
       }
     >
-      <div className="space-y-6 p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-          <div className="space-y-4 rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 p-6 shadow-sm">
+      <div className="space-y-4 p-3">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+          <div className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-muted/40 p-4 shadow-sm">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 <span>{pod.deployment.flavour.release.app.identifier}</span>
                 <span>•</span>
                 <span>{pod.deployment.flavour.release.version}</span>
               </div>
-              <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+              <h1 className="text-2xl font-bold tracking-tight">
                 {pod.backend.name}
               </h1>
-              <CardDescription className="max-w-2xl text-base leading-7">
+              <CardDescription className="text-sm">
                 Live pod for {pod.deployment.flavour.release.app.identifier} on{" "}
                 {pod.backend.name}. The log stream and deployment details below
                 summarise the current runtime state.
@@ -114,7 +114,7 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
           <Card>
             <CardHeader>
               <CardTitle>Latest Logs</CardTitle>

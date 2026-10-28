@@ -15,15 +15,10 @@ export const ResourcePage =  asDetailQueryRoute(
         object={data?.resource}
         help={KABINET_HELP.resource}
       >
-        <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
-          <div>
-            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              {data?.resource.name}
-            </h1>
-            <p className="mt-3 text-xl text-muted-foreground"></p>
-          </div>
+        <div className="p-3">
+          <h1 className="text-2xl font-bold tracking-tight">{data?.resource.name}</h1>
         </div>
-        <div className="p-6">
+        <div className="px-3 pb-3">
           <div className="mt-4 font-light mb-2">Hosted Pods</div>
           <div className="grid grid-cols-6 gap-2">
             {data?.resource?.pods.map((pod) => (
@@ -31,7 +26,7 @@ export const ResourcePage =  asDetailQueryRoute(
             ))}
           </div>
         </div>
-        <div className="p-6">
+        <div className="px-3 pb-3">
           <div className="mt-4 font-light mb-2">Qualifiers</div>
           <ResponsiveContainerGrid>
             {data?.resource?.qualifiers.map((qualifier) => (

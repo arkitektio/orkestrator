@@ -97,21 +97,21 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
 
   return (
     <KabinetRelease.ModelPage title={release.name} object={release} help={KABINET_HELP.release}>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
-        <header className="relative overflow-hidden rounded-3xl border">
+      <div className="flex w-full flex-col gap-4 p-3">
+        <header className="relative overflow-hidden rounded-2xl border">
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0 h-28 opacity-80"
+            className="absolute inset-x-0 top-0 h-16 opacity-80"
             style={{ background: appGradient(app.hue ?? 0) }}
           />
-          <div className="relative flex flex-col gap-5 p-6 pt-14">
+          <div className="relative flex flex-col gap-3 p-4 pt-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex items-end gap-4">
                 {hasOwnLogo(app) ? (
                   <AppIcon
                     app={app}
-                    size={96}
-                    className="size-24 rounded-3xl text-3xl ring-4 ring-background"
+                    size={64}
+                    className="size-16 rounded-2xl text-xl ring-4 ring-background"
                   />
                 ) : (
                   // Live here rather than rasterised: this is the one mark on
@@ -121,17 +121,17 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
                     fallback={
                       <AppIcon
                         app={app}
-                        size={96}
-                        className="size-24 rounded-3xl text-3xl ring-4 ring-background"
+                        size={64}
+                        className="size-16 rounded-2xl text-xl ring-4 ring-background"
                       />
                     }
                   >
-                    <AppMarkCanvas app={app} />
+                    <AppMarkCanvas app={app} className="size-16" />
                   </Suspense>
                 )}
                 <div className="min-w-0 pb-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{app.name}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">{app.name}</h1>
                     <Badge variant="secondary" className="rounded-full font-mono">
                       v{release.version}
                     </Badge>

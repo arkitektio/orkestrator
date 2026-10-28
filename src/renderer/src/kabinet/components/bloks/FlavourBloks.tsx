@@ -165,18 +165,20 @@ const AppLogos = ({ logos }: { logos: KabinetBlokFragment[] }) => (
 );
 
 const ActionLogos = ({ logos, drawnFor }: { logos: KabinetBlokFragment[]; drawnFor: Map<string, string[]> }) => (
-  <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3">
+  <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2">
     {logos.map((blok) => {
       const actions = drawnFor.get(blok.id) ?? [];
       return (
-        <div key={blok.id} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center">
+        <div key={blok.id} className="flex min-w-0 items-center gap-3 rounded-xl border p-2">
           {blok.parseError ? (
-            <AlertTriangle className="size-12 text-warning" aria-label={blok.parseError} />
+            <AlertTriangle className="size-10 shrink-0 text-warning" aria-label={blok.parseError} />
           ) : (
-            <TabLogo blok={blok} className="size-12" />
+            <TabLogo blok={blok} className="size-10 shrink-0" />
           )}
-          <span className="line-clamp-2 text-xs font-medium">{actions.length ? actions.join(", ") : blok.key}</span>
-          {actions.length > 0 && <span className="truncate font-mono text-[0.65rem] text-muted-foreground">{blok.key}</span>}
+          <div className="flex min-w-0 flex-col">
+            <span className="line-clamp-2 text-xs font-medium">{actions.length ? actions.join(", ") : blok.key}</span>
+            {actions.length > 0 && <span className="truncate font-mono text-[0.65rem] text-muted-foreground">{blok.key}</span>}
+          </div>
         </div>
       );
     })}
@@ -304,7 +306,7 @@ export const FlavourBloks = ({ flavourId }: { flavourId: string }) => {
   return (
     <TreesContext.Provider value={trees}>
       <BlokAssetHostProvider value={assetHost}>
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6">
           {logos.length > 0 && (
             <Section title="App logo" count={logos.length}>
               <AppLogos logos={logos} />

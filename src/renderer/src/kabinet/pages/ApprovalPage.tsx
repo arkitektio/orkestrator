@@ -45,7 +45,7 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
         ) : undefined
       }
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
+      <div className="flex w-full flex-col gap-4 p-3">
         <header className="flex items-center gap-4">
           <AppIcon app={app} size={56} className="size-14 rounded-2xl" />
           <div className="min-w-0">
