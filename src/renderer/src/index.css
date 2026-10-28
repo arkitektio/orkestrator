@@ -186,15 +186,17 @@
 
   /* Base Neutrals */
   /* Off-white, not white: the page is the quiet surface, and what sits on it
-     (cards, menus) is the brighter one. `backgroundpaired` is where the page
+     (cards, menus) is the brighter one. It must stand clearly above the rail
+     (`--sidebar`) it floats on: within a few points of it, rail, page and
+     the settings pane all read as one grey. `backgroundpaired` is where the page
      gradient ends, a faint tint toward the corner; it must stay LIGHT here
      (a dark one made every light page fade to charcoal). */
-  --background: oklch(0.972 0.004 var(--brand-hue));
+  --background: oklch(0.985 0.003 var(--brand-hue));
   --backgroundpaired: oklch(0.93 0.012 var(--brand-hue));
   --foreground: oklch(0.145 0.005 var(--brand-hue));
 
   /* Surfaces */
-  --card: oklch(0.993 0.002 var(--brand-hue));
+  --card: oklch(0.998 0.001 var(--brand-hue));
   --card-foreground: var(--foreground);
   --popover: var(--card);
   --popover-foreground: var(--foreground);
@@ -207,8 +209,8 @@
   /* Secondary & Accents */
   --secondary: oklch(0.935 0.006 var(--brand-hue));
   --secondary-foreground: oklch(0.21 0.006 var(--brand-hue));
-  --muted: oklch(0.94 0.004 var(--brand-hue));
-  --muted-foreground: oklch(0.5 0.01 var(--brand-hue));
+  --muted: oklch(0.945 0.004 var(--brand-hue));
+  --muted-foreground: oklch(0.46 0.012 var(--brand-hue));
   --accent: oklch(0.93 0.012 var(--brand-hue));
   --accent-foreground: oklch(0.205 0.01 var(--brand-hue));
 
@@ -255,8 +257,8 @@
   --spectrum-orange-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 60);
   --spectrum-red: oklch(0.6 var(--spectrum-chroma) 27);
   --spectrum-red-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 27);
-  --border: oklch(0.885 0.006 var(--brand-hue));
-  --input: oklch(0.885 0.006 var(--brand-hue));
+  --border: oklch(0.865 0.008 var(--brand-hue));
+  --input: oklch(0.865 0.008 var(--brand-hue));
   --ring: oklch(from var(--primary) 0.708 calc(c * 0.5) h);
 
   /* Charts */
@@ -269,11 +271,13 @@
   --radius: 0.625rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.948 0.006 var(--brand-hue));
+  --sidebar: oklch(0.925 0.009 var(--brand-hue));
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
+  /* Darker than the rail: `--accent` is lighter than it now, and a hover
+     must not brighten a row on the rail into the page colour. */
+  --sidebar-accent: oklch(0.885 0.014 var(--brand-hue));
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
