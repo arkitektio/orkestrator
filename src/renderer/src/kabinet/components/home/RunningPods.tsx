@@ -10,9 +10,9 @@ import { AppIcon } from "../AppIcon";
 const SHOWN = 8;
 
 const STATUS_DOT: Record<PodStatus, string> = {
-  [PodStatus.Running]: "bg-emerald-500",
-  [PodStatus.Pending]: "bg-amber-500 animate-pulse",
-  [PodStatus.Stopping]: "bg-amber-500 animate-pulse",
+  [PodStatus.Running]: "bg-success",
+  [PodStatus.Pending]: "bg-warning animate-pulse",
+  [PodStatus.Stopping]: "bg-warning animate-pulse",
   [PodStatus.Failed]: "bg-destructive",
   [PodStatus.Stopped]: "bg-muted-foreground/40",
   [PodStatus.Unkown]: "bg-muted-foreground/40",

@@ -99,7 +99,7 @@ export const RepoBlokCard = React.memo(
         description={blok.description}
         preview={
           blok.parseError ? (
-            <div className={cn(PREVIEW_BOX, "flex items-center justify-center text-amber-500")}>
+            <div className={cn(PREVIEW_BOX, "flex items-center justify-center text-warning")}>
               <AlertTriangle className="size-8" aria-label="This blok does not parse" />
             </div>
           ) : (

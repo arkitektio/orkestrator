@@ -336,7 +336,7 @@ export const InstallReleaseDialog = (
 
       {noDeployers ? null : existing ? (
         <p className="flex items-start gap-2 text-sm">
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
           <span>
             Already authorized for <span className="font-mono">{existing.agent}</span>{" "}
             <Timestamp date={existing.createdAt} relative />. Deploy it to a backend to run it.

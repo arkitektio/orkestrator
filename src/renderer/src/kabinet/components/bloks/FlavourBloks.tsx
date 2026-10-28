@@ -171,7 +171,7 @@ const ActionLogos = ({ logos, drawnFor }: { logos: KabinetBlokFragment[]; drawnF
       return (
         <div key={blok.id} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center">
           {blok.parseError ? (
-            <AlertTriangle className="size-12 text-amber-500" aria-label={blok.parseError} />
+            <AlertTriangle className="size-12 text-warning" aria-label={blok.parseError} />
           ) : (
             <TabLogo blok={blok} className="size-12" />
           )}

@@ -12,7 +12,7 @@ import { useGetReleaseApprovalQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import { DeployButton } from "../components/store/StoreParts";
-import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
+import { APPROVAL_STATUS_DOT, APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 import { KABINET_HELP } from "../help";
 
 const Fact = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -56,14 +56,8 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
               <Badge variant="secondary" className="rounded-full font-mono">
                 v{approval.release.version}
               </Badge>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "rounded-full",
-                  status === "active" && "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
-                  status === "stale" && "border-amber-500/40 text-amber-700 dark:text-amber-300",
-                )}
-              >
+              <Badge variant="outline" className="gap-1.5 rounded-full">
+                <span className={cn("size-1.5 rounded-full", APPROVAL_STATUS_DOT[status])} />
                 {APPROVAL_STATUS_LABEL[status]}
               </Badge>
             </div>

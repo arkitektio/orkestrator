@@ -22,7 +22,7 @@ export const HardwareBadges = ({
       <Badge
         key={accelerator}
         variant="secondary"
-        className="gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        className="gap-1 bg-primary/10 text-primary"
       >
         <Zap className="size-3" />
         {accelerator}

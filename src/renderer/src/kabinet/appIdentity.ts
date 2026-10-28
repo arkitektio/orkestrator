@@ -49,7 +49,10 @@ export const logoFor = (entity: {
 /** Whether the app has a picture of its own (a LOGO blok or an uploaded logo), so no mark is generated. */
 export const hasOwnLogo = (app: Pick<AppIdentity, "logo" | "logoBlok">): boolean => !!(app.logoBlok || app.logo);
 
-/** Stable hue per identifier, so every app keeps its colour across renders. */
+/**
+ * Stable 0–360 seed per identifier, so every app keeps its colour across
+ * renders. `appGradient` turns it into a step within the brand hue.
+ */
 export const hueFor = (identifier: string): number => {
   let hash = 0;
   for (let i = 0; i < identifier.length; i++) {
