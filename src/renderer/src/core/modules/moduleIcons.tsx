@@ -1,5 +1,5 @@
-import { ChatBubbleIcon, DashIcon, HomeIcon } from "@radix-ui/react-icons";
-import { Database, Landmark, Mail, MapPinned, Podcast, ShoppingBasket, Users2, Workflow } from "lucide-react";
+import { ChatBubbleIcon, HomeIcon } from "@radix-ui/react-icons";
+import { Database, FileText, Landmark, Mail, MapPinned, Podcast, ShoppingBasket, Users2, Workflow } from "lucide-react";
 import { BsLightning } from "react-icons/bs";
 import { GoWorkflow } from "react-icons/go";
 import { MdStream } from "react-icons/md";
@@ -33,7 +33,7 @@ export const matchIcon = (key: string) => {
     case "alpaka":
       return <ChatBubbleIcon className="h-4 w-4" />;
     case "dokuments":
-      return <DashIcon className="h-4 w-4" />;
+      return <FileText className="h-4 w-4" />;
     case "lovekit":
       return <MdStream className="h-4 w-4" />;
     case "bank":
