@@ -1,4 +1,4 @@
-import {applyTaskUpdate, idleTaskRecord, withTaskStatus, type BlokTaskRecord} from '@/core/blok/renderer/runtime';
+import {applyTaskUpdate, idleTaskRecord, withTaskStatus, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import type {TaskEventFragment} from '../api/graphql';
 import {parseTimestamp} from '../travel/travelSource';
 import {taskUpdateFromEvent} from './blokTaskUpdates';

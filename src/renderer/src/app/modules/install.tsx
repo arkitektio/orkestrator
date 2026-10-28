@@ -9,7 +9,7 @@ import { KUVERT_MODULE } from "@/kuvert/module";
 import type { ModuleBuiltins } from "@/core/modules/host/define";
 import { registerModules } from "@/core/modules/host/host";
 import { moduleBloks } from "@/core/modules/registries";
-import { addBlokComponents } from "@/core/blok/renderer/catalog";
+import { addBlokComponents } from "@/core/blok/catalog";
 import { LOK_MODULE } from "@/lok/module";
 import { LOKATE_MODULE } from "@/lokate/module";
 import { LOVEKIT_MODULE } from "@/lovekit/module";

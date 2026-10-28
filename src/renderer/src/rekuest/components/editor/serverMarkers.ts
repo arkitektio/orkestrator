@@ -1,4 +1,4 @@
-import { offsetAtCodePoint, parseBsxSafe, type BsxMarker, type BsxRange } from "@/core/blok/bsx";
+import { offsetAtCodePoint, parseBsxSafe, type BsxMarker, type BsxRange } from "@arkitektio/bsx/bsx/index";
 import { describeError } from "@/core/notify";
 
 /**

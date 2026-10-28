@@ -16,7 +16,7 @@ vi.mock('@/rekuest/hooks/useLiveState', () => ({
   },
 }));
 
-import {BlokRuntimeProvider, createBlokRuntimeStore, type BlokRuntimeStore} from '@/core/blok/renderer/runtime';
+import {BlokRuntimeProvider, createBlokRuntimeStore, type BlokRuntimeStore} from '@arkitektio/bsx/renderer/runtime/index';
 import {BlokTravelProvider} from '@/rekuest/travel/context';
 import {createTravelSource, type TravelCheckout, type TravelSource} from '@/rekuest/travel/travelSource';
 import {BlokStateSync} from './blokStateSync';

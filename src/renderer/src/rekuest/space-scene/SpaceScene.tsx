@@ -9,8 +9,8 @@ import {
   SceneSurface,
   useSceneNotice,
   useSceneOverlay,
-} from '@/core/blok/renderer/bloks/scene';
-import {BlokSpaceHostProvider, type BlokSpaceHost} from '@/core/blok/renderer/bloks/run';
+} from '@arkitektio/bsx/renderer/bloks/scene/index';
+import {BlokSpaceHostProvider, type BlokSpaceHost} from '@arkitektio/bsx/renderer/bloks/run/index';
 import {describeError, reportErrorAs, toast} from '@/core/notify';
 import {useSmartDrop} from '@/core/smart/hooks';
 import {Button} from '@/core/ui/button';

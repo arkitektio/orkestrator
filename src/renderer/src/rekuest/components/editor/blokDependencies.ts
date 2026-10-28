@@ -1,4 +1,4 @@
-import type { BlokPortMatch, BlokScopeDependency } from "@/core/blok/bsx";
+import type { BlokPortMatch, BlokScopeDependency } from "@arkitektio/bsx/bsx/index";
 import type {
   ActionDemandInput,
   AgentDependencyInput,

@@ -8,8 +8,8 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
-} from "@/core/blok/renderer/bloks/shared";
-import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/catalogs";
+import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 import { lazily } from "./lazily";
 import { MIKRO_TABLE_BLOKS } from "./table";
@@ -85,6 +85,31 @@ export const MikroSceneBlok = createBlokComponent(
     name: "MikroScene",
     acceptsChildren: true,
     placement: { notDownstreamOf: ["MikroScene"] },
+    // What each callback hands its action (`event.<field>`), as the spec publishes it.
+    events: {
+      onAnnotation: [
+        { key: "annotation", kind: "DICT", description: "The drawn shape, as a structure reference." },
+        { key: "kind", kind: "STRING", description: "The kind of shape." },
+        { key: "lens", kind: "DICT", description: "The lens under the probe, or null." },
+        { key: "descriptors", kind: "ANY", description: "The shape's descriptors, or null." },
+      ],
+      onLayersChange: [
+        { key: "layers", kind: "LIST", description: "The layers now drawn." },
+        { key: "added", kind: "LIST", description: "The layers that are new." },
+      ],
+      onPick: [
+        { key: "layer", kind: "STRING", description: "The layer read." },
+        { key: "world", kind: "LIST", description: "The world point, or null." },
+        { key: "voxel", kind: "LIST", description: "The voxel read." },
+        { key: "lens", kind: "DICT", description: "The lens, or null." },
+      ],
+      onSelect: [
+        { key: "annotation", kind: "DICT", description: "The selected annotation." },
+        { key: "annotations", kind: "LIST", description: "Every selected annotation." },
+        { key: "lens", kind: "DICT", description: "The lens under the probe, or null." },
+      ],
+    },
+    bindKinds: { bind: "ANY", bindWorld: "STRING" },
     schema: mikroSceneSchema,
   },
   lazily(Parts.MikroScene),

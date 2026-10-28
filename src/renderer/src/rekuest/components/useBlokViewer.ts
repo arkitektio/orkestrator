@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Arkitekt } from "@/core/connection/arkitekt/host";
-import type { BlokViewer } from "@/core/blok/renderer/runtime/viewer";
+import type { BlokViewer } from "@arkitektio/bsx/renderer/runtime/viewer";
 
 /**
  * `viewer`: who is looking, as the active profile's own token says it

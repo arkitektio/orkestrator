@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BlokSceneStillProvider } from "@/core/blok/renderer/bloks/scene/host";
+import { BlokSceneStillProvider } from "@arkitektio/bsx/renderer/bloks/scene/host";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import {
   CheckoutAgentDocument,

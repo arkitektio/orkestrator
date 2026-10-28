@@ -4,7 +4,7 @@ import type { Structure } from "@/core/types";
 import { cn } from "@/core/util/utils";
 import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, useDecideMutation, useTaskBloksQuery } from "../api/graphql";
 import { useTask } from "../hooks/useTasks";
-import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@/core/blok/renderer/bloks/run";
+import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { openAsks, type TaskRootSource } from "../run/taskRoot";
 import { MaterializedBlokEmbed } from "./MaterializedBlokEmbed";
 import { HoldCard } from "./task/HoldCard";

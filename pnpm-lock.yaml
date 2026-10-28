@@ -173,6 +173,9 @@ importers:
 
   .:
     dependencies:
+      '@arkitektio/bsx':
+        specifier: file:../../typescript/libraries/bsx/packages/bsx
+        version: file:../../typescript/libraries/bsx/packages/bsx(55f208e6d3964cc4098c6efd26b2243a)
       '@aws-sdk/client-s3':
         specifier: ^3.1010.0
         version: 3.1048.0
@@ -655,6 +658,78 @@ packages:
     resolution: {integrity: sha512-afG3YPwuSA0E5foouZusz5GlXKs74dObv4cuWyLyfKsYFj2r7oGRNB28v18HvwuLSQtQFCi+DpIe0TZkgQDYyg==}
     peerDependencies:
       graphql: '*'
+
+  '@arkitektio/bsx@file:../../typescript/libraries/bsx/packages/bsx':
+    resolution: {directory: ../../typescript/libraries/bsx/packages/bsx, type: directory}
+    peerDependencies:
+      '@monaco-editor/react': ^4.7.0
+      '@react-three/drei': ^10.7.0
+      '@react-three/fiber': ^9.4.0
+      '@testing-library/react': ^16.3.0
+      blurhash: ^2.0.5
+      class-variance-authority: ^0.7.1
+      clsx: ^2.1.1
+      embla-carousel-react: ^8.6.0
+      graphql: ^16.8.0
+      input-otp: ^1.4.2
+      lucide-react: '>=0.500.0'
+      monaco-editor: '>=0.50.0'
+      radix-ui: ^1.4.3
+      react: ^19.2.0
+      react-day-picker: ^9.11.0
+      react-dom: ^19.2.0
+      react-lazy-load-image-component: ^1.6.0
+      react-resizable-panels: ^3.0.6
+      recharts: ^2.15.0
+      tailwind-merge: ^3.4.0
+      tailwindcss: ^4.1.0
+      three: '>=0.180.0'
+      vaul: ^1.1.2
+      zod: ^4.0.0
+      zustand: ^5.0.0
+    peerDependenciesMeta:
+      '@monaco-editor/react':
+        optional: true
+      '@react-three/drei':
+        optional: true
+      '@react-three/fiber':
+        optional: true
+      '@testing-library/react':
+        optional: true
+      blurhash:
+        optional: true
+      class-variance-authority:
+        optional: true
+      clsx:
+        optional: true
+      embla-carousel-react:
+        optional: true
+      input-otp:
+        optional: true
+      lucide-react:
+        optional: true
+      monaco-editor:
+        optional: true
+      radix-ui:
+        optional: true
+      react-day-picker:
+        optional: true
+      react-dom:
+        optional: true
+      react-lazy-load-image-component:
+        optional: true
+      react-resizable-panels:
+        optional: true
+      recharts:
+        optional: true
+      tailwind-merge:
+        optional: true
+      tailwindcss:
+        optional: true
+      three:
+        optional: true
+      vaul:
+        optional: true
 
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
@@ -9775,6 +9850,35 @@ snapshots:
       graphql: 16.14.0
       immutable: 5.1.5
       invariant: 2.2.4
+
+  '@arkitektio/bsx@file:../../typescript/libraries/bsx/packages/bsx(55f208e6d3964cc4098c6efd26b2243a)':
+    dependencies:
+      graphql: 16.14.0
+      react: 19.2.7
+      zod: 4.4.3
+      zustand: 5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
+    optionalDependencies:
+      '@monaco-editor/react': 4.7.0(monaco-editor@0.56.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@react-three/drei': 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@react-three/fiber': 9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@testing-library/react': 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      blurhash: 2.0.5
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      embla-carousel-react: 8.6.0(react@19.2.7)
+      input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      lucide-react: 0.562.0(react@19.2.7)
+      monaco-editor: 0.56.0
+      radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react-day-picker: 9.14.0(react@19.2.7)
+      react-dom: 19.2.7(react@19.2.7)
+      react-lazy-load-image-component: 1.6.3(react@19.2.7)
+      react-resizable-panels: 3.0.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      recharts: 2.15.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      tailwind-merge: 3.6.0
+      tailwindcss: 4.3.0
+      three: 0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)
+      vaul: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:

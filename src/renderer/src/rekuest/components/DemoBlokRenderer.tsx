@@ -1,6 +1,6 @@
 import * as React from 'react';
-import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
-import {demoModel, type BlokDeclarations} from '@/core/blok/renderer/declarations';
+import BlokRenderer from '@arkitektio/bsx/renderer/BlokRenderer';
+import {demoModel, type BlokDeclarations} from '@arkitektio/bsx/renderer/declarations';
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';

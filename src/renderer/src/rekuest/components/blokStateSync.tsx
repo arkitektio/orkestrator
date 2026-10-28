@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useBlokRuntime} from '@/core/blok/renderer/runtime';
+import {useBlokRuntime} from '@arkitektio/bsx/renderer/runtime/index';
 import {useBoundState} from '@/rekuest/travel/context';
 
 /** Where a blok reads one state of the agent bound to a dependency: `deps.<key>.<state>`. */

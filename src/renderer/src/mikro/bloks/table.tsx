@@ -7,8 +7,8 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
-} from "@/core/blok/renderer/bloks/shared";
-import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/catalogs";
+import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 import { lazily } from "./lazily";
 import { ROW_OPS, ROWS_LIMIT_DEFAULT, ROWS_LIMIT_MAX } from "./tableSql";

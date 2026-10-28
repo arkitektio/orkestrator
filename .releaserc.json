@@ -39,8 +39,8 @@
                         "label": "Blok catalog (registerUiCatalog payload)"
                     },
                     {
-                        "path": "dist/catalog/blok-catalog.manifest.json",
-                        "label": "Blok catalog manifest"
+                        "path": "dist/catalog/blok-module.json",
+                        "label": "Blok module (spec format)"
                     }
                 ]
             }

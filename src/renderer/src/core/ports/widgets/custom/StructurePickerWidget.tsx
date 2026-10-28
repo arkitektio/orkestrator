@@ -36,7 +36,7 @@ export const StructurePickerWidget = (props: InputWidgetProps) => {
       ...(query && ward
         ? [
             { key: "query", static_value: query },
-            { key: "schema", static_value: ward },
+            { key: "ward", static_value: ward },
           ]
         : []),
     ],

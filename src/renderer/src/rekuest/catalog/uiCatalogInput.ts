@@ -3,17 +3,14 @@ import {
   isActionSchema,
   isRequiredField,
   unwrapSchema,
-  type BlokCatalog,
   type BlokComponentContext,
   type BlokComponentPlacement,
-  type BlokFunctionDefinition,
   type BlokPropKind,
-  type BlokFunctionReturnType,
-} from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/runtime/index";
+import { moduleComponentsOf, type BlokUi } from "@arkitektio/bsx/runtime";
 import {
   ComponentContext,
   CatalogValueKind,
-  type CatalogArgumentInput,
   type CatalogComponentInput,
   type CatalogOperationInput,
   type CatalogPropInput,
@@ -22,7 +19,7 @@ import {
 } from "@/rekuest/api/graphql";
 
 /**
- * Maps the renderer's blok catalog (`defaultBlokCatalog`) onto rekuest's
+ * Maps the renderer's declared UI (`orkestratorUi`) onto rekuest's
  * `RegisterModuleInput`, so the server can validate bloks and definitions
  * against what this client actually renders and evaluates.
  *
@@ -126,23 +123,6 @@ const propInput = (key: string, schema: z.ZodTypeAny): CatalogPropInput => ({
   description: describe(schema),
 });
 
-const argumentInput = (key: string, schema: z.ZodTypeAny): CatalogArgumentInput => ({
-  key,
-  kind: zodToCatalogKind(schema),
-  required: isRequiredField(schema),
-  description: describe(schema),
-});
-
-const RETURN_KIND: Record<BlokFunctionReturnType, CatalogValueKind> = {
-  string: CatalogValueKind.String,
-  number: CatalogValueKind.Float,
-  boolean: CatalogValueKind.Bool,
-  list: CatalogValueKind.List,
-  object: CatalogValueKind.Dict,
-  unknown: CatalogValueKind.Any,
-  void: CatalogValueKind.Any,
-};
-
 /**
  * `RegisterModuleInput` marks the lists optional (server defaults to `[]`);
  * the builder always fills them, and consumers rely on that.
@@ -155,34 +135,6 @@ export type BuiltModuleInput = RegisterModuleInput & {
 
 const sortByKey = <T extends { key: string }>(items: T[]): T[] =>
   [...items].sort((left, right) => left.key.localeCompare(right.key));
-
-const operationArguments = (fn: BlokFunctionDefinition): CatalogArgumentInput[] => {
-  if (fn.variadic) {
-    return [
-      {
-        key: "values",
-        kind: CatalogValueKind.List,
-        required: false,
-        description:
-          "Positional values; bare numeric argument keys (0, 1, …) are accepted as well.",
-      },
-    ];
-  }
-  const shape = shapeOf(fn.schema);
-  if (!shape) {
-    return [];
-  }
-  return sortByKey(
-    Object.entries(shape).map(([key, schema]) => argumentInput(key, schema)),
-  );
-};
-
-const operationDescription = (fn: BlokFunctionDefinition, alias?: string): string => {
-  const parts = [alias ? `Alias of ${fn.name}. ${fn.description}` : fn.description];
-  if (fn.deprecated) parts.push(`Deprecated: ${fn.deprecated}`);
-  if (fn.purity === "effect") parts.push("Has side effects; only valid in action position.");
-  return parts.join(" ");
-};
 
 const CONTEXT: Record<BlokComponentContext, ComponentContext> = {
   html: ComponentContext.Html,
@@ -217,60 +169,21 @@ export const componentInput = (component: {
   };
 };
 
-export const operationInputs = (fn: BlokFunctionDefinition): CatalogOperationInput[] => {
-  const base = {
-    arguments: operationArguments(fn),
-    returns: RETURN_KIND[fn.returnType] ?? CatalogValueKind.Any,
-  };
-  return [
-    { name: fn.name, description: operationDescription(fn), ...base },
-    ...fn.aliases.map((alias) => ({
-      name: alias,
-      description: operationDescription(fn, alias),
-      ...base,
-    })),
-  ];
-};
-
-export type BuildModuleOptions = {
-  /**
-   * Operation names the server's built-in base catalog already defines. A UI
-   * catalog may not redefine them (the server rejects the whole registration),
-   * so they are left out; the client still evaluates them locally, the server
-   * simply validates them against its own definition.
-   */
-  reservedOperations?: ReadonlySet<string>;
-  /**
-   * Component names the catalog does not publish: the server's base catalog
-   * (`foreach`, `if`, `match`, …) and the spec's standard catalogs (`ui@1`,
-   * `scene@1`, …), which this UI implements whole (`implementedCatalogs`).
-   * What is left is the UI's own extras.
-   */
-  reservedComponents?: ReadonlySet<string>;
-  /**
-   * The spec's standard catalogs this UI implements whole, as `name@version`
-   * (`implementedCatalogs`): the server resolves their components from the
-   * spec, so `components` only carries the extras.
-   */
-  catalogs?: readonly string[];
-};
-
-export const buildRegisterModuleInput = (
-  catalog: BlokCatalog,
-  meta: { name: string; description?: string | null },
-  options: BuildModuleOptions = {},
-): BuiltModuleInput => ({
-  name: meta.name,
-  description: meta.description ?? null,
-  components: [...catalog.components.values()]
-    .filter((component) => !options.reservedComponents?.has(component.name))
+/**
+ * What this UI registers (`registerModule`): its module, the components it
+ * draws beyond the global catalogs (`moduleComponentsOf`), and `catalogs`, the
+ * global ones it implements whole (`ui.claims`), which the server resolves
+ * from the spec. base@2's components are never sent: the server holds them.
+ */
+export const buildRegisterModuleInput = (ui: Pick<BlokUi, "name" | "description" | "catalog" | "claims">): BuiltModuleInput => ({
+  name: ui.name,
+  description: ui.description,
+  components: moduleComponentsOf(ui.catalog)
     .map(componentInput)
     .sort((left, right) => left.name.localeCompare(right.name)),
-  operations: catalog.functionDefinitions
-    .flatMap(operationInputs)
-    .filter((operation) => !options.reservedOperations?.has(operation.name))
-    .sort((left, right) => left.name.localeCompare(right.name)),
-  catalogs: [...(options.catalogs ?? [])].sort(),
+  // A module adds components only: what a blok may call is the language's (the spec's vocabulary).
+  operations: [],
+  catalogs: [...ui.claims].sort(),
   // The client's per-PortKind fallbacks are built-in React widgets, not
   // catalog components, so there is nothing meaningful to publish yet.
   widgetDefaults: [],

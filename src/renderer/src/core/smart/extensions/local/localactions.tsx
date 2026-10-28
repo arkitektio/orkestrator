@@ -1,7 +1,7 @@
 import { usePerformAction } from "@/core/smart/localactions/useLocalAction";
 import { Action, ActionState } from "@/core/smart/localactions/LocalActionProvider";
 import { Sparkles } from "lucide-react";
-import { SourceLogo } from "@/core/blok/logo/SourceLogo";
+import { SourceLogo } from "@arkitektio/bsx/logo/SourceLogo";
 import { CommandActionRow } from "../CommandActionRow";
 import type { OnDone } from "../types";
 

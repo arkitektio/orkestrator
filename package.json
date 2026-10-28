@@ -48,6 +48,7 @@
     "typecheck:fast": "tsc -p tsconfig.typecheck.json --noEmit --incremental --tsBuildInfoFile node_modules/.cache/typecheck.tsbuildinfo"
   },
   "dependencies": {
+    "@arkitektio/bsx": "file:../../typescript/libraries/bsx/packages/bsx",
     "@aws-sdk/client-s3": "^3.1010.0",
     "@aws-sdk/lib-storage": "^3.1010.0",
     "@duckdb/duckdb-wasm": "1.33.1-dev45.0",

@@ -2,7 +2,8 @@ import {
   BlokComponentHost,
   canHostBlokComponent,
   HOSTED_VALUE_ROOT,
-} from "@/core/blok/renderer/BlokComponentHost";
+} from "@arkitektio/bsx/renderer/BlokComponentHost";
+import { defaultBlokCatalog } from "@/core/blok/catalog";
 import { portRequires } from "@/core/ports/engine/constraints";
 import { dependencyScope } from "@/core/ports/engine/portCalls";
 import { dependencyFieldName } from "@/core/ports/engine/portPaths";
@@ -109,7 +110,7 @@ export const CatalogWidget = ({
   // label of its own, and must not be nested under this one's.
   const propsKey = JSON.stringify(componentProps);
   const hostable = useMemo(
-    () => canHostBlokComponent(component, JSON.parse(propsKey) as unknown[]),
+    () => canHostBlokComponent(component, JSON.parse(propsKey) as unknown[], defaultBlokCatalog),
     [component, propsKey],
   );
   if (!hostable) return <>{fallback}</>;
@@ -128,6 +129,7 @@ export const CatalogWidget = ({
             onValue={onValue}
             port={blokPort}
             fallback={fallback}
+            catalog={defaultBlokCatalog}
           />
           {port.description && <FormDescription>{portDescription(port, widget)}</FormDescription>}
           <FormMessage />

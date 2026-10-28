@@ -1,4 +1,4 @@
-import { loadVocabulary } from "@/core/blok/spec/vocabulary";
+import { loadVocabulary } from "@arkitektio/bsx/spec/vocabulary";
 import { latestTaskRecord, type LatestTaskSource } from "../blokLatestTask";
 
 /**

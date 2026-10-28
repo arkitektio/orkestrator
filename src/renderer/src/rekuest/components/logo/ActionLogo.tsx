@@ -1,7 +1,7 @@
 import * as React from "react";
-import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
-import { logoDataModel } from "@/core/blok/logo/demo";
-import { useBlokRuntime } from "@/core/blok/renderer/runtime";
+import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
+import { logoDataModel } from "@arkitektio/bsx/logo/demo";
+import { useBlokRuntime } from "@arkitektio/bsx/renderer/runtime/index";
 import { cn } from "@/core/util/utils";
 import { BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
 import { useMyLatestTask } from "@/rekuest/lib/taskIndex";

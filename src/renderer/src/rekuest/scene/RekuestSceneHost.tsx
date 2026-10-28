@@ -3,7 +3,7 @@ import {
   BlokSceneHostProvider,
   type BlokModelDecoration,
   type BlokSceneHost,
-} from '@/core/blok/renderer/bloks/scene';
+} from '@arkitektio/bsx/renderer/bloks/scene/index';
 import {DEFAULT_MODEL_POLICY, type ModelPolicy} from '@/core/model/glb';
 import {useAssetPolicyQuery, useBloksForModelQuery, useListMaterializedBloksQuery} from '@/rekuest/api/graphql';
 

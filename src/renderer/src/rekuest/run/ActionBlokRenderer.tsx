@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {dependencyKeysRead} from '@/core/blok/bsx/infer';
-import {normalizeBlokArgument, normalizeBlokComponentTree, type BlokActionArgument, type BlokComponentNode} from '@/core/blok/renderer/runtime';
-import {BlokRunHostProvider, type BlokRunHost} from '@/core/blok/renderer/bloks/run';
+import {dependencyKeysRead} from '@arkitektio/bsx/bsx/infer';
+import {normalizeBlokArgument, normalizeBlokComponentTree, type BlokActionArgument, type BlokComponentNode} from '@arkitektio/bsx/renderer/runtime/index';
+import {BlokRunHostProvider, type BlokRunHost} from '@arkitektio/bsx/renderer/bloks/run/index';
 import {TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer} from '../components/MaterializedBlokRenderer';

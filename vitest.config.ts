@@ -20,8 +20,11 @@ export default defineConfig({
     // docblock at the top of the file.
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
+    // @arkitektio/bsx is processed like this app's own source: its runtime Tailwind reads
+    // stylesheets as text (`?raw`) and its shadcn copies import CJS packages by name.
+    server: { deps: { inline: ["@arkitektio/bsx"] } },
     // CSS is stubbed out in tests, `?raw` imports included. The stylesheets the
-    // runtime Tailwind compiler for bloks reads (`core/blok/tailwind`) must be
+    // runtime Tailwind compiler for bloks reads (`@arkitektio/bsx/tailwind`) must be
     // real text, so these alone are processed.
     css: { include: [/tailwindcss\/(theme|utilities)\.css/, /src\/renderer\/src\/theme\.css/] },
     include: [
@@ -40,14 +43,6 @@ export default defineConfig({
         "src/renderer/src/kabinet/lib/marks/*.ts",
         "src/renderer/src/fluss/validation/utils.tsx",
         "src/renderer/src/core/util/utils.ts",
-        "src/renderer/src/core/blok/renderer/runtime/utils.ts",
-        "src/renderer/src/core/blok/renderer/runtime/context.tsx",
-        "src/renderer/src/core/blok/renderer/runtime/resolution.ts",
-        "src/renderer/src/core/blok/renderer/runtime/scope.tsx",
-        "src/renderer/src/core/blok/renderer/runtime/functions.ts",
-        "src/renderer/src/core/blok/renderer/runtime/preflight.ts",
-        "src/renderer/src/core/blok/renderer/runtime/checks.ts",
-        "src/renderer/src/core/blok/renderer/functions/**/*.ts",
         "src/renderer/src/rekuest/widgets/utils.tsx",
         "src/renderer/src/core/smart/localactions/LocalActionProvider.tsx",
         "src/renderer/src/core/dnd/selection/store.tsx",

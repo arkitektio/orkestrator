@@ -1,5 +1,5 @@
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
-import { BlokAssetHostProvider } from "@/core/blok/renderer/assets";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
+import { BlokAssetHostProvider } from "@arkitektio/bsx/renderer/assets";
 import { useDialog } from "@/core/dialogs/registry";
 import { KabinetRelease, RekuestBlok } from "@/core/linkers";
 import { Badge } from "@/core/ui/badge";

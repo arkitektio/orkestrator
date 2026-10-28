@@ -1,22 +1,19 @@
-import { effectFunctions, standardBlokFunctions, variadicBlokFunctions } from "@/core/blok/renderer/functions";
+import { invokeBlokFunction } from "@arkitektio/bsx/renderer/functions/index";
 import {
   BlokSchemas,
-  createBlokCatalog,
-  describeBlokCatalog,
   invokeUtilCall,
   normalizeBlokCall,
   type BlokResolutionContext,
   type BlokUtilCall,
-} from "@/core/blok/renderer/runtime";
-import type { BlokResolved } from "@/core/blok/renderer/runtime/resolution";
-
-import { portFunctions } from "./portFunctions";
+} from "@arkitektio/bsx/renderer/runtime/index";
+import type { BlokResolved } from "@arkitektio/bsx/renderer/runtime/resolution";
 
 /**
  * Port calls: how hide effects and validators are expressed.
  *
  * A port call is a blok `UtilCall` — `{ operation, arguments }` — naming a
- * function from the catalog below and resolving its arguments from the form:
+ * function of the blok language (`val.is_set`, `list.contains`, `str.matches`,
+ * `cmp.*`, …) and resolving its arguments from the form:
  *
  * - `{ "value_path": "value" }` is the port's own value;
  * - `{ "value_path": "<name>" }` is the value of a port listed in the
@@ -29,15 +26,6 @@ import { portFunctions } from "./portFunctions";
  */
 
 export const PORT_CALL_SELF_PATH = "value";
-
-export const portCallCatalog = createBlokCatalog(
-  "https://arkitekt.live/catalogs/port-calls/v1.json",
-  [],
-  [...standardBlokFunctions, ...variadicBlokFunctions, ...effectFunctions, ...portFunctions],
-);
-
-/** Serializable manifest for authoring UIs (function names, args, purity). */
-export const describePortCallCatalog = () => describeBlokCatalog(portCallCatalog);
 
 export type ParsedPortCall = BlokResolved<BlokUtilCall>;
 
@@ -108,9 +96,7 @@ const createContext = (scope: PortCallScope): BlokResolutionContext => ({
       : undefined;
   },
   resolvePath: (path) => path,
-  // Port calls are base@1 (they feed definition_hash): JSON-looking literals decode, functions are v1.
-  decodeLiterals: true,
-  invokeFunction: portCallCatalog.invokeFunction,
+  invokeFunction: invokeBlokFunction,
   dispatchAction: async () => ({
     ok: false as const,
     error: "Port calls cannot dispatch actions.",

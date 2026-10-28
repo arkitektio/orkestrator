@@ -1,4 +1,4 @@
-import {idleTaskRecord, withTaskStatus, type BlokTaskRecord, type BlokTaskStatus} from '@/core/blok/renderer/runtime';
+import {idleTaskRecord, withTaskStatus, type BlokTaskRecord, type BlokTaskStatus} from '@arkitektio/bsx/renderer/runtime/index';
 import {TaskEventKind} from '../api/graphql';
 import {pendingHolds, type HoldRequest} from '../lib/holds';
 import {isTerminalEvent} from '../lib/taskTracker';

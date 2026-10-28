@@ -1,4 +1,4 @@
-import { addBlokComponents } from "@/core/blok/renderer/catalog";
+import { addBlokComponents } from "@/core/blok/catalog";
 import { MIKRO_MODULE } from "@/mikro/module";
 import { buildCatalogExport as buildCoreCatalogExport } from "@/rekuest/catalog/catalogExport";
 

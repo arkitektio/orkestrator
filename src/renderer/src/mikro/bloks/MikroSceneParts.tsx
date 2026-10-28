@@ -4,8 +4,8 @@ import {
   asStructure,
   renderChildList,
   useControlledValue,
-} from "@/core/blok/renderer/bloks/shared";
-import { useBinding, useBlok, useEventAction, useValue, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/bloks/shared/index";
+import { useBinding, useBlok, useEventAction, useValue, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 import { cn } from "@/core/util/utils";
 import { useGetSceneQuery, type SceneFragment } from "@/mikro/api/graphql";
 import { Scene } from "@/mikro/components/scene/Scene";

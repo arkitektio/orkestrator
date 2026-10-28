@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseBsx } from "@/core/blok/bsx/parse";
-import { printBsx } from "@/core/blok/bsx/print";
-import type { BlokComponentNode } from "@/core/blok/renderer/runtime";
+import { parseBsx } from "@arkitektio/bsx/bsx/parse";
+import { printBsx } from "@arkitektio/bsx/bsx/print";
+import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/index";
 import basiks from "./basiks.fixture.json";
 import { DefinitionLogo, KabinetBlokLogo } from "./KabinetBlokLogo";
 

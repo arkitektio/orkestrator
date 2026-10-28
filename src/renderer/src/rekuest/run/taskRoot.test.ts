@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {idleTaskRecord} from '@/core/blok/renderer/runtime';
+import {idleTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import {TaskEventKind} from '../api/graphql';
 import {shownAsk, taskRecordOf, type TaskRootSource} from './taskRoot';
 

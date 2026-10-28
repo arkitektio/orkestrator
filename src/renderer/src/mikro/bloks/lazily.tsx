@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import type { BlokRenderArgs } from "@/core/blok/renderer/runtime";
+import type { BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 /**
  * A blok render loaded on first use. The definitions next to it are exported

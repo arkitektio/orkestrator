@@ -6,7 +6,7 @@
  * Blok keys are organization-wide, so every one is named for this app.
  */
 
-import { actionLogoSource } from "@/core/blok/logo/actionLogoSource";
+import { actionLogoSource } from "@arkitektio/bsx/logo/actionLogoSource";
 
 export type ActionLogoDeclaration = {
   /** The blok's key: what `ImplementationInput.logo` names. */

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {ErrorBoundary} from 'react-error-boundary';
-import {parseBsxPartial} from '@/core/blok/bsx';
-import type {BlokComponentNode} from '@/core/blok/renderer/runtime/types';
+import {parseBsxPartial} from '@arkitektio/bsx/bsx/index';
+import type {BlokComponentNode} from '@arkitektio/bsx/renderer/runtime/types';
 import {CodeBlock} from '@/core/ui/markdown';
 import {ErrorNote} from '@/core/ui/error-note';
 import {DemoBlokRenderer} from './DemoBlokRenderer';

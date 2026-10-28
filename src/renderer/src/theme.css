@@ -1,7 +1,7 @@
 /* What a Tailwind class means in this app: its custom variants, its theme
  * tokens and its own utilities. `index.css` imports it for the build; the
- * runtime compiler that styles bloks (`core/blok/tailwind/runtimeTailwind.ts`)
- * reads it raw, so a class in a blok means what it means in the app.
+ * runtime compiler that styles bloks (`@arkitektio/bsx/tailwind`) reads it raw
+ * (`core/blok/platform.ts` hands it over), so a class in a blok means what it means in the app.
  *
  * Only what defines a class belongs here. The values the tokens point at
  * (`:root`, `.dark`), keyframes and base styles are global already and stay in
@@ -18,6 +18,9 @@
 @custom-variant railbg (&:is(.rail-backdrop *));
 @custom-variant selected (&[data-selected="true"]);
 @custom-variant b-selected (&[data-bselected="true"]);
+/* A control (or panel) whose action a held lock keeps from running now (`lockedActions`):
+   the blok renderer marks it data-locked; a control marking itself data-locked="false" does not count. */
+@custom-variant locked (&:where([data-locked]:not([data-locked="false"]), [data-locked]:not([data-locked="false"]) *));
 @custom-variant over (&[data-over="true"]);
 @custom-variant dragging (&[data-dragging="true"]);
 @custom-variant isdropping (&[data-isdropping="true"]);

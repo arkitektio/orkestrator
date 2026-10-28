@@ -1,4 +1,4 @@
-import type {BlokRunAgent} from '@/core/blok/renderer/bloks/run';
+import type {BlokRunAgent} from '@arkitektio/bsx/renderer/bloks/run/index';
 
 /**
  * Which agent stands behind each dependency key of a run: what an action's

@@ -65,23 +65,21 @@ try {
   const {buildCatalogExport} = await import(
     pathToFileURL(resolve(bundleDir, 'catalogExport.mjs')).href
   );
-  const {catalog, manifest} = buildCatalogExport();
+  const {catalog, module} = buildCatalogExport();
 
-  if (!catalog.components.length || !catalog.operations.length) {
+  if (!catalog.components.length) {
     throw new Error(
-      `Refusing to publish an empty catalog (${catalog.components.length} components, ${catalog.operations.length} operations).`,
+      `Refusing to publish an empty catalog (${catalog.components.length} components).`,
     );
   }
 
   await mkdir(outDir, {recursive: true});
   await writeFile(resolve(outDir, 'blok-catalog.json'), `${JSON.stringify(catalog, null, 2)}\n`);
-  await writeFile(
-    resolve(outDir, 'blok-catalog.manifest.json'),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
+  // The `orkestrator` module in the spec's catalog format: arkitekt-spec's `modules/orkestrator.json`.
+  await writeFile(resolve(outDir, 'blok-module.json'), `${JSON.stringify(module, null, 1)}\n`);
 
   console.info(
-    `[blok-catalog] wrote dist/catalog/ — "${catalog.name}": ${catalog.components.length} components, ${catalog.operations.length} operations.`,
+    `[blok-catalog] wrote dist/catalog/ — "${catalog.name}": ${catalog.components.length} components.`,
   );
 } finally {
   await rm(bundleDir, {recursive: true, force: true});

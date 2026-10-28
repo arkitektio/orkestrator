@@ -4,18 +4,14 @@ import { z } from "zod";
 import {
   createBlokCatalog,
   createBlokComponent,
-  createBlokFunction,
-  createVariadicBlokFunction,
   BlokPropSchemas,
-} from "@/core/blok/renderer/runtime";
-import { defaultBlokCatalog, UI_CATALOG_NAME } from "@/core/blok/renderer/catalog";
-import { implementedCatalogs } from "@/core/blok/renderer/modules";
+} from "@arkitektio/bsx/renderer/runtime/index";
+import { orkestratorUi, UI_CATALOG_NAME } from "@/core/blok/catalog";
 import { CatalogValueKind, type ModuleFragment } from "@/rekuest/api/graphql";
 import {
   buildRegisterModuleInput,
   moduleMatches,
   componentInput,
-  operationInputs,
   zodToCatalogKind,
 } from "./uiCatalogInput";
 
@@ -142,99 +138,28 @@ describe("componentInput", () => {
   });
 });
 
-describe("operationInputs", () => {
-  it("emits one operation per name and alias with typed arguments", () => {
-    const fn = createBlokFunction(
-      {
-        name: "str.pad",
-        aliases: ["pad"],
-        description: "Pads a string.",
-        purity: "pure",
-        returnType: "string",
-        schema: z.object({ value: z.string(), width: z.int(), fill: z.string().optional() }),
-      },
-      () => "",
-    );
-
-    const [main, alias] = operationInputs(fn);
-    expect(main).toEqual({
-      name: "str.pad",
-      description: "Pads a string.",
-      returns: CatalogValueKind.String,
-      arguments: [
-        { key: "fill", kind: CatalogValueKind.String, required: false, description: null },
-        { key: "value", kind: CatalogValueKind.String, required: true, description: null },
-        { key: "width", kind: CatalogValueKind.Int, required: true, description: null },
-      ],
-    });
-    expect(alias).toMatchObject({
-      name: "pad",
-      description: "Alias of str.pad. Pads a string.",
-      returns: CatalogValueKind.String,
-      arguments: main.arguments,
-    });
-  });
-
-  it("collapses variadic functions to a single optional list argument", () => {
-    const fn = createVariadicBlokFunction(
-      { name: "math.sum", description: "Sums.", item: z.number(), purity: "pure", returnType: "number" },
-      () => 0,
-    );
-    const [op] = operationInputs(fn);
-    expect(op.returns).toBe(CatalogValueKind.Float);
-    expect(op.arguments).toEqual([
-      expect.objectContaining({ key: "values", kind: CatalogValueKind.List, required: false }),
-    ]);
-  });
-
-  it("notes side effects and deprecation in the description", () => {
-    const fn = createBlokFunction(
-      { name: "ui.toast", description: "Shows a toast.", schema: z.object({}), deprecated: "use ui.notify" },
-      () => undefined,
-    );
-    expect(operationInputs(fn)[0].description).toBe(
-      "Shows a toast. Deprecated: use ui.notify Has side effects; only valid in action position.",
-    );
-  });
-});
-
 describe("buildRegisterModuleInput", () => {
-  it("maps the real default catalog without throwing, each component once", () => {
-    const input = buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME });
+  it("maps the real UI without throwing: its claims, and none of the claimed catalogs' components", () => {
+    const input = buildRegisterModuleInput(orkestratorUi);
 
     expect(input.name).toBe(UI_CATALOG_NAME);
     expect(input.widgetDefaults).toEqual([]);
-    const names = input.components.map((component) => component.name);
-    expect(new Set(names).size).toBe(names.length);
-    expect([...names].sort()).toEqual([...defaultBlokCatalog.components.keys()].sort());
-    // Every function and alias is addressable by name.
-    const operationNames = new Set(input.operations.map((operation) => operation.name));
-    for (const name of defaultBlokCatalog.functions.keys()) {
-      expect(operationNames.has(name)).toBe(true);
-    }
-  });
-
-  it("leaves out operations the server's base catalog reserves", () => {
-    const reserved = new Set(["eq", "if", "get"]);
-    const input = buildRegisterModuleInput(
-      defaultBlokCatalog,
-      { name: UI_CATALOG_NAME },
-      { reservedOperations: reserved },
-    );
-    const names = new Set(input.operations.map((operation) => operation.name));
-    for (const name of reserved) {
-      expect(defaultBlokCatalog.functions.has(name)).toBe(true);
-      expect(names.has(name)).toBe(false);
-    }
-    // Everything else stays registered.
-    expect(names.has("gt")).toBe(true);
-  });
-
-  it("sends the standard catalogs it implements, sorted, and none unless told", () => {
-    expect(buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME }).catalogs).toEqual([]);
-    const input = buildRegisterModuleInput(defaultBlokCatalog, { name: UI_CATALOG_NAME }, { catalogs: implementedCatalogs(defaultBlokCatalog) });
-    expect(input.catalogs).toEqual([...implementedCatalogs(defaultBlokCatalog)].sort());
+    expect(input.catalogs).toEqual([...orkestratorUi.claims].sort());
     expect(input.catalogs).toContain("ui@1");
+    const names = new Set(input.components.map((component) => component.name));
+    for (const name of ["Button", "foreach", "Sheet", "Scene", "StructurePicker"]) expect(names.has(name), name).toBe(false);
+    // A module adds components only: what a blok calls is the language's.
+    expect(input.operations).toEqual([]);
+  });
+
+  it("sends a UI's own components, sorted, each once", () => {
+    const own = createBlokCatalog("own", [
+      createBlokComponent({ name: "Zeta", schema: z.object({}) }, Noop),
+      createBlokComponent({ name: "Alpha", schema: z.object({}) }, Noop),
+    ]);
+    const input = buildRegisterModuleInput({ name: "own", description: null, catalog: own, claims: [] });
+    expect(input.components.map((component) => component.name)).toEqual(["Alpha", "Zeta"]);
+    expect(input.catalogs).toEqual([]);
   });
 });
 
@@ -247,14 +172,8 @@ describe("moduleMatches", () => {
         Noop,
       ),
     ],
-    [
-      createBlokFunction(
-        { name: "upper", description: "Uppercases.", purity: "pure", returnType: "string", schema: z.object({ value: z.string() }) },
-        () => "",
-      ),
-    ],
   );
-  const input = buildRegisterModuleInput(catalog, { name: "orkestrator", description: "d" }, { catalogs: ["ui@1", "html@1"] });
+  const input = buildRegisterModuleInput({ name: "orkestrator", description: "d", catalog, claims: ["ui@1", "html@1"] });
 
   const roundTrip = (): ModuleFragment => ({
     __typename: "Module",
@@ -304,9 +223,12 @@ describe("moduleMatches", () => {
     changedKind.components[0].props[0].kind = CatalogValueKind.Any;
     expect(moduleMatches(changedKind, input)).toBe(false);
 
-    const missingOperation = roundTrip();
-    missingOperation.operations = [];
-    expect(moduleMatches(missingOperation, input)).toBe(false);
+    // A copy registered when modules still carried operations is out of date: it is sent again.
+    const withOperation = roundTrip();
+    withOperation.operations = [
+      { __typename: "CatalogOperation", name: "upper", description: null, returns: CatalogValueKind.String, arguments: [] },
+    ];
+    expect(moduleMatches(withOperation, input)).toBe(false);
 
     expect(moduleMatches({ ...roundTrip(), catalogs: ["ui@1"] }, input)).toBe(false);
     expect(moduleMatches({ ...roundTrip(), catalogs: [] }, input)).toBe(false);

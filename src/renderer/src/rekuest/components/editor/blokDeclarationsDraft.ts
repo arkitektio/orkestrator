@@ -1,7 +1,7 @@
-import { parseBsxArgument, printBsx, BsxSyntaxError, type BlokScopeLocal, type BlokScopeLocalPort, type BlokScopeQuery, type BlokScopeSubscription } from "@/core/blok/bsx";
-import { isLocalName } from "@/core/blok/bsx/expr";
-import { normalizeBlokArgument, type BlokActionArgument } from "@/core/blok/renderer/runtime";
-import { loadVocabulary } from "@/core/blok/spec/vocabulary";
+import { parseBsxArgument, printBsx, BsxSyntaxError, type BlokScopeLocal, type BlokScopeLocalPort, type BlokScopeQuery, type BlokScopeSubscription } from "@arkitektio/bsx/bsx/index";
+import { isLocalName } from "@arkitektio/bsx/bsx/expr";
+import { normalizeBlokArgument, type BlokActionArgument } from "@arkitektio/bsx/renderer/runtime/index";
+import { loadVocabulary } from "@arkitektio/bsx/spec/vocabulary";
 import { LocalKind, PortKind, type ActionArgumentInput, type BlokLocalInput, type BlokQueryInput, type BlokSubscriptionInput, type ChoiceInput } from "../../api/graphql";
 
 /**

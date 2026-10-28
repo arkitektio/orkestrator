@@ -7,7 +7,7 @@ import {
   type BlokLocal,
   type BlokPersistScope,
   type BlokPersistence,
-} from '@/core/blok/renderer/persist';
+} from '@arkitektio/bsx/renderer/persist';
 
 /** Whose kept values these are: the hub (its id, else its address) and the user of the active profile. */
 const usePersistScope = (): Omit<BlokPersistScope, 'materializedBlok'> | null => {

@@ -5,7 +5,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 
 /** A first drawing settles before it is kept; a loaded test run takes longer than waitFor's default. */
 const SLOW = {timeout: 5000};
-import tree from '@/core/blok/renderer/bloks/logo/logo.fixture.json';
+import tree from '@arkitektio/bsx/renderer/bloks/logo/logo.fixture.json';
 import {AgentLogo, BlokLogo} from './BlokLogo';
 
 /**

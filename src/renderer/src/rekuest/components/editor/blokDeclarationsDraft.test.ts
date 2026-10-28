@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LocalKind } from "../../api/graphql";
-import { checkBlokTree, emptyBlokScope, parseBsx, resolveBlokScope } from "@/core/blok/bsx";
-import { defaultBlokView } from "@/core/blok/spec/catalogs";
+import { checkBlokTree, emptyBlokScope, parseBsx, resolveBlokScope } from "@arkitektio/bsx/bsx/index";
+import { defaultBlokView } from "@arkitektio/bsx/spec/catalogs";
 import { buildDeclarations, declarationsDraft, draftResolvedLocals, emptyDeclarationsDraft, inferredLocalKinds, newLocalDraft, type LocalDraft } from "./blokDeclarationsDraft";
 
 const local = (patch: Partial<LocalDraft>): LocalDraft => ({ ...newLocalDraft(), ...patch });

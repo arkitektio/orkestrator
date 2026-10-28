@@ -7,9 +7,9 @@ import {
   parseBsxPartial,
   printBsx,
   type BlokCheckScope,
-} from "@/core/blok/bsx";
-import { BsxEditor } from "@/core/blok/editor/BsxEditor";
-import type { BlokComponentNode } from "@/core/blok/renderer/runtime/types";
+} from "@arkitektio/bsx/bsx/index";
+import { BsxEditor } from "@arkitektio/bsx/editor/BsxEditor";
+import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/types";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
@@ -70,7 +70,7 @@ import {
   type LocalDraft,
   type ReadDraft,
 } from "../components/editor/blokDeclarationsDraft";
-import type { BlokDeclaredLocal, BlokDeclarations } from "@/core/blok/renderer/declarations";
+import type { BlokDeclaredLocal, BlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
 
 type EditorDraft = {
   name: string;

@@ -1,5 +1,5 @@
-import {isRecord, splitPathSegments} from '@/core/blok/renderer/runtime';
-import {loadVocabulary} from '@/core/blok/spec/vocabulary';
+import {isRecord, splitPathSegments} from '@arkitektio/bsx/renderer/runtime/index';
+import {loadVocabulary} from '@arkitektio/bsx/spec/vocabulary';
 
 const collectArgumentDemandPaths = (
   argument: unknown,

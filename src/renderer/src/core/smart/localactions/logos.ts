@@ -1,4 +1,4 @@
-import { actionLogoSource } from "@/core/blok/logo/actionLogoSource";
+import { actionLogoSource } from "@arkitektio/bsx/logo/actionLogoSource";
 
 /**
  * The logos of the host's own local actions (`registry.tsx`): v2 logo BSX (`ActionLogo`),

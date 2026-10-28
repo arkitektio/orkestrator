@@ -1,4 +1,4 @@
-import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
+import { CachedBlokLogo, type LogoTree } from "@arkitektio/bsx/logo/CachedBlokLogo";
 import { AgentLogoFragment, BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
 
 /**

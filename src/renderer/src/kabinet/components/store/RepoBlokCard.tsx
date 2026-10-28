@@ -1,6 +1,6 @@
-import { type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
-import { parseBlokDeclarations } from "@/core/blok/renderer/declarations";
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
+import { type LogoTree } from "@arkitektio/bsx/logo/CachedBlokLogo";
+import { parseBlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
 import { useDialog } from "@/core/dialogs/registry";
 import { KabinetRepo, RekuestBlok } from "@/core/linkers";
 import { Badge } from "@/core/ui/badge";

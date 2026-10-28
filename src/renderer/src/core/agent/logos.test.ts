@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/core/smart/registry", () => ({ smartRegistry: { findModel: vi.fn() } }));
 
-import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@/core/blok/renderer/bloks/logo";
+import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@arkitektio/bsx/catalogs/parts/logo";
 import "./actions";
-import { parseBsxSafe } from "@/core/blok/bsx/parse";
-import { defaultBlokCatalog } from "@/core/blok/renderer/catalog";
-import { normalizeBlokComponentTree, preflightBlokDocument } from "@/core/blok/renderer/runtime";
+import { parseBsxSafe } from "@arkitektio/bsx/bsx/parse";
+import { defaultBlokCatalog } from "@/core/blok/catalog";
+import { normalizeBlokComponentTree, preflightBlokDocument } from "@arkitektio/bsx/renderer/runtime/index";
 import { ACTION_LOGOS } from "./logos";
 import { globalRegistry } from "./registry";
 

@@ -18,7 +18,7 @@ import { blokArgsFromStructures } from "./blokArgsFromStructures";
 import MaterializedBlokRenderer from "./MaterializedBlokRenderer";
 import { RekuestBlokPreview } from "./preview/RekuestBlokPreview";
 import { PortValue } from "./task/PortValue";
-import { idleTaskRecord, withTaskStatus, type BlokTaskRecord } from "@/core/blok/renderer/runtime";
+import { idleTaskRecord, withTaskStatus, type BlokTaskRecord } from "@arkitektio/bsx/renderer/runtime/index";
 import { BlokServiceChips, BlokServicesGuard, blokServicesOf } from "./BlokServices";
 
 /** Where an ask through a blok stands, and its answer once there is one. */

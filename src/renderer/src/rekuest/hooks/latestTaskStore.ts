@@ -1,5 +1,5 @@
 import {gql, type ApolloClient} from '@apollo/client';
-import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@/core/blok/renderer/runtime';
+import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import type {TaskEventKind} from '../api/graphql';
 import {taskUpdateFromEvent} from '../components/blokTaskUpdates';
 import {createLiveStateStore, type LiveStateSubscribe} from './liveStateStore';

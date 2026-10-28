@@ -1,6 +1,6 @@
 import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
-import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
+import BlokRenderer from '@arkitektio/bsx/renderer/BlokRenderer';
 import {
   useBlokRuntime,
   useBlokRuntimeStoreApi,
@@ -8,14 +8,14 @@ import {
   type BlokRefuseActionHandler,
   type BlokSourceStatus,
   type BlokTaskRecord,
-} from '@/core/blok/renderer/runtime';
+} from '@arkitektio/bsx/renderer/runtime/index';
 import {
   declaredLocals,
   declaredQueries,
   declaredSubscriptions,
   liveModel,
   type BlokDeclarations,
-} from '@/core/blok/renderer/declarations';
+} from '@arkitektio/bsx/renderer/declarations';
 import {describeError, toast} from '@/core/notify';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
@@ -32,7 +32,7 @@ import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
-import type {BlokPersistence} from '@/core/blok/renderer/persist';
+import type {BlokPersistence} from '@arkitektio/bsx/renderer/persist';
 import {useBlokComponentStore, useBlokPersistence} from './useBlokPersistence';
 import {useBlokViewer} from './useBlokViewer';
 

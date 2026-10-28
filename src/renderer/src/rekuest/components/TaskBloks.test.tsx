@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseBsx } from "@/core/blok/bsx/parse";
-import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
-import { BlokRunHostProvider } from "@/core/blok/renderer/bloks/run";
+import { parseBsx } from "@arkitektio/bsx/bsx/parse";
+import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
+import { BlokRunHostProvider } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { TaskEventKind } from "../api/graphql";
 import type { HoldRequest } from "../lib/holds";
 import { useTaskBlokHost } from "./TaskBloks";

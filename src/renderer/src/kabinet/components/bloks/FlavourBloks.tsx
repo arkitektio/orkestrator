@@ -1,17 +1,17 @@
-import { demoModel, parseBlokDeclarations } from "@/core/blok/renderer/declarations";
+import { demoModel, parseBlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
 import * as React from "react";
 import { AlertTriangle, Box, LayoutPanelTop, Loader2 } from "lucide-react";
-import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
-import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
+import { CachedBlokLogo, type LogoTree } from "@arkitektio/bsx/logo/CachedBlokLogo";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
+import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
 import {
   ASSET_KIND_LABELS,
   BlokAssetHostProvider,
   type BlokAsset,
   type BlokAssetHost,
   type BlokAssetKind,
-} from "@/core/blok/renderer/assets";
-import { normalizeBlokComponentTree } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/assets";
+import { normalizeBlokComponentTree } from "@arkitektio/bsx/renderer/runtime/index";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { formatBytes } from "@/core/smart/display/DisplayLine";

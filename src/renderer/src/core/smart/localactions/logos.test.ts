@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { parseBsxSafe } from "@/core/blok/bsx/parse";
-import { defaultBlokCatalog } from "@/core/blok/renderer/catalog";
-import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@/core/blok/renderer/bloks/logo";
-import { normalizeBlokComponentTree, preflightBlokDocument } from "@/core/blok/renderer/runtime";
+import { parseBsxSafe } from "@arkitektio/bsx/bsx/parse";
+import { defaultBlokCatalog } from "@/core/blok/catalog";
+import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@arkitektio/bsx/catalogs/parts/logo";
+import { normalizeBlokComponentTree, preflightBlokDocument } from "@arkitektio/bsx/renderer/runtime/index";
 import { HOST_ACTION_LOGOS } from "./logos";
 
 const attributes = (source: string, name: string) =>

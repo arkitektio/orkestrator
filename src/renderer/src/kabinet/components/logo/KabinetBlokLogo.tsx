@@ -1,5 +1,5 @@
-import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
-import { parseBlokDeclarations } from "@/core/blok/renderer/declarations";
+import { CachedBlokLogo, type LogoTree } from "@arkitektio/bsx/logo/CachedBlokLogo";
+import { parseBlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
 import { KabinetLogoBlokFragment, useKabinetLogoTreeQuery } from "@/kabinet/api/graphql";
 
 /** kabinet's blok ids (`<flavour id>:<key>`) are kept apart from every other service's. */

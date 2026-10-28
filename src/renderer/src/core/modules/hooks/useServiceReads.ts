@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { resolveServiceClient } from "@/core/modules/host/operations";
-import type { BlokReadExecutor } from "@/core/blok/renderer/runtime/reads";
+import type { BlokReadExecutor } from "@arkitektio/bsx/renderer/runtime/reads";
 
 /**
  * Runs a blok's declared reads (`queries`, `subscriptions`) on the session's

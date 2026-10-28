@@ -6,8 +6,11 @@
 
 /* The tokens, variants and utilities a class means the same by everywhere,
    in its own file so the runtime compiler that styles bloks
-   (`core/blok/tailwind/runtimeTailwind.ts`) reads exactly what the build does. */
+   (`@arkitektio/bsx/tailwind`, given it by `core/blok/platform.ts`) reads exactly what the build does. */
 @import './theme.css';
+/* The blok renderer's own classes (its shadcn copies, its layout): Tailwind does not scan
+   node_modules on its own. */
+@source '../../../node_modules/@arkitektio/bsx/dist';
 
 /* Window-drag regions for the renderer-drawn title bar.
  *
