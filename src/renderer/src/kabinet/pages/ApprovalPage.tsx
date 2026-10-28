@@ -11,6 +11,7 @@ import React from "react";
 import { useGetReleaseApprovalQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
+import { RevokeApprovalButton } from "../components/RevokeApprovalButton";
 import { DeployButton } from "../components/store/StoreParts";
 import { APPROVAL_STATUS_DOT, APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 import { KABINET_HELP } from "../help";
@@ -111,7 +112,10 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
         </div>
 
         <section className="flex flex-col gap-2">
-          <h3 className="text-base font-semibold tracking-tight">Mandate</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base font-semibold tracking-tight">Mandate</h3>
+            <RevokeApprovalButton approval={approval} label="Revoke mandate" />
+          </div>
           <StructureDisplay
             identifier="@lok/mandate"
             id={approval.mandateId}

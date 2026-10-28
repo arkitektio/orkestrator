@@ -14,6 +14,7 @@ import { useGetDeploymentQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import ApprovalCard from "../components/cards/ApprovalCard";
+import { RevokeApprovalButton } from "../components/RevokeApprovalButton";
 import { KABINET_HELP } from "../help";
 import { POD_STATUS_DOT, podStatusLabel } from "../lib/podStatus";
 
@@ -93,7 +94,10 @@ export const DeploymentPage = asDetailQueryRoute(useGetDeploymentQuery, ({ data 
         </div>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Runs as</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Runs as</h2>
+            {deployment.approval && <RevokeApprovalButton approval={deployment.approval} label="Revoke mandate" />}
+          </div>
           {deployment.approval ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-2">
               <ApprovalCard item={deployment.approval} />
