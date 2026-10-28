@@ -155,6 +155,7 @@ const CardFrame = ({
   iconLabel,
   title,
   facts,
+  menu,
   children,
 }: {
   tone: Tone;
@@ -163,6 +164,8 @@ const CardFrame = ({
   /** The name, as the link that opens it. */
   title: React.ReactNode;
   facts: (string | React.ReactNode)[];
+  /** The card's menu burger sits in the header's corner: keep the name clear of it. */
+  menu?: boolean;
   children?: React.ReactNode;
 }) => (
   <div
@@ -171,7 +174,7 @@ const CardFrame = ({
       TONES[tone].frame,
     )}
   >
-    <div className="flex min-w-0 items-center gap-2 px-1 pt-0.5 text-sm font-medium">
+    <div className={cn("flex min-w-0 items-center gap-2 px-1 pt-0.5 text-sm font-medium", menu && "pr-7")}>
       <Icon className={cn("h-4 w-4 shrink-0", TONES[tone].icon)} aria-label={iconLabel} />
       {title}
     </div>
@@ -218,29 +221,32 @@ const FileCard = ({ file }: { file: HomeFile }) => {
     file.size != null && formatBytes(file.size),
   ].filter((fact): fact is string => Boolean(fact));
 
+  // The whole card is the FILE (its menu, drag payload, selection); the image
+  // tiles inside are their own. Its burger sits top-right, clear of theirs.
   return (
-    <CardFrame
-      tone="file"
-      icon={FileIcon}
-      title={
-        <MikroFile.Smart object={file} className="min-w-0 [container-type:normal]!">
-          <MikroFile.DetailLink object={file} className="block truncate hover:underline">
+    <MikroFile.Smart object={file} menuButton="top" className="h-full [container-type:normal]!">
+      <CardFrame
+        tone="file"
+        icon={FileIcon}
+        title={
+          <MikroFile.DetailLink object={file} className="block min-w-0 truncate hover:underline">
             {file.name}
           </MikroFile.DetailLink>
-        </MikroFile.Smart>
-      }
-      facts={facts}
-    >
-      {shown.length > 0 && <GoldenTiles file={file} items={shown} multi={series.length > 1} />}
-      {hidden > 0 && (
-        <MikroFile.DetailLink
-          object={file}
-          className="absolute bottom-1.5 right-1.5 z-10 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur hover:bg-black/80"
-        >
-          +{hidden} more
-        </MikroFile.DetailLink>
-      )}
-    </CardFrame>
+        }
+        facts={facts}
+        menu
+      >
+        {shown.length > 0 && <GoldenTiles file={file} items={shown} multi={series.length > 1} />}
+        {hidden > 0 && (
+          <MikroFile.DetailLink
+            object={file}
+            className="absolute bottom-1.5 right-1.5 z-10 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur hover:bg-black/80"
+          >
+            +{hidden} more
+          </MikroFile.DetailLink>
+        )}
+      </CardFrame>
+    </MikroFile.Smart>
   );
 };
 
