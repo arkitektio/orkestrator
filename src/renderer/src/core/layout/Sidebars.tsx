@@ -1,6 +1,15 @@
 import { flattenChildren } from "./flattenChildren";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
-import { isValidElement, useEffect, useState, type ReactNode } from "react";
+import {
+  isValidElement,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 const ACTIVE_SIDEBAR_KEY = "active-sidebar";
 
@@ -37,18 +46,71 @@ const collectTabs = (children: ReactNode): SidebarsTabProps[] => {
   return [...byLabel.values()];
 };
 
+/** How far the edge fade reaches into the tab row, in px. */
+const FADE_PX = 20;
+
+/**
+ * The tab row scrolls sideways when the rail is too narrow for every label,
+ * with no scrollbar: an edge fades out only on a side that has more tabs
+ * past it, so a row that fits shows no fade at all. A vertical wheel scrolls
+ * it too (most mice have no horizontal wheel), and the active tab is kept in
+ * view when it changes.
+ */
+const useTabRowOverflow = (activeTab: string) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+
+  const measure = useCallback(() => {
+    const row = ref.current;
+    if (!row) return;
+    const start = row.scrollLeft > 1;
+    const end = row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
+    setEdges((held) => (held.start === start && held.end === end ? held : { start, end }));
+  }, []);
+
+  useLayoutEffect(() => {
+    const row = ref.current;
+    if (!row) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    // Translate a vertical wheel into a sideways scroll, but only while
+    // there is somewhere to go: a row that fits lets the wheel pass.
+    const onWheel = (event: WheelEvent) => {
+      if (row.scrollWidth <= row.clientWidth) return;
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      row.scrollLeft += event.deltaY;
+    };
+    row.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      observer.disconnect();
+      row.removeEventListener("wheel", onWheel);
+    };
+  }, [measure]);
+
+  useEffect(() => {
+    const active = ref.current?.querySelector<HTMLElement>('[data-state="active"]');
+    active?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [activeTab]);
+
+  const mask =
+    edges.start || edges.end
+      ? `linear-gradient(to right, ${edges.start ? "transparent" : "black"}, black ${FADE_PX}px, black calc(100% - ${FADE_PX}px), ${edges.end ? "transparent" : "black"})`
+      : undefined;
+  const style: CSSProperties | undefined = mask
+    ? { maskImage: mask, WebkitMaskImage: mask }
+    : undefined;
+
+  return { ref, onScroll: measure, style };
+};
+
 const SidebarsRoot = (props: {
   children?: ReactNode;
   /** localStorage key the active tab is remembered under. */
   sidebarKey?: string;
   /** The tab to open when nothing valid is remembered under `sidebarKey`. */
   defaultTab?: string;
-  /**
-   * "overlay" drops the tab bar's filled background so the rail sits
-   * seamlessly on a page that paints its own surface (see PageLayout's
-   * `overlay` prop).
-   */
-  variant?: "default" | "overlay";
 }) => {
   const tabs = collectTabs(props.children);
 
@@ -78,6 +140,8 @@ const SidebarsRoot = (props: {
     ? activeTab
     : (tabs.at(0)?.label ?? "");
 
+  const row = useTabRowOverflow(effectiveTab);
+
   // Save to local storage whenever the active tab changes
   useEffect(() => {
     if (effectiveTab) {
@@ -91,19 +155,20 @@ const SidebarsRoot = (props: {
       onValueChange={setActiveTab}
       className="w-full h-full flex flex-initial flex-col"
     >
-      <div className="flex-initial h-16  flex px-2 py-2 1">
+      <div className="flex-initial h-16 flex items-center px-2">
+        {/* Labels keep their own width and are never cut: the row scrolls
+            instead (see `useTabRowOverflow`). */}
         <TabsList
-          className={
-            props.variant === "overlay"
-              ? "w-full flex gap-2 my-auto bg-transparent"
-              : "w-full flex gap-2 my-auto"
-          }
+          ref={row.ref}
+          onScroll={row.onScroll}
+          style={row.style}
+          className="h-8 w-full justify-start gap-0.5 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.label}
               value={tab.label}
-              className="flex-1 h-full text-xs truncate px-2 py-1 cursor-pointer text-elevation-foreground/60 hover:text-elevation-foreground data-[state=active]:text-elevation-foreground data-[state=active]:bg-accent data-[state=active]:hover:bg-accent/90"
+              className="h-7 flex-none cursor-pointer rounded-full px-3 text-xs data-active:bg-foreground/10 data-active:shadow-none dark:data-active:border-transparent dark:data-active:bg-foreground/15"
             >
               {tab.label}
             </TabsTrigger>
