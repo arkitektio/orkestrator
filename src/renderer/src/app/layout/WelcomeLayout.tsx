@@ -50,7 +50,7 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
         onDoubleClick={dragZoneDoubleClick()}
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background mx-2 mb-2 rounded-xl border border-border/60 shadow-sm">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background mx-2 mb-2 rounded-xl border border-page-edge shadow-sm">
         {children}
       </div>
 

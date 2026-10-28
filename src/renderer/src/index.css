@@ -270,6 +270,14 @@
 
   --radius: 0.625rem;
 
+  /* The page's own right-hand rail (PageLayout), set off from the page:
+     a touch darker and more tinted than `--muted`. */
+  --page-rail: oklch(0.92 0.008 var(--brand-hue));
+  /* The page card's edge against the window chrome (AppLayout, split panes,
+     the welcome card). Firmer than `--border`: the card's clip-path clips its
+     own shadow, so this line is all that sets it off. */
+  --page-edge: oklch(0.83 0.01 var(--brand-hue));
+
   /* Sidebar */
   --sidebar: oklch(0.925 0.009 var(--brand-hue));
   --sidebar-foreground: var(--foreground);
@@ -374,6 +382,10 @@
   --chart-3: oklch(0.7 0.15 calc(var(--brand-hue) - 3));
   --chart-4: oklch(0.6 0.13 calc(var(--brand-hue) - 2));
   --chart-5: oklch(0.51 0.1 calc(var(--brand-hue) + 1));
+
+  /* Lifted off the black page, but well under the cards (0.205). */
+  --page-rail: oklch(0.13 0.006 var(--brand-hue));
+  --page-edge: oklch(1 0 0 / 14%);
 
   --sidebar: var(--card);
   --sidebar-foreground: var(--foreground);

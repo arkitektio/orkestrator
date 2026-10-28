@@ -248,12 +248,10 @@ export const PageLayout = ({
             maxSize={80}
             defaultSize={20}
             order={2}
-            // Darker than the page in BOTH themes, which needs a pair:
-            // `--muted` is a step under white in light mode, but in dark mode
-            // it is 0.269 against `--sidebar`'s 0.205 -- i.e. lighter. Dark
-            // mode drops to `--background` instead, the black the page
-            // gradient starts from.
-            className="bg-muted dark:bg-background"
+            // A token of its own (`--page-rail`, index.css): darker than
+            // the page in light mode, lifted off the black in dark mode,
+            // tuned without touching `--muted` everywhere else.
+            className="bg-page-rail"
             id="sidebar"
 
           >
