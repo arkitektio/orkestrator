@@ -15,10 +15,35 @@ export const DEFAULT_COORDINATION_SERVER_HOST = "go.arkitekt.live";
 export const DEFAULT_COORDINATION_SERVER_URL =
   `https://${DEFAULT_COORDINATION_SERVER_HOST}`;
 
+/**
+ * What Orkestrator asks to be allowed to do: everything, at lok and at every service.
+ *
+ * Each service declares one scope that grants all it offers (`<service>_all`); lok grants
+ * the ones the organization has and skips the rest, so this list works on any hub.
+ * Narrow it to what the UI actually calls once its clients say what they need.
+ */
+export const ALL_SCOPES = [
+  "openid",
+  "lok_all",
+  "alpaka_all",
+  "bank_all",
+  "dokuments_all",
+  "elektro_all",
+  "fluss_all",
+  "kabinet_all",
+  "kraph_all",
+  "kuvert_all",
+  "lokate_all",
+  "lovekit_all",
+  "mikro_all",
+  "omero_ark_all",
+  "rekuest_all",
+];
+
 export const manifest: Manifest = {
   version: "0.0.1",
   identifier: "live.arkitekt.orkestrator",
-  scopes: ["openid"],
+  scopes: ALL_SCOPES,
   requirements: [
     {
       key: "lok",
