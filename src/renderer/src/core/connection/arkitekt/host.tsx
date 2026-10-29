@@ -71,6 +71,9 @@ export const useDatalayerEndpoint = (): string | undefined =>
 
 export const useLivekit = () => Arkitekt.useService("livekit").client as { url: string };
 
+/** A module's media grant, shared per profile across windows and launches. */
+export { mediaGrantKey, sharedGrant } from "./runtime/sharedGrant";
+
 /**
  * The services an action (or anything handed the service map) reads, by
  * key: `Action<ModuleServices<"mikro">>` types `services.mikro.client`.

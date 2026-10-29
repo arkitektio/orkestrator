@@ -99,6 +99,7 @@ import {
   refreshSession,
 } from "./runtime/profileAuth";
 import { rotateProfileSession } from "./runtime/sharedRefresh";
+import { forgetMediaGrants } from "./runtime/sharedGrant";
 import {
   aliasReportsFrom,
   buildConfigurationIssues,
@@ -1220,6 +1221,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         const marked = markProfileStale(book, profileId, "Signed out on this computer");
         return wasActive ? setActiveProfile(marked, null) : marked;
       });
+      forgetMediaGrants(profileId);
 
       if (wasActive) park();
     },
@@ -1234,6 +1236,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // Local only: the fakts discovery document has no `revocation_endpoint`,
       // so the refresh token stays valid server-side until it expires.
       const book = await persistBook((current) => removeProfileFromBook(current, profileId));
+      forgetMediaGrants(profileId);
 
       if (wasActive) park();
 
@@ -1249,6 +1252,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     // which deployment this machine talks to.
     const lastEndpoint = store.getState().profileBook.lastEndpoint;
     await persistBook(() => setLastEndpoint(emptyProfileBook(), lastEndpoint));
+    forgetMediaGrants();
     park();
   }, [store, persistBook, park]);
 

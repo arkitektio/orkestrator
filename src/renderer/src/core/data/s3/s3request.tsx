@@ -28,6 +28,13 @@ export type S3SigningCredentials = {
    * lasting the rest of the current UTC hour plus one more.
    */
   expiresAt?: number;
+  /**
+   * Absolute ms timestamp the grant was issued. When present, presigned URLs
+   * are dated to it instead of the UTC hour, so an object keeps one URL (one
+   * HTTP cache entry) for the grant's whole life. Stamp it once on arrival
+   * (see `stampGrant`), like `expiresAt`.
+   */
+  signedAt?: number;
 };
 
 const HOUR_MS = 3_600_000;
@@ -50,6 +57,21 @@ export const grantExpiresAt = (
     ? issuedAt + grant.expiresIn * 1000
     : fallbackExpiresAt(issuedAt);
 
+/**
+ * A grant as it ARRIVES, with its issue time and absolute expiry stamped on.
+ * Both are part of the presign memo key and of the URL itself, so stamp once
+ * and keep the result: every later call (and every window sharing the stored
+ * grant) then signs each object to the same URL.
+ */
+export const stampGrant = <G extends { expiresIn?: number | null }>(
+  grant: G,
+  issuedAt: number = Date.now(),
+): G & { signedAt: number; expiresAt: number } => ({
+  ...grant,
+  signedAt: issuedAt,
+  expiresAt: grantExpiresAt(grant, issuedAt),
+});
+
 /** The runner's config shape for one object URL under `credentials`. */
 export const s3FetchConfigFor = (url: string, credentials: S3SigningCredentials): S3FetchConfig => ({
   accessKey: credentials.accessKey,
@@ -57,13 +79,14 @@ export const s3FetchConfigFor = (url: string, credentials: S3SigningCredentials)
   sessionToken: credentials.sessionToken,
   region: credentials.region,
   expiresAt: credentials.expiresAt ?? fallbackExpiresAt(Date.now()),
+  signedAt: credentials.signedAt,
   baseUrl: url,
   storeId: url,
 });
 
 /**
- * A presigned GET URL for `url`, memoized per (credential identity, UTC hour,
- * object) by the runner. This is what an `<img src>` or a three.js loader
+ * A presigned GET URL for `url`, memoized per (credential identity, issue time
+ * or else UTC hour, object) by the runner. This is what an `<img src>` or a three.js loader
  * should be handed: no headers, so no CORS preflight, and the URL is a stable
  * HTTP cache key — the same object viewed from several cards is fetched once
  * and served from Chromium's cache after that.

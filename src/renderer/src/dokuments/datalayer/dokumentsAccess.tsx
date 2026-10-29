@@ -1,5 +1,5 @@
-import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
-import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
+import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { presignS3Url, stampGrant } from "@/core/data/s3/s3request";
 import { useDokuments } from "@/dokuments/api/funcs";
 import {
   MediaAccessGrantFragment,
@@ -11,43 +11,32 @@ import {
 import { ApolloClient } from "@apollo/client";
 import React from "react";
 
-type DokumentsMediaCredentials = MediaAccessGrantFragment & { expiresAt: number };
-
-const CREDENTIAL_REFRESH_SKEW_MS = 60_000;
+type DokumentsMediaCredentials = MediaAccessGrantFragment & { signedAt: number; expiresAt: number };
 
 // Grants are per store (`requestMediaAccess` takes a `storeId`), so they are
-// cached per store id; a fresh grant per mount would presign to a new URL
-// each time and defeat the HTTP cache.
-const grantCache = new Map<string, Promise<DokumentsMediaCredentials>>();
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getCredentials = (store: MediaStoreFragment, client: ApolloClient<any>): Promise<DokumentsMediaCredentials> => {
-  const cached = grantCache.get(store.id);
-  if (cached) return cached;
-
-  const request = client
-    .mutate<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>({
-      mutation: RequestMediaAccessDocument,
-      variables: { input: { storeId: store.id } },
-    })
-    .then(({ data }) => {
+// shared per store id, across windows and launches (`sharedGrant`); a fresh
+// grant per mount would presign to a new URL each time and defeat the HTTP
+// cache. No profile: this window only.
+const getCredentials = (
+  store: MediaStoreFragment,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null,
+): Promise<DokumentsMediaCredentials> =>
+  sharedGrant(
+    mediaGrantKey("dokuments", profileId ?? "", datalayer, `store:${store.id}`),
+    async () => {
+      const { data } = await client.mutate<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>({
+        mutation: RequestMediaAccessDocument,
+        variables: { input: { storeId: store.id } },
+      });
       const grant = data?.requestMediaAccess;
       if (!grant) throw new Error("Failed to get read credentials for the file");
-      const credentials: DokumentsMediaCredentials = { ...grant, expiresAt: grantExpiresAt(grant) };
-      const ttl = Math.max(0, credentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS - Date.now());
-      setTimeout(() => {
-        if (grantCache.get(store.id) === request) grantCache.delete(store.id);
-      }, ttl);
-      return credentials;
-    })
-    .catch((error) => {
-      if (grantCache.get(store.id) === request) grantCache.delete(store.id);
-      throw error;
-    });
-
-  grantCache.set(store.id, request);
-  return request;
-};
+      return stampGrant(grant);
+    },
+    { share: profileId !== null },
+  );
 
 /** A presigned URL for `store`, signed client-side from its read grant. */
 export const getDokumentsMediaUrl = async (
@@ -55,8 +44,9 @@ export const getDokumentsMediaUrl = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: ApolloClient<any>,
   datalayer: string,
+  profileId: string | null = null,
 ): Promise<string> => {
-  const credentials = await getCredentials(store, client);
+  const credentials = await getCredentials(store, client, datalayer, profileId);
   return presignS3Url(datalayer + "/" + credentials.bucket + "/" + credentials.key, credentials);
 };
 
@@ -64,13 +54,14 @@ export const getDokumentsMediaUrl = async (
 export const useDokumentsMediaUrl = (store: MediaStoreFragment | null | undefined): string | undefined => {
   const client = useDokuments();
   const datalayer = useDatalayerEndpoint();
+  const profileId = Arkitekt.useActiveProfileId();
   const [url, setUrl] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
     setUrl(undefined);
     if (!store || !datalayer) return;
     let cancelled = false;
-    getDokumentsMediaUrl(store, client, datalayer)
+    getDokumentsMediaUrl(store, client, datalayer, profileId)
       .then((signed) => {
         if (!cancelled) setUrl(signed);
       })
@@ -78,7 +69,7 @@ export const useDokumentsMediaUrl = (store: MediaStoreFragment | null | undefine
     return () => {
       cancelled = true;
     };
-  }, [store, client, datalayer]);
+  }, [store, client, datalayer, profileId]);
 
   return url;
 };

@@ -1,105 +1,97 @@
 import { AssetAccessDocument, AssetAccessQuery, AssetAccessQueryVariables, MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
-import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
+import { presignS3Url, stampGrant } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useRekuest } from "@/rekuest/api/hooks";
 import React from "react";
 
-/** A grant plus the absolute expiry derived from its `expiresIn` — computed
- * once on arrival so the presign memo (keyed on it) stays stable. */
-export type RekuestMediaCredentials = MediaAccessGrantFragment & { expiresAt: number };
-
-const CREDENTIAL_REFRESH_SKEW_MS = 60_000;
+/** A grant plus its issue time and absolute expiry — stamped once on arrival,
+ * so the presign memo (keyed on both) and the URLs it mints stay stable. */
+export type RekuestMediaCredentials = MediaAccessGrantFragment & { signedAt: number; expiresAt: number };
 
 // Rekuest grants are PER STORE (the mutation takes a `storeId` and answers
-// with that object's key), so they are cached per store id rather than once
-// globally. Without this every mount of a placement model ran the mutation
-// again and — since each grant carries a fresh session token — presigned to a
-// different URL, defeating both the presign memo and the HTTP cache.
-const grantCache = new Map<string, Promise<RekuestMediaCredentials>>();
-
-const getCredentials = (media: MediaStoreFragment, client: ApolloClient<any>): Promise<RekuestMediaCredentials> => {
-  const cached = grantCache.get(media.id);
-  if (cached) return cached;
-
-  const request = client.mutate<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>({
-    mutation: RequestMediaAccessDocument,
-    variables: {
-      input: { storeId: media.id } as RequestMediaAccessInput
-    }
-  }).then(({ data }) => {
-    const grant = data?.requestMediaAccess;
-    if (!grant) {
-      throw new Error("Failed to get media access credentials");
-    }
-    const credentials: RekuestMediaCredentials = { ...grant, expiresAt: grantExpiresAt(grant) };
-    // Drop the entry shortly before the grant dies so the next mount re-mints.
-    const ttl = Math.max(0, credentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS - Date.now());
-    setTimeout(() => {
-      if (grantCache.get(media.id) === request) grantCache.delete(media.id);
-    }, ttl);
-    return credentials;
-  }).catch((error) => {
-    // Do not cache failures: the next call retries.
-    if (grantCache.get(media.id) === request) grantCache.delete(media.id);
-    throw error;
-  });
-
-  grantCache.set(media.id, request);
-  return request;
-};
+// with that object's key), so they are shared per store id. Each grant carries
+// a fresh session token and so presigns to a different URL: one grant per
+// store, kept across windows and launches (`sharedGrant`), is what lets the
+// presign memo and the HTTP cache hit. No profile: this window only.
+const getCredentials = (
+  media: MediaStoreFragment,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null,
+): Promise<RekuestMediaCredentials> =>
+  sharedGrant(
+    mediaGrantKey("rekuest", profileId ?? "", datalayer, `store:${media.id}`),
+    async () => {
+      const { data } = await client.mutate<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>({
+        mutation: RequestMediaAccessDocument,
+        variables: {
+          input: { storeId: media.id } as RequestMediaAccessInput
+        }
+      });
+      const grant = data?.requestMediaAccess;
+      if (!grant) {
+        throw new Error("Failed to get media access credentials");
+      }
+      return stampGrant(grant);
+    },
+    { share: profileId !== null },
+  );
 
 /**
  * A presigned URL for the object `credentials` grant access to. Plain https,
  * loadable by three.js loaders directly; memoized by the signer per
- * (credential, UTC hour, object), so `useGLTF`'s own URL-keyed cache also
+ * (credential, issue time, object), so `useGLTF`'s own URL-keyed cache also
  * hits across remounts.
  */
 export const createMediaUrl = (_media: MediaStoreFragment, datalayer: string, credentials: RekuestMediaCredentials) =>
   presignS3Url(datalayer + "/" + credentials.bucket + "/" + credentials.key, credentials);
 
 /** `createMediaUrl` with the grant fetched (and cached per store) via `client`. */
-export const getRekuestMediaUrl = async (media: MediaStoreFragment, client: ApolloClient<any>, datalayer: string): Promise<string> => {
-  const credentials = await getCredentials(media, client);
+export const getRekuestMediaUrl = async (
+  media: MediaStoreFragment,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null = null,
+): Promise<string> => {
+  const credentials = await getCredentials(media, client, datalayer, profileId);
   return createMediaUrl(media, datalayer, credentials);
 };
 
 // An asset's grant comes off its store (`accessGrant`): a kulisse store for a
-// model, a media store for an image. Cached per asset ref, as above per store.
-type AssetCredentials = Omit<MediaAccessGrantFragment, "__typename"> & { expiresAt: number };
+// model, a media store for an image. Shared per asset ref, as above per store.
+type AssetCredentials = Omit<MediaAccessGrantFragment, "__typename"> & { signedAt: number; expiresAt: number };
 
-const assetGrantCache = new Map<string, Promise<AssetCredentials>>();
-
-const getAssetCredentials = (ref: string, client: ApolloClient<any>): Promise<AssetCredentials> => {
-  const cached = assetGrantCache.get(ref);
-  if (cached) return cached;
-
-  const request = client.query<AssetAccessQuery, AssetAccessQueryVariables>({
-    query: AssetAccessDocument,
-    variables: { ref },
-    fetchPolicy: "network-only",
-  }).then(({ data }) => {
-    const grant = data?.asset?.file.accessGrant;
-    if (!grant) throw new Error(`No asset ${ref} to read.`);
-    const { __typename: _kind, ...fields } = grant;
-    const credentials: AssetCredentials = { ...fields, expiresAt: grantExpiresAt(grant) };
-    const ttl = Math.max(0, credentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS - Date.now());
-    setTimeout(() => {
-      if (assetGrantCache.get(ref) === request) assetGrantCache.delete(ref);
-    }, ttl);
-    return credentials;
-  }).catch((error) => {
-    if (assetGrantCache.get(ref) === request) assetGrantCache.delete(ref);
-    throw error;
-  });
-
-  assetGrantCache.set(ref, request);
-  return request;
-};
+const getAssetCredentials = (
+  ref: string,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null,
+): Promise<AssetCredentials> =>
+  sharedGrant(
+    mediaGrantKey("rekuest", profileId ?? "", datalayer, `asset:${ref}`),
+    async () => {
+      const { data } = await client.query<AssetAccessQuery, AssetAccessQueryVariables>({
+        query: AssetAccessDocument,
+        variables: { ref },
+        fetchPolicy: "network-only",
+      });
+      const grant = data?.asset?.file.accessGrant;
+      if (!grant) throw new Error(`No asset ${ref} to read.`);
+      const { __typename: _kind, ...fields } = grant;
+      return stampGrant(fields);
+    },
+    { share: profileId !== null },
+  );
 
 /** A presigned URL for the file of the asset `ref`, whichever kind of store holds it. */
-export const getRekuestAssetUrl = async (ref: string, client: ApolloClient<any>, datalayer: string): Promise<string> => {
-  const credentials = await getAssetCredentials(ref, client);
+export const getRekuestAssetUrl = async (
+  ref: string,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null = null,
+): Promise<string> => {
+  const credentials = await getAssetCredentials(ref, client, datalayer, profileId);
   return presignS3Url(datalayer + "/" + credentials.bucket + "/" + credentials.key, credentials);
 };
 
@@ -116,8 +108,13 @@ export const createBlobUrl = async (media: MediaStoreFragment, datalayer: string
 };
 
 /** `createBlobUrl` with the grant fetched (and cached per store) via `client`. */
-export const createBlobedUrl = async (media: MediaStoreFragment, client: ApolloClient<any>, datalayer: string) => {
-  const credentials = await getCredentials(media, client);
+export const createBlobedUrl = async (
+  media: MediaStoreFragment,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null = null,
+) => {
+  const credentials = await getCredentials(media, client, datalayer, profileId);
   return await createBlobUrl(media, datalayer, credentials);
 };
 
@@ -125,6 +122,7 @@ export const WithMediaUrl = (props: { children: (url: string) => React.ReactNode
 
   const endpointUrl = useDatalayerEndpoint();
   const rekuest = useRekuest();
+  const profileId = Arkitekt.useActiveProfileId();
 
   const [url, setUrl] = React.useState<string | null>(null);
 
@@ -134,7 +132,7 @@ export const WithMediaUrl = (props: { children: (url: string) => React.ReactNode
 
     let isMounted = true;
 
-    getRekuestMediaUrl(props.media, rekuest, endpointUrl)
+    getRekuestMediaUrl(props.media, rekuest, endpointUrl, profileId)
       .then((mediaUrl) => {
         if (isMounted) setUrl(mediaUrl);
       })
@@ -144,7 +142,7 @@ export const WithMediaUrl = (props: { children: (url: string) => React.ReactNode
       isMounted = false;
       setUrl(null);
     };
-  }, [props.media, endpointUrl, rekuest]);
+  }, [props.media, endpointUrl, rekuest, profileId]);
 
   if (!url) {
     return null;

@@ -1,16 +1,16 @@
 import { ApolloClient, gql } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useKraph } from "@/kraph/api/funcs";
 import { MediaStoreFragment } from "@/kraph/api/graphql";
 import React from "react";
-import { grantExpiresAt, presignS3Url, S3SigningCredentials } from "@/core/data/s3/s3request";
+import { presignS3Url, S3SigningCredentials, stampGrant } from "@/core/data/s3/s3request";
 import { useNearViewport } from "@/core/data/s3/useNearViewport";
 
 /**
  * Kraph media (category and term images) through an access grant, mirroring
  * `mikroAccess.tsx`. The server-side `MediaStore.presignedUrl` is a
  * compatibility field that only returns the object path now, so nothing
- * here reads it: the client asks for one general grant per session and
+ * here reads it: the client asks for one general grant per profile and
  * signs each object URL itself.
  *
  * The `requestGeneralMediaAccess` mutation is not in the kraph schema yet —
@@ -41,46 +41,36 @@ type GeneralMediaAccessGrant = {
   bucket: string;
 };
 
-export type KraphMediaCredentials = GeneralMediaAccessGrant & { expiresAt: number };
+export type KraphMediaCredentials = GeneralMediaAccessGrant & { signedAt: number; expiresAt: number };
 
-const CREDENTIAL_REFRESH_SKEW_MS = 60_000;
-
-let cachedCredentialsPromise: Promise<KraphMediaCredentials> | null = null;
-let cachedCredentials: KraphMediaCredentials | null = null;
-
-const getCredentials = async (client: ApolloClient<any>): Promise<KraphMediaCredentials> => {
-  const now = Date.now();
-  if (cachedCredentials && now < cachedCredentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS) {
-    return cachedCredentials;
-  }
-  if (cachedCredentialsPromise) {
-    return cachedCredentialsPromise;
-  }
-
-  cachedCredentialsPromise = client
-    .mutate<{ requestGeneralMediaAccess: GeneralMediaAccessGrant }, { input: Record<string, never> }>({
-      mutation: REQUEST_GENERAL_MEDIA_ACCESS,
-      variables: { input: {} },
-    })
-    .then(({ data }) => {
+/**
+ * The profile's kraph media grant on `datalayer`, shared by every window and
+ * kept across launches until it expires (`sharedGrant`), so each image keeps
+ * one URL and Chromium's cache answers. No profile: this window only.
+ */
+const getCredentials = (
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null,
+): Promise<KraphMediaCredentials> =>
+  sharedGrant(
+    mediaGrantKey("kraph", profileId ?? "", datalayer),
+    async () => {
+      const { data } = await client.mutate<
+        { requestGeneralMediaAccess: GeneralMediaAccessGrant },
+        { input: Record<string, never> }
+      >({
+        mutation: REQUEST_GENERAL_MEDIA_ACCESS,
+        variables: { input: {} },
+      });
       const grant = data?.requestGeneralMediaAccess;
       if (!grant) {
         throw new Error("Failed to get kraph media access credentials");
       }
-      const credentials: KraphMediaCredentials = { ...grant, expiresAt: grantExpiresAt(grant) };
-      cachedCredentials = credentials;
-      return credentials;
-    })
-    .catch((err) => {
-      cachedCredentials = null;
-      throw err;
-    })
-    .finally(() => {
-      cachedCredentialsPromise = null;
-    });
-
-  return cachedCredentialsPromise;
-};
+      return stampGrant(grant);
+    },
+    { share: profileId !== null },
+  );
 
 const signingCredentials = (credentials: KraphMediaCredentials): S3SigningCredentials => ({
   accessKey: credentials.accessKey,
@@ -88,6 +78,7 @@ const signingCredentials = (credentials: KraphMediaCredentials): S3SigningCreden
   sessionToken: credentials.sessionToken,
   region: credentials.region,
   expiresAt: credentials.expiresAt,
+  signedAt: credentials.signedAt,
 });
 
 /** The object URL on the datalayer, signed with the session's grant. */
@@ -95,8 +86,9 @@ export const getKraphMediaUrl = async (
   media: MediaStoreFragment,
   client: ApolloClient<any>,
   datalayer: string,
+  profileId: string | null = null,
 ): Promise<string> => {
-  const credentials = await getCredentials(client);
+  const credentials = await getCredentials(client, datalayer, profileId);
   return presignS3Url(`${datalayer}/${media.bucket}/${media.key}`, signingCredentials(credentials));
 };
 
@@ -115,6 +107,7 @@ export const WithKraphMediaUrl = (props: {
 }) => {
   const endpointUrl = useDatalayerEndpoint();
   const kraph = useKraph();
+  const profileId = Arkitekt.useActiveProfileId();
 
   const sentinelRef = React.useRef<HTMLSpanElement | null>(null);
   const near = useNearViewport(sentinelRef);
@@ -124,7 +117,7 @@ export const WithKraphMediaUrl = (props: {
     if (!endpointUrl || !props.media || !near) return;
 
     let isMounted = true;
-    getKraphMediaUrl(props.media, kraph, endpointUrl)
+    getKraphMediaUrl(props.media, kraph, endpointUrl, profileId)
       .then((mediaUrl) => {
         if (isMounted) setUrl(mediaUrl);
       })
@@ -139,7 +132,7 @@ export const WithKraphMediaUrl = (props: {
       isMounted = false;
       setUrl(null);
     };
-  }, [props.media, endpointUrl, kraph, near]);
+  }, [props.media, endpointUrl, kraph, near, profileId]);
 
   if (!url) {
     return <span ref={sentinelRef} aria-hidden className="absolute inset-0 pointer-events-none" />;

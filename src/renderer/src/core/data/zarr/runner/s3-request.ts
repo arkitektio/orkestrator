@@ -28,6 +28,13 @@ export interface S3FetchConfig {
   secretKey: string
   sessionToken: string
   storeId: string
+  /**
+   * When the credential was issued (absolute ms). Presigned URLs date their
+   * signature to it instead of the UTC hour, so one object keeps ONE URL — one
+   * HTTP cache entry — for the credential's whole life. Must be fixed per
+   * credential (stamped on arrival), never `Date.now()` per call.
+   */
+  signedAt?: number
 }
 
 const encoder = new TextEncoder()
@@ -338,10 +345,21 @@ const PRESIGN_MAX_EXPIRES_SECONDS = 604_800
  * The presigned URL IS the HTTP cache key, so the same object must presign to
  * the same URL across every worker and across time — a fresh `X-Amz-Date` per
  * request would give every fetch its own cache entry and cache nothing. The
- * date is pinned to the UTC hour floor: deterministic everywhere, and at worst
- * an hour boundary rotates the cache key.
+ * date is pinned to the credential's issue time when it carries one (one URL
+ * for the credential's whole life, in every window that shares it), else to
+ * the UTC hour floor: deterministic everywhere, and at worst an hour boundary
+ * rotates the cache key. An issue time the 7-day presign ceiling cannot span
+ * to the expiry, or one in the future, falls back to the hour floor.
  */
-function presignPinnedTime(now: number): number {
+function presignPinnedTime(config: S3FetchConfig, now: number): number {
+  const { signedAt, expiresAt } = config
+  if (
+    typeof signedAt === 'number' &&
+    signedAt <= now &&
+    expiresAt - signedAt <= PRESIGN_MAX_EXPIRES_SECONDS * 1000
+  ) {
+    return signedAt - (signedAt % 1000)
+  }
   return now - (now % 3_600_000)
 }
 
@@ -427,7 +445,7 @@ async function presignS3Url(
 /** The memoized presigned URL for one (credential window, object) pair. */
 function presignedS3UrlCached(config: S3FetchConfig, url: URL): Promise<string> {
   assertCredentialsValid(config)
-  const pinnedTime = presignPinnedTime(Date.now())
+  const pinnedTime = presignPinnedTime(config, Date.now())
   const memoKey = [
     config.accessKey,
     fingerprint(config.secretKey),
