@@ -31,6 +31,9 @@ vi.mock('@/rekuest/travel/context', async importOriginal => ({
 
 import {ComponentContext, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import {ActionBlokRenderer, runOfTask, unboundOfRun} from './ActionBlokRenderer';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 const frame = () => act(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
 

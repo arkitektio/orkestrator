@@ -6,6 +6,9 @@ import { printBsx } from "@arkitektio/bsx/bsx/print";
 import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/index";
 import basiks from "./basiks.fixture.json";
 import { DefinitionLogo, KabinetBlokLogo } from "./KabinetBlokLogo";
+import { installAppBlokCatalog } from "@/core/blok/testing";
+
+installAppBlokCatalog();
 
 /**
  * `basiks.fixture.json` is what kabinet serves for the basiks app, as v2 trees: its

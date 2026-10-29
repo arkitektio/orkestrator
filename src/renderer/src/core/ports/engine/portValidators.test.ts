@@ -4,7 +4,7 @@ import { runPortValidators } from "./portValidators";
 
 const gtMin = {
   call: {
-    operation: "gt",
+    operation: "cmp.gt",
     arguments: [
       { key: "a", value_path: "value" },
       { key: "b", value_path: "min" },
@@ -38,7 +38,7 @@ describe("runPortValidators", () => {
     const broken = { ...gtMin, call: { operation: "nope.missing", arguments: [] } };
     const messages = runPortValidators([broken], 0, { min: 1 });
     expect(messages).toHaveLength(1);
-    expect(messages[0]).toMatch(/not found/);
+    expect(messages[0]).toMatch(/not a function of the blok language/);
   });
 
   it("handles missing or empty validator lists", () => {

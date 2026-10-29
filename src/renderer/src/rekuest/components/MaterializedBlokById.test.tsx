@@ -4,6 +4,9 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import MaterializedBlokById from './MaterializedBlokById';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 /** `<Text text={args.note} />`, opened for a `note`. */
 const materializedBlok = {

@@ -4,6 +4,9 @@ import {cleanup, render, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TaskEventKind} from '@/rekuest/api/graphql';
 import {ActionLogo} from './ActionLogo';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 /**
  * An action logo draws `task`: null (the kept drawing) until the viewer runs

@@ -7,6 +7,9 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 const SLOW = {timeout: 5000};
 import tree from '@arkitektio/bsx/renderer/bloks/logo/logo.fixture.json';
 import {AgentLogo, BlokLogo} from './BlokLogo';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 /**
  * The first showing of a logo draws its blok and keeps the svg; every later one

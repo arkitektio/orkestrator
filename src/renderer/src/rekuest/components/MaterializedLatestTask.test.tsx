@@ -5,6 +5,9 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TaskEventKind} from '../api/graphql';
 import type {LatestTaskMessage} from '../hooks/latestTaskStore';
 import tree from './latestTaskPanel.fixture.json';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 /**
  * `latestTaskPanel.fixture.json` is the panel of `testing/fake_starmist_app.py` as the
