@@ -72,8 +72,8 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
               {app.latest.flavours.length} flavours
             </span>
             {app.runningCount > 0 && (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <span className="size-1.5 animate-pulse rounded-full bg-current" />
+              <span className="flex items-center gap-1">
+                <span className="size-1.5 animate-pulse rounded-full bg-success" />
                 {app.runningCount} running
               </span>
             )}

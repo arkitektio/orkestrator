@@ -75,7 +75,6 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
   return (
     <KraphEntity.ModelPage
       help={KRAPH_HELP.entity}
-      variant="black"
       object={{ id: data.entity.id }}
       title={data.entity.label || categoryTitle}
       sidebars={

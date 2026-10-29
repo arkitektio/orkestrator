@@ -274,6 +274,7 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
             "mesh — is what restores it.",
           evidence: where,
           remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
+          steps: [SIGN_IN_AGAIN, "If it keeps lapsing, ask the deployment's admin to let this computer into the mesh."],
         });
         break;
       case "needs-machine-auth":
@@ -626,6 +627,10 @@ const dnsFindings = (
         id: "net.dns.nxdomain",
         severity: "blocker",
         title: `${host} does not resolve to an address`,
+        steps: [
+          "If the address is on a private network or VPN, connect to it first.",
+          "Otherwise the deployment's configuration may name it wrong: tell its admin.",
+        ],
         detail:
           "Neither this computer's resolver nor the public DNS servers know " +
           "this name. Either it is misspelled in the deployment's configuration, " +
@@ -718,6 +723,11 @@ const tcpFindings = (probe: NetworkProbeResult): Finding[] => {
         id: "net.tcp.timeout",
         severity: "blocker",
         title: `${host} did not answer on port ${port}`,
+        steps: [
+          "Check that you are on the network (or VPN) the deployment is on.",
+          "Check that the machine is switched on.",
+          "A firewall may be dropping the connection: ask the network's admin.",
+        ],
         detail:
           "The connection was neither accepted nor refused, it was simply " +
           "ignored. That is what a firewall dropping traffic looks like, or a " +
@@ -1053,11 +1063,14 @@ const hubFindings = (input: DiagnoseInput): Finding[] => {
 
   if (!hub.online) {
     const probed = input.network.length > 0;
-    const nothingAnswers = probed && !anyAnswered;
+    // A refusal is the machine answering: it is up, so the verdict is the
+    // server on it (`service.not-running`), and the silent hub only a note.
+    const machineAnswered = notRunningFindings(input).length > 0;
+    const nothingAnswers = probed && !anyAnswered && !machineAnswered;
     return [
       {
         id: "hub.offline",
-        severity: probed && anyAnswered ? "warning" : "blocker",
+        severity: probed && (anyAnswered || machineAnswered) ? "warning" : "blocker",
         title:
           probed && anyAnswered
             ? `${hub.name} has stopped reporting, but its services answer`
@@ -1152,6 +1165,46 @@ const hubAgrees = (input: DiagnoseInput): boolean => {
   return compared.length > 0 && compared.every((comparison) => comparison.verdict === "agree-ok");
 };
 
+/**
+ * The server is down: some machine behind the service's addresses answered
+ * and refused the connection, and no address got through. One sentence for
+ * all of them, because to the user it is one fact.
+ *
+ * Loopback does not count: `localhost` refuses on every computer that is not
+ * the server, so it says nothing about the server.
+ */
+const notRunningFindings = (input: DiagnoseInput): Finding[] => {
+  if (input.network.some((probe) => probe.http.ok)) return [];
+  const refused = input.network.filter(
+    (probe) =>
+      probe.tcp.attempted &&
+      probe.tcp.code === "ECONNREFUSED" &&
+      !probe.viaMeshProxy &&
+      classifyHost(probe.target.host).class !== "loopback",
+  );
+  if (refused.length === 0) return [];
+
+  const first = refused[0].target;
+  const service = first.serviceKey ?? "The service";
+  const port = first.port ?? (first.ssl ? 443 : 80);
+  return [
+    {
+      id: "service.not-running",
+      severity: "blocker",
+      title: `${service} isn't running on ${first.host}`,
+      detail:
+        `The machine answered, but nothing accepted the connection on port ${port}, ` +
+        "so the server is stopped, still starting, or on a different port.",
+      steps: [
+        `Start ${service} on ${first.host}, or ask whoever runs the deployment to.`,
+        "If it was just restarted, give it a moment and retry.",
+        "Still failing? Copy the report and send it to the deployment's admin.",
+      ],
+      evidence: refused.map((probe) => `${probe.url} — ${failureLine(probe) ?? "refused"}`),
+    },
+  ];
+};
+
 /* ──────────────────────────── assembly ────────────────────────────────── */
 
 /**
@@ -1160,6 +1213,18 @@ const hubAgrees = (input: DiagnoseInput): boolean => {
  * but stop them shouting over the one sentence that actually helps.
  */
 const demoteSymptoms = (findings: Finding[]): Finding[] => {
+  // A machine that answers and refuses is up and reachable: the server on it
+  // is not running. Neither the mesh nor the other addresses' silence is what
+  // stands in the way, so they become evidence too.
+  if (findings.some((finding) => finding.id === "service.not-running")) {
+    const SHADOWED = ["net.tcp.refused", "net.tcp.timeout", "net.tcp.unreachable", "net.dns.nxdomain", "net.tcp.mesh-refused"];
+    return findings.map((finding) =>
+      SHADOWED.includes(finding.id) || finding.id.startsWith("mesh.") || finding.id.startsWith("upstream.mesh-control.")
+        ? { ...finding, severity: "info" as const }
+        : finding,
+    );
+  }
+
   const causeBlocker = findings.some(
     (finding) =>
       (finding.id.startsWith("upstream.") || finding.id.startsWith("mesh.") || finding.id.startsWith("hub.")) &&
@@ -1218,6 +1283,7 @@ const diagnoseServices = (input: DiagnoseInput): Finding[] => {
   }
 
   if (systemMeshTargets.length > 0) findings.push(...meshHealthy(input.mesh, uncoveredTargets, findings));
+  findings.push(...notRunningFindings(input));
 
   // Main got through where the app did not — the only finding that points at
   // the app itself rather than at the network.
@@ -1303,6 +1369,10 @@ const upstreamFindings = (
             id: "upstream.coordination.unreachable",
             severity: "blocker",
             title: `This computer cannot reach ${host} either`,
+            steps: [
+              "Check this computer's internet connection.",
+              "Switch off a VPN or proxy that might be in the way, then retry.",
+            ],
             detail:
               "Not even the coordination server answers, so this is not about the " +
               "hub or any one service: this computer is not getting out. Check the " +
@@ -1326,6 +1396,9 @@ const upstreamFindings = (
       title: nothingElse
         ? "This computer is not getting out to the internet at all"
         : "This computer cannot reach the public internet",
+      steps: nothingElse
+        ? ["Check the network connection.", "If a sign-in page (hotel, campus Wi-Fi) is waiting, open a browser and pass it."]
+        : undefined,
       detail: nothingElse
         ? "Not even a well-known public address answers, so the problem is on this " +
           "computer's side: no network connection, a firewall or proxy blocking outbound " +

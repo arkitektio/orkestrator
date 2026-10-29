@@ -4,8 +4,8 @@ import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { Input } from "@/core/ui/input";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Skeleton } from "@/core/ui/skeleton";
-import { cn } from "@/core/util/utils";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowRight,
@@ -20,7 +20,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppStoreQuery, useRepoBloksQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/AppStoreCard";
@@ -29,6 +29,7 @@ import { RepoBlokSection } from "../components/store/RepoBlokCard";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { KABINET_HELP } from "../help";
 import {
+  Chip,
   HardwareBadges,
   InstallButton,
   FeaturedBadge,
@@ -64,29 +65,6 @@ const SORTS: { value: StoreSort; label: string }[] = [
   { value: "name", label: "A–Z" },
 ];
 
-const Chip = ({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      "flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors [&>svg]:size-3.5",
-      active
-        ? "border-foreground bg-foreground text-background"
-        : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-    )}
-  >
-    {children}
-  </button>
-);
-
 const Stat = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col">
     <span className="text-2xl font-semibold tabular-nums tracking-tight">{value}</span>
@@ -97,7 +75,7 @@ const Stat = ({ value, label }: { value: number; label: string }) => (
 );
 
 const FeaturedApp = ({ app }: { app: StoreApp }) => (
-  <div className="relative overflow-hidden rounded-3xl border">
+  <div className="relative overflow-hidden rounded-2xl border">
     <div
       aria-hidden
       className="absolute inset-0 opacity-[0.12] dark:opacity-20"
@@ -108,19 +86,19 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
       className="absolute -right-24 -top-24 size-80 rounded-full opacity-40 blur-3xl"
       style={{ background: appGradient(app.hue) }}
     />
-    <div className="relative grid gap-6 p-6 md:grid-cols-[1fr_auto] md:p-8">
-      <div className="flex flex-col gap-4">
+    <div className="relative grid gap-4 p-4 md:grid-cols-[1fr_auto]">
+      <div className="flex flex-col gap-3">
         <FeaturedBadge />
         <div className="flex items-center gap-4">
-          <AppIcon app={app} size={80} className="size-20 rounded-3xl text-2xl" />
+          <AppIcon app={app} size={64} className="size-16 rounded-2xl text-xl" />
           <div className="min-w-0">
-            <h2 className="truncate text-3xl font-bold tracking-tight">{app.name}</h2>
+            <h2 className="truncate text-2xl font-bold tracking-tight">{app.name}</h2>
             <p className="truncate font-mono text-xs text-muted-foreground">
               {app.identifier} · v{app.latest.version}
             </p>
           </div>
         </div>
-        <p className="line-clamp-2 max-w-xl text-sm text-muted-foreground">
+        <p className="line-clamp-2 text-sm text-muted-foreground">
           {app.definitions.find((d) => d.description)?.description ??
             `Brings ${app.definitions.length} actions to your organization.`}
         </p>
@@ -187,8 +165,8 @@ const Shelf = ({
   );
 
 const LoadingGrid = () => (
-  <div className="flex flex-col gap-6">
-    <Skeleton className="h-64 w-full rounded-3xl" />
+  <div className="flex flex-col gap-4">
+    <Skeleton className="h-48 w-full rounded-2xl" />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <Skeleton key={i} className="h-44 rounded-2xl" />
@@ -198,17 +176,17 @@ const LoadingGrid = () => (
 );
 
 const EmptyStore = () => (
-  <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed px-6 py-20 text-center">
-    <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-      <ShoppingBag className="size-8 text-primary" />
+  <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed p-4">
+    <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+      <ShoppingBag className="size-5 text-primary" />
     </div>
     <div>
-      <h2 className="text-xl font-semibold">The shelves are empty</h2>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">
+      <h2 className="text-base font-semibold">The shelves are empty</h2>
+      <p className="mt-0.5 text-sm text-muted-foreground">
         Add a repository to see apps registered with your organization.
       </p>
     </div>
-    <div className="flex flex-wrap justify-center gap-2">
+    <div className="flex flex-wrap gap-2">
       <DialogButton name="createrepo" dialogProps={{}} size="sm">
         Add a repository
       </DialogButton>
@@ -283,18 +261,18 @@ export const AppStorePage = () => {
         </>
       }
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-4 md:p-6">
+      <div className="flex w-full flex-col gap-5 p-3">
         {/* Header */}
-        <header className="flex flex-col gap-5">
-          <div className="flex flex-wrap items-end justify-between gap-6">
+        <header className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight">Discover apps</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Discover apps</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Browse the apps registered with your organization and the bloks they bring, and deploy them on a running engine.
               </p>
             </div>
             {(apps.length > 0 || repoBlokCount > 0) && (
-              <div className="flex gap-8">
+              <div className="flex gap-6">
                 <Stat value={apps.length} label="Apps" />
                 <Stat value={totals.actions} label="Actions" />
                 <Stat value={totals.flavours} label="Flavours" />
@@ -310,7 +288,7 @@ export const AppStorePage = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search apps, identifiers, actions or bloks…"
-              className="h-11 rounded-full pl-10 pr-10 text-sm"
+              className="h-9 rounded-full pl-10 pr-10 text-sm"
             />
             {search && (
               <button
@@ -362,9 +340,7 @@ export const AppStorePage = () => {
         </header>
 
         {error && !data && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            Could not load the app store: {error.message}
-          </div>
+          <ErrorNote error={error} title="Couldn't load the app store" />
         )}
 
         {loading && !data ? (
@@ -391,7 +367,7 @@ export const AppStorePage = () => {
                   <Badge variant="secondary">{appBloks.length}</Badge>
                 </div>
                 {appBloks.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+                  <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
                     No app brings a panel or scene that matches.
                   </div>
                 ) : (
@@ -407,7 +383,7 @@ export const AppStorePage = () => {
             {browsing && featured && <FeaturedApp app={featured} />}
 
             {browsing && apps.length > 4 && (
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <Shelf
                   title="Fresh releases"
                   description="The latest additions and updates."
@@ -467,7 +443,7 @@ export const AppStorePage = () => {
                 <Badge variant="secondary">{visible.length}</Badge>
               </div>
               {visible.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-14 text-center text-sm text-muted-foreground">
+                <div className="flex flex-col items-start gap-2 rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
                   Nothing matches these filters.
                   <Button
                     variant="outline"

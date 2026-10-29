@@ -14,6 +14,26 @@ fragment Shortcut on Shortcut {
     ...ReturnPort
   }
   allowQuick
+  pinned
+  bindings {
+    ...ShortcutBinding
+  }
+}
+
+fragment ShortcutBinding on ShortcutBinding {
+  id
+  app
+  client
+  device
+  createdAt
+  user {
+    id
+    sub
+  }
+  boundBy {
+    id
+    sub
+  }
 }
 
 fragment ListShortcut on Shortcut {
@@ -36,4 +56,11 @@ fragment ListShortcut on Shortcut {
     ...ReturnPort
   }
   allowQuick
+  pinned
+}
+
+# Read from the cache by the smart menu's pins: a row's own `pinned`, no query of its own.
+fragment ShortcutPin on Shortcut {
+  id
+  pinned
 }

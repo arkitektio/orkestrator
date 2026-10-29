@@ -6,7 +6,7 @@ import { KabinetApproval } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import { ListReleaseApprovalFragment } from "../../api/graphql";
 import { releaseIdentity } from "../../appIdentity";
-import { APPROVAL_STATUS_LABEL, approvalStatus } from "../../lib/approvals";
+import { APPROVAL_STATUS_DOT, APPROVAL_STATUS_LABEL, approvalStatus } from "../../lib/approvals";
 import { AppIcon } from "../AppIcon";
 
 interface Props {
@@ -31,14 +31,8 @@ const TheCard = ({ item }: Props) => {
               {app.name} <span className="font-mono text-xs text-muted-foreground">v{item.release.version}</span>
             </KabinetApproval.DetailLink>
           </div>
-          <span
-            className={cn(
-              "shrink-0 text-xs",
-              status === "active" && "text-emerald-600 dark:text-emerald-400",
-              status === "stale" && "text-amber-600 dark:text-amber-400",
-              status === "revoked" && "text-muted-foreground",
-            )}
-          >
+          <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <span className={cn("size-1.5 rounded-full", APPROVAL_STATUS_DOT[status])} />
             {APPROVAL_STATUS_LABEL[status]}
           </span>
         </div>

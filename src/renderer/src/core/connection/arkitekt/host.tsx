@@ -45,13 +45,13 @@ export const useSelfClient = <C = ApolloClient<any>>(): C | undefined =>
 export const Guard = {
   /** Signed in: the session (lok) is up. */
   Lok: Arkitekt.Guard,
-  Datalayer: serviceGuard("datalayer"),
+  Datalayer: serviceGuard("s3"),
   Livekit: serviceGuard("livekit"),
 };
 
 /**
  * Where lok's media lives: the coordination server's base path, not the
- * `datalayer` service from fakts (that one is the modules' store).
+ * `s3` service from fakts (that one is the modules' store).
  */
 export const useCoordinationEndpoint = (): string | undefined => {
   const baseUrl = useArkitektStore((state) => state.connection?.endpoint?.base_url);
@@ -67,7 +67,7 @@ export const useServiceInstanceId = (serviceKey: string): string | undefined =>
   useArkitektStore((state) => state.connection?.serviceInstanceMap?.[serviceKey]?.identifier);
 
 export const useDatalayerEndpoint = (): string | undefined =>
-  (Arkitekt.usePotentialService("datalayer")?.client as { url?: string } | undefined)?.url;
+  (Arkitekt.usePotentialService("s3")?.client as { url?: string } | undefined)?.url;
 
 export const useLivekit = () => Arkitekt.useService("livekit").client as { url: string };
 

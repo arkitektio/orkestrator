@@ -63,7 +63,7 @@ export const ChartViewport = () => {
   const status = usePlotScopeStatus();
   if (status.phase !== "ready") {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-black p-6 text-center">
+      <div className="dark text-foreground flex h-full w-full items-center justify-center rounded-lg bg-black p-6 text-center">
         <div className="max-w-sm text-sm text-muted-foreground">
           {phaseMessageWith(status, CHART_PHASE_WORDING)}
         </div>
@@ -99,7 +99,7 @@ const ReadyViewport = () => {
   const autoscale = useChartAutoscale();
 
   return (
-    <div className="relative h-full w-full select-none overflow-hidden bg-black [-webkit-user-select:none]">
+    <div className="dark text-foreground relative h-full w-full select-none overflow-hidden rounded-lg bg-black [-webkit-user-select:none]">
       {/* Headless: the row layout follows the stores. */}
       <StackLayoutManager<ChartLayerState> rowOf={rowOf} />
       {/* Hold A to annotate; with no drawing layer yet, the toolbar offers one. */}

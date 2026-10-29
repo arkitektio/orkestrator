@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
 import { cn } from "@/core/util/utils";
 import { ComponentContext } from "@/rekuest/api/graphql";
 import { RekuestAssetHost } from "@/rekuest/scene/RekuestAssetHost";

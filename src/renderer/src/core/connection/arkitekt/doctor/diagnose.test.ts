@@ -218,10 +218,23 @@ describe("tcp findings", () => {
     probe({ tcp, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } });
 
   it("refused means the host is up and the service is not", () => {
-    const finding = byId(run({ network: [tcpProbe({ attempted: true, ok: false, code: "ECONNREFUSED", ms: 4 })] }), "net.tcp.refused");
-    expect(finding?.severity).toBe("blocker");
+    const findings = run({ network: [tcpProbe({ attempted: true, ok: false, code: "ECONNREFUSED", ms: 4 })] });
+    expect(findings[0]).toMatchObject({ id: "service.not-running", severity: "blocker" });
+    expect(findings[0].steps?.length).toBeGreaterThan(0);
+    // the per-address refusal stays, as evidence under the verdict
+    const finding = byId(findings, "net.tcp.refused");
+    expect(finding?.severity).toBe("info");
     expect(finding?.title).toContain("nothing is listening on port 443");
-    expect(finding?.remedy).toMatchObject({ kind: "copy" });
+  });
+
+  it("a refusing localhost alone says nothing about the server", () => {
+    const local = target({ host: "localhost", label: "mikro alias 2" });
+    const findings = run({
+      targets: [local],
+      network: [{ ...tcpProbe({ attempted: true, ok: false, code: "ECONNREFUSED", ms: 1 }), target: local }],
+    });
+    expect(ids(findings)).not.toContain("service.not-running");
+    expect(findings[0].id).toBe("net.tcp.refused");
   });
 
   it("timeout reads as a firewall, not as a missing service", () => {
@@ -571,6 +584,64 @@ describe("built-in mesh findings", () => {
     expect(findings[0].id).toBe("mesh.sidecar.needs-login");
     expect(findings[0].remedy).toEqual({ kind: "manual", instructions: "Sign out of this deployment and sign in again." });
     expect(byId(findings, "net.dns.nxdomain")?.severity).toBe("info");
+  });
+
+  it("lapsed membership, but the other addresses reach the machine and are refused: the server is down", () => {
+    // The unreachable page's case: one address only the mesh could route, the
+    // rest answered by the machine itself with a refusal, the hub silent.
+    const meshHost = target({ host: "hub.mesh.example.org", label: "mikro alias 1", serviceKey: "mikro" });
+    const server = target({ host: "lab-server", label: "mikro alias 2", serviceKey: "mikro" });
+    const local = target({ host: "localhost", label: "mikro alias 3", serviceKey: "mikro" });
+    const refusedProbe = (t: ProbeTarget) =>
+      probe({
+        target: t,
+        url: `https://${t.host}/`,
+        tcp: { attempted: true, ok: false, code: "ECONNREFUSED", ms: 3 },
+        tls: { attempted: false, ok: false },
+        http: { attempted: false, ok: false },
+      });
+    const hub: HubHealthFacts = { name: "lab-hub", online: false, version: "1.4.0", services: {} };
+    const findings = run({
+      context: ctx(CONTROL),
+      targets: [meshHost, server, local],
+      sidecar: sidecarWith("needs-login"),
+      network: [failingProbe({ target: meshHost }), refusedProbe(server), refusedProbe(local)],
+      hub,
+    });
+    expect(findings[0]).toMatchObject({ id: "service.not-running", title: "mikro isn't running on lab-server" });
+    expect(byId(findings, "mesh.sidecar.needs-login")?.severity).toBe("info");
+    expect(byId(findings, "hub.never-reported")?.severity).toBe("info");
+
+    // A hub that stopped reporting does not take the headline from it either.
+    const silent = run({
+      context: ctx(CONTROL),
+      targets: [meshHost, server],
+      sidecar: sidecarWith("needs-login"),
+      network: [failingProbe({ target: meshHost }), refusedProbe(server)],
+      hub: { ...hub, lastSeenAt: "2026-09-23T10:00:00Z" },
+    });
+    expect(silent[0].id).toBe("service.not-running");
+    expect(byId(silent, "hub.offline")?.severity).toBe("warning");
+  });
+
+  it("lapsed membership with only localhost refusing: still the mesh", () => {
+    const meshHost = target({ host: "hub.mesh.example.org", label: "mikro alias 1" });
+    const local = target({ host: "localhost", label: "mikro alias 2" });
+    const findings = run({
+      context: ctx(CONTROL),
+      targets: [meshHost, local],
+      sidecar: sidecarWith("needs-login"),
+      network: [
+        failingProbe({ target: meshHost }),
+        probe({
+          target: local,
+          tcp: { attempted: true, ok: false, code: "ECONNREFUSED", ms: 1 },
+          tls: { attempted: false, ok: false },
+          http: { attempted: false, ok: false },
+        }),
+      ],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.needs-login");
   });
 
   it("names the other node states: awaiting approval, error, connecting, stopped", () => {

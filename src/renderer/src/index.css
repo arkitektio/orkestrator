@@ -6,8 +6,11 @@
 
 /* The tokens, variants and utilities a class means the same by everywhere,
    in its own file so the runtime compiler that styles bloks
-   (`core/blok/tailwind/runtimeTailwind.ts`) reads exactly what the build does. */
+   (`@arkitektio/bsx/tailwind`, given it by `core/blok/platform.ts`) reads exactly what the build does. */
 @import './theme.css';
+/* The blok renderer's own classes (its shadcn copies, its layout): Tailwind does not scan
+   node_modules on its own. */
+@source '../../../node_modules/@arkitektio/bsx/dist';
 
 /* Window-drag regions for the renderer-drawn title bar.
  *
@@ -49,6 +52,14 @@
    Chromium 128 the client rects it reports match the pointer's coordinates. */
 .chrome-zoom {
   zoom: var(--chrome-zoom);
+}
+
+/* The floating rail, tucked away off the window's left edge (`AppLayout`).
+ * Its top row is a window-drag region, and Electron collects drag regions from
+ * the layout, so a translated-away rail could leave one behind over the page,
+ * swallowing clicks there. Out of sight, nothing in it drags. */
+[data-rail-floating="tucked"] .app-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* The command palette's open and close are box animations driven from
@@ -183,15 +194,17 @@
 
   /* Base Neutrals */
   /* Off-white, not white: the page is the quiet surface, and what sits on it
-     (cards, menus) is the brighter one. `backgroundpaired` is where the page
+     (cards, menus) is the brighter one. It must stand clearly above the rail
+     (`--sidebar`) it floats on: within a few points of it, rail, page and
+     the settings pane all read as one grey. `backgroundpaired` is where the page
      gradient ends, a faint tint toward the corner; it must stay LIGHT here
      (a dark one made every light page fade to charcoal). */
-  --background: oklch(0.972 0.004 var(--brand-hue));
+  --background: oklch(0.985 0.003 var(--brand-hue));
   --backgroundpaired: oklch(0.93 0.012 var(--brand-hue));
   --foreground: oklch(0.145 0.005 var(--brand-hue));
 
   /* Surfaces */
-  --card: oklch(0.993 0.002 var(--brand-hue));
+  --card: oklch(0.998 0.001 var(--brand-hue));
   --card-foreground: var(--foreground);
   --popover: var(--card);
   --popover-foreground: var(--foreground);
@@ -204,15 +217,56 @@
   /* Secondary & Accents */
   --secondary: oklch(0.935 0.006 var(--brand-hue));
   --secondary-foreground: oklch(0.21 0.006 var(--brand-hue));
-  --muted: oklch(0.94 0.004 var(--brand-hue));
-  --muted-foreground: oklch(0.5 0.01 var(--brand-hue));
+  --muted: oklch(0.945 0.004 var(--brand-hue));
+  --muted-foreground: oklch(0.46 0.012 var(--brand-hue));
   --accent: oklch(0.93 0.012 var(--brand-hue));
   --accent-foreground: oklch(0.205 0.01 var(--brand-hue));
 
   /* Interactive & Status */
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.885 0.006 var(--brand-hue));
-  --input: oklch(0.885 0.006 var(--brand-hue));
+
+  /* Status roles (blok language v2 theme: success, warning, info). Their hues
+     are fixed, like destructive's, so they stay recognisable; their chroma
+     follows the brand's (--status-chroma). Near the brand hue a status would
+     read as the brand, so it moves away in lightness: --<role>-near is 1 at
+     the brand's own hue, falling to 0 at 40deg apart (cos 40deg = 0.766).
+     Light: a near status gets darker; dark: lighter. The brand itself sits
+     around L 0.7-0.75 in both. */
+  --status-chroma: clamp(0.07, calc(var(--brand-chroma) * 1.05), 0.2);
+  --success-near: max(0, calc((cos(calc((var(--brand-hue) - 150) * 1deg)) - 0.766) / 0.234));
+  --warning-near: max(0, calc((cos(calc((var(--brand-hue) - 75) * 1deg)) - 0.766) / 0.234));
+  --info-near: max(0, calc((cos(calc((var(--brand-hue) - 240) * 1deg)) - 0.766) / 0.234));
+  --success: oklch(calc(0.6 - 0.16 * var(--success-near)) var(--status-chroma) 150);
+  --success-foreground: oklch(0.985 calc(var(--status-chroma) * 0.15) 150);
+  --success-soft: oklch(calc(0.95 - 0.06 * var(--success-near)) calc(var(--status-chroma) * 0.35) 150);
+  --warning: oklch(calc(0.7 - 0.16 * var(--warning-near)) var(--status-chroma) 75);
+  --warning-foreground: oklch(0.24 calc(var(--status-chroma) * 0.4) 60);
+  --warning-soft: oklch(calc(0.96 - 0.06 * var(--warning-near)) calc(var(--status-chroma) * 0.35) 85);
+  --info: oklch(calc(0.6 - 0.16 * var(--info-near)) var(--status-chroma) 240);
+  --info-foreground: oklch(0.985 calc(var(--status-chroma) * 0.15) 240);
+  --info-soft: oklch(calc(0.95 - 0.06 * var(--info-near)) calc(var(--status-chroma) * 0.35) 240);
+
+  /* Spectral roles (blok language v2 theme.spectrum): fixed hues for data
+     that has a colour of its own (a fluorophore's emission, a laser line).
+     Their chroma follows the brand's intensity like the status roles', but
+     unlike those they never shift near the brand hue. */
+  --spectrum-chroma: clamp(0.1, calc(var(--brand-chroma) * 1.1), 0.2);
+  --spectrum-violet: oklch(0.55 var(--spectrum-chroma) 300);
+  --spectrum-violet-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 300);
+  --spectrum-blue: oklch(0.58 var(--spectrum-chroma) 260);
+  --spectrum-blue-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 260);
+  --spectrum-cyan: oklch(0.68 var(--spectrum-chroma) 215);
+  --spectrum-cyan-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 215);
+  --spectrum-green: oklch(0.64 var(--spectrum-chroma) 145);
+  --spectrum-green-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 145);
+  --spectrum-yellow: oklch(0.8 var(--spectrum-chroma) 100);
+  --spectrum-yellow-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 100);
+  --spectrum-orange: oklch(0.7 var(--spectrum-chroma) 60);
+  --spectrum-orange-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 60);
+  --spectrum-red: oklch(0.6 var(--spectrum-chroma) 27);
+  --spectrum-red-soft: oklch(0.95 calc(var(--spectrum-chroma) * 0.35) 27);
+  --border: oklch(0.865 0.008 var(--brand-hue));
+  --input: oklch(0.865 0.008 var(--brand-hue));
   --ring: oklch(from var(--primary) 0.708 calc(c * 0.5) h);
 
   /* Charts */
@@ -224,12 +278,22 @@
 
   --radius: 0.625rem;
 
+  /* The page's own right-hand rail (PageLayout), set off from the page:
+     a touch darker and more tinted than `--muted`. */
+  --page-rail: oklch(0.92 0.008 var(--brand-hue));
+  /* The page card's edge against the window chrome (AppLayout, split panes,
+     the welcome card). Firmer than `--border`: the card's clip-path clips its
+     own shadow, so this line is all that sets it off. */
+  --page-edge: oklch(0.83 0.01 var(--brand-hue));
+
   /* Sidebar */
-  --sidebar: oklch(0.948 0.006 var(--brand-hue));
+  --sidebar: oklch(0.925 0.009 var(--brand-hue));
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
+  /* Darker than the rail: `--accent` is lighter than it now, and a hover
+     must not brighten a row on the rail into the page colour. */
+  --sidebar-accent: oklch(0.885 0.014 var(--brand-hue));
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
@@ -242,13 +306,32 @@
   --logo-brand-strong: oklch(0.36 var(--brand-chroma) var(--brand-hue));
   --logo-brand-soft: oklch(0.84 calc(var(--brand-chroma) * 0.5) var(--brand-hue));
   --logo-surface: var(--card);
+  /* The status pens: the status roles, which already follow the brand's chroma
+     and step away from its hue. */
+  --logo-success: var(--success);
+  --logo-warning: var(--warning);
+  --logo-info: var(--info);
+  /* The spectral pens: the spectral roles. */
+  --logo-spectrum-violet: var(--spectrum-violet);
+  --logo-spectrum-blue: var(--spectrum-blue);
+  --logo-spectrum-cyan: var(--spectrum-cyan);
+  --logo-spectrum-green: var(--spectrum-green);
+  --logo-spectrum-yellow: var(--spectrum-yellow);
+  --logo-spectrum-orange: var(--spectrum-orange);
+  --logo-spectrum-red: var(--spectrum-red);
 }
 
-.dark {
+/* The brand defaults belong to the document, not to every `.dark`: the scene
+   canvas scopes `.dark` onto its own subtree in light mode (`SceneViewport`),
+   and redeclaring the brand there would hide the user's colour (set inline on
+   `<html>` by `brandTheme`) inside it. */
+:root.dark {
   /* --- MASTER THEME CONTROLS --- */
   --brand-hue: 165.057;
   --brand-chroma: 0.14384;
+}
 
+.dark {
   --background: oklch(0% 0 0);
   --backgroundpaired: oklch(34.846% 0.005 var(--brand-hue));
   --foreground: oklch(0.985 0.005 var(--brand-hue));
@@ -270,6 +353,33 @@
   --accent-foreground: var(--foreground);
 
   --destructive: oklch(0.704 0.191 22.216);
+
+  /* Status roles: lighter near the brand hue (see :root). */
+  --success: oklch(calc(0.72 + 0.12 * var(--success-near)) var(--status-chroma) 150);
+  --success-foreground: oklch(0.18 calc(var(--status-chroma) * 0.4) 150);
+  --success-soft: oklch(calc(0.3 + 0.06 * var(--success-near)) calc(var(--status-chroma) * 0.45) 150);
+  --warning: oklch(calc(0.8 + 0.1 * var(--warning-near)) var(--status-chroma) 75);
+  --warning-foreground: oklch(0.2 calc(var(--status-chroma) * 0.4) 60);
+  --warning-soft: oklch(calc(0.32 + 0.06 * var(--warning-near)) calc(var(--status-chroma) * 0.45) 75);
+  --info: oklch(calc(0.72 + 0.12 * var(--info-near)) var(--status-chroma) 240);
+  --info-foreground: oklch(0.18 calc(var(--status-chroma) * 0.4) 240);
+  --info-soft: oklch(calc(0.3 + 0.06 * var(--info-near)) calc(var(--status-chroma) * 0.45) 240);
+
+  /* Spectral roles: per-band dark lightness, no near-brand shift (see :root). */
+  --spectrum-violet: oklch(0.7 var(--spectrum-chroma) 300);
+  --spectrum-violet-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 300);
+  --spectrum-blue: oklch(0.72 var(--spectrum-chroma) 260);
+  --spectrum-blue-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 260);
+  --spectrum-cyan: oklch(0.8 var(--spectrum-chroma) 215);
+  --spectrum-cyan-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 215);
+  --spectrum-green: oklch(0.78 var(--spectrum-chroma) 145);
+  --spectrum-green-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 145);
+  --spectrum-yellow: oklch(0.88 var(--spectrum-chroma) 100);
+  --spectrum-yellow-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 100);
+  --spectrum-orange: oklch(0.8 var(--spectrum-chroma) 60);
+  --spectrum-orange-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 60);
+  --spectrum-red: oklch(0.72 var(--spectrum-chroma) 27);
+  --spectrum-red-soft: oklch(0.3 calc(var(--spectrum-chroma) * 0.45) 27);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(from var(--primary) 0.556 calc(c * 0.5) h);
@@ -280,6 +390,10 @@
   --chart-3: oklch(0.7 0.15 calc(var(--brand-hue) - 3));
   --chart-4: oklch(0.6 0.13 calc(var(--brand-hue) - 2));
   --chart-5: oklch(0.51 0.1 calc(var(--brand-hue) + 1));
+
+  /* Lifted off the black page, but well under the cards (0.205). */
+  --page-rail: oklch(0.13 0.006 var(--brand-hue));
+  --page-edge: oklch(1 0 0 / 14%);
 
   --sidebar: var(--card);
   --sidebar-foreground: var(--foreground);
@@ -297,6 +411,19 @@
   --logo-brand-strong: oklch(0.87 calc(var(--brand-chroma) * 0.75) var(--brand-hue));
   --logo-brand-soft: oklch(0.42 calc(var(--brand-chroma) * 0.6) var(--brand-hue));
   --logo-surface: var(--card);
+  /* The status pens: the status roles, which already follow the brand's chroma
+     and step away from its hue. */
+  --logo-success: var(--success);
+  --logo-warning: var(--warning);
+  --logo-info: var(--info);
+  /* The spectral pens: the spectral roles. */
+  --logo-spectrum-violet: var(--spectrum-violet);
+  --logo-spectrum-blue: var(--spectrum-blue);
+  --logo-spectrum-cyan: var(--spectrum-cyan);
+  --logo-spectrum-green: var(--spectrum-green);
+  --logo-spectrum-yellow: var(--spectrum-yellow);
+  --logo-spectrum-orange: var(--spectrum-orange);
+  --logo-spectrum-red: var(--spectrum-red);
 }
 
 /* The window surface under glass: the sidebar colour, at the share the

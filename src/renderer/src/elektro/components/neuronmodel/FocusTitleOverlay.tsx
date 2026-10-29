@@ -20,7 +20,7 @@ export const FocusTitleOverlay = ({
   cell?: { id: string; compoundId?: string | null } | null;
   facts: React.ReactNode[];
 }) => (
-  <div className="pointer-events-none absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
+  <div className="dark text-foreground pointer-events-none absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
     <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
       <span className="shrink-0 uppercase tracking-widest">{kind}</span>
       {model && (

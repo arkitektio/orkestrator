@@ -57,7 +57,7 @@ export const ImageLayerCard = memo(function ImageLayerCard({
           layout + paint of the whole editor subtree on every toggle and kept
           animating during store-driven re-renders — the cards snap instead. */}
       <CollapsibleContent className="overflow-hidden">
-        <div className="border-t border-white/10">
+        <div className="border-t border-foreground/10">
           <LayerGraphFlyout
             inline
             editor={editor}

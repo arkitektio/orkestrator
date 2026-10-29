@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { parseBsxSafe } from "@/core/blok/bsx/parse";
-import { defaultBlokCatalog } from "@/core/blok/renderer/catalog";
-import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@/core/blok/renderer/bloks/logo";
-import { normalizeBlokComponentTree, preflightBlokDocument } from "@/core/blok/renderer/runtime";
+import { parseBsxSafe } from "@arkitektio/bsx/bsx/parse";
+import { defaultBlokCatalog } from "@/core/blok/catalog";
+import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@arkitektio/bsx/catalogs/parts/logo";
+import { normalizeBlokComponentTree, preflightBlokDocument } from "@arkitektio/bsx/renderer/runtime/index";
 import { HOST_ACTION_LOGOS } from "./logos";
 
 const attributes = (source: string, name: string) =>
   [...source.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((match) => match[1]);
 
 describe("the host actions' logos", () => {
-  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an ActionLogo this catalog draws, in the palette", (_, source) => {
+  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an ActionLogo this catalog draws, in the pens", (_, source) => {
     const parsed = parseBsxSafe(source);
     if (!parsed.ok) throw parsed.error;
     expect(parsed.tree.component).toBe("ActionLogo");
@@ -20,7 +20,7 @@ describe("the host actions' logos", () => {
     expect(preflight.invalidNodes.size).toBe(0);
 
     const paints = [...attributes(source, "fill"), ...attributes(source, "stroke")];
-    expect(paints.filter((paint) => !(LOGO_PAINT_TOKENS as readonly string[]).includes(paint))).toEqual([]);
+    expect(paints.filter((paint) => !LOGO_PAINT_TOKENS.includes(paint))).toEqual([]);
     expect(
       attributes(source, "animate").filter((name) => !(LOGO_ANIMATIONS as readonly string[]).includes(name)),
     ).toEqual([]);

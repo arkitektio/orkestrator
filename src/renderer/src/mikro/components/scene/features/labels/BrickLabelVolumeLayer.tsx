@@ -16,13 +16,13 @@ import { intersectLocalVolumeBox, localCropClip } from "../bricks/probeMath";
 import { useCropClipUniforms } from "../bricks/layers/useCropClipUniforms";
 import { marchResidentBricks } from "../bricks/octree/brickSampling";
 import { useBrushSkeletonStoreApi } from "../annotations/enhancers/brushSkeletonStore";
-import { DESIGN_TOOL_GESTURES, useModeStore } from "../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import {
   clickProbeEnabled,
   hoverProbeEnabled,
   type ProbeGateInput,
 } from "../../platform/probe/probeGating";
-import { effectiveProbeLayerId, layerAnswersProbe } from "../../platform/probe/probeTargeting";
+import { effectiveHitLayerId, layerAnswersProbe } from "../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../platform/probe/probeTypes";
 import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
@@ -101,6 +101,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   const brickStoreApi = useBrickStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
 
+  const modeStoreApi = useModeStoreApi();
   const interactionMode = useModeStore((s) => s.interactionMode);
   const probeFollowsCursor = useModeStore((s) => s.probeFollowsCursor);
   const designTool = useModeStore((s) => s.designTool);
@@ -242,7 +243,11 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
 
   const answersProbe = () =>
     layerAnswersProbe(
-      effectiveProbeLayerId(viewerStoreApi.getState().probeLayerId, sceneStoreApi.getState().layers),
+      effectiveHitLayerId(
+        viewerStoreApi.getState(),
+        sceneStoreApi.getState().layers,
+        modeStoreApi.getState().displayMode === "3D",
+      ),
       layerId,
     );
 
@@ -305,8 +310,8 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
           updateProbe(null);
         }}
         onPointerDown={!clickEnabled ? undefined : (e) => {
-          // ONE layer answers, always — the pinned probe target, by default
-          // the first visible layer (`effectiveProbeLayerId`). Declining
+          // ONE layer answers, always — the hit target, by default the data
+          // layer (`effectiveHitLayerId`). Declining
           // WITHOUT stopPropagation lets the event fall through to it.
           if (!answersProbe()) return;
           if (designClick && designTool) {

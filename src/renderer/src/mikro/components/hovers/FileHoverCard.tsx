@@ -47,7 +47,7 @@ export const FileHoverCard = ({ object }: { object: Object }) => {
           <HoverRow label="Type" value={file.contentType} />
         )}
         {/* No "Origins" row: `File.origins` is gone from the mikro schema. */}
-        <HoverRow label="Organization" value={file.organization.slug} />
+        <HoverRow label="Organization" value={file.organization.identifier} />
       </div>
 
     </HoverShell>

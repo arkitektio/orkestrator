@@ -46,7 +46,6 @@ export const ModelWorkspacePage = asDetailQueryRoute(
 
     return (
       <ElektroModelWorkspace.ModelPage
-        variant="black"
         title={workspace.name}
         help={ELEKTRO_HELP.modelWorkspace}
         object={workspace}
@@ -57,7 +56,7 @@ export const ModelWorkspacePage = asDetailQueryRoute(
         }
       >
         <div className="h-full w-full grid grid-cols-12 grid-reverse gap-4 pointers-events-none p-4">
-          <div className="col-span-3 @container bg-black bg-clip-padding backdrop-filter backdrop-blur-2xl bg-opacity-10 z-100 overflow-auto flex flex-col">
+          <div className="col-span-3 @container bg-muted/40 backdrop-blur-2xl z-100 overflow-auto flex flex-col">
             <div className="p-3">
               <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
                 {workspace.name}

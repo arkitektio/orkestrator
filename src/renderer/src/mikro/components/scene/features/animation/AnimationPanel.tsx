@@ -49,22 +49,22 @@ const TourRow = ({ id, name, waypointCount, durationMs }: {
   const playing = playingId === id;
 
   return (
-    <div className="flex items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 py-1">
+    <div className="flex items-center gap-1 rounded border border-foreground/10 bg-foreground/5 px-1.5 py-1">
       <button
         type="button"
         className="min-w-0 flex-1 text-left"
         onClick={() => loadDraft(animations.find((a) => a.id === id) ?? null)}
         title="Edit this tour's stops"
       >
-        <div className="truncate text-[11px] text-white/90">{name}</div>
-        <div className="text-[9px] text-white/40">
+        <div className="truncate text-[11px] text-foreground/90">{name}</div>
+        <div className="text-[9px] text-foreground/40">
           {waypointCount} stops · {formatSeconds(durationMs)}
         </div>
       </button>
       <Button
         size="icon"
         variant="ghost"
-        className="h-6 w-6 text-white/70"
+        className="h-6 w-6 text-foreground/70"
         title={playing ? "Stop" : "Play"}
         onClick={() => (playing ? stop() : play(id, { loop }))}
       >
@@ -73,7 +73,7 @@ const TourRow = ({ id, name, waypointCount, durationMs }: {
       <Button
         size="icon"
         variant="ghost"
-        className="h-6 w-6 text-white/50 hover:text-red-400"
+        className="h-6 w-6 text-foreground/50 hover:text-red-400"
         title="Delete tour"
         disabled={saving}
         onClick={() => void remove(id).catch(reportErrorAs("Couldn't delete the tour"))}
@@ -96,18 +96,18 @@ const DraftRow = ({ index }: { index: number }) => {
   const isFirst = index === 0;
 
   return (
-    <div className="rounded border border-white/10 bg-white/5 p-1.5">
+    <div className="rounded border border-foreground/10 bg-foreground/5 p-1.5">
       <div className="flex items-center gap-1">
-        <MapPin className="h-3 w-3 shrink-0 text-white/40" />
+        <MapPin className="h-3 w-3 shrink-0 text-foreground/40" />
         <Input
           value={waypoint.name}
           onChange={(e) => update(waypoint.key, { name: e.target.value })}
-          className="h-6 flex-1 border-white/10 bg-black/30 text-[11px] text-white/90"
+          className="h-6 flex-1 border-foreground/10 bg-background/30 text-[11px] text-foreground/90"
         />
         <Button
           size="icon"
           variant="ghost"
-          className="h-5 w-5 text-white/50"
+          className="h-5 w-5 text-foreground/50"
           disabled={isFirst}
           title="Move earlier"
           onClick={() => move(waypoint.key, -1)}
@@ -117,7 +117,7 @@ const DraftRow = ({ index }: { index: number }) => {
         <Button
           size="icon"
           variant="ghost"
-          className="h-5 w-5 text-white/50"
+          className="h-5 w-5 text-foreground/50"
           disabled={isLast}
           title="Move later"
           onClick={() => move(waypoint.key, 1)}
@@ -127,7 +127,7 @@ const DraftRow = ({ index }: { index: number }) => {
         <Button
           size="icon"
           variant="ghost"
-          className="h-5 w-5 text-white/50 hover:text-red-400"
+          className="h-5 w-5 text-foreground/50 hover:text-red-400"
           title="Remove stop"
           onClick={() => removeWaypoint(waypoint.key)}
         >
@@ -138,7 +138,7 @@ const DraftRow = ({ index }: { index: number }) => {
       {/* The first stop is where the tour STARTS, so nothing travels to it —
           the server ignores its duration and easing, and so does the player. */}
       {isFirst ? (
-        <div className="pl-4 pt-1 text-[9px] text-white/40">Starting pose</div>
+        <div className="pl-4 pt-1 text-[9px] text-foreground/40">Starting pose</div>
       ) : (
         <div className="flex items-center gap-1 pl-4 pt-1">
           <Input
@@ -149,13 +149,13 @@ const DraftRow = ({ index }: { index: number }) => {
             onChange={(e) =>
               update(waypoint.key, { durationMs: Math.max(0, Number(e.target.value) || 0) })
             }
-            className="h-6 w-16 border-white/10 bg-black/30 text-[10px] text-white/90"
+            className="h-6 w-16 border-foreground/10 bg-background/30 text-[10px] text-foreground/90"
             title="Travel time to this stop (ms)"
           />
           <select
             value={waypoint.easing}
             onChange={(e) => update(waypoint.key, { easing: e.target.value as Easing })}
-            className="h-6 flex-1 rounded border border-white/10 bg-black/30 px-1 text-[10px] text-white/90"
+            className="h-6 flex-1 rounded border border-foreground/10 bg-background/30 px-1 text-[10px] text-foreground/90"
             title="How the camera eases along that travel"
           >
             {Object.values(Easing).map((easing) => (
@@ -190,7 +190,7 @@ type AnimationPanelProps = {
 const panelClass = (variant: AnimationPanelProps["variant"]) =>
   variant === "sidebar"
     ? "flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
-    : "pointer-events-auto flex max-h-[60vh] w-60 flex-col gap-2 overflow-y-auto rounded-lg border border-black/10 bg-black/40 p-2 backdrop-blur-md";
+    : "pointer-events-auto flex max-h-[60vh] w-60 flex-col gap-2 overflow-y-auto rounded-lg border border-background/10 bg-background/40 p-2 backdrop-blur-md";
 
 /**
  * A tour's poses are camera positions in the XY view's space. Turned to
@@ -204,11 +204,11 @@ export const AnimationPanel = ({ variant = "floating" }: AnimationPanelProps = {
   if (isIdentityView(view)) return <AnimationPanelBody variant={variant} />;
   return (
     <div className={panelClass(variant)}>
-      <div className="flex items-center gap-1 text-[10px] font-medium text-white/60">
+      <div className="flex items-center gap-1 text-[10px] font-medium text-foreground/60">
         <Clapperboard className="h-3 w-3" />
         <span>Animations</span>
       </div>
-      <p className="text-[10px] text-white/50">
+      <p className="text-[10px] text-foreground/50">
         Tours are recorded and played in the XY view. Switch the plane back to XY to play or edit them.
       </p>
     </div>
@@ -255,7 +255,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
     <div
       className={panelClass(variant)}
     >
-      <div className="flex items-center gap-1 text-[10px] font-medium text-white/60">
+      <div className="flex items-center gap-1 text-[10px] font-medium text-foreground/60">
         <Clapperboard className="h-3 w-3" />
         <span>Animations</span>
       </div>
@@ -271,7 +271,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
               durationMs={tourDurationMs(animation.waypoints)}
             />
           ))}
-          <label className="flex items-center gap-1 pt-0.5 text-[9px] text-white/50">
+          <label className="flex items-center gap-1 pt-0.5 text-[9px] text-foreground/50">
             <input
               type="checkbox"
               checked={loop}
@@ -283,12 +283,12 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
         </div>
       )}
 
-      <div className="h-px bg-white/10" />
+      <div className="h-px bg-foreground/10" />
 
-      <div className="flex items-center justify-between text-[10px] font-medium text-white/60">
+      <div className="flex items-center justify-between text-[10px] font-medium text-foreground/60">
         <span>{editingId ? "Editing tour" : "New tour"}</span>
         {draft.length > 0 && (
-          <span className="rounded bg-white/10 px-1 font-mono text-white/90">
+          <span className="rounded bg-foreground/10 px-1 font-mono text-foreground/90">
             {formatSeconds(draftDuration)}
           </span>
         )}
@@ -297,7 +297,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
       <Button
         size="sm"
         variant="outline"
-        className="h-7 border-white/10 bg-white/5 text-[10px] text-white/80"
+        className="h-7 border-foreground/10 bg-foreground/5 text-[10px] text-foreground/80"
         onClick={captureWaypoint}
       >
         <MapPin className="mr-1 h-3 w-3" />
@@ -305,7 +305,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
       </Button>
 
       {draft.length === 0 ? (
-        <p className="text-[10px] leading-4 text-white/40">
+        <p className="text-[10px] leading-4 text-foreground/40">
           Fly the scene, then pin each pose you want the tour to travel through.
         </p>
       ) : (
@@ -322,7 +322,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
             value={name}
             placeholder="Tour name"
             onChange={(e) => setName(e.target.value)}
-            className="h-7 border-white/10 bg-black/30 text-[11px] text-white/90"
+            className="h-7 border-foreground/10 bg-background/30 text-[11px] text-foreground/90"
           />
           <div className="flex gap-1">
             <Button
@@ -336,7 +336,7 @@ const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-[10px] text-white/60"
+              className="h-7 text-[10px] text-foreground/60"
               onClick={clearDraft}
             >
               Discard

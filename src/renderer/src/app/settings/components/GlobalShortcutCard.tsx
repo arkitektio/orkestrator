@@ -1,13 +1,13 @@
-import { acceleratorFromKeyPress, formatAccelerator } from "@/core/command/accelerator";
+import { shortcutConflict } from "@/core/command/shortcuts";
 import { useSettingsStore } from "@/core/settings/store/SettingsContext";
 import type { Settings } from "@/core/settings/store/validator";
-import { Button } from "@/core/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { FormDescription, FormItem, FormLabel } from "@/core/ui/form";
 import { Switch } from "@/core/ui/switch";
 import { Keyboard } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useController } from "react-hook-form";
+import { useCallback } from "react";
+import { useController, useFormContext } from "react-hook-form";
+import { ShortcutRecorder } from "./ShortcutRecorder";
 
 const DEFAULT_SHORTCUT = "CommandOrControl+Shift+Space";
 
@@ -29,29 +29,16 @@ export const GlobalShortcutCard = () => {
     name: "globalPaletteShortcut",
   });
   const status = useSettingsStore((s) => s.globalShortcutStatus);
-  const [recording, setRecording] = useState(false);
+  const { getValues } = useFormContext<Settings>();
+  // Pressed inside the app, a system-wide shortcut fires too, so it may not
+  // share a combination with an in-app one either.
+  const conflict = useCallback(
+    (accelerator: string) => shortcutConflict(accelerator, "globalPaletteShortcut", getValues())?.label ?? null,
+    [getValues],
+  );
   const enabled = field.value !== null;
   // The web build has no main process, so nothing could register it.
   const available = typeof window !== "undefined" && !!window.api?.palette;
-
-  useEffect(() => {
-    if (!recording) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      // Swallow everything while recording, the palette's own ⌘K included.
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (event.key === "Escape") {
-        setRecording(false);
-        return;
-      }
-      const accelerator = acceleratorFromKeyPress(event);
-      if (!accelerator) return; // modifiers still being held
-      field.onChange(accelerator);
-      setRecording(false);
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [recording, field]);
 
   const refused =
     status && (status.status === "taken" || status.status === "invalid") ? STATUS_TEXT[status.status] : null;
@@ -84,26 +71,13 @@ export const GlobalShortcutCard = () => {
         {enabled && (
           <FormItem>
             <FormLabel>Shortcut</FormLabel>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!available}
-                onClick={() => setRecording(true)}
-              >
-                {recording ? "Press a shortcut…" : formatAccelerator(field.value ?? DEFAULT_SHORTCUT)}
-              </Button>
-              {field.value !== DEFAULT_SHORTCUT && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => field.onChange(DEFAULT_SHORTCUT)}
-                >
-                  Reset
-                </Button>
-              )}
-            </div>
+            <ShortcutRecorder
+              value={field.value}
+              defaultValue={DEFAULT_SHORTCUT}
+              onChange={field.onChange}
+              disabled={!available}
+              conflict={conflict}
+            />
             {refused ? (
               <p className="text-sm text-destructive">{refused}</p>
             ) : (

@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/core/smart/registry", () => ({ smartRegistry: { findModel: vi.fn() } }));
 
-import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@/core/blok/renderer/bloks/logo";
+import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@arkitektio/bsx/catalogs/parts/logo";
 import "./actions";
-import { parseBsxSafe } from "@/core/blok/bsx/parse";
-import { defaultBlokCatalog } from "@/core/blok/renderer/catalog";
-import { normalizeBlokComponentTree, preflightBlokDocument } from "@/core/blok/renderer/runtime";
+import { parseBsxSafe } from "@arkitektio/bsx/bsx/parse";
+import { defaultBlokCatalog } from "@/core/blok/catalog";
+import { normalizeBlokComponentTree, preflightBlokDocument } from "@arkitektio/bsx/renderer/runtime/index";
 import { ACTION_LOGOS } from "./logos";
 import { globalRegistry } from "./registry";
 
@@ -34,12 +34,12 @@ describe("orkestrator's action logos", () => {
     expect(preflight.invalidNodes.size).toBe(0);
   });
 
-  it.each(Object.entries(ACTION_LOGOS))("%s is an ActionLogo in the palette, named for this app", (name, logo) => {
+  it.each(Object.entries(ACTION_LOGOS))("%s is an ActionLogo in the pens, named for this app", (name, logo) => {
     expect(logo.key).toBe(`orkestrator_${name}_logo`);
     expect(logo.source.startsWith('<ActionLogo viewBox="0 0 24 24"')).toBe(true);
     // The server refuses any paint outside the palette.
     const paints = [...attributes(logo.source, "fill"), ...attributes(logo.source, "stroke")];
-    expect(paints.filter((paint) => !(LOGO_PAINT_TOKENS as readonly string[]).includes(paint))).toEqual([]);
+    expect(paints.filter((paint) => !LOGO_PAINT_TOKENS.includes(paint))).toEqual([]);
     expect(
       attributes(logo.source, "animate").filter((name) => !(LOGO_ANIMATIONS as readonly string[]).includes(name)),
     ).toEqual([]);

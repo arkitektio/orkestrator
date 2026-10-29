@@ -47,3 +47,4 @@ patchedDependencies:
 
 minimumReleaseAgeExclude:
   - hyparquet-writer@0.16.9
+  - '@arkitektio/bsx'

@@ -47,16 +47,16 @@ export const formatCell = (value: unknown): string => {
 const StatusBadge = ({ state }: { state: PlanRowsState }) => {
   if (state.status === "pending") {
     return (
-      <span className="rounded bg-white/10 px-1 text-[9px] font-medium text-white/40">…</span>
+      <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/40">…</span>
     );
   }
   if (state.status === "rows") {
     return state.sampleSource === "exact" ? (
-      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-300">
+      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
         exact
       </span>
     ) : (
-      <span className="rounded bg-white/10 px-1 text-[9px] font-medium text-white/50">~LOD</span>
+      <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/50">~LOD</span>
     );
   }
   return null;
@@ -92,7 +92,7 @@ const ReferenceFollowUp = ({
   if (state.phase === "collapsed") {
     return (
       <button
-        className="pointer-events-auto rounded border border-white/10 bg-white/5 px-1 text-[9px] text-white/60 hover:bg-white/15 hover:text-white"
+        className="pointer-events-auto rounded border border-foreground/10 bg-foreground/5 px-1 text-[9px] text-foreground/60 hover:bg-foreground/15 hover:text-foreground"
         title={`Look up in ${column.references.name}`}
         onClick={() => void expand()}
       >
@@ -101,15 +101,15 @@ const ReferenceFollowUp = ({
     );
   }
   if (state.phase === "loading") {
-    return <span className="text-[9px] text-white/40">…</span>;
+    return <span className="text-[9px] text-foreground/40">…</span>;
   }
   if (state.phase === "error") {
-    return <span className="text-[9px] text-red-300/70">lookup failed</span>;
+    return <span className="text-[9px] text-red-700/70 dark:text-red-300/70">lookup failed</span>;
   }
   return (
-    <div className="col-span-2 ml-2 space-y-0.5 border-l border-white/10 pl-2">
+    <div className="col-span-2 ml-2 space-y-0.5 border-l border-foreground/10 pl-2">
       {state.rows.length === 0 && (
-        <span className="text-[10px] text-white/40">no matching row</span>
+        <span className="text-[10px] text-foreground/40">no matching row</span>
       )}
       {state.rows.map((row, index) => (
         <div key={index} className="grid grid-cols-[auto_1fr] gap-x-2">
@@ -124,8 +124,8 @@ const ReferenceFollowUp = ({
 
 const RowCellPair = ({ name, value }: { name: string; value: unknown }) => (
   <>
-    <span className="truncate text-[10px] text-white/50">{name}</span>
-    <span className="text-right font-mono text-[10px] text-white/90">{formatCell(value)}</span>
+    <span className="truncate text-[10px] text-foreground/50">{name}</span>
+    <span className="text-right font-mono text-[10px] text-foreground/90">{formatCell(value)}</span>
   </>
 );
 
@@ -177,9 +177,9 @@ const ProfileRows = ({
 );
 
 const SeriesLine = ({ series }: { series: PlanSeries }) => (
-  <div className="text-white/80">
+  <div className="text-foreground/80">
     <TraceSparkline values={series.values} marker={series.marker} />
-    <span className="block text-[9px] text-white/35">
+    <span className="block text-[9px] text-foreground/35">
       {series.values.length * series.stride} samples along {series.axis}
       {series.stride > 1 ? `, every ${series.stride}th shown` : ""}
     </span>
@@ -210,36 +210,36 @@ export const AttributePlanBlock = ({
   const array = meta.kind === "ARRAY";
 
   return (
-    <div className="space-y-0.5 rounded border border-white/10 bg-white/5 px-2 py-1.5">
+    <div className="space-y-0.5 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1">
           {array && meta.sourceId ? (
             <MikroArrayDataset.DetailLink
               object={{ id: meta.sourceId }}
-              className="pointer-events-auto truncate text-[10px] font-medium text-white/60 hover:text-white"
+              className="pointer-events-auto truncate text-[10px] font-medium text-foreground/60 hover:text-foreground"
             >
               {meta.name}
             </MikroArrayDataset.DetailLink>
           ) : (
-            <span className="truncate text-[10px] font-medium text-white/60">{meta.name}</span>
+            <span className="truncate text-[10px] font-medium text-foreground/60">{meta.name}</span>
           )}
           {meta.via && (
-            <span className="truncate text-[9px] text-white/35">{meta.via}</span>
+            <span className="truncate text-[9px] text-foreground/35">{meta.via}</span>
           )}
           {sparse && (
-            <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-200/80">
+            <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-700/80 dark:text-sky-200/80">
               matrix
             </span>
           )}
           {array && (
-            <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-200/80">
+            <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-700/80 dark:text-amber-200/80">
               array
             </span>
           )}
         </span>
         <span className="flex items-center gap-1.5">
           {state.sampledValue !== undefined && state.sampledValue !== null && (
-            <span className="font-mono text-[10px] text-white/70">
+            <span className="font-mono text-[10px] text-foreground/70">
               #{String(state.sampledValue)}
             </span>
           )}
@@ -247,13 +247,13 @@ export const AttributePlanBlock = ({
         </span>
       </div>
       {state.status === "background" && (
-        <span className="text-[10px] text-white/40">background</span>
+        <span className="text-[10px] text-foreground/40">background</span>
       )}
       {state.status === "error" && (
-        <span className="text-[10px] text-red-300/70">{state.error ?? "failed"}</span>
+        <span className="text-[10px] text-red-700/70 dark:text-red-300/70">{state.error ?? "failed"}</span>
       )}
       {state.status === "rows" && state.rows.length === 0 && !state.series && (
-        <span className="text-[10px] text-white/40">
+        <span className="text-[10px] text-foreground/40">
           {array
             ? "no line for this object"
             : sparse
@@ -271,7 +271,7 @@ export const AttributePlanBlock = ({
           <AttributeRowBlock key={index} row={row} columns={columns} />
         ))}
       {state.truncated && (
-        <span className="block text-right text-[9px] text-white/35">
+        <span className="block text-right text-[9px] text-foreground/35">
           top {state.truncated.shown} of {state.truncated.total} entries
         </span>
       )}
@@ -299,7 +299,9 @@ export const HopBlocks = ({ blocks }: { blocks: readonly HopBlock[] }) => (
 
 export const AttributeRowsSection = ({ probe }: { probe: ProbeResult }) => {
   perfMonitor.countRender("AttributeRowsSection"); // no-op unless a perf recording is armed
-  const probedAttributes = useViewerStore((s) => s.probedAttributes);
+  // This reading's layer's rows only: another info layer settling does not
+  // re-render this one.
+  const probedAttributes = useViewerStore((s) => s.probedAttributes[probe.layerId] ?? null);
 
   const blocks = useMemo<readonly HopBlock[]>(() => {
     if (!probedAttributes) return [];

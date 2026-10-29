@@ -4,8 +4,8 @@ import {
   asStructure,
   renderChildList,
   useControlledValue,
-} from "@/core/blok/renderer/bloks/shared";
-import { useBinding, useBlok, useEventAction, useValue, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/bloks/shared/index";
+import { useBinding, useBlok, useEventAction, useValue, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 import { cn } from "@/core/util/utils";
 import { useGetSceneQuery, type SceneFragment } from "@/mikro/api/graphql";
 import { Scene } from "@/mikro/components/scene/Scene";
@@ -87,7 +87,14 @@ const SceneWiring = ({ component, sceneId }: { component: BlokRenderArgs["compon
   const setSelection = selection.setValue;
 
   useSceneEvents({
-    onAnnotation,
+    // A draw selects what it drew: the binding holds it too (a blok can then confirm it before
+    // acting on it), though it is reported as onAnnotation, not onSelect.
+    onAnnotation: bind || onAnnotation
+      ? (payload) => {
+          if (bind) setSelection({ annotation: payload.annotation, lens: payload.lens });
+          onAnnotation?.(payload);
+        }
+      : undefined,
     // The binding follows every selection; the action only runs when one is declared.
     onSelect: bind || onSelect
       ? (payload) => {

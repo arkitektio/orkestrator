@@ -1,32 +1,23 @@
-import {buildRegisterUiCatalogInput} from '@/rekuest/catalog/uiCatalogInput';
-import {defaultBlokCatalog, UI_CATALOG_DESCRIPTION, UI_CATALOG_NAME} from '@/core/blok/renderer/catalog';
-import {describeBlokCatalog} from '@/core/blok/renderer/runtime';
+import {buildRegisterModuleInput} from '@/rekuest/catalog/uiCatalogInput';
+import {orkestratorUi, UI_CATALOG_DESCRIPTION, UI_CATALOG_NAME} from '@/core/blok/catalog';
+import {blokModuleSpec} from '@arkitektio/bsx/runtime';
 
 /**
- * The two JSON documents this client publishes for its blok catalog:
+ * The documents this client publishes for its blok module:
  *
- * - `catalog` — the full `registerUiCatalog` payload, i.e. exactly what the app
+ * - `catalog` — the full `registerModule` payload, i.e. exactly what the app
  *   would send a rekuest server (every component and prop with its description
- *   and `CatalogValueKind`).
- * - `manifest` — the lightweight `describeBlokCatalog` shape (names, prop keys,
- *   function signatures), the document the catalog id URL is meant to serve.
+ *   and `CatalogValueKind`, and the global catalogs it claims).
+ * - `module` — the same components as the spec writes a catalog
+ *   (`modules/orkestrator.json` in arkitekt-spec): what `arkitekt check` knows
+ *   of the components only this app draws.
  *
  * Kept free of `fs` so it stays testable; `scripts/export-blok-catalog.mjs`
  * does the writing.
- *
- * There is no server to ask at build time, so what the base catalog holds is
- * taken from this client's own (`baseBlokCatalog`, which mirrors the server's
- * `base@1`): the published file is what this app adds to it, as the registrar
- * sends it.
  */
 export const buildCatalogExport = () => ({
-  catalog: buildRegisterUiCatalogInput(
-    defaultBlokCatalog,
-    {name: UI_CATALOG_NAME, description: UI_CATALOG_DESCRIPTION},
-    {
-      reservedOperations: new Set(defaultBlokCatalog.base?.functions.keys()),
-      reservedComponents: new Set(defaultBlokCatalog.base?.components.keys()),
-    },
-  ),
-  manifest: describeBlokCatalog(defaultBlokCatalog),
+  catalog: buildRegisterModuleInput(orkestratorUi),
+  module: blokModuleSpec(UI_CATALOG_NAME, UI_CATALOG_DESCRIPTION, orkestratorUi.catalog),
+  /** The global catalogs this app implements whole, as `name@version`. */
+  catalogs: [...orkestratorUi.claims],
 });

@@ -46,7 +46,26 @@ export type SmartSectionContext = SmartContextProps & {
   liveFilter?: string;
   /** The surface draws the sections' `SearchBar`s (the menu does, the palette does not). */
   hasSearchBar?: boolean;
+  /**
+   * In a related context's mount (`objects` is then the related one's): the
+   * page's own selection. A section that folds every context into one query
+   * builds it from this and `related`, so both mounts ask the same thing.
+   */
+  primary?: Pick<SmartContextProps, "objects" | "partners" | "returns">;
 };
+
+/**
+ * How a section serves the related contexts (`SmartContextProps.related`):
+ * - `repeat`: mounted again for each, as for a page of its own (synchronous
+ *   sections: costs nothing).
+ * - `or`: one query over the page's objects OR any related one, issued
+ *   identically by every mount (Apollo answers the later ones from the same
+ *   request); each mount keeps the rows `routeOf` sends to its identifier.
+ * Left out, a section serves the page's own objects only.
+ */
+export type SmartSectionRelated<T> =
+  | { mode: "repeat" }
+  | { mode: "or"; routeOf: (item: T) => string | undefined };
 
 /**
  * - `loading`: no rows for these variables yet.
@@ -113,6 +132,8 @@ export type SmartContextSection<T = unknown> = {
   usePins?: (sectionId: SmartSectionId) => SectionPins;
   /** Also offered in the ⌘K palette (under its own search), not only in the menu. */
   palette?: boolean;
+  /** Whether and how it serves the page's related contexts; see `SmartSectionRelated`. */
+  related?: SmartSectionRelated<T>;
   /**
    * Queries worth warming before the menu opens (hover, selection change),
    * as data: the host owns the TTL, dedupe and which client answers. Build the

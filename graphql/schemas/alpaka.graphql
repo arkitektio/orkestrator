@@ -497,6 +497,11 @@ input FinishMessageInput {
   text: String = null
 }
 
+"""A memory to forget"""
+input ForgetInput {
+  name: String!
+}
+
 """The type of the tool"""
 type FunctionCall {
   arguments: String!
@@ -590,6 +595,72 @@ input LLMModelFilter {
 input LLMModelOrder @oneOf {
   label: Ordering
   modelId: Ordering
+}
+
+"""
+Something an assistant remembers about the person who assigned its task
+"""
+type Memory {
+  """The memory itself"""
+  content: String!
+  createdAt: DateTime!
+
+  """
+  One line saying what the memory holds: what an assistant reads in the index
+  """
+  description: String!
+  id: ID!
+
+  """What the memory is about"""
+  kind: MemoryKind!
+
+  """A short slug the memory is found and replaced by, unique per person"""
+  name: String!
+  updatedAt: DateTime!
+}
+
+"""Filter for memories"""
+input MemoryFilter {
+  AND: MemoryFilter
+  DISTINCT: Boolean
+  NOT: MemoryFilter
+  OR: MemoryFilter
+  ids: [ID!]
+  kind: MemoryKind
+  names: [String!]
+
+  """
+  Search what a memory says: a case-insensitive substring of its name, description or content, or semantic similarity to all three. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
+  search: String
+}
+
+"""Something to remember about the person who assigned the task"""
+input MemoryInput {
+  """The memory itself"""
+  content: String!
+
+  """One line saying what the memory holds, read in the index every turn"""
+  description: String!
+
+  """What the memory is about"""
+  kind: MemoryKind! = USER
+
+  """A short slug to find and replace the memory by: `prefers-tiff-exports`"""
+  name: String!
+}
+
+"""What a memory is about"""
+enum MemoryKind {
+  FEEDBACK
+  PROJECT
+  REFERENCE
+  USER
+}
+
+input MemoryOrder @oneOf {
+  name: Ordering
+  updatedAt: Ordering
 }
 
 """Message represent the message of an agent on a room"""
@@ -723,6 +794,9 @@ type Mutation {
   """
   finishMessage(input: FinishMessageInput!): Message!
 
+  """Forget one of the assigner's memories by name; whether there was one"""
+  forget(input: ForgetInput!): Boolean!
+
   """Generate an image from a text description"""
   generateImage(input: ImageInput!): ImageResponse!
 
@@ -733,6 +807,11 @@ type Mutation {
 
   """Re-list the models a provider offers"""
   refreshProvider(input: RefreshProviderInput!): Provider!
+
+  """
+  Remember something about the person who assigned the task, replacing the memory of that name. Needs the task's provenance token
+  """
+  remember(input: MemoryInput!): Memory!
 
   """
   Take a room or a message out of a collaboration, with what it brought that nothing else there needs
@@ -809,7 +888,9 @@ enum Ordering {
 """An Organization model to represent an organization in the system"""
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`"""
+  identifier: String!
 }
 
 """A provider of LLMs"""
@@ -902,6 +983,11 @@ type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
 
+  """
+  Who assigned the task this request is made for: whose memories it reaches
+  """
+  assigner: User!
+
   """Get a single budget by ID"""
   budget(id: ID!): Budget!
 
@@ -939,6 +1025,14 @@ type Query {
 
   """List the LLM models reachable through this organization's providers"""
   llmModels(filters: LLMModelFilter, ordering: [LLMModelOrder!]! = [], pagination: OffsetPaginationInput): [LLMModel!]!
+
+  """
+  What is remembered about the person who assigned the task this request is made for. Needs the task's provenance token
+  """
+  memories(filters: MemoryFilter, ordering: [MemoryOrder!]! = [], pagination: OffsetPaginationInput): [Memory!]!
+
+  """Get one of the assigner's memories by ID"""
+  memory(id: ID!): Memory!
 
   """Get a single message by ID"""
   message(id: ID!): Message!

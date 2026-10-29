@@ -69,7 +69,7 @@ const SingleHookWatcher = ({ entry }: { entry: PendingHook }) => {
       getClient: (service) =>
         serviceMap[service]?.client as ApolloClient<unknown> | undefined,
       datalayerEndpoint: (
-        serviceMap["datalayer"]?.client as { url?: string } | undefined
+        serviceMap["s3"]?.client as { url?: string } | undefined
       )?.url,
       startDownload,
       navigate,

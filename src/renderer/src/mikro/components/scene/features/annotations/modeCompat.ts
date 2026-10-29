@@ -74,7 +74,7 @@ export const fallbackToolFor = (
  * gating the mode picker on it would make the Probe button flicker while bricks
  * stream in.
  *
- * Equivalent by design to `effectiveProbeLayerId(…) !== null`
+ * Equivalent by design to `effectiveHitLayerId(…) !== null`
  * (`platform/probe/probeTargeting.ts`): some layer can answer the probe exactly
  * when some layer is visible.
  *

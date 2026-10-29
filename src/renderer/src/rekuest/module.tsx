@@ -1,7 +1,7 @@
 import { TaskHookRunner } from "@/core/modules/taskhooks/TaskHookRunner";
 import { defineModule } from "@/core/modules/host/define";
 import { REKUEST_ACTIONS } from "./actions";
-import { UiCatalogRegistrar } from "./catalog/UiCatalogRegistrar";
+import { ModuleRegistrar } from "./catalog/ModuleRegistrar";
 import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
@@ -136,7 +136,7 @@ export const REKUEST_MODULE = defineModule({
     background: [
       TaskUpdater,
       AgentUpdater,
-      UiCatalogRegistrar,
+      ModuleRegistrar,
       RekuestDashboardWidgets,
       LatestTasksDashboardWidget,
       TaskHookRunner,

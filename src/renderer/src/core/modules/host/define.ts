@@ -1,4 +1,4 @@
-import type { BlokComponentDefinition } from "@/core/blok/renderer/runtime";
+import type { BlokComponentDefinition } from "@arkitektio/bsx/renderer/runtime/index";
 import type { ComponentType } from "react";
 
 import type { RoleRequirement } from "@/core/connection/roles";

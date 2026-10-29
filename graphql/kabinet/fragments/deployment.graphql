@@ -1,0 +1,44 @@
+# A deployment is one flavour installed on one backend: what a pod is started
+# from. Enough for a row: which app and version, where, and how it is doing.
+fragment ListDeployment on Deployment {
+  id
+  localId
+  name
+  status
+  backend {
+    id
+    name
+    kind
+  }
+  flavour {
+    id
+    name
+    logo
+    originalLogo
+    release {
+      id
+      version
+      logo
+      originalLogo
+      logoBlok {
+        ...KabinetLogoBlok
+      }
+      app {
+        id
+        identifier
+        embedding
+      }
+    }
+  }
+}
+
+# The detail adds who it acts as: the release approval it was installed under.
+fragment Deployment on Deployment {
+  ...ListDeployment
+  backend {
+    ...ListBackend
+  }
+  approval {
+    ...ListReleaseApproval
+  }
+}

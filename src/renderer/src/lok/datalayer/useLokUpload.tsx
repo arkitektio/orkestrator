@@ -163,7 +163,7 @@ const uploadToStore = async (
 export const useLokUpload = () => {
   const client = useLok() as ApolloClient<NormalizedCache> | undefined;
   // lok's media store is the coordination server's, at its base path — not the
-  // `datalayer` service fakts hands the modules.
+  // `s3` service fakts hands the modules.
   const datalayerEndpoint = useCoordinationEndpoint();
 
   const upload = useCallback(

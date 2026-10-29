@@ -30,9 +30,11 @@ export interface SmartModelProps {
   hover?: boolean;
   /**
    * Shows a small burger in the card's bottom-right corner while it is hovered, which
-   * opens the card's right-click menu. Never shown inside the page sidebar.
+   * opens the card's right-click menu. Never shown inside the page sidebar. `"top"`
+   * puts it in the top-right corner instead, for a card whose bottom corner holds
+   * the buttons of the cards inside it.
    */
-  menuButton?: boolean;
+  menuButton?: boolean | "top";
   className?: string;
 }
 

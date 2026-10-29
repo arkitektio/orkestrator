@@ -3,10 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const profile = (id: string, slug: string | undefined, hub: string | null = "3") => ({
+const profile = (id: string, org: string | undefined, hub: string | null = "3") => ({
   id,
-  identity: { baseUrl: "https://go.arkitekt.live/lok", hubId: hub },
-  label: { organizationSlug: slug, organizationName: slug && `${slug} org` },
+  identity: { baseUrl: "https://go.arkitekt.live/lok", hubId: hub, organizationId: org ?? null },
+  label: { organizationName: org && `${org} org` },
   session: { endpoint: { base_url: "https://go.arkitekt.live/lok" } },
 });
 

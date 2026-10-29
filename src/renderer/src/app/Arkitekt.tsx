@@ -35,8 +35,8 @@ export const serviceMap = {
       };
     },
   },
-  datalayer: {
-    key: "datalayer",
+  s3: {
+    key: "s3",
     service: "live.arkitekt.s3",
     optional: true,
     omitchallenge: true,
@@ -67,7 +67,7 @@ export const Guard = {
   Elektro: Arkitekt.buildServiceGuard("elektro"),
   Lovekit: Arkitekt.buildServiceGuard("lovekit"),
   Dokuments: Arkitekt.buildServiceGuard("dokuments"),
-  Datalayer: Arkitekt.buildServiceGuard("datalayer"),
+  Datalayer: Arkitekt.buildServiceGuard("s3"),
 };
 
 export const useMikro = () => {
@@ -123,7 +123,7 @@ export const useDokuments = () => {
 };
 /**
  * Where lok's media lives: the coordination server's base path, not the
- * `datalayer` service from fakts (that one is the modules' store).
+ * `s3` service from fakts (that one is the modules' store).
  */
 export const useCoordinationEndpoint = (): string | undefined => {
   const baseUrl = useArkitektStore((state) => state.connection?.endpoint?.base_url);
@@ -131,6 +131,6 @@ export const useCoordinationEndpoint = (): string | undefined => {
 };
 
 export const useDatalayerEndpoint = (): string | undefined => {
-  const url = Arkitekt.usePotentialService("datalayer")?.client?.url;
+  const url = Arkitekt.usePotentialService("s3")?.client?.url;
   return url;
 };

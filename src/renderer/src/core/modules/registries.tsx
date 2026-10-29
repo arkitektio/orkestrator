@@ -3,7 +3,7 @@ import React, { type ComponentType, type ReactNode } from "react";
 import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { DialogDescription, DialogTitle } from "@/core/ui/dialog";
 import type { DisplayWidgetProps, ViewerWidgetProps } from "@/core/smart/display/registry";
-import type { BlokComponentDefinition } from "@/core/blok/renderer/runtime";
+import type { BlokComponentDefinition } from "@arkitektio/bsx/renderer/runtime/index";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import type {

@@ -1,6 +1,6 @@
 import React from "react";
 import { Identifier } from "@/core/types";
-import { PageLayout, PageVariant } from "./PageLayout";
+import { PageLayout } from "./PageLayout";
 import { CommandContext } from "@/core/command/CommandContext";
 
 export type ListPageLayoutProps = {
@@ -11,7 +11,6 @@ export type ListPageLayoutProps = {
   sidebars?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: PageVariant;
   callback?: (object: string) => void;
 };
 
@@ -21,7 +20,6 @@ export const ListPageLayout = ({
   title,
   children,
   identifier,
-  variant,
   actions,
   pageActions,
 }: ListPageLayoutProps) => {
@@ -35,7 +33,6 @@ export const ListPageLayout = ({
         title={title}
         sidebars={sidebars}
         help={help}
-        variant={variant}
         actions={actions}
         pageActions={pageActions}
       >

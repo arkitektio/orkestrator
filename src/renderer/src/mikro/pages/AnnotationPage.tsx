@@ -54,7 +54,6 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
     // area, unreachable from anything rendered inside it.
     <Scene.Provider scene={sceneData?.scene ?? null}>
       <MikroAnnotation.ModelPage
-        variant="black"
         overlay
         object={annotation}
         help={MIKRO_HELP.annotation}

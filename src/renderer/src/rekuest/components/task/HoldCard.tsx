@@ -5,7 +5,7 @@ import { cn } from "@/core/util/utils";
 import { ArgPortFragment, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
-import { HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
+import { AskClosed, askClosedText, HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
 import { Check, CheckCircle2, Hand, Loader2, MessageSquarePlus, X, XCircle, Zap } from "lucide-react";
 import { useState } from "react";
 import { PortValue } from "./PortValue";
@@ -67,9 +67,18 @@ const HoldBadge = ({ hold, logo }: { hold: HoldRequest; logo?: Parameters<typeof
  * task's own hold. The title and description are the agent's own words, so
  * they are labelled as theirs; what the server knows for certain (the action,
  * the agent, the arguments) is shown beside them, the arguments as what they
- * are. Approve / Deny answer the held task with `decide`.
+ * are. Approve / Deny answer the held task with `decide`. `closed`: the task
+ * is being stopped (or ended), so the card is grayed and takes no answer.
  */
-export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: string }) => {
+export const HoldCard = ({
+  hold,
+  closed,
+  className,
+}: {
+  hold: HoldRequest;
+  closed?: AskClosed | null;
+  className?: string;
+}) => {
   const [decide] = useDecideMutation();
   const [answer, setAnswer] = useState("");
   const [answering, setAnswering] = useState(false);
@@ -96,19 +105,26 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
   const asksThroughBlok = hold.kind === "self" && !!hold.blok;
 
   const speaker = hold.callerAgent?.name ?? (hold.kind === "self" ? "A task" : "An agent");
+  const closedText = closed ? askClosedText(closed) : null;
 
   return (
     <div
       role="group"
-      aria-label={`Waiting for your decision: ${hold.title}`}
+      aria-label={closedText ? `${hold.title}: ${closedText}` : `Waiting for your decision: ${hold.title}`}
+      aria-disabled={closed ? true : undefined}
       className={cn(
-        "relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-amber-500/30 bg-card p-3 shadow-sm",
+        "relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm",
+        closed ? "border-border" : "border-amber-500/30",
         className,
       )}
     >
       {/* The accent: an edge in the waiting colour, so a held card reads as one at a glance. */}
-      <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-amber-500/70" />
+      <span
+        aria-hidden
+        className={cn("absolute inset-y-0 left-0 w-1", closed ? "bg-muted-foreground/30" : "bg-amber-500/70")}
+      />
 
+      <div className={cn("flex flex-col gap-3", closed && "pointer-events-none select-none opacity-60")}>
       <div className="flex items-start gap-3 pl-1">
         <HoldBadge hold={hold} logo={action?.logo} />
         <div className="min-w-0 flex-1">
@@ -156,11 +172,21 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
                 : sending === "approve"
                   ? TaskBlokStatus.Answered
                   : TaskBlokStatus.Waiting,
+            // The sentence is the card's footer: the blok only freezes.
+            closed: closed ? "" : null,
           }}
           onReturn={(values) => send(true, values)}
         />
       )}
+      </div>
 
+      {closedText ? (
+        <div className="flex items-center gap-1.5 pl-1 text-[11px] text-muted-foreground">
+          {closed !== "ended" && <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />}
+          {closedText}
+        </div>
+      ) : (
+      <>
       {answering && (
         <Textarea
           value={answer}
@@ -196,6 +222,8 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
           </Button>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

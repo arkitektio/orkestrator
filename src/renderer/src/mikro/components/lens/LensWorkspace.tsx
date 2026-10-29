@@ -84,7 +84,6 @@ export const LensWorkspace = ({
         object={lens}
         help={MIKRO_HELP.lens}
         title={`${description.container.name} · ${description.title}`}
-        variant="black"
         overlay
         actions={<LensSmart.Actions object={lens} />}
         pageActions={

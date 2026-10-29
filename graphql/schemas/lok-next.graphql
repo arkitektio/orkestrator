@@ -502,7 +502,7 @@ type Hub {
 }
 
 """
-Hub(id, name, organization, identifier, description, creator, client, token, auth_key, last_seen_at, last_healthy, version, mesh_connected, mesh_host)
+Hub(id, name, organization, identifier, description, creator, client, token, uid, auth_key, tls_certificate, last_seen_at, last_healthy, version, mesh_connected, mesh_host)
 """
 input HubFilter {
   AND: HubFilter
@@ -1469,11 +1469,12 @@ type ServiceInstance {
 }
 
 """
-One service running in a hub: a hub runs one instance of a service per ``instance_id``.
+One service running in a hub, named by its name there (``instance_id``: ``mikro``).
 
-Its id is what a token composed for it names (``aud``) and what a guest's collaborations are
-listed under, so it must not change when the hub is authorized again by another admin or
-upgraded to another release of the service: those are updated on the instance, in place.
+The hub names its services itself: the name is unique within the hub, and with the hub's own
+uuid (``Hub.uid``) it is what a token composed for the service says (``aud: [mikro]``,
+``hub: <uid>``) and what a guest's collaborations are listed under. Authorized again, by
+another admin or with another release, it is the same instance, updated in place.
 """
 input ServiceInstanceFilter {
   AND: ServiceInstanceFilter

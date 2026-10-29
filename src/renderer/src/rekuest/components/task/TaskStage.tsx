@@ -1,6 +1,7 @@
 import { cn } from "@/core/util/utils";
 import { PageSections } from "@/core/layout/PageSections";
-import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
+import { ComponentContext, DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
+import { useRunTask, useTaskActionBlok } from "@/rekuest/run/useRun";
 import { LiveTicker } from "@/rekuest/components/spaces/task/LiveTicker";
 import { LiveStatusStrip } from "@/rekuest/components/spaces/task/panels/LiveStatusStrip";
 import { TimeSlider } from "@/rekuest/components/spaces/task/panels/TimeSlider";
@@ -54,6 +55,9 @@ const SpaceStage = (props: {
 }) => {
   const { task, focusTime } = props;
   const [store] = useState(() => createSpaceViewStore(task));
+  // The run as its action draws it into a room (its overlay), and the space it was started in.
+  const { task: run } = useRunTask(task.id);
+  const overlay = useTaskActionBlok(run, ComponentContext.Overlay);
 
   useEffect(() => {
     store.getState().refreshTask(task);
@@ -70,7 +74,7 @@ const SpaceStage = (props: {
         <LiveStatusStrip />
         <div className="min-h-0 flex-1">
           <TaskTravel>
-            <TaskRooms />
+            <TaskRooms run={overlay} startedIn={run?.space} />
           </TaskTravel>
         </div>
         <TimeSlider />

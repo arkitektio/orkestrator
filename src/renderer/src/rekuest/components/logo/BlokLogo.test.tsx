@@ -5,7 +5,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 
 /** A first drawing settles before it is kept; a loaded test run takes longer than waitFor's default. */
 const SLOW = {timeout: 5000};
-import tree from '@/core/blok/renderer/bloks/logo/logo.fixture.json';
+import tree from '@arkitektio/bsx/renderer/bloks/logo/logo.fixture.json';
 import {AgentLogo, BlokLogo} from './BlokLogo';
 
 /**
@@ -17,7 +17,8 @@ const BLOK = {
   id: 'logo-blok',
   hash: 'h1',
   componentTree: tree,
-  demoState: {self: {Status: {lamps: [{color: 'lime'}]}}},
+  // The v2 demo: an agent's logo reads `self`, which is `deps.self`.
+  demo: {deps: {self: {status: {lamps: [{name: 'a', pen: 'success'}]}}}},
 };
 
 const useLogoBlokQuery = vi.fn(() => ({data: {blok: BLOK}}));
@@ -53,7 +54,7 @@ describe('an agent logo', {timeout: 20000}, () => {
       expect(found).not.toBeNull();
       return found as SVGSVGElement;
     }, SLOW);
-    expect(kept.querySelector('circle[fill="lime"]')).not.toBeNull();
+    expect(kept.querySelector('circle[fill="var(--logo-success)"]')).not.toBeNull();
     const gradient = kept.querySelector('linearGradient');
     expect(gradient?.id.startsWith(kept.getAttribute('data-blok-prefix') ?? '-')).toBe(true);
     expect(kept.querySelector('rect')?.getAttribute('fill')).toBe(`url(#${gradient?.id})`);

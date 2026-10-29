@@ -30,9 +30,19 @@ export type SettingsStore = StoreApi<SettingsStoreState> & {
   followOtherWindows: () => () => void;
 };
 
+/**
+ * Parse settings, filling what is missing from `fallbackSettings`.
+ *
+ * A field that fails validation costs only itself: it takes its value from
+ * `keep` (the settings in force, on a write) or the fallback, and every other
+ * field survives. Parsing all-or-nothing used to throw the whole object away
+ * for one stale enum value — at boot that wrote the defaults back over the
+ * user's brand, zoom and backdrop for good.
+ */
 function normalizeSettings(
   value: unknown,
   fallbackSettings: Settings,
+  keep?: Settings,
 ): Settings | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
@@ -41,47 +51,40 @@ function normalizeSettings(
   const definedEntries = Object.fromEntries(
     Object.entries(value as object).filter(([, entryValue]) => entryValue !== undefined),
   );
+  const candidate = { ...fallbackSettings, ...definedEntries };
 
-  const result = settingsValidator.safeParse({
-    ...fallbackSettings,
-    ...definedEntries,
-  });
-
-  if (!result.success) {
-    console.error("Invalid settings", result.error);
-    return undefined;
+  let data: Settings;
+  const result = settingsValidator.safeParse(candidate);
+  if (result.success) {
+    data = result.data;
+  } else {
+    const repair = keep ?? fallbackSettings;
+    const failed = [
+      ...new Set(
+        result.error.issues
+          .map((issue) => issue.path[0])
+          .filter((key): key is keyof Settings => typeof key === "string"),
+      ),
+    ];
+    const salvaged = settingsValidator.safeParse({
+      ...candidate,
+      ...Object.fromEntries(failed.map((key) => [key, repair[key]])),
+    });
+    if (!salvaged.success) {
+      console.error("Invalid settings", salvaged.error);
+      return undefined;
+    }
+    console.warn("[settings] invalid fields left as they were:", failed, result.error);
+    data = salvaged.data;
   }
 
   // Detection switched off means nothing detected is kept, whoever wrote the
   // settings — the snapshot must not outlive the permission to take it.
-  if (!result.data.telemetryDetectHardware && result.data.rendererHardware) {
-    return { ...result.data, rendererHardware: null };
+  if (!data.telemetryDetectHardware && data.rendererHardware) {
+    return { ...data, rendererHardware: null };
   }
 
-  return result.data;
-}
-
-function applyThemeSettings(settings: Settings) {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const theme = settings.darkMode ? "dark" : "light";
-  localStorage.setItem("theme", theme);
-  localStorage.setItem("vite-ui-theme", theme);
-
-  if (settings.darkMode) {
-    document.documentElement.classList.add("dark");
-    document.documentElement.classList.remove("light");
-    document.documentElement.classList.add("theme-back-bright");
-    document.documentElement.classList.remove("theme-back-zink");
-    return;
-  }
-
-  document.documentElement.classList.remove("dark");
-  document.documentElement.classList.add("light");
-  document.documentElement.classList.remove("theme-back-bright");
-  document.documentElement.classList.add("theme-back-zink");
+  return data;
 }
 
 function applyBrandSettings(settings: Settings) {
@@ -191,43 +194,51 @@ export function createSettingsStore(
     globalShortcutStatus: null,
     setSettings: (nextSettings) => {
       const previousSettings = store.getState().settings;
-      const normalizedSettings = normalizeSettings(nextSettings, currentDefaultSettings);
-      if (normalizedSettings) {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizedSettings));
-        console.log("Settings saved to local storage");
+      const normalizedSettings = normalizeSettings(
+        nextSettings,
+        currentDefaultSettings,
+        previousSettings,
+      );
+      // A write that cannot be made valid is refused, not stored as
+      // "no settings": that would unmount the whole app behind
+      // `SettingsProvider`'s loading screen.
+      if (!normalizedSettings) {
+        console.error("Refused a settings write that could not be validated");
+        return;
+      }
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizedSettings));
+      console.log("Settings saved to local storage");
 
-        applyThemeSettings(normalizedSettings);
-        applyBrandSettings(normalizedSettings);
-        applyRendererBudgetSettings(normalizedSettings);
+      applyBrandSettings(normalizedSettings);
+      applyRendererBudgetSettings(normalizedSettings);
 
-        if (
-          isHydrating ||
-          normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
-        ) {
-          applyZoomLevel(normalizedSettings.defaultZoomLevel);
-        }
+      if (
+        isHydrating ||
+        normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
+      ) {
+        applyZoomLevel(normalizedSettings.defaultZoomLevel);
+      }
 
-        const glassToggled =
-          isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
-        if (
-          glassToggled ||
-          normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
-        ) {
-          applyRailGlass(
-            normalizedSettings.railGlass,
-            normalizedSettings.railGlassTransparency,
-            glassToggled,
-          );
-        }
+      const glassToggled =
+        isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
+      if (
+        glassToggled ||
+        normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
+      ) {
+        applyRailGlass(
+          normalizedSettings.railGlass,
+          normalizedSettings.railGlassTransparency,
+          glassToggled,
+        );
+      }
 
-        if (
-          isHydrating ||
-          normalizedSettings.globalPaletteShortcut !== previousSettings?.globalPaletteShortcut
-        ) {
-          applyGlobalShortcut(normalizedSettings.globalPaletteShortcut, (status) =>
-            set({ globalShortcutStatus: status }),
-          );
-        }
+      if (
+        isHydrating ||
+        normalizedSettings.globalPaletteShortcut !== previousSettings?.globalPaletteShortcut
+      ) {
+        applyGlobalShortcut(normalizedSettings.globalPaletteShortcut, (status) =>
+          set({ globalShortcutStatus: status }),
+        );
       }
       set({ settings: normalizedSettings });
     },

@@ -61,7 +61,7 @@ export const FileInfoSidebar = ({ file }: { file: PageFile }) => {
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold">Organization</div>
         <div className="break-all font-mono text-xs text-muted-foreground">
-          {file.organization?.slug || "Global"}
+          {file.organization?.identifier || "Global"}
         </div>
       </div>
 

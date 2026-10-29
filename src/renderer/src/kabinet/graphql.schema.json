@@ -128,7 +128,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ActionArgumentInput",
-        "description": "A JSON-serializable argument entry for a multi-agent action trigger.",
+        "description": "An argument of a call: a literal, a path, a nested call, a list or an object; null when it sets none.",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -158,7 +158,7 @@
           },
           {
             "name": "utilCall",
-            "description": "Defines a nested utility call if this argument should trigger a system utility interaction.",
+            "description": "A nested function call.",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "UtilCallInput",
@@ -210,7 +210,7 @@
           },
           {
             "name": "valueLiteral",
-            "description": "Static literal value if not dynamically bound.",
+            "description": "A JSON literal.",
             "type": {
               "kind": "SCALAR",
               "name": "JSONSerializable",
@@ -222,13 +222,221 @@
           },
           {
             "name": "valuePath",
-            "description": "JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically.",
+            "description": "A path the argument reads, as a prop's dynamic_value does.",
             "type": {
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
             },
             "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "ActionBlokInput",
+        "description": "An action's own blok (blok language v2): how a client shows a run of it in one context, naming devices by the action's dependency keys.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "catalogs",
+            "description": "The catalogs it needs, as name@version.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "components",
+            "description": "The UI component tree, unless the blok is sent as its `source`.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ComponentNodeInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "context",
+            "description": "Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`).",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ComponentContext",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "defaultValue": "HTML",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "demo",
+            "description": "What a preview renders it with.",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "BlokDemoInput",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": "What the blok shows of a run.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "locals",
+            "description": "Its locals: form state that feeds a call, written only through bind.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokLocalInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "module",
+            "description": "The module the blok renders against besides its catalogs; the Orkestrator's when absent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "queries",
+            "description": "Its declared reads.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokQueryInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "subscriptions",
+            "description": "Its declared streams.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokSubscriptionInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": "The blok language version the blok speaks; 2 is the only one.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -857,7 +1065,7 @@
         "inputFields": [
           {
             "name": "arguments",
-            "description": "Key-value arguments map compiled for the target agent call.",
+            "description": "Its arguments, each named.",
             "type": {
               "kind": "LIST",
               "name": null,
@@ -877,7 +1085,7 @@
           },
           {
             "name": "dependency",
-            "description": "The abstract agent dependency key declared in the Blok manifest (e.g., 'stage_dep').",
+            "description": "`self`, or the dependency key the task goes to (`deps.<key>`).",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -893,7 +1101,7 @@
           },
           {
             "name": "operation",
-            "description": "The target function name registered on that specific agent's worker thread loop.",
+            "description": "The action called, by its key in the dependency's action demands.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2821,14 +3029,86 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "BlokImplementationInput",
-        "description": "Which locks does the agent provide in general",
+        "name": "BlokDemoInput",
+        "description": "What a preview renders a blok with, mirroring the roots it reads.",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
             "name": "args",
-            "description": "The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only.",
+            "description": "What it is opened on.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSONSerializable",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deps",
+            "description": "Per dependency key (`self` included), its states and tasks: `{self: {arm: {joints: [...]}}}`.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSONSerializable",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "queries",
+            "description": "Per declared query, the value it answers.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSONSerializable",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "subscriptions",
+            "description": "Per declared subscription, its value.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSONSerializable",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "task",
+            "description": "The task record it is about (task and action bloks, action logos).",
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSONSerializable",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "BlokImplementationInput",
+        "description": "A blok an agent declares (blok language v2).",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "args",
+            "description": "The items this Blok is opened for, declared like an action's args and read under `args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2851,20 +3131,32 @@
             "deprecationReason": null
           },
           {
-            "name": "catalog",
-            "description": "The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry.",
+            "name": "catalogs",
+            "description": "The catalogs it needs, as name@version ('ui@1', 'scene@1').",
             "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                }
+              }
             },
-            "defaultValue": "null",
+            "defaultValue": "[]",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "components",
-            "description": "The UI component tree blueprint for this Blok, unless it is sent as its `source`.",
+            "description": "The UI component tree blueprint for this Blok (one root), unless it is sent as its `source`.",
             "type": {
               "kind": "LIST",
               "name": null,
@@ -2884,7 +3176,7 @@
           },
           {
             "name": "context",
-            "description": "The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.",
+            "description": "The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root is a Scene, LOGO an agent's logo, ACTION_LOGO an action's.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2915,11 +3207,11 @@
             "deprecationReason": null
           },
           {
-            "name": "demoState",
-            "description": "An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes.",
+            "name": "demo",
+            "description": "What a preview renders it with.",
             "type": {
-              "kind": "SCALAR",
-              "name": "JSONSerializable",
+              "kind": "INPUT_OBJECT",
+              "name": "BlokDemoInput",
               "ofType": null
             },
             "defaultValue": "null",
@@ -2928,7 +3220,7 @@
           },
           {
             "name": "dependencies",
-            "description": "The dependencies required by this Blok.",
+            "description": "The dependencies required by this Blok: for an agent's blok the one dependency `self`, its demands what the tree reads and calls of it.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -3003,14 +3295,598 @@
             "deprecationReason": null
           },
           {
-            "name": "source",
-            "description": "The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.",
+            "name": "locals",
+            "description": "Its locals: form state that feeds a call, written only through bind.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokLocalInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "module",
+            "description": "The module (an app's own unversioned extras, registered by a UI app such as the Orkestrator) the blok renders against besides its catalogs; the Orkestrator's when absent.",
             "type": {
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
             },
             "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "queries",
+            "description": "Its declared reads, as `queries.<key>`.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokQueryInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The Blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "subscriptions",
+            "description": "Its declared streams, as `subscriptions.<key>`.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "BlokSubscriptionInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": "The blok language version the blok speaks; 2 is the only one.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "BlokLocalInput",
+        "description": "A local: blok-level form state that feeds a call, written only through `bind` on controls. A local is an arg port plus `persist`; its `kind` is a port kind or ANY. Every field left out (or null) is the tree's to tell: the kind is inferred (its default, the task argument it is passed to whole, the control bound to it; ANY when nothing tells), and an inferred port fills only the fields the local leaves out.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "children",
+            "description": "Its child ports (the item of a LIST, the fields of a DICT or MODEL).",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ArgPortInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "choices",
+            "description": "The values it takes (an ENUM's).",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ChoiceInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "default",
+            "description": "The value it starts with.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "AnyDefault",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": "What it is for.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "dimension",
+            "description": "For a QUANTITY: its dimensionality (derived from the unit).",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "effects",
+            "description": "Its effects.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "EffectInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": "The structure (or model, enum) identifier of what it holds.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "Its name, read bare in the tree (`{iterations}`); never a reserved root.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "kind",
+            "description": "A port kind or ANY. Left out or null: inferred from the tree, ANY when nothing tells.",
+            "type": {
+              "kind": "ENUM",
+              "name": "LocalKind",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "label",
+            "description": "Its label.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "nullable",
+            "description": "Whether it may hold null; left out, what is inferred says (false when nothing does).",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "persist",
+            "description": "Remember the last input on this device (never on a server); false when left out.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "proposedUnits",
+            "description": "For a QUANTITY: the units offered.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "referenceUnit",
+            "description": "For a QUANTITY: its reference unit.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "requires",
+            "description": "Its descriptor requirements.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "RequiresInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "validators",
+            "description": "Its validators.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ValidatorInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "widget",
+            "description": "The widget a form of it uses.",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "AssignWidgetInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "BlokQueryInput",
+        "description": "A declared read: one GraphQL query on a service, re-run when its variables change; the blok reads it as `queries.<key>`.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "document",
+            "description": "One GraphQL `query` operation; never a mutation.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "Its name: the blok reads it as `queries.<key>` (status, value, error, refetching, fetching_more).",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "more",
+            "description": "The list field of its result that `queries.<key>.fetch_more(...)` appends new pages to, as a dotted path into the data (`positions`, `images.items`). A query without it cannot fetch more.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "poll",
+            "description": "Re-run every this many seconds, besides when its variables change.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "service",
+            "description": "The service it runs on, by its key ('mikro').",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variables",
+            "description": "Its variables, each an expression over args, locals and dependencies (as a call argument is stored).",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ActionArgumentInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "BlokSubscriptionInput",
+        "description": "A declared stream: one GraphQL subscription on a service; the blok reads it as `subscriptions.<key>`.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "document",
+            "description": "One GraphQL `subscription` operation.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "history",
+            "description": "A declared query to replay from while travelling; without it the value at travel start shows, stale.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "keep",
+            "description": "Keep the last this many payloads as a list; the latest only when absent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "Its name: the blok reads it as `subscriptions.<key>` (status, value, error).",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "service",
+            "description": "The service it runs on, by its key.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variables",
+            "description": "Its variables, as a query's.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ActionArgumentInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -3847,7 +4723,7 @@
       {
         "kind": "ENUM",
         "name": "ComponentContext",
-        "description": "The renderer a catalog component lives in. A component may only be placed where its context is in force.",
+        "description": "The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run.",
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -3872,6 +4748,12 @@
             "deprecationReason": null
           },
           {
+            "name": "OVERLAY",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "SCENE",
             "description": null,
             "isDeprecated": false,
@@ -3883,13 +4765,13 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ComponentNodeInput",
-        "description": "An abstract structural visual element inside a Blok blueprint manifest.",
+        "description": "A node of a blok tree (blok language v2).",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
             "name": "children",
-            "description": "Flat adjacency pointer list mapping out IDs nested inside this specific component layer.",
+            "description": "Its children, in order.",
             "type": {
               "kind": "LIST",
               "name": null,
@@ -3909,7 +4791,7 @@
           },
           {
             "name": "component",
-            "description": "The type indicator token matching your Electron app's registered catalog specs (e.g. 'Slider').",
+            "description": "The catalog component (`Button`) or language component (`if`, `foreach`, `suspense`).",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -3925,7 +4807,7 @@
           },
           {
             "name": "id",
-            "description": "Unique structural string identifying this node instance inside the flat workspace layout tree.",
+            "description": "An explicit id, or one derived from the node's place (`Card[0]/Button[1]`); unique in the tree.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -3967,7 +4849,7 @@
       {
         "kind": "OBJECT",
         "name": "ComponentProp",
-        "description": "A single key-value prop configuration for a component layout node.",
+        "description": "One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null).",
         "isOneOf": null,
         "fields": [
           {
@@ -4055,13 +4937,13 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ComponentPropInput",
-        "description": "A single key-value prop configuration for a component layout node.",
+        "description": "One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect (`query.refetch`, `query.fetch_more`, `ui.copy`, `task.answer`), or nothing (null).",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
             "name": "agentCall",
-            "description": "Defines an imperative interactive network action callback loop if this prop should trigger an agent interaction.",
+            "description": "A task call: a callback's one thing.",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "AgentProbeInput",
@@ -4073,7 +4955,7 @@
           },
           {
             "name": "declaresValue",
-            "description": "If set, this prop declares a new 'value' in the Blok state that can be referenced by other props or actions. The value of this field should be the name of the declared value (e.g., 'selected_user').",
+            "description": "The name a task call writes its record to (`... into move`), or the loop variable of a `foreach` (its `let`).",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -4085,7 +4967,7 @@
           },
           {
             "name": "dynamicValue",
-            "description": "A reactive state data-binding rule.",
+            "description": "A path the prop reads.",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "DynamicValueInput",
@@ -4113,7 +4995,7 @@
           },
           {
             "name": "staticValue",
-            "description": "A raw scalar or JSON-stringified literal configuration parameter (e.g. '40x' or True).",
+            "description": "A JSON literal: a string, number, bool, list or object.",
             "type": {
               "kind": "SCALAR",
               "name": "JSONSerializable",
@@ -4125,7 +5007,7 @@
           },
           {
             "name": "utilCall",
-            "description": "Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction.",
+            "description": "A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more).",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "UtilCallInput",
@@ -6382,6 +7264,30 @@
             "deprecationReason": null
           },
           {
+            "name": "bloks",
+            "description": "The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ActionBlokInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "catalogs",
             "description": "Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error.",
             "type": {
@@ -6556,6 +7462,30 @@
                   "ofType": {
                     "name": "PortGroupInput",
                     "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "protocols",
+            "description": "Where the action means to hook in (`on_scene_annotation`): hints a caller filters on, stored beside the protocols the server infers. Not a contract, and not part of the action's hash.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String",
+                    "kind": "SCALAR",
                     "ofType": null
                   }
                 }
@@ -7381,7 +8311,7 @@
           },
           {
             "name": "path",
-            "description": "JSON Pointer to a variable inside the Blok's isolated data model (e.g., '/microscope/exposure').",
+            "description": "The path the prop reads: a root (`self`, `deps`, `args`, `task`, `queries`, `subscriptions`, `viewer`, `then`, `event`, `error`), a local, a loop variable or a record, and what follows it.",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -8203,8 +9133,8 @@
             "deprecationReason": null
           },
           {
-            "name": "demoState",
-            "description": "The state the blok is drawn against when it is shown on its own.",
+            "name": "demo",
+            "description": "What a preview renders it with.",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -8268,7 +9198,7 @@
           },
           {
             "name": "hash",
-            "description": "A SHA-256 of what the blok draws: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.",
+            "description": "A SHA-256 of what the blok draws: its component tree, context and what it declares beside it. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -8315,12 +9245,56 @@
             "deprecationReason": null
           },
           {
+            "name": "locals",
+            "description": "Its locals, as the app declared them (snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "parseError",
             "description": "Why the blok's source does not parse, or null.",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "queries",
+            "description": "Its declared reads (snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": "The blok language version it speaks; null for a blok an app brought before blok language v2.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
               "ofType": null
             },
             "isDeprecated": false,
@@ -10271,6 +11245,108 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "LocalKind",
+        "description": "The kind of a blok local: a port kind, or ANY (an untyped value, which skips the bind and argument kind checks). No action port is ever ANY.",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "ANY",
+            "description": "An untyped value: nothing gave the local a kind. A path below it is taken as written.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "BOOL",
+            "description": "A boolean. No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DATE",
+            "description": "An ISO-8601 date or datetime string. No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DICT",
+            "description": "A string-keyed map. One child keyed '...' describes a homogeneous value type; several named children describe the known keys.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ENUM",
+            "description": "One of a fixed set of values; `choices` required.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "FLOAT",
+            "description": "A floating point number. No children; choices optional.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INT",
+            "description": "An integer. No children; choices optional.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INTERFACE",
+            "description": "A reference to any object implementing an interface, typed by `identifier` (required). No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "LIST",
+            "description": "A list; exactly one child describes the item type (conventionally keyed '...').",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MEMORY_STRUCTURE",
+            "description": "A reference to an object that lives in the agent's memory, typed by `identifier` (required). Makes the action LOCAL-scoped. No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MODEL",
+            "description": "An object with named fields; at least one child per field, `identifier` optional.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "QUANTITY",
+            "description": "A physical quantity with a unit; `reference_unit` required, `dimension` derived. No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "STRING",
+            "description": "A string. No children; choices optional.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "STRUCTURE",
+            "description": "A reference to an object held by a service, typed by `identifier` (@package/key, required). Values are ids. No children.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "UNION",
+            "description": "One of several variants; at least two children, each a variant.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "INPUT_OBJECT",
         "name": "LockDefinitionInput",
         "description": "Which locks does the agent provide in general",
@@ -11781,8 +12857,24 @@
         "isOneOf": null,
         "fields": [
           {
-            "name": "slug",
-            "description": "Slug of the organization.",
+            "name": "id",
+            "description": "This service's id of the organization.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": "The organization across issuers and services: `<issuer>#<org>`.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -15685,6 +16777,22 @@
             "deprecationReason": null
           },
           {
+            "name": "catalogs",
+            "description": "The catalogs it needs, as name@version.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "componentTree",
             "description": "The whole component tree as one JSON value (a list of roots, snake_case keys). Null when the source does not parse.",
             "args": [],
@@ -15713,13 +16821,17 @@
             "deprecationReason": null
           },
           {
-            "name": "demoState",
-            "description": "The state the blok is drawn against when it is shown on its own.",
+            "name": "demo",
+            "description": "What a preview renders it with, as a rekuest_core BlokDemoInput.",
             "args": [],
             "type": {
-              "kind": "SCALAR",
-              "name": "JSON",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -15778,7 +16890,7 @@
           },
           {
             "name": "hash",
-            "description": "A SHA-256 of what the blok draws: its component tree, demo state and context. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.",
+            "description": "A SHA-256 of what the blok draws: its component tree, context and what it declares beside it. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -15810,7 +16922,7 @@
           },
           {
             "name": "installHash",
-            "description": "A SHA-256 of everything installing it writes: its name, description, BSX, demo state, dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.",
+            "description": "A SHA-256 of everything installing it writes: its name, description, BSX, declarations (locals, demo, queries, ...), dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -15852,6 +16964,34 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "locals",
+            "description": "Its locals, as rekuest_core BlokLocalInputs (arg ports plus persist, snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "module",
+            "description": "The module (an app's own UI extras, registered in rekuest) it renders against besides its catalogs; the Orkestrator's when null.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -15901,6 +17041,22 @@
             "deprecationReason": null
           },
           {
+            "name": "queries",
+            "description": "Its declared reads, as rekuest_core BlokQueryInputs (snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "repo",
             "description": "The repository that publishes it.",
             "args": [],
@@ -15945,6 +17101,22 @@
             "deprecationReason": null
           },
           {
+            "name": "subscriptions",
+            "description": "Its declared streams, as rekuest_core BlokSubscriptionInputs (snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "updatedAt",
             "description": "When a scan last wrote it.",
             "args": [],
@@ -15953,6 +17125,22 @@
               "name": null,
               "ofType": {
                 "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": "The blok language version it speaks; 2 is the only one.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -19514,7 +20702,7 @@
           },
           {
             "name": "operation",
-            "description": "The utility function name to invoke.",
+            "description": "The function called (`str.upper`), or in a callback the effect (`ui.copy`, `task.answer`).",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -20798,6 +21986,150 @@
     ],
     "directives": [
       {
+        "name": "auth",
+        "description": null,
+        "isRepeatable": false,
+        "isDeprecated": false,
+        "deprecationReason": null,
+        "locations": [
+          "FIELD_DEFINITION"
+        ],
+        "args": [
+          {
+            "name": "allow_scoped",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "any_org_role_of",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "any_role_of",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "any_scope_of",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "required_org_roles",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "required_roles",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "required_scopes",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ]
+      },
+      {
         "name": "deprecated",
         "description": "Marks an element of a GraphQL schema as no longer supported.",
         "isRepeatable": false,
@@ -20820,6 +22152,34 @@
               "ofType": null
             },
             "defaultValue": "\"No longer supported\"",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ]
+      },
+      {
+        "name": "identified",
+        "description": null,
+        "isRepeatable": false,
+        "isDeprecated": false,
+        "deprecationReason": null,
+        "locations": [
+          "OBJECT"
+        ],
+        "args": [
+          {
+            "name": "by",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           }

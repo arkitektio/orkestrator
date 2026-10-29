@@ -59,7 +59,6 @@ export const ExperimentPage = asDetailQueryRoute(
           object={experiment}
           title={experiment.name}
           help={ELEKTRO_HELP.experiment}
-          variant="black"
           overlay
           pageActions={
             <>

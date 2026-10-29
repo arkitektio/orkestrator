@@ -118,3 +118,68 @@ describe("probePoints", () => {
     expect(store.getState().probePoints).toEqual([]);
   });
 });
+
+describe("probe point readings", () => {
+  const clickOn = (layerId: string, voxelIndex: [number, number, number]): ProbeResult => ({
+    ...probeAt([0, 0, 0]),
+    layerId,
+    voxelIndex,
+    origin: "click",
+  });
+
+  it("keeps what each info layer read, and each reading's first lookup", () => {
+    const store = build();
+    const hit = clickOn("nuclei", [1, 2, 3]);
+    const lookup = { systemId: "signal-system", coords: { x: 1, t: 0 } };
+    store.getState().pinProbePoint(hit, null, null, null, [
+      { probe: hit, lookup: null },
+      { probe: clickOn("signal", [4, 5, 6]), lookup },
+    ]);
+    expect(store.getState().probePoints[0].readings.map((r) => r.probe.layerId)).toEqual([
+      "nuclei",
+      "signal",
+    ]);
+
+    // A re-publish takes the new readings, but a lookup already frozen stays.
+    store.getState().refreshProbePoint(hit, null, [
+      { probe: clickOn("signal", [4, 5, 6]), lookup: { systemId: "signal-system", coords: { x: 1, t: 9 } } },
+    ]);
+    const [reading] = store.getState().probePoints[0].readings;
+    expect(reading.lookup).toBe(lookup);
+  });
+
+  it("a repeat click without readings keeps the ones it has", () => {
+    const store = build();
+    const hit = clickOn("nuclei", [1, 2, 3]);
+    store.getState().pinProbePoint(hit, null, null, null, [{ probe: hit, lookup: null }]);
+    store.getState().pinProbePoint(hit, null);
+    expect(store.getState().probePoints[0].readings).toHaveLength(1);
+  });
+});
+
+describe("probedAttributes per layer", () => {
+  const key = (layerId: string) => ({
+    layerId,
+    voxelIndex: [1, 2, 3] as [number, number, number],
+    sliceSignature: "",
+    systemId: "system",
+    pointId: `${layerId}:1,2,3:`,
+  });
+
+  it("files each reading's rows under its layer, and clears all but the kept", () => {
+    const store = build();
+    store.getState().beginProbedAttributes(key("a"), []);
+    store.getState().beginProbedAttributes(key("b"), []);
+    expect(Object.keys(store.getState().probedAttributes)).toEqual(["a", "b"]);
+
+    store.getState().clearProbedAttributes(["b"]);
+    expect(Object.keys(store.getState().probedAttributes)).toEqual(["b"]);
+
+    let writes = 0;
+    store.subscribe(() => writes++);
+    store.getState().clearProbedAttributes(["b"]);
+    expect(writes).toBe(0);
+    store.getState().clearProbedAttributes();
+    expect(store.getState().probedAttributes).toEqual({});
+  });
+});

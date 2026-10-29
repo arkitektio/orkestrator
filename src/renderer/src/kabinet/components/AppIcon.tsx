@@ -4,9 +4,22 @@ import { useState } from "react";
 import { hueFor, type AppIdentity } from "../appIdentity";
 import { KabinetBlokLogo } from "./logo/KabinetBlokLogo";
 
-/** Soft two-stop gradient derived from the app's hue. */
-export const appGradient = (hue: number, alpha = 1) =>
-  `linear-gradient(135deg, hsl(${hue} 70% 55% / ${alpha}), hsl(${(hue + 40) % 360} 75% 42% / ${alpha}))`;
+const brandStop = (lightness: number, chroma: number, shift: number, alpha: number) =>
+  `oklch(${lightness.toFixed(3)} calc(var(--brand-chroma) * ${chroma.toFixed(3)}) calc(var(--brand-hue) + ${shift.toFixed(1)}) / ${alpha})`;
+
+/**
+ * Soft two-stop gradient for an app, on the brand hue so it repaints with the
+ * theme. `seed` (`hueFor`, 0–360) picks the app's step within it: lightness and
+ * chroma vary per app, the hue only by a few degrees. Both stops stay dark
+ * enough for the white initials in either mode.
+ */
+export const appGradient = (seed: number, alpha = 1) => {
+  const t = (((seed % 360) + 360) % 360) / 360;
+  const lightness = 0.46 + 0.12 * ((t * 3) % 1);
+  const chroma = 0.55 + 0.45 * ((t * 7) % 1);
+  const shift = (t - 0.5) * 24;
+  return `linear-gradient(135deg, ${brandStop(lightness + 0.06, chroma, shift, alpha)}, ${brandStop(lightness - 0.1, chroma * 0.85, shift + 8, alpha)})`;
+};
 
 /**
  * An app's icon, in four tiers.
@@ -75,7 +88,7 @@ export const AppIcon = ({
       <div
         className={cn(
           "relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl",
-          "shadow-sm ring-1 ring-black/5 dark:ring-white/10",
+          "shadow-sm ring-1 ring-border",
           "size-14 text-lg",
           className,
         )}
@@ -104,7 +117,7 @@ export const AppIcon = ({
       <div
         className={cn(
           "absolute inset-0 flex items-center justify-center rounded-[inherit]",
-          "shadow-sm ring-1 ring-black/5 transition-opacity duration-300 dark:ring-white/10",
+          "shadow-sm ring-1 ring-border transition-opacity duration-300",
           // A mark is a lit 3D object on transparency: it carries its own
           // colour and shading, so the tinted, ringed tile that frames a flat
           // logo only fights with it.

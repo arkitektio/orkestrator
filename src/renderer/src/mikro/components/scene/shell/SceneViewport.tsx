@@ -353,7 +353,7 @@ export const SceneViewport = (props: {
             }: ${status.error.message}`
           : "Initializing scene data...";
     return (
-      <div className="relative h-full w-full overflow-hidden rounded-lg bg-black">
+      <div className="dark relative h-full w-full overflow-hidden rounded-lg bg-black text-foreground">
         <div className="flex h-full w-full items-center justify-center px-8 text-center text-sm text-zinc-300">
           {message}
         </div>
@@ -366,8 +366,13 @@ export const SceneViewport = (props: {
       {/* What a menu in the viewport runs and gets a lens back from lands in
           the scene as a layer. */}
       <SceneResultSink>
+      {/* The canvas is the one black surface on the page, in either theme:
+          `dark` resolves the chrome drawn over it (buttons, popovers in
+          place, borders) to its dark tokens. `text-foreground` too: `color`
+          inherits as a computed value, so without it the page's dark text
+          would carry into the canvas and its icons would vanish. */}
       <div
-        className="relative h-full w-full overflow-hidden rounded-lg bg-black"
+        className="dark relative h-full w-full overflow-hidden rounded-lg bg-black text-foreground"
         style={backgroundStyle(status.scene.backgroundColor)}
       >
         <KeyboardModeController />

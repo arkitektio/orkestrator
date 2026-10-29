@@ -223,7 +223,7 @@ export const NetworkLayerCard = memo(
         swatchCSS: byInstance ? instancePaletteCSS(activePalette) : uniformCSS,
         settings: (
           <div className="space-y-1.5">
-            <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">
+            <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">
               palette
             </div>
             <ColormapSelect
@@ -247,7 +247,7 @@ export const NetworkLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Share2 className="h-3 w-3 text-emerald-300" />}
+        icon={<Share2 className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
         tile="bg-emerald-400/15"
         title={layer.name?.trim() || collection?.label || `Network ${layer.id}`}
         hidden={hidden}
@@ -282,12 +282,12 @@ export const NetworkLayerCard = memo(
                   : "The width of every segment, in scene units. A well-defined length only where the layer's placement is a similarity or better."
               }
             />
-            <span className="w-8 shrink-0 text-right font-mono text-[9px] text-white/40">
+            <span className="w-8 shrink-0 text-right font-mono text-[9px] text-foreground/40">
               {lineWidth}
             </span>
           </div>
           {hasRadii && (
-            <div className="mt-1 text-[9px] text-white/35">
+            <div className="mt-1 text-[9px] text-foreground/35">
               per-node radii from the collection override this
             </div>
           )}
@@ -438,7 +438,7 @@ export const NetworkLayerCard = memo(
           {/* Declared-but-unimplemented: shown so a set field is not silently
               ignored. See the module docblock. */}
           {(layer.nodeSizeColumn || layer.edgeWidthColumn) && (
-            <div className="mt-1 text-[9px] text-amber-300/60">
+            <div className="mt-1 text-[9px] text-amber-700/60 dark:text-amber-300/60">
               {layer.nodeSizeColumn
                 ? `nodeSizeColumn "${layer.nodeSizeColumn}"`
                 : `edgeWidthColumn "${layer.edgeWidthColumn}"`}{" "}

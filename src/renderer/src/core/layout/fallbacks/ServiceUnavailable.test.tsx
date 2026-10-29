@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { buildConnectionDiagram } from "@/core/connection/arkitekt/doctor/diagram";
@@ -31,6 +31,13 @@ const renderPanel = (props: Partial<React.ComponentProps<typeof ServiceStatusPan
       {...props}
     />,
   );
+
+/** The page with its technical details (and the map in them) unfolded, for what is drawn in it. */
+const renderMap = (props: Partial<React.ComponentProps<typeof ServiceStatusPanel>> = {}) => {
+  const result = renderPanel(props);
+  fireEvent.click(screen.getByRole("button", { name: /Technical details/ }));
+  return result;
+};
 
 /** One part of the diagram, by the id the view puts on it. */
 const part = (id: string): HTMLElement => {
@@ -73,7 +80,7 @@ const report = (online: boolean): DoctorReport => {
 
 describe("ServiceStatusPanel", () => {
   it("says which service it could not reach and what it tried", () => {
-    renderPanel();
+    renderMap();
     expect(screen.getByRole("heading", { name: "Couldn't reach Mikro" })).toBeInTheDocument();
     // The address it tried is a line in the diagram, not a sentence.
     expect(screen.getByRole("button", { name: /mikro\.tailnet\.ts\.net/ })).toBeInTheDocument();
@@ -90,7 +97,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("draws the coordination server as working, and still never blames it in words", () => {
-    renderPanel({
+    renderMap({
       allDown: true,
       deployment: { name: "jhnnsrs-lab" },
       coordination: { host: "go.arkitekt.live" },
@@ -105,7 +112,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("puts the break on the line to the hub, with its reason, and leaves the rest green", () => {
-    renderPanel({ tunnel: "Arkitekt mesh · lab" });
+    renderMap({ tunnel: "Arkitekt mesh · lab" });
 
     const line = part("serviceLink");
     expect(line).toHaveAttribute("data-state", "failed");
@@ -121,7 +128,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("keeps the break on the line when the hub reports itself healthy", () => {
-    renderPanel({ doctor: { status: "done", report: report(true) } });
+    renderMap({ doctor: { status: "done", report: report(true) } });
 
     expect(part("reportLink")).toHaveAttribute("data-state", "ok");
     expect(within(part("reportLink")).getByText("reporting")).toBeInTheDocument();
@@ -132,7 +139,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("moves the break to the hub when it has stopped reporting", () => {
-    renderPanel({ doctor: { status: "done", report: report(false) } });
+    renderMap({ doctor: { status: "done", report: report(false) } });
 
     expect(part("reportLink")).toHaveAttribute("data-state", "failed");
     expect(within(part("reportLink")).getByText("not reporting")).toBeInTheDocument();
@@ -140,7 +147,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("draws each address as its own line, with what it ran into for whoever asks", async () => {
-    renderPanel({ doctor: { status: "done", report: report(true) } });
+    renderMap({ doctor: { status: "done", report: report(true) } });
 
     const line = screen.getByRole("button", { name: /mikro\.tailnet\.ts\.net:443/ });
     expect(line.closest("[data-alias]")).toHaveAttribute("data-state", "failed");
@@ -154,19 +161,19 @@ describe("ServiceStatusPanel", () => {
     // The doctor's run is in flight (or about to start): no half-checked picture.
     for (const status of ["idle", "running"] as const) {
       const { unmount } = renderPanel({ doctor: { status } });
-      expect(screen.getByText("Diagnosing…")).toBeInTheDocument();
+      expect(screen.getByText("Investigating what is wrong…")).toBeInTheDocument();
       expect(document.querySelector("[data-part]")).toBeNull();
       unmount();
     }
 
     // A re-run makes the last report stale, so it waits again.
     const { unmount } = renderPanel({ doctor: { status: "running", report: report(true) } });
-    expect(screen.getByText("Diagnosing…")).toBeInTheDocument();
+    expect(screen.getByText("Investigating what is wrong…")).toBeInTheDocument();
     expect(document.querySelector("[data-part]")).toBeNull();
     unmount();
 
-    renderPanel({ doctor: { status: "done", report: report(true) } });
-    expect(screen.queryByText("Diagnosing…")).toBeNull();
+    renderMap({ doctor: { status: "done", report: report(true) } });
+    expect(screen.queryByText("Investigating what is wrong…")).toBeNull();
     expect(part("serviceLink")).toHaveAttribute("data-state", "failed");
   });
 
@@ -175,7 +182,7 @@ describe("ServiceStatusPanel", () => {
     for (const status of ["checking", "configured"] as const) {
       const { unmount } = renderPanel({ state: state({ status, errors: [] }), doctor: { status: "idle" } });
       expect(screen.getByRole("heading", { name: "Connecting to Mikro" })).toBeInTheDocument();
-      expect(screen.queryByText("Diagnosing…")).toBeNull();
+      expect(screen.queryByText("Investigating what is wrong…")).toBeNull();
       expect(screen.queryByLabelText("Connection diagram")).toBeNull();
       expect(screen.queryByRole("button")).toBeNull();
       unmount();
@@ -183,21 +190,97 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("says what it could not reach first, then diagnoses, then shows the picture", () => {
-    const { unmount } = renderPanel({ doctor: { status: "running" } });
+    const { unmount } = renderPanel({
+      state: state({
+        instance: { identifier: "m", service: "mikro", aliases: [{ id: "a", host: "lab-server", port: 443, ssl: true, challenge: "c" }] },
+      } as Partial<ServiceRuntimeState>),
+      doctor: { status: "running" },
+    });
+    // What is being looked at, while it is.
+    expect(screen.getByText("lab-server:443")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Technical details/ })).toBeNull();
     expect(screen.getByRole("heading", { name: "Couldn't reach Mikro" })).toBeInTheDocument();
-    expect(screen.getByText("Diagnosing…")).toBeInTheDocument();
+    expect(screen.getByText("Investigating what is wrong…")).toBeInTheDocument();
     unmount();
 
-    renderPanel({
+    renderMap({
       doctor: {
         status: "done",
         report: { ...report(true), findings: [{ id: "x", severity: "blocker", title: "The way to the hub is broken", detail: "d" }] },
       },
     });
-    expect(screen.queryByText("Diagnosing…")).toBeNull();
+    expect(screen.queryByText("Investigating what is wrong…")).toBeNull();
     // The likeliest reason is one line under the heading, not a card.
     expect(screen.getByText("The way to the hub is broken")).toBeInTheDocument();
     expect(part("serviceLink")).toHaveAttribute("data-state", "failed");
+  });
+
+  it("leads with the verdict and what to try, and folds the map away", () => {
+    renderPanel({
+      doctor: {
+        status: "done",
+        report: {
+          ...report(true),
+          findings: [
+            {
+              id: "service.not-running",
+              severity: "blocker",
+              title: "mikro isn't running on lab-server",
+              detail: "d",
+              steps: ["Start mikro on lab-server.", "Retry in a moment."],
+            },
+          ],
+        },
+      },
+    });
+    const reason = screen.getByRole("region", { name: "Most likely reason" });
+    expect(within(reason).getByText("mikro isn't running on lab-server")).toBeInTheDocument();
+    expect(screen.getByText(/^Investigated 1 address in 1\.2s/)).toBeInTheDocument();
+    const steps = screen.getByRole("region", { name: "What you can try" });
+    expect(within(steps).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "1Start mikro on lab-server.",
+      "2Retry in a moment.",
+    ]);
+    expect(screen.getByRole("button", { name: /retry mikro/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy report/i })).toBeInTheDocument();
+    expect(document.querySelector("[data-part]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Technical details/ }));
+    expect(part("serviceLink")).toHaveAttribute("data-state", "failed");
+  });
+
+  it("retries by itself every minute, and a manual retry starts the minute over", async () => {
+    vi.useFakeTimers();
+    try {
+      const onRetry = vi.fn();
+      renderPanel({ onRetry, doctor: { status: "done", report: report(true) } });
+      expect(screen.getByText("Retrying automatically in 60s")).toBeInTheDocument();
+
+      await act(async () => vi.advanceTimersByTime(30_000));
+      expect(screen.getByText("Retrying automatically in 30s")).toBeInTheDocument();
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /retry mikro/i })));
+      expect(onRetry).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Retrying automatically in 60s")).toBeInTheDocument();
+
+      await act(async () => vi.advanceTimersByTime(59_000));
+      expect(onRetry).toHaveBeenCalledTimes(1);
+      await act(async () => vi.advanceTimersByTime(1_000));
+      expect(onRetry).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not retry by itself while it is still diagnosing", async () => {
+    vi.useFakeTimers();
+    try {
+      const onRetry = vi.fn();
+      renderPanel({ onRetry, doctor: { status: "running" } });
+      await act(async () => vi.advanceTimersByTime(120_000));
+      expect(onRetry).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("lists nothing under the picture: no report cards, only the report to copy", () => {
@@ -246,7 +329,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("does not ask again once it has an answer, and draws the relay Tailscale reports", () => {
-    renderPanel({
+    renderMap({
       tailscaleConsent: "allowed",
       onTailscaleAnswer: vi.fn(),
       tailscale: {
@@ -266,7 +349,7 @@ describe("ServiceStatusPanel", () => {
 
   it("draws one relay for every address that goes through the same DERP region", () => {
     const alias = (id: string, host: string) => ({ id, host, port: 443, ssl: true, challenge: "c" });
-    renderPanel({
+    renderMap({
       state: state({
         instance: { identifier: "m", service: "mikro", aliases: [alias("a", "mikro.tailnet.ts.net"), alias("b", "100.64.0.2")] },
       } as Partial<ServiceRuntimeState>),
@@ -310,7 +393,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("warns that a relay costs performance to whoever hovers it", async () => {
-    renderPanel({
+    renderMap({
       tailscaleConsent: "allowed",
       tailscale: {
         vendor: "tailscale",
@@ -325,7 +408,7 @@ describe("ServiceStatusPanel", () => {
   });
 
   it("shows a part's report to whoever hovers it", async () => {
-    renderPanel({ coordination: { host: "go.arkitekt.live" } });
+    renderMap({ coordination: { host: "go.arkitekt.live" } });
 
     await userEvent.hover(part("coordination"));
     expect((await screen.findAllByText("where this session signed in")).length).toBeGreaterThan(0);
@@ -336,7 +419,7 @@ describe("ServiceStatusPanel", () => {
     withFinding.findings = [
       { id: "hub.healthy-client-fails", severity: "blocker", title: "The hub sees it running", detail: "d", targetLabel: "mikro" },
     ];
-    renderPanel({
+    renderMap({
       doctor: { status: "done", report: withFinding },
       renderFindings: (findings) => <div>{findings.map((finding) => finding.title).join(", ")}</div>,
     });
@@ -392,5 +475,27 @@ describe("ServiceStatusPanel progress", () => {
     expect(screen.getByText("Couldn't reach Mikro")).toBeTruthy();
     expect(screen.getByText("Waiting for an administrator to approve this computer on the mesh.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mesh settings" })).toBeTruthy();
+  });
+
+  it("does not blame the mesh when the doctor found the server down", () => {
+    renderPanel({
+      progress: {
+        ...progress,
+        waitingForMesh: false,
+        attempts: [...progress.attempts, { host: "mikro.lab.ts.net", route: "mesh", state: "failed", at: 1 }],
+      },
+      meshProgress: mesh("needs-machine-auth"),
+      meshAction: <button>Mesh settings</button>,
+      doctor: {
+        status: "done",
+        report: {
+          ...report(true),
+          findings: [{ id: "service.not-running", severity: "blocker", title: "mikro isn't running on lab-server", detail: "d" }],
+        },
+      },
+    });
+    expect(screen.getByText("mikro isn't running on lab-server")).toBeTruthy();
+    expect(screen.queryByText(/approve this computer on the mesh/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mesh settings" })).toBeNull();
   });
 });

@@ -9,7 +9,7 @@ import {
 } from "@/core/ui/card";
 import { PageSections } from "@/core/layout/PageSections";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
-import { KabinetApproval, KabinetPod } from "@/core/linkers";
+import { KabinetApproval, KabinetDeployment, KabinetFlavour, KabinetPod, KabinetRelease } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
@@ -32,19 +32,19 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
         />
       }
     >
-      <div className="space-y-6 p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-          <div className="space-y-4 rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 p-6 shadow-sm">
+      <div className="space-y-4 p-3">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+          <div className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-muted/40 p-4 shadow-sm">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 <span>{pod.deployment.flavour.release.app.identifier}</span>
                 <span>•</span>
                 <span>{pod.deployment.flavour.release.version}</span>
               </div>
-              <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+              <h1 className="text-2xl font-bold tracking-tight">
                 {pod.backend.name}
               </h1>
-              <CardDescription className="max-w-2xl text-base leading-7">
+              <CardDescription className="text-sm">
                 Live pod for {pod.deployment.flavour.release.app.identifier} on{" "}
                 {pod.backend.name}. The log stream and deployment details below
                 summarise the current runtime state.
@@ -75,16 +75,31 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
                 <div className="font-medium break-all">{pod.backend.name}</div>
               </div>
               <div>
+                <div className="text-muted-foreground">Deployment</div>
+                <KabinetDeployment.DetailLink
+                  object={pod.deployment}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  {pod.deployment.name}
+                </KabinetDeployment.DetailLink>
+              </div>
+              <div>
                 <div className="text-muted-foreground">Flavour</div>
-                <div className="font-medium break-all">
-                  {pod.deployment.flavour.release.id}
-                </div>
+                <KabinetFlavour.DetailLink
+                  object={pod.deployment.flavour}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  {pod.deployment.flavour.name}
+                </KabinetFlavour.DetailLink>
               </div>
               <div>
                 <div className="text-muted-foreground">Release</div>
-                <div className="font-medium break-all">
-                  {pod.deployment.flavour.release.id}
-                </div>
+                <KabinetRelease.DetailLink
+                  object={pod.deployment.flavour.release}
+                  className="font-medium break-all hover:text-primary"
+                >
+                  v{pod.deployment.flavour.release.version}
+                </KabinetRelease.DetailLink>
               </div>
               {pod.deployment.approval && (
                 <div>
@@ -114,7 +129,7 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
           <Card>
             <CardHeader>
               <CardTitle>Latest Logs</CardTitle>

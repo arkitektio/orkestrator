@@ -11,8 +11,9 @@ import React from "react";
 import { useGetReleaseApprovalQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
+import { RevokeApprovalButton } from "../components/RevokeApprovalButton";
 import { DeployButton } from "../components/store/StoreParts";
-import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
+import { APPROVAL_STATUS_DOT, APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 import { KABINET_HELP } from "../help";
 
 const Fact = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -45,7 +46,7 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
         ) : undefined
       }
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
+      <div className="flex w-full flex-col gap-4 p-3">
         <header className="flex items-center gap-4">
           <AppIcon app={app} size={56} className="size-14 rounded-2xl" />
           <div className="min-w-0">
@@ -56,14 +57,8 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
               <Badge variant="secondary" className="rounded-full font-mono">
                 v{approval.release.version}
               </Badge>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "rounded-full",
-                  status === "active" && "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
-                  status === "stale" && "border-amber-500/40 text-amber-700 dark:text-amber-300",
-                )}
-              >
+              <Badge variant="outline" className="gap-1.5 rounded-full">
+                <span className={cn("size-1.5 rounded-full", APPROVAL_STATUS_DOT[status])} />
                 {APPROVAL_STATUS_LABEL[status]}
               </Badge>
             </div>
@@ -117,7 +112,10 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
         </div>
 
         <section className="flex flex-col gap-2">
-          <h3 className="text-base font-semibold tracking-tight">Mandate</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base font-semibold tracking-tight">Mandate</h3>
+            <RevokeApprovalButton approval={approval} label="Revoke mandate" />
+          </div>
           <StructureDisplay
             identifier="@lok/mandate"
             id={approval.mandateId}

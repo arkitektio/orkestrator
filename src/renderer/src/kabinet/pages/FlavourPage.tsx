@@ -6,10 +6,11 @@ import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/core/linkers";
 import { Boxes, Container, GitBranch, KeyRound, Layers, Server, Shapes } from "lucide-react";
 import { bringsBloks, FlavourBloks } from "../components/bloks/FlavourBloks";
 import { lazy, Suspense, useMemo } from "react";
-import { PodStatus, useGetFlavourQuery } from "../api/graphql";
+import { ListDeploymentFragment, PodStatus, useGetFlavourQuery } from "../api/graphql";
 import { hasOwnLogo, logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact } from "../components/AppTabs";
+import DeploymentCard from "../components/cards/DeploymentCard";
 import { InstallButton, SelectorBadges } from "../components/store/StoreParts";
 import { KABINET_HELP } from "../help";
 
@@ -63,22 +64,20 @@ const SourceTab = ({
 const DeploymentsTab = ({
   deployments,
 }: {
-  deployments: readonly { id: string; status: PodStatus }[];
+  deployments: readonly ListDeploymentFragment[];
 }) => {
   if (deployments.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
+      <p className="py-2 text-sm text-muted-foreground">
         This flavour is not deployed anywhere.
       </p>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
       {deployments.map((deployment) => (
-        <Badge key={deployment.id} variant="outline" className="rounded-full">
-          {deployment.status.toLowerCase()}
-        </Badge>
+        <DeploymentCard key={deployment.id} item={deployment} />
       ))}
     </div>
   );
@@ -144,21 +143,21 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
 
   return (
     <KabinetFlavour.ModelPage title={flavour.name} object={flavour} help={KABINET_HELP.flavour}>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
-        <header className="relative overflow-hidden rounded-3xl border">
+      <div className="flex w-full flex-col gap-4 p-3">
+        <header className="relative overflow-hidden rounded-2xl border">
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0 h-28 opacity-80"
+            className="absolute inset-x-0 top-0 h-16 opacity-80"
             style={{ background: appGradient(app.hue ?? 0) }}
           />
-          <div className="relative flex flex-col gap-5 p-6 pt-14">
+          <div className="relative flex flex-col gap-3 p-4 pt-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex items-end gap-4">
                 {hasOwnLogo(app) ? (
                   <AppIcon
                     app={app}
-                    size={96}
-                    className="size-24 rounded-3xl text-3xl ring-4 ring-background"
+                    size={64}
+                    className="size-16 rounded-2xl text-xl ring-4 ring-background"
                   />
                 ) : (
                   // Live here rather than rasterised: this is the one mark on
@@ -168,16 +167,16 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
                     fallback={
                       <AppIcon
                         app={app}
-                        size={96}
-                        className="size-24 rounded-3xl text-3xl ring-4 ring-background"
+                        size={64}
+                        className="size-16 rounded-2xl text-xl ring-4 ring-background"
                       />
                     }
                   >
-                    <AppMarkCanvas app={app} />
+                    <AppMarkCanvas app={app} className="size-16" />
                   </Suspense>
                 )}
                 <div className="min-w-0 pb-1">
-                  <h1 className="text-3xl font-bold tracking-tight">{flavour.name}</h1>
+                  <h1 className="text-2xl font-bold tracking-tight">{flavour.name}</h1>
                   {/* Where this build sits: which app, which version. */}
                   <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
                     {app.id ? (

@@ -27,6 +27,13 @@ export const APPROVAL_STATUS_LABEL: Record<ApprovalStatus, string> = {
   revoked: "Revoked",
 };
 
+/** The status dot's theme colour; the label beside it stays in the text colour. */
+export const APPROVAL_STATUS_DOT: Record<ApprovalStatus, string> = {
+  active: "bg-success",
+  stale: "bg-warning",
+  revoked: "bg-muted-foreground/40",
+};
+
 /**
  * An approval the dialog can install with instead of approving again: still
  * active, for this deployer app, and the signed-in user's own (the pod acts as

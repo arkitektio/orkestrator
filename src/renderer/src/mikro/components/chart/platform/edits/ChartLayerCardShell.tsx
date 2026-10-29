@@ -7,7 +7,7 @@ import { ChartLayerMenu } from "./ChartLayerMenu";
 import { ChartLayerPlacement } from "./ChartLayerPlacement";
 
 /** The look of a header button, the scene cards' compact dialect. */
-export const CHART_CARD_BUTTON = "h-5 w-5 shrink-0 p-0 text-white/45 hover:text-white/90";
+export const CHART_CARD_BUTTON = "h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90";
 
 /**
  * The surface every chart layer card wears: the scene's `LayerCardShell`, so a
@@ -38,7 +38,7 @@ export const ChartLayerCardShell = ({
   return (
     <LayerCardShell
       icon={<span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: layer.color }} />}
-      tile="bg-white/10"
+      tile="bg-foreground/10"
       title={layer.label}
       badges={badges}
       hidden={hidden}
@@ -61,7 +61,7 @@ export const ChartLayerCardShell = ({
       }
       pinned={
         <div className="flex flex-col gap-0.5 px-2 pb-1.5">
-          <span className="truncate font-mono text-[9px] text-white/40" title={layer.reads}>
+          <span className="truncate font-mono text-[9px] text-foreground/40" title={layer.reads}>
             {layer.reads}
           </span>
           <ChartLayerPlacement layer={layer} />
@@ -78,10 +78,10 @@ export const ChartFact = ({ label, value }: { label: string; value: ReactNode | 
   if (value === null || value === undefined || value === "") return null;
   return (
     <div className="flex items-baseline gap-2">
-      <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+      <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
         {label}
       </span>
-      <span className="ml-auto truncate font-mono text-[10px] tabular-nums text-white/60">{value}</span>
+      <span className="ml-auto truncate font-mono text-[10px] tabular-nums text-foreground/60">{value}</span>
     </div>
   );
 };
@@ -91,7 +91,7 @@ export const ChartFacts = ({ children, error }: { children: ReactNode; error?: s
   <CardSection title="data">
     <div className="flex flex-col gap-0.5">{children}</div>
     {error && (
-      <div className="truncate text-[10px] text-red-300" title={error}>
+      <div className="truncate text-[10px] text-red-700 dark:text-red-300" title={error}>
         {error}
       </div>
     )}

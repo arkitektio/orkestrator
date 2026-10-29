@@ -12,14 +12,13 @@ export const MechanismPage = asDetailQueryRoute(
 
     return (
       <ElektroMechanism.ModelPage
-        variant="black"
         title={data?.mechanism?.name}
         help={ELEKTRO_HELP.mechanism}
         object={data.mechanism}
       >
         <div className="h-full w-full grid grid-cols-12 grid-reverse gap-4 pointers-events-none p-4 ">
 
-          <div className="col-span-3  @container bg-black bg-clip-padding backdrop-filter backdrop-blur-2xl bg-opacity-10 z-100 overflow-hidden flex flex-col ">
+          <div className="col-span-3  @container bg-muted/40 backdrop-blur-2xl z-100 overflow-hidden flex flex-col ">
 
             <div className=" p-3">
               <div>

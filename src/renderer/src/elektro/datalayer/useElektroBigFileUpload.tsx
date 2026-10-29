@@ -35,7 +35,7 @@ export const useElektroBigFileUpload = () => {
         RequestBigfileUploadMutationVariables
       >({
         mutation: RequestBigfileUploadDocument,
-        variables: { input: { originalFileName: file.name } },
+        variables: { input: { originalFileName: file.name, fileSize: file.size } },
       });
 
       const grant = data?.requestBigfileUpload;

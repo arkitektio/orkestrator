@@ -30,9 +30,9 @@ export const lensOfLayer = (layers: readonly PayloadLayer[], layerId: string | n
   return layer?.lens?.id && layer.lens.dataset ? ref(ARRAY_LENS, layer.lens.id) : null;
 };
 
-/** The lens a host should read "under the probe": the pinned layer's, else the first visible array layer's. */
-export const probeLens = (layers: readonly PayloadLayer[], pinnedLayerId: string | null | undefined): StructureRef | null =>
-  lensOfLayer(layers, pinnedLayerId) ??
+/** The lens a host should run with: the data layer's, else the first visible array layer's. */
+export const dataLens = (layers: readonly PayloadLayer[], dataLayerId: string | null | undefined): StructureRef | null =>
+  lensOfLayer(layers, dataLayerId) ??
   lensOfLayer(layers, layers.find((layer) => layer.visible !== false && layer.lens?.dataset)?.id);
 
 export type SceneAnnotationPayload = {

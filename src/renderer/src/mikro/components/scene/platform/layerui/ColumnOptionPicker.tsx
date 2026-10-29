@@ -221,7 +221,7 @@ export const ColumnOptionPicker = ({
         <button
           type="button"
           title={title ?? (mode === "color" ? "Add a colouring" : "Add a filter rule")}
-          className="flex h-5 shrink-0 items-center gap-1 rounded-md border border-white/10 bg-white/5 px-1.5 text-[9px] font-medium uppercase tracking-[0.06em] text-white/50 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white/90"
+          className="flex h-5 shrink-0 items-center gap-1 rounded-md border border-foreground/10 bg-foreground/5 px-1.5 text-[9px] font-medium uppercase tracking-[0.06em] text-foreground/50 transition-colors hover:border-foreground/20 hover:bg-foreground/10 hover:text-foreground/90"
         >
           <Plus className="h-2.5 w-2.5" />
           add
@@ -269,7 +269,7 @@ export const ColumnOptionPicker = ({
                       // with no parquet read behind it.
                     >
                       <span className="flex-1 truncate">{option.graphAttribute}</span>
-                      <span className="shrink-0 rounded bg-white/5 px-1 text-[9px] text-muted-foreground">
+                      <span className="shrink-0 rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground">
                         per node
                       </span>
                       {added && <Check className="h-3 w-3 shrink-0" />}
@@ -352,13 +352,13 @@ export const ColumnOptionPicker = ({
                           it from the object-level columns beside it. */}
                       {option.target && (
                         <span
-                          className="shrink-0 rounded bg-white/5 px-1 text-[9px] text-muted-foreground"
+                          className="shrink-0 rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground"
                           title={(option.target === "EDGE" ? PER_EDGE_NOTE : PER_NODE_NOTE).slice(3)}
                         >
                           {option.target === "EDGE" ? "per edge" : "per node"}
                         </span>
                       )}
-                      <span className="shrink-0 rounded bg-white/5 px-1 text-[9px] text-muted-foreground">
+                      <span className="shrink-0 rounded bg-foreground/5 px-1 text-[9px] text-muted-foreground">
                         {isMeasure(option) ? "measure" : "categorical"}
                       </span>
                       {added && <Check className="h-3 w-3 shrink-0" />}

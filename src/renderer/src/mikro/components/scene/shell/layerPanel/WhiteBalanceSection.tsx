@@ -38,7 +38,7 @@ const SliderRow = ({
   onChange: (value: number) => void;
 }) => (
   <div className="flex items-center gap-1.5" title={title}>
-    <span className="w-7 shrink-0 text-[9px] uppercase tracking-[0.08em] text-white/35">
+    <span className="w-7 shrink-0 text-[9px] uppercase tracking-[0.08em] text-foreground/35">
       {label}
     </span>
     <Slider
@@ -49,7 +49,7 @@ const SliderRow = ({
       onValueChange={([next]) => onChange(next)}
       className="flex-1 py-1"
     />
-    <span className="w-8 shrink-0 text-right font-mono text-[9px] text-white/40">{readout}</span>
+    <span className="w-8 shrink-0 text-right font-mono text-[9px] text-foreground/40">{readout}</span>
   </div>
 );
 

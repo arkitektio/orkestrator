@@ -49,7 +49,7 @@ export const ProbeTime = ({
         {readings.map((reading) => (
           <span
             key={reading.key}
-            className="font-mono text-white/50"
+            className="font-mono text-foreground/50"
             title={reading.clock ? reading.clock.toISOString() : `${reading.t} ${reading.unit}`}
           >
             {reading.clock ? formatClock(reading.clock) : `${reading.axis}=${reading.t}`}
@@ -63,9 +63,9 @@ export const ProbeTime = ({
     <>
       {readings.map((reading) => (
         <div key={reading.key} className="flex items-baseline justify-between gap-3">
-          <span className="text-white/50">Time</span>
+          <span className="text-foreground/50">Time</span>
           <span
-            className="font-mono text-white/90"
+            className="font-mono text-foreground/90"
             title={reading.clock ? reading.clock.toISOString() : undefined}
           >
             {reading.axis} {reading.index} · {reading.t}

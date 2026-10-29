@@ -152,6 +152,33 @@ fragment DetailTask on Task {
   parent {
     id
   }
+  root {
+    id
+  }
+  # what the info rail shows: who asked for it, where, and how
+  caller {
+    id
+    user {
+      sub
+    }
+    client {
+      clientId
+    }
+  }
+  space {
+    id
+    name
+  }
+  resolution {
+    id
+    name
+  }
+  heldLocks {
+    id
+    key
+  }
+  capture
+  notBefore
   finishedAt
   implementation {
     execution

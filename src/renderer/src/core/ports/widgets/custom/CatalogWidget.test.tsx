@@ -33,10 +33,10 @@ vi.mock("@/core/forms/StructurePickerControl", () => ({
 }));
 // The whole default catalog drags every module's bloks in; the picker is what
 // a structure port hosts.
-vi.mock("@/core/blok/renderer/catalog", async () => {
-  const { createBlokCatalog } = await import("@/core/blok/renderer/runtime");
-  const { structureBlokComponents } = await import("@/core/blok/renderer/bloks/structure");
-  return { defaultBlokCatalog: createBlokCatalog("widget-test-catalog", structureBlokComponents, []) };
+vi.mock("@/core/blok/catalog", async () => {
+  const { createBlokCatalog } = await import("@arkitektio/bsx/renderer/runtime/index");
+  const { orkestratorStructure } = await import("@/core/blok/structure");
+  return { defaultBlokCatalog: createBlokCatalog("widget-test-catalog", orkestratorStructure.components) };
 });
 
 import { PortsRootContext } from "@/core/ports/engine/PortsRootContext";
@@ -63,7 +63,7 @@ const PICKER_PROPS = [
   // As the server spells a prop (camelCase), which the host normalizes.
   { __typename: "ComponentProp", key: "bind", staticValue: "value" },
   { __typename: "ComponentProp", key: "query", staticValue: QUERY },
-  { __typename: "ComponentProp", key: "schema", staticValue: "mikro" },
+  { __typename: "ComponentProp", key: "ward", staticValue: "mikro" },
 ];
 
 const Harness = ({

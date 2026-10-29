@@ -109,7 +109,7 @@ const Sparkline = ({ histogram, color }: { histogram: PlaneHistogram; color: str
 
 const Swatch = ({ css }: { css: string }) => (
   <span
-    className="h-3 w-3 shrink-0 rounded-sm border border-white/20"
+    className="h-3 w-3 shrink-0 rounded-sm border border-foreground/20"
     style={{ background: css }}
   />
 );
@@ -296,10 +296,10 @@ export const RgbChannelEditor = ({
                         className={`flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] transition-colors ${
                           candidate.index === plane.index
                             ? "bg-brand/20 text-brand-soft"
-                            : "text-white/60 hover:bg-white/5 hover:text-white/85"
+                            : "text-foreground/60 hover:bg-foreground/5 hover:text-foreground/85"
                         }`}
                       >
-                        <span className="w-6 shrink-0 font-mono text-[9px] text-white/35">
+                        <span className="w-6 shrink-0 font-mono text-[9px] text-foreground/35">
                           {candidate.index}
                         </span>
                         <span className="min-w-0 flex-1 truncate">{candidate.display}</span>
@@ -310,7 +310,7 @@ export const RgbChannelEditor = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[9px] text-white/35">
+                  <span className="text-[9px] text-foreground/35">
                     this lens does not say how many planes it has — the mapping is kept as
                     stored
                   </span>

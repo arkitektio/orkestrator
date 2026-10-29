@@ -10,7 +10,13 @@ query RepoBlokTree($id: ID!) {
     id
     hash
     componentTree
-    demoState
+    vocab
+    catalogs
+    module
+    locals
+    demo
+    queries
+    subscriptions
   }
 }
 

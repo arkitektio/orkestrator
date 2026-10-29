@@ -1,5 +1,5 @@
-mutation RegisterUiCatalog($input: RegisterUiCatalogInput!) {
-  registerUiCatalog(input: $input) {
-    ...UICatalog
+mutation RegisterModule($input: RegisterModuleInput!) {
+  registerModule(input: $input) {
+    ...Module
   }
 }

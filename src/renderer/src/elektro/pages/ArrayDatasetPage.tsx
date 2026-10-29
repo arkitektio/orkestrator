@@ -73,7 +73,6 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         object={dataset}
         title={dataset.name}
         help={ELEKTRO_HELP.arrayDataset}
-        variant="black"
         overlay
         actions={<ElektroArrayDataset.Actions object={dataset} />}
         pageActions={

@@ -22,7 +22,7 @@ export const NeuronModelTitleOverlay = ({
   const hasNetwork = counts.synapses + counts.stimulators + counts.connections > 0;
 
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
+    <div className="dark text-foreground pointer-events-none absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
       {/* `break-all` for the same reason as the dataset title: names are often
           one long token, and the tail is what tells two apart. */}
       <ElektroNeuronModel.DetailLink

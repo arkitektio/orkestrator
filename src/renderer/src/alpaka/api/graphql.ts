@@ -457,6 +457,11 @@ export type FinishMessageInput = {
   text?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A memory to forget */
+export type ForgetInput = {
+  name: Scalars['String']['input'];
+};
+
 /** The type of the tool */
 export type FunctionCall = {
   __typename?: 'FunctionCall';
@@ -546,6 +551,59 @@ export type LlmModelFilter = {
 export type LlmModelOrder =
   { label: Ordering; modelId?: never; }
   |  { label?: never; modelId: Ordering; };
+
+/** Something an assistant remembers about the person who assigned its task */
+export type Memory = {
+  __typename?: 'Memory';
+  /** The memory itself */
+  content: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  /** One line saying what the memory holds: what an assistant reads in the index */
+  description: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** What the memory is about */
+  kind: MemoryKind;
+  /** A short slug the memory is found and replaced by, unique per person */
+  name: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** Filter for memories */
+export type MemoryFilter = {
+  AND?: InputMaybe<MemoryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MemoryFilter>;
+  OR?: InputMaybe<MemoryFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  kind?: InputMaybe<MemoryKind>;
+  names?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Search what a memory says: a case-insensitive substring of its name, description or content, or semantic similarity to all three. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Something to remember about the person who assigned the task */
+export type MemoryInput = {
+  /** The memory itself */
+  content: Scalars['String']['input'];
+  /** One line saying what the memory holds, read in the index every turn */
+  description: Scalars['String']['input'];
+  /** What the memory is about */
+  kind?: MemoryKind;
+  /** A short slug to find and replace the memory by: `prefers-tiff-exports` */
+  name: Scalars['String']['input'];
+};
+
+/** What a memory is about */
+export enum MemoryKind {
+  Feedback = 'FEEDBACK',
+  Project = 'PROJECT',
+  Reference = 'REFERENCE',
+  User = 'USER'
+}
+
+export type MemoryOrder =
+  { name: Ordering; updatedAt?: never; }
+  |  { name?: never; updatedAt: Ordering; };
 
 /** Message represent the message of an agent on a room */
 export type Message = {
@@ -659,12 +717,16 @@ export type Mutation = {
   ensureCollection: ChromaCollection;
   /** Close a streaming message. Pass the full final text so any delta lost on the way is repaired; call it in a finally block so a crashed stream never stays open. */
   finishMessage: Message;
+  /** Forget one of the assigner's memories by name; whether there was one */
+  forget: Scalars['Boolean']['output'];
   /** Generate an image from a text description */
   generateImage: ImageResponse;
   /** Pull a model into an Ollama provider, or a decision model into an Ollaya provider */
   pull: OllamaPullResult;
   /** Re-list the models a provider offers */
   refreshProvider: Provider;
+  /** Remember something about the person who assigned the task, replacing the memory of that name. Needs the task's provenance token */
+  remember: Memory;
   /** Take a room or a message out of a collaboration, with what it brought that nothing else there needs */
   removeFromCollaboration: Collaboration;
   /** Post a complete message into a room */
@@ -783,6 +845,12 @@ export type MutationFinishMessageArgs = {
 
 
 /** The root mutation type */
+export type MutationForgetArgs = {
+  input: ForgetInput;
+};
+
+
+/** The root mutation type */
 export type MutationGenerateImageArgs = {
   input: ImageInput;
 };
@@ -797,6 +865,12 @@ export type MutationPullArgs = {
 /** The root mutation type */
 export type MutationRefreshProviderArgs = {
   input: RefreshProviderInput;
+};
+
+
+/** The root mutation type */
+export type MutationRememberArgs = {
+  input: MemoryInput;
 };
 
 
@@ -887,7 +961,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>` */
+  identifier: Scalars['String']['output'];
 };
 
 /** A provider of LLMs */
@@ -978,6 +1053,8 @@ export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
   _service: _Service;
+  /** Who assigned the task this request is made for: whose memories it reaches */
+  assigner: User;
   /** Get a single budget by ID */
   budget: Budget;
   /** How much of a budget is used in the current period */
@@ -1002,6 +1079,10 @@ export type Query = {
   llmModel: LlmModel;
   /** List the LLM models reachable through this organization's providers */
   llmModels: Array<LlmModel>;
+  /** What is remembered about the person who assigned the task this request is made for. Needs the task's provenance token */
+  memories: Array<Memory>;
+  /** Get one of the assigner's memories by ID */
+  memory: Memory;
   /** Get a single message by ID */
   message: Message;
   /** List the messages in this organization's rooms */
@@ -1088,6 +1169,18 @@ export type QueryLlmModelsArgs = {
   filters?: InputMaybe<LlmModelFilter>;
   ordering?: Array<LlmModelOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMemoriesArgs = {
+  filters?: InputMaybe<MemoryFilter>;
+  ordering?: Array<MemoryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMemoryArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1666,7 +1759,7 @@ export type ListProviderFragment = { __typename?: 'Provider', id: string, name: 
 
 export type ChatResponseFragment = { __typename?: 'ChatResponse', id: string, object: string, created: number, model: string, usage?: { __typename?: 'Usage', promptTokens: number, completionTokens: number, totalTokens: number } | null, choices: Array<{ __typename?: 'Choice', index: number, finishReason?: string | null, message: { __typename?: 'ChatMessage', role: Role, content?: string | null, name?: string | null, toolCallId?: string | null, functionCall?: { __typename?: 'FunctionCall', name: string, arguments: string } | null, toolCalls?: Array<{ __typename?: 'ToolCall', id: string, type: ToolType, function: { __typename?: 'FunctionCall', name: string, arguments: string } }> | null } }> };
 
-export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, slug: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
+export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, identifier: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
     { __typename?: 'Message' }
     & ListMessageFragment
   )> };
@@ -2152,7 +2245,7 @@ export const RoomFragmentDoc = gql`
   }
   organization {
     id
-    slug
+    identifier
   }
   agents {
     id

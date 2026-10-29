@@ -5,7 +5,7 @@
  * here as the path `/smart/…` (see `LINKS.md`).
  */
 export type SmartLink = {
-  /** The organization's slug. */
+  /** The organization's id. */
   org: string;
   /** lok's id of the hub. Untrusted: kontrol does not check it belongs to `org`. */
   hub: string;

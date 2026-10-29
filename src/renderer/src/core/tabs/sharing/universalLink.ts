@@ -69,13 +69,12 @@ export const privateLinkFor = async (
  * front door (`frontend_url` in lok's `/.well-known/fakts`). It walks whoever
  * opens one through signing in, joining the organization and installing the
  * app before it hands the link to `orkestrator://`; the raw scheme does none
- * of that, so only these https forms are ever copied. An organization without
- * a slug cannot be linked this way.
+ * of that, so only these https forms are ever copied.
  */
 export type LinkHost = {
   frontendUrl: string;
-  /** The organization's slug. */
-  slug: string;
+  /** The organization's id: lok's, the same in every service. */
+  org: string;
   /** lok's id of the hub. */
   hub: string;
   /** lok's id of whoever copies the link; kontrol shows them as the sharer. */
@@ -98,7 +97,7 @@ const withSharer = (link: string, host: LinkHost): string =>
  */
 export const smartLinkFor = (host: LinkHost, structure: { identifier: string; id: string }): string =>
   withSharer(
-    [origin(host), "smartlink", ...[host.slug, host.hub, structure.identifier, structure.id].map(encodeURIComponent)].join("/"),
+    [origin(host), "smartlink", ...[host.org, host.hub, structure.identifier, structure.id].map(encodeURIComponent)].join("/"),
     host,
   );
 
@@ -114,7 +113,7 @@ export const orgLinkFor = (
   scope: ShareScope,
 ): string =>
   withSharer(
-    `${origin(host)}/deeplink/${encodeURIComponent(host.slug)}/orkestrator/${encodeShareScope(
+    `${origin(host)}/deeplink/${encodeURIComponent(host.org)}/orkestrator/${encodeShareScope(
       scope,
       `${location.pathname}${location.search ?? ""}`,
     ).replace(/^\/+/, "")}`,

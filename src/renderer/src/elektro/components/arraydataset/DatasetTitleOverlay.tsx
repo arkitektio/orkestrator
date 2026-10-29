@@ -71,7 +71,7 @@ export const DatasetTitleOverlay = ({
     {experiments.length > 0 && (
       <div className="flex flex-row items-center gap-2">
         <Select value={activeExperimentId} onValueChange={onSelectExperiment}>
-          <SelectTrigger className="h-7 w-64 max-w-[40%] bg-black">
+          <SelectTrigger className="h-7 w-64 max-w-[40%] bg-background">
             <SelectValue placeholder="Experiment" />
           </SelectTrigger>
           <SelectContent>

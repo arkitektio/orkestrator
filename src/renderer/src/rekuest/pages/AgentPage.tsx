@@ -7,9 +7,8 @@ import { PageSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
-import { RekuestAgent, RekuestState } from "@/core/linkers";
+import { RekuestAgent } from "@/core/linkers";
 import { ObjectButton } from "@/core/smart/ObjectButton";
 import { agentStructure } from "@/rekuest/smart/agent";
 import {
@@ -34,9 +33,9 @@ import {
   hydrateAndInsertAgentTask,
 } from "../lib/taskCache";
 import MaterializedBlokById from "../components/MaterializedBlokById";
-import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
 import AgentTaskCard from "../components/cards/AgentTaskCard";
+import { AgentFacts } from "../sidebars/AgentInfoSidebar";
 import { AgentTasksSidebar } from "../sidebars/AgentTasksSidebar";
 import { REKUEST_HELP } from "../help";
 
@@ -107,18 +106,19 @@ const useDefaultSceneBlok = (agent: string) => {
 
 /**
  * The agent's default scene, on the right of the page. It starts just inside
- * the content column (620px wide) and its left edge fades to black, so the
- * two meet in a soft seam rather than the scene running behind the lists.
+ * the content column (620px wide) and its left edge fades into the page, so
+ * the two meet in a soft seam rather than the scene running behind the lists.
+ * The scene itself is dark in either theme (`dark`), like every canvas.
  */
 const AgentBackgroundScene = (props: { materializedBlok: string }) => (
-  <div className="absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
+  <div className="dark text-foreground absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
     <MaterializedBlokById
       key={props.materializedBlok}
       materializedBlokId={props.materializedBlok}
       surfaceId={props.materializedBlok}
       chrome="none"
     />
-    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-[linear-gradient(90deg,black_0%,rgba(0,0,0,0.85)_35%,transparent_100%)]" />
+    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-linear-to-r from-background via-background/85 via-35% to-transparent" />
   </div>
 );
 
@@ -212,32 +212,15 @@ export const AgentPage = asDetailQueryRoute(
         title={data.agent.name}
         help={REKUEST_HELP.agent}
         object={data.agent}
-        variant={"black"}
         sidebars={
-          <Sidebars>
+          <Sidebars sidebarKey="AgentDetail" defaultTab="Info">
+            <Sidebars.Tab label="Info">
+              <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
+                <AgentFacts agent={data.agent} />
+              </div>
+            </Sidebars.Tab>
             <Sidebars.Tab label="Knowledge">
               <RekuestAgent.Knowledge object={data?.agent} />
-            </Sidebars.Tab>
-            <Sidebars.Tab label="States">
-              <>
-                {/* States Section */}
-                {data.agent.states.length > 0 && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                      Agent States
-                    </h3>
-                    <div className="space-y-3">
-                      {data.agent.states.map((state) => (
-                        <RekuestState.DetailLink object={state} key={state.id}>
-                          <Button variant="outline" size="sm">
-                            {state.id}
-                          </Button>
-                        </RekuestState.DetailLink>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
             </Sidebars.Tab>
             <Sidebars.Tab label="Tasks">
               <AgentTasksSidebar agent={data.agent.id} />
@@ -251,32 +234,8 @@ export const AgentPage = asDetailQueryRoute(
             <ObjectButton objects={[agentStructure(data.agent)]} />
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
-            <CopyAgentPythonButton agent={data.agent} />
-            {/* The agent's other views: one control, so they give way
-                together rather than leaving a stray link behind. */}
-            <PageActionGroup priority={-10}>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="states"
-                className="font-semibold"
-              >
-                <PageAction size="sm">States</PageAction>
-              </RekuestAgent.DetailLink>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="tasks"
-                className="font-semibold"
-              >
-                <PageAction size="sm">Tasks</PageAction>
-              </RekuestAgent.DetailLink>
-              <RekuestAgent.DetailLink
-                object={data?.agent}
-                subroute="bloks"
-                className="font-semibold"
-              >
-                <PageAction size="sm">Bloks</PageAction>
-              </RekuestAgent.DetailLink>
-            </PageActionGroup>
+            {/* The agent's tasks, states and bloks pages and its Python
+                protocol are in the Info tab, to keep the header short. */}
           </>
         }
       >

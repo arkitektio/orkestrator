@@ -119,12 +119,11 @@ export type GeneralMediaAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a media object. */
@@ -189,6 +188,8 @@ export type Mutation = {
   finishMediaUpload: MediaStore;
   /** Create a file from file-like data */
   fromFileLike: File;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for the organization's files. */
   requestGeneralMediaAccess: GeneralMediaAccessGrant;
   /** Request temporary S3 read credentials for an uploaded file. */
@@ -220,6 +221,11 @@ export type MutationFinishMediaUploadArgs = {
 
 export type MutationFromFileLikeArgs = {
   input: FromFileLike;
+};
+
+
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
 };
 
 
@@ -341,6 +347,10 @@ export type QueryPagesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
 export type RequestGeneralMediaAccessInput = {
   expiresIn?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -351,7 +361,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

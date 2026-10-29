@@ -9,3 +9,11 @@ query ListApps($filters: AppFilter, $pagination: OffsetPaginationInput) {
     ...ShelfApp
   }
 }
+
+# The apps page: every app with all of its releases, so what a card counts
+# (flavours, running deployments) is the app's, not only its newest version's.
+query AppCatalog($filters: AppFilter, $pagination: OffsetPaginationInput) {
+  apps(filters: $filters, pagination: $pagination) {
+    ...App
+  }
+}

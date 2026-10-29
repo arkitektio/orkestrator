@@ -57,10 +57,10 @@ describe("globalPaletteShortcut setting", () => {
     await flush();
     setGlobalShortcut.mockClear();
 
-    store.getState().setSettings({ ...defaultSettings, darkMode: false });
+    store.getState().setSettings({ ...defaultSettings, showHoverCards: false });
     expect(setGlobalShortcut).not.toHaveBeenCalled();
 
-    store.getState().setSettings({ ...defaultSettings, darkMode: false, globalPaletteShortcut: null });
+    store.getState().setSettings({ ...defaultSettings, showHoverCards: false, globalPaletteShortcut: null });
     await flush();
     expect(setGlobalShortcut).toHaveBeenCalledWith(null);
     expect(store.getState().globalShortcutStatus?.status).toBe("off");

@@ -12,7 +12,11 @@ import { MikroCoordinateSystem } from "@/core/linkers";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { resolveProbeStrategy } from "../../platform/probe/probeModes";
 import type { ProbeMode } from "../../platform/probe/probeTypes";
-import { effectiveProbeLayerId, probeSystemIdFor } from "../../platform/probe/probeTargeting";
+import {
+  effectiveHitLayerId,
+  effectiveInfoLayerIds,
+  probeSystemIdFor,
+} from "../../platform/probe/probeTargeting";
 import { usePlansFor } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import {
   defaultEnabled,
@@ -452,15 +456,16 @@ const AttributeFetchGroup = ({ systemId, title }: { systemId: string; title: str
 };
 
 /**
- * What a hover FETCHES. Lists every attribute plan of the probe's target
- * layer (and of each mesh/network collection in the scene, which a pick
+ * What a hover FETCHES. Lists every attribute plan of each info layer (the
+ * readout's layers, `effectiveInfoLayerIds`) and of each mesh/network
+ * collection in the scene, which a pick
  * probes), one row per hop of each chain: the landing table or matrix, then
  * the references it can cross. Each hop has a switch; a table hop unfolds to
  * a column checklist; matrices share one cap on how much of a profile is
  * kept. Choices persist per browser, keyed by the hop — the same data in
  * another scene remembers them.
  */
-const AttributeFetchSection = ({ targetLayer }: { targetLayer: LayerStateLike | undefined }) => {
+const AttributeFetchSection = ({ infoLayers }: { infoLayers: readonly LayerStateLike[] }) => {
   const sceneStoreApi = useSceneStoreApi();
   const collectionsKey = useSceneStore((s) =>
     s.sceneLayers
@@ -476,10 +481,11 @@ const AttributeFetchSection = ({ targetLayer }: { targetLayer: LayerStateLike | 
   const groups = useMemo(() => {
     const out: { systemId: string; title: string }[] = [];
     const seen = new Set<string>();
-    const targetSystem = targetLayer ? probeSystemIdFor(targetLayer) : null;
-    if (targetLayer && targetSystem) {
-      seen.add(targetSystem);
-      out.push({ systemId: targetSystem, title: layerDisplayLabel(targetLayer) });
+    for (const layer of infoLayers) {
+      const systemId = probeSystemIdFor(layer);
+      if (!systemId || seen.has(systemId)) continue;
+      seen.add(systemId);
+      out.push({ systemId, title: layerDisplayLabel(layer) });
     }
     for (const layer of sceneStoreApi.getState().sceneLayers) {
       if (layer.__typename !== "MeshLayer" && layer.__typename !== "NetworkLayer") continue;
@@ -491,7 +497,7 @@ const AttributeFetchSection = ({ targetLayer }: { targetLayer: LayerStateLike | 
     return out;
     // The key STANDS FOR the scene layers read via getState().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionsKey, targetLayer, sceneStoreApi]);
+  }, [collectionsKey, infoLayers, sceneStoreApi]);
   const selection = useViewerStore((s) => s.attributeSelection);
   const setSparseLimit = useViewerStore((s) => s.setSparseLimit);
   const plansOfFirst = usePlansFor(groups[0]?.systemId ?? null);
@@ -524,9 +530,11 @@ const AttributeFetchSection = ({ targetLayer }: { targetLayer: LayerStateLike | 
 type LayerStateLike = Parameters<typeof layerDisplayLabel>[0] & Parameters<typeof probeSystemIdFor>[0];
 
 /**
- * How the probe BEHAVES — target layer, march strategy, threshold. Moved out
- * of the probe HUD so the readout can be just the reading; these are settings,
- * and this popover is where the scene's settings live.
+ * How the probe BEHAVES — march strategy, threshold, what a hover fetches.
+ * Moved out of the probe HUD so the readout can be just the reading; these are
+ * settings, and this popover is where the scene's settings live. WHICH layers
+ * the probe involves is a button of its own in the control bar
+ * (`LayerTargetPicker`).
  */
 const ProbeSettingsSection = () => {
   const displayMode = useModeStore((s) => s.displayMode);
@@ -534,11 +542,13 @@ const ProbeSettingsSection = () => {
   const setProbeMode = useViewerStore((s) => s.setProbeMode);
   const probeThreshold = useViewerStore((s) => s.probeThreshold);
   const setProbeThreshold = useViewerStore((s) => s.setProbeThreshold);
+  const dataLayerId = useViewerStore((s) => s.dataLayerId);
+  const infoLayerIds = useViewerStore((s) => s.infoLayerIds);
   const probeLayerId = useViewerStore((s) => s.probeLayerId);
-  const setProbeLayerId = useViewerStore((s) => s.setProbeLayerId);
+  const pickLayerId = useViewerStore((s) => s.pickLayerId);
   const sceneStoreApi = useSceneStoreApi();
   // A SCALAR key over exactly what this section reads per layer (P9c/P17):
-  // identity + display-label inputs for the picker, visibility, and the
+  // identity + display-label inputs for the fetch section, visibility, and the
   // projection the strategy resolves against. `layersPlanKey` won't do here —
   // it deliberately ignores `projection` and `name` — and subscribing to the
   // array re-rendered this popover on every per-tick layer edit.
@@ -553,29 +563,25 @@ const ProbeSettingsSection = () => {
       .join("|"),
   );
 
-  // Both brick layers bail on `visible === false`, so a hidden layer cannot
-  // answer a probe (`features/annotations/modeCompat.ts`). An alive explicit pin drives the
-  // picker's value; a dead pin (hidden/gone layer) shows as Auto WITHOUT being
-  // erased — it heals by derivation and resurrects if its layer comes back.
-  //
-  // The strategy resolves against the layer that will ANSWER the next probe —
-  // the effective target — since this section configures future probes, not a
-  // reading that already happened.
-  const { probeableLayers, pinnedLayer, targetLayer } = useMemo(() => {
+  // The strategy resolves against the layer the next ray will STOP in — the
+  // effective hit target — since this section configures future probes, not a
+  // reading that already happened. The fetch section lists the info layers'
+  // plans: those are what a hover reads.
+  const { targetLayer, infoLayers } = useMemo(() => {
     const { layers } = sceneStoreApi.getState();
-    const probeableLayers = layers.filter((candidate) => candidate.visible !== false);
-    const pinnedLayer =
-      probeLayerId !== null
-        ? layers.find(
-            (candidate) => candidate.id === probeLayerId && candidate.visible !== false,
-          )
-        : undefined;
-    const targetId = effectiveProbeLayerId(probeLayerId, layers);
-    const targetLayer = layers.find((candidate) => candidate.id === targetId);
-    return { probeableLayers, pinnedLayer, targetLayer };
+    const targetId = effectiveHitLayerId(
+      { dataLayerId, probeLayerId, pickLayerId },
+      layers,
+      displayMode === "3D",
+    );
+    const infoIds = effectiveInfoLayerIds({ dataLayerId, infoLayerIds }, layers);
+    return {
+      targetLayer: layers.find((candidate) => candidate.id === targetId),
+      infoLayers: layers.filter((candidate) => infoIds.includes(candidate.id)),
+    };
     // The key STANDS FOR the layers array read via getState().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layersKey, probeLayerId, sceneStoreApi]);
+  }, [layersKey, dataLayerId, infoLayerIds, probeLayerId, pickLayerId, displayMode, sceneStoreApi]);
   const resolved = resolveProbeStrategy(
     probeMode,
     targetLayer?.projection,
@@ -591,29 +597,6 @@ const ProbeSettingsSection = () => {
   return (
     <div className="mt-1 border-t pt-1">
       <div className="py-1 text-xs font-medium">Probe</div>
-
-      {/* Which layer the probe reads. Exactly one layer answers — Auto follows
-          the first visible layer; picking one pins it explicitly (it sticks
-          through reorders). */}
-      <select
-        value={pinnedLayer?.id ?? ""}
-        onChange={(event) =>
-          setProbeLayerId(event.target.value === "" ? null : event.target.value)
-        }
-        className="h-6 w-full min-w-0 rounded border bg-transparent px-1 text-xs"
-        title="Which layer the probe reads"
-      >
-        <option value="">
-          {probeableLayers[0]
-            ? `Auto — first layer (${layerDisplayLabel(probeableLayers[0])})`
-            : "Auto — no visible layer"}
-        </option>
-        {probeableLayers.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
-            {layerDisplayLabel(candidate)}
-          </option>
-        ))}
-      </select>
 
       {displayMode === "3D" && (
         <div className="mt-2">
@@ -659,7 +642,7 @@ const ProbeSettingsSection = () => {
         </div>
       )}
 
-      <AttributeFetchSection targetLayer={targetLayer} />
+      <AttributeFetchSection infoLayers={infoLayers} />
     </div>
   );
 };

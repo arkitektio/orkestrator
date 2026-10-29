@@ -30,12 +30,12 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
     >
       <div className="p-3">
         <div className="grid grid-cols-6">
-          <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center ">
+          <div className="col-span-4">
             <div>
-              <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+              <h1 className="text-2xl font-bold tracking-tight">
                 {data?.backend?.name}
               </h1>
-              <p className="mt-3 text-xl text-muted-foreground flex flex-row">
+              <p className="mt-1 text-sm text-muted-foreground flex flex-row">
                 <IconForBackendKind
                   kind={data?.backend.kind}
                   className="h-4 w-4 mr-2 my-auto"
@@ -54,7 +54,7 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
             </div>
           </div>
         </div>
-        <Separator className="mt-8 mb-2" />
+        <Separator className="mt-4 mb-2" />
 
         <div className="mt-4 font-light mb-2">Managed Pods</div>
         <div className="grid grid-cols-6 gap-2">

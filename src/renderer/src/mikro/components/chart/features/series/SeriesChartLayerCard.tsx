@@ -60,7 +60,7 @@ export const SeriesChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
               label="Scale"
               value={clim ? `${formatValue(clim.lo)} … ${formatValue(clim.hi)}` : null}
             />
-            {readout?.note && <div className="text-[10px] text-white/40">{readout.note}</div>}
+            {readout?.note && <div className="text-[10px] text-foreground/40">{readout.note}</div>}
           </ChartFacts>
         </>
       )}

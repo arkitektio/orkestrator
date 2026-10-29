@@ -1,9 +1,11 @@
-import { ConnectionDiagram } from "@/core/connection/ui/doctor/ConnectionDiagram";
+import { ConnectionDiagram, DiagramLegend, TailscaleQuestion } from "@/core/connection/ui/doctor/ConnectionDiagram";
 import {
   CopyReportButton,
   FindingList,
+  RemedyButton,
   type ConnectionDoctorPanelProps,
 } from "@/core/connection/ui/doctor/ConnectionDoctorPanel";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { Button } from "@/core/ui/button";
 import { coordinationBase } from "@/core/connection/arkitekt/coordination";
@@ -30,14 +32,15 @@ import {
 } from "@/core/connection/mesh/useSystemTailscale";
 import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
-import { Loader2, RefreshCw, Unplug } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw, Stethoscope, Unplug, Waypoints, Wrench } from "lucide-react";
+import { cn } from "@/core/util/utils";
 import { ConnectionSteps } from "@/core/connection/ui/progress/ConnectionSteps";
 import { serviceSteps } from "@/core/connection/ui/progress/serviceSteps";
 import { describeMesh, meshIsStuck } from "@/core/connection/progress/describe";
 import type { MeshProgress, ServiceProgress } from "@/core/connection/progress/store";
 import { useMeshProgress, useServiceProgress } from "@/core/connection/progress/hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { StatusPage, type StatusDetail } from "./StatusPage";
+import { CopyDetailsButton, StatusPage, statusCopyText, type StatusDetail } from "./StatusPage";
 import { BackButton, HomeButton, MeshSettingsButton } from "./statusActions";
 
 /**
@@ -50,14 +53,128 @@ import { BackButton, HomeButton, MeshSettingsButton } from "./statusActions";
  *
  * - still trying its addresses: just "Connecting". No diagram, no alarm; most
  *   of the time this is on screen for a moment and then gone.
- * - every address failed: "Couldn't reach …", and now the picture — the
- *   coordination server, this computer and the hub, with what is broken red
- *   where it is broken (`ConnectionDiagram`). The connection doctor starts by
- *   itself ("Diagnosing…") and what it finds lands in the picture: on the
- *   part it is about, on hover, and in the copied report. Nothing is listed
- *   underneath; the one line under the heading is the likeliest reason.
+ * - every address failed: "Couldn't reach …". The connection doctor starts by
+ *   itself ("Diagnosing…") and the page then says ONE thing: the likeliest
+ *   reason under the heading, what to try as the hints, Retry and the report
+ *   to copy. The picture — coordination server, this computer, the hub, red
+ *   where it is broken (`ConnectionDiagram`) — is folded away, with the
+ *   facts and the raw error, behind "Technical details".
  * - not part of this deployment: says so.
  */
+
+/** The column the page's cards share: wider than the text, narrower than the map. */
+const CARD = "w-[min(36rem,calc(100cqw-2rem))] text-left";
+
+/**
+ * What the doctor is looking at while it runs. Not a progress bar: the probes
+ * run at once and report together, so this says WHAT is being checked, which
+ * is the honest part, and spins until the answer is in.
+ */
+const Investigating = ({ name, addresses }: { name: string; addresses: string[] }) => (
+  <div className={cn(CARD, "rounded-xl border border-primary/30 bg-primary/5 p-4")}>
+    <div className="flex items-center gap-2 text-sm font-semibold">
+      <Loader2 className="size-4 animate-spin text-primary motion-reduce:animate-none" aria-hidden />
+      Investigating what is wrong…
+    </div>
+    <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+      <li className="flex items-start gap-2">
+        <span aria-hidden className="mt-[0.5em] size-1.5 shrink-0 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
+        <span>
+          {addresses.length === 1
+            ? `The address ${name} advertises`
+            : `The ${addresses.length > 1 ? `${addresses.length} ` : ""}addresses ${name} advertises`}
+          {addresses.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {addresses.map((address) => (
+                <code key={address} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                  {address}
+                </code>
+              ))}
+            </span>
+          )}
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span aria-hidden className="mt-[0.5em] size-1.5 shrink-0 animate-pulse rounded-full bg-primary [animation-delay:300ms] motion-reduce:animate-none" />
+        The network and mesh software on this computer
+      </li>
+      <li className="flex items-start gap-2">
+        <span aria-hidden className="mt-[0.5em] size-1.5 shrink-0 animate-pulse rounded-full bg-primary [animation-delay:600ms] motion-reduce:animate-none" />
+        The hub's own report about itself
+      </li>
+    </ul>
+  </div>
+);
+
+/**
+ * What the investigation concluded, on top: the likeliest reason, why we
+ * think so, and — numbered, because they are tried in order — what to do.
+ */
+const Diagnosis = ({ verdict, steps }: { verdict: Finding; steps: string[] }) => (
+  <section
+    aria-label="Most likely reason"
+    className={cn(CARD, "overflow-hidden rounded-xl border border-destructive/40 bg-destructive/5")}
+  >
+    <div className="p-4">
+      <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-destructive">
+        <Stethoscope className="size-3.5" aria-hidden />
+        Most likely reason
+      </div>
+      <p className="text-base font-semibold leading-snug text-foreground">{verdict.title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{verdict.detail}</p>
+    </div>
+    {steps.length > 0 && (
+      <div aria-label="What you can try" role="region" className="border-t border-destructive/20 bg-background/40 p-4">
+        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-destructive">
+          <Wrench className="size-3.5" aria-hidden />
+          What you can try
+        </div>
+        <ol className="space-y-2.5">
+          {steps.map((step, index) => (
+            <li key={step} className="flex items-start gap-3 text-sm leading-relaxed text-foreground">
+              <span
+                aria-hidden
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive text-xs font-semibold text-white"
+              >
+                {index + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    )}
+  </section>
+);
+
+/** How long an unreachable service waits before it is tried again by itself. */
+export const AUTO_RETRY_SECONDS = 60;
+
+/**
+ * Counts down to the next automatic retry while `enabled`, and fires `run` at
+ * zero. Starts over whenever it is (re-)enabled or `restart` is called — a
+ * manual retry is a retry, so the next automatic one is a full minute later.
+ */
+const useAutoRetry = (enabled: boolean, run: () => void) => {
+  const [left, setLeft] = useState(AUTO_RETRY_SECONDS);
+  const runRef = useRef(run);
+  runRef.current = run;
+
+  useEffect(() => {
+    if (!enabled) return;
+    setLeft(AUTO_RETRY_SECONDS);
+    const id = setInterval(() => setLeft((current) => Math.max(0, current - 1)), 1000);
+    return () => clearInterval(id);
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || left > 0) return;
+    setLeft(AUTO_RETRY_SECONDS);
+    runRef.current();
+  }, [enabled, left]);
+
+  return { left, restart: () => setLeft(AUTO_RETRY_SECONDS) };
+};
 
 const timeOf = (ms: number | undefined): string | null =>
   ms ? new Date(ms).toLocaleTimeString() : null;
@@ -142,6 +259,7 @@ export const ServiceStatusPanel = ({
   meshAction,
 }: ServiceStatusPanelProps) => {
   const [retrying, setRetrying] = useState(false);
+  const [showTechnical, setShowTechnical] = useState(false);
   const name = state?.definition.name ?? serviceKey;
   const checkedAt = timeOf(state?.lastCheckedAt);
 
@@ -153,6 +271,12 @@ export const ServiceStatusPanel = ({
       setRetrying(false);
     }
   };
+  // Hooks before the early returns. Only an unreachable service retries by
+  // itself, and not while a retry or the diagnosis is already running.
+  const autoRetry = useAutoRetry(
+    state?.status === "invalid" && !retrying && !(doctor && (doctor.status === "idle" || doctor.status === "running")),
+    () => void retry(allDown),
+  );
 
   const facts: StatusDetail[] = [{ label: "Service", value: serviceKey, mono: true }];
   if (hubName && hubName !== deployment?.name) facts.push({ label: "Hub", value: hubName });
@@ -196,10 +320,15 @@ export const ServiceStatusPanel = ({
     );
   }
 
+  const verdict = doctor?.report ? primaryFinding(doctor.report.findings) : undefined;
   // The mesh is what failed, for a reason the user can act on: that leads,
-  // ahead of the general "couldn't reach" and the doctor.
+  // ahead of the general "couldn't reach" — unless the doctor found something
+  // else at fault (a server that refuses is not fixed by the mesh).
   const meshStuck =
-    !!meshProgress && meshIsStuck(meshProgress.phase) && !!progress?.attempts.some((attempt) => attempt.route === "mesh");
+    !!meshProgress &&
+    meshIsStuck(meshProgress.phase) &&
+    !!progress?.attempts.some((attempt) => attempt.route === "mesh") &&
+    (!verdict || verdict.id.startsWith("mesh."));
 
   // Every address failed. Only now the picture, and the doctor behind it.
   const diagram = buildConnectionDiagram({
@@ -218,18 +347,34 @@ export const ServiceStatusPanel = ({
     doctor,
   });
   const subject = allDown ? (deployment?.name ?? "this deployment") : name;
-  const verdict = doctor?.report ? primaryFinding(doctor.report.findings) : undefined;
   // Until the doctor has looked, there is only half a picture — and one that
-  // would change under the reader. So it waits ("Diagnosing…", in the room
-  // the picture will take) and shows the tested one. Without a doctor at all
-  // the live state is all there is, and that is drawn as it is.
+  // would change under the reader. So it says "Diagnosing…" and offers no
+  // map. Without a doctor at all the live state is all there is.
   const diagnosing = !!doctor && (doctor.status === "idle" || doctor.status === "running");
+  // The one question worth asking on the page itself: an address only a
+  // Tailscale the app does not run can explain, while nothing else does.
+  const askTailscale =
+    !diagnosing && !!onTailscaleAnswer && !!diagram.serviceLink.askTailscale && verdict?.id !== "service.not-running";
+  // The investigated reason leads the page; the mesh's own, when that is
+  // what is stuck, stays the one line under the heading instead.
+  const diagnosed = verdict && !meshStuck && !diagnosing && doctor?.status !== "error" ? verdict : undefined;
+  const addresses = (state.instance?.aliases ?? []).map(
+    (alias) => `${alias.host}${alias.port ? `:${alias.port}` : ""}`,
+  );
+  // The verdict's own way out, as a button. A manual one is already a hint,
+  // and one that runs a command answers in the doctor's panel, which this
+  // page does not have, so neither is offered here.
+  const remedy =
+    verdict?.remedy && !meshStuck && !diagnosing && verdict.remedy.kind !== "manual" && verdict.remedy.kind !== "run"
+      ? verdict.remedy
+      : undefined;
 
   if (deployment?.name && !allDown) facts.push({ label: "Deployment", value: deployment.name });
   if (state.alias) {
     facts.push({ label: "Address", value: `${state.alias.host}${state.alias.port ? `:${state.alias.port}` : ""}`, mono: true });
   }
   if (checkedAt) facts.push({ label: "Last checked", value: checkedAt });
+  const technical = state.errors.length > 0 ? state.errors.join("\n") : null;
 
   return (
     <StatusPage
@@ -243,36 +388,122 @@ export const ServiceStatusPanel = ({
       description={
         meshStuck ? (
           `${describeMesh(meshProgress)}.`
-        ) : diagnosing ? null : doctor?.status === "error" ? (
+        ) : diagnosing ? (
+          "Looking into why, this takes a few seconds."
+        ) : doctor?.status === "error" ? (
           <>The diagnosis itself failed{doctor.error ? `: ${doctor.error}` : "."}</>
-        ) : verdict ? (
-          // The likeliest reason, as one line. Everything else the check saw
-          // is on the part it is about: hover it, or open the red one.
-          verdict.title
+        ) : diagnosed && doctor?.report ? (
+          // The reason itself is the card below; this says it was looked into.
+          `Investigated ${doctor.report.targets.length} ${doctor.report.targets.length === 1 ? "address" : "addresses"} in ${(doctor.report.durationMs / 1000).toFixed(1)}s.`
         ) : null
       }
-      actions={
-        <>
-          <Button size="lg" disabled={retrying} onClick={() => void retry(allDown)}>
-            <RefreshCw className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
-            {allDown ? "Retry all services" : `Retry ${name}`}
-          </Button>
-          {meshStuck && meshAction}
-          {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
-        </>
-      }
-      details={facts}
-      technical={state.errors.length > 0 ? state.errors.join("\n") : null}
     >
-      {/* Wider than the column of text: the diagram is the page here. */}
-      <div className="flex w-[min(48rem,calc(100cqw-2rem))] justify-center">
-        <ConnectionDiagram
-          diagram={diagram}
-          pending={diagnosing}
-          renderFindings={renderFindings}
-          onTailscaleAnswer={onTailscaleAnswer}
-        />
+      {diagnosing && <Investigating name={name} addresses={addresses} />}
+      {diagnosed && <Diagnosis verdict={diagnosed} steps={diagnosed.steps ?? []} />}
+      {askTailscale && (
+        <div className={CARD}>
+          <TailscaleQuestion onAnswer={onTailscaleAnswer!} />
+        </div>
+      )}
+
+      {/* The actions under the steps they act on, not under the map. */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button
+          size="lg"
+          disabled={retrying}
+          onClick={() => {
+            autoRetry.restart();
+            void retry(allDown);
+          }}
+        >
+          <RefreshCw className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
+          {allDown ? "Retry all services" : `Retry ${name}`}
+        </Button>
+        {meshStuck && meshAction}
+        {remedy && <RemedyButton remedy={remedy} onRemedy={() => {}} />}
+        {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
       </div>
+      {!diagnosing && (
+        <div className={cn(CARD, "-mt-3 space-y-1.5")} aria-live="off">
+          <p className="text-center text-xs text-muted-foreground">
+            {retrying ? "Retrying…" : `Retrying automatically in ${autoRetry.left}s`}
+          </p>
+          <div className="mx-auto h-0.5 w-40 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-destructive/60 transition-[width] duration-1000 ease-linear"
+              style={{ width: `${retrying ? 100 : ((AUTO_RETRY_SECONDS - autoRetry.left) / AUTO_RETRY_SECONDS) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {!diagnosing && (
+        <Collapsible
+          open={showTechnical}
+          onOpenChange={setShowTechnical}
+          // Wider than the column of text once open: the map needs the room.
+          className={cn(
+            "overflow-hidden rounded-xl border bg-card/60 text-left backdrop-blur-sm",
+            showTechnical ? "w-[min(48rem,calc(100cqw-2rem))]" : CARD,
+          )}
+        >
+          <div className="flex items-center hover:bg-muted/40">
+            <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Waypoints className="size-4" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">Technical details</span>
+                <span className="block text-xs text-muted-foreground">
+                  The connection map, the addresses tried and the raw error
+                </span>
+              </span>
+              <ChevronDown
+                className={cn("size-4 text-muted-foreground transition-transform", showTechnical && "rotate-180")}
+                aria-hidden
+              />
+            </CollapsibleTrigger>
+            {showTechnical && (
+              <CopyDetailsButton text={() => statusCopyText({ title: `Couldn't reach ${subject}`, details: facts, technical })} />
+            )}
+          </div>
+          <CollapsibleContent className="border-t">
+            <div
+              className="px-3 pt-3 pb-4"
+              // A faint dot grid: reads as a canvas, not as another card.
+              style={{
+                backgroundImage: "radial-gradient(circle, color-mix(in oklab, var(--muted-foreground) 18%, transparent) 1px, transparent 1px)",
+                backgroundSize: "16px 16px",
+              }}
+            >
+              <ConnectionDiagram
+                // The question is asked on the page, not again in the picture.
+                diagram={{ ...diagram, serviceLink: { ...diagram.serviceLink, askTailscale: false } }}
+                renderFindings={renderFindings}
+              />
+              <DiagramLegend className="mt-2 justify-center" />
+              {renderFindings && (
+                <p className="mt-1 text-center text-[11px] text-muted-foreground/70">
+                  Hover a part for what was checked there; click a red one for what was found.
+                </p>
+              )}
+            </div>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t px-4 py-3 text-sm">
+              {facts.map((fact) => (
+                <div key={fact.label} className="contents">
+                  <dt className="whitespace-nowrap text-muted-foreground">{fact.label}</dt>
+                  <dd className={cn("min-w-0 break-all", fact.mono && "font-mono text-xs leading-5")}>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {technical && (
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all border-t bg-muted/40 px-4 py-3 font-mono text-xs leading-5">
+                {technical}
+              </pre>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </StatusPage>
   );
 };

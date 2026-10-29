@@ -170,6 +170,7 @@ declare global {
         onStateChanged: (cb: (state: WindowChromeState) => void) => () => void;
         setTheme: (theme: ChromeTheme, source?: ChromeThemeSource) => void;
         setRailGlass: (enabled: boolean) => void;
+        setWindowButtonsVisible: (visible: boolean) => void;
       };
       tabs: {
         onOpen: (cb: (payload: { path: string }) => void) => () => void;

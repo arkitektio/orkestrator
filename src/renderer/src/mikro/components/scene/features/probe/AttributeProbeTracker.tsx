@@ -3,7 +3,10 @@ import { selectionsFor } from "../../platform/model/worldSelections";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { acquireAttributeService } from "@/mikro/lib/attributes/attributeService";
-import { createAttributeResolver } from "@/mikro/lib/attributes/attributeResolver";
+import {
+  createAttributeResolver,
+  type AttributeResolver,
+} from "@/mikro/lib/attributes/attributeResolver";
 import {
   executeOptionsFor,
   selectHops,
@@ -32,7 +35,9 @@ import { useMeshStoreApi } from "../meshes/store/meshSlice";
 
 /**
  * Headless "what is under this pixel?" executor: whenever the active probe
- * moves, discover the probed system's attribute plans and run each one
+ * moves, for each INFO reading (`probeInfo`, one per info layer at the hit;
+ * a mesh pick is its own) discover that layer's system's attribute plans and
+ * run each one
  * locally through the SHARED attribute service (`acquireAttributeService`) —
  * the scene contributes only what is genuinely scene-y: assembling the
  * probed point's level-0 coordinates, the resident atlas fast path, and the
@@ -144,9 +149,9 @@ export function AttributeProbeTracker() {
           .identifyObjectId(Number(value))
           .then((entry) => {
             if (!entry) return;
-            // Latest-wins: only apply while this probe is still the active one.
-            const probe = viewerStore.getState().probedCoordinate;
-            if (!probe || keyOf(probe)?.pointId !== key.pointId) return;
+            // Latest-wins: only apply while this reading is still on screen.
+            const current = readingsOf(viewerStore.getState());
+            if (!current.some((reading) => keyOf(reading)?.pointId === key.pointId)) return;
             const previous = viewerStore.getState().meshSelection;
             viewerStore.getState().setMeshSelection({
               layerId,
@@ -267,8 +272,8 @@ export function AttributeProbeTracker() {
         }
       }
     };
-    const resolver = createAttributeResolver<SceneAttributeKey>({
-      resolvePlans: async (key) => {
+    const resolverOptions = {
+      resolvePlans: async (key: SceneAttributeKey) => {
         const plans = await service.plansFor(key.systemId);
         const selection = selectionNow();
         warmSelected(plans, selection);
@@ -277,10 +282,22 @@ export function AttributeProbeTracker() {
         return plans.filter((plan) => selectHops(selection, plan).length > 0);
       },
       executePlan,
-      begin: (key, plans) =>
+      begin: (key: SceneAttributeKey, plans: readonly AttributePlanLike[]) =>
         viewerStore.getState().beginProbedAttributes(key, hopMetasFor(plans, selectionNow())),
-      deliver: (key, id, state) => viewerStore.getState().mergeAttributeRows(key, id, state),
-    });
+      deliver: (key: SceneAttributeKey, id: string, state: PlanRowsState) =>
+        viewerStore.getState().mergeAttributeRows(key, id, state),
+    };
+    // One latest-wins resolver PER LAYER: the readings of one hit run side by
+    // side, and only a newer request for the same layer supersedes one.
+    const resolvers = new Map<string, AttributeResolver<SceneAttributeKey>>();
+    const resolverFor = (layerId: string) => {
+      let resolver = resolvers.get(layerId);
+      if (!resolver) {
+        resolver = createAttributeResolver<SceneAttributeKey>(resolverOptions);
+        resolvers.set(layerId, resolver);
+      }
+      return resolver;
+    };
 
     const keyOf = (probe: ProbeResult): SceneAttributeKey | null => {
       const signature = selectionSignature(selectionNow());
@@ -383,18 +400,35 @@ export function AttributeProbeTracker() {
      * `tryInstant` stays: after the settle it is a latency win (deliver from
      * cache rather than wait out a round trip), not a throttle.
      */
-    const request = (probe: ProbeResult | null) => {
-      if (probe === null) {
-        viewerStore.getState().clearProbedAttributes();
-        return;
-      }
+    const requestOne = (probe: ProbeResult) => {
       // A mesh probe still awaiting its objectId (first pick, catalog in
       // flight) has no lookup key yet; the layer re-publishes when it lands.
       if (probe.strategy === "mesh" && probe.values[0]?.value == null) return;
       const key = keyOf(probe);
       if (!key) return;
       if (tryInstant(key)) return;
-      resolver.request(key);
+      resolverFor(key.layerId).request(key);
+    };
+
+    /** The readings of the settled probe: the info layers', or a mesh pick
+     * (stable per pick, so an unrelated store write is not a new request). */
+    const NONE: readonly ProbeResult[] = [];
+    let meshReadings: { probe: ProbeResult; readings: readonly ProbeResult[] } | null = null;
+    const readingsOf = (state: {
+      probeReadout: ProbeResult | null;
+      probeInfo: readonly ProbeResult[];
+    }): readonly ProbeResult[] => {
+      const probe = state.probeReadout;
+      if (probe === null) return NONE;
+      if (probe.strategy !== "mesh") return state.probeInfo;
+      if (meshReadings?.probe !== probe) meshReadings = { probe, readings: [probe] };
+      return meshReadings.readings;
+    };
+
+    const request = (readings: readonly ProbeResult[]) => {
+      // Rows of a layer no longer read would describe a point nobody asked about.
+      viewerStore.getState().clearProbedAttributes(readings.map((reading) => reading.layerId));
+      for (const reading of readings) requestOne(reading);
     };
 
     viewerStore
@@ -403,27 +437,28 @@ export function AttributeProbeTracker() {
         service.followReference(column, value),
       );
 
-    let lastProbe = viewerStore.getState().probeReadout;
+    let lastReadings = readingsOf(viewerStore.getState());
     let lastSelection = viewerStore.getState().attributeSelection;
-    request(lastProbe);
+    request(lastReadings);
     const unsubscribe = viewerStore.subscribe((state) => {
-      if (state.probeReadout !== lastProbe) {
+      const readings = readingsOf(state);
+      if (readings !== lastReadings) {
         // Exact-value merges replace the probe object too, but the fetch key
         // (voxel + signature) is unchanged, so the resolver dedupes them.
-        lastProbe = state.probeReadout;
-        request(lastProbe);
+        lastReadings = readings;
+        request(readings);
       } else if (state.attributeSelection !== lastSelection) {
         // What a hover fetches changed: the same point is a new request (the
         // selection's signature is in the key), so the readout refreshes
         // without waiting for the cursor to move.
         lastSelection = state.attributeSelection;
-        request(lastProbe);
+        request(readings);
       }
     });
 
     return () => {
       unsubscribe();
-      resolver.dispose();
+      for (const resolver of resolvers.values()) resolver.dispose();
       service.registerArrayProvider(null);
       acquired.release();
       viewerStore.getState().registerFollowAttributeReference(null);

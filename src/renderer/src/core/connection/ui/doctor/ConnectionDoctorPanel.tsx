@@ -80,7 +80,7 @@ export type ConnectionDoctorPanelProps = {
   centered?: boolean;
 };
 
-const RemedyButton = ({
+export const RemedyButton = ({
   remedy,
   onRemedy,
 }: {

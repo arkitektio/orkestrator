@@ -16,7 +16,38 @@ query LogoBlok($id: ID!) {
     id
     hash
     componentTree
-    demoState
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
   }
 }
 

@@ -2,7 +2,8 @@ import { useCallback } from "react";
 import * as THREE from "three";
 
 import { buildAffineMatrix } from "../../../../../platform/coords/worldTransform";
-import { effectiveProbeLayerId } from "../../../../../platform/probe/probeTargeting";
+import { effectiveHitLayerId } from "../../../../../platform/probe/probeTargeting";
+import { useModeStoreApi } from "../../../../../platform/stores/modeStore";
 import { simplifyPath, type PathPoint } from "../../shared/pathSimplify";
 import { buildTraceCost, type TraceWeights } from "./traceCost";
 import {
@@ -150,8 +151,8 @@ export const useTraceHop = () => {
  * 3D goes through the probe, which already carries the layer AND the voxel it
  * landed on — no inversion, and the point is exactly where the ray met the
  * data. 2D has no probe in ANNOTATE mode, only a world point on the drawn
- * slice, so the point is resolved against THE probe target layer
- * (`effectiveProbeLayerId`) — the same single layer that answers probing.
+ * slice, so the point is resolved against THE hit target layer
+ * (`effectiveHitLayerId`) — the same single layer that answers probing.
  * Deliberately no containment fallback: scanning other layers would let one
  * chain's vertices resolve to different layers, the exact ambiguity the
  * single-target rule removes. A click outside the target's extent returns
@@ -160,6 +161,7 @@ export const useTraceHop = () => {
 export const useTraceWaypoints = () => {
   const sceneStoreApi = useSceneStoreApi();
   const viewerStoreApi = useBrickStoreApi();
+  const modeStoreApi = useModeStoreApi();
 
   const fromProbe = useCallback((): TraceWaypoint | null => {
     const probe = viewerStoreApi.getState().probedCoordinate;
@@ -174,9 +176,10 @@ export const useTraceWaypoints = () => {
   const fromWorld = useCallback(
     (world: THREE.Vector3): TraceWaypoint | null => {
       const layers = sceneStoreApi.getState().layers;
-      const targetId = effectiveProbeLayerId(
-        viewerStoreApi.getState().probeLayerId,
+      const targetId = effectiveHitLayerId(
+        viewerStoreApi.getState(),
         layers,
+        modeStoreApi.getState().displayMode === "3D",
       );
       const layer = layers.find((candidate) => candidate.id === targetId);
       if (!layer) return null;
@@ -190,7 +193,7 @@ export const useTraceWaypoints = () => {
 
       return { layerId: layer.id, voxel, world: [world.x, world.y, world.z] };
     },
-    [sceneStoreApi, viewerStoreApi],
+    [sceneStoreApi, viewerStoreApi, modeStoreApi],
   );
 
   return { fromProbe, fromWorld };

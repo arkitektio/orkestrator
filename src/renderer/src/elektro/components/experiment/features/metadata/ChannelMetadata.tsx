@@ -166,7 +166,7 @@ const SiteSection = ({
 const ValuesSection = ({ histogram, unit }: { histogram: ValueHistogramLike; unit: string | null }) => (
   <PopoutSection title={unit ? `Values · ${unit}` : "Values"}>
     {histogram.histogram && histogram.histogram.length > 0 && (
-      <HistogramSparkline histogram={histogram.histogram} tone="surface" />
+      <HistogramSparkline histogram={histogram.histogram} />
     )}
     {histogram.min != null && <PopoutFact label="min">{histogram.min}</PopoutFact>}
     {histogram.max != null && <PopoutFact label="max">{histogram.max}</PopoutFact>}

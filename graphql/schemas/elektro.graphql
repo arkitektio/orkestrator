@@ -3698,12 +3698,11 @@ type GeneralMediaAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading a parquet object."""
@@ -3711,12 +3710,11 @@ type GeneralParquetAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading the organization's sparse stores."""
@@ -3724,6 +3722,7 @@ type GeneralSparseAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
@@ -3735,12 +3734,11 @@ type GeneralZarrAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """
@@ -4890,9 +4888,29 @@ type Mutation {
   putTableDatasetsInFolder(input: AssociateInput!): Folder!
 
   """
+  Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshBigfileUpload(input: RefreshUploadInput!): BigFileUploadGrant!
+
+  """
+  Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshMediaUpload(input: RefreshUploadInput!): MediaUploadGrant!
+
+  """
+  Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshParquetUpload(input: RefreshUploadInput!): ParquetUploadGrant!
+
+  """
   Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption
   """
-  refreshSparseUpload(input: RefreshSparseUploadInput!): SparseUploadGrant!
+  refreshSparseUpload(input: RefreshUploadInput!): SparseUploadGrant!
+
+  """
+  Reissue upload credentials for a zarr upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshZarrUpload(input: RefreshUploadInput!): ZarrUploadGrant!
 
   """Take annotation collections out of a folder"""
   releaseAnnotationCollectionsFromFolder(input: DesociateInput!): Folder!
@@ -5316,7 +5334,9 @@ enum Ordering {
 
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`"""
+  identifier: String!
 }
 
 """A parameter port of a mechanism"""
@@ -5918,7 +5938,7 @@ input RecordingSiteInput {
   position: Float = null
 }
 
-input RefreshSparseUploadInput {
+input RefreshUploadInput {
   storeId: String!
 }
 
@@ -5947,7 +5967,7 @@ input RequestBigFileAccessInput {
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 
@@ -5973,7 +5993,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

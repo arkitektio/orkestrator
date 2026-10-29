@@ -1,11 +1,12 @@
-import { offsetAt, parseBsxSafe, type BsxMarker, type BsxRange } from "@/core/blok/bsx";
+import { offsetAtCodePoint, parseBsxSafe, type BsxMarker, type BsxRange } from "@arkitektio/bsx/bsx/index";
 import { describeError } from "@/core/notify";
 
 /**
  * What the server said about a draft, placed in its source: a refused save or
  * dry run (a GraphQL error, which names "line X, column Y" when BSX did not
  * parse), and the non-fatal findings of an edit (`Diagnostic`, whose `path`
- * names a node, a prop, or nothing the editor can find).
+ * names a node, a prop, or nothing the editor can find). Both carry the
+ * vocabulary's codes, and the server counts columns in code points.
  */
 
 export type ServerDiagnostic = { code: string; message: string; path?: string | null };
@@ -40,6 +41,7 @@ export const diagnosticMarkers = (diagnostics: readonly ServerDiagnostic[], sour
     message: `${diagnostic.message} (${diagnostic.code})`,
     range: rangeForServerPath(source, diagnostic.path),
     severity: "warning",
+    code: diagnostic.code,
   }));
 
 /** The server refused the draft: the reason, at the line it names, else on the root tag. */
@@ -49,6 +51,6 @@ export const refusalMarkers = (error: unknown, source: string): BsxMarker[] => {
   const text = technical ?? message;
   const at = /line (\d+), column (\d+)/i.exec(text);
   if (!at) return [{ message: text, range: rootRange(source), severity: "error" }];
-  const start = offsetAt(source, Number(at[1]), Number(at[2]));
+  const start = offsetAtCodePoint(source, Number(at[1]), Number(at[2]));
   return [{ message: text, range: { start, end: start + 1 }, severity: "error" }];
 };

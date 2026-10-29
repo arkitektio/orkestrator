@@ -52,7 +52,7 @@ describe('the latest task of an action, folded from its feed', () => {
     );
     expect(held).toMatchObject({
       task: '4',
-      record: {status: 'running', running: true, progress: 60, message: '6 of 10', result: 3},
+      record: {status: 'running', running: true, progress: 60, message: '6 of 10', returns: {count: 3}},
     });
   });
 
@@ -63,7 +63,7 @@ describe('the latest task of an action, folded from its feed', () => {
       kind: TaskEventKind.Completed,
       returns: {count: 9},
     });
-    expect(held?.record).toMatchObject({status: 'done', done: true, running: false, progress: 100, result: 9});
+    expect(held?.record).toMatchObject({status: 'done', done: true, running: false, progress: 100, returns: {count: 9}});
   });
 
   it('moves on to a task that starts, and forgets the one before', () => {

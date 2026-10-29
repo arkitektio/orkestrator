@@ -55,7 +55,7 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
       data-partners={partners.length > 0 ? "true" : undefined}
     >
       {props.children}
-      {props.menuButton && <MenuButton />}
+      {props.menuButton && <MenuButton placement={props.menuButton === "top" ? "top" : "bottom"} />}
       {isOver && <CombineButton />}
 
       {partners.length > 0 && (
@@ -88,9 +88,11 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
  * so the two can never show different menus.
  *
  * `[#sidebar_&]:hidden`: a card in the page sidebar is a reference, not a
- * thing to act on from there.
+ * thing to act on from there. It shows while ITS card is hovered (it is the
+ * card's direct child), so hovering a card that holds others does not light up
+ * every burger inside it.
  */
-const MenuButton = () => {
+const MenuButton = ({ placement }: { placement: "top" | "bottom" }) => {
   return (
     <button
       type="button"
@@ -114,9 +116,10 @@ const MenuButton = () => {
         );
       }}
       className={cn(
-        "absolute bottom-1.5 right-1.5 z-20 flex h-6 w-6 items-center justify-center",
+        "absolute right-1.5 z-20 flex h-6 w-6 items-center justify-center",
+        placement === "top" ? "top-1.5" : "bottom-1.5",
         "rounded-full border border-border bg-background text-muted-foreground shadow-sm",
-        "opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100",
+        "opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 [.group:hover>&]:opacity-100",
         "[#sidebar_&]:hidden",
       )}
     >

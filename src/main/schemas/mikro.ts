@@ -4140,6 +4140,7 @@ export type GeneralFabriksAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4152,6 +4153,7 @@ export type GeneralKonnektionAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4164,12 +4166,11 @@ export type GeneralKulisseAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a media object. */
@@ -4178,12 +4179,11 @@ export type GeneralMediaAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a parquet object. */
@@ -4192,12 +4192,11 @@ export type GeneralParquetAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading the organization's sparse stores. */
@@ -4206,6 +4205,7 @@ export type GeneralSparseAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4218,12 +4218,11 @@ export type GeneralZarrAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 export enum Granularity {
@@ -6384,6 +6383,18 @@ export type Mutation = {
   putMeshCollectionsInFolder: Folder;
   /** File table datasets in a folder */
   putTableDatasetsInFolder: Folder;
+  /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
+  /** Reissue upload credentials for a fabriks upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshFabriksUpload: FabriksUploadGrant;
+  /** Reissue upload credentials for a konnektion upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshKonnektionUpload: KonnektionUploadGrant;
+  /** Reissue upload credentials for a kulisse upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshKulisseUpload: KulisseUploadGrant;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
+  /** Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshParquetUpload: ParquetUploadGrant;
   /** Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption */
   refreshSparseUpload: SparseUploadGrant;
   /** Reissue upload credentials for a Zarr store whose upload is still in flight. A grant's credentials expire, and clients hold the session token as a static credential, so a write large enough to outlive its session dies partway through. This returns a fresh session against the same prefix so the write can carry on. Refuses a store that is already populated -- that is an overwrite, not a resumption */
@@ -6987,13 +6998,43 @@ export type MutationPutTableDatasetsInFolderArgs = {
 };
 
 
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshFabriksUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshKonnektionUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshKulisseUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshParquetUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
 export type MutationRefreshSparseUploadArgs = {
-  input: RefreshSparseUploadInput;
+  input: RefreshUploadInput;
 };
 
 
 export type MutationRefreshZarrUploadArgs = {
-  input: RefreshZarrUploadInput;
+  input: RefreshUploadInput;
 };
 
 
@@ -7797,7 +7838,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 /** The sample */
@@ -9092,11 +9134,7 @@ export type QueryTransformationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-export type RefreshSparseUploadInput = {
-  storeId: Scalars['String']['input'];
-};
-
-export type RefreshZarrUploadInput = {
+export type RefreshUploadInput = {
   storeId: Scalars['String']['input'];
 };
 
@@ -9137,7 +9175,7 @@ export type RequestBigFileAccessInput = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -9182,7 +9220,7 @@ export type RequestKulisseAccessInput = {
 };
 
 export type RequestKulisseUploadInput = {
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -9192,7 +9230,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -12129,9 +12167,9 @@ export type KulisseUploadGrantFragment = { __typename?: 'KulisseUploadGrant', ac
 
 export type KulisseAccessGrantFragment = { __typename?: 'KulisseAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
 
-export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
-export type DetailFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+export type DetailFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -12815,7 +12853,7 @@ export type From_File_LikeMutationVariables = Exact<{
 }>;
 
 
-export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
+export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
 
 export type DeleteFileMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13666,7 +13704,7 @@ export type GetFileQueryVariables = Exact<{
 }>;
 
 
-export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
+export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
 
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
@@ -13940,7 +13978,7 @@ export type GetSparseDatasetQueryVariables = Exact<{
 }>;
 
 
-export type GetSparseDatasetQuery = { __typename?: 'Query', sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string>, folder?: { __typename?: 'Folder', id: string, name: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> }, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> } };
+export type GetSparseDatasetQuery = { __typename?: 'Query', sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string>, fullLens?: { __typename?: 'SparseLens', id: string } | null, folder?: { __typename?: 'Folder', id: string, name: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> }, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> } };
 
 export type GetSparseDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<SparseDatasetFilter>;
@@ -13977,7 +14015,7 @@ export type GetTableDatasetQueryVariables = Exact<{
 }>;
 
 
-export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }>, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } } };
+export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, fullLens?: { __typename?: 'TableLens', id: string } | null, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }>, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } } };
 
 export type GetTableDatasetDerivedQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15909,7 +15947,8 @@ export const FileFragmentDoc = gql`
     ...ProvenanceEntry
   }
   organization {
-    slug
+    id
+    identifier
   }
   size
   contentType
@@ -19264,6 +19303,9 @@ export const GetSparseDatasetDocument = gql`
     query GetSparseDataset($id: ID!) {
   sparseDataset(id: $id) {
     ...SparseDataset
+    fullLens {
+      id
+    }
   }
 }
     ${SparseDatasetFragmentDoc}`;
@@ -19344,6 +19386,9 @@ export const GetTableDatasetDocument = gql`
     query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
     ...TableDataset
+    fullLens {
+      id
+    }
   }
 }
     ${TableDatasetFragmentDoc}`;

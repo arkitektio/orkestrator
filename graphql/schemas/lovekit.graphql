@@ -298,7 +298,9 @@ enum Ordering {
 
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`"""
+  identifier: String!
 }
 
 type Query {

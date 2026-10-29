@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseBsx } from "@arkitektio/bsx/bsx/parse";
+import { printBsx } from "@arkitektio/bsx/bsx/print";
+import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/index";
 import basiks from "./basiks.fixture.json";
 import { DefinitionLogo, KabinetBlokLogo } from "./KabinetBlokLogo";
 
 /**
- * `basiks.fixture.json` is what kabinet serves for the basiks app (1.1.1): its
- * LOGO and the ACTION_LOGO of `threshold_image`, each parsed from the BSX the
- * app sent by the backend (`bridge/repo/bloks.py`, arkitekt-spec's `bsx()`).
+ * `basiks.fixture.json` is what kabinet serves for the basiks app, as v2 trees: its
+ * logo and the action logo of `threshold_image` (`AgentLogo` and `ActionLogo` roots, painted with
+ * the viewer's pens), each parsed from the BSX the app sent.
  * They must draw through the same logo cache rekuest's bloks do.
  */
 type Tree = (typeof basiks)["logo"];
@@ -30,6 +33,11 @@ const KEPT = 'span[data-logo-host] > svg[data-blok-prefix^="logo"]';
 afterEach(cleanup);
 
 describe("a kabinet logo", { timeout: 20000 }, () => {
+  it.each([["logo", basiks.logo], ["action logo", basiks.actionLogo]])("%s is a v2 tree that reads back from its BSX", (_, entry) => {
+    const [root] = entry.componentTree as BlokComponentNode[];
+    expect(parseBsx(printBsx(root)).tree).toEqual(root);
+  });
+
   it("draws an app's LOGO from the tree kabinet parsed, and keeps it", async () => {
     const first = render(<KabinetBlokLogo blok={{ id: "3:basiks_logo", hash: basiks.logo.hash }} className="size-8" />);
 

@@ -1,7 +1,7 @@
 import * as React from "react";
 
-import { asStructure } from "@/core/blok/renderer/bloks/shared";
-import { useBlok, useBlokResource, useValue, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+import { asStructure } from "@arkitektio/bsx/renderer/bloks/shared/index";
+import { useBlok, useBlokResource, useValue, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 import { HISTOGRAM_BINS, readColumnDomain, readColumnHistogram } from "@/core/data/parquet/columnStats";
 import type { ParquetStoreRef } from "@/core/data/parquet/parquetEngine";
 import { cn } from "@/core/util/utils";

@@ -16,7 +16,7 @@ import {
   type AxisSelection,
 } from "../../../platform/coords/selection";
 import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
-import { effectiveProbeLayerId, layerAnswersProbe } from "../../../platform/probe/probeTargeting";
+import { effectiveHitLayerId, layerAnswersProbe } from "../../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../../platform/probe/probeTypes";
 import {
   clickProbeEnabled,
@@ -25,7 +25,7 @@ import {
 } from "../../../platform/probe/probeGating";
 import { useBrushSkeletonStoreApi } from "../../annotations/enhancers/brushSkeletonStore";
 import { useCreateSceneAnnotation } from "../../annotations/useCreateSceneAnnotation";
-import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi, type LayerState } from "../../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../../platform/stores/viewerStore";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
@@ -124,18 +124,20 @@ export const useBrickPlaneProbe = ({
   const { createPointAnnotation } = useCreateSceneAnnotation();
   const brushApi = useBrushSkeletonStoreApi();
 
-  // Event-time resolution — fresh pin AND fresh layer list, no render
-  // subscription: exactly one layer (the effective probe target) answers.
+  // Event-time resolution — fresh pins, layer list AND view, no render
+  // subscription: exactly one layer (the effective hit target) answers.
+  const modeStoreApi = useModeStoreApi();
   const answersProbe = useCallback(
     () =>
       layerAnswersProbe(
-        effectiveProbeLayerId(
-          viewerStoreApi.getState().probeLayerId,
+        effectiveHitLayerId(
+          viewerStoreApi.getState(),
           sceneStoreApi.getState().layers,
+          modeStoreApi.getState().displayMode === "3D",
         ),
         layerId,
       ),
-    [viewerStoreApi, sceneStoreApi, layerId],
+    [viewerStoreApi, sceneStoreApi, modeStoreApi, layerId],
   );
 
   useEffect(() => {

@@ -2824,12 +2824,11 @@ export type GeneralMediaAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a parquet object. */
@@ -2838,12 +2837,11 @@ export type GeneralParquetAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading the organization's sparse stores. */
@@ -2852,6 +2850,7 @@ export type GeneralSparseAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -2864,12 +2863,11 @@ export type GeneralZarrAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
@@ -3656,8 +3654,16 @@ export type Mutation = {
   putSparseDatasetsInFolder: Folder;
   /** File table datasets in a folder. A derived table follows its primary parent */
   putTableDatasetsInFolder: Folder;
+  /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
+  /** Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshParquetUpload: ParquetUploadGrant;
   /** Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption */
   refreshSparseUpload: SparseUploadGrant;
+  /** Reissue upload credentials for a zarr upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshZarrUpload: ZarrUploadGrant;
   /** Take annotation collections out of a folder */
   releaseAnnotationCollectionsFromFolder: Folder;
   /** Take array datasets out of a folder */
@@ -4095,8 +4101,28 @@ export type MutationPutTableDatasetsInFolderArgs = {
 };
 
 
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshParquetUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
 export type MutationRefreshSparseUploadArgs = {
-  input: RefreshSparseUploadInput;
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshZarrUploadArgs = {
+  input: RefreshUploadInput;
 };
 
 
@@ -4513,7 +4539,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>` */
+  identifier: Scalars['String']['output'];
 };
 
 /** A parameter port of a mechanism */
@@ -5209,7 +5236,7 @@ export type RecordingSiteInput = {
   position?: InputMaybe<Scalars['Float']['input']>;
 };
 
-export type RefreshSparseUploadInput = {
+export type RefreshUploadInput = {
   storeId: Scalars['String']['input'];
 };
 
@@ -5237,7 +5264,7 @@ export type RequestBigFileAccessInput = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -5263,7 +5290,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 

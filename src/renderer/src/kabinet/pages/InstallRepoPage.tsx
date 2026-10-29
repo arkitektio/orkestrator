@@ -61,7 +61,7 @@ const InstallRepoPage = () => {
 
   return (
     <PageLayout title="Install a repo" help={KABINET_HELP.installRepo}>
-      <div className="p-6">
+      <div className="p-3">
         {!coordinates ? (
           <Card className="max-w-xl">
             <CardHeader>

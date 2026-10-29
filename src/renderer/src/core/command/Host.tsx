@@ -17,6 +17,7 @@ export const CommandMenuHost = () => {
       partners={pageContext.partners}
       returns={pageContext.returns}
       collection={pageContext.collection}
+      related={pageContext.related}
     />
   );
 };

@@ -116,7 +116,7 @@ export const TrackLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Spline className="h-3 w-3 text-sky-300" />}
+        icon={<Spline className="h-3 w-3 text-sky-700 dark:text-sky-300" />}
         tile="bg-sky-400/15"
         title={layer.tableDataset?.name?.trim() || `Tracks ${layer.id}`}
         hidden={hidden}
@@ -144,7 +144,7 @@ export const TrackLayerCard = memo(
                 className="flex-1 py-1"
               />
               <span
-                className="w-12 shrink-0 text-right font-mono text-[9px] text-white/40"
+                className="w-12 shrink-0 text-right font-mono text-[9px] text-foreground/40"
                 title={
                   tailWindow === 0
                     ? "The whole trajectory is drawn, with no fade"
@@ -170,7 +170,7 @@ export const TrackLayerCard = memo(
               onValueCommit={([value]) => persist({ lineWidth: value })}
               className="flex-1 py-1"
             />
-            <span className="w-7 shrink-0 text-right font-mono text-[9px] text-white/40">
+            <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/40">
               {lineWidth}
             </span>
           </div>
@@ -184,7 +184,7 @@ export const TrackLayerCard = memo(
               onChange={(event) =>
                 persist({ colorByColumn: event.target.value || null })
               }
-              className="h-6 min-w-0 flex-1 rounded border border-white/10 bg-black/30 px-1.5 text-[10px] text-white/80"
+              className="h-6 min-w-0 flex-1 rounded border border-foreground/10 bg-background/30 px-1.5 text-[10px] text-foreground/80"
               title="Colour every segment by one of the table's measure columns. Coordinate and track-id columns are not offered — the dataset declares those by role."
             >
               <option value="">flat colour</option>
@@ -215,7 +215,7 @@ export const TrackLayerCard = memo(
 
         {/* What the layer IS. Derived from the dataset's column roles, so these
             are stated rather than offered — see the docblock. */}
-        <div className="flex flex-wrap items-center gap-1 border-t border-white/5 px-2 py-1">
+        <div className="flex flex-wrap items-center gap-1 border-t border-foreground/5 px-2 py-1">
           <RowLabel>from</RowLabel>
           {layer.trackIdColumn && (
             <Badge title="The TRACK_ID column that groups rows into trajectories">

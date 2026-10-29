@@ -1,4 +1,5 @@
 import { Object, Identifier } from "@/core/types";
+import type { RelatedContext } from "./extensions/types";
 import React from "react";
 
 export type SmartObjectContext<T extends Object = Object> = {
@@ -17,8 +18,7 @@ export type SmartModelPage<T extends Object = Object> = {
   help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: unknown;
-  /** Seamless sidebar rail — see PageLayout's `overlay` prop. */
+  /** A canvas page — see PageLayout's `overlay` prop. */
   overlay?: boolean;
   /** The rail tab to open when nothing valid is remembered. */
   defaultSidebar?: string;
@@ -26,6 +26,8 @@ export type SmartModelPage<T extends Object = Object> = {
   sidebarKey?: string;
   /** `false` drops the auto-appended Chat tab (a room page is already the chat). */
   chat?: boolean;
+  /** What the page also stands for in the ⌘K palette (a container's whole lens). */
+  related?: RelatedContext[];
   callback?: (object: T) => void;
 };
 
@@ -35,7 +37,6 @@ export type SmartListPageProps<T extends Object = Object> = {
   help?: React.ReactNode;
   sidebars?: React.ReactNode;
   pageActions?: React.ReactNode;
-  variant?: unknown;
   callback?: (object: T) => void;
 };
 

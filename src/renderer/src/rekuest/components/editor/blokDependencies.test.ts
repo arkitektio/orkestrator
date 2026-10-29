@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BlokEditorDependencyFragment } from "@/rekuest/api/graphql";
 import { PortKind } from "@/rekuest/api/graphql";
-import { bsxDependency, dependencyDraft, dependencyInput, dependencyProblems, emptyDependency } from "./blokDependencies";
+import { dependencyDraft, dependencyInput, dependencyProblems, emptyDependency, scopeDependency } from "./blokDependencies";
 
 const read = (overrides: Partial<BlokEditorDependencyFragment> = {}): BlokEditorDependencyFragment => ({
   id: "1",
@@ -79,20 +79,36 @@ describe("blok dependencies", () => {
     expect(dependencyInput(emptyDependency("lamp")).actionDependencies).toBeNull();
   });
 
-  it("tells completion its keys", () => {
-    expect(bsxDependency(dependencyDraft(read()))).toEqual({
+  it("gives the validator the corpus-shaped dependency", () => {
+    expect(scopeDependency(dependencyDraft(read()))).toEqual({
       key: "stage",
-      app: "mikro.stage",
-      actions: ["move"],
-      states: ["position"],
+      action_dependencies: [
+        {
+          key: "move",
+          demand: {
+            arg_matches: [
+              {
+                key: "x",
+                kind: PortKind.Float,
+                identifier: null,
+                nullable: null,
+                children: [{ key: "inner", kind: null, identifier: null, nullable: null, children: [] }],
+              },
+            ],
+            return_matches: null,
+          },
+        },
+      ],
+      state_dependencies: [{ key: "position", demand: null }],
     });
+    expect(scopeDependency(emptyDependency("lamp"))).toEqual({ key: "lamp", action_dependencies: null, state_dependencies: null });
   });
 
   it("finds keys that cannot be saved", () => {
-    const drafts = [emptyDependency("stage"), emptyDependency("stage"), emptyDependency("2x"), emptyDependency("utils")];
+    const drafts = [emptyDependency("stage"), emptyDependency("stage"), emptyDependency("2x"), emptyDependency("self")];
     const problems = dependencyProblems(drafts);
     expect(problems.get(drafts[0].uid)).toMatch(/twice/);
     expect(problems.get(drafts[2].uid)).toMatch(/name/);
-    expect(problems.get(drafts[3].uid)).toMatch(/reserves/);
+    expect(problems.get(drafts[3].uid)).toMatch(/own agent/);
   });
 });

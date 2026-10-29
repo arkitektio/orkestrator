@@ -1,51 +1,102 @@
 /**
- * Which layer answers a probe pointer event.
+ * Which layers a probe involves. Three roles, deliberately apart:
  *
- * Exactly ONE layer reads the probe at any time. An explicit pin
- * (`viewerStore.probeLayerId`) selects it; with no pin the DEFAULT target is
- * the first visible image layer in store order — never "whatever mesh the ray
- * hits first", which made the reading camera-dependent with stacked layers.
+ *  - The DATA layer (`viewerStore.dataLayerId`): the one a scene is ABOUT —
+ *    the lens a new annotation is cut with, an annotation card's "Run with"
+ *    default, the host's select payload, the metadata fallback. One layer,
+ *    because a task takes one lens.
+ *  - The INFO layers (`viewerStore.infoLayerIds`): what the readout shows
+ *    under the cursor — channel values and attribute plans, each sampled at
+ *    the hit point (`infoReadings.ts`). A set, defaulting to the data layer.
+ *  - The HIT layer: whose mesh answers the pointer — where a 3D ray stops,
+ *    where design gestures land. Exactly ONE layer reads the pointer at any
+ *    time, never "whatever mesh the ray hits first", which made the reading
+ *    camera-dependent with stacked layers. The user's probe pin
+ *    (`probeLayerId`) chooses it in 3D only; in 2D the layers are coplanar,
+ *    the hit point is the same on all of them, and the hit follows the data
+ *    layer. A transient pick (`pickLayerId`) overrides both while it runs.
  *
- * The mechanism is a decline, not a filter: a layer that is not the target
- * must return from its handler WITHOUT calling `event.stopPropagation()`, so
- * R3F carries the same event on to the next intersected object — the target
- * layer — which handles it normally. Stopping propagation first would swallow
- * the event and probe nothing.
- *
- * This covers EVERY probe-shaped gesture, not just PROBE-mode readouts: the
- * DESIGN tools' volume clicks and strokes (trace, seed, carve, lift, bridge)
- * are captured by the intensity volume, the label raymarcher and the 2D
- * plane through the same `layerAnswersProbe` guard — so a design gesture
- * lands on the pinned layer (or the default first visible one), never on
- * "whatever the ray hit first". Lifting from a mask that is not the first
- * visible layer therefore means pinning it (the layer row's probe pin).
+ * The hit mechanism is a decline, not a filter: a layer that is not the hit
+ * target must return from its handler WITHOUT calling `event.stopPropagation()`,
+ * so R3F carries the same event on to the next intersected object — the
+ * target layer — which handles it normally. Stopping propagation first would
+ * swallow the event and probe nothing. This covers EVERY probe-shaped gesture,
+ * not just PROBE-mode readouts: the DESIGN tools' volume clicks and strokes
+ * (trace, seed, carve, lift, bridge) go through the same `layerAnswersProbe`
+ * guard, so lifting from a mask means making it the data layer (or, in 3D,
+ * the layer the ray stops in) in the control bar's `LayerTargetPicker`.
  */
 
+type TargetLayerLike = { id: string; visible?: boolean };
+
+/** The pins a resolution reads, as they sit on the viewer store. */
+export type ProbeTargetPins = {
+  dataLayerId: string | null;
+  infoLayerIds: readonly string[] | null;
+  probeLayerId: string | null;
+  pickLayerId: string | null;
+};
+
+const firstVisible = (layers: readonly TargetLayerLike[]): string | null =>
+  layers.find((layer) => layer.visible !== false)?.id ?? null;
+
+const isVisible = (layers: readonly TargetLayerLike[], id: string | null): id is string =>
+  id !== null && layers.some((layer) => layer.id === id && layer.visible !== false);
+
 /**
- * The layer the probe actually reads. An explicit pin wins while its layer
- * exists and is visible (a hidden layer draws no mesh and can answer
- * nothing); otherwise the first layer with `visible !== false`. Null only
- * when no layer can answer at all.
+ * The layer tasks and annotations use. A pin wins while its layer is in the
+ * scene, HIDDEN OR NOT — a task reads the lens, not the pixels on screen;
+ * otherwise the first visible layer. Null only with no layer to name.
  *
- * A dead pin is deliberately NOT erased here: it heals by derivation, and
- * resurrects if its layer is shown again — a temporary hide keeps the user's
- * intent.
+ * A dead pin is deliberately NOT erased here: it heals by derivation (the
+ * scene provider drops it when its layer is removed).
  */
-export const effectiveProbeLayerId = (
-  probeLayerId: string | null,
-  layers: readonly { id: string; visible?: boolean }[],
+export const effectiveDataLayerId = (
+  dataLayerId: string | null,
+  layers: readonly TargetLayerLike[],
+): string | null =>
+  dataLayerId !== null && layers.some((layer) => layer.id === dataLayerId)
+    ? dataLayerId
+    : firstVisible(layers);
+
+/**
+ * The layers the readout samples, in store order: the chosen set, or the
+ * data layer alone by default. Hidden layers drop out — only visible layers
+ * get node plans, so a hidden one has nothing resident to read.
+ */
+export const effectiveInfoLayerIds = (
+  pins: Pick<ProbeTargetPins, "dataLayerId" | "infoLayerIds">,
+  layers: readonly TargetLayerLike[],
+): string[] => {
+  const chosen = pins.infoLayerIds ?? [effectiveDataLayerId(pins.dataLayerId, layers)];
+  return layers
+    .filter((layer) => layer.visible !== false && chosen.includes(layer.id))
+    .map((layer) => layer.id);
+};
+
+/**
+ * The layer whose handler answers the pointer: a live transient pick, else
+ * (3D only) the visible probe pin, else the data layer while it is visible,
+ * else the first visible layer. Null only when no layer can answer at all —
+ * a hidden layer draws no mesh.
+ *
+ * A dead or 2D-ignored pin is not erased: it resurrects when its layer is
+ * shown again, or when the view goes back to 3D.
+ */
+export const effectiveHitLayerId = (
+  pins: Pick<ProbeTargetPins, "dataLayerId" | "probeLayerId" | "pickLayerId">,
+  layers: readonly TargetLayerLike[],
+  is3D: boolean,
 ): string | null => {
-  if (
-    probeLayerId !== null &&
-    layers.some((layer) => layer.id === probeLayerId && layer.visible !== false)
-  ) {
-    return probeLayerId;
-  }
-  return layers.find((layer) => layer.visible !== false)?.id ?? null;
+  if (isVisible(layers, pins.pickLayerId)) return pins.pickLayerId;
+  if (is3D && isVisible(layers, pins.probeLayerId)) return pins.probeLayerId;
+  const data = effectiveDataLayerId(pins.dataLayerId, layers);
+  if (isVisible(layers, data)) return data;
+  return firstVisible(layers);
 };
 
 export const layerAnswersProbe = (
-  /** The resolved target (`effectiveProbeLayerId`), or null for "no layer". */
+  /** The resolved target (`effectiveHitLayerId`), or null for "no layer". */
   effectiveLayerId: string | null,
   /** The layer whose handler is deciding whether to act. */
   layerId: string,

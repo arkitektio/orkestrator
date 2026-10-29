@@ -2106,6 +2106,11 @@ type Mutation {
   """Run the rules over existing transactions."""
   reapplyRules(accounts: [ID!] = null, semanticAssign: Boolean! = true): Int!
 
+  """
+  Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshBigfileUpload(input: RefreshUploadInput!): BigFileUploadGrant!
+
   """Fetch and store daily closes from the enabled sources."""
   refreshSecurityPrices(dateFrom: Date = null, dateTo: Date = null, isins: [String!] = null, sources: [PriceSource!] = null): [PriceRefresh!]!
 
@@ -2229,7 +2234,9 @@ An organization (tenant). Every bank object belongs to exactly one, and queries 
 """
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 """
@@ -2713,13 +2720,17 @@ enum RecurringStatus {
   IGNORED
 }
 
+input RefreshUploadInput {
+  storeId: String!
+}
+
 input RequestBigFileAccessInput {
   storeId: String!
 }
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

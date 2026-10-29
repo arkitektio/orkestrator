@@ -22,7 +22,7 @@ import {
 } from "@/core/ui/context-menu";
 import { InputGroupButton } from "@/core/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import { SourceLogo } from "@/core/blok/logo/SourceLogo";
+import { SourceLogo } from "@arkitektio/bsx/logo/SourceLogo";
 import { LocalActionCommand } from "./localactions";
 
 type LocalActionEntry = { id: string; action: Action };
@@ -215,6 +215,8 @@ export const LOCAL_ACTIONS_SECTION: SmartContextSection<LocalActionEntry> = {
   priority: 0,
   tier: "instant",
   applies: () => true,
+  // A registry scan: listing the related contexts' costs nothing.
+  related: { mode: "repeat" },
   useItems: useLocalActionItems,
   itemKey: (entry) => entry.id,
   usePins: useLocalActionPins,

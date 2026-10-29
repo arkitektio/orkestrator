@@ -74,7 +74,6 @@ describe('latestTaskRecord', () => {
       running: false,
       done: true,
       progress: 100,
-      result: 'labels',
       returns: {return0: 'labels'},
     });
   });
@@ -133,7 +132,7 @@ describe('the latest task at a moment in the past', () => {
       progress: 15,
       message: 'Predicting',
     });
-    expect(latestTaskRecord(done, ms('2026-10-13T10:00:09Z'))).toMatchObject({status: 'done', result: 'labels'});
+    expect(latestTaskRecord(done, ms('2026-10-13T10:00:09Z'))).toMatchObject({status: 'done', returns: {return0: 'labels'}});
   });
 });
 

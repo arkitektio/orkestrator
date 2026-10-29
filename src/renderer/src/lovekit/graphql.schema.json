@@ -2056,8 +2056,8 @@
             "deprecationReason": null
           },
           {
-            "name": "slug",
-            "description": null,
+            "name": "identifier",
+            "description": "The organization across issuers and services: `<issuer>#<org>`",
             "args": [],
             "type": {
               "kind": "NON_NULL",

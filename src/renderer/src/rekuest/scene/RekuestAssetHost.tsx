@@ -4,7 +4,7 @@ import {
   type BlokAsset,
   type BlokAssetHost,
   type BlokAssetSource,
-} from '@/core/blok/renderer/assets';
+} from '@arkitektio/bsx/renderer/assets';
 import {useDatalayerEndpoint} from '@/core/connection/arkitekt/host';
 import {ADMIN_ROLE, useHasRoles} from '@/core/connection/roles';
 import {DEFAULT_MODEL_POLICY} from '@/core/model/glb';

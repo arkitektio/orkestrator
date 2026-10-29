@@ -120,7 +120,7 @@ export const AnnotationLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<SquareDashed className="h-3 w-3 text-amber-300" />}
+        icon={<SquareDashed className="h-3 w-3 text-amber-700 dark:text-amber-300" />}
         tile="bg-amber-400/15"
         title={
           collection?.name?.trim() ||
@@ -143,7 +143,7 @@ export const AnnotationLayerCard = memo(
           total > 0 ? (
             <span
               className={`shrink-0 font-mono text-[9px] ${
-                inView === 0 ? "text-amber-300/80" : "text-white/50"
+                inView === 0 ? "text-amber-700/80 dark:text-amber-300/80" : "text-foreground/50"
               }`}
               title={
                 inView === 0
@@ -163,7 +163,7 @@ export const AnnotationLayerCard = memo(
                 variant="ghost"
                 size="icon"
                 className={`h-5 w-5 shrink-0 ${
-                  live ? "text-brand-light hover:text-brand-light" : "text-white/45 hover:text-white/90"
+                  live ? "text-brand-light hover:text-brand-light" : "text-foreground/45 hover:text-foreground/90"
                 }`}
                 title={
                   live
@@ -179,7 +179,7 @@ export const AnnotationLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
               title={hidden ? "Show (session)" : "Hide (session)"}
               onClick={() => patchSceneLayer(layer.id, { visible: hidden })}
             >
@@ -189,7 +189,7 @@ export const AnnotationLayerCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
                 title="Remove layer from scene"
                 onClick={() => onRemove(layer.id)}
               >
@@ -200,17 +200,17 @@ export const AnnotationLayerCard = memo(
         }
       >
         {/* ------------------------------------------------ shapes --------- */}
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-white/5 px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-foreground/5 px-2 py-1.5">
           <RowLabel>shapes</RowLabel>
           {total === 0 ? (
-            <span className="text-[9px] text-white/25">
+            <span className="text-[9px] text-foreground/25">
               {annotations ? "empty — draw a shape to fill it" : "loading…"}
             </span>
           ) : (
             <>
               <span
                 className={`font-mono text-[9px] ${
-                  inView === 0 ? "text-amber-300/80" : "text-white/50"
+                  inView === 0 ? "text-amber-700/80 dark:text-amber-300/80" : "text-foreground/50"
                 }`}
                 title={
                   inView === 0
@@ -237,7 +237,7 @@ export const AnnotationLayerCard = memo(
             its vectors live in — the two facts that explain where the shapes
             land when the placement looks wrong. */}
         {collection && (
-          <div className="flex flex-wrap items-center gap-1 border-t border-white/5 px-2 py-1">
+          <div className="flex flex-wrap items-center gap-1 border-t border-foreground/5 px-2 py-1">
             <Badge title="The annotation collection this layer draws">
               collection {collection.id}
             </Badge>

@@ -7,3 +7,13 @@ mutation CreateShortcut($input: CreateShortcutInput!) {
 mutation DeleteShortcut($id: ID!) {
   deleteShortcut(input: { id: $id })
 }
+
+mutation BindShortcut($input: BindShortcutInput!) {
+  bindShortcut(input: $input) {
+    ...Shortcut
+  }
+}
+
+mutation UnbindShortcut($id: ID!) {
+  unbindShortcut(input: { id: $id })
+}

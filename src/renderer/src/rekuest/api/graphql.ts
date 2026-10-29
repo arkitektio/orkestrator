@@ -38,8 +38,6 @@ export type Scalars = {
   JSONSerializable: { input: any; output: any; }
   /** A reference to a media store: the id its finished upload returned. */
   MediaLike: { input: any; output: any; }
-  /** The `Props` scalar type represents a JSON object of UI props or state */
-  Props: { input: any; output: any; }
   /** The `SearchQuery` scalar is a GraphQL query string a search widget executes against its ward to populate its choices */
   SearchQuery: { input: any; output: any; }
   _Any: { input: any; output: any; }
@@ -56,6 +54,8 @@ export type Action = {
   args: Array<ArgPort>;
   /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
   assignable: Scalars['Boolean']['output'];
+  /** The action's own bloks, at most one per context (HTML for a task panel, OVERLAY drawn into the space that hosts a run): declared with the action, the latest registration's. Not part of its hash. */
+  bloks: Array<ActionBlok>;
   /** Collections to which this action belongs. */
   collections: Array<Collection>;
   /** Timestamp when the action was defined. */
@@ -203,22 +203,60 @@ export type ActionArgument = {
   valuePath?: Maybe<Scalars['String']['output']>;
 };
 
-/** A JSON-serializable argument entry for a multi-agent action trigger. */
+/** An argument of a call: a literal, a path, a nested call, a list or an object; null when it sets none. */
 export type ActionArgumentInput = {
   /** Defines a nested agent call if this argument should trigger an agent interaction. */
   agentCall?: InputMaybe<AgentProbeInput>;
   /** The argument property name. */
   key?: InputMaybe<Scalars['String']['input']>;
-  /** Defines a nested utility call if this argument should trigger a system utility interaction. */
+  /** A nested function call. */
   utilCall?: InputMaybe<UtilCallInput>;
   /** Defines a list of key-value pairs if this argument should be a dictionary. */
   valueDict?: InputMaybe<Array<ActionArgumentInput>>;
   /** Defines a list of values if this argument should be an array. */
   valueList?: InputMaybe<Array<ActionArgumentInput>>;
-  /** Static literal value if not dynamically bound. */
+  /** A JSON literal. */
   valueLiteral?: InputMaybe<Scalars['JSONSerializable']['input']>;
-  /** JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically. */
+  /** A path the argument reads, as a prop's dynamic_value does. */
   valuePath?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** An action's own blok for one context: how a client shows a run of the action there. It names devices only by the action's dependency keys: a run binds them through `Task.dependencyAgents`, a preview through the `dependencyTree` dry run. */
+export type ActionBlok = {
+  __typename?: 'ActionBlok';
+  /** The action whose runs it shows. */
+  action: Action;
+  /** What it draws: a blok held by its actions only (`heldByAction`), shared by every action of the app declaring the same. */
+  blok: Blok;
+  /** Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run, over the agents placed there. */
+  context: ComponentContext;
+  id: Scalars['ID']['output'];
+};
+
+/** An action's own blok (blok language v2): how a client shows a run of it in one context, naming devices by the action's dependency keys. */
+export type ActionBlokInput = {
+  /** The catalogs it needs, as name@version. */
+  catalogs?: Array<Scalars['String']['input']>;
+  /** The UI component tree, unless the blok is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`). */
+  context?: ComponentContext;
+  /** What a preview renders it with. */
+  demo?: InputMaybe<BlokDemoInput>;
+  /** What the blok shows of a run. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** Its locals: form state that feeds a call, written only through bind. */
+  locals?: Array<BlokLocalInput>;
+  /** The module the blok renders against besides its catalogs; the Orkestrator's when absent. */
+  module?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared reads. */
+  queries?: Array<BlokQueryInput>;
+  /** The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared streams. */
+  subscriptions?: Array<BlokSubscriptionInput>;
+  /** The blok language version the blok speaks; 2 is the only one. */
+  vocab: Scalars['Int']['input'];
 };
 
 /** Pure matching criteria for an action (app/key preferred; matches loosen). */
@@ -326,6 +364,8 @@ export type ActionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ActionFilter>;
   OR?: InputMaybe<ActionFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Filter using app identifier */
   appIdentifier?: InputMaybe<Scalars['String']['input']>;
   /** Whether an agent that can take the action is connected now (`Action.assignable`). */
@@ -709,11 +749,11 @@ export type AgentOrder =
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentProbeInput = {
-  /** Key-value arguments map compiled for the target agent call. */
+  /** Its arguments, each named. */
   arguments?: InputMaybe<Array<ActionArgumentInput>>;
-  /** The abstract agent dependency key declared in the Blok manifest (e.g., 'stage_dep'). */
+  /** `self`, or the dependency key the task goes to (`deps.<key>`). */
   dependency: Scalars['String']['input'];
-  /** The target function name registered on that specific agent's worker thread loop. */
+  /** The action called, by its key in the dependency's action demands. */
   operation: Scalars['String']['input'];
 };
 
@@ -924,6 +964,8 @@ export type AssignInput = {
   reference?: InputMaybe<Scalars['String']['input']>;
   /** The resolution ID to assign to when assining to a implementation with dependencies */
   resolution?: InputMaybe<Scalars['ID']['input']>;
+  /** The space (in the caller's organization) the run is started in: where a client draws the action's overlay over the placed agents (`Task.space`). Only a UI reads it; nothing runs differently. Honoured on a root only. */
+  space?: InputMaybe<Scalars['ID']['input']>;
   /** What the agent's state must hold for the task to run. Refused unless the agent says it tests them, and for a state or path its declaration does not have. */
   stateRequires?: InputMaybe<Array<StateRequirementInput>>;
   /** Whether the task should step. Ie. go to the next breakpoint */
@@ -1011,6 +1053,20 @@ export type BaseCatalog = {
   version: Scalars['Int']['output'];
 };
 
+/** Pin a shortcut for whoever matches: users, an app, a client, a device, each optional. They cannot unpin it. */
+export type BindShortcutInput = {
+  /** The identifier of the app to pin it in; every app when not given. */
+  app?: InputMaybe<Scalars['String']['input']>;
+  /** The `client_id` of the client to pin it in; every client when not given. */
+  client?: InputMaybe<Scalars['String']['input']>;
+  /** The `device_id` of the device to pin it on; every device when not given. */
+  device?: InputMaybe<Scalars['String']['input']>;
+  /** The shortcut to pin. */
+  shortcut: Scalars['ID']['input'];
+  /** The users (their `sub`) to pin the shortcut for, one binding each; every user when not given. */
+  users?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 /** The input for bouncing an agent. */
 export type BlockInput = {
   /** The agent ID to bounce. */
@@ -1025,7 +1081,8 @@ export type Blok = {
   app?: Maybe<App>;
   /** The items this blok is opened for, declared like an action's args and read under `@args.<key>`; empty for a blok that is opened on its own. */
   args: Array<ArgPort>;
-  catalog: UiCatalog;
+  /** The catalogs it needs, as name@version ('ui@1', 'scene@1'). */
+  catalogs: Array<Scalars['String']['output']>;
   /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). Unlike `components` it has no depth limit, which a selection set always has. */
   componentTree: Scalars['AnyDefault']['output'];
   /** The typed component tree of this blok. */
@@ -1033,24 +1090,30 @@ export type Blok = {
   /** The renderer for this blok's root. */
   context: ComponentContext;
   creator: User;
-  /** Demo state used to render a preview of this blok without agents. */
-  demoState: Scalars['Props']['output'];
+  /** What a preview renders it with, mirroring the roots it reads (deps, args, task, queries, subscriptions); null when it declares none. */
+  demo?: Maybe<BlokDemo>;
   /** Dependencies that need to be resolved for this blok. */
   dependencies: Array<BlokDependency>;
   description?: Maybe<Scalars['String']['output']>;
-  /** Non-fatal registration findings, e.g. manifest util calls naming operations that neither the base catalog nor this blok's catalog provides. */
+  /** The findings of its last write against its catalogs and module, with the blok vocabulary's codes (`catalog.props`, `palette.raw_colour`, ...): warnings only, since an error refuses the write. */
   diagnostics: Array<Diagnostic>;
   /** The model reference this blok decorates, if any. */
   forModel?: Maybe<Scalars['String']['output']>;
   /** The node of `forModel` this blok attaches to; the model's root when null. */
   forNode?: Maybe<Scalars['String']['output']>;
-  /** A SHA-256 of what the blok renders: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
+  /** A SHA-256 of what the blok renders: its component tree, context, language version, catalogs, locals, demo, queries and subscriptions. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
   hash: Scalars['String']['output'];
   /** The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead. */
   head?: Maybe<BlokRevision>;
+  /** Whether this blok is an action's own (`Action.bloks`): declared with the action, never listed, materialized or edited on its own. */
+  heldByAction: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  /** Its locals as written: form state that feeds a call, written only through `bind`, read bare; each an arg port plus `persist`, its kind null when it was left out. A persisted one stays on the device, never on a server. What `hash` covers. */
+  locals: Array<BlokLocal>;
   /** Materialized bloks that are instances of this blok, but the ones made for a message. */
   materializedBloks: Array<MaterializedBlok>;
+  /** The module (an app's own UI extras) it renders against besides its catalogs. */
+  module: Module;
   name: Scalars['String']['output'];
   /** Where this custom blok was installed from (e.g. kabinet's `RepoBlok.origin`); null for one made here. */
   origin?: Maybe<Scalars['String']['output']>;
@@ -1060,12 +1123,18 @@ export type Blok = {
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
   providers: Array<Agent>;
+  /** Its declared reads, read as `queries.<key>`. */
+  queries: Array<BlokQuery>;
+  /** Its locals as its tree resolves them, each with a kind (a left-out kind inferred from its default, the task argument it is passed to or the control bound to it; ANY when nothing tells). Derived from the rest on every write: what renderers type the locals with, never part of `hash`. */
+  resolvedLocals: Array<ResolvedBlokLocal>;
   /** What a person answers through this blok when a task asks with it, declared like an action's returns: the values `blok.answer` hands back. Empty for a blok that answers nothing. */
   returns: Array<ReturnPort>;
   /** The revisions of this custom blok, newest first. An undo is a revision too, so history only grows. */
   revisions: Array<BlokRevision>;
-  /** The backend services this blok reads from (its `query` components name them), each frozen at the version it was written against. A client warns when the live service differs. */
-  services: Array<BlokService>;
+  /** Its declared streams, read as `subscriptions.<key>`. */
+  subscriptions: Array<BlokSubscription>;
+  /** The blok language version it speaks; 2 is the only one. */
+  vocab: Scalars['Int']['output'];
 };
 
 
@@ -1101,6 +1170,30 @@ export type BlokAgentMapping = {
 export type BlokAgentMappingInput = {
   agent: Scalars['ID']['input'];
   key: Scalars['String']['input'];
+};
+
+/** What a preview renders a blok with, mirroring the roots it reads. */
+export type BlokDemo = {
+  __typename?: 'BlokDemo';
+  args?: Maybe<Scalars['JSONSerializable']['output']>;
+  deps?: Maybe<Scalars['JSONSerializable']['output']>;
+  queries?: Maybe<Scalars['JSONSerializable']['output']>;
+  subscriptions?: Maybe<Scalars['JSONSerializable']['output']>;
+  task?: Maybe<Scalars['JSONSerializable']['output']>;
+};
+
+/** What a preview renders a blok with, mirroring the roots it reads. */
+export type BlokDemoInput = {
+  /** What it is opened on. */
+  args?: InputMaybe<Scalars['JSONSerializable']['input']>;
+  /** Per dependency key (`self` included), its states and tasks: `{self: {arm: {joints: [...]}}}`. */
+  deps?: InputMaybe<Scalars['JSONSerializable']['input']>;
+  /** Per declared query, the value it answers. */
+  queries?: InputMaybe<Scalars['JSONSerializable']['input']>;
+  /** Per declared subscription, its value. */
+  subscriptions?: InputMaybe<Scalars['JSONSerializable']['input']>;
+  /** The task record it is about (task and action bloks, action logos). */
+  task?: InputMaybe<Scalars['JSONSerializable']['input']>;
 };
 
 /** An agent dependency declared by a blok. */
@@ -1155,6 +1248,8 @@ export type BlokEdit = {
   forked: Scalars['Boolean']['output'];
   /** The materialization that shows the edit: the one it was made through, or the fork's new one. Null for an edit of the blok itself. */
   materializedBlok?: Maybe<MaterializedBlok>;
+  /** The new content's locals as its tree resolves them, each with a kind (a left-out kind inferred from its default, the task argument it is passed to or the control bound to it; ANY when nothing tells): what an editor types the locals with before saving, a dry run included. */
+  resolvedLocals: Array<ResolvedBlokLocal>;
   /** The revision the blok is at after the edit; null for a dry run. */
   revision?: Maybe<BlokRevision>;
 };
@@ -1165,6 +1260,8 @@ export type BlokFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<BlokFilter>;
   OR?: InputMaybe<BlokFilter>;
+  /** Only bloks whose args accept at least one of these demand sets (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Only bloks installed from an origin (true) or only ones made here (false). */
@@ -1177,21 +1274,21 @@ export type BlokFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Which locks does the agent provide in general */
+/** A blok an agent declares (blok language v2). */
 export type BlokImplementationInput = {
-  /** The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only. */
+  /** The items this Blok is opened for, declared like an action's args and read under `args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only. */
   args?: Array<ArgPortInput>;
-  /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
-  catalog?: InputMaybe<Scalars['String']['input']>;
-  /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */
+  /** The catalogs it needs, as name@version ('ui@1', 'scene@1'). */
+  catalogs?: Array<Scalars['String']['input']>;
+  /** The UI component tree blueprint for this Blok (one root), unless it is sent as its `source`. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene. */
+  /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root is a Scene, LOGO an agent's logo, ACTION_LOGO an action's. */
   context?: ComponentContext;
   /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
   default?: Scalars['Boolean']['input'];
-  /** An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes. */
-  demoState?: InputMaybe<Scalars['JSONSerializable']['input']>;
-  /** The dependencies required by this Blok. */
+  /** What a preview renders it with. */
+  demo?: InputMaybe<BlokDemoInput>;
+  /** The dependencies required by this Blok: for an agent's blok the one dependency `self`, its demands what the tree reads and calls of it. */
   dependencies?: Array<AgentDependencyInput>;
   /** A human-readable description about this Blok's purpose and functionality. */
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1201,10 +1298,105 @@ export type BlokImplementationInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
-  /** The backend services this Blok reads from (its `query` components name them), each frozen at the version it was written against. */
-  services?: Array<BlokServiceInput>;
-  /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
+  /** Its locals: form state that feeds a call, written only through bind. */
+  locals?: Array<BlokLocalInput>;
+  /** The module (an app's own unversioned extras, registered by a UI app such as the Orkestrator) the blok renders against besides its catalogs; the Orkestrator's when absent. */
+  module?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared reads, as `queries.<key>`. */
+  queries?: Array<BlokQueryInput>;
+  /** The Blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
   source?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared streams, as `subscriptions.<key>`. */
+  subscriptions?: Array<BlokSubscriptionInput>;
+  /** The blok language version the blok speaks; 2 is the only one. */
+  vocab: Scalars['Int']['input'];
+};
+
+/** A local as the blok declares it: blok-level form state that feeds a call, written only through `bind` on controls. A local is an arg port plus `persist`; its kind may be left out. */
+export type BlokLocal = {
+  __typename?: 'BlokLocal';
+  children?: Maybe<Array<ArgPort>>;
+  choices?: Maybe<Array<Choice>>;
+  default?: Maybe<Scalars['AnyDefault']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  dimension?: Maybe<Scalars['String']['output']>;
+  effects?: Maybe<Array<Effect>>;
+  identifier?: Maybe<Scalars['Identifier']['output']>;
+  key: Scalars['String']['output'];
+  kind?: Maybe<LocalKind>;
+  label?: Maybe<Scalars['String']['output']>;
+  nullable: Scalars['Boolean']['output'];
+  persist: Scalars['Boolean']['output'];
+  proposedUnits?: Maybe<Array<Scalars['String']['output']>>;
+  referenceUnit?: Maybe<Scalars['String']['output']>;
+  requires?: Maybe<Array<Requires>>;
+  validators?: Maybe<Array<Validator>>;
+  widget?: Maybe<AssignWidget>;
+};
+
+/** A local: blok-level form state that feeds a call, written only through `bind` on controls. A local is an arg port plus `persist`; its `kind` is a port kind or ANY. Every field left out (or null) is the tree's to tell: the kind is inferred (its default, the task argument it is passed to whole, the control bound to it; ANY when nothing tells), and an inferred port fills only the fields the local leaves out. */
+export type BlokLocalInput = {
+  /** Its child ports (the item of a LIST, the fields of a DICT or MODEL). */
+  children?: InputMaybe<Array<ArgPortInput>>;
+  /** The values it takes (an ENUM's). */
+  choices?: InputMaybe<Array<ChoiceInput>>;
+  /** The value it starts with. */
+  default?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** What it is for. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** For a QUANTITY: its dimensionality (derived from the unit). */
+  dimension?: InputMaybe<Scalars['String']['input']>;
+  /** Its effects. */
+  effects?: InputMaybe<Array<EffectInput>>;
+  /** The structure (or model, enum) identifier of what it holds. */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Its name, read bare in the tree (`{iterations}`); never a reserved root. */
+  key: Scalars['String']['input'];
+  /** A port kind or ANY. Left out or null: inferred from the tree, ANY when nothing tells. */
+  kind?: InputMaybe<LocalKind>;
+  /** Its label. */
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** Whether it may hold null; left out, what is inferred says (false when nothing does). */
+  nullable?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Remember the last input on this device (never on a server); false when left out. */
+  persist?: InputMaybe<Scalars['Boolean']['input']>;
+  /** For a QUANTITY: the units offered. */
+  proposedUnits?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** For a QUANTITY: its reference unit. */
+  referenceUnit?: InputMaybe<Scalars['String']['input']>;
+  /** Its descriptor requirements. */
+  requires?: InputMaybe<Array<RequiresInput>>;
+  /** Its validators. */
+  validators?: InputMaybe<Array<ValidatorInput>>;
+  /** The widget a form of it uses. */
+  widget?: InputMaybe<AssignWidgetInput>;
+};
+
+/** A declared read: one GraphQL query on a service, read as `queries.<key>` (status, value, error, refetching, fetching_more). */
+export type BlokQuery = {
+  __typename?: 'BlokQuery';
+  document: Scalars['String']['output'];
+  key: Scalars['String']['output'];
+  more?: Maybe<Scalars['String']['output']>;
+  poll?: Maybe<Scalars['Float']['output']>;
+  service: Scalars['String']['output'];
+  variables: Array<ActionArgument>;
+};
+
+/** A declared read: one GraphQL query on a service, re-run when its variables change; the blok reads it as `queries.<key>`. */
+export type BlokQueryInput = {
+  /** One GraphQL `query` operation; never a mutation. */
+  document: Scalars['String']['input'];
+  /** Its name: the blok reads it as `queries.<key>` (status, value, error, refetching, fetching_more). */
+  key: Scalars['String']['input'];
+  /** The list field of its result that `queries.<key>.fetch_more(...)` appends new pages to, as a dotted path into the data (`positions`, `images.items`). A query without it cannot fetch more. */
+  more?: InputMaybe<Scalars['String']['input']>;
+  /** Re-run every this many seconds, besides when its variables change. */
+  poll?: InputMaybe<Scalars['Float']['input']>;
+  /** The service it runs on, by its key ('mikro'). */
+  service: Scalars['String']['input'];
+  /** Its variables, each an expression over args, locals and dependencies (as a call argument is stored). */
+  variables?: Array<ActionArgumentInput>;
 };
 
 /** One state of a custom blok, never changed once written. Every write to a custom blok commits one; the blok is a copy of its head. */
@@ -1213,7 +1405,8 @@ export type BlokRevision = {
   /** The user it was written as. */
   author?: Maybe<User>;
   blok: Blok;
-  catalog: UiCatalog;
+  /** The catalogs it needs, as name@version ('ui@1', 'scene@1'). */
+  catalogs: Array<Scalars['String']['output']>;
   /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). */
   componentTree: Scalars['AnyDefault']['output'];
   /** The typed component tree of this revision. */
@@ -1223,42 +1416,60 @@ export type BlokRevision = {
   /** The renderer for this revision's root. */
   context: ComponentContext;
   createdAt: Scalars['DateTime']['output'];
-  /** The local state of this revision. */
-  demoState: Scalars['Props']['output'];
+  /** What a preview renders it with, mirroring the roots it reads (deps, args, task, queries, subscriptions); null when it declares none. */
+  demo?: Maybe<BlokDemo>;
   /** The agent dependencies of this revision. */
   dependencies: Array<RevisionDependency>;
   /** A SHA-256 of what this revision renders, as `Blok.hash` is of the head. */
   hash: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  /** Its locals as written: form state that feeds a call, written only through `bind`, read bare; each an arg port plus `persist`, its kind null when it was left out. A persisted one stays on the device, never on a server. What `hash` covers. */
+  locals: Array<BlokLocal>;
   /** What changed and why, in a sentence. */
   message?: Maybe<Scalars['String']['output']>;
+  /** The module this revision renders against. */
+  module: Module;
   /** The place of this revision in its blok's history, from 1. */
   number: Scalars['Int']['output'];
   /** The revision this one was made from; null for the first. */
   parent?: Maybe<BlokRevision>;
+  /** Its declared reads, read as `queries.<key>`. */
+  queries: Array<BlokQuery>;
+  /** Its locals as its tree resolves them, each with a kind (a left-out kind inferred from its default, the task argument it is passed to or the control bound to it; ANY when nothing tells). Derived from the rest on every write: what renderers type the locals with, never part of `hash`. */
+  resolvedLocals: Array<ResolvedBlokLocal>;
+  /** Its declared streams, read as `subscriptions.<key>`. */
+  subscriptions: Array<BlokSubscription>;
   /** The task that wrote it, e.g. the assistant turn that designed it. */
   task?: Maybe<Task>;
+  /** The blok language version it speaks; 2 is the only one. */
+  vocab: Scalars['Int']['output'];
 };
 
-/** A backend service a blok reads from, frozen at the version it was written against. */
-export type BlokService = {
-  __typename?: 'BlokService';
+/** A declared stream: one GraphQL subscription on a service, read as `subscriptions.<key>`. */
+export type BlokSubscription = {
+  __typename?: 'BlokSubscription';
+  document: Scalars['String']['output'];
+  history?: Maybe<Scalars['String']['output']>;
+  keep?: Maybe<Scalars['Int']['output']>;
   key: Scalars['String']['output'];
-  schemaHash?: Maybe<Scalars['String']['output']>;
-  service?: Maybe<Scalars['String']['output']>;
-  version?: Maybe<Scalars['String']['output']>;
+  service: Scalars['String']['output'];
+  variables: Array<ActionArgument>;
 };
 
-/** A backend service a blok reads from, frozen at the version it was written against. */
-export type BlokServiceInput = {
-  /** The service's key, as a `query`'s `schema` names it: 'mikro'. */
+/** A declared stream: one GraphQL subscription on a service; the blok reads it as `subscriptions.<key>`. */
+export type BlokSubscriptionInput = {
+  /** One GraphQL `subscription` operation. */
+  document: Scalars['String']['input'];
+  /** A declared query to replay from while travelling; without it the value at travel start shows, stale. */
+  history?: InputMaybe<Scalars['String']['input']>;
+  /** Keep the last this many payloads as a list; the latest only when absent. */
+  keep?: InputMaybe<Scalars['Int']['input']>;
+  /** Its name: the blok reads it as `subscriptions.<key>` (status, value, error). */
   key: Scalars['String']['input'];
-  /** 'sha256:<hex>' of the canonical GraphQL schema the blok's queries were checked against. */
-  schemaHash?: InputMaybe<Scalars['String']['input']>;
-  /** The service type, in reverse-domain form: 'live.arkitekt.mikro'. */
-  service?: InputMaybe<Scalars['String']['input']>;
-  /** The server version the blok was written against, as the service declaration names it ('8'). */
-  version?: InputMaybe<Scalars['String']['input']>;
+  /** The service it runs on, by its key. */
+  service: Scalars['String']['input'];
+  /** Its variables, as a query's. */
+  variables?: Array<ActionArgumentInput>;
 };
 
 /** The input for bouncing an agent. */
@@ -1317,6 +1528,7 @@ export type CatalogArgumentInput = {
 export type CatalogComponent = {
   __typename?: 'CatalogComponent';
   acceptsChildren: Scalars['Boolean']['output'];
+  catalog?: Maybe<Scalars['String']['output']>;
   childrenContext?: Maybe<ComponentContext>;
   context: ComponentContext;
   description?: Maybe<Scalars['String']['output']>;
@@ -1325,12 +1537,15 @@ export type CatalogComponent = {
   name: Scalars['String']['output'];
   notDownstreamOf: Array<Scalars['String']['output']>;
   props: Array<CatalogProp>;
+  textProp?: Maybe<Scalars['String']['output']>;
 };
 
 /** A component a UI catalog can render. */
 export type CatalogComponentInput = {
   /** Whether ComponentNode.children may be nested under this component. */
   acceptsChildren?: Scalars['Boolean']['input'];
+  /** The catalog it belongs to, as name@version (`ui@1`), or the name of the module it is from. */
+  catalog?: InputMaybe<Scalars['String']['input']>;
   /** The context in force for this component's children, when it differs from its own: such a component bridges two renderers. */
   childrenContext?: InputMaybe<ComponentContext>;
   /** The context this component may be placed in. */
@@ -1347,6 +1562,26 @@ export type CatalogComponentInput = {
   notDownstreamOf?: Array<Scalars['String']['input']>;
   /** The props this component accepts. */
   props?: Array<CatalogPropInput>;
+  /** The prop text children fill (`<Button>Go</Button>` sets `label`); none: the component takes no text. */
+  textProp?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A field of the event a CALLBACK prop hands its callback. */
+export type CatalogEventField = {
+  __typename?: 'CatalogEventField';
+  description?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+  kind: CatalogValueKind;
+};
+
+/** A field of the event a CALLBACK prop hands its callback (`event.<key>`). */
+export type CatalogEventFieldInput = {
+  /** Human-readable description of the field. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The field a callback reads as `event.<key>`. */
+  key: Scalars['String']['input'];
+  /** The value kind of the field. */
+  kind: CatalogValueKind;
 };
 
 /** A pure operation a UI catalog can evaluate for UtilCalls. */
@@ -1374,6 +1609,7 @@ export type CatalogOperationInput = {
 export type CatalogProp = {
   __typename?: 'CatalogProp';
   description?: Maybe<Scalars['String']['output']>;
+  event?: Maybe<Array<CatalogEventField>>;
   key: Scalars['String']['output'];
   kind: CatalogValueKind;
   required: Scalars['Boolean']['output'];
@@ -1383,9 +1619,11 @@ export type CatalogProp = {
 export type CatalogPropInput = {
   /** Human-readable description of the prop. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** For a CALLBACK prop: the fields of the event it hands its callback (`event.<key>`); none when it hands none. */
+  event?: InputMaybe<Array<CatalogEventFieldInput>>;
   /** The prop key a ComponentProp.key must match. */
   key: Scalars['String']['input'];
-  /** The value kind this prop accepts. CALLBACK props must be bound via agent_call or util_call. */
+  /** The value kind this prop accepts. CALLBACK props hold one task call or one effect. On `bind`, the kind the control writes (`locals.bind_kinds`). */
   kind: CatalogValueKind;
   /** Whether every component instance must set this prop. */
   required?: Scalars['Boolean']['input'];
@@ -1524,11 +1762,12 @@ export type CollectionActionsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
+/** The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run. */
 export enum ComponentContext {
   ActionLogo = 'ACTION_LOGO',
   Html = 'HTML',
   Logo = 'LOGO',
+  Overlay = 'OVERLAY',
   Scene = 'SCENE'
 }
 
@@ -1541,19 +1780,19 @@ export type ComponentNode = {
   props?: Maybe<Array<ComponentProp>>;
 };
 
-/** An abstract structural visual element inside a Blok blueprint manifest. */
+/** A node of a blok tree (blok language v2). */
 export type ComponentNodeInput = {
-  /** Flat adjacency pointer list mapping out IDs nested inside this specific component layer. */
+  /** Its children, in order. */
   children?: InputMaybe<Array<ComponentNodeInput>>;
-  /** The type indicator token matching your Electron app's registered catalog specs (e.g. 'Slider'). */
+  /** The catalog component (`Button`) or language component (`if`, `foreach`, `suspense`). */
   component: Scalars['String']['input'];
-  /** Unique structural string identifying this node instance inside the flat workspace layout tree. */
+  /** An explicit id, or one derived from the node's place (`Card[0]/Button[1]`); unique in the tree. */
   id: Scalars['String']['input'];
   /** The collection of static values, state pointers, or action endpoints assigned to this component. */
   props?: InputMaybe<Array<ComponentPropInput>>;
 };
 
-/** A single key-value prop configuration for a component layout node. */
+/** One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null). */
 export type ComponentProp = {
   __typename?: 'ComponentProp';
   agentCall?: Maybe<AgentCall>;
@@ -1564,19 +1803,19 @@ export type ComponentProp = {
   utilCall?: Maybe<UtilCall>;
 };
 
-/** A single key-value prop configuration for a component layout node. */
+/** One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect (`query.refetch`, `query.fetch_more`, `ui.copy`, `task.answer`), or nothing (null). */
 export type ComponentPropInput = {
-  /** Defines an imperative interactive network action callback loop if this prop should trigger an agent interaction. */
+  /** A task call: a callback's one thing. */
   agentCall?: InputMaybe<AgentProbeInput>;
-  /** If set, this prop declares a new 'value' in the Blok state that can be referenced by other props or actions. The value of this field should be the name of the declared value (e.g., 'selected_user'). */
+  /** The name a task call writes its record to (`... into move`), or the loop variable of a `foreach` (its `let`). */
   declaresValue?: InputMaybe<Scalars['String']['input']>;
-  /** A reactive state data-binding rule. */
+  /** A path the prop reads. */
   dynamicValue?: InputMaybe<DynamicValueInput>;
   /** The prop key name matching the target UI catalog constraint. */
   key: Scalars['String']['input'];
-  /** A raw scalar or JSON-stringified literal configuration parameter (e.g. '40x' or True). */
+  /** A JSON literal: a string, number, bool, list or object. */
   staticValue?: InputMaybe<Scalars['JSONSerializable']['input']>;
-  /** Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction. */
+  /** A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more). */
   utilCall?: InputMaybe<UtilCallInput>;
 };
 
@@ -1590,14 +1829,14 @@ export type CreateAssetInput = {
 
 /** The input for creating a blok. */
 export type CreateBlokInput = {
-  /** The universal id */
-  catalog?: InputMaybe<Scalars['String']['input']>;
+  /** The catalogs it needs, as name@version ('ui@1'). */
+  catalogs?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The schema of the blok. This can be used to validate the blok input and output. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
   /** The renderer for the blok's root: HTML, or SCENE for a full 3D view. */
   context?: InputMaybe<ComponentContext>;
-  /** The initial state of the blok. This is used to set the initial state of the blok when it is materialized. */
-  demoState?: InputMaybe<Scalars['Args']['input']>;
+  /** What a preview renders it with. */
+  demo?: InputMaybe<BlokDemoInput>;
   /** The dependencies of the blok. This is used to identify the blok in the system. */
   dependencies?: InputMaybe<Array<AgentDependencyInput>>;
   /** The description of the blok. This can described the blok and its purpose. */
@@ -1606,16 +1845,24 @@ export type CreateBlokInput = {
   forModel?: InputMaybe<Scalars['String']['input']>;
   /** The node of `for_model` this blok attaches to; the model's root when absent. */
   forNode?: InputMaybe<Scalars['String']['input']>;
+  /** Its locals: form state that feeds a call, written only through bind. */
+  locals?: InputMaybe<Array<BlokLocalInput>>;
+  /** The module (an app's own unversioned UI extras, by name in the caller's organization) the blok renders against besides its catalogs; the Orkestrator's when absent. */
+  module?: InputMaybe<Scalars['String']['input']>;
   /** The name of the Blok, used for identification in the system. */
   name: Scalars['String']['input'];
   /** Where the blok is installed from (kabinet's `RepoBlok.origin`). A blok of the same origin is updated in place instead of matched by name. */
   origin?: InputMaybe<Scalars['String']['input']>;
   /** The hash its origin gives what it draws, kept to tell when the origin has an update. */
   originHash?: InputMaybe<Scalars['String']['input']>;
-  /** The backend services the blok's queries read from, each frozen at the version it was written against. Every `query`'s `schema` must name one. */
-  services?: InputMaybe<Array<BlokServiceInput>>;
-  /** The blok as BSX, which the server parses into `components`: send one of the two. */
+  /** Its declared reads, as `queries.<key>`. */
+  queries?: InputMaybe<Array<BlokQueryInput>>;
+  /** The blok as v2 BSX, which the server parses into `components`: send one of the two. */
   source?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared streams, as `subscriptions.<key>`. */
+  subscriptions?: InputMaybe<Array<BlokSubscriptionInput>>;
+  /** The blok language version the blok speaks; 2 is the only one. */
+  vocab: Scalars['Int']['input'];
 };
 
 /** Input for creating a dashboard, optionally specifying its name and the bloks to include. It is owned by the caller's organization. */
@@ -1689,6 +1936,8 @@ export type CreateShortcutInput = {
   args: Scalars['Args']['input'];
   /** The bind number of the shortcut. This is used to identify the shortcut in the system. */
   bindNumber?: InputMaybe<Scalars['Int']['input']>;
+  /** Pin the new shortcut for whoever these match (admins only). */
+  bindings?: InputMaybe<ShortcutBindingsInput>;
   /** The description of the shortcut.This can described the shortcut and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
   /** The name of the shortcut. This is used to identify the shortcut in the system. */
@@ -1894,6 +2143,8 @@ export type DefinitionInput = {
   allowProbe?: Scalars['Boolean']['input'];
   /** The args of the definition. This is the input ports of the definition */
   args?: Array<ArgPortInput>;
+  /** The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash. */
+  bloks?: Array<ActionBlokInput>;
   /** Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error. */
   catalogs?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The collections of the definition. This is used to group definitions together in the UI */
@@ -2079,8 +2330,9 @@ export type Diagnostic = {
   path?: Maybe<Scalars['String']['output']>;
 };
 
-/** Severity of a registration finding. Errors are never stored (they abort registration), so only WARNING exists. */
+/** Severity of a finding on a blok or a definition, as the blok vocabulary's diagnostic table levels it. An ERROR refuses a write, so only a blok rewritten by a migration (blok language v2) stores one; everything registered or written since stores WARNINGs. */
 export enum DiagnosticLevel {
+  Error = 'ERROR',
   Warning = 'WARNING'
 }
 
@@ -2095,7 +2347,7 @@ export type DynamicValue = {
 export type DynamicValueInput = {
   /** A static fallback literal value (serialized string or JSON primitive) used when `path` does not resolve. */
   literal?: InputMaybe<Scalars['String']['input']>;
-  /** JSON Pointer to a variable inside the Blok's isolated data model (e.g., '/microscope/exposure'). */
+  /** The path the prop reads: a root (`self`, `deps`, `args`, `task`, `queries`, `subscriptions`, `viewer`, `then`, `event`, `error`), a local, a loop variable or a record, and what follows it. */
   path?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2103,32 +2355,40 @@ export type DynamicValueInput = {
 export type EditBlokInput = {
   /** Bindings on `materialized_blok`, by dependency key, over the ones it has. Bindings of keys the edit removes go. Refused with `blok`: a blok binds no agents, its materializations do. */
   agentMappings?: InputMaybe<Array<MappedAgentInput>>;
-  /** The full list of the items the blok is opened for, read under `@args.<key>` (html bloks only). Kept when omitted; an empty list removes them. */
+  /** The full list of the items the blok is opened for, read under `args.<key>` (html bloks only). Kept when omitted; an empty list removes them. */
   args?: InputMaybe<Array<ArgPortInput>>;
   /** The revision the edit starts from. It must still be the blok's head, or the edit is refused. Required for a custom blok; a provided blok has no revisions and is forked. */
   base?: InputMaybe<Scalars['ID']['input']>;
   /** The blok to edit, as an editor of the blok itself does. Send it or `materialized_blok`, not both. */
   blok?: InputMaybe<Scalars['ID']['input']>;
-  /** Name of the UI catalog (in the caller's organization) the blok renders against. Kept when omitted. */
-  catalog?: InputMaybe<Scalars['String']['input']>;
+  /** The full list of the catalogs it needs. Kept when omitted; an empty list removes them. */
+  catalogs?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The full component tree. Kept when omitted. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** The full local state. Kept when omitted. */
-  demoState?: InputMaybe<Scalars['Args']['input']>;
+  /** What a preview renders it with. Kept when omitted. */
+  demo?: InputMaybe<BlokDemoInput>;
   /** The full list of agent dependencies. Kept when omitted; keys not listed are removed. */
   dependencies?: InputMaybe<Array<AgentDependencyInput>>;
   /** Check everything and return the findings, keeping nothing. Off when omitted. */
   dryRun?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The full list of its locals. Kept when omitted; an empty list removes them. */
+  locals?: InputMaybe<Array<BlokLocalInput>>;
   /** The materialization the edit is made through, which also takes `agent_mappings`. Send it or `blok`, not both. */
   materializedBlok?: InputMaybe<Scalars['ID']['input']>;
   /** What changed and why, in a sentence; kept with the revision. */
   message?: InputMaybe<Scalars['String']['input']>;
-  /** The full list of the backend services the blok's queries read from, each frozen at its version. Kept when omitted; an empty list removes them. */
-  services?: InputMaybe<Array<BlokServiceInput>>;
+  /** Name of the module (in the caller's organization) the blok renders against. Kept when omitted. */
+  module?: InputMaybe<Scalars['String']['input']>;
+  /** The full list of its declared reads. Kept when omitted; an empty list removes them. */
+  queries?: InputMaybe<Array<BlokQueryInput>>;
   /** The full component tree as BSX, which the server parses: send it or `components`, not both. */
   source?: InputMaybe<Scalars['String']['input']>;
+  /** The full list of its declared streams. Kept when omitted; an empty list removes them. */
+  subscriptions?: InputMaybe<Array<BlokSubscriptionInput>>;
   /** The task making the edit (one the caller's agent runs), kept with the revision. */
   task?: InputMaybe<Scalars['ID']['input']>;
+  /** The blok language version the edit is written in; 2 when omitted, the only one. */
+  vocab?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Effect = {
@@ -2462,6 +2722,8 @@ export type ImplementationActionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ImplementationActionFilter>;
   OR?: InputMaybe<ImplementationActionFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<ActionKind>;
@@ -2675,6 +2937,40 @@ export type LatestTaskSnapshot = {
 
 export type LatestTaskSnapshotTaskChangeTaskEventChange = LatestTaskSnapshot | TaskChange | TaskEventChange;
 
+/** The kind of a blok local: a port kind, or ANY (an untyped value, which skips the bind and argument kind checks). No action port is ever ANY. */
+export enum LocalKind {
+  /** An untyped value: nothing gave the local a kind. A path below it is taken as written. */
+  Any = 'ANY',
+  /** A boolean. No children. */
+  Bool = 'BOOL',
+  /** An ISO-8601 date or datetime string. No children. */
+  Date = 'DATE',
+  /** A string-keyed map. One child keyed '...' describes a homogeneous value type; several named children describe the known keys. */
+  Dict = 'DICT',
+  /** One of a fixed set of values; `choices` required. */
+  Enum = 'ENUM',
+  /** A floating point number. No children; choices optional. */
+  Float = 'FLOAT',
+  /** An integer. No children; choices optional. */
+  Int = 'INT',
+  /** A reference to any object implementing an interface, typed by `identifier` (required). No children. */
+  Interface = 'INTERFACE',
+  /** A list; exactly one child describes the item type (conventionally keyed '...'). */
+  List = 'LIST',
+  /** A reference to an object that lives in the agent's memory, typed by `identifier` (required). Makes the action LOCAL-scoped. No children. */
+  MemoryStructure = 'MEMORY_STRUCTURE',
+  /** An object with named fields; at least one child per field, `identifier` optional. */
+  Model = 'MODEL',
+  /** A physical quantity with a unit; `reference_unit` required, `dimension` derived. No children. */
+  Quantity = 'QUANTITY',
+  /** A string. No children; choices optional. */
+  String = 'STRING',
+  /** A reference to an object held by a service, typed by `identifier` (@package/key, required). Values are ids. No children. */
+  Structure = 'STRUCTURE',
+  /** One of several variants; at least two children, each a variant. */
+  Union = 'UNION'
+}
+
 /** A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs. */
 export type Lock = {
   __typename?: 'Lock';
@@ -2825,6 +3121,8 @@ export type MaterializedBlokFilter = {
   OR?: InputMaybe<MaterializedBlokFilter>;
   /** Filter by agent */
   agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Only materialized bloks whose blok's args accept at least one of these demand sets. See `BlokFilter.anyDemands`. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action. */
   contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`. */
@@ -2991,6 +3289,33 @@ export type ModelStats = {
   triangles: Scalars['Int']['output'];
 };
 
+/** A module: an app's own, unversioned UI extras (the components a UI app can render beyond the spec's catalogs and the pure operations it can evaluate for UtilCalls), registered per organization with the catalogs it implements whole. A blok names at most one as its `module`. */
+export type Module = {
+  __typename?: 'Module';
+  /** Bloks rendered against this module, but the ones a task made to show and an action's own (`Action.bloks`). */
+  bloks: Array<Blok>;
+  /** The spec's versioned catalogs (blok language v2) the UI app implements whole, as name@version ('ui@1'), as it registered them. */
+  catalogs: Array<Scalars['String']['output']>;
+  /** Registered components. Empty until a UI app registers the module. */
+  components: Array<CatalogComponent>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** Whether a UI app has registered components or operations; unregistered modules validate nothing. */
+  isRegistered: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  /** Registered pure operations UtilCalls may name. Empty until a UI app registers the module. */
+  operations: Array<CatalogOperation>;
+  /** Default widgets per port kind and/or structure identifier. A UI renders them for ports that declare no widget; an identifier match beats a kind match. */
+  widgetDefaults: Array<WidgetDefault>;
+};
+
+
+/** A module: an app's own, unversioned UI extras (the components a UI app can render beyond the spec's catalogs and the pure operations it can evaluate for UtilCalls), registered per organization with the catalogs it implements whole. A blok names at most one as its `module`. */
+export type ModuleBloksArgs = {
+  filters?: InputMaybe<BlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
 /** Root mutation type for executing write operations on the API. */
 export type Mutation = {
   __typename?: 'Mutation';
@@ -2998,6 +3323,8 @@ export type Mutation = {
   assign: Task;
   /** Automatically resolve dependencies for an implementation. */
   autoResolve: Resolution;
+  /** Pin a shortcut for users, in one app or in every app. They cannot unpin it. */
+  bindShortcut: Shortcut;
   /** Block an agent from connecting. */
   block: Agent;
   /** Bounce an agent so it reconnects. */
@@ -3092,8 +3419,10 @@ export type Mutation = {
   pinMaterializedBlok: MaterializedBlok;
   /** Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks). */
   probe: Probe;
-  /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
-  registerUiCatalog: UiCatalog;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
+  /** Register a module: the components and operations a UI app can render and evaluate beyond the spec's catalogs, and the catalogs it implements whole (upsert by name in the caller's organization). Bloks (`module`) and definitions (`catalogs`) that name it are validated against it. */
+  registerModule: Module;
   /** A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy. */
   requestAssetUpload: AssetUploadGrant;
   /** Request temporary S3 read credentials for a media file */
@@ -3110,13 +3439,15 @@ export type Mutation = {
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
   triggerSchedule: Task;
+  /** Remove a shortcut's binding to a user. */
+  unbindShortcut: Scalars['ID']['output'];
   /** Unblock a previously blocked agent. */
   unblock: Agent;
   /** Unshelve data from a memory drawer. */
   unshelveMemoryDrawer: Scalars['ID']['output'];
   /** Update properties of an agent such as its name. */
   updateAgent: Agent;
-  /** Update properties of a blok such as its name, description, components, demo state, catalog, or dependencies. */
+  /** Update properties of a blok such as its name, description, components, module, or dependencies. */
   updateBlok: Blok;
   /** Update properties of a dashboard such as its name, associated bloks, or organization. */
   updateDashboard: Dashboard;
@@ -3144,6 +3475,12 @@ export type MutationAssignArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationAutoResolveArgs = {
   input: AutoResolveInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationBindShortcutArgs = {
+  input: BindShortcutInput;
 };
 
 
@@ -3430,8 +3767,14 @@ export type MutationProbeArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationRegisterUiCatalogArgs = {
-  input: RegisterUiCatalogInput;
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationRegisterModuleArgs = {
+  input: RegisterModuleInput;
 };
 
 
@@ -3480,6 +3823,12 @@ export type MutationShelveInMemoryDrawerArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationTriggerScheduleArgs = {
   input: ScheduleIdInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationUnbindShortcutArgs = {
+  input: UnbindShortcutInput;
 };
 
 
@@ -3588,8 +3937,10 @@ export enum Ordering {
 /** Represents an organization in the system. */
 export type Organization = {
   __typename?: 'Organization';
-  /** Slug of the organization. */
-  slug: Scalars['String']['output'];
+  /** This service's id of the organization. */
+  id: Scalars['ID']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 export type ParamPair = {
@@ -4026,6 +4377,10 @@ export type Query = {
   memoryShelve: MemoryShelve;
   /** All memory shelves. */
   memoryShelves: Array<MemoryShelve>;
+  /** Get a module by ID. */
+  module: Module;
+  /** Modules registered in the caller's organization: the components and operations UI apps can render and evaluate beyond the spec's catalogs. */
+  modules: Array<Module>;
   /** Find your implementation at a specific interface. */
   myImplementationAt: Implementation;
   /** Fetch the root tasks this client created (caller-scoped). */
@@ -4086,6 +4441,8 @@ export type Query = {
   spacePlacements: Array<SpacePlacement>;
   /** List all spaces. */
   spaces: Array<Space>;
+  /** The spaces that place any of these agents (e.g. the ones a dependencyTree dry run binds), those placing the most first, then the most recently changed: where to run a workflow over them. */
+  spacesForAgents: Array<SpaceForAgents>;
   /** Get a specific state by ID. */
   state: State;
   /** Get state at global revision. */
@@ -4124,10 +4481,6 @@ export type Query = {
   trigger: Trigger;
   /** All triggers in the organization. */
   triggers: Array<Trigger>;
-  /** Get a UI catalog by ID. */
-  uiCatalog: UiCatalog;
-  /** UI catalogs registered in the caller's organization: the components and operations UI apps can render and evaluate. */
-  uiCatalogs: Array<UiCatalog>;
   /** Fetch a wiregram by ID. */
   wiregram: Wiregram;
   /** The automation documents the organization imported. */
@@ -4363,6 +4716,11 @@ export type QueryMemoryShelvesArgs = {
 };
 
 
+export type QueryModuleArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryMyImplementationAtArgs = {
   actionId?: InputMaybe<Scalars['ID']['input']>;
   interface?: InputMaybe<Scalars['String']['input']>;
@@ -4536,6 +4894,11 @@ export type QuerySpacesArgs = {
 };
 
 
+export type QuerySpacesForAgentsArgs = {
+  agents: Array<Scalars['ID']['input']>;
+};
+
+
 export type QueryStateArgs = {
   id: Scalars['ID']['input'];
 };
@@ -4644,11 +5007,6 @@ export type QueryTriggersArgs = {
 };
 
 
-export type QueryUiCatalogArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
 export type QueryWiregramArgs = {
   id: Scalars['ID']['input'];
 };
@@ -4658,17 +5016,23 @@ export type QueryWiregramsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** Register (upsert by name, scoped to the caller's organization) the components and operations a UI app can render and evaluate. */
-export type RegisterUiCatalogInput = {
-  /** The components this catalog can render. */
+export type RefreshUploadInput = {
+  storeId: Scalars['String']['input'];
+};
+
+/** Register a module (upsert by name, scoped to the caller's organization): the components and operations a UI app can render and evaluate beyond the spec's catalogs. */
+export type RegisterModuleInput = {
+  /** The spec's versioned catalogs (blok language v2) this UI implements whole, as name@version ('ui@1', 'scene@1'). Its `components` are what it draws beyond them. */
+  catalogs?: Array<Scalars['String']['input']>;
+  /** The components this module can render. */
   components?: Array<CatalogComponentInput>;
-  /** Human-readable description of the catalog. */
+  /** Human-readable description of the module. */
   description?: InputMaybe<Scalars['String']['input']>;
-  /** The catalog name. Bloks and definitions reference it by this name; registering again replaces the previous components and operations. */
+  /** The module name. Bloks (`module`) and definitions (`catalogs`) reference it by this name; registering again replaces the previous components and operations. */
   name: Scalars['String']['input'];
-  /** The pure operations this catalog can evaluate for UtilCalls. */
+  /** The pure operations this module can evaluate for UtilCalls. */
   operations?: Array<CatalogOperationInput>;
-  /** Default widgets per port kind and/or structure identifier. A UI renders them for ports that declare no widget; an identifier match beats a kind match. Each widget is validated against this catalog plus base at registration. */
+  /** Default widgets per port kind and/or structure identifier. A UI renders them for ports that declare no widget; an identifier match beats a kind match. Each widget is validated against this module plus base at registration. */
   widgetDefaults?: Array<WidgetDefaultInput>;
 };
 
@@ -4697,7 +5061,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -4764,6 +5128,28 @@ export type ResolvedAgentDependency = {
   unmet?: Maybe<Scalars['String']['output']>;
   /** Get a specific argument by key. */
   values?: Maybe<Scalars['String']['output']>;
+};
+
+/** A local as the blok's tree resolves it: its kind always set (inferred from its default, the task argument it is passed to or the control bound to it when the blok left it out; ANY when nothing tells). */
+export type ResolvedBlokLocal = {
+  __typename?: 'ResolvedBlokLocal';
+  children?: Maybe<Array<ArgPort>>;
+  choices?: Maybe<Array<Choice>>;
+  default?: Maybe<Scalars['AnyDefault']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  dimension?: Maybe<Scalars['String']['output']>;
+  effects?: Maybe<Array<Effect>>;
+  identifier?: Maybe<Scalars['Identifier']['output']>;
+  key: Scalars['String']['output'];
+  kind: LocalKind;
+  label?: Maybe<Scalars['String']['output']>;
+  nullable: Scalars['Boolean']['output'];
+  persist: Scalars['Boolean']['output'];
+  proposedUnits?: Maybe<Array<Scalars['String']['output']>>;
+  referenceUnit?: Maybe<Scalars['String']['output']>;
+  requires?: Maybe<Array<Requires>>;
+  validators?: Maybe<Array<Validator>>;
+  widget?: Maybe<AssignWidget>;
 };
 
 /** Represents a dependency that has been resolved to a specific implementation. */
@@ -5162,6 +5548,8 @@ export type Shortcut = {
   args: Array<ArgPort>;
   /** Which shortcut should be bound to this Action by default. 0 means no binding. */
   bindNumber?: Maybe<Scalars['Int']['output']>;
+  /** Who an admin pinned this shortcut for, and where (app, client, device). */
+  bindings: Array<ShortcutBinding>;
   /** Optional description. */
   description?: Maybe<Scalars['String']['output']>;
   /** Shortcut ID. */
@@ -5170,6 +5558,8 @@ export type Shortcut = {
   implementation?: Maybe<Implementation>;
   /** Name of the shortcut. */
   name: Scalars['String']['output'];
+  /** Whether an admin pinned this shortcut for the caller: one of its bindings matches who they are and where they call from. The caller cannot unpin it. */
+  pinned: Scalars['Boolean']['output'];
   /** Return ports from the shortcut's action. */
   returns: Array<ReturnPort>;
   /** Saved arguments for the shortcut. */
@@ -5180,23 +5570,62 @@ export type Shortcut = {
   useReturns: Scalars['Boolean']['output'];
 };
 
+/** An admin's pin of a shortcut, for whoever matches it: each of user, app, client and device that is set must be the caller's. */
+export type ShortcutBinding = {
+  __typename?: 'ShortcutBinding';
+  /** The identifier of the app it is pinned in; null for every app. */
+  app?: Maybe<Scalars['String']['output']>;
+  /** The admin who pinned it. */
+  boundBy: User;
+  /** The `client_id` of the client it is pinned in; null for every client. */
+  client?: Maybe<Scalars['String']['output']>;
+  /** When it was pinned. */
+  createdAt: Scalars['DateTime']['output'];
+  /** The `device_id` of the device it is pinned on; null for every device. */
+  device?: Maybe<Scalars['String']['output']>;
+  /** Binding ID. */
+  id: Scalars['ID']['output'];
+  /** The pinned shortcut. */
+  shortcut: Shortcut;
+  /** The user it is pinned for; null for every user. */
+  user?: Maybe<User>;
+};
+
+/** Who to pin a shortcut for, and where: each field that is given must be the caller's; nothing given pins it for the whole organization. */
+export type ShortcutBindingsInput = {
+  /** The identifier of the app to pin it in; every app when not given. */
+  app?: InputMaybe<Scalars['String']['input']>;
+  /** The `client_id` of the client to pin it in; every client when not given. */
+  client?: InputMaybe<Scalars['String']['input']>;
+  /** The `device_id` of the device to pin it on; every device when not given. */
+  device?: InputMaybe<Scalars['String']['input']>;
+  /** The users (their `sub`) to pin the shortcut for, one binding each; every user when not given. */
+  users?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 export type ShortcutFilter = {
   AND?: InputMaybe<ShortcutFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ShortcutFilter>;
   OR?: InputMaybe<ShortcutFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Whether an agent that can take the shortcut's action is connected now (`Action.assignable`). */
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Whether an admin pinned the shortcut for the caller: a binding whose user, app, client and device are each the caller's or left open. */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   toolbox?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type ShortcutOrder =
   /** Runnable first (DESC) or last (ASC) by the shortcut's `Action.assignable`; the order the filters set is the tie-break. */
-  { assignable: Ordering; name?: never; }
-  |  { assignable?: never; name: Ordering; };
+  { assignable: Ordering; name?: never; pinned?: never; }
+  |  { assignable?: never; name: Ordering; pinned?: never; }
+  |  /** Pinned for the caller (an admin bound it to them, or to where they call from) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break. */
+  { assignable?: never; name?: never; pinned: Ordering; };
 
 /** Something a service announced: an object of a structure was created, updated or deleted. */
 export type Signal = {
@@ -5384,6 +5813,15 @@ export type SpaceFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Search by name */
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A space and how many of the agents asked about it places. */
+export type SpaceForAgents = {
+  __typename?: 'SpaceForAgents';
+  /** How many of the agents asked about this space places. */
+  placed: Scalars['Int']['output'];
+  /** The space. */
+  space: Space;
 };
 
 export type SpaceOrder =
@@ -5855,6 +6293,8 @@ export type Task = {
   actedOn: Array<Scalars['String']['output']>;
   /** Action assigned. */
   action: Action;
+  /** Its action's own bloks (`Action.bloks`), at most one per context: how a client shows this run, with each dependency key bound by `dependencyAgents`. */
+  actionBloks: Array<ActionBlok>;
   /** Agent responsible for this task. */
   agent?: Maybe<Agent>;
   /** Get a specific argument by key. */
@@ -5879,6 +6319,8 @@ export type Task = {
   dependencies: Scalars['AnyDefault']['output'];
   /** The dependency thats linked to the parents execution if applicable. */
   dependency?: Maybe<Scalars['String']['output']>;
+  /** The agents this run got for its action's dependencies, by key: the top level of the tree resolved when it was assigned. What an action blok's `<At dependency>` anchors at. */
+  dependencyAgents: Array<TaskDependencyAgent>;
   /** The method of the dependency that caused this task, if applicable. */
   dependencyMethod?: Maybe<Scalars['String']['output']>;
   /** The events */
@@ -5927,6 +6369,8 @@ export type Task = {
   schedule?: Maybe<Schedule>;
   /** The signal that caused this task, if a trigger fired it. */
   signal?: Maybe<Signal>;
+  /** The space the caller started this run in (the assign's `space`): where a client draws the action's overlay. Null when none was named, or the space is gone. */
+  space?: Maybe<Space>;
   /** The trigger that fired this task, if any. */
   trigger?: Maybe<Trigger>;
   /** Last update timestamp. */
@@ -6022,6 +6466,15 @@ export type TaskChangeEvent = {
   __typename?: 'TaskChangeEvent';
   create?: Maybe<TaskChange>;
   event?: Maybe<TaskEventChange>;
+};
+
+/** An agent a task got for one of its action's dependencies, as it was resolved when the task was assigned. */
+export type TaskDependencyAgent = {
+  __typename?: 'TaskDependencyAgent';
+  /** The agent bound to it for this run. A key bound to several agents comes once per agent. */
+  agent: Agent;
+  /** The dependency key, as the action's implementation declares it and the action's bloks name it. */
+  key: Scalars['String']['output'];
 };
 
 /** An event that occurred during a task. */
@@ -6537,29 +6990,10 @@ export type TriggerOrder =
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
   |  { createdAt?: never; name?: never; updatedAt: Ordering; };
 
-/** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
-export type UiCatalog = {
-  __typename?: 'UICatalog';
-  /** Bloks rendered against this catalog. */
-  bloks: Array<Blok>;
-  /** Registered components. Empty until a UI app registers the catalog. */
-  components: Array<CatalogComponent>;
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  /** Whether a UI app has registered components or operations; unregistered catalogs validate nothing. */
-  isRegistered: Scalars['Boolean']['output'];
-  name: Scalars['String']['output'];
-  /** Registered pure operations UtilCalls may name. Empty until a UI app registers the catalog. */
-  operations: Array<CatalogOperation>;
-  /** Default widgets per port kind and/or structure identifier. A UI renders them for ports that declare no widget; an identifier match beats a kind match. */
-  widgetDefaults: Array<WidgetDefault>;
-};
-
-
-/** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
-export type UiCatalogBloksArgs = {
-  filters?: InputMaybe<BlokFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
+/** Remove a shortcut's binding to a user. */
+export type UnbindShortcutInput = {
+  /** The binding to remove. */
+  id: Scalars['ID']['input'];
 };
 
 /** The input for bouncing an agent. */
@@ -6584,20 +7018,10 @@ export type UpdateAgentInput = {
 /** The input for updating a blok. Omitted (null) fields are left unchanged; list fields replace wholesale. */
 export type UpdateBlokInput = {
   /**
-   * Name of the UI catalog (in the caller's organization) this blok renders against. Created if missing.
-   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
-   */
-  catalog?: InputMaybe<Scalars['String']['input']>;
-  /**
    * The full component tree of the blok. Replaces the existing tree when provided.
    * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
    */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /**
-   * The demo state used to preview this blok. Replaces the existing demo state when provided.
-   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
-   */
-  demoState?: InputMaybe<Scalars['Args']['input']>;
   /**
    * The full list of agent dependencies. When provided it replaces the existing set: keys not listed are deleted and their agent mappings on materialized bloks lose their dependency reference.
    * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
@@ -6607,6 +7031,11 @@ export type UpdateBlokInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** The ID of the blok to update. */
   id: Scalars['ID']['input'];
+  /**
+   * Name of the module (in the caller's organization) this blok renders against. Created if missing.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
+  module?: InputMaybe<Scalars['String']['input']>;
   /** The name of the blok, used for identification in the system. */
   name?: InputMaybe<Scalars['String']['input']>;
   /**
@@ -6727,7 +7156,7 @@ export type UtilCall = {
 export type UtilCallInput = {
   /** Key-value arguments map compiled for the target utility call. */
   arguments?: InputMaybe<Array<ActionArgumentInput>>;
-  /** The utility function name to invoke. */
+  /** The function called (`str.upper`), or in a callback the effect (`ui.copy`, `task.answer`). */
   operation: Scalars['String']['input'];
 };
 
@@ -6998,6 +7427,35 @@ export type HoverActionFragment = { __typename?: 'Action', id: string, name: str
     & BlokLogoFragment
   ) | null, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
+export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, resolvedLocals: Array<(
+      { __typename?: 'ResolvedBlokLocal' }
+      & ResolvedBlokLocalFragment
+    )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }> } };
+
+export type TaskDependencyAgentFragment = { __typename?: 'TaskDependencyAgent', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } };
+
+export type RunTaskFragment = { __typename?: 'Task', id: string, args: any, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, isDone: boolean, events: Array<(
+    { __typename?: 'TaskEvent' }
+    & TaskEventFragment
+  )>, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } } | null, actionBloks: Array<(
+    { __typename?: 'ActionBlok' }
+    & ActionBlokFragment
+  )>, dependencyAgents: Array<(
+    { __typename?: 'TaskDependencyAgent' }
+    & TaskDependencyAgentFragment
+  )>, space?: { __typename?: 'Space', id: string, name: string } | null };
+
+export type SpaceForAgentsFragment = { __typename?: 'SpaceForAgents', placed: number, space: (
+    { __typename?: 'Space' }
+    & ListSpaceFragment
+  ) };
+
 export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: string, app: { __typename?: 'App', identifier: string }, states: Array<(
     { __typename?: 'State' }
     & StateFragment
@@ -7017,7 +7475,7 @@ export type AgentLogoFragment = { __typename?: 'Agent', logo?: { __typename?: 'M
     ) } | null };
 
 export type AgentFragment = (
-  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, supervisor?: string | null, implementations: Array<(
+  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, declaredName: string, description?: string | null, kind: AgentKind, installedAt: any, active: boolean, connected: boolean, lastSeen?: any | null, supervisor?: string | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -7173,18 +7631,58 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
       & BlokArgumentFragment
     )> | null } | null };
 
+export type BlokLocalChoiceFragment = { __typename?: 'Choice', value: any, label: string, description?: string | null };
+
+export type BlokLocalChildLeafFragment = { __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, description?: string | null, identifier?: any | null, nullable: boolean, default?: any | null, choices?: Array<(
+    { __typename?: 'Choice' }
+    & BlokLocalChoiceFragment
+  )> | null };
+
+export type BlokLocalChildFragment = (
+  { __typename?: 'ArgPort', children?: Array<(
+    { __typename?: 'ArgPort' }
+    & BlokLocalChildLeafFragment
+  )> | null }
+  & BlokLocalChildLeafFragment
+);
+
+export type BlokLocalFragment = { __typename?: 'BlokLocal', key: string, label?: string | null, kind?: LocalKind | null, description?: string | null, identifier?: any | null, nullable: boolean, default?: any | null, persist: boolean, choices?: Array<(
+    { __typename?: 'Choice' }
+    & BlokLocalChoiceFragment
+  )> | null, children?: Array<(
+    { __typename?: 'ArgPort' }
+    & BlokLocalChildFragment
+  )> | null };
+
+export type ResolvedBlokLocalFragment = { __typename?: 'ResolvedBlokLocal', key: string, label?: string | null, kind: LocalKind, description?: string | null, identifier?: any | null, nullable: boolean, default?: any | null, persist: boolean, choices?: Array<(
+    { __typename?: 'Choice' }
+    & BlokLocalChoiceFragment
+  )> | null, children?: Array<(
+    { __typename?: 'ArgPort' }
+    & BlokLocalChildFragment
+  )> | null };
+
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
-  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, args: Array<(
+  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, module: { __typename?: 'Module', id: string, name: string, description?: string | null, isRegistered: boolean }, resolvedLocals: Array<(
+    { __typename?: 'ResolvedBlokLocal' }
+    & ResolvedBlokLocalFragment
+  )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+      { __typename?: 'ActionArgument' }
+      & BlokArgumentFragment
+    )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+      { __typename?: 'ActionArgument' }
+      & BlokArgumentFragment
+    )> }>, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
-  )>, services: Array<{ __typename?: 'BlokService', key: string, service?: string | null, version?: string | null, schemaHash?: string | null }>, diagnostics: Array<(
+  )>, diagnostics: Array<(
     { __typename?: 'Diagnostic' }
     & BlokDiagnosticFragment
   )> };
@@ -7192,7 +7690,16 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
 export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, args: any, taskRole?: TaskBlokRole | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
     { __typename?: 'Blok', hash: string }
     & BlokFragment
-  ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, demoState: any } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+  ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, vocab: number, catalogs: Array<string>, resolvedLocals: Array<(
+      { __typename?: 'ResolvedBlokLocal' }
+      & ResolvedBlokLocalFragment
+    )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }> } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
@@ -7234,7 +7741,19 @@ export type BlokEditorDependencyFragment = { __typename?: 'BlokDependency', id: 
     & BlokEditorStateDependencyFragment
   )> };
 
-export type BlokEditorFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, provided: boolean, componentTree: any, demoState: any, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, args: Array<(
+export type BlokEditorFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, provided: boolean, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, locals: Array<(
+    { __typename?: 'BlokLocal' }
+    & BlokLocalFragment
+  )>, resolvedLocals: Array<(
+    { __typename?: 'ResolvedBlokLocal' }
+    & ResolvedBlokLocalFragment
+  )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+      { __typename?: 'ActionArgument' }
+      & BlokArgumentFragment
+    )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+      { __typename?: 'ActionArgument' }
+      & BlokArgumentFragment
+    )> }>, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, dependencies: Array<(
@@ -7864,7 +8383,7 @@ export type ListResolutionFragment = { __typename?: 'Resolution', id: string, na
 
 export type SessionFragment = { __typename?: 'Session', id: string, startedAt: any, agent: { __typename?: 'Agent', id: string, name: string }, snapshots: Array<{ __typename?: 'Snapshot', id: string, value: any, timestamp: any }> };
 
-export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: (
+export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
   ), args: Array<(
@@ -7873,9 +8392,14 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
   )>, returns: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
+  )>, bindings: Array<(
+    { __typename?: 'ShortcutBinding' }
+    & ShortcutBindingFragment
   )> };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
+export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, client?: string | null, device?: string | null, createdAt: any, user?: { __typename?: 'User', id: string, sub: string } | null, boundBy: { __typename?: 'User', id: string, sub: string } };
+
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
       { __typename?: 'Blok' }
       & BlokLogoFragment
     ) | null }, args: Array<(
@@ -7885,6 +8409,8 @@ export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: 
     { __typename?: 'ReturnPort' }
     & ReturnPortFragment
   )> };
+
+export type ShortcutPinFragment = { __typename?: 'Shortcut', id: string, pinned: boolean };
 
 export type SpaceFragment = { __typename?: 'Space', id: string, name: string, placements: Array<(
     { __typename?: 'Placement' }
@@ -7989,10 +8515,10 @@ export type NoChildrenDetailTaskFragment = (
 );
 
 export type DetailTaskFragment = (
-  { __typename?: 'Task', finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
+  { __typename?: 'Task', capture: boolean, notBefore?: any | null, finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
     { __typename?: 'Task', parentStep?: number | null, callKey?: string | null }
     & PostmanTaskFragment
-  )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
+  )>, parent?: { __typename?: 'Task', id: string } | null, root?: { __typename?: 'Task', id: string } | null, caller?: { __typename?: 'Caller', id: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } | null, space?: { __typename?: 'Space', id: string, name: string } | null, resolution?: { __typename?: 'Resolution', id: string, name: string } | null, heldLocks: Array<{ __typename?: 'Lock', id: string, key: string }>, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
         { __typename?: 'Placement' }
         & AgentPlacementFragment
       )> }, dependencies: Array<{ __typename?: 'Dependency', id: string, key: string, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, actionDependencies: Array<{ __typename?: 'ActionDependency', key: string }> }> } | null, resolvedDependencies: Array<{ __typename?: 'ResolvedAgentDependency', key: string, values?: string | null, mappedAgents: Array<{ __typename?: 'AgentMapping', agent: { __typename?: 'Agent', id: string, name: string, placements: Array<(
@@ -8072,7 +8598,7 @@ export type CatalogOperationFragment = { __typename?: 'CatalogOperation', name: 
     & CatalogArgumentFragment
   )> };
 
-export type UiCatalogFragment = { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean, components: Array<(
+export type ModuleFragment = { __typename?: 'Module', id: string, name: string, description?: string | null, isRegistered: boolean, catalogs: Array<string>, components: Array<(
     { __typename?: 'CatalogComponent' }
     & CatalogComponentFragment
   )>, operations: Array<(
@@ -8080,7 +8606,7 @@ export type UiCatalogFragment = { __typename?: 'UICatalog', id: string, name: st
     & CatalogOperationFragment
   )> };
 
-export type ListUiCatalogFragment = { __typename?: 'UICatalog', id: string, name: string, isRegistered: boolean };
+export type ListModuleFragment = { __typename?: 'Module', id: string, name: string, isRegistered: boolean };
 
 export type CleanupActionsMutationVariables = Exact<{
   actionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -8428,6 +8954,9 @@ export type CheckBlokMutationVariables = Exact<{
 export type CheckBlokMutation = { __typename?: 'Mutation', editBlok: { __typename?: 'BlokEdit', applied: boolean, diagnostics: Array<(
       { __typename?: 'Diagnostic' }
       & BlokDiagnosticFragment
+    )>, resolvedLocals: Array<(
+      { __typename?: 'ResolvedBlokLocal' }
+      & ResolvedBlokLocalFragment
     )> } };
 
 export type RevertBlokMutationVariables = Exact<{
@@ -8608,6 +9137,23 @@ export type DeleteShortcutMutationVariables = Exact<{
 
 export type DeleteShortcutMutation = { __typename?: 'Mutation', deleteShortcut: string };
 
+export type BindShortcutMutationVariables = Exact<{
+  input: BindShortcutInput;
+}>;
+
+
+export type BindShortcutMutation = { __typename?: 'Mutation', bindShortcut: (
+    { __typename?: 'Shortcut' }
+    & ShortcutFragment
+  ) };
+
+export type UnbindShortcutMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UnbindShortcutMutation = { __typename?: 'Mutation', unbindShortcut: string };
+
 export type CreateSpaceMutationVariables = Exact<{
   input: CreateSpaceInput;
 }>;
@@ -8706,14 +9252,14 @@ export type CreateHigherOrderImplementationMutation = { __typename?: 'Mutation',
     & ListImplementationFragment
   ) };
 
-export type RegisterUiCatalogMutationVariables = Exact<{
-  input: RegisterUiCatalogInput;
+export type RegisterModuleMutationVariables = Exact<{
+  input: RegisterModuleInput;
 }>;
 
 
-export type RegisterUiCatalogMutation = { __typename?: 'Mutation', registerUiCatalog: (
-    { __typename?: 'UICatalog' }
-    & UiCatalogFragment
+export type RegisterModuleMutation = { __typename?: 'Mutation', registerModule: (
+    { __typename?: 'Module' }
+    & ModuleFragment
   ) };
 
 export type ConstantActionQueryVariables = Exact<{
@@ -8895,6 +9441,36 @@ export type ActionSignatureByHashQuery = { __typename?: 'Query', action: (
     { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, key: string, version: string, app: { __typename?: 'App', identifier: string } }
     & PortsFragment
   ) };
+
+export type RunTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RunTaskQuery = { __typename?: 'Query', task: (
+    { __typename?: 'Task' }
+    & RunTaskFragment
+  ) };
+
+export type ActionBloksQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ActionBloksQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, bloks: Array<(
+      { __typename?: 'ActionBlok' }
+      & ActionBlokFragment
+    )> } };
+
+export type SpacesForAgentsQueryVariables = Exact<{
+  agents: Array<Scalars['ID']['input']>;
+}>;
+
+
+export type SpacesForAgentsQuery = { __typename?: 'Query', spacesForAgents: Array<(
+    { __typename?: 'SpaceForAgents' }
+    & SpaceForAgentsFragment
+  )> };
 
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -9218,7 +9794,16 @@ export type LogoBlokQueryVariables = Exact<{
 }>;
 
 
-export type LogoBlokQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, hash: string, componentTree: any, demoState: any } };
+export type LogoBlokQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, hash: string, componentTree: any, vocab: number, catalogs: Array<string>, resolvedLocals: Array<(
+      { __typename?: 'ResolvedBlokLocal' }
+      & ResolvedBlokLocalFragment
+    )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }> } };
 
 export type BlokEditorQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -9253,6 +9838,13 @@ export type ClientsQuery = { __typename?: 'Query', clients: Array<(
     { __typename?: 'Client' }
     & ListClientFragment
   )> };
+
+export type BindingClientsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type BindingClientsQuery = { __typename?: 'Query', clients: Array<{ __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null, device?: { __typename?: 'Device', id: string, deviceId: string } | null }> };
 
 export type GetDashboardQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -9890,22 +10482,22 @@ export type ToolboxQuery = { __typename?: 'Query', toolbox: (
     & ToolboxFragment
   ) };
 
-export type UiCatalogsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ModulesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UiCatalogsQuery = { __typename?: 'Query', uiCatalogs: Array<(
-    { __typename?: 'UICatalog' }
-    & UiCatalogFragment
+export type ModulesQuery = { __typename?: 'Query', modules: Array<(
+    { __typename?: 'Module' }
+    & ModuleFragment
   )> };
 
-export type UiCatalogQueryVariables = Exact<{
+export type ModuleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type UiCatalogQuery = { __typename?: 'Query', uiCatalog: (
-    { __typename?: 'UICatalog' }
-    & UiCatalogFragment
+export type ModuleQuery = { __typename?: 'Query', module: (
+    { __typename?: 'Module' }
+    & ModuleFragment
   ) };
 
 export type BaseCatalogQueryVariables = Exact<{ [key: string]: never; }>;
@@ -10273,6 +10865,88 @@ export const HoverActionFragmentDoc = gql`
   }
 }
     ${BlokLogoFragmentDoc}`;
+export const TaskEventFragmentDoc = gql`
+    fragment TaskEvent on TaskEvent {
+  id
+  kind
+  level
+  returns
+  task {
+    id
+    reference
+  }
+  progress
+  reference
+  createdAt
+  message
+  step
+  agentTs
+  effect
+  key
+  value
+  delegatedTo {
+    id
+    action {
+      name
+    }
+    implementation {
+      id
+      interface
+      action {
+        name
+      }
+    }
+  }
+}
+    `;
+export const BlokLocalChoiceFragmentDoc = gql`
+    fragment BlokLocalChoice on Choice {
+  value
+  label
+  description
+}
+    `;
+export const BlokLocalChildLeafFragmentDoc = gql`
+    fragment BlokLocalChildLeaf on ArgPort {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  choices {
+    ...BlokLocalChoice
+  }
+}
+    ${BlokLocalChoiceFragmentDoc}`;
+export const BlokLocalChildFragmentDoc = gql`
+    fragment BlokLocalChild on ArgPort {
+  ...BlokLocalChildLeaf
+  children {
+    ...BlokLocalChildLeaf
+  }
+}
+    ${BlokLocalChildLeafFragmentDoc}`;
+export const ResolvedBlokLocalFragmentDoc = gql`
+    fragment ResolvedBlokLocal on ResolvedBlokLocal {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  persist
+  choices {
+    ...BlokLocalChoice
+  }
+  children {
+    ...BlokLocalChild
+  }
+}
+    ${BlokLocalChoiceFragmentDoc}
+${BlokLocalChildFragmentDoc}`;
 export const PortCallLeafArgumentFragmentDoc = gql`
     fragment PortCallLeafArgument on ActionArgument {
   key
@@ -10303,6 +10977,156 @@ export const PortCallInnerArgumentFragmentDoc = gql`
 }
     ${PortCallLeafArgumentFragmentDoc}
 ${PortCallLeafFragmentDoc}`;
+export const BlokAgentCallLeafFragmentDoc = gql`
+    fragment BlokAgentCallLeaf on AgentCall {
+  dependency
+  operation
+  arguments {
+    ...PortCallLeafArgument
+  }
+}
+    ${PortCallLeafArgumentFragmentDoc}`;
+export const BlokArgumentInnerFragmentDoc = gql`
+    fragment BlokArgumentInner on ActionArgument {
+  ...PortCallInnerArgument
+  agentCall {
+    ...BlokAgentCallLeaf
+  }
+}
+    ${PortCallInnerArgumentFragmentDoc}
+${BlokAgentCallLeafFragmentDoc}`;
+export const BlokArgumentFragmentDoc = gql`
+    fragment BlokArgument on ActionArgument {
+  ...PortCallLeafArgument
+  utilCall {
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  valueList {
+    ...BlokArgumentInner
+  }
+  valueDict {
+    ...BlokArgumentInner
+  }
+}
+    ${PortCallLeafArgumentFragmentDoc}
+${BlokArgumentInnerFragmentDoc}`;
+export const ActionBlokFragmentDoc = gql`
+    fragment ActionBlok on ActionBlok {
+  id
+  context
+  blok {
+    id
+    context
+    heldByAction
+    componentTree
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
+  }
+}
+    ${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}`;
+export const TaskDependencyAgentFragmentDoc = gql`
+    fragment TaskDependencyAgent on TaskDependencyAgent {
+  key
+  agent {
+    id
+    name
+    connected
+  }
+}
+    `;
+export const RunTaskFragmentDoc = gql`
+    fragment RunTask on Task {
+  id
+  args
+  latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
+  isDone
+  events(ordering: {createdAt: DESC}) {
+    ...TaskEvent
+  }
+  action {
+    id
+    name
+  }
+  implementation {
+    id
+    agent {
+      id
+      name
+      connected
+    }
+  }
+  actionBloks {
+    ...ActionBlok
+  }
+  dependencyAgents {
+    ...TaskDependencyAgent
+  }
+  space {
+    id
+    name
+  }
+}
+    ${TaskEventFragmentDoc}
+${ActionBlokFragmentDoc}
+${TaskDependencyAgentFragmentDoc}`;
+export const ListSpaceFragmentDoc = gql`
+    fragment ListSpace on Space {
+  id
+  name
+}
+    `;
+export const SpaceForAgentsFragmentDoc = gql`
+    fragment SpaceForAgents on SpaceForAgents {
+  placed
+  space {
+    ...ListSpace
+  }
+}
+    ${ListSpaceFragmentDoc}`;
 export const PortCallInnerFragmentDoc = gql`
     fragment PortCallInner on UtilCall {
   operation
@@ -10377,49 +11201,6 @@ export const PortEffectFragmentDoc = gql`
     ${CustomEffectFragmentDoc}
 ${MessageEffectFragmentDoc}
 ${HideEffectFragmentDoc}`;
-export const BlokAgentCallLeafFragmentDoc = gql`
-    fragment BlokAgentCallLeaf on AgentCall {
-  dependency
-  operation
-  arguments {
-    ...PortCallLeafArgument
-  }
-}
-    ${PortCallLeafArgumentFragmentDoc}`;
-export const BlokArgumentInnerFragmentDoc = gql`
-    fragment BlokArgumentInner on ActionArgument {
-  ...PortCallInnerArgument
-  agentCall {
-    ...BlokAgentCallLeaf
-  }
-}
-    ${PortCallInnerArgumentFragmentDoc}
-${BlokAgentCallLeafFragmentDoc}`;
-export const BlokArgumentFragmentDoc = gql`
-    fragment BlokArgument on ActionArgument {
-  ...PortCallLeafArgument
-  utilCall {
-    operation
-    arguments {
-      ...BlokArgumentInner
-    }
-  }
-  agentCall {
-    dependency
-    operation
-    arguments {
-      ...BlokArgumentInner
-    }
-  }
-  valueList {
-    ...BlokArgumentInner
-  }
-  valueDict {
-    ...BlokArgumentInner
-  }
-}
-    ${PortCallLeafArgumentFragmentDoc}
-${BlokArgumentInnerFragmentDoc}`;
 export const BlokComponentPropFragmentDoc = gql`
     fragment BlokComponentProp on ComponentProp {
   key
@@ -11063,6 +11844,10 @@ export const AgentFragmentDoc = gql`
   blocked
   pinned
   name
+  declaredName
+  description
+  kind
+  installedAt
   active
   connected
   lastSeen
@@ -11596,6 +12381,25 @@ export const OpenableBlokFragmentDoc = gql`
   }
 }
     `;
+export const BlokLocalFragmentDoc = gql`
+    fragment BlokLocal on BlokLocal {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  persist
+  choices {
+    ...BlokLocalChoice
+  }
+  children {
+    ...BlokLocalChild
+  }
+}
+    ${BlokLocalChoiceFragmentDoc}
+${BlokLocalChildFragmentDoc}`;
 export const BlokEditorPortMatchLeafFragmentDoc = gql`
     fragment BlokEditorPortMatchLeaf on PortMatch {
   at
@@ -11694,7 +12498,41 @@ export const BlokEditorFragmentDoc = gql`
     number
   }
   componentTree
-  demoState
+  vocab
+  catalogs
+  locals {
+    ...BlokLocal
+  }
+  resolvedLocals {
+    ...ResolvedBlokLocal
+  }
+  demo {
+    deps
+    args
+    task
+    queries
+    subscriptions
+  }
+  queries {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    poll
+    more
+  }
+  subscriptions {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    keep
+    history
+  }
   args {
     ...ArgPort
   }
@@ -11702,7 +12540,10 @@ export const BlokEditorFragmentDoc = gql`
     ...BlokEditorDependency
   }
 }
-    ${ArgPortFragmentDoc}
+    ${BlokLocalFragmentDoc}
+${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}
+${ArgPortFragmentDoc}
 ${BlokEditorDependencyFragmentDoc}`;
 export const BlokRevisionListItemFragmentDoc = gql`
     fragment BlokRevisionListItem on BlokRevision {
@@ -11759,7 +12600,7 @@ export const BlokFragmentDoc = gql`
     key
     description
   }
-  catalog {
+  module {
     id
     name
     description
@@ -11769,24 +12610,51 @@ export const BlokFragmentDoc = gql`
   forModel
   forNode
   componentTree
-  demoState
+  vocab
+  catalogs
+  resolvedLocals {
+    ...ResolvedBlokLocal
+  }
+  demo {
+    deps
+    args
+    task
+    queries
+    subscriptions
+  }
+  queries {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    poll
+    more
+  }
+  subscriptions {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    keep
+    history
+  }
   args {
     ...ArgPort
   }
   returns {
     ...ReturnPort
   }
-  services {
-    key
-    service
-    version
-    schemaHash
-  }
   diagnostics {
     ...BlokDiagnostic
   }
 }
     ${ListMaterializedBlokFragmentDoc}
+${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}
 ${BlokDiagnosticFragmentDoc}`;
@@ -11809,7 +12677,38 @@ export const MaterializedBlokFragmentDoc = gql`
     id
     number
     componentTree
-    demoState
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
   }
   pinnedRevision {
     id
@@ -11827,7 +12726,9 @@ export const MaterializedBlokFragmentDoc = gql`
     }
   }
 }
-    ${BlokFragmentDoc}`;
+    ${BlokFragmentDoc}
+${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}`;
 export const TaskBlokFragmentDoc = gql`
     fragment TaskBlok on TaskBlok {
   role
@@ -12331,40 +13232,6 @@ export const DetailActionFragmentDoc = gql`
     ${GraphNodeActionFragmentDoc}
 ${BlokLogoFragmentDoc}
 ${MinimalImplementationFragmentDoc}`;
-export const TaskEventFragmentDoc = gql`
-    fragment TaskEvent on TaskEvent {
-  id
-  kind
-  level
-  returns
-  task {
-    id
-    reference
-  }
-  progress
-  reference
-  createdAt
-  message
-  step
-  agentTs
-  effect
-  key
-  value
-  delegatedTo {
-    id
-    action {
-      name
-    }
-    implementation {
-      id
-      interface
-      action {
-        name
-      }
-    }
-  }
-}
-    `;
 export const PostmanTaskFragmentDoc = gql`
     fragment PostmanTask on Task {
   id
@@ -12579,6 +13446,23 @@ export const SessionFragmentDoc = gql`
   startedAt
 }
     `;
+export const ShortcutBindingFragmentDoc = gql`
+    fragment ShortcutBinding on ShortcutBinding {
+  id
+  app
+  client
+  device
+  createdAt
+  user {
+    id
+    sub
+  }
+  boundBy {
+    id
+    sub
+  }
+}
+    `;
 export const ShortcutFragmentDoc = gql`
     fragment Shortcut on Shortcut {
   id
@@ -12596,10 +13480,15 @@ export const ShortcutFragmentDoc = gql`
     ...ReturnPort
   }
   allowQuick
+  pinned
+  bindings {
+    ...ShortcutBinding
+  }
 }
     ${DetailActionFragmentDoc}
 ${ArgPortFragmentDoc}
-${ReturnPortFragmentDoc}`;
+${ReturnPortFragmentDoc}
+${ShortcutBindingFragmentDoc}`;
 export const ListShortcutFragmentDoc = gql`
     fragment ListShortcut on Shortcut {
   id
@@ -12621,10 +13510,17 @@ export const ListShortcutFragmentDoc = gql`
     ...ReturnPort
   }
   allowQuick
+  pinned
 }
     ${BlokLogoFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
+export const ShortcutPinFragmentDoc = gql`
+    fragment ShortcutPin on Shortcut {
+  id
+  pinned
+}
+    `;
 export const SpacePlacementFragmentDoc = gql`
     fragment SpacePlacement on Placement {
   id
@@ -12676,12 +13572,6 @@ export const SpaceFragmentDoc = gql`
 }
     ${SpacePlacementFragmentDoc}
 ${SpaceBlokPlacementFragmentDoc}`;
-export const ListSpaceFragmentDoc = gql`
-    fragment ListSpace on Space {
-  id
-  name
-}
-    `;
 export const StateEventFragmentDoc = gql`
     fragment StateEvent on State {
   id
@@ -12975,6 +13865,32 @@ export const DetailTaskFragmentDoc = gql`
   parent {
     id
   }
+  root {
+    id
+  }
+  caller {
+    id
+    user {
+      sub
+    }
+    client {
+      clientId
+    }
+  }
+  space {
+    id
+    name
+  }
+  resolution {
+    id
+    name
+  }
+  heldLocks {
+    id
+    key
+  }
+  capture
+  notBefore
   finishedAt
   implementation {
     execution
@@ -13224,12 +14140,13 @@ export const CatalogOperationFragmentDoc = gql`
   }
 }
     ${CatalogArgumentFragmentDoc}`;
-export const UiCatalogFragmentDoc = gql`
-    fragment UICatalog on UICatalog {
+export const ModuleFragmentDoc = gql`
+    fragment Module on Module {
   id
   name
   description
   isRegistered
+  catalogs
   components {
     ...CatalogComponent
   }
@@ -13239,8 +14156,8 @@ export const UiCatalogFragmentDoc = gql`
 }
     ${CatalogComponentFragmentDoc}
 ${CatalogOperationFragmentDoc}`;
-export const ListUiCatalogFragmentDoc = gql`
-    fragment ListUICatalog on UICatalog {
+export const ListModuleFragmentDoc = gql`
+    fragment ListModule on Module {
   id
   name
   isRegistered
@@ -14443,9 +15360,13 @@ export const CheckBlokDocument = gql`
     diagnostics {
       ...BlokDiagnostic
     }
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
   }
 }
-    ${BlokDiagnosticFragmentDoc}`;
+    ${BlokDiagnosticFragmentDoc}
+${ResolvedBlokLocalFragmentDoc}`;
 export type CheckBlokMutationFn = Apollo.MutationFunction<CheckBlokMutation, CheckBlokMutationVariables>;
 
 /**
@@ -15091,6 +16012,70 @@ export function useDeleteShortcutMutation(baseOptions?: ApolloReactHooks.Mutatio
 export type DeleteShortcutMutationHookResult = ReturnType<typeof useDeleteShortcutMutation>;
 export type DeleteShortcutMutationResult = Apollo.MutationResult<DeleteShortcutMutation>;
 export type DeleteShortcutMutationOptions = Apollo.BaseMutationOptions<DeleteShortcutMutation, DeleteShortcutMutationVariables>;
+export const BindShortcutDocument = gql`
+    mutation BindShortcut($input: BindShortcutInput!) {
+  bindShortcut(input: $input) {
+    ...Shortcut
+  }
+}
+    ${ShortcutFragmentDoc}`;
+export type BindShortcutMutationFn = Apollo.MutationFunction<BindShortcutMutation, BindShortcutMutationVariables>;
+
+/**
+ * __useBindShortcutMutation__
+ *
+ * To run a mutation, you first call `useBindShortcutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBindShortcutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bindShortcutMutation, { data, loading, error }] = useBindShortcutMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBindShortcutMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<BindShortcutMutation, BindShortcutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<BindShortcutMutation, BindShortcutMutationVariables>(BindShortcutDocument, options);
+      }
+export type BindShortcutMutationHookResult = ReturnType<typeof useBindShortcutMutation>;
+export type BindShortcutMutationResult = Apollo.MutationResult<BindShortcutMutation>;
+export type BindShortcutMutationOptions = Apollo.BaseMutationOptions<BindShortcutMutation, BindShortcutMutationVariables>;
+export const UnbindShortcutDocument = gql`
+    mutation UnbindShortcut($id: ID!) {
+  unbindShortcut(input: {id: $id})
+}
+    `;
+export type UnbindShortcutMutationFn = Apollo.MutationFunction<UnbindShortcutMutation, UnbindShortcutMutationVariables>;
+
+/**
+ * __useUnbindShortcutMutation__
+ *
+ * To run a mutation, you first call `useUnbindShortcutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnbindShortcutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unbindShortcutMutation, { data, loading, error }] = useUnbindShortcutMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useUnbindShortcutMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnbindShortcutMutation, UnbindShortcutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnbindShortcutMutation, UnbindShortcutMutationVariables>(UnbindShortcutDocument, options);
+      }
+export type UnbindShortcutMutationHookResult = ReturnType<typeof useUnbindShortcutMutation>;
+export type UnbindShortcutMutationResult = Apollo.MutationResult<UnbindShortcutMutation>;
+export type UnbindShortcutMutationOptions = Apollo.BaseMutationOptions<UnbindShortcutMutation, UnbindShortcutMutationVariables>;
 export const CreateSpaceDocument = gql`
     mutation CreateSpace($input: CreateSpaceInput!) {
   createSpace(input: $input) {
@@ -15446,39 +16431,39 @@ export function useCreateHigherOrderImplementationMutation(baseOptions?: ApolloR
 export type CreateHigherOrderImplementationMutationHookResult = ReturnType<typeof useCreateHigherOrderImplementationMutation>;
 export type CreateHigherOrderImplementationMutationResult = Apollo.MutationResult<CreateHigherOrderImplementationMutation>;
 export type CreateHigherOrderImplementationMutationOptions = Apollo.BaseMutationOptions<CreateHigherOrderImplementationMutation, CreateHigherOrderImplementationMutationVariables>;
-export const RegisterUiCatalogDocument = gql`
-    mutation RegisterUiCatalog($input: RegisterUiCatalogInput!) {
-  registerUiCatalog(input: $input) {
-    ...UICatalog
+export const RegisterModuleDocument = gql`
+    mutation RegisterModule($input: RegisterModuleInput!) {
+  registerModule(input: $input) {
+    ...Module
   }
 }
-    ${UiCatalogFragmentDoc}`;
-export type RegisterUiCatalogMutationFn = Apollo.MutationFunction<RegisterUiCatalogMutation, RegisterUiCatalogMutationVariables>;
+    ${ModuleFragmentDoc}`;
+export type RegisterModuleMutationFn = Apollo.MutationFunction<RegisterModuleMutation, RegisterModuleMutationVariables>;
 
 /**
- * __useRegisterUiCatalogMutation__
+ * __useRegisterModuleMutation__
  *
- * To run a mutation, you first call `useRegisterUiCatalogMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRegisterUiCatalogMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useRegisterModuleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRegisterModuleMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [registerUiCatalogMutation, { data, loading, error }] = useRegisterUiCatalogMutation({
+ * const [registerModuleMutation, { data, loading, error }] = useRegisterModuleMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useRegisterUiCatalogMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RegisterUiCatalogMutation, RegisterUiCatalogMutationVariables>) {
+export function useRegisterModuleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RegisterModuleMutation, RegisterModuleMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<RegisterUiCatalogMutation, RegisterUiCatalogMutationVariables>(RegisterUiCatalogDocument, options);
+        return ApolloReactHooks.useMutation<RegisterModuleMutation, RegisterModuleMutationVariables>(RegisterModuleDocument, options);
       }
-export type RegisterUiCatalogMutationHookResult = ReturnType<typeof useRegisterUiCatalogMutation>;
-export type RegisterUiCatalogMutationResult = Apollo.MutationResult<RegisterUiCatalogMutation>;
-export type RegisterUiCatalogMutationOptions = Apollo.BaseMutationOptions<RegisterUiCatalogMutation, RegisterUiCatalogMutationVariables>;
+export type RegisterModuleMutationHookResult = ReturnType<typeof useRegisterModuleMutation>;
+export type RegisterModuleMutationResult = Apollo.MutationResult<RegisterModuleMutation>;
+export type RegisterModuleMutationOptions = Apollo.BaseMutationOptions<RegisterModuleMutation, RegisterModuleMutationVariables>;
 export const ConstantActionDocument = gql`
     query ConstantAction($id: ID!) {
   action(id: $id) {
@@ -16120,6 +17105,114 @@ export function useActionSignatureByHashLazyQuery(baseOptions?: ApolloReactHooks
 export type ActionSignatureByHashQueryHookResult = ReturnType<typeof useActionSignatureByHashQuery>;
 export type ActionSignatureByHashLazyQueryHookResult = ReturnType<typeof useActionSignatureByHashLazyQuery>;
 export type ActionSignatureByHashQueryResult = Apollo.QueryResult<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>;
+export const RunTaskDocument = gql`
+    query RunTask($id: ID!) {
+  task(id: $id) {
+    ...RunTask
+  }
+}
+    ${RunTaskFragmentDoc}`;
+
+/**
+ * __useRunTaskQuery__
+ *
+ * To run a query within a React component, call `useRunTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRunTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRunTaskQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRunTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RunTaskQuery, RunTaskQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RunTaskQuery, RunTaskQueryVariables>(RunTaskDocument, options);
+      }
+export function useRunTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RunTaskQuery, RunTaskQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RunTaskQuery, RunTaskQueryVariables>(RunTaskDocument, options);
+        }
+export type RunTaskQueryHookResult = ReturnType<typeof useRunTaskQuery>;
+export type RunTaskLazyQueryHookResult = ReturnType<typeof useRunTaskLazyQuery>;
+export type RunTaskQueryResult = Apollo.QueryResult<RunTaskQuery, RunTaskQueryVariables>;
+export const ActionBloksDocument = gql`
+    query ActionBloks($id: ID!) {
+  action(id: $id) {
+    id
+    bloks {
+      ...ActionBlok
+    }
+  }
+}
+    ${ActionBlokFragmentDoc}`;
+
+/**
+ * __useActionBloksQuery__
+ *
+ * To run a query within a React component, call `useActionBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionBloksQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useActionBloksQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionBloksQuery, ActionBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionBloksQuery, ActionBloksQueryVariables>(ActionBloksDocument, options);
+      }
+export function useActionBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionBloksQuery, ActionBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionBloksQuery, ActionBloksQueryVariables>(ActionBloksDocument, options);
+        }
+export type ActionBloksQueryHookResult = ReturnType<typeof useActionBloksQuery>;
+export type ActionBloksLazyQueryHookResult = ReturnType<typeof useActionBloksLazyQuery>;
+export type ActionBloksQueryResult = Apollo.QueryResult<ActionBloksQuery, ActionBloksQueryVariables>;
+export const SpacesForAgentsDocument = gql`
+    query SpacesForAgents($agents: [ID!]!) {
+  spacesForAgents(agents: $agents) {
+    ...SpaceForAgents
+  }
+}
+    ${SpaceForAgentsFragmentDoc}`;
+
+/**
+ * __useSpacesForAgentsQuery__
+ *
+ * To run a query within a React component, call `useSpacesForAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSpacesForAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSpacesForAgentsQuery({
+ *   variables: {
+ *      agents: // value for 'agents'
+ *   },
+ * });
+ */
+export function useSpacesForAgentsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
+      }
+export function useSpacesForAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
+        }
+export type SpacesForAgentsQueryHookResult = ReturnType<typeof useSpacesForAgentsQuery>;
+export type SpacesForAgentsLazyQueryHookResult = ReturnType<typeof useSpacesForAgentsLazyQuery>;
+export type SpacesForAgentsQueryResult = Apollo.QueryResult<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -17288,10 +18381,42 @@ export const LogoBlokDocument = gql`
     id
     hash
     componentTree
-    demoState
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
   }
 }
-    `;
+    ${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}`;
 
 /**
  * __useLogoBlokQuery__
@@ -17437,6 +18562,54 @@ export function useClientsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type ClientsQueryHookResult = ReturnType<typeof useClientsQuery>;
 export type ClientsLazyQueryHookResult = ReturnType<typeof useClientsLazyQuery>;
 export type ClientsQueryResult = Apollo.QueryResult<ClientsQuery, ClientsQueryVariables>;
+export const BindingClientsDocument = gql`
+    query BindingClients($pagination: OffsetPaginationInput) {
+  clients(pagination: $pagination) {
+    id
+    clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
+    device {
+      id
+      deviceId
+    }
+  }
+}
+    `;
+
+/**
+ * __useBindingClientsQuery__
+ *
+ * To run a query within a React component, call `useBindingClientsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBindingClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBindingClientsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useBindingClientsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BindingClientsQuery, BindingClientsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BindingClientsQuery, BindingClientsQueryVariables>(BindingClientsDocument, options);
+      }
+export function useBindingClientsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BindingClientsQuery, BindingClientsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BindingClientsQuery, BindingClientsQueryVariables>(BindingClientsDocument, options);
+        }
+export type BindingClientsQueryHookResult = ReturnType<typeof useBindingClientsQuery>;
+export type BindingClientsLazyQueryHookResult = ReturnType<typeof useBindingClientsLazyQuery>;
+export type BindingClientsQueryResult = Apollo.QueryResult<BindingClientsQuery, BindingClientsQueryVariables>;
 export const GetDashboardDocument = gql`
     query GetDashboard($id: ID!) {
   dashboard(id: $id) {
@@ -19746,75 +20919,75 @@ export function useToolboxLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type ToolboxQueryHookResult = ReturnType<typeof useToolboxQuery>;
 export type ToolboxLazyQueryHookResult = ReturnType<typeof useToolboxLazyQuery>;
 export type ToolboxQueryResult = Apollo.QueryResult<ToolboxQuery, ToolboxQueryVariables>;
-export const UiCatalogsDocument = gql`
-    query UiCatalogs {
-  uiCatalogs {
-    ...UICatalog
+export const ModulesDocument = gql`
+    query Modules {
+  modules {
+    ...Module
   }
 }
-    ${UiCatalogFragmentDoc}`;
+    ${ModuleFragmentDoc}`;
 
 /**
- * __useUiCatalogsQuery__
+ * __useModulesQuery__
  *
- * To run a query within a React component, call `useUiCatalogsQuery` and pass it any options that fit your needs.
- * When your component renders, `useUiCatalogsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useModulesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useModulesQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useUiCatalogsQuery({
+ * const { data, loading, error } = useModulesQuery({
  *   variables: {
  *   },
  * });
  */
-export function useUiCatalogsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<UiCatalogsQuery, UiCatalogsQueryVariables>) {
+export function useModulesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ModulesQuery, ModulesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<UiCatalogsQuery, UiCatalogsQueryVariables>(UiCatalogsDocument, options);
+        return ApolloReactHooks.useQuery<ModulesQuery, ModulesQueryVariables>(ModulesDocument, options);
       }
-export function useUiCatalogsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<UiCatalogsQuery, UiCatalogsQueryVariables>) {
+export function useModulesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ModulesQuery, ModulesQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<UiCatalogsQuery, UiCatalogsQueryVariables>(UiCatalogsDocument, options);
+          return ApolloReactHooks.useLazyQuery<ModulesQuery, ModulesQueryVariables>(ModulesDocument, options);
         }
-export type UiCatalogsQueryHookResult = ReturnType<typeof useUiCatalogsQuery>;
-export type UiCatalogsLazyQueryHookResult = ReturnType<typeof useUiCatalogsLazyQuery>;
-export type UiCatalogsQueryResult = Apollo.QueryResult<UiCatalogsQuery, UiCatalogsQueryVariables>;
-export const UiCatalogDocument = gql`
-    query UiCatalog($id: ID!) {
-  uiCatalog(id: $id) {
-    ...UICatalog
+export type ModulesQueryHookResult = ReturnType<typeof useModulesQuery>;
+export type ModulesLazyQueryHookResult = ReturnType<typeof useModulesLazyQuery>;
+export type ModulesQueryResult = Apollo.QueryResult<ModulesQuery, ModulesQueryVariables>;
+export const ModuleDocument = gql`
+    query Module($id: ID!) {
+  module(id: $id) {
+    ...Module
   }
 }
-    ${UiCatalogFragmentDoc}`;
+    ${ModuleFragmentDoc}`;
 
 /**
- * __useUiCatalogQuery__
+ * __useModuleQuery__
  *
- * To run a query within a React component, call `useUiCatalogQuery` and pass it any options that fit your needs.
- * When your component renders, `useUiCatalogQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useModuleQuery` and pass it any options that fit your needs.
+ * When your component renders, `useModuleQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useUiCatalogQuery({
+ * const { data, loading, error } = useModuleQuery({
  *   variables: {
  *      id: // value for 'id'
  *   },
  * });
  */
-export function useUiCatalogQuery(baseOptions: ApolloReactHooks.QueryHookOptions<UiCatalogQuery, UiCatalogQueryVariables>) {
+export function useModuleQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ModuleQuery, ModuleQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<UiCatalogQuery, UiCatalogQueryVariables>(UiCatalogDocument, options);
+        return ApolloReactHooks.useQuery<ModuleQuery, ModuleQueryVariables>(ModuleDocument, options);
       }
-export function useUiCatalogLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<UiCatalogQuery, UiCatalogQueryVariables>) {
+export function useModuleLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ModuleQuery, ModuleQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<UiCatalogQuery, UiCatalogQueryVariables>(UiCatalogDocument, options);
+          return ApolloReactHooks.useLazyQuery<ModuleQuery, ModuleQueryVariables>(ModuleDocument, options);
         }
-export type UiCatalogQueryHookResult = ReturnType<typeof useUiCatalogQuery>;
-export type UiCatalogLazyQueryHookResult = ReturnType<typeof useUiCatalogLazyQuery>;
-export type UiCatalogQueryResult = Apollo.QueryResult<UiCatalogQuery, UiCatalogQueryVariables>;
+export type ModuleQueryHookResult = ReturnType<typeof useModuleQuery>;
+export type ModuleLazyQueryHookResult = ReturnType<typeof useModuleLazyQuery>;
+export type ModuleQueryResult = Apollo.QueryResult<ModuleQuery, ModuleQueryVariables>;
 export const BaseCatalogDocument = gql`
     query BaseCatalog {
   baseCatalog {

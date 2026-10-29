@@ -1,3 +1,4 @@
+import type { RelatedContext } from "@/core/smart/extensions/types";
 import { Structure } from "@/core/types";
 import { windowRole } from "@/core/util/windowRole";
 import React, {
@@ -37,6 +38,8 @@ export type CommandPageContext = {
   partners?: Structure[];
   returns?: string[];
   collection?: string;
+  /** What the page also stands for (a container's whole lens), listed after its own rows. */
+  related?: RelatedContext[];
 };
 
 /**
@@ -110,10 +113,11 @@ export const useCommandContext = (context: CommandPageContext) => {
   const partners = context.partners;
   const returns = context.returns;
   const collection = context.collection;
+  const related = context.related;
 
   const stable = useMemo<CommandPageContext>(
-    () => ({ objects, partners, returns, collection }),
-    [objects, partners, returns, collection],
+    () => ({ objects, partners, returns, collection, related }),
+    [objects, partners, returns, collection, related],
   );
 
   useEffect(() => {

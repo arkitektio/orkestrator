@@ -18,6 +18,7 @@ import { displayModeToPreferredView } from "../../platform/camera/preferredView"
 import { useScenePreferencesEditor } from "../../features/animation/useAnimationEditor";
 import { InteractionMode, useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
+import { LayerTargetPicker } from "./LayerTargetPicker";
 import { SceneSettings } from "./SceneSettings";
 
 /** Icon per interaction mode for the compact mode control. */
@@ -33,8 +34,13 @@ const INTERACTION_ICONS: Record<InteractionMode, LucideIcon> = {
  * question these controls change: what kind of view you are in and what a
  * pointer gesture does. Renderer-owned HUD, so every host gets them in the
  * same place. Left to right: interaction modes, the hover-probe toggle (only
- * while in PROBE, since it modifies nothing else), the 2D/3D display toggle,
- * the pin, and the view-settings gear.
+ * while in PROBE, since it modifies nothing else), the layer picker (data,
+ * under-cursor and ray layers), the 2D/3D display toggle, the pin, and the
+ * view-settings gear.
+ *
+ * The layer picker is shown in every mode, not just PROBE: the data layer
+ * decides what tasks and new annotations use, and the hit decides where
+ * DESIGN gestures land.
  *
  * The gear is here rather than in a panel column because it answers the same
  * question as its neighbours — what this view looks like — and a corner is a
@@ -113,6 +119,8 @@ export const SceneModeControls = () => {
           <ScanEye className="h-3.5 w-3.5" />
         </Button>
       )}
+
+      {probeable && <LayerTargetPicker />}
 
       <Button
         variant={"outline"}

@@ -1,13 +1,7 @@
-import { portHash } from "@/core/ports/engine/utils";
 import { StringField } from "@/core/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/core/ui/collapsible";
 import {
   DialogDescription,
   DialogFooter,
@@ -17,11 +11,8 @@ import {
 import { ErrorNote } from "@/core/ui/error-note";
 import { Form } from "@/core/ui/form";
 import { ActionDescription, FormActionDescription } from "@/core/ports/engine/ActionDescription";
-import { notEmpty } from "@/core/util/utils";
 import { RekuestShortcut } from "@/core/linkers";
-import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
-import { ArgsContainerProps } from "@/core/ports/engine/tailwind";
-import { Port, PortGroup } from "@/core/ports/engine/types";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
@@ -32,112 +23,7 @@ import {
 import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
-export type FilledGroup = PortGroup & {
-  filledPorts: Port[];
-};
-
-export { portHash };
-
-export const NanaContainer = () => {
-  return (
-    <div className="grid @lg:grid-cols-2 @lg:grid-cols-2 @xl:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6 gap-5">
-      {" "}
-    </div>
-  );
-};
-
-const ArgsContainer = ({
-  ports,
-  groups,
-  options,
-  registry,
-  hidden,
-  bound,
-  path,
-}: ArgsContainerProps) => {
-  const hash = portHash(ports.filter(notEmpty));
-
-  const filledGroups = useMemo(() => {
-    if (!groups || groups.length === 0) {
-      groups = [
-        {
-          key: "default",
-          ports: ports.filter(notEmpty).map((p) => p.key),
-        },
-      ];
-    }
-
-    const argGroups: FilledGroup[] = groups.filter(notEmpty).map((g) => ({
-      ...g,
-      filledPorts: ports
-        .filter(notEmpty)
-        .filter((x) => g.ports.includes(x?.key)),
-    }));
-
-    return argGroups;
-  }, [ports, hash]);
-
-  const len = 1;
-
-  const lg_size = len < 2 ? len : 2;
-  const xl_size = len < 3 ? len : 3;
-  const xxl_size = len < 4 ? len : 4;
-  const xxxl_size = len < 5 ? len : 5;
-  const xxxxl_size = len < 6 ? len : 6;
-
-  return (
-    <div
-      className={`grid @lg:grid-cols-${lg_size} @xl:grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-5 `}
-    >
-      {filledGroups.map((group, index) => {
-        return (
-          <Collapsible key={index} className="@container" defaultOpen={true}>
-            {group.key != "default" && (
-              <div className="mb-2">
-                <CollapsibleTrigger className="text-xs">
-                  {group.key}
-                </CollapsibleTrigger>
-                <p className="text-muted-foreground text-xs">
-                  {group.description}
-                </p>
-              </div>
-            )}
-            <CollapsibleContent>
-              {group.filledPorts.map((port, index) => {
-                const Widget = registry.getInputWidgetForPort(port);
-                if (hidden && hidden[port.key]) return null;
-                if (!port.widget) return null;
-
-                return (
-                  <div className="w-full flex flex-row items-center space-x-2">
-                    <div className="flex-grow">
-                      <EffectWrapper
-                        key={index}
-                        effects={port.effects || []}
-                        port={port}
-                        path={[...path, port.key]}
-                        registry={registry}
-                      >
-                        <Widget
-                          key={index}
-                          port={port}
-                          bound={bound}
-                          widget={port.widget}
-                          options={options}
-                          path={[...path, port.key]}
-                        />
-                      </EffectWrapper>
-                    </div>
-                  </div>
-                );
-              })}
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      })}
-    </div>
-  );
-};
+const NO_PORTS: never[] = [];
 
 export const ReserveForm = (props: {
   id: string;
@@ -156,9 +42,21 @@ export const ReserveForm = (props: {
 
   const [chosenArgs, setChosenArgs] = React.useState<string[]>([]);
 
+  // Every argument is in the form; only the chosen ones are mounted, and
+  // only what is mounted is validated and saved.
+  const ports = action?.args ?? NO_PORTS;
+  const chosenPorts = useMemo(
+    () => ports.filter((arg) => chosenArgs.includes(arg.key)),
+    [ports, chosenArgs],
+  );
+  const overwrites = useMemo(
+    () => ({ ...props.args, name: action?.name }),
+    [props.args, action?.name],
+  );
+
   const form = usePortForm({
-    ports: action?.args.filter((arg) => chosenArgs.includes(arg.key)) || [],
-    overwrites: { ...props.args, name: action?.name },
+    ports,
+    overwrites,
     additionalSchema: z.object({
       name: z.string().nonempty(),
       allowQuick: z.boolean().default(false),
@@ -239,10 +137,8 @@ export const ReserveForm = (props: {
             <ArgsContainer
               registry={registry}
               groups={action?.portGroups || []}
-              ports={
-                action?.args.filter((arg) => chosenArgs.includes(arg.key)) || []
-              }
-              hidden={props.args}
+              ports={chosenPorts}
+              options={{ layout: "stack" }}
               path={[]}
             />
 

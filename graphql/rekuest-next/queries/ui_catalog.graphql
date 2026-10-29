@@ -1,12 +1,12 @@
-query UiCatalogs {
-  uiCatalogs {
-    ...UICatalog
+query Modules {
+  modules {
+    ...Module
   }
 }
 
-query UiCatalog($id: ID!) {
-  uiCatalog(id: $id) {
-    ...UICatalog
+query Module($id: ID!) {
+  module(id: $id) {
+    ...Module
   }
 }
 

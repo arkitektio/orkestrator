@@ -1,7 +1,8 @@
-# UI catalogs: what a UI app (this client) can render (`components`) and
-# evaluate (`operations`). The client registers its own catalog on startup
-# (`rekuest/catalog/UiCatalogRegistrar.tsx`); the server validates bloks and
-# definitions that name it against this.
+# Modules: what a UI app (this client) renders beyond the spec's catalogs
+# (`components`) and evaluates (`operations`), with the standard catalogs it
+# implements in full (`catalogs`). The client registers its own module on
+# startup (`rekuest/catalog/ModuleRegistrar.tsx`); the server validates bloks
+# and definitions that name it against this.
 
 fragment CatalogProp on CatalogProp {
   key
@@ -39,11 +40,12 @@ fragment CatalogOperation on CatalogOperation {
   }
 }
 
-fragment UICatalog on UICatalog {
+fragment Module on Module {
   id
   name
   description
   isRegistered
+  catalogs
   components {
     ...CatalogComponent
   }
@@ -52,7 +54,7 @@ fragment UICatalog on UICatalog {
   }
 }
 
-fragment ListUICatalog on UICatalog {
+fragment ListModule on Module {
   id
   name
   isRegistered

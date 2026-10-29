@@ -5254,6 +5254,7 @@ type GeneralFabriksAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
@@ -5267,6 +5268,7 @@ type GeneralKonnektionAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
@@ -5280,12 +5282,11 @@ type GeneralKulisseAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading a media object."""
@@ -5293,12 +5294,11 @@ type GeneralMediaAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading a parquet object."""
@@ -5306,12 +5306,11 @@ type GeneralParquetAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading the organization's sparse stores."""
@@ -5319,6 +5318,7 @@ type GeneralSparseAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
@@ -5330,12 +5330,11 @@ type GeneralZarrAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """
@@ -8346,14 +8345,44 @@ type Mutation {
   putTableDatasetsInFolder(input: AssociateInput!): Folder!
 
   """
+  Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshBigfileUpload(input: RefreshUploadInput!): BigFileUploadGrant!
+
+  """
+  Reissue upload credentials for a fabriks upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshFabriksUpload(input: RefreshUploadInput!): FabriksUploadGrant!
+
+  """
+  Reissue upload credentials for a konnektion upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshKonnektionUpload(input: RefreshUploadInput!): KonnektionUploadGrant!
+
+  """
+  Reissue upload credentials for a kulisse upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshKulisseUpload(input: RefreshUploadInput!): KulisseUploadGrant!
+
+  """
+  Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshMediaUpload(input: RefreshUploadInput!): MediaUploadGrant!
+
+  """
+  Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshParquetUpload(input: RefreshUploadInput!): ParquetUploadGrant!
+
+  """
   Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption
   """
-  refreshSparseUpload(input: RefreshSparseUploadInput!): SparseUploadGrant!
+  refreshSparseUpload(input: RefreshUploadInput!): SparseUploadGrant!
 
   """
   Reissue upload credentials for a Zarr store whose upload is still in flight. A grant's credentials expire, and clients hold the session token as a static credential, so a write large enough to outlive its session dies partway through. This returns a fresh session against the same prefix so the write can carry on. Refuses a store that is already populated -- that is an overwrite, not a resumption
   """
-  refreshZarrUpload(input: RefreshZarrUploadInput!): ZarrUploadGrant!
+  refreshZarrUpload(input: RefreshUploadInput!): ZarrUploadGrant!
 
   """
   Unfile annotation collections from a folder. They are not deleted, only unfiled
@@ -9317,7 +9346,9 @@ An organization (tenant). Every object in mikro is scoped to exactly one organiz
 """
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 """The sample"""
@@ -10506,11 +10537,7 @@ type Query {
   transformations(filters: TransformationFilter, ordering: [TransformationOrder!]! = [], pagination: OffsetPaginationInput): [Transformation!]!
 }
 
-input RefreshSparseUploadInput {
-  storeId: String!
-}
-
-input RefreshZarrUploadInput {
+input RefreshUploadInput {
   storeId: String!
 }
 
@@ -10566,7 +10593,7 @@ input RequestBigFileAccessInput {
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 
@@ -10611,7 +10638,7 @@ input RequestKulisseAccessInput {
 }
 
 input RequestKulisseUploadInput {
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 
@@ -10621,7 +10648,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

@@ -3,27 +3,24 @@ import {
   isActionSchema,
   isRequiredField,
   unwrapSchema,
-  type BlokCatalog,
   type BlokComponentContext,
   type BlokComponentPlacement,
-  type BlokFunctionDefinition,
   type BlokPropKind,
-  type BlokFunctionReturnType,
-} from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/runtime/index";
+import { moduleComponentsOf, type BlokUi } from "@arkitektio/bsx/runtime";
 import {
   ComponentContext,
   CatalogValueKind,
-  type CatalogArgumentInput,
   type CatalogComponentInput,
   type CatalogOperationInput,
   type CatalogPropInput,
-  type RegisterUiCatalogInput,
-  type UiCatalogFragment,
+  type RegisterModuleInput,
+  type ModuleFragment,
 } from "@/rekuest/api/graphql";
 
 /**
- * Maps the renderer's blok catalog (`defaultBlokCatalog`) onto rekuest's
- * `RegisterUiCatalogInput`, so the server can validate bloks and definitions
+ * Maps the renderer's declared UI (`orkestratorUi`) onto rekuest's
+ * `RegisterModuleInput`, so the server can validate bloks and definitions
  * against what this client actually renders and evaluates.
  *
  * Lives under rekuest because it emits rekuest input types; the blok runtime
@@ -39,6 +36,7 @@ type ZodDef = {
   in?: z.ZodTypeAny;
   options?: z.ZodTypeAny[];
   values?: unknown[];
+  entries?: Record<string, unknown>;
 };
 
 const defOf = (schema: z.ZodTypeAny): ZodDef =>
@@ -56,6 +54,14 @@ const unwrapForKind = (schema: z.ZodTypeAny): z.ZodTypeAny => {
     return current;
   }
   return current;
+};
+
+/** The closed set of strings a `z.enum` prop takes, through its wrappers; null for any other schema. */
+export const zodEnumValues = (schema: z.ZodTypeAny): string[] | null => {
+  const def = defOf(unwrapForKind(schema));
+  if (def.type !== "enum" || !def.entries) return null;
+  const values = Object.values(def.entries);
+  return values.every((value): value is string => typeof value === "string") ? values : null;
 };
 
 /** Best-effort `CatalogValueKind` for a zod schema; unknown shapes are `ANY`. */
@@ -117,62 +123,18 @@ const propInput = (key: string, schema: z.ZodTypeAny): CatalogPropInput => ({
   description: describe(schema),
 });
 
-const argumentInput = (key: string, schema: z.ZodTypeAny): CatalogArgumentInput => ({
-  key,
-  kind: zodToCatalogKind(schema),
-  required: isRequiredField(schema),
-  description: describe(schema),
-});
-
-const RETURN_KIND: Record<BlokFunctionReturnType, CatalogValueKind> = {
-  string: CatalogValueKind.String,
-  number: CatalogValueKind.Float,
-  boolean: CatalogValueKind.Bool,
-  list: CatalogValueKind.List,
-  object: CatalogValueKind.Dict,
-  unknown: CatalogValueKind.Any,
-  void: CatalogValueKind.Any,
-};
-
 /**
- * `RegisterUiCatalogInput` marks the lists optional (server defaults to `[]`);
+ * `RegisterModuleInput` marks the lists optional (server defaults to `[]`);
  * the builder always fills them, and consumers rely on that.
  */
-export type BuiltUiCatalogInput = RegisterUiCatalogInput & {
+export type BuiltModuleInput = RegisterModuleInput & {
   components: CatalogComponentInput[];
   operations: CatalogOperationInput[];
+  catalogs: string[];
 };
 
 const sortByKey = <T extends { key: string }>(items: T[]): T[] =>
   [...items].sort((left, right) => left.key.localeCompare(right.key));
-
-const operationArguments = (fn: BlokFunctionDefinition): CatalogArgumentInput[] => {
-  if (fn.variadic) {
-    return [
-      {
-        key: "values",
-        kind: CatalogValueKind.List,
-        required: false,
-        description:
-          "Positional values; bare numeric argument keys (0, 1, …) are accepted as well.",
-      },
-    ];
-  }
-  const shape = shapeOf(fn.schema);
-  if (!shape) {
-    return [];
-  }
-  return sortByKey(
-    Object.entries(shape).map(([key, schema]) => argumentInput(key, schema)),
-  );
-};
-
-const operationDescription = (fn: BlokFunctionDefinition, alias?: string): string => {
-  const parts = [alias ? `Alias of ${fn.name}. ${fn.description}` : fn.description];
-  if (fn.deprecated) parts.push(`Deprecated: ${fn.deprecated}`);
-  if (fn.purity === "effect") parts.push("Has side effects; only valid in action position.");
-  return parts.join(" ");
-};
 
 const CONTEXT: Record<BlokComponentContext, ComponentContext> = {
   html: ComponentContext.Html,
@@ -207,51 +169,21 @@ export const componentInput = (component: {
   };
 };
 
-export const operationInputs = (fn: BlokFunctionDefinition): CatalogOperationInput[] => {
-  const base = {
-    arguments: operationArguments(fn),
-    returns: RETURN_KIND[fn.returnType] ?? CatalogValueKind.Any,
-  };
-  return [
-    { name: fn.name, description: operationDescription(fn), ...base },
-    ...fn.aliases.map((alias) => ({
-      name: alias,
-      description: operationDescription(fn, alias),
-      ...base,
-    })),
-  ];
-};
-
-export type BuildUiCatalogOptions = {
-  /**
-   * Operation names the server's built-in base catalog already defines. A UI
-   * catalog may not redefine them (the server rejects the whole registration),
-   * so they are left out; the client still evaluates them locally, the server
-   * simply validates them against its own definition.
-   */
-  reservedOperations?: ReadonlySet<string>;
-  /**
-   * Component names the server's base catalog already defines (its control
-   * flow: `foreach`, `if`, `match`, …). Left out for the same reason.
-   */
-  reservedComponents?: ReadonlySet<string>;
-};
-
-export const buildRegisterUiCatalogInput = (
-  catalog: BlokCatalog,
-  meta: { name: string; description?: string | null },
-  options: BuildUiCatalogOptions = {},
-): BuiltUiCatalogInput => ({
-  name: meta.name,
-  description: meta.description ?? null,
-  components: [...catalog.components.values()]
-    .filter((component) => !options.reservedComponents?.has(component.name))
+/**
+ * What this UI registers (`registerModule`): its module, the components it
+ * draws beyond the global catalogs (`moduleComponentsOf`), and `catalogs`, the
+ * global ones it implements whole (`ui.claims`), which the server resolves
+ * from the spec. base@2's components are never sent: the server holds them.
+ */
+export const buildRegisterModuleInput = (ui: Pick<BlokUi, "name" | "description" | "catalog" | "claims">): BuiltModuleInput => ({
+  name: ui.name,
+  description: ui.description,
+  components: moduleComponentsOf(ui.catalog)
     .map(componentInput)
     .sort((left, right) => left.name.localeCompare(right.name)),
-  operations: catalog.functionDefinitions
-    .flatMap(operationInputs)
-    .filter((operation) => !options.reservedOperations?.has(operation.name))
-    .sort((left, right) => left.name.localeCompare(right.name)),
+  // A module adds components only: what a blok may call is the language's (the spec's vocabulary).
+  operations: [],
+  catalogs: [...ui.claims].sort(),
   // The client's per-PortKind fallbacks are built-in React widgets, not
   // catalog components, so there is nothing meaningful to publish yet.
   widgetDefaults: [],
@@ -307,7 +239,7 @@ const canonicalFields = (
   );
 
 const canonicalize = (
-  catalog: Pick<BuiltUiCatalogInput, "components" | "operations"> | UiCatalogFragment,
+  catalog: Pick<BuiltModuleInput, "components" | "operations"> | ModuleFragment,
 ): CanonicalCatalog => ({
   components: [...catalog.components]
     .map((component) => ({
@@ -336,14 +268,17 @@ const canonicalize = (
  * so the startup registrar can skip the mutation. Compared structurally after
  * normalizing ordering, `__typename` markers and server-side input defaults.
  */
-export const catalogMatches = (
-  remote: UiCatalogFragment | null | undefined,
-  input: BuiltUiCatalogInput,
+export const moduleMatches = (
+  remote: ModuleFragment | null | undefined,
+  input: BuiltModuleInput,
 ): boolean => {
   if (!remote || !remote.isRegistered || remote.name !== input.name) {
     return false;
   }
   if ((remote.description ?? null) !== (input.description ?? null)) {
+    return false;
+  }
+  if (JSON.stringify([...remote.catalogs].sort()) !== JSON.stringify([...input.catalogs].sort())) {
     return false;
   }
   return JSON.stringify(canonicalize(remote)) === JSON.stringify(canonicalize(input));

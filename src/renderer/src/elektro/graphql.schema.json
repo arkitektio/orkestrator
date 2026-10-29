@@ -20433,7 +20433,7 @@
             "deprecationReason": null
           },
           {
-            "name": "path",
+            "name": "prefix",
             "description": null,
             "args": [],
             "type": {
@@ -20508,18 +20508,6 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "store",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -20585,7 +20573,7 @@
             "deprecationReason": null
           },
           {
-            "name": "path",
+            "name": "prefix",
             "description": null,
             "args": [],
             "type": {
@@ -20663,18 +20651,6 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
-          },
-          {
-            "name": "store",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -20729,6 +20705,22 @@
               "name": null,
               "ofType": {
                 "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "prefix",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -20861,7 +20853,7 @@
             "deprecationReason": null
           },
           {
-            "name": "path",
+            "name": "prefix",
             "description": null,
             "args": [],
             "type": {
@@ -20936,18 +20928,6 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "store",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -28580,6 +28560,105 @@
             "deprecationReason": null
           },
           {
+            "name": "refreshBigfileUpload",
+            "description": "Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "RefreshUploadInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "BigFileUploadGrant",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "refreshMediaUpload",
+            "description": "Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "RefreshUploadInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "MediaUploadGrant",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "refreshParquetUpload",
+            "description": "Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "RefreshUploadInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ParquetUploadGrant",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "refreshSparseUpload",
             "description": "Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption",
             "args": [
@@ -28590,7 +28669,7 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "name": "RefreshSparseUploadInput",
+                    "name": "RefreshUploadInput",
                     "kind": "INPUT_OBJECT",
                     "ofType": null
                   }
@@ -28605,6 +28684,39 @@
               "name": null,
               "ofType": {
                 "name": "SparseUploadGrant",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "refreshZarrUpload",
+            "description": "Reissue upload credentials for a zarr upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "RefreshUploadInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ZarrUploadGrant",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -31607,8 +31719,8 @@
             "deprecationReason": null
           },
           {
-            "name": "slug",
-            "description": null,
+            "name": "identifier",
+            "description": "The organization across issuers and services: `<issuer>#<org>`",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -36597,7 +36709,7 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "RefreshSparseUploadInput",
+        "name": "RefreshUploadInput",
         "description": null,
         "isOneOf": false,
         "fields": null,
@@ -36830,11 +36942,15 @@
             "name": "fileSize",
             "description": null,
             "type": {
-              "kind": "SCALAR",
-              "name": "ByteCount",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ByteCount",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
-            "defaultValue": "null",
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -37006,11 +37122,15 @@
             "name": "fileSize",
             "description": null,
             "type": {
-              "kind": "SCALAR",
-              "name": "ByteCount",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ByteCount",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
-            "defaultValue": "null",
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           },

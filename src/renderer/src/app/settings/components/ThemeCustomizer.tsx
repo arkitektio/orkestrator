@@ -40,6 +40,8 @@ const PRESETS = [
   { name: "Rose", hue: 355, chroma: 0.2 },
 ];
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 const SOURCES: { value: BrandSource; label: string; icon: typeof Laptop }[] = [
   { value: "membership", label: "Membership colour", icon: UsersRound },
   { value: "local", label: "Local colour", icon: Laptop },
@@ -63,8 +65,12 @@ const BrandPicker = ({
   disabled?: boolean;
   actions?: React.ReactNode;
 }) => {
+  // The number inputs take whatever is typed; clamp to what a brand can be
+  // (the settings schema's range) so an out-of-range value is never stored.
   const change = (nextHue: number, nextChroma: number) => {
-    if (Number.isFinite(nextHue) && Number.isFinite(nextChroma)) onChange(nextHue, nextChroma);
+    if (Number.isFinite(nextHue) && Number.isFinite(nextChroma)) {
+      onChange(clamp(nextHue, 0, 360), clamp(nextChroma, 0, 1));
+    }
   };
 
   return (

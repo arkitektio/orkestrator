@@ -2,12 +2,24 @@ import type React from "react";
 import { serviceGuard } from "@/core/connection/arkitekt/host";
 import { Badge } from "@/core/ui/badge";
 
-/** A service a blok reads from (`Blok.services`): only its key matters here. */
+/** A service a blok reads from: only its key matters here. */
 export type BlokServiceRef = { key: string };
 
 /**
+ * The services a blok reads from: those of its declared queries and
+ * subscriptions (blok language v2 merges the old `Blok.services` into them).
+ */
+export const blokServicesOf = (blok: {
+  queries?: ReadonlyArray<{ service: string }> | null;
+  subscriptions?: ReadonlyArray<{ service: string }> | null;
+}): BlokServiceRef[] =>
+  [...new Set([...(blok.queries ?? []), ...(blok.subscriptions ?? [])].map((read) => read.service))]
+    .sort()
+    .map((key) => ({ key }));
+
+/**
  * What a blok needs connected besides its agents: the services its `query`
- * components read, named so the person sees it.
+ * queries and subscriptions read, named so the person sees it.
  */
 export const BlokServiceChips = ({ services }: { services: readonly BlokServiceRef[] }) =>
   services.length === 0 ? null : (

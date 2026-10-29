@@ -1,3 +1,7 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
+
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
 """A JSON-serializable argument entry for a multi-agent action trigger."""
@@ -11,7 +15,9 @@ type ActionArgument {
   valuePath: String
 }
 
-"""A JSON-serializable argument entry for a multi-agent action trigger."""
+"""
+An argument of a call: a literal, a path, a nested call, a list or an object; null when it sets none.
+"""
 input ActionArgumentInput {
   """
   Defines a nested agent call if this argument should trigger an agent interaction.
@@ -21,9 +27,7 @@ input ActionArgumentInput {
   """The argument property name."""
   key: String = null
 
-  """
-  Defines a nested utility call if this argument should trigger a system utility interaction.
-  """
+  """A nested function call."""
   utilCall: UtilCallInput = null
 
   """
@@ -34,13 +38,55 @@ input ActionArgumentInput {
   """Defines a list of values if this argument should be an array."""
   valueList: [ActionArgumentInput!] = null
 
-  """Static literal value if not dynamically bound."""
+  """A JSON literal."""
   valueLiteral: JSONSerializable = null
 
-  """
-  JSON Pointer referencing the shared Blok state to inject into this argument slot dynamically.
-  """
+  """A path the argument reads, as a prop's dynamic_value does."""
   valuePath: String = null
+}
+
+"""
+An action's own blok (blok language v2): how a client shows a run of it in one context, naming devices by the action's dependency keys.
+"""
+input ActionBlokInput {
+  """The catalogs it needs, as name@version."""
+  catalogs: [String!]! = []
+
+  """The UI component tree, unless the blok is sent as its `source`."""
+  components: [ComponentNodeInput!] = null
+
+  """
+  Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`).
+  """
+  context: ComponentContext! = HTML
+
+  """What a preview renders it with."""
+  demo: BlokDemoInput = null
+
+  """What the blok shows of a run."""
+  description: String = null
+
+  """Its locals: form state that feeds a call, written only through bind."""
+  locals: [BlokLocalInput!]! = []
+
+  """
+  The module the blok renders against besides its catalogs; the Orkestrator's when absent.
+  """
+  module: String = null
+
+  """Its declared reads."""
+  queries: [BlokQueryInput!]! = []
+
+  """
+  The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
+
+  """Its declared streams."""
+  subscriptions: [BlokSubscriptionInput!]! = []
+
+  """The blok language version the blok speaks; 2 is the only one."""
+  vocab: Int!
 }
 
 """
@@ -225,17 +271,13 @@ input AgentDependencyInput {
 Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest.
 """
 input AgentProbeInput {
-  """Key-value arguments map compiled for the target agent call."""
+  """Its arguments, each named."""
   arguments: [ActionArgumentInput!] = null
 
-  """
-  The abstract agent dependency key declared in the Blok manifest (e.g., 'stage_dep').
-  """
+  """`self`, or the dependency key the task goes to (`deps.<key>`)."""
   dependency: String!
 
-  """
-  The target function name registered on that specific agent's worker thread loop.
-  """
+  """The action called, by its key in the dependency's action demands."""
   operation: String!
 }
 
@@ -593,25 +635,43 @@ input BackendOrder @oneOf {
   name: Ordering
 }
 
-"""Which locks does the agent provide in general"""
+"""What a preview renders a blok with, mirroring the roots it reads."""
+input BlokDemoInput {
+  """What it is opened on."""
+  args: JSONSerializable = null
+
+  """
+  Per dependency key (`self` included), its states and tasks: `{self: {arm: {joints: [...]}}}`.
+  """
+  deps: JSONSerializable = null
+
+  """Per declared query, the value it answers."""
+  queries: JSONSerializable = null
+
+  """Per declared subscription, its value."""
+  subscriptions: JSONSerializable = null
+
+  """The task record it is about (task and action bloks, action logos)."""
+  task: JSONSerializable = null
+}
+
+"""A blok an agent declares (blok language v2)."""
 input BlokImplementationInput {
   """
-  The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only.
+  The items this Blok is opened for, declared like an action's args and read under `args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only.
   """
   args: [ArgPortInput!]! = []
 
-  """
-  The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry.
-  """
-  catalog: String = null
+  """The catalogs it needs, as name@version ('ui@1', 'scene@1')."""
+  catalogs: [String!]! = []
 
   """
-  The UI component tree blueprint for this Blok, unless it is sent as its `source`.
+  The UI component tree blueprint for this Blok (one root), unless it is sent as its `source`.
   """
   components: [ComponentNodeInput!] = null
 
   """
-  The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.
+  The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root is a Scene, LOGO an agent's logo, ACTION_LOGO an action's.
   """
   context: ComponentContext! = HTML
 
@@ -620,12 +680,12 @@ input BlokImplementationInput {
   """
   default: Boolean! = false
 
-  """
-  An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes.
-  """
-  demoState: JSONSerializable = null
+  """What a preview renders it with."""
+  demo: BlokDemoInput = null
 
-  """The dependencies required by this Blok."""
+  """
+  The dependencies required by this Blok: for an agent's blok the one dependency `self`, its demands what the tree reads and calls of it.
+  """
   dependencies: [AgentDependencyInput!]! = []
 
   """
@@ -646,10 +706,149 @@ input BlokImplementationInput {
   """The key of this Blok implementation."""
   key: String!
 
+  """Its locals: form state that feeds a call, written only through bind."""
+  locals: [BlokLocalInput!]! = []
+
   """
-  The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.
+  The module (an app's own unversioned extras, registered by a UI app such as the Orkestrator) the blok renders against besides its catalogs; the Orkestrator's when absent.
+  """
+  module: String = null
+
+  """Its declared reads, as `queries.<key>`."""
+  queries: [BlokQueryInput!]! = []
+
+  """
+  The Blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.
   """
   source: String = null
+
+  """Its declared streams, as `subscriptions.<key>`."""
+  subscriptions: [BlokSubscriptionInput!]! = []
+
+  """The blok language version the blok speaks; 2 is the only one."""
+  vocab: Int!
+}
+
+"""
+A local: blok-level form state that feeds a call, written only through `bind` on controls. A local is an arg port plus `persist`; its `kind` is a port kind or ANY. Every field left out (or null) is the tree's to tell: the kind is inferred (its default, the task argument it is passed to whole, the control bound to it; ANY when nothing tells), and an inferred port fills only the fields the local leaves out.
+"""
+input BlokLocalInput {
+  """Its child ports (the item of a LIST, the fields of a DICT or MODEL)."""
+  children: [ArgPortInput!]
+
+  """The values it takes (an ENUM's)."""
+  choices: [ChoiceInput!]
+
+  """The value it starts with."""
+  default: AnyDefault
+
+  """What it is for."""
+  description: String
+
+  """For a QUANTITY: its dimensionality (derived from the unit)."""
+  dimension: String
+
+  """Its effects."""
+  effects: [EffectInput!]
+
+  """The structure (or model, enum) identifier of what it holds."""
+  identifier: String
+
+  """
+  Its name, read bare in the tree (`{iterations}`); never a reserved root.
+  """
+  key: String!
+
+  """
+  A port kind or ANY. Left out or null: inferred from the tree, ANY when nothing tells.
+  """
+  kind: LocalKind
+
+  """Its label."""
+  label: String
+
+  """
+  Whether it may hold null; left out, what is inferred says (false when nothing does).
+  """
+  nullable: Boolean
+
+  """
+  Remember the last input on this device (never on a server); false when left out.
+  """
+  persist: Boolean
+
+  """For a QUANTITY: the units offered."""
+  proposedUnits: [String!]
+
+  """For a QUANTITY: its reference unit."""
+  referenceUnit: String
+
+  """Its descriptor requirements."""
+  requires: [RequiresInput!]
+
+  """Its validators."""
+  validators: [ValidatorInput!]
+
+  """The widget a form of it uses."""
+  widget: AssignWidgetInput
+}
+
+"""
+A declared read: one GraphQL query on a service, re-run when its variables change; the blok reads it as `queries.<key>`.
+"""
+input BlokQueryInput {
+  """One GraphQL `query` operation; never a mutation."""
+  document: String!
+
+  """
+  Its name: the blok reads it as `queries.<key>` (status, value, error, refetching, fetching_more).
+  """
+  key: String!
+
+  """
+  The list field of its result that `queries.<key>.fetch_more(...)` appends new pages to, as a dotted path into the data (`positions`, `images.items`). A query without it cannot fetch more.
+  """
+  more: String = null
+
+  """Re-run every this many seconds, besides when its variables change."""
+  poll: Float = null
+
+  """The service it runs on, by its key ('mikro')."""
+  service: String!
+
+  """
+  Its variables, each an expression over args, locals and dependencies (as a call argument is stored).
+  """
+  variables: [ActionArgumentInput!]! = []
+}
+
+"""
+A declared stream: one GraphQL subscription on a service; the blok reads it as `subscriptions.<key>`.
+"""
+input BlokSubscriptionInput {
+  """One GraphQL `subscription` operation."""
+  document: String!
+
+  """
+  A declared query to replay from while travelling; without it the value at travel start shows, stale.
+  """
+  history: String = null
+
+  """
+  Keep the last this many payloads as a list; the latest only when absent.
+  """
+  keep: Int = null
+
+  """
+  Its name: the blok reads it as `subscriptions.<key>` (status, value, error).
+  """
+  key: String!
+
+  """The service it runs on, by its key."""
+  service: String!
+
+  """Its variables, as a query's."""
+  variables: [ActionArgumentInput!]! = []
 }
 
 """Requires CPU resources on the backend."""
@@ -812,31 +1011,28 @@ input CollectionOrder @oneOf {
 }
 
 """
-The renderer a catalog component lives in. A component may only be placed where its context is in force.
+The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run.
 """
 enum ComponentContext {
   ACTION_LOGO
   HTML
   LOGO
+  OVERLAY
   SCENE
 }
 
-"""
-An abstract structural visual element inside a Blok blueprint manifest.
-"""
+"""A node of a blok tree (blok language v2)."""
 input ComponentNodeInput {
-  """
-  Flat adjacency pointer list mapping out IDs nested inside this specific component layer.
-  """
+  """Its children, in order."""
   children: [ComponentNodeInput!] = null
 
   """
-  The type indicator token matching your Electron app's registered catalog specs (e.g. 'Slider').
+  The catalog component (`Button`) or language component (`if`, `foreach`, `suspense`).
   """
   component: String!
 
   """
-  Unique structural string identifying this node instance inside the flat workspace layout tree.
+  An explicit id, or one derived from the node's place (`Card[0]/Button[1]`); unique in the tree.
   """
   id: String!
 
@@ -846,7 +1042,9 @@ input ComponentNodeInput {
   props: [ComponentPropInput!] = null
 }
 
-"""A single key-value prop configuration for a component layout node."""
+"""
+One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null).
+"""
 type ComponentProp {
   agentCall: AgentCall
   declaresValue: String
@@ -856,31 +1054,29 @@ type ComponentProp {
   utilCall: UtilCall
 }
 
-"""A single key-value prop configuration for a component layout node."""
+"""
+One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect (`query.refetch`, `query.fetch_more`, `ui.copy`, `task.answer`), or nothing (null).
+"""
 input ComponentPropInput {
-  """
-  Defines an imperative interactive network action callback loop if this prop should trigger an agent interaction.
-  """
+  """A task call: a callback's one thing."""
   agentCall: AgentProbeInput = null
 
   """
-  If set, this prop declares a new 'value' in the Blok state that can be referenced by other props or actions. The value of this field should be the name of the declared value (e.g., 'selected_user').
+  The name a task call writes its record to (`... into move`), or the loop variable of a `foreach` (its `let`).
   """
   declaresValue: String = null
 
-  """A reactive state data-binding rule."""
+  """A path the prop reads."""
   dynamicValue: DynamicValueInput = null
 
   """The prop key name matching the target UI catalog constraint."""
   key: String!
 
-  """
-  A raw scalar or JSON-stringified literal configuration parameter (e.g. '40x' or True).
-  """
+  """A JSON literal: a string, number, bool, list or object."""
   staticValue: JSONSerializable = null
 
   """
-  Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction.
+  A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more).
   """
   utilCall: UtilCallInput = null
 }
@@ -1287,6 +1483,11 @@ input DefinitionInput {
   args: [ArgPortInput!]! = []
 
   """
+  The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash.
+  """
+  bloks: [ActionBlokInput!]! = []
+
+  """
   Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error.
   """
   catalogs: [String!] = []
@@ -1335,6 +1536,11 @@ input DefinitionInput {
   The port groups of the definition. This is used to group ports together in the UI
   """
   portGroups: [PortGroupInput!]! = []
+
+  """
+  Where the action means to hook in (`on_scene_annotation`): hints a caller filters on, stored beside the protocols the server infers. Not a contract, and not part of the action's hash.
+  """
+  protocols: [String!]! = []
 
   """
   Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects.
@@ -1505,7 +1711,7 @@ input DynamicValueInput {
   literal: String = null
 
   """
-  JSON Pointer to a variable inside the Blok's isolated data model (e.g., '/microscope/exposure').
+  The path the prop reads: a root (`self`, `deps`, `args`, `task`, `queries`, `subscriptions`, `viewer`, `then`, `event`, `error`), a local, a loop variable or a record, and what follows it.
   """
   path: String = null
 }
@@ -1678,8 +1884,8 @@ type FlavourBlok {
   """
   default: Boolean!
 
-  """The state the blok is drawn against when it is shown on its own."""
-  demoState: JSON
+  """What a preview renders it with."""
+  demo: JSON
 
   """What the app says the blok shows."""
   description: String
@@ -1694,7 +1900,7 @@ type FlavourBlok {
   forNode: String
 
   """
-  A SHA-256 of what the blok draws: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.
+  A SHA-256 of what the blok draws: its component tree, context and what it declares beside it. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.
   """
   hash: String!
 
@@ -1704,8 +1910,19 @@ type FlavourBlok {
   """The key the app declared this blok under, unique within it."""
   key: String!
 
+  """Its locals, as the app declared them (snake_case keys)."""
+  locals: JSON!
+
   """Why the blok's source does not parse, or null."""
   parseError: String
+
+  """Its declared reads (snake_case keys)."""
+  queries: JSON!
+
+  """
+  The blok language version it speaks; null for a blok an app brought before blok language v2.
+  """
+  vocab: Int
 }
 
 """Filter for flavours."""
@@ -2063,6 +2280,72 @@ input LabelSelectorInput {
   weight: Int! = 1
 }
 
+"""
+The kind of a blok local: a port kind, or ANY (an untyped value, which skips the bind and argument kind checks). No action port is ever ANY.
+"""
+enum LocalKind {
+  """
+  An untyped value: nothing gave the local a kind. A path below it is taken as written.
+  """
+  ANY
+
+  """A boolean. No children."""
+  BOOL
+
+  """An ISO-8601 date or datetime string. No children."""
+  DATE
+
+  """
+  A string-keyed map. One child keyed '...' describes a homogeneous value type; several named children describe the known keys.
+  """
+  DICT
+
+  """One of a fixed set of values; `choices` required."""
+  ENUM
+
+  """A floating point number. No children; choices optional."""
+  FLOAT
+
+  """An integer. No children; choices optional."""
+  INT
+
+  """
+  A reference to any object implementing an interface, typed by `identifier` (required). No children.
+  """
+  INTERFACE
+
+  """
+  A list; exactly one child describes the item type (conventionally keyed '...').
+  """
+  LIST
+
+  """
+  A reference to an object that lives in the agent's memory, typed by `identifier` (required). Makes the action LOCAL-scoped. No children.
+  """
+  MEMORY_STRUCTURE
+
+  """
+  An object with named fields; at least one child per field, `identifier` optional.
+  """
+  MODEL
+
+  """
+  A physical quantity with a unit; `reference_unit` required, `dimension` derived. No children.
+  """
+  QUANTITY
+
+  """A string. No children; choices optional."""
+  STRING
+
+  """
+  A reference to an object held by a service, typed by `identifier` (@package/key, required). Values are ids. No children.
+  """
+  STRUCTURE
+
+  """One of several variants; at least two children, each a variant."""
+  UNION
+}
+
 """Which locks does the agent provide in general"""
 input LockDefinitionInput {
   """Describe the lock a bit"""
@@ -2291,8 +2574,11 @@ enum Ordering {
 
 """Represents an organization in the system."""
 type Organization {
-  """Slug of the organization."""
-  slug: String!
+  """This service's id of the organization."""
+  id: ID!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 """A running instance of a deployment on a backend."""
@@ -2926,6 +3212,9 @@ type RepoBlok {
   """When a scan first found it."""
   addedAt: DateTime!
 
+  """The catalogs it needs, as name@version."""
+  catalogs: JSON!
+
   """
   The whole component tree as one JSON value (a list of roots, snake_case keys). Null when the source does not parse.
   """
@@ -2934,8 +3223,8 @@ type RepoBlok {
   """The renderer its root lives in."""
   context: ComponentContext!
 
-  """The state the blok is drawn against when it is shown on its own."""
-  demoState: JSON
+  """What a preview renders it with, as a rekuest_core BlokDemoInput."""
+  demo: JSON!
 
   """
   The agents it draws from, as rekuest_core AgentDependencyInputs (snake_case keys).
@@ -2952,13 +3241,13 @@ type RepoBlok {
   forNode: String
 
   """
-  A SHA-256 of what the blok draws: its component tree, demo state and context. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.
+  A SHA-256 of what the blok draws: its component tree, context and what it declares beside it. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.
   """
   hash: String!
   id: ID!
 
   """
-  A SHA-256 of everything installing it writes: its name, description, BSX, demo state, dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.
+  A SHA-256 of everything installing it writes: its name, description, BSX, declarations (locals, demo, queries, ...), dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.
   """
   installHash: String!
 
@@ -2969,6 +3258,16 @@ type RepoBlok {
 
   """Unique in its repository: what a scan finds it again by."""
   key: String!
+
+  """
+  Its locals, as rekuest_core BlokLocalInputs (arg ports plus persist, snake_case keys).
+  """
+  locals: JSON!
+
+  """
+  The module (an app's own UI extras, registered in rekuest) it renders against besides its catalogs; the Orkestrator's when null.
+  """
+  module: String
 
   """The name it is installed under in rekuest."""
   name: String!
@@ -2981,6 +3280,9 @@ type RepoBlok {
   """Why its BSX does not parse, or null."""
   parseError: String
 
+  """Its declared reads, as rekuest_core BlokQueryInputs (snake_case keys)."""
+  queries: JSON!
+
   """The repository that publishes it."""
   repo: GithubRepo!
 
@@ -2992,8 +3294,16 @@ type RepoBlok {
   """
   sourcePath: String
 
+  """
+  Its declared streams, as rekuest_core BlokSubscriptionInputs (snake_case keys).
+  """
+  subscriptions: JSON!
+
   """When a scan last wrote it."""
   updatedAt: DateTime!
+
+  """The blok language version it speaks; 2 is the only one."""
+  vocab: Int!
 }
 
 """Filter for the bloks repositories publish."""
@@ -3717,7 +4027,9 @@ input UtilCallInput {
   """Key-value arguments map compiled for the target utility call."""
   arguments: [ActionArgumentInput!] = null
 
-  """The utility function name to invoke."""
+  """
+  The function called (`str.upper`), or in a callback the effect (`ui.copy`, `task.answer`).
+  """
   operation: String!
 }
 

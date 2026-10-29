@@ -1,4 +1,4 @@
-import type {BlokTaskUpdate} from '@/core/blok/renderer/runtime';
+import type {BlokTaskUpdate} from '@arkitektio/bsx/renderer/runtime/index';
 import {TaskEventKind, type TaskEventFragment} from '../api/graphql';
 import {failureFallback} from '../lib/taskTracker';
 

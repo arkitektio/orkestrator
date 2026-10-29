@@ -49,7 +49,7 @@ const TheCard = ({ item }: Props) => {
               {item.release.app.identifier}:{item.release.version}
             </CardDescription>
             {item.selectors.map((selector, index) => (
-              <Badge key={index} className=" text-white bg-gray-700">
+              <Badge key={index} variant="secondary">
                 {selectorLabel(selector)}
               </Badge>
             ))}

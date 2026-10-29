@@ -4,9 +4,9 @@ import type * as React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as z from "zod";
 
-import { shadcnComposableComponents } from "@/core/blok/renderer/bloks";
-import { renderBlokDocument } from "@/core/blok/renderer/bloks/testing";
-import { createBlokCatalog, createBlokFunction } from "@/core/blok/renderer/runtime";
+import { shadcnExtras, shadcnHtml, shadcnUi } from "@arkitektio/bsx/shadcn";
+import { renderBlokDocument } from "@arkitektio/bsx/renderer/bloks/testing";
+import { createBlokCatalog } from "@arkitektio/bsx/renderer/runtime/index";
 
 const handlers: { current: Record<string, ((payload: unknown) => void) | undefined> } = { current: {} };
 
@@ -45,17 +45,15 @@ vi.mock("@/mikro/lib/annotations/useLiveSceneAnnotations", () => ({ useLiveScene
 import { MIKRO_BLOKS } from "./index";
 
 const record = vi.fn();
-const catalog = createBlokCatalog("mikro-scene-test", [...shadcnComposableComponents, ...MIKRO_BLOKS], [
-  createBlokFunction(
-    { name: "test.record", description: "Records its arguments.", schema: z.object({ value: z.unknown() }) },
-    (args) => {
-      record(args.value);
-      return null;
-    },
-  ),
-]);
+const catalog = createBlokCatalog("mikro-scene-test", [...shadcnUi.components, ...shadcnHtml.components, ...shadcnExtras.components, ...MIKRO_BLOKS]);
 
-const recordAt = (path: string) => ({ util_call: { operation: "test.record", arguments: [{ key: "value", value_path: path }] } });
+/** A callback's one thing: a task call, whose arguments the test records. */
+const recordAt = (path: string) => ({ agent_call: { dependency: "self", operation: "record", arguments: [{ key: "value", value_path: path }] } });
+const render = (roots: unknown[]) => {
+  const rendered = renderBlokDocument(catalog, roots);
+  rendered.store.getState().setDispatchAction((action) => void record(action.arguments?.value));
+  return rendered;
+};
 const scene = { key: "value", static_value: { object: "s1", __identifier: "@mikro/scene" } };
 const view = { id: "view", component: "MikroSceneViewport", props: [] };
 
@@ -79,12 +77,12 @@ describe("MikroScene", () => {
     expect(await screen.findByText("the layer list")).toBeTruthy();
   });
 
-  it("runs the blok's action on a drawn shape, the event as $event", async () => {
-    renderBlokDocument(catalog, [
+  it("runs the blok's action on a drawn shape, the event as event", async () => {
+    render([
       {
         id: "scene",
         component: "MikroScene",
-        props: [scene, { key: "onAnnotation", ...recordAt("$event.annotation") }],
+        props: [scene, { key: "onAnnotation", ...recordAt("event.annotation") }],
         children: [view],
       },
     ]);
@@ -95,11 +93,11 @@ describe("MikroScene", () => {
   });
 
   it("writes the selection to its binding before onSelect runs", async () => {
-    renderBlokDocument(catalog, [
+    render([
       {
         id: "scene",
         component: "MikroScene",
-        props: [scene, { key: "bind", static_value: "form.selected" }, { key: "onSelect", ...recordAt("form.selected") }],
+        props: [scene, { key: "bind", dynamic_value: { path: "form.selected" } }, { key: "onSelect", ...recordAt("form.selected") }],
         children: [view],
       },
     ]);
@@ -110,12 +108,28 @@ describe("MikroScene", () => {
     expect(record).toHaveBeenCalledWith({ annotation, lens });
   });
 
-  it("writes the scene's world space to bindWorld, for a picker of what the scene can show", async () => {
-    renderBlokDocument(catalog, [
+  it("writes a drawn shape to its binding, before onAnnotation runs", async () => {
+    render([
       {
         id: "scene",
         component: "MikroScene",
-        props: [scene, { key: "bindWorld", static_value: "form.world" }, { key: "onPick", ...recordAt("form.world") }],
+        props: [scene, { key: "bind", dynamic_value: { path: "form.selected" } }, { key: "onAnnotation", ...recordAt("form.selected") }],
+        children: [view],
+      },
+    ]);
+    await screen.findByTestId("viewport");
+    const annotation = { __identifier: "@mikro/annotation", object: "a3" };
+    const lens = { __identifier: "@mikro/arraylens", object: "l2" };
+    act(() => handlers.current.onAnnotation?.({ annotation, kind: "PATH", lens, descriptors: null }));
+    expect(record).toHaveBeenCalledWith({ annotation, lens });
+  });
+
+  it("writes the scene's world space to bindWorld, for a picker of what the scene can show", async () => {
+    render([
+      {
+        id: "scene",
+        component: "MikroScene",
+        props: [scene, { key: "bindWorld", dynamic_value: { path: "form.world" } }, { key: "onPick", ...recordAt("form.world") }],
         children: [view],
       },
     ]);
@@ -125,8 +139,8 @@ describe("MikroScene", () => {
   });
 
   it("listens only for the events the blok declares", async () => {
-    renderBlokDocument(catalog, [
-      { id: "scene", component: "MikroScene", props: [scene, { key: "onPick", ...recordAt("$event.voxel") }], children: [] },
+    render([
+      { id: "scene", component: "MikroScene", props: [scene, { key: "onPick", ...recordAt("event.voxel") }], children: [] },
     ]);
     await vi.waitFor(() => expect(handlers.current.onPick).toBeDefined());
     expect(handlers.current.onAnnotation).toBeUndefined();

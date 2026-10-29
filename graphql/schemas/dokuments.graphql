@@ -90,12 +90,11 @@ type GeneralMediaAccessGrant {
   accessKey: String!
   bucket: String!
   expiresIn: Int!
-  path: String!
+  prefix: String!
   region: String!
   secretKey: String!
   sessionToken: String!
   status: String!
-  store: String
 }
 
 """Temporary S3 credentials for reading a media object."""
@@ -166,6 +165,11 @@ type Mutation {
 
   """Create a file from file-like data"""
   fromFileLike(input: FromFileLike!): File!
+
+  """
+  Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshMediaUpload(input: RefreshUploadInput!): MediaUploadGrant!
 
   """Request temporary S3 read credentials for the organization's files."""
   requestGeneralMediaAccess(input: RequestGeneralMediaAccessInput!): GeneralMediaAccessGrant!
@@ -250,6 +254,10 @@ type Query {
   pages(filters: PageFilter, pagination: OffsetPaginationInput): [Page!]!
 }
 
+input RefreshUploadInput {
+  storeId: String!
+}
+
 input RequestGeneralMediaAccessInput {
   expiresIn: Int = null
 }
@@ -260,7 +268,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

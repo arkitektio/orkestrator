@@ -12,8 +12,9 @@ describe("activeMetadataLayerId", () => {
     expect(activeMetadataLayerId("a", "c", layers)).toBe("a");
   });
 
-  it("falls back to the probe pin when nothing is selected", () => {
+  it("falls back to the data layer when nothing is selected, hidden or not", () => {
     expect(activeMetadataLayerId(null, "c", layers)).toBe("c");
+    expect(activeMetadataLayerId(null, "a", layers)).toBe("a");
   });
 
   it("falls back to the first visible layer with neither", () => {

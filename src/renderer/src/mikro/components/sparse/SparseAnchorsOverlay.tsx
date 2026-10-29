@@ -92,7 +92,7 @@ const SparseAnchorsPanel = ({
           <ActiveAnchor anchor={fullById.get(anchor.id) ?? anchor} />
         </div>
       ))}
-      {loading && <span className="text-[9px] text-white/30">Loading…</span>}
+      {loading && <span className="text-[9px] text-foreground/30">Loading…</span>}
     </div>
   );
 };

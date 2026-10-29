@@ -1243,6 +1243,11 @@ type Mutation {
   pushMailChanges(account: ID!): PushResult!
 
   """
+  Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
+  """
+  refreshBigfileUpload(input: RefreshUploadInput!): BigFileUploadGrant!
+
+  """
   Request temporary S3 credentials to upload one file (an attachment to send).
   """
   requestBigfileUpload(input: RequestBigFileUploadInput!): BigFileUploadGrant!
@@ -1368,7 +1373,9 @@ An organization (tenant). Every mailbox belongs to exactly one, and queries only
 """
 type Organization {
   id: ID!
-  slug: String!
+
+  """The organization across issuers and services: `<issuer>#<org>`."""
+  identifier: String!
 }
 
 """A message sent through a mailbox's SMTP server."""
@@ -1622,6 +1629,10 @@ input RecipientInput {
   name: String = null
 }
 
+input RefreshUploadInput {
+  storeId: String!
+}
+
 """A recipient the SMTP server refused."""
 type RefusedRecipient {
   address: String!
@@ -1631,7 +1642,7 @@ type RefusedRecipient {
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: ByteCount = null
+  fileSize: ByteCount!
   originalFileName: String!
 }
 

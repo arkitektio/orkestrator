@@ -157,6 +157,13 @@ const api = {
      * Global: one preference, every window follows it.
      */
     setRailGlass: (enabled: boolean) => ipcRenderer.send("window:set-rail-glass", enabled),
+    /**
+     * macOS: show or hide this window's traffic lights. The floating rail hides
+     * them while it is tucked away (they would sit over the page) and shows them
+     * as it slides in. A no-op on the other platforms.
+     */
+    setWindowButtonsVisible: (visible: boolean) =>
+      ipcRenderer.send("window:set-buttons-visible", visible),
   },
   /**
    * Deep links land here: main asks the renderer to open a path as a tab

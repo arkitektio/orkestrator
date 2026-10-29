@@ -9,7 +9,8 @@ fragment File on File {
     ...ProvenanceEntry
   }
   organization {
-    slug
+    id
+    identifier
   }
   size
   contentType

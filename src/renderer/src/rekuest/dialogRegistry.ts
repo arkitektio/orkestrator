@@ -1,5 +1,7 @@
-import { prefersSize } from "@/core/modules/host/dialogNeeds";
+import { needsRoles, prefersSize } from "@/core/modules/host/dialogNeeds";
+import { BindShortcutDialog } from "./components/dialogs/BindShortcutDialog";
 import { CreateShortcutDialog } from "./components/dialogs/CreateShortcutDialog";
+import { REKUEST_ADMIN } from "./roles";
 import { AssignDialog } from "./forms/assign/AssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
 import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
@@ -29,6 +31,8 @@ export const REKUEST_DIALOGS = {
   // per row reads better than a page-wide strip
   assign: prefersSize("medium", AssignDialog),
   createshortcut: CreateShortcutDialog,
+  // an admin pins a shortcut for members, in one app or every app
+  bindshortcut: needsRoles(REKUEST_ADMIN, prefersSize("small", BindShortcutDialog)),
   // an action on a clock ("cron job") or on a signal: one builder for both
   createautomation: prefersSize("medium", CreateAutomationDialog),
   editschedule: prefersSize("medium", EditScheduleDialog),

@@ -47,8 +47,7 @@ export const useNeutralPick = (
   const arm = useCallback(() => {
     disarmRef.current?.();
     const previousMode: InteractionMode = modeApi.getState().interactionMode;
-    const previousPin = viewerApi.getState().probeLayerId;
-    viewerApi.getState().setProbeLayerId(layerId);
+    viewerApi.getState().setPickLayerId(layerId);
     modeApi.getState().setInteractionMode("PROBE");
 
     let unsubscribe: (() => void) | null = null;
@@ -59,8 +58,8 @@ export const useNeutralPick = (
       if (modeApi.getState().interactionMode === "PROBE") {
         modeApi.getState().setInteractionMode(previousMode);
       }
-      if (viewerApi.getState().probeLayerId === layerId) {
-        viewerApi.getState().setProbeLayerId(previousPin);
+      if (viewerApi.getState().pickLayerId === layerId) {
+        viewerApi.getState().setPickLayerId(null);
       }
     };
 

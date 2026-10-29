@@ -25,7 +25,6 @@ export const CellPage = asDetailQueryRoute(useDetailCellQuery, ({ data }) => {
       object={{ id: pageId }}
       title={cell.id}
       help={ELEKTRO_HELP.cell}
-      variant="black"
       overlay
       pageActions={
         model && (

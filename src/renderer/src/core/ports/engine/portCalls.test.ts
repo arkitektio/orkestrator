@@ -2,15 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   dependencyScope,
-  describePortCallCatalog,
   evaluatePortCall,
   parsePortCall,
-  portCallCatalog,
   runPortCall,
 } from "./portCalls";
 
 const eqCall = {
-  operation: "eq",
+  operation: "cmp.eq",
   arguments: [
     { key: "a", value_path: "value" },
     { key: "b", value_literal: "advanced" },
@@ -26,7 +24,7 @@ describe("parsePortCall", () => {
   it("accepts a JSON-encoded UtilCall", () => {
     const parsed = parsePortCall(JSON.stringify(eqCall));
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.value.operation).toBe("eq");
+    if (parsed.ok) expect(parsed.value.operation).toBe("cmp.eq");
   });
 
   it("rejects malformed payloads without throwing", () => {
@@ -45,7 +43,7 @@ describe("parsePortCall", () => {
   it("accepts the GraphQL camelCase shape and drops __typename markers", () => {
     const fromGraphql = {
       __typename: "UtilCall",
-      operation: "not",
+      operation: "logic.negate",
       arguments: [
         {
           __typename: "ActionArgument",
@@ -54,17 +52,17 @@ describe("parsePortCall", () => {
           valuePath: null,
           utilCall: {
             __typename: "UtilCall",
-            operation: "port.isOneOf",
+            operation: "list.contains",
             arguments: [
-              { __typename: "ActionArgument", key: "value", valuePath: "value" },
               {
                 __typename: "ActionArgument",
-                key: "options",
+                key: "value",
                 valueList: [
                   { __typename: "ActionArgument", valueLiteral: "a" },
                   { __typename: "ActionArgument", valueLiteral: "b" },
                 ],
               },
+              { __typename: "ActionArgument", key: "item", valuePath: "value" },
             ],
           },
         },
@@ -74,8 +72,8 @@ describe("parsePortCall", () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     const inner = parsed.value.arguments?.[0]?.util_call;
-    expect(inner?.operation).toBe("port.isOneOf");
-    expect(inner?.arguments?.[1]?.value_list).toHaveLength(2);
+    expect(inner?.operation).toBe("list.contains");
+    expect(inner?.arguments?.[0]?.value_list).toHaveLength(2);
     expect(runPortCall(fromGraphql, { value: "c", dependencies: {} })).toEqual({
       ok: true,
       value: true,
@@ -100,7 +98,7 @@ describe("evaluatePortCall", () => {
 
   it("reads declared dependencies by name", () => {
     const call = {
-      operation: "gt",
+      operation: "cmp.gt",
       arguments: [
         { key: "a", value_path: "value" },
         { key: "b", value_path: "min" },
@@ -112,13 +110,13 @@ describe("evaluatePortCall", () => {
 
   it("resolves nested util calls", () => {
     const call = {
-      operation: "not",
+      operation: "logic.negate",
       arguments: [
         {
           key: "a",
           util_call: {
-            operation: "is_empty",
-            arguments: [{ key: "a", value_path: "value" }],
+            operation: "val.is_empty",
+            arguments: [{ key: "value", value_path: "value" }],
           },
         },
       ],
@@ -127,9 +125,9 @@ describe("evaluatePortCall", () => {
     expect(runPortCall(call, scope(""))).toEqual({ ok: true, value: false });
   });
 
-  it("resolves an undeclared path to undefined rather than failing", () => {
+  it("reads an undeclared path as null rather than failing", () => {
     const call = {
-      operation: "port.isSet",
+      operation: "val.is_set",
       arguments: [{ key: "value", value_path: "nope" }],
     };
     expect(runPortCall(call, scope("x", { other: 1 }))).toEqual({ ok: true, value: false });
@@ -138,67 +136,55 @@ describe("evaluatePortCall", () => {
   it("reports unknown functions", () => {
     const result = runPortCall({ operation: "nope.missing", arguments: [] }, scope(1));
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/not found/);
+    if (!result.ok) expect(result.error).toMatch(/not a function of the blok language/);
   });
 
-  it("refuses functions with side effects", () => {
+  it("refuses an effect: only a blok's callback runs one", () => {
     const result = runPortCall(
-      { operation: "clipboard.copy", arguments: [{ key: "value", value_literal: "x" }] },
+      { operation: "ui.copy", arguments: [{ key: "text", value_literal: "x" }] },
       scope(1),
     );
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/side effects/);
+    if (!result.ok) expect(result.error).toMatch(/effect/);
   });
 
-  it("reports invalid arguments", () => {
+  it("reads an argument of the wrong kind as null, as the language does", () => {
     const parsed = parsePortCall({
       operation: "math.round",
       arguments: [{ key: "value", value_literal: "abc" }],
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    const result = evaluatePortCall(parsed.value, scope(null));
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/Invalid arguments/);
+    expect(evaluatePortCall(parsed.value, scope(null))).toEqual({ ok: true, value: null });
   });
 });
 
-describe("port functions", () => {
-  const call = (name: string, args: Record<string, unknown>) =>
-    portCallCatalog.invokeFunction(name, args, { requirePure: true });
-  const value = (name: string, args: Record<string, unknown>) => {
-    const result = call(name, args);
-    if (!result.ok) throw new Error(`${name} failed: ${result.error}`);
+describe("the language's functions a port call names", () => {
+  const value = (operation: string, args: Record<string, unknown>) => {
+    const result = runPortCall(
+      { operation, arguments: Object.entries(args).map(([key, literal]) => ({ key, value_literal: literal })) },
+      { value: null, dependencies: {} },
+    );
+    if (!result.ok) throw new Error(`${operation} failed: ${result.error}`);
     return result.value;
   };
 
-  it("port.isSet", () => {
-    expect(value("port.isSet", { value: 0 })).toBe(true);
-    expect(value("port.isSet", { value: "" })).toBe(true);
-    expect(value("port.isSet", { value: null })).toBe(false);
-    expect(value("port.isSet", { value: undefined })).toBe(false);
+  it("val.is_set", () => {
+    expect(value("val.is_set", { value: 0 })).toBe(true);
+    expect(value("val.is_set", { value: "" })).toBe(true);
+    expect(value("val.is_set", { value: null })).toBe(false);
   });
 
-  it("port.isOneOf", () => {
-    expect(value("port.isOneOf", { value: "b", options: ["a", "b"] })).toBe(true);
-    expect(value("port.isOneOf", { value: "c", options: ["a", "b"] })).toBe(false);
-    expect(call("port.isOneOf", { value: "c", options: "ab" }).ok).toBe(false);
+  it("list.contains", () => {
+    expect(value("list.contains", { value: ["a", "b"], item: "b" })).toBe(true);
+    expect(value("list.contains", { value: ["a", "b"], item: "c" })).toBe(false);
+    expect(value("list.contains", { value: "ab", item: "c" })).toBe(false);
   });
 
   it("str.matches", () => {
     expect(value("str.matches", { value: "abc123", pattern: "^[a-z]+\\d+$" })).toBe(true);
-    expect(value("str.matches", { value: "ABC", pattern: "^abc$", flags: "i" })).toBe(true);
     expect(value("str.matches", { value: "x", pattern: "^y$" })).toBe(false);
     expect(value("str.matches", { value: null, pattern: ".*" })).toBe(false);
-  });
-
-  it("are all pure and described in the manifest", () => {
-    const manifest = describePortCallCatalog();
-    for (const name of ["port.isSet", "port.isOneOf", "str.matches", "eq", "not"]) {
-      const entry = manifest.functions.find((fn) => fn.name === name);
-      expect(entry, name).toBeDefined();
-      expect(entry?.purity).toBe("pure");
-    }
   });
 });
 

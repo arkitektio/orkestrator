@@ -66,6 +66,74 @@ fragment BlokComponentProp on ComponentProp {
   }
 }
 
+# A local is an arg port plus `persist`: its kind says which controls may bind
+# it and which action ports it may be passed to. Two levels of child ports are
+# read (a list of models, a dict's fields); widgets and effects never apply.
+fragment BlokLocalChoice on Choice {
+  value
+  label
+  description
+}
+
+fragment BlokLocalChildLeaf on ArgPort {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  choices {
+    ...BlokLocalChoice
+  }
+}
+
+fragment BlokLocalChild on ArgPort {
+  ...BlokLocalChildLeaf
+  children {
+    ...BlokLocalChildLeaf
+  }
+}
+
+# A local as the blok wrote it, its kind null when it was left out. Only the
+# editor reads these: it loads and sends them as written, so a re-save never
+# pins an inferred kind.
+fragment BlokLocal on BlokLocal {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  persist
+  choices {
+    ...BlokLocalChoice
+  }
+  children {
+    ...BlokLocalChild
+  }
+}
+
+# A local as the blok's tree resolves it, its kind always set (inferred when
+# the blok left it out, ANY when nothing tells): what renderers type it with.
+fragment ResolvedBlokLocal on ResolvedBlokLocal {
+  key
+  label
+  kind
+  description
+  identifier
+  nullable
+  default
+  persist
+  choices {
+    ...BlokLocalChoice
+  }
+  children {
+    ...BlokLocalChild
+  }
+}
+
 fragment BlokDiagnostic on Diagnostic {
   level
   code
@@ -103,7 +171,7 @@ fragment Blok on Blok {
     key
     description
   }
-  catalog {
+  module {
     id
     name
     description
@@ -113,7 +181,38 @@ fragment Blok on Blok {
   forModel
   forNode
   componentTree
-  demoState
+  vocab
+  catalogs
+  resolvedLocals {
+    ...ResolvedBlokLocal
+  }
+  demo {
+    deps
+    args
+    task
+    queries
+    subscriptions
+  }
+  queries {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    poll
+    more
+  }
+  subscriptions {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    keep
+    history
+  }
   # What it is opened for (`@args.<key>`): asked for with a port form when missing.
   args {
     ...ArgPort
@@ -121,13 +220,6 @@ fragment Blok on Blok {
   # What a person answers through it when a task asks with it (`blok.return`).
   returns {
     ...ReturnPort
-  }
-  # The services its `query` components read: guarded around it, named for the person.
-  services {
-    key
-    service
-    version
-    schemaHash
   }
   diagnostics {
     ...BlokDiagnostic
@@ -155,7 +247,38 @@ fragment MaterializedBlok on MaterializedBlok {
     id
     number
     componentTree
-    demoState
+    vocab
+    catalogs
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
   }
   pinnedRevision {
     id
@@ -342,7 +465,42 @@ fragment BlokEditor on Blok {
     number
   }
   componentTree
-  demoState
+  vocab
+  catalogs
+  locals {
+    ...BlokLocal
+  }
+  # What the tree makes of them, for "inferred: X" before the source parses here.
+  resolvedLocals {
+    ...ResolvedBlokLocal
+  }
+  demo {
+    deps
+    args
+    task
+    queries
+    subscriptions
+  }
+  queries {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    poll
+    more
+  }
+  subscriptions {
+    key
+    service
+    document
+    variables {
+      ...BlokArgument
+    }
+    keep
+    history
+  }
   args {
     ...ArgPort
   }

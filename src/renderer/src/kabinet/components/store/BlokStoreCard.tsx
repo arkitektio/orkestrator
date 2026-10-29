@@ -1,5 +1,5 @@
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
-import { BlokAssetHostProvider } from "@/core/blok/renderer/assets";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
+import { BlokAssetHostProvider } from "@arkitektio/bsx/renderer/assets";
 import { useDialog } from "@/core/dialogs/registry";
 import { KabinetRelease, RekuestBlok } from "@/core/linkers";
 import { Badge } from "@/core/ui/badge";
@@ -108,7 +108,7 @@ export const AppBlokCard = React.memo(({ app, blok }: StoreAppBlok) => {
       description={blok.description}
       preview={
         blok.parseError ? (
-          <div className={cn(PREVIEW_BOX, "flex items-center justify-center text-amber-500")}>
+          <div className={cn(PREVIEW_BOX, "flex items-center justify-center text-warning")}>
             <AlertTriangle className="size-8" aria-label="This blok does not parse" />
           </div>
         ) : (

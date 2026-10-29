@@ -159,33 +159,16 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
         </div>
       ) : (
         <>
-          <DerivedFromSection
-            edges={data.tableDataset.derivedFrom}
-            // Not "acquired": nothing measures a feature table off an
-            // instrument. A table with no parent edge is one that claims no data
-            // underneath it at all.
-            emptyTitle="Freestanding table"
-            emptyDescription="This table names no parent, so its rows are not recorded as measured over any other data."
-          />
+          <DerivedFromSection edges={data.tableDataset.derivedFrom} />
 
           {/* Which BYTES this table came out of, next to which DATA it was
               computed from — two different questions, and both can have an
               answer. A file has no coordinate system, so these links place
               nothing, which is why they are their own section rather than more
               rows in `DerivedFromSection`. */}
-          <FileLinksSection
-            title="Loaded from"
-            links={data.tableDataset.sourceFiles}
-            emptyTitle="No source file"
-            emptyDescription="These rows were written directly rather than loaded out of a CSV or parquet file held here."
-          />
+          <FileLinksSection title="Loaded from" links={data.tableDataset.sourceFiles} />
 
-          <FileLinksSection
-            title="Exported to"
-            links={data.tableDataset.exports}
-            emptyTitle="Never exported"
-            emptyDescription="No file has been written out of this table."
-          />
+          <FileLinksSection title="Exported to" links={data.tableDataset.exports} />
 
           <ProvenanceSection entries={data.tableDataset.provenanceEntries} />
         </>

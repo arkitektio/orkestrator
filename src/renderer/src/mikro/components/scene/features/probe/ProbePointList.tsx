@@ -39,9 +39,12 @@ import { useProbedLayer } from "./ProbeChannelValues";
  * the cursor reads against what was pinned; it is left out while it rests on
  * a place that is already a point.
  *
- * Each point asks the shared attribute service about ITSELF, at the
- * coordinates frozen when it was pinned (`ProbePointLookup`) — the live
- * readout's `probedAttributes` slot is one point wide and follows the cursor.
+ * A point's values and rows are its READINGS — one per info layer at the
+ * click (`ProbePointReading`) — so the blocks group by layer, not by the
+ * layer the click happened to hit. Each reading asks the shared attribute
+ * service about ITSELF, at the coordinates frozen when it was pinned
+ * (`ProbePointLookup`) — the live readout's `probedAttributes` slots follow
+ * the cursor.
  * The headless lookups below report what settled; the service caches per
  * point, so a click the hover already answered costs nothing.
  */
@@ -153,8 +156,29 @@ const comparedPoint = (point: ProbePoint): ComparedPoint => ({
 
 const LIVE_POINT: ComparedPoint = { id: "live", index: 0, color: LIVE_PROBE_COLOR, label: "live" };
 
-/** A column of the comparison: a pinned point, or the live probe. */
+/** A cell source of the comparison: one layer's reading at a pinned point, or
+ * at the live probe. A legend row is the same shape with the HIT as `probe`. */
 type Reading = { point: ComparedPoint; probe: ProbeResult };
+
+/** A reading's lookup slot: a point has one per info layer. */
+const lookupId = (pointId: string, layerId: string) => `${pointId}|${layerId}`;
+
+/** A point's lookups as the legend says them: loading while any is, else
+ * failed if any did. */
+const pointLookup = (
+  point: ProbePoint,
+  lookups: Readonly<Record<string, Lookup>>,
+): Lookup | undefined => {
+  const mine = point.readings.flatMap((reading) => {
+    const lookup = lookups[lookupId(point.id, reading.probe.layerId)];
+    return lookup ? [lookup] : [];
+  });
+  return (
+    mine.find((lookup) => lookup.status === "loading") ??
+    mine.find((lookup) => lookup.status === "error") ??
+    mine[0]
+  );
+};
 
 /** Where a point's values came from, in the readout's own words. */
 const sourceOf = (probe: ProbeResult): string => {
@@ -186,19 +210,19 @@ const LegendRow = ({
   return (
     <div className="flex items-center gap-1.5 text-[10px]">
       <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: point.color }} />
-      <span className="font-medium text-white/80">{comparedPointName(point)}</span>
-      <span className="min-w-0 flex-1 truncate text-white/40">{layerName}</span>
-      {lookup?.status === "loading" && <span className="text-white/40">…</span>}
+      <span className="font-medium text-foreground/80">{comparedPointName(point)}</span>
+      <span className="min-w-0 flex-1 truncate text-foreground/40">{layerName}</span>
+      {lookup?.status === "loading" && <span className="text-foreground/40">…</span>}
       {lookup?.status === "error" && (
-        <span className="truncate text-red-300/70" title={lookup.error}>
+        <span className="truncate text-red-700/70 dark:text-red-300/70" title={lookup.error}>
           lookup failed
         </span>
       )}
-      <span className="font-mono text-white/60">[{probe.voxelIndex.join(", ")}]</span>
+      <span className="font-mono text-foreground/60">[{probe.voxelIndex.join(", ")}]</span>
       <ProbeTime layerId={probe.layerId} coords={pinnedCoords} compact />
       {onRemove ? (
         <button
-          className="rounded px-1 text-white/50 hover:bg-white/15 hover:text-white"
+          className="rounded px-1 text-foreground/50 hover:bg-foreground/15 hover:text-foreground"
           title="Remove this probe point"
           onClick={onRemove}
         >
@@ -244,15 +268,15 @@ const LayerValues = ({ layerId, points }: { layerId: string; points: readonly Re
         key: "source",
         label: "read from",
         cells: points.map(({ probe }) => (
-          <span className="font-sans text-white/40">{sourceOf(probe)}</span>
+          <span className="font-sans text-foreground/40">{sourceOf(probe)}</span>
         )),
       },
     ];
   }, [layer?.channels, points]);
 
   return (
-    <div className="space-y-1 rounded border border-white/10 bg-white/5 px-2 py-1.5">
-      <span className="block truncate text-[10px] font-medium text-white/60">
+    <div className="space-y-1 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
+      <span className="block truncate text-[10px] font-medium text-foreground/60">
         {layerName || "Values"}
       </span>
       <ComparisonGrid points={points.map((reading) => reading.point)} rows={rows} />
@@ -275,22 +299,39 @@ export const ProbePointList = () => {
     });
   }, []);
 
-  // The SETTLED live probe (never the hot field, P17) and the rows the
-  // tracker resolved for it.
+  // The SETTLED live probe (never the hot field, P17), its info readings
+  // and the rows the tracker resolved for them.
   const liveProbe = useViewerStore((s) => s.probeReadout);
+  const liveInfo = useViewerStore((s) => s.probeInfo);
   const liveAttributes = useViewerStore((s) => s.probedAttributes);
   const removeProbePoint = useViewerStore((s) => s.removeProbePoint);
   const live =
     liveProbe && !points.some((point) => isSameProbePoint(point.probe, liveProbe))
       ? liveProbe
       : null;
+  const liveReadings = useMemo(
+    () => (live === null ? [] : live.strategy === "mesh" ? [live] : liveInfo),
+    [live, liveInfo],
+  );
 
-  const readings = useMemo<readonly Reading[]>(
+  /** One per point (and the live probe), at the HIT: the legend. */
+  const columns = useMemo<readonly Reading[]>(
     () => [
       ...points.map((point) => ({ point: comparedPoint(point), probe: point.probe })),
       ...(live ? [{ point: LIVE_POINT, probe: live }] : []),
     ],
     [points, live],
+  );
+
+  /** One per point per info layer: the values. */
+  const readings = useMemo<readonly Reading[]>(
+    () => [
+      ...points.flatMap((point) =>
+        point.readings.map((reading) => ({ point: comparedPoint(point), probe: reading.probe })),
+      ),
+      ...liveReadings.map((probe) => ({ point: LIVE_POINT, probe })),
+    ],
+    [points, liveReadings],
   );
 
   const byLayer = useMemo(() => {
@@ -305,72 +346,78 @@ export const ProbePointList = () => {
 
   const compared = useMemo(() => {
     const pinned = points.flatMap((point) => {
-      const lookup = lookups[point.id];
-      return lookup?.status === "ready"
-        ? [{ point: comparedPoint(point), blocks: lookup.blocks }]
-        : [];
+      const blocks = point.readings.flatMap((reading) => {
+        const lookup = lookups[lookupId(point.id, reading.probe.layerId)];
+        return lookup?.status === "ready" ? lookup.blocks : [];
+      });
+      return blocks.length > 0 ? [{ point: comparedPoint(point), blocks }] : [];
     });
-    const liveBlocks: HopBlock[] =
-      live && liveAttributes && isSameProbeKey(live, liveAttributes.key)
-        ? Object.keys(liveAttributes.byPlan).flatMap((hopKey) => {
-            const meta = liveAttributes.planMeta[hopKey];
-            return meta ? [{ meta, state: liveAttributes.byPlan[hopKey] }] : [];
-          })
-        : [];
+    const liveBlocks: HopBlock[] = liveReadings.flatMap((reading) => {
+      const attributes = liveAttributes[reading.layerId];
+      if (!attributes || !isSameProbeKey(reading, attributes.key)) return [];
+      return Object.keys(attributes.byPlan).flatMap((hopKey) => {
+        const meta = attributes.planMeta[hopKey];
+        return meta ? [{ meta, state: attributes.byPlan[hopKey] }] : [];
+      });
+    });
     return compareHopBlocks(
       liveBlocks.length > 0 ? [...pinned, { point: LIVE_POINT, blocks: liveBlocks }] : pinned,
     );
-  }, [points, lookups, live, liveAttributes]);
+  }, [points, lookups, liveReadings, liveAttributes]);
 
   if (points.length === 0) return null;
   const notLoaded = readings.some((reading) => reading.probe.provenance.source === "pending");
 
   return (
-    <div className="mt-2 space-y-1.5 border-t border-white/10 pt-2">
-      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-white/60">
+    <div className="mt-2 space-y-1.5 border-t border-foreground/10 pt-2">
+      <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-foreground/60">
         <span>Probe points</span>
         <button
-          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/70 hover:bg-white/15 hover:text-white"
+          className="rounded border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/70 hover:bg-foreground/15 hover:text-foreground"
           onClick={clearProbePoints}
         >
           Clear all
         </button>
       </div>
 
-      {points.map((point) =>
-        point.lookup === null ? null : point.lookup.instanceValue !== undefined ? (
-          <MeshPointLookup
-            key={point.id}
-            pointId={point.id}
-            lookup={point.lookup}
-            instanceValue={point.lookup.instanceValue}
-            report={report}
-          />
-        ) : (
-          <VoxelPointLookup key={point.id} pointId={point.id} lookup={point.lookup} report={report} />
-        ),
+      {points.flatMap((point) =>
+        point.readings.map(({ probe, lookup }) => {
+          const id = lookupId(point.id, probe.layerId);
+          return lookup === null ? null : lookup.instanceValue !== undefined ? (
+            <MeshPointLookup
+              key={id}
+              pointId={id}
+              lookup={lookup}
+              instanceValue={lookup.instanceValue}
+              report={report}
+            />
+          ) : (
+            <VoxelPointLookup key={id} pointId={id} lookup={lookup} report={report} />
+          );
+        }),
       )}
 
       <div className="space-y-0.5">
-        {readings.map((reading) =>
-          reading.point === LIVE_POINT ? (
-            <LegendRow key={reading.point.id} reading={reading} />
+        {columns.map((column) => {
+          const point = points.find((candidate) => candidate.id === column.point.id);
+          return !point ? (
+            <LegendRow key={column.point.id} reading={column} />
           ) : (
             <LegendRow
-              key={reading.point.id}
-              reading={reading}
-              lookup={lookups[reading.point.id]}
-              onRemove={() => removeProbePoint(reading.point.id)}
+              key={column.point.id}
+              reading={column}
+              lookup={pointLookup(point, lookups)}
+              onRemove={() => removeProbePoint(column.point.id)}
             />
-          ),
-        )}
+          );
+        })}
       </div>
 
       {byLayer.map(([layerId, layerPoints]) => (
         <LayerValues key={layerId} layerId={layerId} points={layerPoints} />
       ))}
       {notLoaded && (
-        <span className="block text-[10px] text-white/40">
+        <span className="block text-[10px] text-foreground/40">
           “not loaded”: the data there was not in memory yet when you clicked — click again to
           read it.
         </span>

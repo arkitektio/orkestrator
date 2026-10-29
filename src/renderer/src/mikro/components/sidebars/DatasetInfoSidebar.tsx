@@ -268,19 +268,9 @@ export const DatasetLineage = ({ dataset }: { dataset: PageDataset }) => {
               nothing, which is why they are their own section rather than more
               rows in `DerivedFromSection`. The other end of the same links is
               what the file's own Info rail lists. */}
-          <FileLinksSection
-            title="Converted from"
-            links={data.arrayDataset.sourceFiles}
-            emptyTitle="No source file"
-            emptyDescription="These arrays were written directly rather than converted out of a file held here."
-          />
+          <FileLinksSection title="Converted from" links={data.arrayDataset.sourceFiles} />
 
-          <FileLinksSection
-            title="Exported to"
-            links={data.arrayDataset.exports}
-            emptyTitle="Never exported"
-            emptyDescription="No file has been written out of this dataset."
-          />
+          <FileLinksSection title="Exported to" links={data.arrayDataset.exports} />
 
           <ProvenanceSection entries={data.arrayDataset.provenanceEntries} />
         </>

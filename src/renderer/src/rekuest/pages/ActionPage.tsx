@@ -13,6 +13,7 @@ import { SimilarActions } from "../components/action/SimilarActions";
 import { LegacyActionTests, TestMatrix } from "../components/action/TestMatrix";
 import { ActionUsageSidebar } from "../sidebars/ActionUsageSidebar";
 import { REKUEST_HELP } from "../help";
+import { ActionBlokPreview } from "../run/ActionBlokPreview";
 
 export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) => {
   // The page describes the action; it does not run it (that is the "Run
@@ -44,6 +45,8 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
         <ActionHeader action={data.action} overview={overview} />
 
         <ActionSignature action={data.action} />
+
+        <ActionBlokPreview actionId={data.action.id} implementations={overview?.implementations} />
 
         {overview ? (
           <ProvidedByPanel implementations={overview.implementations} />

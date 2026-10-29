@@ -36,7 +36,7 @@ const ApprovalsPage: React.FC = () => {
           {(item) => <ApprovalCard key={item.id} item={item} />}
         </ListRender>
         {!loading && data?.releaseApprovals.length === 0 && (
-          <p className="p-6 text-sm text-muted-foreground">
+          <p className="py-2 text-sm text-muted-foreground">
             No release is approved to run yet. Installing an app from the App Store approves it.
           </p>
         )}

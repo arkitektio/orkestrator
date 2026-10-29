@@ -6,17 +6,14 @@ import { LightPathSchematic } from "./LightPathSchematic";
 export const LightPathSpoke = ({
   graph,
   title,
-  tone,
 }: {
   graph: LightpathGraphFragment;
   title?: string;
-  tone?: "overlay" | "surface";
 }) => {
   const { openDialog } = useDialog();
   return (
     <LightPathSchematic
       graph={graph}
-      tone={tone}
       onExpand={() => openDialog("lightpath3d", { graph, title }, { size: "large" })}
     />
   );

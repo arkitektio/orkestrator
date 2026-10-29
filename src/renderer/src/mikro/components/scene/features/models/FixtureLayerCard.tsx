@@ -106,7 +106,7 @@ export const FixtureLayerCard = memo(
               variant="ghost"
               size="icon"
               className={`h-5 w-5 shrink-0 ${
-                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-white/45 hover:text-white/90"
+                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/45 hover:text-foreground/90"
               }`}
               title={layer.wireframe ? "Draw solid surfaces" : "Draw as a wireframe"}
               onClick={() => persist({ wireframe: !layer.wireframe })}
@@ -116,7 +116,7 @@ export const FixtureLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-white/45 hover:text-white/90"
+              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
               title={hidden ? "Show" : "Hide"}
               onClick={() => persist({ visible: hidden })}
             >
@@ -126,7 +126,7 @@ export const FixtureLayerCard = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 shrink-0 text-white/35 hover:text-red-300"
+                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
                 title="Remove layer from scene"
                 onClick={() => onRemove(layerId)}
               >
@@ -164,7 +164,7 @@ export const FixtureLayerCard = memo(
               <input
                 type="color"
                 title="The colour every part is drawn in"
-                className="h-5 w-7 cursor-pointer rounded border border-white/10 bg-transparent"
+                className="h-5 w-7 cursor-pointer rounded border border-foreground/10 bg-transparent"
                 value={toHex(override)}
                 // Previewed per pick, written once the picker closes: a drag
                 // across the swatch is dozens of `input` events.

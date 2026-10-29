@@ -63,7 +63,7 @@ export const ExportHost = () => {
           ctx: {
             getClient: (service) =>
               serviceMap[service]?.client as ApolloClient<unknown> | undefined,
-            datalayerEndpoint: (serviceMap["datalayer"]?.client as { url?: string } | undefined)
+            datalayerEndpoint: (serviceMap["s3"]?.client as { url?: string } | undefined)
               ?.url,
             startDownload,
           },

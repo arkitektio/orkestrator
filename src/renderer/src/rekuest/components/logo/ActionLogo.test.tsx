@@ -6,8 +6,8 @@ import {TaskEventKind} from '@/rekuest/api/graphql';
 import {ActionLogo} from './ActionLogo';
 
 /**
- * An action logo draws `@task`: null (the kept drawing) until the viewer runs
- * the action, then the task from the my-tasks cache, live.
+ * An action logo draws `task`: null (the kept drawing) until the viewer runs
+ * the action, then the task from the my-tasks cache, live, in the v2 record.
  */
 const BLOK = {
   id: 'action-logo',
@@ -21,10 +21,10 @@ const BLOK = {
         {id: 'frame', component: 'Rect', props: [{key: 'width', static_value: '24'}, {key: 'stroke', static_value: 'brand-strong'}, {key: 'animate', static_value: 'march'}]},
         {id: 'dot', component: 'Circle', props: [{key: 'r', static_value: '2'}, {key: 'fill', static_value: '#ff0000'}]},
         {id: 'said', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.message'}}]},
+        {id: 'state', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.status'}}]},
       ],
     },
   ],
-  demoState: {task: null},
 };
 
 const useLogoBlokQuery = vi.fn(() => ({data: {blok: BLOK}}));
@@ -68,6 +68,8 @@ describe('an action logo', {timeout: 20000}, () => {
     const running = render(<ActionLogo action={action as never} className="h-4 w-4" />);
 
     await waitFor(() => expect(running.container.querySelector('text')?.textContent).toBe('cropping'));
+    // The v2 task record: lowercase status.
+    expect(running.container.querySelectorAll('text')[1]?.textContent).toBe('running');
     expect(running.container.querySelector('[data-logo-active]')).not.toBeNull();
     expect(running.container.querySelector('rect')?.getAttribute('class')).toBe('logo-anim logo-anim-march');
 

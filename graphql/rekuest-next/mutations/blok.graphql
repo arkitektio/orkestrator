@@ -49,11 +49,15 @@ mutation EditBlok($input: EditBlokInput!) {
 }
 
 # The same edit with `dryRun`: only the findings, so a check writes nothing to the cache.
+# Also the draft's locals as its tree resolves them: what the editor's preview types them with.
 mutation CheckBlok($input: EditBlokInput!) {
   editBlok(input: $input) {
     applied
     diagnostics {
       ...BlokDiagnostic
+    }
+    resolvedLocals {
+      ...ResolvedBlokLocal
     }
   }
 }

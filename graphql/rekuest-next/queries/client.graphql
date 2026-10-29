@@ -7,3 +7,24 @@ query Clients(
     ...ListClient
   }
 }
+
+# The clients that called rekuest, for a shortcut binding's app, client and
+# device pickers: the only ones a binding can match today.
+query BindingClients($pagination: OffsetPaginationInput) {
+  clients(pagination: $pagination) {
+    id
+    clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
+    device {
+      id
+      deviceId
+    }
+  }
+}

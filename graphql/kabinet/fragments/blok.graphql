@@ -19,7 +19,10 @@ fragment KabinetBlok on FlavourBlok {
   description
   hash
   componentTree
-  demoState
+  vocab
+  locals
+  demo
+  queries
   forModel
   forNode
   parseError

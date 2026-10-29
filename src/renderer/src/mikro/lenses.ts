@@ -27,6 +27,7 @@ import type {
   LensSubjectFragment,
   ListLensFragment,
 } from "./api/graphql";
+import type { RelatedContext } from "@/core/smart/extensions/types";
 
 // Spelled as wire values: this file is pure vocabulary, read by node-environment
 // suites (the add-layer engine's among them), and a runtime import of the
@@ -300,6 +301,27 @@ export const describeLens = (lens: Describable): LensDescription => {
 /** Whether the lens cuts nothing: its container, looked at whole. */
 export const isWholeLens = (lens: LensSubjectFragment) =>
   lens.__typename === "ArrayLens" ? lens.slices.length === 0 : lens.windows.length === 0;
+
+/**
+ * A container's whole lens as the context its page also stands for in the
+ * ⌘K palette: what can be done to the lens is listed after what can be done
+ * to the container, under "Whole array" (`whole`). None when the container
+ * has no whole lens (a dataset with no pixel grid).
+ */
+export const wholeLensContexts = (
+  kind: LensTypename,
+  fullLens: { id: string } | null | undefined,
+): RelatedContext[] | undefined => {
+  if (!fullLens) return undefined;
+  const info = LENS_KINDS[kind];
+  return [
+    {
+      key: "wholeLens",
+      label: info.whole,
+      objects: [{ identifier: info.identifier, id: fullLens.id, label: info.whole }],
+    },
+  ];
+};
 
 /**
  * What a TILE leads with, and what it says underneath.

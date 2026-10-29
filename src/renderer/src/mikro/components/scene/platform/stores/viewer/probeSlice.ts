@@ -11,6 +11,7 @@ import {
   type AttributeSelection,
 } from "@/mikro/lib/attributes/attributeSelection";
 import type { ProbeFetchKey, ProbeMode, ProbeResult } from "../../probe/probeTypes";
+import { sameReadings } from "../../probe/infoReadings";
 import {
   pinProbePoint,
   refreshProbePoint,
@@ -60,23 +61,50 @@ export interface ProbeSlice {
   /** Written ONLY by `ProbeReadoutSettler`; everything else writes the hot
    * field and lets the settler decide when the HUD sees it. */
   setProbeReadout: (coordinate: ProbedCoordinate | null) => void
+  /**
+   * What the readout shows: one reading per INFO layer at the settled hit
+   * (`platform/probe/infoReadings.ts`), each a probe restated in its own
+   * layer. UI cadence, like `probeReadout`, which it always describes.
+   */
+  probeInfo: readonly ProbeResult[];
+  /** Written ONLY by `ProbeReadoutSettler`; value-equal writes are dropped. */
+  setProbeInfo: (readings: readonly ProbeResult[]) => void
   probeThreshold: number;
   setProbeThreshold: (threshold: number) => void
   /** User-selected probe strategy; "auto" follows the layer's projection. */
   probeMode: ProbeMode;
   setProbeMode: (mode: ProbeMode) => void
   /**
-   * Which layer the probe reads, or null for the DEFAULT: the first visible
-   * layer (see `effectiveProbeLayerId`). Exactly one layer ever answers —
-   * every other layer declines the pointer event (without stopping
+   * The layer tasks and annotations use, or null for the DEFAULT: the first
+   * visible layer (see `effectiveDataLayerId`). Session-only.
+   */
+  dataLayerId: string | null;
+  setDataLayerId: (layerId: string | null) => void
+  /**
+   * The layers the readout samples at the hit point, or null for the DEFAULT:
+   * the data layer alone (see `effectiveInfoLayerIds`). Session-only.
+   */
+  infoLayerIds: readonly string[] | null;
+  setInfoLayerIds: (layerIds: readonly string[] | null) => void
+  /**
+   * Which layer a 3D ray stops in, or null for the DEFAULT: the data layer
+   * (see `effectiveHitLayerId`; ignored in 2D). Exactly one layer ever
+   * answers — every other layer declines the pointer event (without stopping
    * propagation) so it falls through to the target layer's mesh.
    */
   probeLayerId: string | null;
-  /** Pin the probe to one layer, or null for the default (first visible
-   * layer). Clears a probe belonging to a different layer, so the readout
-   * never keeps showing values from a layer the probe no longer reads; the
-   * probe panel reconciles the default-target cases this setter cannot see. */
+  /** Pin the ray to one layer, or null for the default. Clears a probe
+   * belonging to a different layer, so the readout never keeps showing a hit
+   * the probe no longer makes; `StaleProbeReconciler` covers the default-target
+   * cases this setter cannot see. */
   setProbeLayerId: (layerId: string | null) => void
+  /**
+   * A TRANSIENT hit override, in both 2D and 3D: set while a click-to-pick
+   * (`useScenePick`, `useNeutralPick`) waits on one layer, cleared after, so
+   * a pick never rewrites the user's own pins.
+   */
+  pickLayerId: string | null;
+  setPickLayerId: (layerId: string | null) => void
   /** Async exact-value upgrade: patches the active probe when the fetched key
    * still matches (no-op set otherwise, so late arrivals never cause
    * renders). Currently unwired on the hover path — the hover readout
@@ -98,16 +126,23 @@ export interface ProbeSlice {
     lookup: ProbePointLookup | null,
     flatZ?: number | null,
     coords?: ProbePoint["coords"],
+    readings?: ProbePoint["readings"],
   ) => void;
   /** A later publish of an already-pinned place (no-op set otherwise). */
-  refreshProbePoint: (probe: ProbeResult, lookup: ProbePointLookup | null) => void;
+  refreshProbePoint: (
+    probe: ProbeResult,
+    lookup: ProbePointLookup | null,
+    readings?: ProbePoint["readings"],
+  ) => void;
   removeProbePoint: (id: string) => void;
   clearProbePoints: () => void;
 
-  /** "What is under this pixel?" — per-table lookup results for the active
-   * probe, written by AttributeProbeTracker executing the probed system's
-   * attribute plans locally (zarr sample + DuckDB lookup). */
-  probedAttributes: ProbedAttributes<SceneAttributeKey> | null;
+  /** "What is under this pixel?" — per-table lookup results for each info
+   * reading of the active probe, keyed by the reading's layer id (a mesh
+   * pick's by the mesh layer's), written by AttributeProbeTracker executing
+   * each probed system's attribute plans locally (zarr sample + DuckDB
+   * lookup). Every setter files under its key's `layerId`. */
+  probedAttributes: Readonly<Record<string, ProbedAttributes<SceneAttributeKey>>>;
   /** A new probed point's hops are known: reset the slice to all-pending. */
   beginProbedAttributes: (key: SceneAttributeKey, hops: readonly HopMeta[]) => void;
   /** Async per-hop settlement: no-op set when the key went stale (same
@@ -118,10 +153,11 @@ export interface ProbeSlice {
    * result is value-equal to what is already up. */
   commitProbedAttributes: (
     key: SceneAttributeKey,
-    planMeta: NonNullable<ProbeSlice["probedAttributes"]>["planMeta"],
+    planMeta: ProbedAttributes<SceneAttributeKey>["planMeta"],
     states: readonly (readonly [string, PlanRowsState])[],
   ) => void;
-  clearProbedAttributes: () => void;
+  /** Drop every layer's rows, or all but `keep`'s. */
+  clearProbedAttributes: (keep?: readonly string[]) => void;
   /** The lazy one-hop FK follow (`references`), registered by the tracker so
    * the HUD can expand a referencing attribute without owning the engine —
    * the captureScreenshot registration pattern. */
@@ -157,6 +193,9 @@ export interface ProbeSlice {
   setSparseLimit: (limit: number) => void;
 }
 
+const NO_READINGS: readonly ProbeResult[] = [];
+const NO_ATTRIBUTES: Readonly<Record<string, ProbedAttributes<SceneAttributeKey>>> = {};
+
 export const createProbeSlice = (
   set: SliceSet<ProbeSlice>,
 ): ProbeSlice => ({
@@ -179,10 +218,23 @@ export const createProbeSlice = (
     set((state) =>
       state.probeReadout === coordinate ? state : { probeReadout: coordinate },
     ),
+  probeInfo: NO_READINGS,
+  setProbeInfo: (readings) =>
+    set((state) =>
+      sameReadings(state.probeInfo, readings)
+        ? state
+        : { probeInfo: readings.length === 0 ? NO_READINGS : readings },
+    ),
   probeThreshold: 0.01,
   setProbeThreshold: (threshold) => set({ probeThreshold: threshold }),
   probeMode: "auto",
   setProbeMode: (mode) => set({ probeMode: mode }),
+  dataLayerId: null,
+  setDataLayerId: (layerId) => set({ dataLayerId: layerId }),
+  infoLayerIds: null,
+  setInfoLayerIds: (layerIds) => set({ infoLayerIds: layerIds }),
+  pickLayerId: null,
+  setPickLayerId: (layerId) => set({ pickLayerId: layerId }),
   probeLayerId: null,
   setProbeLayerId: (layerId) =>
     set((state) => {
@@ -197,36 +249,52 @@ export const createProbeSlice = (
     set((state) => applyExactValues(state, key, values) ?? state),
   probePoints: [],
   probePointSerial: 0,
-  pinProbePoint: (probe, lookup, flatZ = null, coords = null) =>
-    set((state) => pinProbePoint(state, probe, lookup, flatZ, coords)),
-  refreshProbePoint: (probe, lookup) => set((state) => refreshProbePoint(state, probe, lookup)),
+  pinProbePoint: (probe, lookup, flatZ = null, coords = null, readings) =>
+    set((state) => pinProbePoint(state, probe, lookup, flatZ, coords, readings)),
+  refreshProbePoint: (probe, lookup, readings) =>
+    set((state) => refreshProbePoint(state, probe, lookup, readings)),
   removeProbePoint: (id) =>
     set((state) => ({ probePoints: state.probePoints.filter((point) => point.id !== id) })),
   clearProbePoints: () =>
     set((state) => (state.probePoints.length === 0 ? state : { probePoints: [] })),
-  probedAttributes: null,
+  probedAttributes: NO_ATTRIBUTES,
   beginProbedAttributes: (key, hops) =>
-    set({
+    set((state) => ({
       probedAttributes: {
-        key,
-        byPlan: Object.fromEntries(
-          hops.map((hop) => [hop.hopKey, { status: "pending", rows: [] } as PlanRowsState]),
-        ),
-        planMeta: Object.fromEntries(hops.map((hop) => [hop.hopKey, hop])),
+        ...state.probedAttributes,
+        [key.layerId]: {
+          key,
+          byPlan: Object.fromEntries(
+            hops.map((hop) => [hop.hopKey, { status: "pending", rows: [] } as PlanRowsState]),
+          ),
+          planMeta: Object.fromEntries(hops.map((hop) => [hop.hopKey, hop])),
+        },
       },
-    }),
+    })),
   mergeAttributeRows: (key, planKey, planState) =>
     set((state) => {
-      const next = applyAttributeRows(state.probedAttributes, key, planKey, planState);
-      return next ? { probedAttributes: next } : state;
+      const current = state.probedAttributes[key.layerId] ?? null;
+      const next = applyAttributeRows(current, key, planKey, planState);
+      return next ? { probedAttributes: { ...state.probedAttributes, [key.layerId]: next } } : state;
     }),
   commitProbedAttributes: (key, planMeta, states) =>
     set((state) => {
-      const next = buildProbedAttributes(state.probedAttributes, key, planMeta, states);
-      return next ? { probedAttributes: next } : state;
+      const current = state.probedAttributes[key.layerId] ?? null;
+      const next = buildProbedAttributes(current, key, planMeta, states);
+      return next ? { probedAttributes: { ...state.probedAttributes, [key.layerId]: next } } : state;
     }),
-  clearProbedAttributes: () =>
-    set((state) => (state.probedAttributes === null ? state : { probedAttributes: null })),
+  clearProbedAttributes: (keep = []) =>
+    set((state) => {
+      const ids = Object.keys(state.probedAttributes);
+      const kept = ids.filter((id) => keep.includes(id));
+      if (kept.length === ids.length) return state;
+      return {
+        probedAttributes:
+          kept.length === 0
+            ? NO_ATTRIBUTES
+            : Object.fromEntries(kept.map((id) => [id, state.probedAttributes[id]])),
+      };
+    }),
   followAttributeReference: null,
   registerFollowAttributeReference: (fn) => set({ followAttributeReference: fn }),
   meshSelection: null,

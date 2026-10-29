@@ -1,4 +1,4 @@
-import type { BsxDependency } from "@/core/blok/bsx";
+import type { BlokPortMatch, BlokScopeDependency } from "@arkitektio/bsx/bsx/index";
 import type {
   ActionDemandInput,
   AgentDependencyInput,
@@ -184,12 +184,38 @@ export const dependencyInput = (draft: DependencyDraft): AgentDependencyInput =>
     : null,
 });
 
-/** What completion and the reference check need of a draft. */
-export const bsxDependency = (draft: DependencyDraft): BsxDependency => ({
+/** A port match as the editor reads it (camelCase), as the validator's scope spells it. */
+const scopeMatch = (match: PortMatchInput): BlokPortMatch => ({
+  key: match.key ?? null,
+  kind: match.kind ?? null,
+  identifier: match.identifier ?? null,
+  nullable: match.nullable ?? null,
+  children: match.children ? match.children.map(scopeMatch) : null,
+});
+
+const scopeMatches = (matches: readonly PortMatchInput[] | null | undefined) => (matches ? matches.map(scopeMatch) : null);
+
+/**
+ * A draft as the validator and completion read a dependency (the corpus'
+ * scope shape): its actions with their argument and return matches, its
+ * states with their matches. No actions (or states) declared means any.
+ */
+export const scopeDependency = (draft: DependencyDraft): BlokScopeDependency => ({
   key: draft.key.trim(),
-  app: orNull(draft.app),
-  actions: draft.actions.map((action) => action.key),
-  states: draft.states.map((state) => state.key),
+  action_dependencies: draft.actions.length
+    ? draft.actions.map((action) => ({
+        key: action.key,
+        demand: action.demand
+          ? { arg_matches: scopeMatches(action.demand.argMatches), return_matches: scopeMatches(action.demand.returnMatches) }
+          : null,
+      }))
+    : null,
+  state_dependencies: draft.states.length
+    ? draft.states.map((state) => ({
+        key: state.key,
+        demand: state.demand ? { matches: scopeMatches(state.demand.matches) } : null,
+      }))
+    : null,
 });
 
 const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -202,7 +228,7 @@ export const dependencyProblems = (drafts: readonly DependencyDraft[]): Map<stri
   for (const draft of drafts) {
     const key = draft.key.trim();
     if (!NAME.test(key)) problems.set(draft.uid, "A key is a name: letters, digits and _, not starting with a digit.");
-    else if (["utils", "state", "actions", "event", "args"].includes(key)) problems.set(draft.uid, `'${key}' is a word BSX reserves.`);
+    else if (key === "self") problems.set(draft.uid, "'self' is the blok's own agent, not a dependency key.");
     else if ((seen.get(key) ?? 0) > 1) problems.set(draft.uid, `'${key}' is declared twice.`);
     else if (
       draft.minViableInstances != null &&

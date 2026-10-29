@@ -29,7 +29,6 @@ export const ModelCollectionPage = asDetailQueryRoute(
 
     return (
       <ElektroModelCollection.ModelPage
-        variant="black"
         title={data?.modelCollection?.name}
         help={ELEKTRO_HELP.modelCollection}
         object={data?.modelCollection}
@@ -106,8 +105,8 @@ export const ModelCollectionPage = asDetailQueryRoute(
             </div>
           </div>
 
-          <div className="col-span-8 bg-black/5 rounded overflow-hidden">
-            <div className="h-full w-full min-h-[500px] bg-black">
+          <div className="col-span-8 rounded-lg overflow-hidden">
+            <div className="dark text-foreground h-full w-full min-h-[500px] bg-black">
               {selectedDetail?.neuronModel ? (
                 <MorphologyScene.Embedded model={selectedDetail.neuronModel} />
               ) : (

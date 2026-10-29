@@ -2,6 +2,10 @@ import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
+import AppsPage from "./pages/AppsPage";
+import BloksPage from "./pages/BloksPage";
+import DeploymentPage from "./pages/DeploymentPage";
+import DeploymentsPage from "./pages/DeploymentsPage";
 import ApprovalPage from "./pages/ApprovalPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import AppStoreRedirect from "./pages/AppStoreRedirect";
@@ -33,7 +37,11 @@ export const KabinetModule: React.FC<Props> = () => {
         {/* The app page moved to the id-keyed model route; shared links to
             the old identifier-keyed URL still have to resolve. */}
         <Route path="app-store/:identifier" element={<AppStoreRedirect />} />
+        <Route path="apps" element={<AppsPage />} />
         <Route path="apps/:id" element={<AppPage />} />
+        <Route path="bloks" element={<BloksPage />} />
+        <Route path="deployments" element={<DeploymentsPage />} />
+        <Route path="deployments/:id" element={<DeploymentPage />} />
         <Route path="repos" element={<ReposPage />} />
         {/* Static before dynamic: where the install deeplink lands. */}
         <Route path="repos/install" element={<InstallRepoPage />} />

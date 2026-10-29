@@ -61,12 +61,12 @@ const AxisPositionSelect = ({
 
   return (
     <div className="space-y-1">
-      <div className="text-[9px] uppercase tracking-[0.08em] text-white/35">{axis}</div>
+      <div className="text-[9px] uppercase tracking-[0.08em] text-foreground/35">{axis}</div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-full truncate rounded border border-white/10 bg-black/20 px-2 py-1 text-left text-xs hover:border-white/20"
+            className="w-full truncate rounded border border-foreground/10 bg-background/20 px-2 py-1 text-left text-xs hover:border-foreground/20"
             title={`Which ${axis} this colouring reads`}
           >
             {/* The index is shown beside the name because it is what is STORED —
@@ -85,8 +85,8 @@ const AxisPositionSelect = ({
               className="text-xs"
             />
             <CommandList>
-              {loading && <div className="px-3 py-2 text-[10px] text-white/40">Reading {axis}…</div>}
-              {error && <div className="px-3 py-2 text-[10px] text-amber-300/80">{error}</div>}
+              {loading && <div className="px-3 py-2 text-[10px] text-foreground/40">Reading {axis}…</div>}
+              {error && <div className="px-3 py-2 text-[10px] text-amber-700/80 dark:text-amber-300/80">{error}</div>}
               {!loading && !error && shown.length === 0 && (
                 <CommandEmpty className="px-3 py-2 text-[10px]">No {axis} matches.</CommandEmpty>
               )}
@@ -156,9 +156,9 @@ export const SparsePositionPicker = ({
     };
   }, [service, references]);
 
-  if (source.loading) return <div className="text-[10px] text-white/40">Resolving the matrix…</div>;
+  if (source.loading) return <div className="text-[10px] text-foreground/40">Resolving the matrix…</div>;
   if (!source.data) {
-    return <div className="text-[10px] text-amber-300/80">Could not resolve matrix {dataset}.</div>;
+    return <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">Could not resolve matrix {dataset}.</div>;
   }
 
   return (

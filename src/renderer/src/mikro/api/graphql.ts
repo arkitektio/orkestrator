@@ -4145,6 +4145,7 @@ export type GeneralFabriksAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4157,6 +4158,7 @@ export type GeneralKonnektionAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4169,12 +4171,11 @@ export type GeneralKulisseAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a media object. */
@@ -4183,12 +4184,11 @@ export type GeneralMediaAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading a parquet object. */
@@ -4197,12 +4197,11 @@ export type GeneralParquetAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 /** Temporary S3 credentials for reading the organization's sparse stores. */
@@ -4211,6 +4210,7 @@ export type GeneralSparseAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
@@ -4223,12 +4223,11 @@ export type GeneralZarrAccessGrant = {
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
-  path: Scalars['String']['output'];
+  prefix: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  store?: Maybe<Scalars['String']['output']>;
 };
 
 export enum Granularity {
@@ -6389,6 +6388,18 @@ export type Mutation = {
   putMeshCollectionsInFolder: Folder;
   /** File table datasets in a folder */
   putTableDatasetsInFolder: Folder;
+  /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
+  /** Reissue upload credentials for a fabriks upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshFabriksUpload: FabriksUploadGrant;
+  /** Reissue upload credentials for a konnektion upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshKonnektionUpload: KonnektionUploadGrant;
+  /** Reissue upload credentials for a kulisse upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshKulisseUpload: KulisseUploadGrant;
+  /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshMediaUpload: MediaUploadGrant;
+  /** Reissue upload credentials for a parquet upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshParquetUpload: ParquetUploadGrant;
   /** Reissue upload credentials for a sparse store whose upload is still in flight, for the reason `refreshZarrUpload` exists: three chunked arrays of a large matrix take long enough that a write can outlive its session token. Refuses a store that is already populated -- that is an overwrite, not a resumption */
   refreshSparseUpload: SparseUploadGrant;
   /** Reissue upload credentials for a Zarr store whose upload is still in flight. A grant's credentials expire, and clients hold the session token as a static credential, so a write large enough to outlive its session dies partway through. This returns a fresh session against the same prefix so the write can carry on. Refuses a store that is already populated -- that is an overwrite, not a resumption */
@@ -6992,13 +7003,43 @@ export type MutationPutTableDatasetsInFolderArgs = {
 };
 
 
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshFabriksUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshKonnektionUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshKulisseUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshMediaUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+export type MutationRefreshParquetUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
 export type MutationRefreshSparseUploadArgs = {
-  input: RefreshSparseUploadInput;
+  input: RefreshUploadInput;
 };
 
 
 export type MutationRefreshZarrUploadArgs = {
-  input: RefreshZarrUploadInput;
+  input: RefreshUploadInput;
 };
 
 
@@ -7802,7 +7843,8 @@ export enum Ordering {
 export type Organization = {
   __typename?: 'Organization';
   id: Scalars['ID']['output'];
-  slug: Scalars['String']['output'];
+  /** The organization across issuers and services: `<issuer>#<org>`. */
+  identifier: Scalars['String']['output'];
 };
 
 /** The sample */
@@ -9097,11 +9139,7 @@ export type QueryTransformationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-export type RefreshSparseUploadInput = {
-  storeId: Scalars['String']['input'];
-};
-
-export type RefreshZarrUploadInput = {
+export type RefreshUploadInput = {
   storeId: Scalars['String']['input'];
 };
 
@@ -9142,7 +9180,7 @@ export type RequestBigFileAccessInput = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -9187,7 +9225,7 @@ export type RequestKulisseAccessInput = {
 };
 
 export type RequestKulisseUploadInput = {
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -9197,7 +9235,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
   originalFileName: Scalars['String']['input'];
 };
 
@@ -12752,7 +12790,7 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
   ), provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
-  )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+  )>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type DetailFileFragment = (
   { __typename?: 'File', creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
@@ -17484,7 +17522,7 @@ export type GetSparseDatasetQueryVariables = Exact<{
 
 
 export type GetSparseDatasetQuery = { __typename?: 'Query', sparseDataset: (
-    { __typename?: 'SparseDataset' }
+    { __typename?: 'SparseDataset', fullLens?: { __typename?: 'SparseLens', id: string } | null }
     & SparseDatasetFragment
   ) };
 
@@ -17536,7 +17574,7 @@ export type GetTableDatasetQueryVariables = Exact<{
 
 
 export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: (
-    { __typename?: 'TableDataset' }
+    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null }
     & TableDatasetFragment
   ) };
 
@@ -19533,7 +19571,8 @@ export const FileFragmentDoc = gql`
     ...ProvenanceEntry
   }
   organization {
-    slug
+    id
+    identifier
   }
   size
   contentType
@@ -28215,6 +28254,9 @@ export const GetSparseDatasetDocument = gql`
     query GetSparseDataset($id: ID!) {
   sparseDataset(id: $id) {
     ...SparseDataset
+    fullLens {
+      id
+    }
   }
 }
     ${SparseDatasetFragmentDoc}`;
@@ -28437,6 +28479,9 @@ export const GetTableDatasetDocument = gql`
     query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
     ...TableDataset
+    fullLens {
+      id
+    }
   }
 }
     ${TableDatasetFragmentDoc}`;

@@ -194,7 +194,7 @@ export const ActiveAnchor = ({
       <PhasorSpoke anchor={anchor} />
 
       {!hasSpokes && (
-        <span className="text-[9px] text-white/40">no metadata recorded</span>
+        <span className="text-[9px] text-foreground/40">no metadata recorded</span>
       )}
     </MetadataAnchorBox>
   );

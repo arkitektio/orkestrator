@@ -166,7 +166,7 @@ const Viewport = ({ showDisplaySwitch = true }: { showDisplaySwitch?: boolean })
   const mode = showDisplaySwitch ? displayMode : "3D";
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg bg-black">
+    <div className="dark text-foreground relative h-full w-full overflow-hidden rounded-lg bg-black">
       {mode === "Tree" ? (
         <NeuronModelTree model={model} embedded />
       ) : phase === "ready" ? (
@@ -189,7 +189,7 @@ const Viewport = ({ showDisplaySwitch = true }: { showDisplaySwitch?: boolean })
 const MiniViewport = () => {
   const { phase, message } = useContext(PhaseContext);
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <div className="dark text-foreground relative h-full w-full overflow-hidden bg-black">
       {phase === "ready" ? (
         <MorphologyView mini />
       ) : phase === "unsupported" ? (

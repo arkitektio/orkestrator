@@ -7,8 +7,8 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
-} from "@/core/blok/renderer/bloks/shared";
-import { createBlokComponent, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/catalogs";
+import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 import { lazily } from "./lazily";
 import { ROW_OPS, ROWS_LIMIT_DEFAULT, ROWS_LIMIT_MAX } from "./tableSql";
@@ -16,15 +16,15 @@ import { ROW_OPS, ROWS_LIMIT_DEFAULT, ROWS_LIMIT_MAX } from "./tableSql";
 /**
  * A mikro TableDataset, as bloks: what its columns are, what one column holds,
  * and a page of its rows. Each reads one table, named as a structure
- * (`value="@args.table"`), and writes its record (`BlokResourceRecord`) under
+ * (`value={args.table}`), and writes its record (`BlokResourceRecord`) under
  * `bind` for the rest of the blok:
  *
- *     <TableColumns value="@args.table" role="ATTRIBUTE" bind="cols" />
- *     <foreach items="@cols.data" let="#col"><Text text="@col.name" /></foreach>
- *     <ColumnStat value="@args.table" column="@ui.column" bind="stat" />
- *     <Text text="@utils.fmt.number(stat.data.mean)" />
- *     <ColumnHistogram value="@args.table" column="@ui.column" height="8rem" />
- *     <TableRows value="@args.table" columns="@ui.picked" where="@ui.filter" bind="rows" />
+ *     <TableColumns value={args.table} role="ATTRIBUTE" bind={cols} />
+ *     <foreach items={cols.data} let="col"><Text text={col.name} /></foreach>
+ *     <ColumnStat value={args.table} column={ui.column} bind={stat} />
+ *     <Text text={fmt.number(stat.data.mean)} />
+ *     <ColumnHistogram value={args.table} column={ui.column} height="8rem" />
+ *     <TableRows value={args.table} columns={ui.picked} where={ui.filter} bind={rows} />
  *
  * The reads go through the shared parquet engine (one DuckDB connection, one
  * scoped secret per store); a blok never writes SQL. The renders are lazy
@@ -41,7 +41,7 @@ const Parts = {
 };
 
 const tableValueSchema = structureValueSchema.describe(
-  'The table, a structure reference ({"object", "__identifier": "@mikro/tabledataset"}): typically @args.table.',
+  'The table, a structure reference ({"object", "__identifier": "@mikro/tabledataset"}): typically `{args.table}`.',
 );
 const columnSchema = z.string().nullish().describe("The column, by its name. Nothing is read while it is unset.");
 const clearOnUnmountSchema = boolSchema.describe(
@@ -49,9 +49,9 @@ const clearOnUnmountSchema = boolSchema.describe(
 );
 
 const recordBind = (data: string) =>
-  bindSchema.describe(
+  markBindSchema(bindSchema.describe(
     `Where the record is written: {"status", "loading", "ready", "failed", "empty", "stale", "error", "data"}. ${data} Seed it in demo_state for the preview, which reads nothing.`,
-  );
+  ));
 
 export const COLUMN_ROLES = ["ATTRIBUTE", "COLOR", "COORDINATE", "GROUP_ID", "ID", "LABEL", "TRACK_ID"] as const;
 

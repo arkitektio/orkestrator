@@ -3,30 +3,12 @@ import { KabinetPod } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import { Link } from "react-router-dom";
 import { ListPodFragment, PodStatus, useListPodQuery } from "../../api/graphql";
+import { POD_STATUS_DOT, POD_STATUS_RANK } from "../../lib/podStatus";
 import { releaseIdentity } from "../../appIdentity";
 import { AppIcon } from "../AppIcon";
 
 /** How many pods the home page lists; the Pods page has every one. */
 const SHOWN = 8;
-
-const STATUS_DOT: Record<PodStatus, string> = {
-  [PodStatus.Running]: "bg-emerald-500",
-  [PodStatus.Pending]: "bg-amber-500 animate-pulse",
-  [PodStatus.Stopping]: "bg-amber-500 animate-pulse",
-  [PodStatus.Failed]: "bg-destructive",
-  [PodStatus.Stopped]: "bg-muted-foreground/40",
-  [PodStatus.Unkown]: "bg-muted-foreground/40",
-};
-
-/** Running first, then the ones on their way up or down, then the rest. */
-const RANK: Record<PodStatus, number> = {
-  [PodStatus.Running]: 0,
-  [PodStatus.Pending]: 1,
-  [PodStatus.Stopping]: 1,
-  [PodStatus.Failed]: 2,
-  [PodStatus.Unkown]: 3,
-  [PodStatus.Stopped]: 4,
-};
 
 const PodRow = ({ pod }: { pod: ListPodFragment }) => {
   const release = pod.deployment.flavour.release;
@@ -43,7 +25,7 @@ const PodRow = ({ pod }: { pod: ListPodFragment }) => {
             {app.name} <span className="font-normal text-muted-foreground">v{release.version}</span>
           </span>
           <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-            <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[pod.status])} />
+            <span className={cn("size-1.5 shrink-0 rounded-full", POD_STATUS_DOT[pod.status])} />
             <span className="lowercase first-letter:uppercase">{pod.status}</span>
             <span>·</span>
             <span className="truncate">{pod.resource?.name ?? pod.backend.name}</span>
@@ -60,7 +42,7 @@ const PodRow = ({ pod }: { pod: ListPodFragment }) => {
  */
 export const RunningPods = () => {
   const { data } = useListPodQuery({ fetchPolicy: "cache-and-network" });
-  const pods = [...(data?.pods ?? [])].sort((a, b) => RANK[a.status] - RANK[b.status]);
+  const pods = [...(data?.pods ?? [])].sort((a, b) => POD_STATUS_RANK[a.status] - POD_STATUS_RANK[b.status]);
   if (pods.length === 0) return null;
 
   const running = pods.filter((pod) => pod.status === PodStatus.Running).length;

@@ -1,5 +1,5 @@
 import {gql, type ApolloClient} from '@apollo/client';
-import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@/core/blok/renderer/runtime';
+import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import type {TaskEventKind} from '../api/graphql';
 import {taskUpdateFromEvent} from '../components/blokTaskUpdates';
 import {createLiveStateStore, type LiveStateSubscribe} from './liveStateStore';
@@ -11,7 +11,7 @@ import {createLiveStateStore, type LiveStateSubscribe} from './liveStateStore';
  * (the task and the few events its record is made of) and then says what
  * changes it: the task's events, and every task of the action as it starts
  * and as it ends. This folds those into the record a blok reads
- * (`self.<action>.latest`) and holds it in a live-state store, so there is one
+ * (`self.tasks.<action>`, `deps.<key>.tasks.<action>`) and holds it in a live-state store, so there is one
  * subscription per `(agent, interface)` however many bloks read it, and
  * readers hear of it at most once per animation frame.
  */

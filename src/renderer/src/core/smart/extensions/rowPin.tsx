@@ -35,3 +35,18 @@ const CompactRowsContext = React.createContext(false);
 export const CompactRowsProvider = CompactRowsContext.Provider;
 
 export const useCompactRows = () => React.useContext(CompactRowsContext);
+
+/**
+ * The related context a row is listed for (`SmartContextProps.related`), by
+ * key; null for the page's own. Scopes the row's cmdk value, so an action
+ * listed for the page and for its whole lens is two rows, not one.
+ */
+const RowScopeContext = React.createContext<string | null>(null);
+
+export const RowScopeProvider = RowScopeContext.Provider;
+
+/** The cmdk value a row given `value` ends up with: what to look it up by. */
+export const useScopedRowValue = (value: string | undefined) => {
+  const scope = React.useContext(RowScopeContext);
+  return scope !== null && value !== undefined ? `${scope}::${value}` : value;
+};

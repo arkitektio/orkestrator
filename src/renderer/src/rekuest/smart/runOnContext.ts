@@ -1,7 +1,17 @@
 import React from "react";
 import type { PrimaryActionFragment } from "@/rekuest/api/graphql";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
 
-export type RunOnTarget = { action: PrimaryActionFragment };
+export type RunOnTarget = {
+  action: PrimaryActionFragment;
+  /**
+   * What the row runs on, when not the menu's own objects: a row listed for
+   * one of the page's related contexts (its whole lens).
+   */
+  context?: Pick<SmartContextProps, "objects" | "partners">;
+  /** The row's cmdk value, when scoped (`useScopedRowValue`); else the action id. */
+  rowValue?: string;
+};
 
 export type RunOnPoint = { clientX: number; clientY: number };
 
@@ -12,11 +22,12 @@ export type RunOnApi = {
 };
 
 /**
- * Under the action's row: its cmdk item (`value` is the action id), bottom-left.
- * The viewport's centre when the row is not on screen.
+ * Under the action's row: its cmdk item (`value` is the action id, scoped for
+ * a related context's row), bottom-left. The viewport's centre when the row
+ * is not on screen.
  */
-export const rowAnchor = (actionId: string): RunOnPoint => {
-  const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(actionId) : actionId;
+export const rowAnchor = (rowValue: string): RunOnPoint => {
+  const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(rowValue) : rowValue;
   const row = document.querySelector(`[cmdk-item][data-value="${escaped}"]`);
   if (!row) return { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 };
   const rect = row.getBoundingClientRect();

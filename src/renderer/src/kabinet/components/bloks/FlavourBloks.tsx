@@ -1,16 +1,17 @@
+import { demoModel, parseBlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
 import * as React from "react";
 import { AlertTriangle, Box, LayoutPanelTop, Loader2 } from "lucide-react";
-import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
-import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
-import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
+import { CachedBlokLogo, type LogoTree } from "@arkitektio/bsx/logo/CachedBlokLogo";
+import { CachedBlokPreview } from "@arkitektio/bsx/preview/CachedBlokPreview";
+import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
 import {
   ASSET_KIND_LABELS,
   BlokAssetHostProvider,
   type BlokAsset,
   type BlokAssetHost,
   type BlokAssetKind,
-} from "@/core/blok/renderer/assets";
-import { normalizeBlokComponentTree } from "@/core/blok/renderer/runtime";
+} from "@arkitektio/bsx/renderer/assets";
+import { normalizeBlokComponentTree } from "@arkitektio/bsx/renderer/runtime/index";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { formatBytes } from "@/core/smart/display/DisplayLine";
@@ -58,7 +59,7 @@ const hostOf = (source: string): string => {
   }
 };
 
-/** Answers `@self.assets.<name>` from what the flavour declares: known, not stored. */
+/** Answers `self.assets.<name>` from what the flavour declares: known, not stored. */
 export const useInspectedAssetHost = (assets: InspectedAsset[]): BlokAssetHost =>
   React.useMemo(() => {
     const byName = new Map(assets.map((asset) => [asset.name, asset]));
@@ -111,12 +112,13 @@ const BlokPreview = ({ blok }: { blok: KabinetBlokFragment }) => {
     () => normalizeBlokComponentTree((blok.componentTree as unknown[] | null) ?? null).roots,
     [blok.componentTree],
   );
+  const initialState = React.useMemo(() => demoModel(roots, parseBlokDeclarations(blok)), [roots, blok]);
   return (
     <AsyncBoundary loadingFallback={null} errorFallback={(error) => <RenderFailure error={error} />}>
       <BlokRenderer
         surfaceId={`kabinet-preview-${blok.id}`}
         uiComponents={roots}
-        initialState={blok.demoState ?? {}}
+        initialState={initialState}
         chrome="minimal"
         refuseAction={REFUSE_EVERY_ACTION}
       />
@@ -163,18 +165,20 @@ const AppLogos = ({ logos }: { logos: KabinetBlokFragment[] }) => (
 );
 
 const ActionLogos = ({ logos, drawnFor }: { logos: KabinetBlokFragment[]; drawnFor: Map<string, string[]> }) => (
-  <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3">
+  <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2">
     {logos.map((blok) => {
       const actions = drawnFor.get(blok.id) ?? [];
       return (
-        <div key={blok.id} className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center">
+        <div key={blok.id} className="flex min-w-0 items-center gap-3 rounded-xl border p-2">
           {blok.parseError ? (
-            <AlertTriangle className="size-12 text-amber-500" aria-label={blok.parseError} />
+            <AlertTriangle className="size-10 shrink-0 text-warning" aria-label={blok.parseError} />
           ) : (
-            <TabLogo blok={blok} className="size-12" />
+            <TabLogo blok={blok} className="size-10 shrink-0" />
           )}
-          <span className="line-clamp-2 text-xs font-medium">{actions.length ? actions.join(", ") : blok.key}</span>
-          {actions.length > 0 && <span className="truncate font-mono text-[0.65rem] text-muted-foreground">{blok.key}</span>}
+          <div className="flex min-w-0 flex-col">
+            <span className="line-clamp-2 text-xs font-medium">{actions.length ? actions.join(", ") : blok.key}</span>
+            {actions.length > 0 && <span className="truncate font-mono text-[0.65rem] text-muted-foreground">{blok.key}</span>}
+          </div>
         </div>
       );
     })}
@@ -277,7 +281,7 @@ export const FlavourBloks = ({ flavourId }: { flavourId: string }) => {
       new Map(
         bloks.map((blok) => [
           `kabinet:${blok.id}`,
-          { componentTree: blok.componentTree, demoState: blok.demoState, hash: blok.hash },
+          { ...parseBlokDeclarations(blok), componentTree: blok.componentTree, hash: blok.hash },
         ]),
       ),
     [bloks],
@@ -302,7 +306,7 @@ export const FlavourBloks = ({ flavourId }: { flavourId: string }) => {
   return (
     <TreesContext.Provider value={trees}>
       <BlokAssetHostProvider value={assetHost}>
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6">
           {logos.length > 0 && (
             <Section title="App logo" count={logos.length}>
               <AppLogos logos={logos} />

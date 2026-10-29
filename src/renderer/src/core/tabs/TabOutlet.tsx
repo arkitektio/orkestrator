@@ -146,7 +146,7 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
                 "isolate overflow-hidden rounded-xl border bg-background shadow-sm [clip-path:inset(0_round_var(--radius-xl))]",
               // The focused pane is told by its edge, and only while split:
               // with one pane there is nothing to tell apart.
-              pane !== null && (active ? "border-primary/40" : "border-border/60"),
+              pane !== null && (active ? "border-primary/40" : "border-page-edge"),
             )}
             style={
               pane === "left"
