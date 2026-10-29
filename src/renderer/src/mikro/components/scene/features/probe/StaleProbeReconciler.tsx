@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { effectiveProbeLayerId } from "../../platform/probe/probeTargeting";
+import { effectiveHitLayerId } from "../../platform/probe/probeTargeting";
+import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
@@ -22,9 +23,14 @@ export function StaleProbeReconciler() {
     // Mesh probes are owned by their mesh layer (never the image target).
     s.probeReadout && s.probeReadout.strategy !== "mesh" ? s.probeReadout.layerId : null,
   );
+  const dataLayerId = useViewerStore((s) => s.dataLayerId);
   const probeLayerId = useViewerStore((s) => s.probeLayerId);
+  const pickLayerId = useViewerStore((s) => s.pickLayerId);
+  const is3D = useModeStore((s) => s.displayMode === "3D");
   const setProbedCoordinate = useViewerStore((s) => s.setProbedCoordinate);
-  const effectiveTargetId = useSceneStore((s) => effectiveProbeLayerId(probeLayerId, s.layers));
+  const effectiveTargetId = useSceneStore((s) =>
+    effectiveHitLayerId({ dataLayerId, probeLayerId, pickLayerId }, s.layers, is3D),
+  );
   const staleProbe =
     probedLayerId !== null && effectiveTargetId !== null && probedLayerId !== effectiveTargetId;
 

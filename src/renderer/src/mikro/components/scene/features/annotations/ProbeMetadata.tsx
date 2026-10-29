@@ -140,11 +140,11 @@ const ProbedLayer = ({ layerId, readings }: { layerId: string; readings: readonl
 
 const ActiveLayer = () => {
   const selectedLayerId = useSelectionStore((state) => state.selectedLayerId);
-  const probeLayerId = useViewerStore((state) => state.probeLayerId);
+  const dataLayerId = useViewerStore((state) => state.dataLayerId);
   // Both selectors read `layers` but return a SCALAR / the one layer: the
   // array's identity is republished by every `updateLayer`.
   const layerId = useSceneStore((state) =>
-    activeMetadataLayerId(selectedLayerId, probeLayerId, state.layers),
+    activeMetadataLayerId(selectedLayerId, dataLayerId, state.layers),
   );
   const layer = useSceneStore((state) =>
     layerId === null

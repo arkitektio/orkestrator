@@ -5,8 +5,8 @@ import { useRegistration, useRegistrationApi } from "../store/context";
 /**
  * Turns scene clicks into landmark halves while a pick side is armed.
  *
- * The scene's probe does the work (`useScenePick`): the probe pin makes exactly
- * ONE layer answer, so "pick on the fixed layer" ignores the moving layer lying
+ * The scene's probe does the work (`useScenePick`): its transient pick makes
+ * exactly ONE layer answer, so "pick on the fixed layer" ignores the moving layer lying
  * on top of it, and vice versa — which is the entire difficulty of clicking
  * corresponding points on two overlaid images. `worldPos` is where the layer is
  * DRAWN, draft included; the store takes a moving-side click back into base

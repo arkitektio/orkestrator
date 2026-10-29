@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 
-import { effectiveProbeLayerId } from "../../../../../platform/probe/probeTargeting";
+import { effectiveHitLayerId } from "../../../../../platform/probe/probeTargeting";
 import { useBrushSkeleton } from "./useBrushSkeleton";
 import { smoothSoupNormals } from "../../meshes/soupNormals";
 import { PreviewLine, type PreviewLineHandle } from "../../../../../platform/draw/PreviewLine";
 import { useBrushSkeletonStore, useBrushSkeletonStoreApi } from "../../brushSkeletonStore";
-import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../../../platform/stores/modeStore";
 import { useRoiDrawingStore } from "../../../roiDrawingStore";
 import { useSceneStoreApi } from "../../../../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../../../../platform/stores/viewerStore";
@@ -202,15 +202,17 @@ export const BrushStrokeSession = () => {
     if (brush.status === "painting") brush.endStroke();
   }, [interactionMode, heldDesignTool, brushApi]);
 
-  // Arming fills the blank radius from the probe target's own scale.
+  // Arming fills the blank radius from the hit target's own scale.
+  const modeStoreApi = useModeStoreApi();
   useEffect(() => {
     if (!armed) return;
-    const layerId = effectiveProbeLayerId(
-      viewerStoreApi.getState().probeLayerId,
+    const layerId = effectiveHitLayerId(
+      viewerStoreApi.getState(),
       sceneStoreApi.getState().layers,
+      modeStoreApi.getState().displayMode === "3D",
     );
     if (layerId) initRadiusForLayer(layerId);
-  }, [armed, initRadiusForLayer, sceneStoreApi, viewerStoreApi]);
+  }, [armed, initRadiusForLayer, sceneStoreApi, viewerStoreApi, modeStoreApi]);
 
   // The handover: pointer-up moved the store to "extracting"; run it.
   useEffect(() => {

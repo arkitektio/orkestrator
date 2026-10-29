@@ -35,7 +35,7 @@ import {
   layersKey,
   layersPayload,
   pickPayload,
-  probeLens,
+  dataLens,
   selectionPayload,
   type SceneAnnotationPayload,
   type SceneLayersPayload,
@@ -197,11 +197,12 @@ export const useLayerSessionVisibility = () => {
 /**
  * Pick world points by clicking ONE layer.
  *
- * Built entirely from what the scene already has: the probe pin
- * (`viewerStore.probeLayerId` — exactly one layer answers, the rest decline
+ * Built entirely from what the scene already has: the transient hit override
+ * (`viewerStore.pickLayerId` — exactly one layer answers, the rest decline
  * without stopping propagation, `probeTargeting.ts`) and PROBE mode's click
- * probes. While `enabled`, the mode is PROBE and the pin is `layerId`; both
- * are restored afterwards. `worldPos` is the hit under whatever placement the
+ * probes. While `enabled`, the mode is PROBE and the override is `layerId`;
+ * the mode is restored and the override cleared afterwards, so the user's
+ * own pins are never touched. `worldPos` is the hit under whatever placement the
  * layer is DRAWN with, preview included.
  *
  * Known costs of riding the probe, accepted for now: the click also updates
@@ -225,9 +226,8 @@ export const useScenePick = (options: {
   useEffect(() => {
     if (!enabled || !layerId) return;
     const previousMode = modeApi.getState().interactionMode;
-    const previousPin = viewerApi.getState().probeLayerId;
     modeApi.getState().setInteractionMode("PROBE");
-    viewerApi.getState().setProbeLayerId(layerId);
+    viewerApi.getState().setPickLayerId(layerId);
 
     const unsubscribe = viewerApi.subscribe((state, previous) => {
       const probe = state.probedCoordinate;
@@ -239,7 +239,7 @@ export const useScenePick = (options: {
 
     return () => {
       unsubscribe();
-      viewerApi.getState().setProbeLayerId(previousPin);
+      if (viewerApi.getState().pickLayerId === layerId) viewerApi.getState().setPickLayerId(null);
       // Only undo OUR mode: if the user left PROBE meanwhile, that was them.
       if (modeApi.getState().interactionMode === "PROBE") {
         modeApi.getState().setInteractionMode(previousMode);
@@ -312,7 +312,7 @@ export const useSceneEvents = (handlers: SceneEventHandlers): void => {
         return;
       }
       const layers = sceneApi.getState().sceneLayers;
-      current.current.onSelect?.(selectionPayload(ids, probeLens(layers, viewerApi.getState().probeLayerId)));
+      current.current.onSelect?.(selectionPayload(ids, dataLens(layers, viewerApi.getState().dataLayerId)));
     });
   }, [wantsSelect, selectionApi, sceneApi, viewerApi]);
 

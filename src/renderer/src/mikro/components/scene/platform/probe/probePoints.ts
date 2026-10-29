@@ -25,11 +25,26 @@ export interface ProbePointLookup {
   instanceValue?: number;
 }
 
+/**
+ * What ONE info layer measured at a point (`infoReadings.ts`): the reading,
+ * and where that layer's attribute plans are asked — frozen at the click like
+ * the point's own lookup.
+ */
+export interface ProbePointReading {
+  probe: ProbeResult;
+  lookup: ProbePointLookup | null;
+}
+
 export interface ProbePoint {
   id: string;
   /** 1-based, in pinning order, never reused within a session. */
   index: number;
+  /** The HIT: where the click landed — what the marker, the dedupe and the
+   * metadata read. */
   probe: ProbeResult;
+  /** What the readout showed there, one per info layer at the click (a mesh
+   * pick: its own hit). What the comparison's values and rows are made of. */
+  readings: readonly ProbePointReading[];
   /** Null when nothing links the probed layer to a coordinate system (or a
    * mesh pick's objectId has not resolved yet). */
   lookup: ProbePointLookup | null;
@@ -79,14 +94,26 @@ export const isSameProbePoint = (a: ProbeResult, b: ProbeResult): boolean =>
 
 /**
  * A later publish of a point that is already pinned: take its values (a mesh
- * pick re-publishes once its objectId resolves), and the lookup it could not
+ * pick re-publishes once its objectId resolves), and the lookups it could not
  * have before. A lookup that already exists is kept — see `ProbePointLookup`.
  */
 const refreshed = (
   point: ProbePoint,
   probe: ProbeResult,
   lookup: ProbePointLookup | null,
-): ProbePoint => ({ ...point, probe, lookup: point.lookup ?? lookup });
+  readings: readonly ProbePointReading[] | undefined,
+): ProbePoint => ({
+  ...point,
+  probe,
+  lookup: point.lookup ?? lookup,
+  readings:
+    readings?.map((reading) => ({
+      ...reading,
+      lookup:
+        point.readings.find((old) => old.probe.layerId === reading.probe.layerId)?.lookup ??
+        reading.lookup,
+    })) ?? point.readings,
+});
 
 /**
  * Pin `probe`. Clicking a place that is already pinned refreshes that point
@@ -98,15 +125,16 @@ export const pinProbePoint = (
   lookup: ProbePointLookup | null,
   flatZ: number | null = null,
   coords: AxisCoords | null = null,
+  readings?: readonly ProbePointReading[],
 ): ProbePointsState => {
   if (state.probePoints.some((point) => isSameProbePoint(point.probe, probe))) {
-    return refreshProbePoint(state, probe, lookup);
+    return refreshProbePoint(state, probe, lookup, readings);
   }
   const index = state.probePointSerial + 1;
   return {
     probePoints: [
       ...state.probePoints,
-      { id: `probe-point-${index}`, index, probe, lookup, flatZ, coords },
+      { id: `probe-point-${index}`, index, probe, readings: readings ?? [], lookup, flatZ, coords },
     ],
     probePointSerial: index,
   };
@@ -117,12 +145,13 @@ export const refreshProbePoint = (
   state: ProbePointsState,
   probe: ProbeResult,
   lookup: ProbePointLookup | null,
+  readings?: readonly ProbePointReading[],
 ): ProbePointsState => {
   if (!state.probePoints.some((point) => isSameProbePoint(point.probe, probe))) return state;
   return {
     probePointSerial: state.probePointSerial,
     probePoints: state.probePoints.map((point) =>
-      isSameProbePoint(point.probe, probe) ? refreshed(point, probe, lookup) : point,
+      isSameProbePoint(point.probe, probe) ? refreshed(point, probe, lookup, readings) : point,
     ),
   };
 };

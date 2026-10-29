@@ -5,8 +5,12 @@ import {
   PROBE_READOUT_SETTLE_MS,
   needsImmediateReadout,
 } from "../../platform/probe/probeReadout";
+import { readInfoLayers } from "../../platform/probe/infoReadings";
+import { effectiveInfoLayerIds } from "../../platform/probe/probeTargeting";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
+import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { useBrickStoreApi } from "../bricks/store/brickSlice";
 
 /**
  * A placement probe is the 3D annotation cursor, not a measurement, so it
@@ -28,14 +32,39 @@ const readoutOf = (probe: ProbeResult | null): ProbeResult | null =>
  * publish, with a settle instead of a throttle — a numeric readout that
  * flickers through every voxel on the way somewhere is no more informative
  * than one that shows where you stopped.
+ *
+ * With the readout it publishes `probeInfo` — what each INFO layer holds at
+ * the settled hit (`platform/probe/infoReadings.ts`) — and re-reads it when
+ * the chosen layers or their visibility change, so toggling a layer in the
+ * control bar shows at once rather than on the next cursor move.
  */
 export function ProbeReadoutSettler() {
   const viewerStore = useViewerStoreApi();
+  const sceneStore = useSceneStoreApi();
+  const brickStore = useBrickStoreApi();
 
   useEffect(() => {
+    const publishInfo = (probe: ProbeResult | null) => {
+      const viewer = viewerStore.getState();
+      const bricks = brickStore.getState();
+      const layers = sceneStore.getState().layers;
+      viewer.setProbeInfo(
+        readInfoLayers(probe, {
+          layers,
+          infoIds: effectiveInfoLayerIds(viewer, layers),
+          sampler: bricks.brickSystem,
+          nodePlans: bricks.nodePlans,
+        }),
+      );
+    };
+    const publish = (probe: ProbeResult | null) => {
+      viewerStore.getState().setProbeReadout(probe);
+      publishInfo(probe);
+    };
+
     const settler = createSettler<ProbeResult | null>({
       delayMs: PROBE_READOUT_SETTLE_MS,
-      emit: (probe) => viewerStore.getState().setProbeReadout(probe),
+      emit: publish,
     });
 
     /**
@@ -57,21 +86,41 @@ export function ProbeReadoutSettler() {
 
     // Seed synchronously: a probe that survived a remount (a pinned click)
     // must be on screen before the first settle window, not after one.
-    viewerStore.getState().setProbeReadout(offered);
+    publish(offered);
 
     let last = viewerStore.getState().probedCoordinate;
+    let lastPins = [viewerStore.getState().dataLayerId, viewerStore.getState().infoLayerIds] as const;
     const unsubscribe = viewerStore.subscribe((state) => {
+      if (state.dataLayerId !== lastPins[0] || state.infoLayerIds !== lastPins[1]) {
+        lastPins = [state.dataLayerId, state.infoLayerIds];
+        publishInfo(state.probeReadout);
+      }
       if (state.probedCoordinate === last) return;
       last = state.probedCoordinate;
       offer(last);
     });
+    // Visibility decides which info layers can be read; a scalar key, so a
+    // per-tick layer edit costs one string compare.
+    const visibilityKey = () =>
+      sceneStore
+        .getState()
+        .layers.map((layer) => `${layer.id}:${layer.visible === false ? 0 : 1}`)
+        .join("|");
+    let lastVisibility = visibilityKey();
+    const unsubscribeScene = sceneStore.subscribe(() => {
+      const next = visibilityKey();
+      if (next === lastVisibility) return;
+      lastVisibility = next;
+      publishInfo(viewerStore.getState().probeReadout);
+    });
 
     return () => {
       unsubscribe();
+      unsubscribeScene();
       settler.cancel();
-      viewerStore.getState().setProbeReadout(null);
+      publish(null);
     };
-  }, [viewerStore]);
+  }, [viewerStore, sceneStore, brickStore]);
 
   return null;
 }

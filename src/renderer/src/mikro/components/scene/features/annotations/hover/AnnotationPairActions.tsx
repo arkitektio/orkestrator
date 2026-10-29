@@ -24,7 +24,7 @@ import {
 } from "@/mikro/api/graphql";
 
 import { layerDisplayLabel } from "../../../platform/layerui/layerIdentity";
-import { effectiveProbeLayerId } from "../../../platform/probe/probeTargeting";
+import { effectiveDataLayerId } from "../../../platform/probe/probeTargeting";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
 import type { SelectedRoi } from "../roiSelectionStore";
@@ -57,10 +57,10 @@ const PAIR_SECTIONS: SmartSectionSelection = {
  * port's `Requires` narrows the list: an action wanting a rectangle is not
  * offered on a point, one wanting a single-channel image not against a stack.
  *
- * "The image under it" starts as the lens the probe reads — the pinned layer,
- * else the first visible one — the same rule as the probe readout. The "Run
- * with" picker swaps it for any other layer's lens, hidden ones too, for this
- * card only: it does not move the probe pin.
+ * "The image under it" starts as the data layer's lens — the one picked in
+ * the control bar, else the first visible layer. The "Run with" picker swaps
+ * it for any other layer's lens, hidden ones too, for this card only: it does
+ * not move the data layer.
  *
  * Drawn for the card, not as the right-click menu: the actions are tiles
  * (`TILE_SKIN`), the image they run with is the picker's one muted line, and the
@@ -85,13 +85,13 @@ export const AnnotationPairActions = ({
   autoFocus: boolean;
   onDone: () => void;
 }) => {
-  const probeLayerId = useViewerStore((s) => s.probeLayerId);
+  const dataLayerId = useViewerStore((s) => s.dataLayerId);
   const [pickedLayerId, setPickedLayerId] = useState<string | null>(null);
   // A scalar subscription (the target's id), then a `getState()` read: a
   // whole-array subscription would re-render on every layer edit.
   const sceneApi = useSceneStoreApi();
-  const probedLayerId = useSceneStore((s) => effectiveProbeLayerId(probeLayerId, s.layers));
-  const targetLayerId = useSceneStore((s) => pairLayerId(pickedLayerId, probeLayerId, s.layers));
+  const defaultLayerId = useSceneStore((s) => effectiveDataLayerId(dataLayerId, s.layers));
+  const targetLayerId = useSceneStore((s) => pairLayerId(pickedLayerId, dataLayerId, s.layers));
   const lens = useMemo(() => {
     const layers = sceneApi.getState().layers;
     return layerLensPartner(targetLayerId, layers, (layerId) => {
@@ -148,7 +148,7 @@ export const AnnotationPairActions = ({
         picker={
           <LensPicker
             layerId={targetLayerId}
-            probedLayerId={probedLayerId}
+            defaultLayerId={defaultLayerId}
             label={lens.label ?? "this image"}
             onPick={setPickedLayerId}
           />
@@ -362,12 +362,12 @@ const CropMenu = ({
  */
 const LensPicker = ({
   layerId,
-  probedLayerId,
+  defaultLayerId,
   label,
   onPick,
 }: {
   layerId: string | null;
-  probedLayerId: string | null;
+  defaultLayerId: string | null;
   label: string;
   onPick: (layerId: string) => void;
 }) => {
@@ -389,7 +389,7 @@ const LensPicker = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-w-72" onKeyDown={keepKeys}>
         <DropdownMenuLabel className="text-xs">Run with</DropdownMenuLabel>
-        <LayerOptions layerId={layerId} probedLayerId={probedLayerId} onPick={onPick} />
+        <LayerOptions layerId={layerId} defaultLayerId={defaultLayerId} onPick={onPick} />
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -397,11 +397,11 @@ const LensPicker = ({
 
 const LayerOptions = ({
   layerId,
-  probedLayerId,
+  defaultLayerId,
   onPick,
 }: {
   layerId: string | null;
-  probedLayerId: string | null;
+  defaultLayerId: string | null;
   onPick: (layerId: string) => void;
 }) => {
   const sceneApi = useSceneStoreApi();
@@ -412,8 +412,8 @@ const LayerOptions = ({
       {layers.map((layer) => (
         <DropdownMenuRadioItem key={layer.id} value={layer.id} className="text-xs">
           <span className="min-w-0 flex-1 truncate">{layerDisplayLabel(layer)}</span>
-          {layer.id === probedLayerId ? (
-            <span className="shrink-0 text-muted-foreground">probe</span>
+          {layer.id === defaultLayerId ? (
+            <span className="shrink-0 text-muted-foreground">data</span>
           ) : layer.visible === false ? (
             <span className="shrink-0 text-muted-foreground">hidden</span>
           ) : null}

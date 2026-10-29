@@ -4,12 +4,14 @@ import { selectionsFor } from "../../platform/model/worldSelections";
 import { collectionSpatialAxes } from "../../platform/model/collectionPlacement";
 import { probeAxisCoords } from "../../platform/probe/probeCoords";
 import { createProbePinGate } from "../../platform/probe/probePinGate";
-import type { ProbePointLookup } from "../../platform/probe/probePoints";
-import { probeSystemIdFor } from "../../platform/probe/probeTargeting";
+import { readInfoLayers } from "../../platform/probe/infoReadings";
+import type { ProbePointLookup, ProbePointReading } from "../../platform/probe/probePoints";
+import { effectiveInfoLayerIds, probeSystemIdFor } from "../../platform/probe/probeTargeting";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { useBrickStoreApi } from "../bricks/store/brickSlice";
 
 /**
  * Turns a click in PROBE mode (toolbar, or holding P) into a probe point.
@@ -19,13 +21,15 @@ import { useViewerStoreApi } from "../../platform/stores/viewerStore";
  * a drag follows — so pinning in the emitters would drop a point at the start
  * of every right-drag orbit. The emitters stay as they are; this feeds the
  * probes they publish and the window's pointer events to the gate that
- * decides (`platform/probe/probePinGate.ts`), and resolves where the point's
+ * decides (`platform/probe/probePinGate.ts`), and resolves what the point
+ * keeps: the info layers' readings at the click and where each one's
  * attribute plans are asked.
  */
 export function ProbePointPinner() {
   const viewerStore = useViewerStoreApi();
   const sceneStore = useSceneStoreApi();
   const modeStore = useModeStoreApi();
+  const brickStore = useBrickStoreApi();
 
   useEffect(() => {
     /** Where the point's attribute plans are asked — resolved NOW, so the
@@ -67,6 +71,20 @@ export function ProbePointPinner() {
         : null;
     };
 
+    /** What the readout shows at the click: the info layers' readings
+     * (`infoReadings.ts`), or a mesh pick itself — a pick measures the mesh. */
+    const readingsFor = (probe: ProbeResult): ProbePointReading[] => {
+      if (probe.strategy === "mesh") return [{ probe, lookup: lookupFor(probe) }];
+      const bricks = brickStore.getState();
+      const layers = sceneStore.getState().layers;
+      return readInfoLayers(probe, {
+        layers,
+        infoIds: effectiveInfoLayerIds(viewerStore.getState(), layers),
+        sampler: bricks.brickSystem,
+        nodePlans: bricks.nodePlans,
+      }).map((reading) => ({ probe: reading, lookup: lookupFor(reading) }));
+    };
+
     const pin = (probe: ProbeResult) => {
       const flat = modeStore.getState().displayMode === "2D";
       viewerStore
@@ -76,6 +94,7 @@ export function ProbePointPinner() {
           lookupFor(probe),
           flat ? viewerStore.getState().currentZ : null,
           coordsFor(probe),
+          readingsFor(probe),
         );
     };
 
@@ -83,7 +102,8 @@ export function ProbePointPinner() {
       now: () => performance.now(),
       probing: () => modeStore.getState().interactionMode === "PROBE",
       pin,
-      refresh: (probe) => viewerStore.getState().refreshProbePoint(probe, lookupFor(probe)),
+      refresh: (probe) =>
+        viewerStore.getState().refreshProbePoint(probe, lookupFor(probe), readingsFor(probe)),
     });
 
     const onPointerDown = (event: PointerEvent) =>
@@ -116,7 +136,7 @@ export function ProbePointPinner() {
       window.removeEventListener("pointercancel", gate.cancel);
       window.removeEventListener("click", onClick, true);
     };
-  }, [viewerStore, sceneStore, modeStore]);
+  }, [viewerStore, sceneStore, modeStore, brickStore]);
 
   return null;
 }

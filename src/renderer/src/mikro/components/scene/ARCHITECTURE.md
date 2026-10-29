@@ -85,7 +85,8 @@ known about the shape (`AnnotationInfoCard`) it lists
 (`AnnotationPairActions`) the rekuest actions whose two leading ports are
 `(Annotation, ArrayLens)`, in that order (Run and Shortcuts allow further arguments, as on every drop). The shape goes out with the descriptors the server answers for
 it (`GetAnnotationDescriptors`, per clicked shape, never on `SceneAnnotation`),
-the lens is the one the probe reads (`effectiveProbeLayerId`) with its own.
+the lens is the data layer's (`effectiveDataLayerId`, picked in the control
+bar's `LayerTargetPicker`) with its own.
 The lens is sent as `@mikro/arraylens`, as everywhere: mikro hosts one
 structure per lens kind and rekuest matches a port's identifier exactly.
 The pairing is `annotationActionTarget.ts`; the full menu of a shape (no

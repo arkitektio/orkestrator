@@ -6,7 +6,7 @@ import {
   layersKey,
   layersPayload,
   pickPayload,
-  probeLens,
+  dataLens,
   selectionPayload,
 } from "./eventPayloads";
 import { createSceneEvents } from "./sceneEvents";
@@ -46,7 +46,7 @@ describe("payloads", () => {
   });
 
   it("names the selection, first shape first, with the lens under the probe", () => {
-    const lens = probeLens([shapes, image, labels], "l2");
+    const lens = dataLens([shapes, image, labels], "l2");
     expect(selectionPayload(["a1", "a2"], lens)).toEqual({
       annotation: { __identifier: "@mikro/annotation", object: "a1" },
       annotations: [
@@ -56,7 +56,7 @@ describe("payloads", () => {
       lens: { __identifier: "@mikro/arraylens", object: "lens-2" },
     });
     // Nothing pinned: the first visible image layer's lens.
-    expect(probeLens([shapes, image], null)).toEqual({ __identifier: "@mikro/arraylens", object: "lens-1" });
+    expect(dataLens([shapes, image], null)).toEqual({ __identifier: "@mikro/arraylens", object: "lens-1" });
     expect(selectionPayload([], null).annotation).toBeNull();
   });
 

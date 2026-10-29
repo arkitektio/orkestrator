@@ -16,8 +16,8 @@ const layers = [
   { id: "layer:volume", lens: { id: "3", descriptors: volume } },
 ];
 
-const probeLensPartner = (probeLayerId: string | null, shown: typeof layers) =>
-  layerLensPartner(pairLayerId(null, probeLayerId, shown), shown);
+const dataLensPartner = (dataLayerId: string | null, shown: typeof layers) =>
+  layerLensPartner(pairLayerId(null, dataLayerId, shown), shown);
 
 describe("annotationActionTarget", () => {
   it("the annotation carries what the server said it provides", () => {
@@ -37,7 +37,7 @@ describe("annotationActionTarget", () => {
   });
 
   it("pairs with the first visible layer's lens, as an array lens", () => {
-    expect(probeLensPartner(null, layers)).toEqual({
+    expect(dataLensPartner(null, layers)).toEqual({
       identifier: "@mikro/arraylens",
       id: "2",
       label: "DAPI",
@@ -45,17 +45,18 @@ describe("annotationActionTarget", () => {
     });
   });
 
-  it("the probe pin wins while its layer is visible", () => {
-    expect(probeLensPartner("layer:volume", layers)?.id).toBe("3");
-    expect(probeLensPartner("layer:hidden", layers)?.id).toBe("2");
+  it("the data layer wins while it is in the scene, hidden or not", () => {
+    expect(dataLensPartner("layer:volume", layers)?.id).toBe("3");
+    expect(dataLensPartner("layer:hidden", layers)?.id).toBe("1");
+    expect(dataLensPartner("layer:gone", layers)?.id).toBe("2");
   });
 
-  it("nothing to pair with when no layer answers a probe", () => {
-    expect(probeLensPartner(null, [])).toBeNull();
-    expect(probeLensPartner(null, [layers[0]])).toBeNull();
+  it("nothing to pair with when there is no data layer", () => {
+    expect(dataLensPartner(null, [])).toBeNull();
+    expect(dataLensPartner(null, [layers[0]])).toBeNull();
   });
 
-  it("a picked layer wins over the probe, hidden or not, while it is in the scene", () => {
+  it("a picked layer wins over the data layer, hidden or not, while it is in the scene", () => {
     expect(pairLayerId(null, "layer:volume", layers)).toBe("layer:volume");
     expect(pairLayerId("layer:hidden", "layer:volume", layers)).toBe("layer:hidden");
     expect(pairLayerId("layer:gone", null, layers)).toBe("layer:image");

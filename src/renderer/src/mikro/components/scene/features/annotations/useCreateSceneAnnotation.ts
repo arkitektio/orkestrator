@@ -73,10 +73,10 @@ export const useCreateSceneAnnotation = () => {
                 layer.__typename === "AnnotationLayer" &&
                 layer.annotationCollection?.id === collectionId,
             );
-        // The lens the card will run with: the probe's, by the card's own rule.
+        // The lens the card will run with: the data layer's, by the card's own rule.
         const layers = sceneStoreApi.getState().layers;
         const lens = layerLensPartner(
-          pairLayerId(null, viewerStoreApi.getState().probeLayerId, layers),
+          pairLayerId(null, viewerStoreApi.getState().dataLayerId, layers),
           layers,
         );
         const input = { scene: sceneId, kind, vectors };

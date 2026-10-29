@@ -20,7 +20,7 @@ import {
 } from "../../../platform/probe/probeGating";
 import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
-  effectiveProbeLayerId,
+  effectiveHitLayerId,
   layerAnswersProbe,
 } from "../../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../../platform/probe/probeTypes";
@@ -28,7 +28,7 @@ import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
 import { VOLUME_PASS_OBJECT } from "../../../platform/visibility/passVisibility";
 import { DRAG_THRESHOLD_PX } from "../../annotations/drawGesture";
 import { useCreateSceneAnnotation } from "../../annotations/useCreateSceneAnnotation";
-import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
 import {
   isDrawingTool,
   isProbeDerivedTool,
@@ -256,18 +256,20 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   });
   const clickEnabled = clickProbeEnabled(gate);
 
-  // Event-time resolution — fresh pin AND fresh layer list, no render
-  // subscription: exactly one layer (the effective probe target) answers.
+  // Event-time resolution — fresh pins, layer list AND view, no render
+  // subscription: exactly one layer (the effective hit target) answers.
+  const modeStoreApi = useModeStoreApi();
   const answersProbe = useCallback(
     () =>
       layerAnswersProbe(
-        effectiveProbeLayerId(
-          viewerStoreApi.getState().probeLayerId,
+        effectiveHitLayerId(
+          viewerStoreApi.getState(),
           sceneStoreApi.getState().layers,
+          modeStoreApi.getState().displayMode === "3D",
         ),
         layerId,
       ),
-    [viewerStoreApi, sceneStoreApi, layerId],
+    [viewerStoreApi, sceneStoreApi, modeStoreApi, layerId],
   );
 
   useEffect(() => {

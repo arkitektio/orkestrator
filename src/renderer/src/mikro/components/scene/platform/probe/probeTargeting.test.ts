@@ -1,28 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
-  effectiveProbeLayerId,
+  effectiveDataLayerId,
+  effectiveHitLayerId,
+  effectiveInfoLayerIds,
   layerAnswersProbe,
   probeAfterPinChange,
 } from "./probeTargeting";
 
-describe("effectiveProbeLayerId", () => {
-  const layers = [
-    { id: "a", visible: true },
-    { id: "b", visible: true },
-    { id: "c", visible: true },
-  ];
+const layers = [
+  { id: "a", visible: true },
+  { id: "b", visible: true },
+  { id: "c", visible: true },
+];
 
-  it("defaults to the first layer with no pin", () => {
-    expect(effectiveProbeLayerId(null, layers)).toBe("a");
-  });
+const pins = (overrides: Partial<{
+  dataLayerId: string | null;
+  probeLayerId: string | null;
+  pickLayerId: string | null;
+}> = {}) => ({ dataLayerId: null, probeLayerId: null, pickLayerId: null, ...overrides });
 
-  it("lets an explicit visible pin win over the first layer", () => {
-    expect(effectiveProbeLayerId("b", layers)).toBe("b");
-  });
-
-  it("skips a hidden first layer for the default", () => {
+describe("effectiveDataLayerId", () => {
+  it("defaults to the first visible layer with no pin", () => {
+    expect(effectiveDataLayerId(null, layers)).toBe("a");
     expect(
-      effectiveProbeLayerId(null, [
+      effectiveDataLayerId(null, [
         { id: "a", visible: false },
         { id: "b", visible: true },
       ]),
@@ -30,37 +31,95 @@ describe("effectiveProbeLayerId", () => {
   });
 
   it("treats an undefined visible as visible", () => {
-    expect(effectiveProbeLayerId(null, [{ id: "a" }])).toBe("a");
+    expect(effectiveDataLayerId(null, [{ id: "a" }])).toBe("a");
   });
 
-  it("falls back to the first visible layer when the pin names a hidden one", () => {
+  // A task reads the lens, not the pixels on screen.
+  it("keeps a pin on a hidden layer", () => {
     expect(
-      effectiveProbeLayerId("b", [
+      effectiveDataLayerId("b", [
         { id: "a", visible: true },
         { id: "b", visible: false },
       ]),
-    ).toBe("a");
+    ).toBe("b");
   });
 
   it("falls back to the first visible layer when the pin names a gone one", () => {
-    expect(effectiveProbeLayerId("gone", layers)).toBe("a");
+    expect(effectiveDataLayerId("gone", layers)).toBe("a");
+  });
+
+  it("is null with no layer to name", () => {
+    expect(effectiveDataLayerId(null, [])).toBeNull();
+    expect(effectiveDataLayerId(null, [{ id: "a", visible: false }])).toBeNull();
+  });
+});
+
+describe("effectiveInfoLayerIds", () => {
+  it("defaults to the data layer alone", () => {
+    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: null }, layers)).toEqual(["a"]);
+    expect(effectiveInfoLayerIds({ dataLayerId: "c", infoLayerIds: null }, layers)).toEqual(["c"]);
+  });
+
+  it("keeps a chosen set in store order", () => {
+    expect(
+      effectiveInfoLayerIds({ dataLayerId: "a", infoLayerIds: ["c", "a"] }, layers),
+    ).toEqual(["a", "c"]);
+  });
+
+  it("drops hidden and gone layers — nothing resident to read", () => {
+    const shown = [
+      { id: "a", visible: true },
+      { id: "b", visible: false },
+    ];
+    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: ["b", "gone", "a"] }, shown)).toEqual(["a"]);
+    expect(effectiveInfoLayerIds({ dataLayerId: "b", infoLayerIds: null }, shown)).toEqual([]);
+  });
+
+  it("an empty set reads nothing", () => {
+    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: [] }, layers)).toEqual([]);
+  });
+});
+
+describe("effectiveHitLayerId", () => {
+  it("follows the data layer by default", () => {
+    expect(effectiveHitLayerId(pins(), layers, true)).toBe("a");
+    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), layers, true)).toBe("b");
+  });
+
+  it("lets the probe pin win in 3D only", () => {
+    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c" }), layers, true)).toBe("c");
+    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c" }), layers, false)).toBe("a");
+  });
+
+  it("lets a transient pick win in both views", () => {
+    const p = pins({ dataLayerId: "a", probeLayerId: "c", pickLayerId: "b" });
+    expect(effectiveHitLayerId(p, layers, true)).toBe("b");
+    expect(effectiveHitLayerId(p, layers, false)).toBe("b");
+  });
+
+  // A hidden layer draws no mesh, so it can answer nothing.
+  it("skips hidden pins and a hidden data layer", () => {
+    const shown = [
+      { id: "a", visible: true },
+      { id: "b", visible: false },
+    ];
+    expect(effectiveHitLayerId(pins({ probeLayerId: "b" }), shown, true)).toBe("a");
+    expect(effectiveHitLayerId(pins({ pickLayerId: "b" }), shown, true)).toBe("a");
+    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), shown, true)).toBe("a");
+  });
+
+  it("falls back past gone pins", () => {
+    expect(effectiveHitLayerId(pins({ probeLayerId: "gone", dataLayerId: "gone" }), layers, true)).toBe("a");
   });
 
   it("is null when every layer is hidden", () => {
-    expect(
-      effectiveProbeLayerId(null, [
-        { id: "a", visible: false },
-        { id: "b", visible: false },
-      ]),
-    ).toBeNull();
-    expect(
-      effectiveProbeLayerId("a", [{ id: "a", visible: false }]),
-    ).toBeNull();
-  });
-
-  it("is null with no layers at all", () => {
-    expect(effectiveProbeLayerId(null, [])).toBeNull();
-    expect(effectiveProbeLayerId("a", [])).toBeNull();
+    const hidden = [
+      { id: "a", visible: false },
+      { id: "b", visible: false },
+    ];
+    expect(effectiveHitLayerId(pins(), hidden, true)).toBeNull();
+    expect(effectiveHitLayerId(pins({ probeLayerId: "a", dataLayerId: "a" }), hidden, true)).toBeNull();
+    expect(effectiveHitLayerId(pins(), [], true)).toBeNull();
   });
 });
 

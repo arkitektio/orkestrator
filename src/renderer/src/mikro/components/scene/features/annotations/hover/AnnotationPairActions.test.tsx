@@ -42,7 +42,7 @@ vi.mock("../../../platform/stores/sceneStore", () => ({
   useSceneStoreApi: () => ({ getState: () => ({ layers }) }),
 }));
 vi.mock("../../../platform/stores/viewerStore", () => ({
-  useViewerStore: (selector: (s: unknown) => unknown) => selector({ probeLayerId: null }),
+  useViewerStore: (selector: (s: unknown) => unknown) => selector({ dataLayerId: null }),
 }));
 vi.mock("../../../platform/layerui/layerIdentity", () => ({
   layerDisplayLabel: (layer: { name: string }) => layer.name,
@@ -111,7 +111,7 @@ const answer = (descriptors: unknown, descriptorsUnder?: unknown) => ({
 });
 
 describe("AnnotationPairActions", () => {
-  it("offers what takes the pair as tiles: the shape with its descriptors, against the probed lens", () => {
+  it("offers what takes the pair as tiles: the shape with its descriptors, against the data lens", () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({ "@mikro/annotation_kind": "RECTANGLE" }));
 
@@ -154,7 +154,7 @@ describe("AnnotationPairActions", () => {
     render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
 
     expect(screen.getByTestId("layers").dataset.value).toBe("layer:image");
-    expect(screen.getByTestId("layer:layer:image").textContent).toBe("DAPIprobe");
+    expect(screen.getByTestId("layer:layer:image").textContent).toBe("DAPIdata");
     expect(screen.getByTestId("layer:layer:gfp").textContent).toBe("GFPhidden");
 
     fireEvent.click(screen.getByTestId("layer:layer:gfp"));

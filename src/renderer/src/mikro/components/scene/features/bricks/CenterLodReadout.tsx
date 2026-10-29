@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { centerBaseVoxel, centerWorldRay, levelDownsampleFactor } from "./octree/centerLod";
-import { effectiveProbeLayerId } from "../../platform/probe/probeTargeting";
+import { effectiveDataLayerId } from "../../platform/probe/probeTargeting";
 import { buildAffineMatrix, sliceToLatticeZ } from "../../platform/coords/worldTransform";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
@@ -23,9 +23,9 @@ import { useBrickStoreApi } from "./store/brickSlice";
  * plan's target is shown alongside, which is what "still refining" looks
  * like.
  *
- * TARGET LAYER: the probe's (`effectiveProbeLayerId`) — the same "exactly one
- * layer answers" rule the readouts already use, so the badge and the probe
- * panel can never describe different layers.
+ * TARGET LAYER: the data layer (`effectiveDataLayerId`), as the metadata
+ * section uses, so the badge describes the layer tasks would run on. A hidden
+ * data layer has no plan, and the badge then shows nothing.
  *
  * CADENCE: a poll, not a subscription. The inputs are camera (viewStore, up to
  * ~17 writes/s) and residency (`residencyVersion`, a streaming-cadence counter
@@ -88,7 +88,7 @@ export const CenterLodReadout = () => {
       const viewProjection = view.viewProjectionMatrix;
       if (!brickSystem || !viewProjection) return null;
 
-      const layerId = effectiveProbeLayerId(viewer.probeLayerId, scene.layers);
+      const layerId = effectiveDataLayerId(viewer.dataLayerId, scene.layers);
       if (!layerId) return null;
       const layer = scene.layers.find((candidate) => candidate.id === layerId);
       const plan = viewer.nodePlans[layerId];
@@ -128,7 +128,7 @@ export const CenterLodReadout = () => {
         view.viewProjectionMatrix,
         viewer.residencyVersion,
         viewer.nodePlans,
-        viewer.probeLayerId,
+        viewer.dataLayerId,
         viewer.brickSystem,
         sceneApi.getState().layers,
       ] as const;
