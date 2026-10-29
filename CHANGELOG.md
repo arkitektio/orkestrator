@@ -1,3 +1,10 @@
+# [5.2.0](https://github.com/arkitektio/orkestrator/compare/v5.1.0...v5.2.0) (2026-10-29)
+
+
+### Features
+
+* **rekuest:** show an implementation's declared asks and informs, and its dynamic capabilities ([671d520](https://github.com/arkitektio/orkestrator/commit/671d5201817361882e638def7a9fcdad74c561e0))
+
 # [5.1.0](https://github.com/arkitektio/orkestrator/compare/v5.0.0...v5.1.0) (2026-10-29)
 
 
