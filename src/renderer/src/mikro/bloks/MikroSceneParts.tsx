@@ -87,7 +87,14 @@ const SceneWiring = ({ component, sceneId }: { component: BlokRenderArgs["compon
   const setSelection = selection.setValue;
 
   useSceneEvents({
-    onAnnotation,
+    // A draw selects what it drew: the binding holds it too (a blok can then confirm it before
+    // acting on it), though it is reported as onAnnotation, not onSelect.
+    onAnnotation: bind || onAnnotation
+      ? (payload) => {
+          if (bind) setSelection({ annotation: payload.annotation, lens: payload.lens });
+          onAnnotation?.(payload);
+        }
+      : undefined,
     // The binding follows every selection; the action only runs when one is declared.
     onSelect: bind || onSelect
       ? (payload) => {

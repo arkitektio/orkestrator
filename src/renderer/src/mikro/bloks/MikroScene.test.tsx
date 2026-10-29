@@ -108,6 +108,22 @@ describe("MikroScene", () => {
     expect(record).toHaveBeenCalledWith({ annotation, lens });
   });
 
+  it("writes a drawn shape to its binding, before onAnnotation runs", async () => {
+    render([
+      {
+        id: "scene",
+        component: "MikroScene",
+        props: [scene, { key: "bind", dynamic_value: { path: "form.selected" } }, { key: "onAnnotation", ...recordAt("form.selected") }],
+        children: [view],
+      },
+    ]);
+    await screen.findByTestId("viewport");
+    const annotation = { __identifier: "@mikro/annotation", object: "a3" };
+    const lens = { __identifier: "@mikro/arraylens", object: "l2" };
+    act(() => handlers.current.onAnnotation?.({ annotation, kind: "PATH", lens, descriptors: null }));
+    expect(record).toHaveBeenCalledWith({ annotation, lens });
+  });
+
   it("writes the scene's world space to bindWorld, for a picker of what the scene can show", async () => {
     render([
       {
