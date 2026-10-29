@@ -34,6 +34,10 @@ import {
 import { SlidersHorizontal } from "lucide-react";
 import { ReactNode, useEffect } from "react";
 import TaskList from "../components/lists/TaskList";
+import {
+  DeclaredInteractions,
+  DynamicCapabilityBadges,
+} from "../components/implementation/DeclaredInteractions";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
 import { ReturnsContainer } from "@/core/ports/engine/tailwind";
@@ -516,6 +520,7 @@ export const DefaultRenderer = (props: {
                 Workflow
               </Badge>
             )}
+            <DynamicCapabilityBadges implementation={i} />
             <span
               className={
                 i.agent.connected ? "text-emerald-500" : "text-muted-foreground"
@@ -536,6 +541,8 @@ export const DefaultRenderer = (props: {
       </div>
 
       <DoForm id={i.id} />
+
+      <DeclaredInteractions interactions={i.interactions} />
 
       <TaskList filters={{ implementation: i.id }} />
     </div>

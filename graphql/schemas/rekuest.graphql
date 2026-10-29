@@ -990,6 +990,61 @@ input ArgPortInput {
 """The `Args` scalar type represents a Dictionary of arguments"""
 scalar Args
 
+"""
+A blok an action asks a person through, declared with it (blok language v2): a task blok, its args and returns ports.
+"""
+input AskBlokInput {
+  """What it is opened on, read under `args.<key>`."""
+  args: [ArgPortInput!]! = []
+
+  """The catalogs it needs, as name@version."""
+  catalogs: [String!]! = []
+
+  """The UI component tree, unless the blok is sent as its `source`."""
+  components: [ComponentNodeInput!] = null
+
+  """What a preview renders it with."""
+  demo: BlokDemoInput = null
+
+  """The agents it reads or calls besides `self`, as `deps.<key>`."""
+  dependencies: [AgentDependencyInput!]! = []
+
+  """
+  What it asks, in a sentence: the hold's message wherever the ask is listed.
+  """
+  description: String = null
+
+  """
+  What a task names it by: `<parameter>.<method>` of the action's interactions protocol.
+  """
+  key: String!
+
+  """Its locals: form state that feeds a call, written only through bind."""
+  locals: [BlokLocalInput!]! = []
+
+  """
+  The module the blok renders against besides its catalogs; the Orkestrator's when absent.
+  """
+  module: String = null
+
+  """Its declared reads."""
+  queries: [BlokQueryInput!]! = []
+
+  """What an answer holds."""
+  returns: [ReturnPortInput!]! = []
+
+  """
+  The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
+
+  """Its declared streams."""
+  subscriptions: [BlokSubscriptionInput!]! = []
+
+  """The blok language version the blok speaks; 2 is the only one."""
+  vocab: Int!
+}
+
 """A verified file the organization holds, stored once by its content."""
 type Asset {
   createdAt: DateTime!
@@ -3602,6 +3657,21 @@ type Implementation {
   diagnostics: [Diagnostic!]!
 
   """
+  Whether a task may also ask through a blok made at ask time, or any blok of the organization. Needs the agent's `rekuest_dynamic_ask` scope too.
+  """
+  dynamicAsks: Boolean!
+
+  """
+  Whether a task may also call actions it found at run time, not only its declared dependencies. Needs the agent's `rekuest_dynamic_call` scope too.
+  """
+  dynamicCalls: Boolean!
+
+  """
+  Whether a task may also show a blok made at inform time, or any blok of the organization. Needs the agent's `rekuest_dynamic_inform` scope too.
+  """
+  dynamicInforms: Boolean!
+
+  """
   What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task.
   """
   effects: Effects!
@@ -3623,6 +3693,11 @@ type Implementation {
 
   """Unique ID of the implementation."""
   id: ID!
+
+  """
+  The bloks it declared to ask a person through or show them, asks and informs both. A task shows only these unless the implementation declares `dynamicAsks` / `dynamicInforms`.
+  """
+  interactions: [ImplementationInteraction!]!
 
   """Interface string representing the implementation entrypoint."""
   interface: String!
@@ -3733,6 +3808,11 @@ A implementation is a blueprint for a action. It is composed of a definition, a 
 """
 input ImplementationInput {
   """
+  The bloks this implementation asks a person through, declared up front: a task asks one by its key.
+  """
+  asks: [AskBlokInput!] = null
+
+  """
   A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash.
   """
   codeHash: String = null
@@ -3746,6 +3826,21 @@ input ImplementationInput {
   dependencies: [AgentDependencyInput!]! = []
 
   """
+  Whether a task may also ask through a blok made at ask time, or any blok of the organization. Refused otherwise, and without the `rekuest_dynamic_ask` scope.
+  """
+  dynamicAsks: Boolean = null
+
+  """
+  Whether a task may also call actions it found at run time, not only its declared dependencies. A WORKFLOW only; refused otherwise, and without the `rekuest_dynamic_call` scope.
+  """
+  dynamicCalls: Boolean = null
+
+  """
+  Whether a task may show a blok made at inform time, or any blok of the organization. Refused otherwise, and without the `rekuest_dynamic_inform` scope.
+  """
+  dynamicInforms: Boolean = null
+
+  """
   What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task.
   """
   effects: Effects! = UNKNOWN
@@ -3755,13 +3850,18 @@ input ImplementationInput {
   """
   execution: Execution! = PLAIN
 
+  """
+  The bloks this implementation shows a person while a task goes on, declared up front: a task shows one by its key.
+  """
+  informs: [InformBlokInput!] = null
+
   """The instance id of the agent this implementation is bound to."""
   instanceId: String = null
 
   """
   The interface of the implementation. This is used to group implementations together in the UI
   """
-  interface: String
+  interface: String!
 
   """
   The locks of the implementation. This is used to specify which resources the implementation needs to run
@@ -3804,6 +3904,30 @@ input ImplementationInput {
   tracks: [TrackInput!] = null
 }
 
+"""
+A blok an implementation declared with it (an `@ask` or `@inform` method of an interactions protocol): what its tasks hold on until a person answers (ASK) or show while they go on (INFORM). A task names it by `key`.
+"""
+type ImplementationInteraction {
+  """
+  What it shows: a blok held by implementations only (`heldByAction`), its args and returns ports declared.
+  """
+  blok: Blok!
+
+  """What it asks or shows, in a sentence: the message it is listed with."""
+  description: String
+  id: ID!
+
+  """
+  What a task names it by: `<parameter>.<method>` of the action's interactions protocol.
+  """
+  key: String!
+
+  """
+  ASK: a task holds on it until a person answers through it. INFORM: a task shows it and goes on.
+  """
+  role: TaskBlokRole!
+}
+
 type ImplementationMapping {
   """Get the key of the implementation mapping."""
   implementation: Implementation!
@@ -3832,6 +3956,58 @@ type ImplementationUpdate {
   create: Implementation
   delete: ID
   update: Implementation
+}
+
+"""
+A blok an action shows a person while its task goes on, declared with it (blok language v2): a task blok, its args ports, no returns.
+"""
+input InformBlokInput {
+  """What it is opened on, read under `args.<key>`."""
+  args: [ArgPortInput!]! = []
+
+  """The catalogs it needs, as name@version."""
+  catalogs: [String!]! = []
+
+  """The UI component tree, unless the blok is sent as its `source`."""
+  components: [ComponentNodeInput!] = null
+
+  """What a preview renders it with."""
+  demo: BlokDemoInput = null
+
+  """The agents it reads or calls besides `self`, as `deps.<key>`."""
+  dependencies: [AgentDependencyInput!]! = []
+
+  """
+  What it shows, in a sentence: the inform's message wherever it is listed.
+  """
+  description: String = null
+
+  """
+  What a task names it by: `<parameter>.<method>` of the action's interactions protocol.
+  """
+  key: String!
+
+  """Its locals: form state that feeds a call, written only through bind."""
+  locals: [BlokLocalInput!]! = []
+
+  """
+  The module the blok renders against besides its catalogs; the Orkestrator's when absent.
+  """
+  module: String = null
+
+  """Its declared reads."""
+  queries: [BlokQueryInput!]! = []
+
+  """
+  The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
+
+  """Its declared streams."""
+  subscriptions: [BlokSubscriptionInput!]! = []
+
+  """The blok language version the blok speaks; 2 is the only one."""
+  vocab: Int!
 }
 
 """

@@ -1,0 +1,62 @@
+# A blok an implementation declared with it (`@ask` / `@inform` on an
+# interactions protocol): what its tasks hold on until a person answers (ASK)
+# or show while they go on (INFORM). Its blok carries what a demo preview needs,
+# and the ports a task opens it on (and an ask is answered with).
+fragment ImplementationInteraction on ImplementationInteraction {
+  id
+  key
+  role
+  description
+  blok {
+    id
+    context
+    heldByAction
+    componentTree
+    vocab
+    catalogs
+    args {
+      key
+      kind
+      label
+      nullable
+      identifier
+    }
+    returns {
+      key
+      kind
+      label
+      nullable
+      identifier
+    }
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
+  }
+}

@@ -862,6 +862,38 @@ export type ArgPortInput = {
   widget?: InputMaybe<AssignWidgetInput>;
 };
 
+/** A blok an action asks a person through, declared with it (blok language v2): a task blok, its args and returns ports. */
+export type AskBlokInput = {
+  /** What it is opened on, read under `args.<key>`. */
+  args?: Array<ArgPortInput>;
+  /** The catalogs it needs, as name@version. */
+  catalogs?: Array<Scalars['String']['input']>;
+  /** The UI component tree, unless the blok is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** What a preview renders it with. */
+  demo?: InputMaybe<BlokDemoInput>;
+  /** The agents it reads or calls besides `self`, as `deps.<key>`. */
+  dependencies?: Array<AgentDependencyInput>;
+  /** What it asks, in a sentence: the hold's message wherever the ask is listed. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** What a task names it by: `<parameter>.<method>` of the action's interactions protocol. */
+  key: Scalars['String']['input'];
+  /** Its locals: form state that feeds a call, written only through bind. */
+  locals?: Array<BlokLocalInput>;
+  /** The module the blok renders against besides its catalogs; the Orkestrator's when absent. */
+  module?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared reads. */
+  queries?: Array<BlokQueryInput>;
+  /** What an answer holds. */
+  returns?: Array<ReturnPortInput>;
+  /** The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared streams. */
+  subscriptions?: Array<BlokSubscriptionInput>;
+  /** The blok language version the blok speaks; 2 is the only one. */
+  vocab: Scalars['Int']['input'];
+};
+
 /** A verified file the organization holds, stored once by its content. */
 export type Asset = {
   __typename?: 'Asset';
@@ -2657,6 +2689,12 @@ export type Implementation = {
   dependencies: Array<Dependency>;
   /** Non-fatal registration findings, e.g. validator/effect calls naming operations that neither the base catalog nor the definition's catalog provides. */
   diagnostics: Array<Diagnostic>;
+  /** Whether a task may also ask through a blok made at ask time, or any blok of the organization. Needs the agent's `rekuest_dynamic_ask` scope too. */
+  dynamicAsks: Scalars['Boolean']['output'];
+  /** Whether a task may also call actions it found at run time, not only its declared dependencies. Needs the agent's `rekuest_dynamic_call` scope too. */
+  dynamicCalls: Scalars['Boolean']['output'];
+  /** Whether a task may also show a blok made at inform time, or any blok of the organization. Needs the agent's `rekuest_dynamic_inform` scope too. */
+  dynamicInforms: Scalars['Boolean']['output'];
   /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
   effects: Effects;
   /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
@@ -2667,6 +2705,8 @@ export type Implementation = {
   higherOrderFor?: Maybe<Implementation>;
   /** Unique ID of the implementation. */
   id: Scalars['ID']['output'];
+  /** The bloks it declared to ask a person through or show them, asks and informs both. A task shows only these unless the implementation declares `dynamicAsks` / `dynamicInforms`. */
+  interactions: Array<ImplementationInteraction>;
   /** Interface string representing the implementation entrypoint. */
   interface: Scalars['String']['output'];
   /** The agent's locks this implementation takes while it runs. */
@@ -2766,20 +2806,30 @@ export type ImplementationFilter = {
 
 /** A implementation is a blueprint for a action. It is composed of a definition, a list of dependencies, and a list of params. */
 export type ImplementationInput = {
+  /** The bloks this implementation asks a person through, declared up front: a task asks one by its key. */
+  asks?: InputMaybe<Array<AskBlokInput>>;
   /** A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash. */
   codeHash?: InputMaybe<Scalars['String']['input']>;
   /** The definition of the implementation. This is used to uniquely identify the implementation */
   definition: DefinitionInput;
   /** The agent dependencies required by this implementation. */
   dependencies?: Array<AgentDependencyInput>;
+  /** Whether a task may also ask through a blok made at ask time, or any blok of the organization. Refused otherwise, and without the `rekuest_dynamic_ask` scope. */
+  dynamicAsks?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether a task may also call actions it found at run time, not only its declared dependencies. A WORKFLOW only; refused otherwise, and without the `rekuest_dynamic_call` scope. */
+  dynamicCalls?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether a task may show a blok made at inform time, or any blok of the organization. Refused otherwise, and without the `rekuest_dynamic_inform` scope. */
+  dynamicInforms?: InputMaybe<Scalars['Boolean']['input']>;
   /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
   effects?: Effects;
   /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
   execution?: Execution;
+  /** The bloks this implementation shows a person while a task goes on, declared up front: a task shows one by its key. */
+  informs?: InputMaybe<Array<InformBlokInput>>;
   /** The instance id of the agent this implementation is bound to. */
   instanceId?: InputMaybe<Scalars['String']['input']>;
   /** The interface of the implementation. This is used to group implementations together in the UI */
-  interface?: InputMaybe<Scalars['String']['input']>;
+  interface: Scalars['String']['input'];
   /** The locks of the implementation. This is used to specify which resources the implementation needs to run */
   locks?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The key of the agent's action logo blok (context ACTION_LOGO) that draws this action. */
@@ -2796,6 +2846,20 @@ export type ImplementationInput = {
   provenanceAudience?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The tracks of the definition. This is used to track values over time during the runtime of an action. This is the state of a dependency */
   tracks?: InputMaybe<Array<TrackInput>>;
+};
+
+/** A blok an implementation declared with it (an `@ask` or `@inform` method of an interactions protocol): what its tasks hold on until a person answers (ASK) or show while they go on (INFORM). A task names it by `key`. */
+export type ImplementationInteraction = {
+  __typename?: 'ImplementationInteraction';
+  /** What it shows: a blok held by implementations only (`heldByAction`), its args and returns ports declared. */
+  blok: Blok;
+  /** What it asks or shows, in a sentence: the message it is listed with. */
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What a task names it by: `<parameter>.<method>` of the action's interactions protocol. */
+  key: Scalars['String']['output'];
+  /** ASK: a task holds on it until a person answers through it. INFORM: a task shows it and goes on. */
+  role: TaskBlokRole;
 };
 
 export type ImplementationMapping = {
@@ -2819,6 +2883,36 @@ export type ImplementationUpdate = {
   create?: Maybe<Implementation>;
   delete?: Maybe<Scalars['ID']['output']>;
   update?: Maybe<Implementation>;
+};
+
+/** A blok an action shows a person while its task goes on, declared with it (blok language v2): a task blok, its args ports, no returns. */
+export type InformBlokInput = {
+  /** What it is opened on, read under `args.<key>`. */
+  args?: Array<ArgPortInput>;
+  /** The catalogs it needs, as name@version. */
+  catalogs?: Array<Scalars['String']['input']>;
+  /** The UI component tree, unless the blok is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** What a preview renders it with. */
+  demo?: InputMaybe<BlokDemoInput>;
+  /** The agents it reads or calls besides `self`, as `deps.<key>`. */
+  dependencies?: Array<AgentDependencyInput>;
+  /** What it shows, in a sentence: the inform's message wherever it is listed. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** What a task names it by: `<parameter>.<method>` of the action's interactions protocol. */
+  key: Scalars['String']['input'];
+  /** Its locals: form state that feeds a call, written only through bind. */
+  locals?: Array<BlokLocalInput>;
+  /** The module the blok renders against besides its catalogs; the Orkestrator's when absent. */
+  module?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared reads. */
+  queries?: Array<BlokQueryInput>;
+  /** The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** Its declared streams. */
+  subscriptions?: Array<BlokSubscriptionInput>;
+  /** The blok language version the blok speaks; 2 is the only one. */
+  vocab: Scalars['Int']['input'];
 };
 
 /** An interface referenced by an action's port, derived from the relational port rows. */
@@ -7872,7 +7966,10 @@ export type FrozenBindingFragment = { __typename?: 'ResolvedAgentDependency', ke
         & AgentPlacementFragment
       )> } }> };
 
-export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, effects: Effects, codeHash?: string | null, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, action: (
+export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, dynamicAsks: boolean, dynamicCalls: boolean, dynamicInforms: boolean, effects: Effects, codeHash?: string | null, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, interactions: Array<(
+    { __typename?: 'ImplementationInteraction' }
+    & ImplementationInteractionFragment
+  )>, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
   ), agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, kind: AgentKind, lastSeen?: any | null, hash: string, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
@@ -7900,6 +7997,17 @@ export type ImplementationStatsQuery = { __typename?: 'Query', taskStats: { __ty
 export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, effects: Effects, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
 
 export type InstallerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, nullable: boolean }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, user: { __typename?: 'User', sub: string } } };
+
+export type ImplementationInteractionFragment = { __typename?: 'ImplementationInteraction', id: string, key: string, role: TaskBlokRole, description?: string | null, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, args: Array<{ __typename?: 'ArgPort', key: string, kind: PortKind, label?: string | null, nullable: boolean, identifier?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, kind: PortKind, label?: string | null, nullable: boolean, identifier?: any | null }>, resolvedLocals: Array<(
+      { __typename?: 'ResolvedBlokLocal' }
+      & ResolvedBlokLocalFragment
+    )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }>, subscriptions: Array<{ __typename?: 'BlokSubscription', key: string, service: string, document: string, keep?: number | null, history?: string | null, variables: Array<(
+        { __typename?: 'ActionArgument' }
+        & BlokArgumentFragment
+      )> }> } };
 
 export type MemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string }, drawers: Array<{ __typename?: 'MemoryDrawer', id: string, label: string, description?: string | null, resourceId: string }> };
 
@@ -13147,6 +13255,67 @@ export const ProbeStatsFragmentDoc = gql`
   maxInflight
 }
     `;
+export const ImplementationInteractionFragmentDoc = gql`
+    fragment ImplementationInteraction on ImplementationInteraction {
+  id
+  key
+  role
+  description
+  blok {
+    id
+    context
+    heldByAction
+    componentTree
+    vocab
+    catalogs
+    args {
+      key
+      kind
+      label
+      nullable
+      identifier
+    }
+    returns {
+      key
+      kind
+      label
+      nullable
+      identifier
+    }
+    resolvedLocals {
+      ...ResolvedBlokLocal
+    }
+    demo {
+      deps
+      args
+      task
+      queries
+      subscriptions
+    }
+    queries {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      poll
+      more
+    }
+    subscriptions {
+      key
+      service
+      document
+      variables {
+        ...BlokArgument
+      }
+      keep
+      history
+    }
+  }
+}
+    ${ResolvedBlokLocalFragmentDoc}
+${BlokArgumentFragmentDoc}`;
 export const PortGroupFragmentDoc = gql`
     fragment PortGroup on PortGroup {
   key
@@ -13277,6 +13446,12 @@ export const DetailImplementationFragmentDoc = gql`
   name
   interface
   execution
+  dynamicAsks
+  dynamicCalls
+  dynamicInforms
+  interactions {
+    ...ImplementationInteraction
+  }
   effects
   codeHash
   needsToken
@@ -13343,7 +13518,8 @@ export const DetailImplementationFragmentDoc = gql`
     ...PostmanTask
   }
 }
-    ${DetailActionFragmentDoc}
+    ${ImplementationInteractionFragmentDoc}
+${DetailActionFragmentDoc}
 ${ListDependencyFragmentDoc}
 ${PostmanTaskFragmentDoc}`;
 export const ResolutionFragmentDoc = gql`

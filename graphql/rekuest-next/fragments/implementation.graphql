@@ -3,6 +3,12 @@ fragment DetailImplementation on Implementation {
   name
   interface
   execution
+  dynamicAsks
+  dynamicCalls
+  dynamicInforms
+  interactions {
+    ...ImplementationInteraction
+  }
   effects
   codeHash
   needsToken
