@@ -416,8 +416,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     mutation: DeleteShortcutDocument
   }),
   'rekuest-bind-shortcut': {
-    title: 'Pin for members…',
-    description: 'Pin this shortcut at the top of chosen members\' menus, in one app or every app',
+    title: 'Pin for…',
+    description: 'Pin this shortcut at the top of menus, for chosen members, apps, clients or devices',
     icon: Pin,
     roles: REKUEST_ADMIN,
     conditions: only('@rekuest/shortcut'),

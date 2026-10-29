@@ -23,6 +23,8 @@ fragment Shortcut on Shortcut {
 fragment ShortcutBinding on ShortcutBinding {
   id
   app
+  client
+  device
   createdAt
   user {
     id

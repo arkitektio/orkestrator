@@ -615,11 +615,11 @@ export const REKUEST_HELP = {
         <>Read the result under <b>Outs</b> once the task has returned.</>,
         <>Click the title to copy the hash of the underlying action to the clipboard.</>,
         <>Open the menu button at the right end of the header and choose <b>Delete Shortcut</b> to remove it.</>,
-        <>As an admin, open the same menu and choose <b>Pin for members…</b> to pin it at the top of their menus, in one app or every app.</>,
+        <>As an admin, open the same menu and choose <b>Pin for…</b> to pin it at the top of menus. Narrow who by member, app, client or device; anything left empty matches everyone.</>,
       ]}
       tips={[
         <>A number in brackets after the description is the key bound to this shortcut.</>,
-        <><b>Pinned for</b> lists the members it is pinned for and the app; an admin removes one with the cross.</>,
+        <><b>Pinned for</b> lists each pin: the member (or every member) and the app, client or device it is limited to. An admin removes one with the cross.</>,
         <>An <b>Errors</b> box appears next to the result when the run failed.</>,
       ]}
     />

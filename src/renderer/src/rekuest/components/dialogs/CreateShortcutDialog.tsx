@@ -1,4 +1,3 @@
-import { portHash } from "@/core/ports/engine/utils";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { IntField } from "@/core/forms/IntField";
@@ -6,11 +5,6 @@ import { StringField } from "@/core/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/core/ui/collapsible";
 import {
   DialogDescription,
   DialogFooter,
@@ -21,10 +15,7 @@ import { Form } from "@/core/ui/form";
 import { ScrollArea } from "@/core/ui/scroll-area";
 import { Skeleton } from "@/core/ui/skeleton";
 import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
-import { notEmpty } from "@/core/util/utils";
-import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
-import { ArgsContainerProps } from "@/core/ports/engine/tailwind";
-import { Port, PortGroup } from "@/core/ports/engine/types";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
 import * as z from "zod";
 import {
@@ -36,113 +27,10 @@ import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { RoleGuard } from "@/core/connection/roles";
 import { REKUEST_ADMIN } from "../../roles";
 import { ShortcutBindingFields } from "./BindShortcutDialog";
+import { toBindingInput } from "../../lib/shortcutBinding";
 
-export type FilledGroup = PortGroup & {
-  filledPorts: Port[];
-};
+const NO_PORTS: never[] = [];
 
-export { portHash };
-
-export const NanaContainer = () => {
-  return (
-    <div className="grid @lg:grid-cols-2 @lg:grid-cols-2 @xl:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6 gap-5">
-      {" "}
-    </div>
-  );
-};
-
-const ArgsContainer = ({
-  ports,
-  groups,
-  options,
-  registry,
-  hidden,
-  bound,
-  path,
-}: ArgsContainerProps) => {
-  const hash = portHash(ports.filter(notEmpty));
-
-  const filledGroups = useMemo(() => {
-    if (!groups || groups.length === 0) {
-      groups = [
-        {
-          key: "default",
-          ports: ports.filter(notEmpty).map((p) => p.key),
-        },
-      ];
-    }
-
-    const argGroups: FilledGroup[] = groups.filter(notEmpty).map((g) => ({
-      ...g,
-      filledPorts: ports
-        .filter(notEmpty)
-        .filter((x) => g.ports.includes(x?.key)),
-    }));
-
-    return argGroups;
-  }, [ports, hash]);
-
-  const len = 1;
-
-  const lg_size = len < 2 ? len : 2;
-  const xl_size = len < 3 ? len : 3;
-  const xxl_size = len < 4 ? len : 4;
-  const xxxl_size = len < 5 ? len : 5;
-  const xxxxl_size = len < 6 ? len : 6;
-
-  return (
-    <div
-      className={`grid @lg:grid-cols-${lg_size} @xl:grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-5 `}
-    >
-      {filledGroups.map((group, index) => {
-        return (
-          <Collapsible key={index} className="@container" defaultOpen={true}>
-            {group.key != "default" && (
-              <div className="mb-2">
-                <CollapsibleTrigger className="text-xs">
-                  {group.key}
-                </CollapsibleTrigger>
-                <p className="text-muted-foreground text-xs">
-                  {group.description}
-                </p>
-              </div>
-            )}
-            <CollapsibleContent>
-              {group.filledPorts.map((port, index) => {
-                const Widget = registry.getInputWidgetForPort(port);
-                if (hidden && hidden[port.key]) return null;
-                if (!port.widget) return null;
-
-                return (
-                  <div className="w-full flex flex-row items-center space-x-2">
-                    <div className="flex-grow">
-                      <EffectWrapper
-                        key={index}
-                        effects={port.effects || []}
-                        port={port}
-                        path={[...path, port.key]}
-                        registry={registry}
-                      >
-                        <Widget
-                          key={index}
-                          port={port}
-                          bound={bound}
-                          widget={port.widget}
-                          options={options}
-                          path={[...path, port.key]}
-                        />
-                      </EffectWrapper>
-                    </div>
-                  </div>
-                );
-              })}
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      })}
-    </div>
-  );
-};
 
 export const CreateShortcutDialog = (props: {
   id: string;
@@ -163,22 +51,38 @@ export const CreateShortcutDialog = (props: {
 
   const [chosenArgs, setChosenArgs] = React.useState<string[]>([]);
 
+  // The form holds every argument; only the chosen ones are mounted, and
+  // the port form validates and submits only what is mounted. Toggling one
+  // therefore keeps what was typed, here and in the other fields.
+  const ports = action?.args ?? NO_PORTS;
+  const chosenPorts = useMemo(
+    () => ports.filter((arg) => chosenArgs.includes(arg.key)),
+    [ports, chosenArgs],
+  );
+  const overwrites = useMemo(
+    () => ({ ...props.args, name: action?.name }),
+    [props.args, action?.name],
+  );
+
   const form = usePortForm({
-    ports: action?.args.filter((arg) => chosenArgs.includes(arg.key)) || [],
-    overwrites: { ...props.args, name: action?.name },
+    ports,
+    overwrites,
     additionalSchema: z.object({
       toolbox: z.string().optional(),
       name: z.string().nonempty(),
       allowQuick: z.boolean().default(false),
       bindNumber: z.coerce.number().int().min(0).max(9).optional(),
+      pin: z.boolean().default(false),
       users: z.array(z.string()).optional(),
       app: z.string().nullable().optional(),
+      client: z.string().nullable().optional(),
+      device: z.string().nullable().optional(),
     }),
   });
 
   const { submit: onSubmit } = useDialogSubmit(
     async (data: any) => {
-      const { toolbox, name, allowQuick, bindNumber, users, app, ...rest } = data;
+      const { toolbox, name, allowQuick, bindNumber, pin, users, app, client, device, ...rest } = data;
 
       return create({
         variables: {
@@ -190,7 +94,7 @@ export const CreateShortcutDialog = (props: {
             bindNumber: bindNumber,
             allowQuick: allowQuick,
             // Only an admin sees the fields; the server checks it again.
-            bindings: users?.length ? { users, app: app || null } : null,
+            bindings: pin ? toBindingInput({ users: users ?? [], app, client, device }) : null,
           },
         },
       });
@@ -282,10 +186,8 @@ export const CreateShortcutDialog = (props: {
                       <ArgsContainer
                         registry={registry}
                         groups={action.portGroups || []}
-                        ports={action.args.filter((arg) =>
-                          chosenArgs.includes(arg.key),
-                        )}
-                        hidden={props.args}
+                        ports={chosenPorts}
+                        options={{ layout: "stack" }}
                         path={[]}
                       />
                     </div>
@@ -315,13 +217,12 @@ export const CreateShortcutDialog = (props: {
 
               <RoleGuard require={REKUEST_ADMIN}>
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <h3 className="text-sm font-medium">Pin for members</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Optional. Everyone sees the shortcut; for these members it is pinned.
-                    </p>
-                  </div>
-                  <ShortcutBindingFields />
+                  <SwitchField
+                    name="pin"
+                    label="Pin it"
+                    description="Everyone sees the shortcut; for whoever you pick here it is pinned and cannot be unpinned."
+                  />
+                  {form.watch("pin") ? <ShortcutBindingFields /> : null}
                 </div>
               </RoleGuard>
             </div>

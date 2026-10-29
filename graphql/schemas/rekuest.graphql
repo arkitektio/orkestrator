@@ -1312,17 +1312,29 @@ type BaseCatalog {
 }
 
 """
-Pin a shortcut for users, in one app or in every app. The users cannot unpin it.
+Pin a shortcut for whoever matches: users, an app, a client, a device, each optional. They cannot unpin it.
 """
 input BindShortcutInput {
   """The identifier of the app to pin it in; every app when not given."""
   app: String = null
 
+  """
+  The `client_id` of the client to pin it in; every client when not given.
+  """
+  client: String = null
+
+  """
+  The `device_id` of the device to pin it on; every device when not given.
+  """
+  device: String = null
+
   """The shortcut to pin."""
   shortcut: ID!
 
-  """The users (their `sub`) to pin the shortcut for."""
-  users: [ID!]!
+  """
+  The users (their `sub`) to pin the shortcut for, one binding each; every user when not given.
+  """
+  users: [ID!] = null
 }
 
 """The input for bouncing an agent."""
@@ -2565,7 +2577,7 @@ input CreateShortcutInput {
   """
   bindNumber: Int = null
 
-  """Pin the new shortcut for these users (admins only)."""
+  """Pin the new shortcut for whoever these match (admins only)."""
   bindings: ShortcutBindingsInput = null
 
   """
@@ -6293,7 +6305,9 @@ type Shortcut {
   """
   bindNumber: Int
 
-  """Who an admin pinned this shortcut for, and in which app."""
+  """
+  Who an admin pinned this shortcut for, and where (app, client, device).
+  """
   bindings: [ShortcutBinding!]!
 
   """Optional description."""
@@ -6309,7 +6323,7 @@ type Shortcut {
   name: String!
 
   """
-  Whether an admin pinned this shortcut for the caller, in the app they signed in with or in every app. The caller cannot unpin it.
+  Whether an admin pinned this shortcut for the caller: one of its bindings matches who they are and where they call from. The caller cannot unpin it.
   """
   pinned: Boolean!
 
@@ -6326,7 +6340,9 @@ type Shortcut {
   useReturns: Boolean!
 }
 
-"""An admin's pin of a shortcut for a user, in one app or in every app."""
+"""
+An admin's pin of a shortcut, for whoever matches it: each of user, app, client and device that is set must be the caller's.
+"""
 type ShortcutBinding {
   """The identifier of the app it is pinned in; null for every app."""
   app: String
@@ -6334,8 +6350,14 @@ type ShortcutBinding {
   """The admin who pinned it."""
   boundBy: User!
 
+  """The `client_id` of the client it is pinned in; null for every client."""
+  client: String
+
   """When it was pinned."""
   createdAt: DateTime!
+
+  """The `device_id` of the device it is pinned on; null for every device."""
+  device: String
 
   """Binding ID."""
   id: ID!
@@ -6343,17 +6365,31 @@ type ShortcutBinding {
   """The pinned shortcut."""
   shortcut: Shortcut!
 
-  """The user it is pinned for."""
-  user: User!
+  """The user it is pinned for; null for every user."""
+  user: User
 }
 
-"""Users to pin a shortcut for, in one app or in every app."""
+"""
+Who to pin a shortcut for, and where: each field that is given must be the caller's; nothing given pins it for the whole organization.
+"""
 input ShortcutBindingsInput {
   """The identifier of the app to pin it in; every app when not given."""
   app: String = null
 
-  """The users (their `sub`) to pin the shortcut for."""
-  users: [ID!]!
+  """
+  The `client_id` of the client to pin it in; every client when not given.
+  """
+  client: String = null
+
+  """
+  The `device_id` of the device to pin it on; every device when not given.
+  """
+  device: String = null
+
+  """
+  The users (their `sub`) to pin the shortcut for, one binding each; every user when not given.
+  """
+  users: [ID!] = null
 }
 
 input ShortcutFilter {
@@ -6375,7 +6411,7 @@ input ShortcutFilter {
   ids: [ID!]
 
   """
-  Whether an admin bound the shortcut to the caller, in the app they signed in with or in every app.
+  Whether an admin pinned the shortcut for the caller: a binding whose user, app, client and device are each the caller's or left open.
   """
   pinned: Boolean
   search: String
@@ -6390,7 +6426,7 @@ input ShortcutOrder @oneOf {
   name: Ordering
 
   """
-  Pinned for the caller (an admin bound it to them in this app) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break.
+  Pinned for the caller (an admin bound it to them, or to where they call from) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break.
   """
   pinned: Ordering
 }

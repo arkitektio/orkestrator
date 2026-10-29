@@ -1053,14 +1053,18 @@ export type BaseCatalog = {
   version: Scalars['Int']['output'];
 };
 
-/** Pin a shortcut for users, in one app or in every app. The users cannot unpin it. */
+/** Pin a shortcut for whoever matches: users, an app, a client, a device, each optional. They cannot unpin it. */
 export type BindShortcutInput = {
   /** The identifier of the app to pin it in; every app when not given. */
   app?: InputMaybe<Scalars['String']['input']>;
+  /** The `client_id` of the client to pin it in; every client when not given. */
+  client?: InputMaybe<Scalars['String']['input']>;
+  /** The `device_id` of the device to pin it on; every device when not given. */
+  device?: InputMaybe<Scalars['String']['input']>;
   /** The shortcut to pin. */
   shortcut: Scalars['ID']['input'];
-  /** The users (their `sub`) to pin the shortcut for. */
-  users: Array<Scalars['ID']['input']>;
+  /** The users (their `sub`) to pin the shortcut for, one binding each; every user when not given. */
+  users?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 /** The input for bouncing an agent. */
@@ -1932,7 +1936,7 @@ export type CreateShortcutInput = {
   args: Scalars['Args']['input'];
   /** The bind number of the shortcut. This is used to identify the shortcut in the system. */
   bindNumber?: InputMaybe<Scalars['Int']['input']>;
-  /** Pin the new shortcut for these users (admins only). */
+  /** Pin the new shortcut for whoever these match (admins only). */
   bindings?: InputMaybe<ShortcutBindingsInput>;
   /** The description of the shortcut.This can described the shortcut and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
@@ -5544,7 +5548,7 @@ export type Shortcut = {
   args: Array<ArgPort>;
   /** Which shortcut should be bound to this Action by default. 0 means no binding. */
   bindNumber?: Maybe<Scalars['Int']['output']>;
-  /** Who an admin pinned this shortcut for, and in which app. */
+  /** Who an admin pinned this shortcut for, and where (app, client, device). */
   bindings: Array<ShortcutBinding>;
   /** Optional description. */
   description?: Maybe<Scalars['String']['output']>;
@@ -5554,7 +5558,7 @@ export type Shortcut = {
   implementation?: Maybe<Implementation>;
   /** Name of the shortcut. */
   name: Scalars['String']['output'];
-  /** Whether an admin pinned this shortcut for the caller, in the app they signed in with or in every app. The caller cannot unpin it. */
+  /** Whether an admin pinned this shortcut for the caller: one of its bindings matches who they are and where they call from. The caller cannot unpin it. */
   pinned: Scalars['Boolean']['output'];
   /** Return ports from the shortcut's action. */
   returns: Array<ReturnPort>;
@@ -5566,29 +5570,37 @@ export type Shortcut = {
   useReturns: Scalars['Boolean']['output'];
 };
 
-/** An admin's pin of a shortcut for a user, in one app or in every app. */
+/** An admin's pin of a shortcut, for whoever matches it: each of user, app, client and device that is set must be the caller's. */
 export type ShortcutBinding = {
   __typename?: 'ShortcutBinding';
   /** The identifier of the app it is pinned in; null for every app. */
   app?: Maybe<Scalars['String']['output']>;
   /** The admin who pinned it. */
   boundBy: User;
+  /** The `client_id` of the client it is pinned in; null for every client. */
+  client?: Maybe<Scalars['String']['output']>;
   /** When it was pinned. */
   createdAt: Scalars['DateTime']['output'];
+  /** The `device_id` of the device it is pinned on; null for every device. */
+  device?: Maybe<Scalars['String']['output']>;
   /** Binding ID. */
   id: Scalars['ID']['output'];
   /** The pinned shortcut. */
   shortcut: Shortcut;
-  /** The user it is pinned for. */
-  user: User;
+  /** The user it is pinned for; null for every user. */
+  user?: Maybe<User>;
 };
 
-/** Users to pin a shortcut for, in one app or in every app. */
+/** Who to pin a shortcut for, and where: each field that is given must be the caller's; nothing given pins it for the whole organization. */
 export type ShortcutBindingsInput = {
   /** The identifier of the app to pin it in; every app when not given. */
   app?: InputMaybe<Scalars['String']['input']>;
-  /** The users (their `sub`) to pin the shortcut for. */
-  users: Array<Scalars['ID']['input']>;
+  /** The `client_id` of the client to pin it in; every client when not given. */
+  client?: InputMaybe<Scalars['String']['input']>;
+  /** The `device_id` of the device to pin it on; every device when not given. */
+  device?: InputMaybe<Scalars['String']['input']>;
+  /** The users (their `sub`) to pin the shortcut for, one binding each; every user when not given. */
+  users?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type ShortcutFilter = {
@@ -5602,7 +5614,7 @@ export type ShortcutFilter = {
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Whether an admin bound the shortcut to the caller, in the app they signed in with or in every app. */
+  /** Whether an admin pinned the shortcut for the caller: a binding whose user, app, client and device are each the caller's or left open. */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   toolbox?: InputMaybe<Scalars['ID']['input']>;
@@ -5612,7 +5624,7 @@ export type ShortcutOrder =
   /** Runnable first (DESC) or last (ASC) by the shortcut's `Action.assignable`; the order the filters set is the tie-break. */
   { assignable: Ordering; name?: never; pinned?: never; }
   |  { assignable?: never; name: Ordering; pinned?: never; }
-  |  /** Pinned for the caller (an admin bound it to them in this app) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break. */
+  |  /** Pinned for the caller (an admin bound it to them, or to where they call from) first (DESC) or last (ASC). Put it before `assignable`, which adds the tie-break. */
   { assignable?: never; name?: never; pinned: Ordering; };
 
 /** Something a service announced: an object of a structure was created, updated or deleted. */
@@ -8385,7 +8397,7 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
     & ShortcutBindingFragment
   )> };
 
-export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, createdAt: any, user: { __typename?: 'User', id: string, sub: string }, boundBy: { __typename?: 'User', id: string, sub: string } };
+export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, client?: string | null, device?: string | null, createdAt: any, user?: { __typename?: 'User', id: string, sub: string } | null, boundBy: { __typename?: 'User', id: string, sub: string } };
 
 export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
       { __typename?: 'Blok' }
@@ -9826,6 +9838,13 @@ export type ClientsQuery = { __typename?: 'Query', clients: Array<(
     { __typename?: 'Client' }
     & ListClientFragment
   )> };
+
+export type BindingClientsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type BindingClientsQuery = { __typename?: 'Query', clients: Array<{ __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null, device?: { __typename?: 'Device', id: string, deviceId: string } | null }> };
 
 export type GetDashboardQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13431,6 +13450,8 @@ export const ShortcutBindingFragmentDoc = gql`
     fragment ShortcutBinding on ShortcutBinding {
   id
   app
+  client
+  device
   createdAt
   user {
     id
@@ -18515,6 +18536,54 @@ export function useClientsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type ClientsQueryHookResult = ReturnType<typeof useClientsQuery>;
 export type ClientsLazyQueryHookResult = ReturnType<typeof useClientsLazyQuery>;
 export type ClientsQueryResult = Apollo.QueryResult<ClientsQuery, ClientsQueryVariables>;
+export const BindingClientsDocument = gql`
+    query BindingClients($pagination: OffsetPaginationInput) {
+  clients(pagination: $pagination) {
+    id
+    clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
+    device {
+      id
+      deviceId
+    }
+  }
+}
+    `;
+
+/**
+ * __useBindingClientsQuery__
+ *
+ * To run a query within a React component, call `useBindingClientsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBindingClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBindingClientsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useBindingClientsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BindingClientsQuery, BindingClientsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BindingClientsQuery, BindingClientsQueryVariables>(BindingClientsDocument, options);
+      }
+export function useBindingClientsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BindingClientsQuery, BindingClientsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BindingClientsQuery, BindingClientsQueryVariables>(BindingClientsDocument, options);
+        }
+export type BindingClientsQueryHookResult = ReturnType<typeof useBindingClientsQuery>;
+export type BindingClientsLazyQueryHookResult = ReturnType<typeof useBindingClientsLazyQuery>;
+export type BindingClientsQueryResult = Apollo.QueryResult<BindingClientsQuery, BindingClientsQueryVariables>;
 export const GetDashboardDocument = gql`
     query GetDashboard($id: ID!) {
   dashboard(id: $id) {
