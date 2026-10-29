@@ -8,7 +8,7 @@ import type {
 } from "../../../../../../main/doctor/protocol";
 import { DOCTOR_MAX_TARGETS } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
-import { meshBridge } from "@/core/connection/mesh/bridge";
+import { meshStatusStore } from "@/core/connection/mesh/meshStatusStore";
 import { anyMeshHost } from "./classify";
 import { diagnose } from "./diagnose";
 import type { DoctorContext, DoctorReport, LokOutcome } from "./findings";
@@ -162,7 +162,7 @@ export const useConnectionDoctor = () => {
       const wantsMesh = input.systemMesh !== false && anyMeshHost(targets.map((target) => target.host));
       // The built-in mesh's state is cheap and local; a failure there must
       // not sink the whole run, so it degrades to "unknown".
-      const sidecarStatus = meshBridge()?.status().catch(() => undefined) ?? Promise.resolve(undefined);
+      const sidecarStatus = meshStatusStore().load().catch(() => undefined);
       const [network, mesh, sidecar, lok] = await Promise.all([
         probeInBatches(bridge.probeNetwork, targets),
         wantsMesh ? bridge.probeMesh() : Promise.resolve(undefined),

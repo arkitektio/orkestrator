@@ -66,6 +66,8 @@ import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
 import { useViewerStore } from "../platform/stores/viewerStore";
 import { CropBoxGesture } from "../features/crop/CropBoxGesture";
+import { ScrollGestureNavigation } from "../platform/camera/ScrollGestureNavigation";
+import { LeftPressArbiter } from "./pointer/LeftPressArbiter";
 import { CropChip } from "../features/crop/CropChip";
 
 /**
@@ -398,10 +400,15 @@ export const SceneViewport = (props: {
           <PointerMoveGate />
           <PerfFrameProbe />
           <CameraController />
+          {/* After CameraController: assigns the installed controls' button
+              map per left press (camera or tool). */}
+          <LeftPressArbiter />
           {/* Also after CameraController: needs the installed controls to pan
               and dolly against. Arrow keys, so it lives in the canvas rather
               than with the other keyboard components outside it. */}
           <KeyboardSceneNavigation />
+          {/* Trackpad swipe/pinch; also needs the installed controls. */}
+          <ScrollGestureNavigation />
           {/* Must follow CameraController: fits the as-loaded scene extent
               before the first painted frame (and on 2D/3D remounts). */}
           <InitialCameraFit />

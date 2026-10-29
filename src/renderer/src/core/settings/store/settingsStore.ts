@@ -189,59 +189,69 @@ export function createSettingsStore(
   let currentDefaultSettings = initialDefaultSettings;
   let isHydrating = false;
 
-  const store = createStore<SettingsStoreState>((set) => ({
+  /**
+   * Validate and adopt `nextSettings`; save them only when `persist`. A
+   * change that ARRIVES from another window is already in localStorage —
+   * saving it back is what made two windows ping-pong whenever they disagree
+   * about the shape of the blob (one running code that knows a field the
+   * other strips): each re-save was a "change" to the other, forever.
+   */
+  const commit = (nextSettings: Settings, persist: boolean) => {
+    const previousSettings = store.getState().settings;
+    const normalizedSettings = normalizeSettings(
+      nextSettings,
+      currentDefaultSettings,
+      previousSettings,
+    );
+    // A write that cannot be made valid is refused, not stored as
+    // "no settings": that would unmount the whole app behind
+    // `SettingsProvider`'s loading screen.
+    if (!normalizedSettings) {
+      console.error("Refused a settings write that could not be validated");
+      return;
+    }
+    if (persist) {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizedSettings));
+    }
+
+    applyBrandSettings(normalizedSettings);
+    applyRendererBudgetSettings(normalizedSettings);
+
+    if (
+      isHydrating ||
+      normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
+    ) {
+      applyZoomLevel(normalizedSettings.defaultZoomLevel);
+    }
+
+    const glassToggled =
+      isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
+    if (
+      glassToggled ||
+      normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
+    ) {
+      applyRailGlass(
+        normalizedSettings.railGlass,
+        normalizedSettings.railGlassTransparency,
+        glassToggled,
+      );
+    }
+
+    if (
+      isHydrating ||
+      normalizedSettings.globalPaletteShortcut !== previousSettings?.globalPaletteShortcut
+    ) {
+      applyGlobalShortcut(normalizedSettings.globalPaletteShortcut, (status) =>
+        store.setState({ globalShortcutStatus: status }),
+      );
+    }
+    store.setState({ settings: normalizedSettings });
+  };
+
+  const store = createStore<SettingsStoreState>(() => ({
     settings: undefined,
     globalShortcutStatus: null,
-    setSettings: (nextSettings) => {
-      const previousSettings = store.getState().settings;
-      const normalizedSettings = normalizeSettings(
-        nextSettings,
-        currentDefaultSettings,
-        previousSettings,
-      );
-      // A write that cannot be made valid is refused, not stored as
-      // "no settings": that would unmount the whole app behind
-      // `SettingsProvider`'s loading screen.
-      if (!normalizedSettings) {
-        console.error("Refused a settings write that could not be validated");
-        return;
-      }
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizedSettings));
-      console.log("Settings saved to local storage");
-
-      applyBrandSettings(normalizedSettings);
-      applyRendererBudgetSettings(normalizedSettings);
-
-      if (
-        isHydrating ||
-        normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
-      ) {
-        applyZoomLevel(normalizedSettings.defaultZoomLevel);
-      }
-
-      const glassToggled =
-        isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
-      if (
-        glassToggled ||
-        normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
-      ) {
-        applyRailGlass(
-          normalizedSettings.railGlass,
-          normalizedSettings.railGlassTransparency,
-          glassToggled,
-        );
-      }
-
-      if (
-        isHydrating ||
-        normalizedSettings.globalPaletteShortcut !== previousSettings?.globalPaletteShortcut
-      ) {
-        applyGlobalShortcut(normalizedSettings.globalPaletteShortcut, (status) =>
-          set({ globalShortcutStatus: status }),
-        );
-      }
-      set({ settings: normalizedSettings });
-    },
+    setSettings: (nextSettings) => commit(nextSettings, true),
     hydrate: () => {
       let localSettings: Settings | undefined;
       isHydrating = true;
@@ -288,15 +298,16 @@ export function createSettingsStore(
   // Every window of the app keeps its own store over the same localStorage
   // key; a change saved in one (Settings open in a popout, the quick bar) must
   // reach the others, or each window keeps the colour it booted with. The
-  // `storage` event fires only in the OTHER windows, and re-saving the same
-  // string here fires nothing, so this cannot ping-pong.
+  // `storage` event fires only in the OTHER windows, and what arrives is
+  // adopted WITHOUT being saved back (`commit`), so two windows can never
+  // ping-pong — not even when their code disagrees about which fields exist.
   extendedStore.followOtherWindows = () => {
     if (typeof window === "undefined") return () => undefined;
     const onStorage = (event: StorageEvent) => {
       if (event.key !== SETTINGS_KEY || !event.newValue) return;
       try {
         const next = normalizeSettings(JSON.parse(event.newValue), currentDefaultSettings);
-        if (next) store.getState().setSettings(next);
+        if (next) commit(next, false);
       } catch (error) {
         console.error(error);
       }

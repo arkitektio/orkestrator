@@ -16,7 +16,7 @@ const showWhenAdvanced = {
   fade: false,
   dependencies: ["mode"],
   call: {
-    operation: "eq",
+    operation: "cmp.eq",
     arguments: [
       { key: "a", value_path: "mode" },
       { key: "b", value_literal: "advanced" },
@@ -92,7 +92,7 @@ describe("HideEffect", () => {
       ...showWhenAdvanced,
       dependencies: ["/mode"],
       call: {
-        operation: "eq",
+        operation: "cmp.eq",
         arguments: [
           { key: "a", value_path: "/mode" },
           { key: "b", value_literal: "advanced" },
@@ -127,7 +127,7 @@ describe("HideEffect", () => {
 
     expect(screen.getByText("details input")).toBeTruthy();
     expect(error).toHaveBeenCalledTimes(1);
-    expect(String(error.mock.calls[0][0])).toMatch(/not found/);
+    expect(String(error.mock.calls[0][0])).toMatch(/not a function of the blok language/);
     error.mockRestore();
   });
 });

@@ -12,7 +12,7 @@ import {
   FileIcon,
   FileTextIcon,
 } from "lucide-react";
-import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { Arkitekt, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useDokuments } from "../api/funcs";
 import { useGetFileQuery } from "../api/graphql";
 import { getDokumentsMediaUrl } from "../datalayer/dokumentsAccess";
@@ -50,11 +50,12 @@ export const FilePage = asDetailQueryRoute(
 
     const client = useDokuments();
     const datalayer = useDatalayerEndpoint();
+    const profileId = Arkitekt.useActiveProfileId();
 
     const handleDownload = async () => {
       if (file?.store && datalayer) {
         const link = document.createElement('a');
-        link.href = await getDokumentsMediaUrl(file.store, client, datalayer);
+        link.href = await getDokumentsMediaUrl(file.store, client, datalayer, profileId);
         link.download = file.name;
         document.body.appendChild(link);
         link.click();

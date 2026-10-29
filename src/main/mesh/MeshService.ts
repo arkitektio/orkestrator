@@ -1,13 +1,31 @@
 import { join } from "node:path";
-import type { Readable, Writable } from "node:stream";
 import type { AppModule } from "../modules/AppModule";
 import type { IpcTransport } from "../modules/IpcTransport";
 import type { WindowManager } from "../modules/WindowManager";
+import { ClaimSet, mergeConfigs } from "./claims";
+import { MeshdProcess, type MeshChild } from "./MeshdProcess";
+import {
+  connecting,
+  disconnected,
+  isCurrent,
+  leaseExpired,
+  needsConnect,
+  newRecord,
+  onError,
+  onStatus,
+  presented,
+  unreachable,
+  usableKey,
+  waitingForKey,
+  withKey,
+  type NodeRecord,
+} from "./node";
 import { buildPac, pacDataUrl, proxyPortForHost, routesFor, type PacRoute } from "./pac";
 import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
   MESH_FIREWALL_CHANNEL,
+  MESH_JOIN_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
   MESH_LOCK_MAX_TRUSTED_KEYS,
   MESH_LOCK_SIGN_CHANNEL,
@@ -15,14 +33,14 @@ import {
   MESH_PING_CHANNEL,
   MESH_RESTART_CHANNEL,
   MESH_STATUS_CHANNEL,
-  parseMeshdLine,
+  sanitizeAuthKey,
   sanitizeMeshConfig,
   type MeshClaimRequest,
   type MeshConfig,
-  type MeshdCommand,
   type MeshdEvent,
   type MeshEvent,
   type MeshFirewallState,
+  type MeshJoinRequest,
   type MeshLockInitRequest,
   type MeshLockInitResult,
   type MeshLockSignRequest,
@@ -30,45 +48,39 @@ import {
   type MeshNodeStatus,
   type MeshPingRequest,
   type MeshPingResult,
-  type MeshSidecarState,
   type MeshSnapshot,
   type MeshStatusPayload,
 } from "./protocol";
 
+export type { MeshChild } from "./MeshdProcess";
+
 /**
- * The main-process half of the mesh: owns the sidecar process (`meshd`, one
- * process hosting every mesh) and the session's PAC script that sends each
- * mesh's hosts to its proxy. It stores nothing: a mesh belongs to a profile
- * (organisation + hub) and lives on that profile in the renderer's book.
+ * The main-process half of the mesh: decides which nodes the sidecar runs,
+ * and keeps the session's PAC script sending each mesh's hosts to its proxy.
+ * It stores nothing on disk: a mesh belongs to a profile (organisation + hub)
+ * and lives on that profile in the renderer's book.
+ *
+ * Three concerns, kept apart:
+ *  - WHO WANTS a node: each window's claim (`claims.ts`, desired state only)
+ *    and, while a key is joining, a lease main holds itself (`node.ts`);
+ *  - the ONE-SHOT KEY (`join`): held here until the node is in with it, the
+ *    control server refuses it, or it expires — never on a claim;
+ *  - WHICH NODE IS CURRENT: every connect gets a generation that meshd stamps
+ *    on every event, so a replaced or disconnected node's late events drop.
+ *
+ * Every change runs through one queue (`serialize`), so claims, joins,
+ * crashes and restarts never interleave. Events from the sidecar update the
+ * records at once and only queue a reconcile; nothing in the queue waits on a
+ * node to come up.
  *
  * Everything Electron-specific is injected (`MeshServiceDeps`) so the class
- * runs under vitest against a fake child; `index.ts` wires the real
- * `child_process.spawn` and `session.defaultSession.setProxy`.
+ * runs under vitest against a fake child; `index.ts` wires the real spawn and
+ * `session.defaultSession.setProxy`.
  *
- * Lifecycle: each window claims the mesh of the profile it is in
- * (`MeshClaimRequest`); the running set is the union of those claims, so a
- * mesh is up exactly while some window uses its profile, and a profile whose
- * mesh is switched off claims nothing. A window's claim goes with it when it
- * closes; the sidecar exits once nothing is claimed. It is killed on quit, and a crash marks the meshes stopped rather
- * than pretending; the next connect starts it again. There is no sign-in
- * flow here or in the sidecar: a node that cannot authenticate reports
- * `needs-login`, and the way back is signing in to the deployment again.
- *
- * Security: the renderer can only submit a configuration that is validated
- * here (the id is a plain token, since it names a directory); the binary path is fixed (`meshdLocate.ts`), the
- * argv is a literal, and configuration reaches the sidecar as JSON over
- * stdin, never as an argument.
+ * Security: a configuration is validated here (the id names a directory); the
+ * binary path is fixed (`meshdLocate.ts`), the argv a literal, and everything
+ * reaches the sidecar as JSON over stdin. Keys are never logged or broadcast.
  */
-
-export type MeshChild = {
-  pid?: number;
-  stdin: Writable;
-  stdout: Readable;
-  stderr?: Readable | null;
-  on(event: "exit", listener: (code: number | null) => void): unknown;
-  once(event: "exit", listener: (code: number | null) => void): unknown;
-  kill(): unknown;
-};
 
 export type MeshServiceDeps = {
   /** `undefined` when this build ships no sidecar for the platform. */
@@ -78,48 +90,60 @@ export type MeshServiceDeps = {
   stateRoot: string;
   /** The node name this computer registers under. */
   hostname: string;
-  /** `undefined` = DIRECT. Called only when the script changes. */
+  /** `undefined` = DIRECT. Called only when the script changes, never concurrently. */
   applyProxy: (pacScript: string | undefined) => Promise<void>;
-  /** Whether a path exists (the binary, a node's state file); defaults to a stat. */
+  /** Whether a path exists (the binary); defaults to a stat. */
   exists?: (path: string) => Promise<boolean>;
+  /**
+   * Whether a node's state file (`<root>/<id>/tailscaled.state`) holds a login
+   * — tsnet writes `_current-profile` once one lands; a bare machine key is
+   * not one. Defaults to reading the file.
+   */
+  hasLogin?: (stateFile: string) => Promise<boolean>;
   /** Windows' inbound firewall rules for the sidecar; `not-windows` elsewhere. */
   firewall?: () => Promise<MeshFirewallState>;
+  /** Defaults to `Date.now`. */
+  now?: () => number;
   log?: (message: string) => void;
 };
 
-const READY_TIMEOUT_MS = 15_000;
-const KILL_GRACE_MS = 3_000;
 const PING_TIMEOUT_MS = 30_000;
 const LOCK_SIGN_TIMEOUT_MS = 30_000;
 /** Init signs every machine on the mesh before the lock goes live. */
 const LOCK_INIT_TIMEOUT_MS = 90_000;
 
+type Waiter<T> = { meshId: string; settle: (result: T) => void };
+
 export class MeshService implements AppModule {
-  private child: MeshChild | undefined;
-  private sidecar: MeshSidecarState = { state: "idle" };
-  private readonly statuses = new Map<string, MeshNodeStatus>();
-  /** Each window's claim, by webContents id. */
-  private readonly claims = new Map<number, MeshConfig>();
-  /** Meshes we asked the sidecar to bring up; re-sent after a crash restart. */
-  private readonly wanted = new Set<string>();
-  /** Which meshes have a logged-in node on disk; refreshed on every publish. */
-  private readonly nodeState = new Map<string, boolean>();
+  private readonly process: MeshdProcess;
+  private readonly claims = new ClaimSet();
+  private readonly records = new Map<string, NodeRecord>();
+  private readonly leaseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private nextGen = 0;
+  private seq = 0;
+  private queue: Promise<unknown> = Promise.resolve();
   /** Pings in flight, keyed `<meshId>::<target>`; settled by the final attempt. */
-  private readonly pings = new Map<string, { resolve: (results: MeshPingResult[]) => void; results: MeshPingResult[] }>();
+  private readonly pings = new Map<string, Waiter<MeshPingResult[]> & { results: MeshPingResult[] }>();
   /** Tailnet Lock signatures in flight, keyed `<meshId>::<nodeKey>`. */
-  private readonly lockSigns = new Map<string, Promise<MeshLockSignResult>>();
-  private readonly lockSignWaiters = new Map<string, (result: MeshLockSignResult) => void>();
+  private readonly lockSigns = new Map<string, { promise: Promise<MeshLockSignResult>; waiter: Waiter<MeshLockSignResult> }>();
   /** At most one lock init per mesh; its answer carries secrets, so it has exactly one waiter. */
-  private readonly lockInitWaiters = new Map<string, (result: MeshLockInitResult) => void>();
-  private starting: Promise<void> | undefined;
+  private readonly lockInits = new Map<string, Waiter<MeshLockInitResult>>();
+  private readonly watched = new Set<number>();
   private lastPac: string | undefined;
+  private publishing: Promise<void> | undefined;
+  private dirty = false;
   private quitting = false;
 
   constructor(
     private readonly transport: IpcTransport,
     private readonly windowManager: WindowManager,
     private readonly deps: MeshServiceDeps,
-  ) {}
+  ) {
+    this.process = new MeshdProcess(
+      { binaryPath: deps.binaryPath, spawn: deps.spawn, exists: deps.exists, log: (message) => this.log(message) },
+      { onEvent: (event) => this.onSidecarEvent(event), onExit: (code) => this.onSidecarExit(code) },
+    );
+  }
 
   async setup() {
     this.transport.handleChannel(MESH_STATUS_CHANNEL, () => this.statusPayload());
@@ -134,6 +158,9 @@ export class MeshService implements AppModule {
       }
       return this.claim(sender?.id ?? 0, request);
     });
+    // Not tied to the sender: a join outlives the window that asked (the
+    // lease, not the window, keeps the node up while it gets in).
+    this.transport.handleChannel(MESH_JOIN_CHANNEL, (_event, request: MeshJoinRequest) => this.join(request));
     this.transport.handleChannel(MESH_PING_CHANNEL, (_event, request: MeshPingRequest) => this.ping(request));
     this.transport.handleChannel(MESH_LOCK_SIGN_CHANNEL, (_event, request: MeshLockSignRequest) =>
       this.lockSign(request),
@@ -145,96 +172,261 @@ export class MeshService implements AppModule {
     this.transport.handleChannel(MESH_FIREWALL_CHANNEL, () => this.deps.firewall?.() ?? "not-windows");
   }
 
-  private readonly watched = new Set<number>();
-
   onBeforeQuit() {
     this.quitting = true;
-    this.killChild();
+    for (const timer of this.leaseTimers.values()) clearTimeout(timer);
+    void this.process.kill();
   }
 
-  // ── claims ──
+  // ── what windows ask for ──
 
-  /**
-   * Set (or with `mesh: null`, drop) one window's claim and bring the running
-   * set in line with the union of claims. `authKey` is used for this connect
-   * only and forgotten; it only matters when the mesh is not already up.
-   */
+  /** Set (or with `mesh: null`, drop) one window's claim, and bring the nodes in line. */
   async claim(owner: number, request: MeshClaimRequest): Promise<MeshStatusPayload> {
     const mesh = request?.mesh == null ? undefined : sanitizeMeshConfig(request.mesh);
     if (request?.mesh != null && !mesh) throw new Error("Invalid mesh configuration");
-    if (mesh) this.claims.set(owner, mesh);
-    else this.claims.delete(owner);
-
-    const desired = this.configs();
-    for (const id of [...this.wanted]) {
-      if (!desired.some((config) => config.id === id)) await this.disconnect(id, false);
-    }
-    for (const config of desired) {
-      if (config.id !== mesh?.id) {
-        if (!this.wanted.has(config.id)) await this.connect(config, undefined, false);
-        continue;
-      }
-      const state = this.statuses.get(config.id)?.state;
-      const up = state === "running" || state === "starting" || state === "needs-machine-auth";
-      // A re-claim retries a node that is down (after a crash, say); a fresh
-      // key also revives one that lost its membership. A node that is up
-      // keeps its session, and any key is ignored.
-      const retry = !up && (!!request.authKey || state !== "needs-login");
-      if (!this.wanted.has(config.id) || retry) {
-        // meshd answers a connect for a node it still holds with that node's
-        // last status and drops the key, so a retry tears the node down first.
-        if (retry && this.wanted.has(config.id)) await this.disconnect(config.id, false);
-        await this.connect(config, request.authKey, false);
-      }
-    }
-    for (const id of [...this.statuses.keys()]) {
-      if (!desired.some((config) => config.id === id)) this.statuses.delete(id);
-    }
-    if (this.wanted.size === 0) this.killChild();
+    await this.serialize(async () => {
+      this.claims.set(owner, mesh);
+      await this.reconcile();
+    });
     await this.publish();
     return this.statusPayload();
   }
 
-  /** The union of claims, one config per mesh id; pinned hosts are merged. */
-  private configs(): MeshConfig[] {
-    const byId = new Map<string, MeshConfig>();
-    for (const config of this.claims.values()) {
-      const seen = byId.get(config.id);
-      byId.set(config.id, seen ? { ...seen, hosts: [...new Set([...seen.hosts, ...config.hosts])] } : config);
-    }
-    return [...byId.values()];
+  /** Hand over a one-shot key for a mesh's node and keep the node up while it joins. */
+  async join(request: MeshJoinRequest): Promise<MeshStatusPayload> {
+    const mesh = sanitizeMeshConfig(request?.mesh);
+    const authKey = sanitizeAuthKey(request?.authKey);
+    if (!mesh) throw new Error("Invalid mesh configuration");
+    if (!authKey) throw new Error("Invalid mesh key");
+    await this.serialize(async () => {
+      const record = this.record(mesh.id);
+      const next = withKey(record, authKey, mesh, this.now());
+      this.records.set(mesh.id, next);
+      if (next.lease) this.armLease(mesh.id, next.lease.until);
+      await this.reconcile();
+    });
+    await this.publish();
+    return this.statusPayload();
   }
 
-  // ── nodes ──
+  /**
+   * "Check again": stop the sidecar and bring every wanted node back in a
+   * fresh one — a fresh map from the coordination server, and the binary on
+   * disk now (a sidecar outlives rebuilds otherwise). Nodes keep their state.
+   * Refused while a node joins (restarting could replay a key the server
+   * already took) or a lock setup runs (its answer would be lost).
+   */
+  async restart(): Promise<MeshStatusPayload> {
+    if (this.lockInits.size > 0) throw new Error("Tailnet Lock is being set up; try again when it is done");
+    if ([...this.records.values()].some((record) => record.lease)) {
+      throw new Error("A mesh is joining; try again in a moment");
+    }
+    await this.serialize(async () => {
+      await this.process.kill();
+      for (const [id, record] of this.records) {
+        if (record.connected) this.records.set(id, disconnected(record));
+        this.settleWaiters(id, "The mesh client restarted");
+      }
+      await this.reconcile();
+    });
+    await this.publish();
+    return this.statusPayload();
+  }
 
-  private async connect(mesh: MeshConfig, authKey: string | undefined, publish = true): Promise<void> {
-    const id = mesh.id;
-    this.wanted.add(id);
-    this.setStatus({ id, state: "starting" });
-    try {
-      await this.ensureSidecar();
-    } catch (error) {
-      this.setStatus({ id, state: "error", error: errorMessage(error) });
-      if (publish) await this.publish();
+  // ── reconcile ──
+
+  /** Run `fn` after everything queued before it; a failure does not break the chain. */
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(fn, fn);
+    this.queue = run.catch((error) => this.log(`mesh: ${errorMessage(error)}`));
+    return run;
+  }
+
+  /** Every node someone wants: window claims and join leases, one per mesh. */
+  private configs(): MeshConfig[] {
+    const leased = [...this.records.values()].flatMap((record) => (record.lease ? [record.lease.config] : []));
+    return mergeConfigs([...this.claims.values(), ...leased]);
+  }
+
+  /** Bring meshd in line with what is wanted. Idempotent; only ever runs in the queue. */
+  private async reconcile(): Promise<void> {
+    const now = this.now();
+    const wanted = this.configs();
+    const ids = new Set(wanted.map((config) => config.id));
+
+    for (const [id, record] of this.records) {
+      if (ids.has(id) || !record.connected) continue;
+      this.process.send({ op: "disconnect", id, gen: record.gen });
+      this.records.set(id, disconnected(record));
+      this.settleWaiters(id, "The mesh was disconnected");
+    }
+
+    for (const config of wanted) {
+      const record = this.record(config.id);
+      if (!needsConnect(record, now)) continue;
+      const key = usableKey(record, now);
+      // No key and no login on disk: the node could only ask for an
+      // interactive login nobody finishes, and the control server would hold
+      // that request open. It waits for a key instead.
+      if (!key && !(await this.loggedIn(config.id))) {
+        this.records.set(config.id, waitingForKey(record));
+        continue;
+      }
+      try {
+        await this.process.ensure();
+      } catch (error) {
+        this.sidecarUnavailable(errorMessage(error));
+        return;
+      }
+      const gen = ++this.nextGen;
+      this.settleWaiters(config.id, "The mesh node was replaced");
+      this.records.set(config.id, connecting(record, gen, key));
+      this.process.send({
+        op: "connect",
+        id: config.id,
+        gen,
+        dir: join(this.deps.stateRoot, config.id),
+        controlUrl: config.controlUrl,
+        hostname: this.deps.hostname,
+        ...(key ? { authKey: key.value } : {}),
+      });
+    }
+
+    for (const id of [...this.records.keys()]) {
+      const record = this.records.get(id)!;
+      if (!ids.has(id) && !record.key && !record.lease) this.records.delete(id);
+    }
+    if (![...this.records.values()].some((record) => record.connected)) await this.process.kill();
+  }
+
+  /** From an event or a timer: queue a reconcile (after `first`), then publish either way. */
+  private reconcileSoon(first?: () => void) {
+    void this.serialize(async () => {
+      first?.();
+      await this.reconcile();
+    }).then(
+      () => this.publish(),
+      () => this.publish(),
+    );
+  }
+
+  private record(id: string): NodeRecord {
+    return this.records.get(id) ?? newRecord(id);
+  }
+
+  /** The sidecar cannot be had (missing, outdated, would not start): no node can join. */
+  private sidecarUnavailable(error: string) {
+    for (const [id, record] of this.records) {
+      this.records.set(id, unreachable(record, error));
+      this.clearLease(id);
+    }
+    for (const config of this.configs()) {
+      if (!this.records.has(config.id)) this.records.set(config.id, unreachable(newRecord(config.id), error));
+    }
+  }
+
+  private armLease(id: string, until: number) {
+    this.clearLease(id);
+    this.leaseTimers.set(
+      id,
+      setTimeout(() => {
+        this.leaseTimers.delete(id);
+        this.reconcileSoon(() => {
+          const record = this.records.get(id);
+          if (record) this.records.set(id, leaseExpired(record, this.now()));
+        });
+      }, Math.max(0, until - this.now())),
+    );
+  }
+
+  private clearLease(id: string) {
+    const timer = this.leaseTimers.get(id);
+    if (timer) clearTimeout(timer);
+    this.leaseTimers.delete(id);
+  }
+
+  // ── sidecar events ──
+
+  private onSidecarEvent(event: Exclude<MeshdEvent, { ev: "ready" }>) {
+    if (event.ev === "log") {
+      if (isCurrent(this.records.get(event.id), event.gen)) {
+        this.broadcast({ type: "log", meshId: event.id, message: event.message });
+      }
       return;
     }
-    this.send({
-      op: "connect",
-      id,
-      dir: join(this.deps.stateRoot, id),
-      controlUrl: mesh.controlUrl,
-      hostname: this.deps.hostname,
-      authKey: authKey || undefined,
-    });
-    if (publish) await this.publish();
+    if (event.ev === "error") {
+      if (!event.id) {
+        this.log(event.message);
+        return;
+      }
+      const record = this.records.get(event.id);
+      if (!isCurrent(record, event.gen)) return;
+      this.log(`[${event.id}] ${event.message}`);
+      this.afterNodeChange(event.id, record, onError(record, event.message));
+      return;
+    }
+    if (event.ev === "ping") {
+      const { ev: _ev, id, gen, ...result } = event;
+      if (!isCurrent(this.records.get(id), gen)) return;
+      this.broadcast({ type: "ping", meshId: id, result });
+      const key = `${id}::${result.target}`;
+      const entry = this.pings.get(key);
+      if (entry) {
+        entry.results.push(result);
+        if (result.final) entry.settle(entry.results);
+      }
+      return;
+    }
+    if (event.ev === "lock-sign") {
+      if (!isCurrent(this.records.get(event.id), event.gen)) return;
+      this.lockSigns.get(`${event.id}::${event.nodeKey}`)?.waiter.settle({ ok: event.ok, error: event.error || undefined });
+      return;
+    }
+    if (event.ev === "lock-init") {
+      if (!isCurrent(this.records.get(event.id), event.gen)) return;
+      // Carries the disablement secret: to its one waiter, nowhere else.
+      this.lockInits.get(event.id)?.settle({
+        ok: event.ok,
+        error: event.error || undefined,
+        disablementSecrets: event.ok ? event.disablementSecrets : undefined,
+      });
+      return;
+    }
+    // status
+    const { ev: _ev, gen, ...status } = event;
+    const record = this.records.get(status.id);
+    if (!isCurrent(record, gen)) return;
+    this.afterNodeChange(status.id, record, onStatus(record, status));
   }
 
-  private async disconnect(id: string, publish = true): Promise<void> {
-    this.wanted.delete(id);
-    if (this.child) this.send({ op: "disconnect", id });
-    this.setStatus({ id, state: "stopped" });
-    if (publish) await this.publish();
+  /** Take the record's next state; a join that just ended may leave a node nobody claims. */
+  private afterNodeChange(id: string, before: NodeRecord, after: NodeRecord) {
+    this.records.set(id, after);
+    if (before.lease && !after.lease) {
+      this.clearLease(id);
+      this.reconcileSoon();
+      return;
+    }
+    void this.publish();
   }
+
+  private onSidecarExit(code: number | null) {
+    const error = `The mesh sidecar stopped unexpectedly (exit code ${code})`;
+    for (const [id, record] of this.records) {
+      if (record.connected) this.records.set(id, disconnected(record, this.quitting ? "stopped" : "error", this.quitting ? undefined : error));
+      this.settleWaiters(id, "The mesh client stopped");
+    }
+    if (this.quitting) return;
+    // A node still joining tries again with its key (attempts are capped);
+    // the rest wait for the next claim, so a crashing sidecar is not looped.
+    if ([...this.records.values()].some((record) => record.lease)) {
+      this.reconcileSoon();
+      return;
+    }
+    void this.publish();
+  }
+
+  // ── one-shot requests (Settings › Mesh) ──
 
   /**
    * Disco-ping one of a mesh's peers. The target must be an address the
@@ -243,40 +435,42 @@ export class MeshService implements AppModule {
    * last one marked `final`; every attempt is also broadcast as it lands.
    */
   async ping(request: MeshPingRequest): Promise<MeshPingResult[]> {
-    const status = this.statuses.get(request.meshId);
-    const target = typeof request.target === "string" ? request.target.trim() : "";
-    const known = (status?.peers ?? []).some((peer) => peer.ips.includes(target));
-    if (!status || status.state !== "running" || !known) {
+    const record = this.records.get(request?.meshId);
+    const target = typeof request?.target === "string" ? request.target.trim() : "";
+    const known = (record?.status.peers ?? []).some((peer) => peer.ips.includes(target));
+    if (!record?.connected || record.status.state !== "running" || !known) {
       throw new Error("Not a machine on a connected mesh");
     }
-    if (!this.child) throw new Error("The mesh client is not running");
+    if (!this.process.running) throw new Error("The mesh client is not running");
     const key = `${request.meshId}::${target}`;
     const pending = this.pings.get(key);
     if (pending) {
       return new Promise((resolve) => {
-        const previous = pending.resolve;
-        pending.resolve = (results) => {
+        const previous = pending.settle;
+        pending.settle = (results) => {
           previous(results);
           resolve(results);
         };
       });
     }
     return new Promise<MeshPingResult[]>((resolve) => {
-      const entry = { resolve, results: [] as MeshPingResult[] };
-      this.pings.set(key, entry);
-      const timer = setTimeout(() => {
-        if (this.pings.get(key) !== entry) return;
-        this.pings.delete(key);
-        entry.resolve([
-          ...entry.results,
-          { target, attempt: entry.results.length + 1, final: true, ok: false, direct: false, error: "The mesh client did not answer" },
-        ]);
-      }, PING_TIMEOUT_MS);
-      entry.resolve = (results) => {
-        clearTimeout(timer);
-        resolve(results);
+      const timer = setTimeout(() => entry.settle(timedOut(entry.results)), PING_TIMEOUT_MS);
+      const timedOut = (results: MeshPingResult[]) => [
+        ...results,
+        { target, attempt: results.length + 1, final: true, ok: false, direct: false, error: "The mesh client did not answer" },
+      ];
+      const entry = {
+        meshId: request.meshId,
+        results: [] as MeshPingResult[],
+        settle: (results: MeshPingResult[]) => {
+          if (this.pings.get(key) !== entry) return;
+          clearTimeout(timer);
+          this.pings.delete(key);
+          resolve(results);
+        },
       };
-      this.send({ op: "ping", id: request.meshId, target });
+      this.pings.set(key, entry);
+      this.process.send({ op: "ping", id: request.meshId, gen: record.gen, target });
     });
   }
 
@@ -288,33 +482,35 @@ export class MeshService implements AppModule {
    * The sidecar checks the same again against the node's live lock state.
    */
   async lockSign(request: MeshLockSignRequest): Promise<MeshLockSignResult> {
-    const status = this.statuses.get(request?.meshId);
+    const record = this.records.get(request?.meshId);
     const nodeKey = typeof request?.nodeKey === "string" ? request.nodeKey.trim() : "";
-    const lock = status?.lock;
-    if (!status || status.state !== "running" || !lock?.enabled) {
+    const lock = record?.status.lock;
+    if (!record?.connected || record.status.state !== "running" || !lock?.enabled) {
       throw new Error("Tailnet Lock is not on for a connected mesh");
     }
     if (!lock.trusted) throw new Error("This computer is not trusted to approve machines");
     if (!(lock.pending ?? []).some((peer) => peer.nodeKey === nodeKey)) {
       throw new Error("That machine is not waiting for approval");
     }
-    if (!this.child) throw new Error("The mesh client is not running");
+    if (!this.process.running) throw new Error("The mesh client is not running");
     const key = `${request.meshId}::${nodeKey}`;
     const inFlight = this.lockSigns.get(key);
-    if (inFlight) return inFlight;
+    if (inFlight) return inFlight.promise;
+    let waiter!: Waiter<MeshLockSignResult>;
     const promise = new Promise<MeshLockSignResult>((resolve) => {
-      const timer = setTimeout(() => settle({ ok: false, error: "The mesh client did not answer" }), LOCK_SIGN_TIMEOUT_MS);
-      const settle = (result: MeshLockSignResult) => {
-        if (this.lockSignWaiters.get(key) !== settle) return;
-        clearTimeout(timer);
-        this.lockSignWaiters.delete(key);
-        this.lockSigns.delete(key);
-        resolve(result);
+      const timer = setTimeout(() => waiter.settle({ ok: false, error: "The mesh client did not answer" }), LOCK_SIGN_TIMEOUT_MS);
+      waiter = {
+        meshId: request.meshId,
+        settle: (result) => {
+          if (this.lockSigns.get(key)?.waiter !== waiter) return;
+          clearTimeout(timer);
+          this.lockSigns.delete(key);
+          resolve(result);
+        },
       };
-      this.lockSignWaiters.set(key, settle);
     });
-    this.lockSigns.set(key, promise);
-    this.send({ op: "lock-sign", id: request.meshId, nodeKey });
+    this.lockSigns.set(key, { promise, waiter });
+    this.process.send({ op: "lock-sign", id: request.meshId, gen: record.gen, nodeKey });
     return promise;
   }
 
@@ -326,9 +522,9 @@ export class MeshService implements AppModule {
    * not broadcast, not logged and not kept.
    */
   async lockInit(request: MeshLockInitRequest): Promise<MeshLockInitResult> {
-    const status = this.statuses.get(request?.meshId);
-    const lock = status?.lock;
-    if (!status || status.state !== "running" || !lock) {
+    const record = this.records.get(request?.meshId);
+    const lock = record?.status.lock;
+    if (!record?.connected || record.status.state !== "running" || !lock) {
       throw new Error("The mesh is not connected");
     }
     if (lock.enabled) throw new Error("Tailnet Lock is already set up for this mesh");
@@ -341,276 +537,102 @@ export class MeshService implements AppModule {
     if (trustedKeys.length > MESH_LOCK_MAX_TRUSTED_KEYS) {
       throw new Error(`At most ${MESH_LOCK_MAX_TRUSTED_KEYS} other signers`);
     }
-    if (this.lockInitWaiters.has(request.meshId)) throw new Error("Tailnet Lock is already being set up");
-    if (!this.child) throw new Error("The mesh client is not running");
+    if (this.lockInits.has(request.meshId)) throw new Error("Tailnet Lock is already being set up");
+    if (!this.process.running) throw new Error("The mesh client is not running");
     const meshId = request.meshId;
     return new Promise<MeshLockInitResult>((resolve) => {
       const timer = setTimeout(
-        () => settle({ ok: false, error: "The mesh client did not answer. Check the mesh before trying again." }),
+        () => waiter.settle({ ok: false, error: "The mesh client did not answer. Check the mesh before trying again." }),
         LOCK_INIT_TIMEOUT_MS,
       );
-      const settle = (result: MeshLockInitResult) => {
-        if (this.lockInitWaiters.get(meshId) !== settle) return;
-        clearTimeout(timer);
-        this.lockInitWaiters.delete(meshId);
-        resolve(result);
+      const waiter: Waiter<MeshLockInitResult> = {
+        meshId,
+        settle: (result) => {
+          if (this.lockInits.get(meshId) !== waiter) return;
+          clearTimeout(timer);
+          this.lockInits.delete(meshId);
+          resolve(result);
+        },
       };
-      this.lockInitWaiters.set(meshId, settle);
-      this.send({ op: "lock-init", id: meshId, trustedKeys });
+      this.lockInits.set(meshId, waiter);
+      this.process.send({ op: "lock-init", id: meshId, gen: record.gen, trustedKeys });
     });
   }
 
-  /**
-   * "Check again": stop the sidecar, wait for it to go, and bring every
-   * claimed mesh back up in a fresh one. A fresh node gets a fresh map from
-   * the coordination server (a capability granted there, say), and a fresh
-   * process is the binary on disk now — a sidecar outlives rebuilds and app
-   * updates otherwise. Nodes keep their state, so nothing re-authenticates.
-   * Refused while a lock setup is running: its answer would be lost.
-   */
-  async restart(): Promise<MeshStatusPayload> {
-    if (this.lockInitWaiters.size > 0) throw new Error("Tailnet Lock is being set up; try again when it is done");
-    if (this.restarting) return this.restarting;
-    this.restarting = (async () => {
-      await this.killChild();
-      for (const config of this.configs()) await this.connect(config, undefined, false);
-      await this.publish();
-      return this.statusPayload();
-    })().finally(() => {
-      this.restarting = undefined;
-    });
-    return this.restarting;
+  /** Whatever was asked of a node that is gone now is answered, not left to time out. */
+  private settleWaiters(meshId: string, error: string) {
+    for (const entry of [...this.pings.values()]) {
+      if (entry.meshId !== meshId) continue;
+      const target = entry.results[0]?.target ?? "";
+      entry.settle([
+        ...entry.results,
+        { target, attempt: entry.results.length + 1, final: true, ok: false, direct: false, error },
+      ]);
+    }
+    for (const { waiter } of [...this.lockSigns.values()]) {
+      if (waiter.meshId === meshId) waiter.settle({ ok: false, error });
+    }
+    const init = this.lockInits.get(meshId);
+    init?.settle({ ok: false, error: `${error}. Check the mesh before trying again.` });
   }
-
-  private restarting: Promise<MeshStatusPayload> | undefined;
 
   /** For main's own Node clients: the proxy port a host tunnels through, if any. */
   proxyPortForHost(host: string): number | undefined {
     return proxyPortForHost(this.routes(), host);
   }
 
-  // ── sidecar process ──
-
-  private async ensureSidecar(): Promise<void> {
-    if (this.child && this.sidecar.state === "ready") return;
-    if (this.starting) return this.starting;
-    this.starting = this.spawnSidecar().finally(() => {
-      this.starting = undefined;
-    });
-    return this.starting;
-  }
-
-  private async spawnSidecar(): Promise<void> {
-    const binary = this.deps.binaryPath;
-    const exists = this.deps.exists ?? defaultExists;
-    if (!binary || !(await exists(binary))) {
-      this.sidecar = { state: "unavailable", reason: "binary-missing", detail: binary };
-      throw new Error("This build does not include the mesh sidecar");
-    }
-    this.sidecar = { state: "starting" };
-    let child: MeshChild;
-    try {
-      child = this.deps.spawn(binary);
-    } catch (error) {
-      this.sidecar = { state: "unavailable", reason: "spawn-failed", detail: errorMessage(error) };
-      throw error;
-    }
-    this.child = child;
-    this.wireChild(child);
-    await this.awaitReady(child);
-  }
-
-  private wireChild(child: MeshChild) {
-    let buffer = "";
-    child.stdout.setEncoding?.("utf8");
-    child.stdout.on("data", (chunk: string | Buffer) => {
-      buffer += chunk.toString();
-      let newline = buffer.indexOf("\n");
-      while (newline !== -1) {
-        const line = buffer.slice(0, newline);
-        buffer = buffer.slice(newline + 1);
-        const event = parseMeshdLine(line);
-        if (event) this.onSidecarEvent(event);
-        newline = buffer.indexOf("\n");
-      }
-    });
-    child.stderr?.on("data", (chunk: string | Buffer) => {
-      for (const line of chunk.toString().split("\n")) {
-        if (line.trim()) this.log(line.trim());
-      }
-    });
-    child.on("exit", (code) => {
-      if (this.child !== child) return;
-      this.child = undefined;
-      const hadWork = this.wanted.size > 0;
-      for (const id of this.wanted) {
-        this.setStatus({
-          id,
-          state: this.quitting ? "stopped" : "error",
-          error: this.quitting ? undefined : `The mesh sidecar stopped unexpectedly (exit code ${code})`,
-        });
-      }
-      this.sidecar =
-        this.quitting || !hadWork ? { state: "idle" } : { state: "crashed", detail: `exit code ${code}` };
-      void this.publish();
-    });
-  }
-
-  private awaitReady(child: MeshChild): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => finish(new Error("The mesh sidecar did not start in time")), READY_TIMEOUT_MS);
-      const onExit = (code: number | null) => finish(new Error(`The mesh sidecar exited (code ${code})`));
-      let settled = false;
-      const finish = (error?: Error) => {
-        // `once("exit")` stays registered past a successful handshake; a
-        // later crash must not be re-reported as a failed spawn.
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        this.readyWaiters.delete(onReady);
-        if (error) {
-          this.sidecar = { state: "unavailable", reason: "spawn-failed", detail: error.message };
-          reject(error);
-        } else resolve();
-      };
-      const onReady = () => finish();
-      this.readyWaiters.add(onReady);
-      child.once("exit", onExit);
-    });
-  }
-
-  private readonly readyWaiters = new Set<() => void>();
-
-  private onSidecarEvent(event: MeshdEvent) {
-    if (event.ev === "ready") {
-      this.sidecar = { state: "ready", version: event.version };
-      for (const waiter of [...this.readyWaiters]) waiter();
-      void this.publish();
-      return;
-    }
-    if (event.ev === "log") {
-      this.broadcast({ type: "log", meshId: event.id, message: event.message });
-      return;
-    }
-    if (event.ev === "error") {
-      this.log(`[${event.id}] ${event.message}`);
-      return;
-    }
-    if (event.ev === "ping") {
-      const { ev: _ev, id, ...result } = event;
-      this.broadcast({ type: "ping", meshId: id, result });
-      const key = `${id}::${result.target}`;
-      const entry = this.pings.get(key);
-      if (entry) {
-        entry.results.push(result);
-        if (result.final) {
-          this.pings.delete(key);
-          entry.resolve(entry.results);
-        }
-      }
-      return;
-    }
-    if (event.ev === "lock-sign") {
-      this.lockSignWaiters.get(`${event.id}::${event.nodeKey}`)?.({ ok: event.ok, error: event.error || undefined });
-      return;
-    }
-    if (event.ev === "lock-init") {
-      // Carries the disablement secret: to its one waiter, nowhere else.
-      this.lockInitWaiters.get(event.id)?.({
-        ok: event.ok,
-        error: event.error || undefined,
-        disablementSecrets: event.ok ? event.disablementSecrets : undefined,
-      });
-      return;
-    }
-    // status
-    const { ev: _ev, ...status } = event;
-    if (!this.wanted.has(status.id)) return; // a straggler after disconnect
-    this.setStatus(status);
-    void this.publish();
-  }
-
-  private send(command: MeshdCommand) {
-    if (!this.child) return;
-    try {
-      this.child.stdin.write(`${JSON.stringify(command)}\n`);
-    } catch (error) {
-      this.log(`send ${command.op}: ${error}`);
-    }
-  }
-
-  /** Resolves once the sidecar has exited (or been killed after the grace period). */
-  private killChild(): Promise<void> {
-    const child = this.child;
-    if (!child) return Promise.resolve();
-    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
-    this.child = undefined;
-    this.sidecar = { state: "idle" };
-    try {
-      child.stdin.write(`${JSON.stringify({ op: "shutdown" } satisfies MeshdCommand)}\n`);
-      child.stdin.end();
-    } catch {
-      // Already gone.
-    }
-    // Closing stdin makes the sidecar tear its nodes down and exit; the kill
-    // is for a hung one.
-    const timer = setTimeout(() => {
-      try {
-        child.kill();
-      } catch {
-        // Already gone.
-      }
-    }, KILL_GRACE_MS);
-    child.once("exit", () => clearTimeout(timer));
-    for (const id of this.wanted) this.setStatus({ id, state: "stopped" });
-    if (!this.quitting) void this.publish();
-    // Never wait forever on a process that will not report its exit.
-    return Promise.race([exited, new Promise<void>((resolve) => setTimeout(resolve, KILL_GRACE_MS + 1_000))]);
-  }
-
   // ── status, routing, broadcast ──
 
-  private setStatus(status: MeshNodeStatus) {
-    this.statuses.set(status.id, status);
+  private presentedStatuses(): Map<string, MeshNodeStatus> {
+    return new Map([...this.records].map(([id, record]) => [id, presented(record)]));
   }
 
   private routes(): PacRoute[] {
-    return routesFor(this.configs(), this.statuses);
+    return routesFor(this.configs(), this.presentedStatuses());
   }
 
-  private async refreshNodeState(): Promise<void> {
-    const exists = this.deps.exists ?? defaultExists;
-    await Promise.all(
-      this.configs().map(async (mesh) => {
-        this.nodeState.set(mesh.id, await exists(join(this.deps.stateRoot, mesh.id, "tailscaled.state")));
-      }),
-    );
-  }
-
-  /** Recompute the PAC, apply it if it changed, and tell every window. */
-  private async publish(): Promise<void> {
-    await this.refreshNodeState();
-    const pac = buildPac(this.routes());
-    if (pac !== this.lastPac) {
-      this.lastPac = pac;
-      try {
-        await this.deps.applyProxy(pac === undefined ? undefined : pacDataUrl(pac));
-      } catch (error) {
-        this.log(`applyProxy: ${error}`);
-      }
+  /**
+   * Recompute the PAC, apply it if it changed, and tell every window. Calls
+   * coalesce: one runs at a time, and one more follows if anything changed
+   * meanwhile — so `applyProxy` never runs concurrently and never goes stale.
+   */
+  private publish(): Promise<void> {
+    this.dirty = true;
+    if (!this.publishing) {
+      this.publishing = (async () => {
+        while (this.dirty) {
+          this.dirty = false;
+          const pac = buildPac(this.routes());
+          if (pac !== this.lastPac) {
+            this.lastPac = pac;
+            try {
+              await this.deps.applyProxy(pac === undefined ? undefined : pacDataUrl(pac));
+            } catch (error) {
+              this.log(`applyProxy: ${error}`);
+            }
+          }
+          if (!this.quitting) this.broadcast({ type: "status", payload: this.statusPayload() });
+        }
+      })().finally(() => {
+        this.publishing = undefined;
+      });
     }
-    this.broadcast({ type: "status", payload: this.statusPayload() });
+    return this.publishing;
   }
 
   private snapshots(): MeshSnapshot[] {
-    return this.configs().map((mesh) => ({
-      config: { ...mesh, hasNodeState: this.nodeState.get(mesh.id) ?? false },
-      status: this.statuses.get(mesh.id) ?? { id: mesh.id, state: "stopped" },
-    }));
+    return this.configs().map((config) => {
+      const record = this.records.get(config.id);
+      return {
+        config,
+        status: record ? presented(record) : { id: config.id, state: "stopped" },
+        joining: !!record?.lease,
+      };
+    });
   }
 
   statusPayload(): MeshStatusPayload {
-    return { sidecar: this.sidecar, meshes: this.snapshots() };
+    return { seq: ++this.seq, sidecar: this.process.state, meshes: this.snapshots() };
   }
 
   private broadcast(event: MeshEvent) {
@@ -620,16 +642,24 @@ export class MeshService implements AppModule {
     }
   }
 
+  private loggedIn(id: string): Promise<boolean> {
+    return (this.deps.hasLogin ?? defaultHasLogin)(join(this.deps.stateRoot, id, "tailscaled.state"));
+  }
+
+  private now(): number {
+    return (this.deps.now ?? Date.now)();
+  }
+
   private log(message: string) {
     (this.deps.log ?? ((m: string) => console.log(`[mesh] ${m}`)))(message);
   }
 }
 
-const defaultExists = async (path: string): Promise<boolean> => {
-  const { access } = await import("node:fs/promises");
+const defaultHasLogin = async (stateFile: string): Promise<boolean> => {
+  const { readFile } = await import("node:fs/promises");
   try {
-    await access(path);
-    return true;
+    const state = JSON.parse(await readFile(stateFile, "utf8")) as Record<string, unknown>;
+    return typeof state["_current-profile"] === "string" && state["_current-profile"].length > 0;
   } catch {
     return false;
   }

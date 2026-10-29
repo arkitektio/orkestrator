@@ -33,7 +33,7 @@ export const useConnectionPath = (): ConnectionPath => {
     .join("\n");
   const hosts = useMemo(() => (hostKey ? hostKey.split("\n") : []), [hostKey]);
 
-  const { sidecar, meshes } = useMeshes();
+  const { payload } = useMeshes();
   const [vpn, setVpn] = useState<VpnInterface[]>([]);
 
   const wantsTailscale = anyMeshHost(hosts);
@@ -58,10 +58,10 @@ export const useConnectionPath = (): ConnectionPath => {
     () =>
       summarizeConnectionPath({
         hosts,
-        mesh: { sidecar, meshes },
+        mesh: payload,
         tailscale,
         vpn,
       }),
-    [hosts, sidecar, meshes, tailscale, vpn],
+    [hosts, payload, tailscale, vpn],
   );
 };

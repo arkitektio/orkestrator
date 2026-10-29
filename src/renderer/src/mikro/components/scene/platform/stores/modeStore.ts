@@ -156,6 +156,21 @@ export interface ModeState {
   /** The ARMED design tool: the selected one while its key is held, else null. */
   designTool: DesignToolId | null;
   /**
+   * Space is held: the left button is the hand — it pans the view — in every
+   * mode and view, and the tools leave presses alone meanwhile
+   * (`platform/input/navigationBindings`). Set by `KeyboardModeController`.
+   */
+  handHeld: boolean;
+  setHandHeld: (held: boolean) => void;
+  /**
+   * Who the left press in flight belongs to, decided at press time by
+   * `shell/pointer/LeftPressArbiter` (`navigationBindings.leftPressOwner`).
+   * Tools skip a press — and the click it ends in — that is the camera's.
+   * Written per press and read with `getState()`; nothing subscribes.
+   */
+  leftPress: "camera" | "tool";
+  setLeftPress: (owner: "camera" | "tool") => void;
+  /**
    * The presentation/faithful switch. OFF is the SCIENTIFIC look and is the
    * renderer as it has always been, plus `NoToneMapping`; ON adds volume
    * shading, ACES grading and tricubic zoom smoothing.
@@ -234,6 +249,16 @@ export const createModeStore = ({
     selectedDesignTool: "trace",
     designToolHeld: false,
     designTool: null,
+    leftPress: "tool",
+    setLeftPress: (owner) =>
+      set((state) => {
+        if (state.leftPress !== owner) state.leftPress = owner;
+      }),
+    handHeld: false,
+    setHandHeld: (held) =>
+      set((state) => {
+        if (state.handHeld !== held) state.handHeld = held;
+      }),
     cinematic: false,
     isoThreshold: 0.5,
     lightRig: { ...CINEMATIC_DEFAULTS },

@@ -1,0 +1,3 @@
+# The build writes to resources/meshd/; a local `go build` lands here.
+/meshd
+/meshd.exe

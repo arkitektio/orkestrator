@@ -7,20 +7,26 @@
 // NOTHING but protocol events — every log line goes to stderr — because the
 // parent parses stdout line by line.
 //
-//	stdin  → {"op":"connect","id":..,"dir":..,"controlUrl":..,"hostname":..,"authKey":..}
-//	         {"op":"disconnect","id":..}
-//	         {"op":"ping","id":..,"target":<tailnet ip>}   (disco ping, like `tailscale ping`)
-//	         {"op":"lock-sign","id":..,"nodeKey":"nodekey:.."} (Tailnet Lock: approve a waiting machine)
-//	         {"op":"lock-init","id":..,"trustedKeys":["tlpub:.."]} (Tailnet Lock: become the key authority)
+//	stdin  → {"op":"connect","id":..,"gen":..,"dir":..,"controlUrl":..,"hostname":..,"authKey":..}
+//	         {"op":"disconnect","id":..,"gen":..}
+//	         {"op":"ping","id":..,"gen":..,"target":<tailnet ip>}   (disco ping, like `tailscale ping`)
+//	         {"op":"lock-sign","id":..,"gen":..,"nodeKey":"nodekey:.."} (Tailnet Lock: approve a waiting machine)
+//	         {"op":"lock-init","id":..,"gen":..,"trustedKeys":["tlpub:.."]} (Tailnet Lock: become the key authority)
 //	         {"op":"status"}             (re-emit every node's status)
 //	         {"op":"shutdown"}
-//	stdout ← {"ev":"ready","version":..}
-//	         {"ev":"status", ...MeshNodeStatus}
-//	         {"ev":"ping","id":..,"target":..,"attempt":..,"final":..,...}
-//	         {"ev":"lock-sign","id":..,"nodeKey":..,"ok":..,"error":..}
-//	         {"ev":"lock-init","id":..,"ok":..,"error":..,"disablementSecrets":[..]}
-//	         {"ev":"log","id":..,"message":..}
-//	         {"ev":"error","id":..,"message":..}
+//	stdout ← {"ev":"ready","version":..,"protocol":2}
+//	         {"ev":"status","gen":.., ...MeshNodeStatus}
+//	         {"ev":"ping","id":..,"gen":..,"target":..,"attempt":..,"final":..,...}
+//	         {"ev":"lock-sign","id":..,"gen":..,"nodeKey":..,"ok":..,"error":..}
+//	         {"ev":"lock-init","id":..,"gen":..,"ok":..,"error":..,"disablementSecrets":[..]}
+//	         {"ev":"log","id":..,"gen":..,"message":..}
+//	         {"ev":"error","id":..,"gen":..,"message":..}
+//
+// Every node event carries the generation of the connect that started the
+// node, so the parent can drop whatever an earlier node of the same id still
+// had in flight. A connect for an id this process holds under another
+// generation replaces that node; under the same one it only repeats the last
+// status. A disconnect answers nothing: the parent knows what it asked for.
 //
 // The node never installs a TUN device or a route: tsnet runs a gVisor
 // netstack in-process, so no privileges are needed and the system Tailscale
@@ -61,11 +67,16 @@ import (
 	"tailscale.com/types/logger"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
+
+// protocol is bumped whenever the stdio protocol changes; the parent refuses
+// a sidecar that speaks another one.
+const protocol = 2
 
 type command struct {
 	Op         string `json:"op"`
 	ID         string `json:"id,omitempty"`
+	Gen        int64  `json:"gen,omitempty"`
 	Dir        string `json:"dir,omitempty"`
 	ControlURL string `json:"controlUrl,omitempty"`
 	Hostname   string `json:"hostname,omitempty"`
@@ -98,6 +109,7 @@ type peer struct {
 type pingEvent struct {
 	Ev         string  `json:"ev"`
 	ID         string  `json:"id"`
+	Gen        int64   `json:"gen,omitempty"`
 	Target     string  `json:"target"`
 	Attempt    int     `json:"attempt"`
 	Final      bool    `json:"final"`
@@ -118,6 +130,7 @@ const pingAttempts = 5
 type nodeStatus struct {
 	Ev             string   `json:"ev"`
 	ID             string   `json:"id"`
+	Gen            int64    `json:"gen,omitempty"`
 	State          string   `json:"state"`
 	ProxyPort      int      `json:"proxyPort,omitempty"`
 	MagicDNSSuffix string   `json:"magicDnsSuffix,omitempty"`
@@ -132,6 +145,8 @@ type nodeStatus struct {
 
 type node struct {
 	id       string
+	gen      int64
+	ctx      context.Context
 	srv      *tsnet.Server
 	lc       *local.Client
 	listener net.Listener
@@ -158,12 +173,12 @@ func logf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "meshd: "+format+"\n", args...)
 }
 
-func emitLog(id, message string) {
-	emit(map[string]string{"ev": "log", "id": id, "message": strings.TrimSpace(message)})
+func emitLog(id string, gen int64, message string) {
+	emit(map[string]any{"ev": "log", "id": id, "gen": gen, "message": strings.TrimSpace(message)})
 }
 
-func emitError(id, message string) {
-	emit(map[string]string{"ev": "error", "id": id, "message": message})
+func emitError(id string, gen int64, message string) {
+	emit(map[string]any{"ev": "error", "id": id, "gen": gen, "message": message})
 }
 
 func main() {
@@ -176,7 +191,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	emit(map[string]string{"ev": "ready", "version": version})
+	emit(map[string]any{"ev": "ready", "version": version, "protocol": protocol})
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
@@ -187,7 +202,7 @@ func main() {
 		}
 		var cmd command
 		if err := json.Unmarshal([]byte(line), &cmd); err != nil {
-			emitError("", "malformed command: "+err.Error())
+			emitError("", 0, "malformed command: "+err.Error())
 			continue
 		}
 		if cmd.Op == "shutdown" {
@@ -204,36 +219,29 @@ func handle(cmd command) {
 	switch cmd.Op {
 	case "connect":
 		if err := connect(cmd); err != nil {
-			emitError(cmd.ID, err.Error())
-			emit(nodeStatus{Ev: "status", ID: cmd.ID, State: "error", Error: err.Error()})
+			emitError(cmd.ID, cmd.Gen, err.Error())
+			emit(nodeStatus{Ev: "status", ID: cmd.ID, Gen: cmd.Gen, State: "error", Error: err.Error()})
 		}
 	case "disconnect":
-		disconnect(cmd.ID)
-		emit(nodeStatus{Ev: "status", ID: cmd.ID, State: "stopped"})
+		disconnect(cmd.ID, cmd.Gen)
 	case "ping":
-		nodMu.Lock()
-		n := nodes[cmd.ID]
-		nodMu.Unlock()
+		n := nodeAt(cmd.ID, cmd.Gen)
 		if n == nil {
-			emit(pingEvent{Ev: "ping", ID: cmd.ID, Target: cmd.Target, Attempt: 1, Final: true, Error: "no such node"})
+			emit(pingEvent{Ev: "ping", ID: cmd.ID, Gen: cmd.Gen, Target: cmd.Target, Attempt: 1, Final: true, Error: "no such node"})
 			return
 		}
 		go n.ping(cmd.Target)
 	case "lock-sign":
-		nodMu.Lock()
-		n := nodes[cmd.ID]
-		nodMu.Unlock()
+		n := nodeAt(cmd.ID, cmd.Gen)
 		if n == nil {
-			emit(lockSignEvent{Ev: "lock-sign", ID: cmd.ID, NodeKey: cmd.NodeKey, Error: "no such node"})
+			emit(lockSignEvent{Ev: "lock-sign", ID: cmd.ID, Gen: cmd.Gen, NodeKey: cmd.NodeKey, Error: "no such node"})
 			return
 		}
 		go n.lockSign(cmd.NodeKey)
 	case "lock-init":
-		nodMu.Lock()
-		n := nodes[cmd.ID]
-		nodMu.Unlock()
+		n := nodeAt(cmd.ID, cmd.Gen)
 		if n == nil {
-			emit(lockInitEvent{Ev: "lock-init", ID: cmd.ID, Error: "no such node"})
+			emit(lockInitEvent{Ev: "lock-init", ID: cmd.ID, Gen: cmd.Gen, Error: "no such node"})
 			return
 		}
 		go n.lockInit(cmd.TrustedKeys)
@@ -253,8 +261,20 @@ func handle(cmd command) {
 			}
 		}
 	default:
-		emitError(cmd.ID, "unknown op: "+cmd.Op)
+		emitError(cmd.ID, cmd.Gen, "unknown op: "+cmd.Op)
 	}
+}
+
+// nodeAt is the node of that id, if it is the one the parent means: a
+// command naming another generation is about a node that is gone.
+func nodeAt(id string, gen int64) *node {
+	nodMu.Lock()
+	defer nodMu.Unlock()
+	n := nodes[id]
+	if n == nil || (gen != 0 && n.gen != gen) {
+		return nil
+	}
+	return n
 }
 
 func connect(cmd command) error {
@@ -262,24 +282,29 @@ func connect(cmd command) error {
 		return errors.New("connect needs id and dir")
 	}
 	nodMu.Lock()
-	if existing := nodes[cmd.ID]; existing != nil {
-		nodMu.Unlock()
-		// Already up: just repeat where we are.
-		existing.mu.Lock()
-		last := existing.last
-		existing.mu.Unlock()
-		if last.Ev != "" {
-			emit(last)
-		}
-		return nil
-	}
+	existing := nodes[cmd.ID]
 	nodMu.Unlock()
+	if existing != nil {
+		if existing.gen == cmd.Gen {
+			// The same connect again: just repeat where we are.
+			existing.mu.Lock()
+			last := existing.last
+			existing.mu.Unlock()
+			if last.Ev != "" {
+				emit(last)
+			}
+			return nil
+		}
+		// A newer connect (a key, say) replaces the node outright.
+		disconnect(cmd.ID, 0)
+	}
 
 	if err := os.MkdirAll(cmd.Dir, 0o700); err != nil {
 		return fmt.Errorf("state dir: %w", err)
 	}
 
 	id := cmd.ID
+	gen := cmd.Gen
 	srv := &tsnet.Server{
 		Dir:        cmd.Dir,
 		Hostname:   cmd.Hostname,
@@ -294,11 +319,11 @@ func connect(cmd command) error {
 		UserLogf: func(format string, args ...any) {
 			msg := fmt.Sprintf(format, args...)
 			fmt.Fprintf(os.Stderr, "[%s] %s\n", id, msg)
-			emitLog(id, msg)
+			emitLog(id, gen, msg)
 		},
 	}
 
-	emit(nodeStatus{Ev: "status", ID: id, State: "starting"})
+	emit(nodeStatus{Ev: "status", ID: id, Gen: gen, State: "starting"})
 
 	if err := srv.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
@@ -320,7 +345,7 @@ func connect(cmd command) error {
 	// side, so MagicDNS names work with no OS integration) and HTTP CONNECT
 	// (for Node clients in the main process).
 	socksLn, httpLn := proxymux.SplitSOCKSAndHTTP(ln)
-	n := &node{id: id, srv: srv, lc: lc, listener: ln, proxy: port}
+	n := &node{id: id, gen: gen, srv: srv, lc: lc, listener: ln, proxy: port}
 	ss := &socks5.Server{Logf: logger.Discard, Dialer: n.dial}
 	go func() {
 		if err := ss.Serve(socksLn); err != nil && !errors.Is(err, net.ErrClosed) {
@@ -335,8 +360,9 @@ func connect(cmd command) error {
 	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	n.ctx = ctx
 	n.cancel = cancel
-	n.last = nodeStatus{Ev: "status", ID: id, State: "starting", ProxyPort: port}
+	n.last = nodeStatus{Ev: "status", ID: id, Gen: gen, State: "starting", ProxyPort: port}
 
 	nodMu.Lock()
 	nodes[id] = n
@@ -351,11 +377,11 @@ func connect(cmd command) error {
 func (n *node) ping(target string) {
 	addr, err := netip.ParseAddr(target)
 	if err != nil {
-		emit(pingEvent{Ev: "ping", ID: n.id, Target: target, Attempt: 1, Final: true, Error: "not a tailnet address"})
+		emit(pingEvent{Ev: "ping", ID: n.id, Gen: n.gen, Target: target, Attempt: 1, Final: true, Error: "not a tailnet address"})
 		return
 	}
 	for attempt := 1; attempt <= pingAttempts; attempt++ {
-		ev := pingEvent{Ev: "ping", ID: n.id, Target: target, Attempt: attempt}
+		ev := pingEvent{Ev: "ping", ID: n.id, Gen: n.gen, Target: target, Attempt: attempt}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		res, err := n.lc.Ping(ctx, addr, tailcfg.PingDisco)
 		cancel()
@@ -406,14 +432,16 @@ func (n *node) dial(ctx context.Context, network, addr string) (net.Conn, error)
 
 func (n *node) port() int { return n.proxy }
 
-func disconnect(id string) {
+// disconnect tears a node down; with a generation, only that node.
+func disconnect(id string, gen int64) {
 	nodMu.Lock()
 	n := nodes[id]
-	delete(nodes, id)
-	nodMu.Unlock()
-	if n == nil {
+	if n == nil || (gen != 0 && n.gen != gen) {
+		nodMu.Unlock()
 		return
 	}
+	delete(nodes, id)
+	nodMu.Unlock()
 	n.cancel()
 	_ = n.listener.Close()
 	_ = n.srv.Close()
@@ -427,7 +455,7 @@ func shutdownAll() {
 	}
 	nodMu.Unlock()
 	for _, id := range ids {
-		disconnect(id)
+		disconnect(id, 0)
 	}
 }
 
@@ -465,7 +493,7 @@ func (n *node) watch(ctx context.Context, port int) {
 
 func (n *node) onNotify(ctx context.Context, msg ipn.Notify, port int) {
 	if msg.ErrMessage != nil {
-		emitError(n.id, *msg.ErrMessage)
+		emitError(n.id, n.gen, *msg.ErrMessage)
 	}
 	// NeedsLogin is reported as such and left alone — see the file header.
 	if msg.State != nil {
@@ -497,6 +525,7 @@ func (n *node) refresh(ctx context.Context, port int) {
 		return
 	}
 	next := snapshot(n.id, port, st)
+	next.Gen = n.gen
 	// A node or server without Tailnet Lock answers with an error; that is
 	// not a status failure, there is just no lock to report.
 	lctx, lcancel := context.WithTimeout(ctx, 5*time.Second)
@@ -504,6 +533,11 @@ func (n *node) refresh(ctx context.Context, port int) {
 		next.Lock = lockSnapshot(lock, lockAllowed(st))
 	}
 	lcancel()
+	// Torn down while asking: whatever it reports now is about a node the
+	// parent already let go of.
+	if ctx.Err() != nil {
+		return
+	}
 	n.mu.Lock()
 	changed := !reflect.DeepEqual(next, n.last)
 	n.last = next
@@ -522,9 +556,10 @@ func snapshot(id string, port int, st *ipnstate.Status) nodeStatus {
 		s.State = "needs-login"
 	case ipn.NeedsMachineAuth.String():
 		s.State = "needs-machine-auth"
-	case ipn.Starting.String():
+	case ipn.Starting.String(), ipn.NoState.String():
+		// NoState is a node that has not got going yet, not one that stopped.
 		s.State = "starting"
-	case ipn.Stopped.String(), ipn.NoState.String():
+	case ipn.Stopped.String():
 		s.State = "stopped"
 	default:
 		s.State = strings.ToLower(st.BackendState)

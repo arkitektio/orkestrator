@@ -5,7 +5,7 @@ import {
   type BlokAssetHost,
   type BlokAssetSource,
 } from '@arkitektio/bsx/renderer/assets';
-import {useDatalayerEndpoint} from '@/core/connection/arkitekt/host';
+import {Arkitekt, useDatalayerEndpoint} from '@/core/connection/arkitekt/host';
 import {ADMIN_ROLE, useHasRoles} from '@/core/connection/roles';
 import {DEFAULT_MODEL_POLICY} from '@/core/model/glb';
 import {describeError} from '@/core/notify';
@@ -124,6 +124,7 @@ const BoundAgentsContext = React.createContext<ReadonlyMap<string, string>>(new 
 const useAsset = (dependency: string, name: string): BlokAsset => {
   const client = useRekuest();
   const endpoint = useDatalayerEndpoint();
+  const profileId = Arkitekt.useActiveProfileId();
   const agent = React.useContext(BoundAgentsContext).get(dependency);
   const {data, loading, error, startPolling, stopPolling} = useAgentAssetsQuery({
     variables: {id: agent ?? ''},
@@ -147,7 +148,7 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
     if (!stored || !endpoint) throw new Error('The asset store is not reachable.');
     // TEMPORARY timing: which stage of a slow asset load is slow (grant, first byte, transfer).
     const started = performance.now();
-    const url = await getRekuestAssetUrl(stored, client, endpoint);
+    const url = await getRekuestAssetUrl(stored, client, endpoint, profileId);
     const signed = performance.now();
     const response = await fetch(url);
     const headers = performance.now();
@@ -187,7 +188,7 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
       xCache: response.headers.get('x-cache'),
     });
     return bytes;
-  }, [client, endpoint, stored]);
+  }, [client, endpoint, stored, profileId]);
 
   return React.useMemo<BlokAsset>(() => {
     if (!name) return {status: 'unknown', reason: 'No asset is named.'};

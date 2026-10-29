@@ -6,11 +6,13 @@ import { resolveServiceAlias } from "./alias/serviceAlias";
 import { isMeshRouted, NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
 import { ArkitektContext } from "./context";
 import { useConnectionStatus } from "./hooks";
+import { requestMeshKey } from "@/core/connection/mesh/meshKey";
 import {
+  asksForMeshKey,
   demandMesh,
   hintedProfileMesh,
-  joinAndPark,
-  meshFromGrant,
+  joinMesh,
+  meshAfterGrant,
   previousMeshForGrant,
   releaseMesh,
   releaseOtherMeshes,
@@ -97,6 +99,7 @@ import {
   refreshSession,
 } from "./runtime/profileAuth";
 import { rotateProfileSession } from "./runtime/sharedRefresh";
+import { forgetMediaGrants } from "./runtime/sharedGrant";
 import {
   aliasReportsFrom,
   buildConfigurationIssues,
@@ -334,8 +337,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // whichever is active when it arrives), and a re-key can rename the
       // profile outright; the chain is the one thing neither changes.
       const chain = currentToken.client_id;
+      const held = { refreshToken: currentToken.refresh_token, profileId: store.getState().profileBook.activeProfileId };
       const ownerId = (book: StoredProfileBook) =>
-        findProfileIdByChain(book, chain) ??
+        findProfileIdByChain(book, chain, held) ??
         (chain ? undefined : book.activeProfileId ?? undefined);
 
       // Every refresh response re-renders the fakts envelope, so this is
@@ -343,10 +347,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // Under the cross-window lock: another window may have rotated this
       // very token, in which case its rotation is adopted instead of ours
       // being replayed (which would revoke the whole chain server-side).
-      const held = { ...session, token: currentToken };
       const { session: nextSession, refreshed } = await rotateProfileSession({
         profileId: session.endpoint.base_url,
-        held,
+        held: { ...session, token: currentToken },
         readPersisted: async () => {
           const storage = await storageProviderRef.current();
           const book = loadStoredProfileBook(storage);
@@ -1020,11 +1023,18 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
             })
           : undefined;
         const previousMesh = previousMeshForGrant(store.getState().profileBook, finalId, hintedMesh);
-        const mesh = meshFromGrant(endpoint, grantedMesh, previousMesh);
-        // The key is one-shot: the node joins with it now (its identity lands
-        // on disk) and is then parked. A service check that needs the mesh
+        const mesh = meshAfterGrant(endpoint, grantedMesh, previousMesh, {
+          asked: asksForMeshKey(endpoint, hintedMesh?.enabled !== false),
+        });
+        // The key is one-shot and goes straight to main, which keeps the node
+        // up until it is in (its identity lands on disk) and parks it after
+        // unless something claims it. A service check that needs the mesh
         // demands it meanwhile, which keeps it running past the park.
-        if (mesh?.enabled && grantedMesh) void joinAndPark(mesh, grantedMesh.authKey);
+        if (mesh?.enabled && grantedMesh) {
+          joinMesh(mesh, grantedMesh.authKey).catch((error) =>
+            console.warn("[ArkitektProvider] could not hand the mesh key to main:", error),
+          );
+        }
 
         // No aliases yet: the checks below resolve them, once, instead of a
         // probe here and a second one straight after hydrating.
@@ -1211,6 +1221,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         const marked = markProfileStale(book, profileId, "Signed out on this computer");
         return wasActive ? setActiveProfile(marked, null) : marked;
       });
+      forgetMediaGrants(profileId);
 
       if (wasActive) park();
     },
@@ -1225,6 +1236,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // Local only: the fakts discovery document has no `revocation_endpoint`,
       // so the refresh token stays valid server-side until it expires.
       const book = await persistBook((current) => removeProfileFromBook(current, profileId));
+      forgetMediaGrants(profileId);
 
       if (wasActive) park();
 
@@ -1240,6 +1252,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     // which deployment this machine talks to.
     const lastEndpoint = store.getState().profileBook.lastEndpoint;
     await persistBook(() => setLastEndpoint(emptyProfileBook(), lastEndpoint));
+    forgetMediaGrants();
     park();
   }, [store, persistBook, park]);
 
@@ -1293,6 +1306,41 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       await persistBook((book) => updateProfileMesh(book, profileId, update));
     },
     [persistBook],
+  );
+
+  const renewMeshKey = useCallback<AppFunctions["renewMeshKey"]>(
+    async (profileId) => {
+      const { storedSession: session, profileBook } = store.getState();
+      const mesh = profileBook.profiles[profileId]?.mesh;
+      if (!session || profileBook.activeProfileId !== profileId || !mesh?.enabled) {
+        return { kind: "failed", error: "This window is not live in that profile, or its mesh is off" };
+      }
+      let accessToken: string;
+      try {
+        accessToken = (await refreshTokenRef.current()).access_token;
+      } catch (error) {
+        return { kind: "failed", error: error instanceof Error ? error.message : String(error) };
+      }
+      const outcome = await requestMeshKey(session.endpoint.base_url, accessToken);
+      if (outcome.kind === "key") {
+        await joinMesh(mesh, outcome.mesh.authKey);
+        if (mesh.keyMissingAt) {
+          await persistBook((book) =>
+            updateProfileMesh(book, profileId, (current) => {
+              if (!current) return current;
+              const { keyMissingAt: _cleared, ...rest } = current;
+              return rest;
+            }),
+          );
+        }
+      } else if (outcome.kind === "not-enrolled") {
+        await persistBook((book) =>
+          updateProfileMesh(book, profileId, (current) => (current ? { ...current, keyMissingAt: Date.now() } : current)),
+        );
+      }
+      return outcome;
+    },
+    [store, persistBook],
   );
 
   const cancelConnection = useCallback<AppFunctions["cancelConnection"]>(() => {
@@ -1365,8 +1413,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       forgetAllProfiles,
       setProfileIdentity,
       setProfileMesh,
+      renewMeshKey,
     }),
-    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, signOutProfile, removeProfile, forgetAllProfiles, setProfileIdentity, setProfileMesh],
+    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, signOutProfile, removeProfile, forgetAllProfiles, setProfileIdentity, setProfileMesh, renewMeshKey],
   );
 
   // ── ONE useEffect: load the profile book, activate the live one, health-check ──

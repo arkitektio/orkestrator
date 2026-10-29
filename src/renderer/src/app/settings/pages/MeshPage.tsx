@@ -76,7 +76,7 @@ import { SettingsPage } from "../components/SettingsPage";
 const STATE: Record<MeshNodeState, { label: string; tone: Tone }> = {
   stopped: { label: "Not running", tone: "bad" },
   starting: { label: "Connecting", tone: "warn" },
-  "needs-login": { label: "Membership lapsed", tone: "bad" },
+  "needs-login": { label: "Not logged in", tone: "bad" },
   "needs-machine-auth": { label: "Awaiting approval", tone: "warn" },
   running: { label: "Connected", tone: "good" },
   error: { label: "Error", tone: "bad" },
@@ -110,7 +110,9 @@ export const MeshPage = () => {
         <Notice icon={AlertTriangle} tone="warn">
           {mesh.sidecar.reason === "binary-missing"
             ? "This build ships without the built-in mesh client, so organisation meshes cannot be joined."
-            : `The mesh client could not be started${mesh.sidecar.detail ? `: ${mesh.sidecar.detail}` : "."}`}
+            : mesh.sidecar.reason === "outdated"
+              ? "The built-in mesh client is older than this version of Orkestrator. Rebuild it (pnpm build:meshd) or update the app."
+              : `The mesh client could not be started${mesh.sidecar.detail ? `: ${mesh.sidecar.detail}` : "."}`}
         </Notice>
       )}
 
@@ -216,18 +218,22 @@ const MeshCard = ({
 }) => {
   const { enabled } = mesh;
   const needed = carried.length > 0;
-  const nodeState: MeshNodeState = status?.state ?? "starting";
+  // No status: nothing claims the node and it is not joining — it starts
+  // when a service needs it.
+  const nodeState: MeshNodeState | undefined = status?.state;
   const running = enabled && nodeState === "running";
   const peers = running ? [...(status?.peers ?? [])] : [];
   const online = peers.filter((peer) => peer.online).length;
-  // Parked because nothing of this hub lives on it — not a fault. (While the
-  // node joins once to register, its real state shows instead.)
-  const parked = enabled && !needed && !running && nodeState !== "starting";
+  // Parked: idle until needed, or nothing of this hub lives on it — not a
+  // fault. (While the node joins, its real state shows instead.)
+  const parked = enabled && !running && (!nodeState || (!needed && nodeState !== "starting"));
   const state = !enabled
     ? { label: "Off", tone: "muted" as Tone }
     : parked
-      ? { label: "Not needed", tone: "muted" as Tone }
-      : STATE[nodeState];
+      ? { label: needed ? "Idle" : "Not needed", tone: "muted" as Tone }
+      : nodeState === "needs-login" && mesh.keyMissingAt
+        ? { label: "No key granted", tone: "bad" as Tone }
+        : STATE[nodeState ?? "stopped"];
   const lock = running && status?.lock?.enabled ? status.lock : undefined;
 
   return (
@@ -291,7 +297,7 @@ const MeshCard = ({
             </p>
           )}
 
-          {enabled && !parked && status && <StateLine status={status} />}
+          {enabled && !parked && status && <StateLine status={status} keyMissing={!!mesh.keyMissingAt} />}
 
           {running && status && (
             <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
@@ -378,15 +384,30 @@ const FirewallNotice = () => {
   }
 };
 
-/** What the state means for the user, when it is not simply "connected". */
-const StateLine = ({ status }: { status: MeshNodeStatus }) => {
+/**
+ * What the state means for the user, when it is not simply "connected".
+ * `keyMissing`: the latest sign-in asked for a mesh key and got none, so
+ * "sign in again" is not advice that can work.
+ */
+const StateLine = ({ status, keyMissing }: { status: MeshNodeStatus; keyMissing: boolean }) => {
   switch (status.state) {
     case "needs-login":
       return (
-        <p className="flex items-center gap-1.5 text-sm text-destructive">
-          <AlertTriangle className="size-3.5 shrink-0" />
-          Membership has lapsed. Sign out of this profile and sign in again to rejoin.
-        </p>
+        <div className="space-y-1">
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <AlertTriangle className="size-3.5 shrink-0" />
+            {keyMissing
+              ? "Your last sign-in did not bring a key for this mesh, so this computer cannot join it. Signing in again will not change that until the deployment grants one — ask its administrator."
+              : status.lastError
+                ? "The mesh server turned this computer away. Orkestrator asks the deployment for a new key by itself; if this stays, sign out of this profile and sign in again."
+                : "This computer is not logged in to the mesh. Orkestrator asks the deployment for a new key by itself; if this stays, sign out of this profile and sign in again."}
+          </p>
+          {status.lastError && (
+            <p className="truncate pl-5 font-mono text-xs text-muted-foreground" title={status.lastError}>
+              {status.lastError}
+            </p>
+          )}
+        </div>
       );
     case "needs-machine-auth":
       return (

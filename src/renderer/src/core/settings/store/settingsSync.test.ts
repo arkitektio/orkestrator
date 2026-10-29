@@ -42,6 +42,26 @@ describe("settings across windows", () => {
     stop();
   });
 
+  it("adopts another window's save without saving it back", () => {
+    // The ping-pong: a window whose code strips a field this one knows used
+    // to re-save the blob on every arrival, which the other window then saw
+    // as a change and re-saved — hundreds of saves a second.
+    const store = createSettingsStore();
+    store.getState().hydrate();
+    const stop = store.followOtherWindows();
+    const { brandSource: _unknownThere, ...older } = defaultSettings;
+    const written = JSON.stringify({ ...older, brandHue: 77 });
+    localStorage.setItem("wasser-settings", written);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "wasser-settings", newValue: written }),
+    );
+
+    expect(store.getState().settings?.brandHue).toBe(77);
+    expect(localStorage.getItem("wasser-settings")).toBe(written);
+    stop();
+  });
+
   it("stops following once unsubscribed, and ignores other keys", () => {
     const store = createSettingsStore();
     store.getState().hydrate();

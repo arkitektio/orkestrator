@@ -1,6 +1,9 @@
 import { Slider } from "@/core/ui/slider";
 import { Toggle } from "@/core/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { useModeStore } from "../../../../../platform/stores/modeStore";
 import { useRoiDrawingStore } from "../../../roiDrawingStore";
+import type { TraceDepth } from "./traceBox";
 import { MAX_TRACE_COST, type TraceWeights } from "./traceCost";
 
 /**
@@ -17,7 +20,26 @@ import { MAX_TRACE_COST, type TraceWeights } from "./traceCost";
  * Edits land in the store immediately and the NEXT edge uses them; edges
  * already traced are left alone, so a chain can deliberately change character
  * part-way.
+ *
+ * In the flat view the live-wire band is regrown on each edit too, so it
+ * answers to the sliders before the next click — except "Straight": the band
+ * has no goal to be straight towards, so the slider only governs drawn
+ * strokes (and edges the band could not answer), and says so.
+ *
+ * 2D / 3D is how far a trace may leave the slices its waypoints sit on
+ * (`traceBox.TraceDepth`), remembered per view.
  */
+
+const DEPTHS: { depth: TraceDepth; hint: string }[] = [
+  {
+    depth: "2D",
+    hint: "Trace on the slices the points sit on — one slice, or the ones a scrubbed path spans",
+  },
+  {
+    depth: "3D",
+    hint: "Let the trace leave the slice and follow the structure through depth",
+  },
+];
 
 const SLIDERS: {
   key: Exclude<keyof TraceWeights, "invert">;
@@ -37,6 +59,9 @@ export const VectorEnhancerPanel = () => {
   const setVectorEnhance = (on: boolean) => setEnhancerOn("vector-trace", on);
   const weights = useRoiDrawingStore((s) => s.traceWeights);
   const setTraceWeights = useRoiDrawingStore((s) => s.setTraceWeights);
+  const displayMode = useModeStore((s) => s.displayMode);
+  const depth = useRoiDrawingStore((s) => s.traceDepth[displayMode]);
+  const setTraceDepth = useRoiDrawingStore((s) => s.setTraceDepth);
 
   return (
     <div className="pointer-events-auto flex flex-col gap-1 rounded-md bg-background/80 px-2 py-1.5 shadow-md backdrop-blur-sm">
@@ -53,8 +78,34 @@ export const VectorEnhancerPanel = () => {
           that will actually be traced. */}
       {vectorEnhance && (
         <>
+          <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            value={depth}
+            onValueChange={(next) => next && setTraceDepth(displayMode, next as TraceDepth)}
+          >
+            {DEPTHS.map(({ depth: option, hint }) => (
+              <ToggleGroupItem
+                key={option}
+                value={option}
+                className="h-6 px-2 text-[10px]"
+                title={hint}
+              >
+                Enhance {option}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
           {SLIDERS.map(({ key, label, hint }) => (
-            <div key={key} className="flex items-center gap-2" title={hint}>
+            <div
+              key={key}
+              className="flex items-center gap-2"
+              title={
+                key === "straightness" && displayMode === "2D"
+                  ? `${hint} — applies to drawn strokes; the line that follows the cursor ignores it`
+                  : hint
+              }
+            >
               <span className="w-12 select-none text-right text-[10px] font-medium uppercase text-muted-foreground">
                 {label}
               </span>

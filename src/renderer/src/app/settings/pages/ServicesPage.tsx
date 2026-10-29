@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/core/ui/dialog";
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { useSystemTailscale } from "@/core/connection/mesh/useSystemTailscale";
 import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
@@ -39,8 +39,7 @@ import { SystemTailscaleSetting } from "../components/SystemTailscaleSetting";
 
 const ServiceGrid = ({ services, hub }: { services: ServiceRuntimeState[]; hub?: HubHealthFacts }) => {
   // Live, so a card says "through the mesh" exactly when requests go through it.
-  const { meshes, sidecar } = useMeshes();
-  const mesh = useMemo(() => ({ sidecar, meshes }), [sidecar, meshes]);
+  const { payload: mesh } = useMeshes();
   // Only once allowed (the diagram above asks); until then the cards say what
   // the app itself knows.
   const { status: tailscale } = useSystemTailscale(

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { grantExpiresAt, presignS3Url, signS3Request, type S3SigningCredentials } from "./s3request";
+import { grantExpiresAt, presignS3Url, signS3Request, stampGrant, type S3SigningCredentials } from "./s3request";
 
 /**
  * The datalayer signer is an adapter over the zarr runner's memoized signer.
@@ -92,6 +92,50 @@ describe("presignS3Url", () => {
   it("strictly encodes reserved characters in the key on the wire", async () => {
     const url = await presignS3Url("https://datalayer.example/media/level=0/a b.png", credentials());
     expect(new URL(url).pathname).toBe("/media/level%3D0/a%20b.png");
+  });
+});
+
+describe("presignS3Url with a grant issue time", () => {
+  const ISSUED = new Date("2026-08-17T10:47:31.250Z").getTime();
+
+  it("keeps one URL across hour boundaries for the grant's whole life", async () => {
+    const first = await presignS3Url(OBJECT, credentials({ signedAt: ISSUED }));
+    vi.setSystemTime(new Date("2026-08-17T12:30:00.000Z"));
+    const later = await presignS3Url(OBJECT, credentials({ signedAt: ISSUED }));
+    expect(later).toBe(first);
+    // Dated to the issue time (to the second), expiring with the grant.
+    expect(queryOf(first).get("X-Amz-Date")).toBe("20260817T104731Z");
+    expect(queryOf(first).get("X-Amz-Expires")).toBe(String((credentials().expiresAt! - (ISSUED - 250)) / 1000));
+  });
+
+  it("gives a re-issued grant its own URL", async () => {
+    const a = await presignS3Url(OBJECT, credentials({ signedAt: ISSUED }));
+    const b = await presignS3Url(OBJECT, credentials({ signedAt: ISSUED + 5_000 }));
+    expect(b).not.toBe(a);
+  });
+
+  it("falls back to the hour floor when the presign ceiling cannot reach the expiry", async () => {
+    const url = await presignS3Url(
+      OBJECT,
+      credentials({ signedAt: ISSUED - 8 * 86_400_000 }),
+    );
+    expect(queryOf(url).get("X-Amz-Date")).toBe("20260817T110000Z");
+  });
+
+  it("falls back to the hour floor for an issue time in the future", async () => {
+    const url = await presignS3Url(OBJECT, credentials({ signedAt: Date.now() + 60_000 }));
+    expect(queryOf(url).get("X-Amz-Date")).toBe("20260817T110000Z");
+  });
+});
+
+describe("stampGrant", () => {
+  it("stamps the issue time and the absolute expiry together", () => {
+    expect(stampGrant({ expiresIn: 3600, bucket: "b" }, 1_000)).toEqual({
+      expiresIn: 3600,
+      bucket: "b",
+      signedAt: 1_000,
+      expiresAt: 1_000 + 3_600_000,
+    });
   });
 });
 

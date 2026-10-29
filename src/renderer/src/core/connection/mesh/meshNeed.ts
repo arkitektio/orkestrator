@@ -12,10 +12,12 @@ import { controlDomain } from "../../../../../main/mesh/protocol";
  * a refresh brings an address on the mesh, the mesh starts by itself.
  *
  * A host counts when it is pinned to the mesh, sits under the control
- * server's domain or the node's cached MagicDNS suffix, or is a mesh literal
- * (a 100.64/10 or tailnet IPv6 address, a `*.ts.net` name). A bare single
- * label does NOT: in practice that is a docker or LAN hostname, and counting
- * it would start the mesh for every compose deployment.
+ * server's domain or the node's cached MagicDNS suffix, or is a tailnet IP
+ * literal (100.64/10 or tailnet IPv6). A bare single label does NOT: in
+ * practice that is a docker or LAN hostname, and counting it would start the
+ * mesh for every compose deployment. Nor does a `*.ts.net` name: that domain
+ * is Tailscale Inc's, so the host is on the system Tailscale's tailnet, never
+ * on this mesh (ionscale names machines under its control domain).
  */
 
 const norm = (host: string): string => host.trim().toLowerCase().replace(/\.$/, "");
@@ -27,8 +29,7 @@ const onMesh = (rawHost: string, mesh: ProfileMesh): boolean => {
   if (domain && host.endsWith(`.${domain}`)) return true;
   const suffix = mesh.magicDnsSuffix ? norm(mesh.magicDnsSuffix) : undefined;
   if (suffix && (host === suffix || host.endsWith(`.${suffix}`))) return true;
-  const shape = classifyHost(host).class;
-  return shape === "mesh-ip" || shape === "mesh-magicdns";
+  return classifyHost(host).class === "mesh-ip";
 };
 
 /** The hub's addresses that go through this mesh, deduplicated, in fakts order. */

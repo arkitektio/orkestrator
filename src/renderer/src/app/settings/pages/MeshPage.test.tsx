@@ -22,7 +22,7 @@ vi.mock("@/core/connection/mesh/useMeshes", () => ({
     sidecar: { state: "ready", version: "t" },
     meshes: [
       {
-        config: { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [], hasNodeState: true },
+        config: { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [] },
         status: { id: "lab", state: "stopped" },
       },
     ],

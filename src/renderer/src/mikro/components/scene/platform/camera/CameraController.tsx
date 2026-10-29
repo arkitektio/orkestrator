@@ -22,41 +22,7 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
-import { NAVIGATE_BUTTONS_3D } from "@/core/data/scene/camera/navigateButtons";
-
-/**
- * Button maps per (display mode × interaction mode).
- *
- * These must be module-level constants: R3F diffs object props by *reference*,
- * so an inline literal would re-apply on every commit. And every branch must
- * pass an explicit map — `mouseButtons={undefined}` is a latch, not a reset
- * (R3F's `applyProps` skips undefined values), so once a map is applied it
- * sticks for the life of the controls instance.
- *
- * In NAVIGATE, left-drag pans (OrbitControls' own default maps LEFT to rotate).
- * In the tool modes the left button belongs to the tool, so the controls must
- * not claim it — the maps simply omit LEFT, which three-stdlib's button switch
- * treats as no action at all (`STATE.NONE`). Right/middle-drag and the wheel
- * still navigate, which is what keeps a 2D probe session from being stuck in
- * place. Omitting LEFT is also the only assignment where shift-click (save
- * probe) and shift-drag (merge selection) can't be hijacked: three-stdlib swaps
- * PAN↔ROTATE when shift is held.
- */
-const NAVIGATE_BUTTONS_2D = {
-  LEFT: THREE.MOUSE.PAN,
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.PAN,
-} as const;
-
-const TOOL_BUTTONS_3D = {
-  MIDDLE: THREE.MOUSE.PAN,
-  RIGHT: THREE.MOUSE.ROTATE,
-} as const;
-
-const TOOL_BUTTONS_2D = {
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.PAN,
-} as const;
+import { cameraButtonsFor } from "../input/navigationBindings";
 
 /**
  * Keeps the OrbitControls pivot on the probed point while "Orbit around probe"
@@ -287,6 +253,7 @@ const PanScaleSync = () => {
 export const CameraController = () => {
   const interactionMode = useModeStore((s) => s.interactionMode);
   const designTool = useModeStore((s) => s.designTool);
+  const handHeld = useModeStore((s) => s.handHeld);
   const displayMode = useModeStore((s) => s.displayMode);
   const zoomToCursor = useModeStore((s) => s.zoomToCursor);
   const smoothOrbit = useModeStore((s) => s.smoothOrbit);
@@ -341,10 +308,24 @@ export const CameraController = () => {
   // what a drag does. Disabling them was only ever a blunt way of neutering the
   // left button, and it left tool modes with no way to move the view at all.
   // DESIGN navigates like NAVIGATE — the left button is the camera's — while
-  // no design tool has it (`designTool` is null: none selected, or Space
-  // held); a selected tool takes the left button and leaves right/middle.
+  // no design tool has it (`designTool` is null); a selected tool takes the
+  // left button and leaves right/middle. Holding Space hands the left button
+  // back to the camera in every mode (`navigationBindings`).
   const isNavigate =
     interactionMode === "NAVIGATE" || (interactionMode === "DESIGN" && designTool === null);
+  const mouseButtons = cameraButtonsFor({ displayMode, leftIsHand: isNavigate || handHeld });
+
+  // The hand says so: the grab cursor while Space is down. The canvas's
+  // own style, so it never fights the toolbar's or a panel's cursor.
+  const canvasElement = useThree((s) => s.gl.domElement);
+  useEffect(() => {
+    if (!handHeld) return;
+    const previous = canvasElement.style.cursor;
+    canvasElement.style.cursor = "grab";
+    return () => {
+      canvasElement.style.cursor = previous;
+    };
+  }, [handHeld, canvasElement]);
 
   return (
     <>
@@ -397,7 +378,7 @@ export const CameraController = () => {
           zoomToCursor={zoomToCursor}
           minDistance={minDistance}
           maxDistance={maxDistance}
-          mouseButtons={isNavigate ? NAVIGATE_BUTTONS_3D : TOOL_BUTTONS_3D}
+          mouseButtons={mouseButtons}
         />
       ) : (
         <OrbitControls
@@ -410,7 +391,7 @@ export const CameraController = () => {
           enablePan={true}
           enableZoom={true}
           screenSpacePanning={true}
-          mouseButtons={isNavigate ? NAVIGATE_BUTTONS_2D : TOOL_BUTTONS_2D}
+          mouseButtons={mouseButtons}
         />
       )}
 

@@ -3,6 +3,9 @@ import * as React from 'react';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import MaterializedBlokRenderer from './MaterializedBlokRenderer';
+import {installAppBlokCatalog} from '@/core/blok/testing';
+
+installAppBlokCatalog();
 
 vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
 vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));

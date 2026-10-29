@@ -16,7 +16,7 @@ import {
 import { useArkitektActions, useArkitektStore } from "./hooks";
 import { ArkitektProvider } from "./provider";
 import { report } from "./utils";
-import { claimProfileMesh, demandedMeshes, joinAndPark } from "@/core/connection/mesh/profileMesh";
+import { claimProfileMesh, demandedMeshes, joinMesh } from "@/core/connection/mesh/profileMesh";
 
 /**
  * A fresh grant: what it writes, in what order, and what it leaves alone when
@@ -36,7 +36,7 @@ vi.mock("./utils", async (importOriginal) => ({
 vi.mock("@/core/connection/mesh/profileMesh", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/mesh/profileMesh")>()),
   claimProfileMesh: vi.fn(async () => {}),
-  joinAndPark: vi.fn(async () => "running"),
+  joinMesh: vi.fn(async () => {}),
 }));
 
 const ALIAS = { id: "a1", host: "localhost", ssl: false, challenge: "ht" };
@@ -137,12 +137,11 @@ beforeEach(() => {
     }
     setItem(key, value);
   };
-  vi.mocked(claimProfileMesh).mockImplementation(async (_mesh, key) => {
-    events.push(`claim:${key}`);
+  vi.mocked(claimProfileMesh).mockImplementation(async (mesh) => {
+    events.push(`claim:${mesh?.id ?? null}`);
   });
-  vi.mocked(joinAndPark).mockImplementation(async (_mesh, key) => {
+  vi.mocked(joinMesh).mockImplementation(async (_mesh, key) => {
     events.push(`join:${key}`);
-    return "running";
   });
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -213,6 +212,26 @@ describe("a fresh grant", () => {
     expect(profile.createdAt).toBe(5);
   });
 
+  it("a re-approval that asked for a mesh key and got none marks the row's mesh, and joins nothing", async () => {
+    const mesh = { id: "node-1", label: "alpha", controlUrl: "https://mesh.alpha.test", hosts: [], enabled: true };
+    const existing = {
+      ...createProfileFromSession({ endpoint, fakts, token: token("old"), aliasMap: { aliasMap: { lok: ALIAS } } }, 5, FINAL_ID),
+      identity: { baseUrl: BASE, userId: "2", organizationId: "3", hubId: "49" },
+      mesh,
+    };
+    writeStoredProfileBook(upsertProfile(emptyProfileBook(), existing), storage);
+    // A build with the mesh client, so the grant asked for a key.
+    vi.stubGlobal("api", { mesh: { claim: vi.fn() } });
+    vi.mocked(flow).mockResolvedValue(grant({ mesh: undefined }) as never);
+    renderProvider();
+    await waitFor(() => expect(harness.state().activity.kind).not.toBe("booting"));
+
+    await connect();
+
+    expect(loadStoredProfileBook(storage).profiles[FINAL_ID].mesh).toMatchObject({ ...mesh, keyMissingAt: expect.any(Number) });
+    expect(joinMesh).not.toHaveBeenCalled();
+  });
+
   it("falls back to a provisional id on a lok that does not name the identity", async () => {
     vi.mocked(flow).mockResolvedValue(grant({ identity: undefined }) as never);
     renderProvider();
@@ -264,5 +283,63 @@ describe("a fresh grant", () => {
     expect(harness.state().storedSession?.token.access_token).toBe("live");
     expect(harness.state().autoLoginError).toBe("The authorization request was declined");
     expect(harness.state().activity.kind).toBe("settled");
+  });
+});
+
+describe("a fresh mesh key without signing in again", () => {
+  const meshkey = (status: number, body: unknown) =>
+    vi.fn(async (url: string) =>
+      String(url).endsWith("/meshkey/")
+        ? new Response(JSON.stringify(body), { status })
+        : Promise.reject(new TypeError("offline")),
+    );
+
+  const signedIn = async () => {
+    vi.mocked(flow).mockResolvedValue(grant() as never);
+    renderProvider();
+    await waitFor(() => expect(harness.state().activity.kind).not.toBe("booting"));
+    await connect();
+    vi.mocked(joinMesh).mockClear();
+  };
+
+  it("joins with the key lok mints for the live session's own client", async () => {
+    await signedIn();
+    const fetch = meshkey(200, { ionscale_auth_key: "tskey-renewed" });
+    vi.stubGlobal("fetch", fetch);
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await harness.actions.renewMeshKey(FINAL_ID);
+    });
+
+    expect(outcome).toMatchObject({ kind: "key" });
+    const [url, init] = fetch.mock.calls.find(([u]) => String(u).endsWith("/meshkey/")) as unknown as [string, RequestInit];
+    expect(url).toBe(`${BASE}meshkey/`);
+    expect(init.headers).toMatchObject({ Authorization: "Bearer granted" });
+    expect(joinMesh).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }), "tskey-renewed");
+  });
+
+  it("a membership not on the mesh marks the row, and joins nothing", async () => {
+    await signedIn();
+    vi.stubGlobal("fetch", meshkey(403, { error: "not_enrolled" }));
+
+    await act(async () => {
+      await harness.actions.renewMeshKey(FINAL_ID);
+    });
+
+    expect(joinMesh).not.toHaveBeenCalled();
+    expect(loadStoredProfileBook(storage).profiles[FINAL_ID].mesh?.keyMissingAt).toEqual(expect.any(Number));
+  });
+
+  it("asks nothing for a profile this window is not live in", async () => {
+    await signedIn();
+    const fetch = meshkey(200, { ionscale_auth_key: "tskey" });
+    vi.stubGlobal("fetch", fetch);
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await harness.actions.renewMeshKey("someone-else");
+    });
+    expect(outcome).toMatchObject({ kind: "failed" });
+    expect(fetch.mock.calls.some(([u]) => String(u).endsWith("/meshkey/"))).toBe(false);
   });
 });

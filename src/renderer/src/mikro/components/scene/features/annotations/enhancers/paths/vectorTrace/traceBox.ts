@@ -69,9 +69,62 @@ export type TraceBoxPlan = {
    * something to flatten away.
    */
   flatten?: boolean;
+  /**
+   * A floor on the z dilation, in level-0 SLICES, when not flattened. The
+   * physical pad alone is no room at all through depth on anisotropic data:
+   * 4 finest voxels of 0.3 µm is 1.2 µm, which rounds to zero 4 µm slices — so
+   * two clicks on one slice would search that slice only, however "3D" the
+   * trace was asked to be. This is what lets an enhanced edge dip through the
+   * neighbouring slices to follow a structure that leaves the drawn one.
+   */
+  depthSlices?: number;
+  /**
+   * The physical pad and the margin dilate x and y only; z gets `depthSlices`
+   * (or nothing, flattened) and no more. For boxes that are sized by what is
+   * on SCREEN — a live-wire window, a stroke's corridor — where a pad of a
+   * hundred microns sideways says nothing about how deep to look.
+   */
+  planarPad?: boolean;
+  /**
+   * Further level-0 voxels the box must contain besides the two ends — a
+   * freehand stroke's samples, which may bow far outside the box its ends
+   * span.
+   */
+  through?: readonly Voxel[];
   /** Node ceiling for one hop. */
   maxNodes?: number;
 };
+
+/**
+ * How far an enhanced trace may leave the slices its waypoints sit on.
+ *
+ * - `"2D"` — not at all: the box is exactly the z span the waypoints straddle
+ *   (one slice, unless the user scrubbed z between clicks — then the path
+ *   runs through the slices in between, and only those).
+ * - `"3D"` — `DEFAULT_TRACE_DEPTH_SLICES` beyond them as well, so a path may
+ *   dip through depth to follow a structure the drawn slice only grazes.
+ */
+export type TraceDepth = "2D" | "3D";
+
+/** The z room a `"3D"` trace gets either side of its waypoints, in slices. */
+export const DEFAULT_TRACE_DEPTH_SLICES = 4;
+
+/**
+ * The box options a `TraceDepth` stands for, in the view the waypoints came
+ * from. The slice floor is the FLAT view's: there, two clicks share a slice
+ * and the box has no depth unless it is given some. Probed waypoints in the
+ * volume already sit at the depths the data put them, and the volume keeps
+ * the box it always traced in — the physical pad, no floor.
+ */
+export const traceDepthPlan = (
+  depth: TraceDepth,
+  view: "2D" | "3D" = "2D",
+): Pick<TraceBoxPlan, "flatten" | "depthSlices"> =>
+  depth === "2D"
+    ? { flatten: true }
+    : view === "2D"
+      ? { flatten: false, depthSlices: DEFAULT_TRACE_DEPTH_SLICES }
+      : { flatten: false };
 
 /**
  * Node ceiling per hop. Deliberately well under what the search could survive:
@@ -126,6 +179,9 @@ export function planTraceBox(plan: TraceBoxPlan): TraceBox {
     minPad = DEFAULT_TRACE_MIN_PAD,
     maxNodes = DEFAULT_TRACE_MAX_NODES,
     flatten = false,
+    depthSlices = 0,
+    planarPad = false,
+    through = [],
   } = plan;
 
   const min: [number, number, number] = [0, 0, 0];
@@ -136,15 +192,21 @@ export function planTraceBox(plan: TraceBoxPlan): TraceBox {
   const padWorld = minPad * Math.min(voxelSize[0], voxelSize[1], voxelSize[2]);
 
   for (let axis = 0; axis < 3; axis += 1) {
-    const low = Math.min(start[axis], goal[axis]);
-    const high = Math.max(start[axis], goal[axis]);
-    const pad =
-      flatten && axis === 2
+    let low = Math.min(start[axis], goal[axis]);
+    let high = Math.max(start[axis], goal[axis]);
+    for (const voxel of through) {
+      low = Math.min(low, voxel[axis]);
+      high = Math.max(high, voxel[axis]);
+    }
+    const physical =
+      planarPad && axis === 2
         ? 0
         : Math.max(
             Math.round(padWorld / (voxelSize[axis] || 1)),
             Math.round((high - low) * margin),
           );
+    const pad =
+      axis !== 2 ? physical : flatten ? 0 : Math.max(physical, depthSlices);
     const from = Math.max(0, Math.floor(low - pad));
     const to = Math.min(Math.max(0, shape[axis] - 1), Math.ceil(high + pad));
     min[axis] = from;
@@ -176,6 +238,27 @@ export function traceNodeOf(box: TraceBox, voxel: Voxel): [number, number, numbe
       (voxel[axis] - box.origin[axis]) / Math.max(1, box.step[axis]),
     );
     node[axis] = Math.max(0, Math.min(box.size[axis] - 1, raw));
+  }
+  return node;
+}
+
+/**
+ * Level-0 voxel → node coordinates, or null when the voxel lies outside the
+ * box. The non-clamping twin of `traceNodeOf`, for a live-wire cursor: a
+ * cursor past the window's edge has no path in the tree, and snapping it onto
+ * the edge would draw one that ends somewhere the pointer is not.
+ */
+export function traceNodeInBox(
+  box: TraceBox,
+  voxel: Voxel,
+): [number, number, number] | null {
+  const node: [number, number, number] = [0, 0, 0];
+  for (let axis = 0; axis < 3; axis += 1) {
+    const raw = Math.round(
+      (voxel[axis] - box.origin[axis]) / Math.max(1, box.step[axis]),
+    );
+    if (raw < 0 || raw > box.size[axis] - 1) return null;
+    node[axis] = raw;
   }
   return node;
 }

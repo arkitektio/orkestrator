@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTraceCost,
+  guideDistances,
   DEFAULT_TRACE_WEIGHTS,
   MAX_TRACE_COST,
   type TraceWeights,
@@ -201,5 +202,67 @@ describe("with the search", () => {
     // The filament is two rows away; with a heavy straightness weight the
     // trace stays on the chord instead of detouring to it.
     expect(result.path.every(([, y]) => y <= 1)).toBe(true);
+  });
+});
+
+describe("guide corridor", () => {
+  /** 9x9 flat field, two bright rows: y = 2 (the one drawn along) and y = 6. */
+  const twoRows = () => {
+    const values = new Array(81).fill(0);
+    for (let x = 0; x < 9; x += 1) {
+      values[x + 2 * 9] = 1;
+      values[x + 6 * 9] = 1;
+    }
+    return Float32Array.from(values);
+  };
+  const SIZE9: [number, number, number] = [9, 9, 1];
+
+  it("walls off everything past the corridor radius", () => {
+    const field = guideDistances(SIZE9, SPACING, {
+      points: [
+        [0, 2, 0],
+        [8, 2, 0],
+      ],
+      radius: 2,
+    });
+    expect(field[4 + 2 * 9]).toBeCloseTo(0, 6);
+    expect(field[4 + 3 * 9]).toBeCloseTo(0.5, 6);
+    expect(field[4 + 4 * 9]).toBeCloseTo(1, 6);
+    expect(field[4 + 5 * 9]).toBe(Infinity);
+  });
+
+  it("ignores depth when planar, so a 3D snap may leave the slice", () => {
+    const field = guideDistances([3, 3, 3], [1, 1, 4], {
+      points: [[1, 1, 1]],
+      radius: 1,
+      planar: true,
+    });
+    for (let z = 0; z < 3; z += 1) expect(field[1 + 3 + z * 9]).toBeCloseTo(0, 6);
+  });
+
+  it("keeps the snapped path on the structure the stroke was drawn along", () => {
+    // The stroke wobbles between the two rows but stays nearer y = 2; the
+    // corridor must keep the trace off the equally bright row at y = 6.
+    const guide = {
+      points: [
+        [0, 2, 0],
+        [3, 3.5, 0],
+        [6, 1.5, 0],
+        [8, 2, 0],
+      ] as [number, number, number][],
+      radius: 2.5,
+      planar: true,
+    };
+    const cost = buildTraceCost({
+      values: twoRows(),
+      size: SIZE9,
+      spacing: SPACING,
+      weights: weights({ intensity: 1, straightness: 0.25 }),
+      guide,
+    });
+    const result = findTracePath({ size: SIZE9, spacing: SPACING, cost }, [0, 2, 0], [8, 2, 0]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.path.every(([, y]) => y === 2)).toBe(true);
   });
 });

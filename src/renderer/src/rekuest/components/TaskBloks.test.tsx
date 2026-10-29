@@ -7,6 +7,9 @@ import { BlokRunHostProvider } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { TaskEventKind } from "../api/graphql";
 import type { HoldRequest } from "../lib/holds";
 import { useTaskBlokHost } from "./TaskBloks";
+import {installAppBlokCatalog} from "@/core/blok/testing";
+
+installAppBlokCatalog();
 
 vi.mock("./task/HoldCard", () => ({
   HoldCard: ({ hold }: { hold: HoldRequest }) => <div>hold: {hold.title}</div>,

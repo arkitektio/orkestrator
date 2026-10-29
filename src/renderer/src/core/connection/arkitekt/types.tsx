@@ -14,6 +14,7 @@ import {
 } from "./fakts/profileStorageSchema";
 import { TokenResponse } from "./fakts/tokenSchema";
 import type { Ward } from "@/core/ports/engine/types";
+import type { MeshKeyOutcome } from "@/core/connection/mesh/meshKey";
 
 export type AvailableService = {
   key: string;
@@ -290,6 +291,13 @@ export type AppFunctions = {
     profileId: string,
     update: (mesh: ProfileMesh | undefined) => ProfileMesh | undefined,
   ) => Promise<void>;
+  /**
+   * Ask lok for a fresh key for the live profile's mesh node and join with it
+   * (`mesh/meshKey.ts`) — the way back for a node that is not logged in,
+   * instead of a new sign-in. Only for the profile this window is live in:
+   * the access token names the client the key is for.
+   */
+  renewMeshKey: (profileId: string) => Promise<MeshKeyOutcome>;
 };
 
 export type ReportResult = {

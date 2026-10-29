@@ -15,7 +15,7 @@ import {
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";
-import { useModeStore } from "../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { gatherLayerWorldBoxes } from "../../platform/visibility/layerBoxes";
@@ -79,6 +79,7 @@ export const CropBoxGesture = () => {
   const sceneApi = useSceneStoreApi();
   const phase = useViewerStore((s) => s.cropPhase);
   const flat = useModeStore((s) => s.displayMode !== "3D");
+  const modeApi = useModeStoreApi();
 
   const lineRef = useRef<PreviewLineHandle>(null);
   const sessionRef = useRef<Session | null>(null);
@@ -253,9 +254,13 @@ export const CropBoxGesture = () => {
       else if (current === "depth") followDepth(session, event);
     };
 
-    /** Left presses on the canvas are the gesture's; nothing below sees them. */
+    /**
+     * Left presses on the canvas are the gesture's; nothing below sees them —
+     * except while Space holds the hand, when they pan like everywhere else.
+     */
     const swallow = (event: MouseEvent): boolean => {
       if (event.button !== 0 || !onCanvas(event)) return false;
+      if (modeApi.getState().handHeld) return false;
       event.stopPropagation();
       return true;
     };
@@ -316,7 +321,7 @@ export const CropBoxGesture = () => {
       window.removeEventListener("pointerup", swallow, true);
       window.removeEventListener("click", onClick, true);
     };
-  }, [phase, flat, camera, controls, gl, invalidate, viewerApi, sceneApi]);
+  }, [phase, flat, camera, controls, gl, invalidate, viewerApi, sceneApi, modeApi]);
 
   return (
     // Furniture: never baked into screenshots or animation captures.

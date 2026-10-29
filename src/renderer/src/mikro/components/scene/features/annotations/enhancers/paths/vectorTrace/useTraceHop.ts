@@ -10,13 +10,16 @@ import {
   extractTraceValues,
   layerLocalToVoxel,
   planTraceBox,
+  traceDepthPlan,
   traceNodeOf,
   traceVoxelOf,
   voxelToLayerLocal,
+  type TraceBox,
+  type TraceDepth,
   type Voxel,
 } from "./traceBox";
 import { voxelWorldSize } from "../../shared/planning";
-import { findTracePath } from "./traceSearch";
+import { findTracePath, type TraceNode } from "./traceSearch";
 import {
   traceChannelSlab,
   traceLayerShape,
@@ -60,48 +63,144 @@ export type TraceHopResult =
  */
 const SIMPLIFY_TOLERANCE_STEPS = 0.5;
 
-export const useTraceHop = () => {
+/**
+ * Everything a trace needs about the layer it runs through, resolved from the
+ * stores in one go — the hop, the stroke snap and the live-wire window all
+ * start here.
+ */
+export type TraceLayerContext = {
+  layerId: string;
+  shape: [number, number, number];
+  affine: THREE.Matrix4;
+  inverse: THREE.Matrix4;
+  /** World length of one level-0 voxel per axis. */
+  voxelSize: [number, number, number];
+  levelSteps: [number, number, number][];
+  /** Read a box's values out of the residency manager. */
+  extract: (box: TraceBox) => Float32Array;
+};
+
+export const useTraceLayerContext = () => {
   const sceneStoreApi = useSceneStoreApi();
   const viewerStoreApi = useBrickStoreApi();
+
+  return useCallback(
+    (layerId: string): TraceLayerContext | null => {
+      const layer = sceneStoreApi
+        .getState()
+        .layers.find((candidate) => candidate.id === layerId);
+      const brickSystem = viewerStoreApi.getState().brickSystem;
+      const shape = layer ? traceLayerShape(layer) : null;
+      if (!layer || !brickSystem || !shape) return null;
+
+      const affine = buildAffineMatrix(layer);
+      const channel = traceChannelSlab(layer);
+      return {
+        layerId,
+        shape,
+        affine,
+        inverse: affine.clone().invert(),
+        // Both anisotropy inputs come from the data itself: the affine's basis
+        // lengths for how long a voxel is, and the pyramid's own shapes for how
+        // much each level actually coarsens each axis.
+        voxelSize: voxelWorldSize(affine),
+        levelSteps: traceLevelSteps(layer),
+        extract: (box) =>
+          extractTraceValues(box, (voxel) =>
+            brickSystem.sampleResident(layer.id, voxel, box.level, channel),
+          ),
+      };
+    },
+    [sceneStoreApi, viewerStoreApi],
+  );
+};
+
+/**
+ * A found node path → world points, simplified.
+ *
+ * The ENDS are replaced by the waypoints' own world points: those lie exactly
+ * where the user clicked, and rounding them to a node centre would visibly
+ * detach the chain's joints from the clicks that made them.
+ */
+export function traceNodesToWorld(
+  context: Pick<TraceLayerContext, "shape" | "affine">,
+  box: TraceBox,
+  nodes: readonly TraceNode[],
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+): THREE.Vector3[] {
+  const world = nodes.map((node) => {
+    const local = voxelToLayerLocal(traceVoxelOf(box, node), context.shape);
+    const point = new THREE.Vector3(...local).applyMatrix4(context.affine);
+    return [point.x, point.y, point.z] as PathPoint;
+  });
+  if (world.length === 1) world.push(world[0]);
+  world[0] = [from[0], from[1], from[2]];
+  world[world.length - 1] = [to[0], to[1], to[2]];
+
+  const tolerance =
+    SIMPLIFY_TOLERANCE_STEPS * Math.min(box.spacing[0], box.spacing[1], box.spacing[2]);
+  return simplifyPath(world, tolerance).map(
+    (point) => new THREE.Vector3(point[0], point[1], point[2]),
+  );
+}
+
+/** How deep a hop searches, and which view its waypoints came from. */
+export type TraceHopOptions = { depth: TraceDepth; view: "2D" | "3D" };
+
+const planHop = (
+  context: TraceLayerContext,
+  from: TraceWaypoint,
+  to: TraceWaypoint,
+  options: TraceHopOptions,
+): TraceBox =>
+  planTraceBox({
+    start: from.voxel,
+    goal: to.voxel,
+    shape: context.shape,
+    voxelSize: context.voxelSize,
+    levelSteps: context.levelSteps,
+    ...traceDepthPlan(options.depth, options.view),
+  });
+
+/**
+ * The pyramid level a hop between these waypoints WOULD search at — planning
+ * only, nothing is read. The drawer weighs it against the live-wire tree's
+ * level: a band grown over a whole screen may have had to coarsen far past
+ * what two nearby clicks need.
+ */
+export const useTraceHopLevel = () => {
+  const resolveLayer = useTraceLayerContext();
+  return useCallback(
+    (from: TraceWaypoint, to: TraceWaypoint, options: TraceHopOptions): number | null => {
+      if (from.layerId !== to.layerId) return null;
+      const context = resolveLayer(from.layerId);
+      return context ? planHop(context, from, to, options).level : null;
+    },
+    [resolveLayer],
+  );
+};
+
+export const useTraceHop = () => {
+  const resolveLayer = useTraceLayerContext();
   const roiDrawingApi = useRoiDrawingStoreApi();
 
   return useCallback(
     (
       from: TraceWaypoint,
       to: TraceWaypoint,
-      options: { flatten?: boolean } = {},
+      options: TraceHopOptions,
     ): TraceHopResult => {
       // A chain that wanders onto another layer would be tracing two different
       // spaces into one annotation. The first waypoint's layer owns the hop.
       if (from.layerId !== to.layerId) return { ok: false, reason: "layer-changed" };
 
-      const layer = sceneStoreApi
-        .getState()
-        .layers.find((candidate) => candidate.id === from.layerId);
-      const brickSystem = viewerStoreApi.getState().brickSystem;
-      const shape = layer ? traceLayerShape(layer) : null;
-      if (!layer || !brickSystem || !shape) return { ok: false, reason: "no-layer" };
+      const context = resolveLayer(from.layerId);
+      if (!context) return { ok: false, reason: "no-layer" };
 
-      const affine = buildAffineMatrix(layer);
-      // Both anisotropy inputs come from the data itself: the affine's basis
-      // lengths for how long a voxel is, and the pyramid's own shapes for how
-      // much each level actually coarsens each axis.
-      const voxelSize = voxelWorldSize(affine);
+      const box = planHop(context, from, to, options);
 
-      const box = planTraceBox({
-        start: from.voxel,
-        goal: to.voxel,
-        shape,
-        voxelSize,
-        levelSteps: traceLevelSteps(layer),
-        flatten: options.flatten,
-      });
-
-      const channel = traceChannelSlab(layer);
-      const values = extractTraceValues(box, (voxel) =>
-        brickSystem.sampleResident(layer.id, voxel, box.level, channel),
-      );
-
+      const values = context.extract(box);
       const start = traceNodeOf(box, from.voxel);
       const goal = traceNodeOf(box, to.voxel);
       const weights: TraceWeights = roiDrawingApi.getState().traceWeights;
@@ -117,31 +216,14 @@ export const useTraceHop = () => {
       const found = findTracePath({ size: box.size, spacing: box.spacing, cost }, start, goal);
       if (!found.ok) return { ok: false, reason: found.reason };
 
-      // Node path → world. The ENDS are replaced by the probe's own world
-      // points: those lie exactly where the user clicked, and rounding them to
-      // a node centre would visibly detach the chain's joints from the clicks
-      // that made them.
-      const world = found.path.map((node) => {
-        const local = voxelToLayerLocal(traceVoxelOf(box, node), shape);
-        const point = new THREE.Vector3(...local).applyMatrix4(affine);
-        return [point.x, point.y, point.z] as PathPoint;
-      });
-      world[0] = from.world;
-      world[world.length - 1] = to.world;
-
-      const tolerance =
-        SIMPLIFY_TOLERANCE_STEPS * Math.min(box.spacing[0], box.spacing[1], box.spacing[2]);
-
       return {
         ok: true,
-        points: simplifyPath(world, tolerance).map(
-          (point) => new THREE.Vector3(point[0], point[1], point[2]),
-        ),
+        points: traceNodesToWorld(context, box, found.path, from.world, to.world),
         level: box.level,
         expanded: found.expanded,
       };
     },
-    [sceneStoreApi, viewerStoreApi, roiDrawingApi],
+    [resolveLayer, roiDrawingApi],
   );
 };
 

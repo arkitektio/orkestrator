@@ -1,73 +1,55 @@
-import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
+import { presignS3Url, stampGrant } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import React from "react";
 import { useNearViewport } from "@/core/data/s3/useNearViewport";
 import { GeneralMediaAccessGrantFragment, KulisseStoreFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables, RequestKulisseAccessDocument, RequestKulisseAccessMutation, RequestKulisseAccessMutationVariables } from "@/mikro/api/graphql";
 
-/** A grant plus the absolute expiry derived from its `expiresIn` — computed
- * once on arrival so the presign memo (keyed on it) stays stable. */
-export type MikroMediaCredentials = GeneralMediaAccessGrantFragment & { expiresAt: number };
+/** A grant plus its issue time and absolute expiry — stamped once on arrival,
+ * so the presign memo (keyed on both) and the URLs it mints stay stable. */
+export type MikroMediaCredentials = GeneralMediaAccessGrantFragment & { signedAt: number; expiresAt: number };
 
-/** Refresh the grant this far before it expires, so a URL minted at the very
- * end of its life still has time to be fetched. */
-const CREDENTIAL_REFRESH_SKEW_MS = 60_000;
-
-// --- Caching & Lock Mechanism ---
-let cachedCredentialsPromise: Promise<MikroMediaCredentials> | null = null;
-let cachedCredentials: MikroMediaCredentials | null = null;
-
-const getCredentials = async (client: ApolloClient<any>): Promise<MikroMediaCredentials> => {
-  const now = Date.now();
-
-  // 1. Return valid cached credentials
-  if (cachedCredentials && now < cachedCredentials.expiresAt - CREDENTIAL_REFRESH_SKEW_MS) {
-    return cachedCredentials;
-  }
-
-  // 2. If a request is already in flight, wait for it to finish (The Lock)
-  if (cachedCredentialsPromise) {
-    return cachedCredentialsPromise;
-  }
-
-  // 3. Initiate a new request and store the promise lock
-  cachedCredentialsPromise = client.mutate<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>({
+const mintCredentials = async (client: ApolloClient<any>): Promise<MikroMediaCredentials> => {
+  const { data } = await client.mutate<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>({
     mutation: RequestGeneralMediaAccessDocument,
     variables: {
       input: {}
     }
-  }).then(({ data }) => {
-    const grant = data?.requestGeneralMediaAccess;
-
-    if (!grant) {
-      throw new Error("Failed to get media access credentials");
-    }
-
-    const credentials: MikroMediaCredentials = { ...grant, expiresAt: grantExpiresAt(grant) };
-    cachedCredentials = credentials;
-    return credentials;
-  }).catch((err) => {
-    // Clear cache on error so subsequent attempts can retry cleanly
-    cachedCredentials = null;
-    throw err;
-  }).finally(() => {
-    // Clear the promise lock once resolved or rejected
-    cachedCredentialsPromise = null;
   });
-
-  return cachedCredentialsPromise;
+  const grant = data?.requestGeneralMediaAccess;
+  if (!grant) {
+    throw new Error("Failed to get media access credentials");
+  }
+  return stampGrant(grant);
 };
+
+/**
+ * The profile's media grant on `datalayer`, shared by every window and kept
+ * across launches until it expires (`sharedGrant` in the connection runtime). One grant
+ * means one URL per snapshot, which is what lets Chromium's cache answer a
+ * second window or the next launch instead of the network.
+ */
+const getCredentials = (
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null,
+): Promise<MikroMediaCredentials> =>
+  // No profile to scope storage by (none active): this window only.
+  sharedGrant(mediaGrantKey("mikro", profileId ?? "", datalayer), () => mintCredentials(client), {
+    share: profileId !== null,
+  });
 
 const mediaObjectUrl = (media: MediaStoreFragment, datalayer: string, credentials: MikroMediaCredentials) =>
   datalayer + "/" + credentials.bucket + "/" + media.key;
 
 /**
  * A presigned URL for `media` — what `<img src>` should be handed. Memoized
- * by the signer per (credential, UTC hour, object), so repeated mounts of the
- * same snapshot cost a Map lookup, and the URL itself is a stable HTTP cache
- * key: Chromium fetches the object once and serves every later card from its
- * cache. Nothing to revoke.
+ * by the signer per (credential, issue time, object), so repeated mounts of
+ * the same snapshot cost a Map lookup, and the URL itself is a stable HTTP
+ * cache key for the grant's whole life: Chromium fetches the object once and
+ * serves every later card, window and launch from its cache. Nothing to
+ * revoke.
  */
 export const createMediaUrl = (media: MediaStoreFragment, datalayer: string, credentials: MikroMediaCredentials) =>
   presignS3Url(mediaObjectUrl(media, datalayer, credentials), credentials);
@@ -78,8 +60,9 @@ export const getMikroMediaUrl = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: ApolloClient<any>,
   datalayer: string,
+  profileId: string | null = null,
 ): Promise<string> => {
-  const credentials = await getCredentials(client);
+  const credentials = await getCredentials(client, datalayer, profileId);
   return createMediaUrl(media, datalayer, credentials);
 };
 
@@ -100,7 +83,7 @@ export const getMikroKulisseUrl = async (
   });
   const grant = data?.requestKulisseAccess;
   if (!grant) throw new Error("Failed to get read credentials for the model");
-  return presignS3Url(datalayer + "/" + grant.bucket + "/" + grant.key, { ...grant, expiresAt: grantExpiresAt(grant) });
+  return presignS3Url(datalayer + "/" + grant.bucket + "/" + grant.key, stampGrant(grant));
 };
 
 /**
@@ -116,8 +99,13 @@ export const createBlobUrl = async (media: MediaStoreFragment, datalayer: string
 };
 
 /** `createBlobUrl` with the grant fetched (and cached) via `client`. */
-export const createBlobedUrl = async (media: MediaStoreFragment, client: ApolloClient<any>, datalayer: string) => {
-  const credentials = await getCredentials(client);
+export const createBlobedUrl = async (
+  media: MediaStoreFragment,
+  client: ApolloClient<any>,
+  datalayer: string,
+  profileId: string | null = null,
+) => {
+  const credentials = await getCredentials(client, datalayer, profileId);
   return await createBlobUrl(media, datalayer, credentials);
 };
 
@@ -129,6 +117,7 @@ export const createBlobedUrl = async (media: MediaStoreFragment, client: ApolloC
 export const WithMikroMediaUrl = (props: { children: (url: string) => React.ReactNode, media?: MediaStoreFragment | undefined | null }) => {
   const endpointUrl = useDatalayerEndpoint();
   const mikro = useMikro();
+  const profileId = Arkitekt.useActiveProfileId();
 
   const sentinelRef = React.useRef<HTMLSpanElement | null>(null);
   const near = useNearViewport(sentinelRef);
@@ -141,7 +130,7 @@ export const WithMikroMediaUrl = (props: { children: (url: string) => React.Reac
 
     let isMounted = true;
 
-    getMikroMediaUrl(props.media, mikro, endpointUrl)
+    getMikroMediaUrl(props.media, mikro, endpointUrl, profileId)
       .then((mediaUrl) => {
         if (isMounted) setUrl(mediaUrl);
       })
@@ -151,7 +140,7 @@ export const WithMikroMediaUrl = (props: { children: (url: string) => React.Reac
       isMounted = false;
       setUrl(null);
     };
-  }, [props.media, endpointUrl, mikro, near]);
+  }, [props.media, endpointUrl, mikro, near, profileId]);
 
   if (!url) {
     // Zero-size sentinel: lets the viewport observer decide when to fetch.

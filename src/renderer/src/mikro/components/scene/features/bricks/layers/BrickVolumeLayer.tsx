@@ -868,6 +868,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
         updateProbe(null, false);
       }}
       onPointerDown={!clickEnabled ? undefined : (e) => {
+        // The camera's press (`modeStore.leftPress`: Space held, or ANNOTATE
+        // before a double-click): no probe, no stroke, no placement.
+        if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
         if (interactionMode === "PROBE" && !answersProbe()) {
           return;
         }
@@ -960,8 +963,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           // Same rule as onPointerDown: only the probe target places
           // annotations; others let the click fall through to it.
           if (!answersProbe()) return;
-          // An orbit-drag release is not an anchor.
-          if (e.delta > DRAG_THRESHOLD_PX) return;
+          // An orbit-drag release is not an anchor, nor a click that ends a
+          // camera press — only a double-click's second click starts a shape.
+          if (e.delta > DRAG_THRESHOLD_PX || modeStoreApi.getState().leftPress === "camera") return;
           const drawing = roiDrawingApi.getState();
           if (!isProbeDerivedTool(drawing.activeTool)) return;
           const probe = probeFromRay(e.ray, "click");

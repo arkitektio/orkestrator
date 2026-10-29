@@ -10,6 +10,7 @@ import { resolveStyle } from "../annotationStyle";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
 import { useSharedBasicMaterial } from "./sharedBasicMaterial";
+import { DRAG_THRESHOLD_PX } from "../drawGesture";
 
 /**
  * One EXTRUDED 3D annotation (box / ellipsoid), in the collection's space
@@ -117,6 +118,9 @@ export const AnnotationShape = memo(function AnnotationShape({
   // set, and click-class events raycast that set UNFILTERED.
   const handleSelect = selectable
     ? (event: ThreeEvent<MouseEvent>) => {
+        // A drag's release is not a pick: a pan (Space-, middle- or right-drag)
+        // ending over a shape would otherwise toggle it.
+        if (event.delta > DRAG_THRESHOLD_PX) return;
         event.stopPropagation();
         onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
       }

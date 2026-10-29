@@ -227,3 +227,116 @@ function reconstruct(
   }
   return path.reverse();
 }
+
+/**
+ * The live-wire half: Dijkstra from ONE seed over the whole grid, keeping the
+ * back-pointer field — the alternative the header sets aside for a cursor
+ * that asks for a new path every frame. That is exactly the 2D drawer once an
+ * anchor is placed: the rubber band follows the structure as the pointer
+ * moves, and each move is a walk back through `cameFrom`, never a search.
+ *
+ * Same lattice, same step cost as `findTracePath`, so a path read off the
+ * tree is the one A* would have found for the same cost field. The field has
+ * no goal to be straight towards, so it is built without the straightness
+ * term (`traceCost` skips it when the chord is missing).
+ *
+ * `cameFrom` is the whole answer: -1 where the seed cannot reach (or the node
+ * is impassable), the seed pointing at itself. An `Int32Array`, so it can
+ * cross from the worker that grows it as a transfer.
+ */
+export function growTraceTree(
+  grid: TraceGrid,
+  seed: TraceNode,
+  options: TraceSearchOptions = {},
+): Int32Array {
+  const { size, spacing, cost } = grid;
+  const total = size[0] * size[1] * size[2];
+  const budget = options.budget ?? DEFAULT_TRACE_BUDGET;
+  const cameFrom = new Int32Array(total).fill(-1);
+
+  if (!inBounds(...seed, size)) return cameFrom;
+  const seedIndex = nodeIndex(seed[0], seed[1], seed[2], size);
+  if (!Number.isFinite(cost[seedIndex])) return cameFrom;
+
+  const stepLengths = OFFSETS.map(([dx, dy, dz]) =>
+    Math.hypot(dx * spacing[0], dy * spacing[1], dz * spacing[2]),
+  );
+  const gScore = new Float64Array(total).fill(Infinity);
+  const closed = new Uint8Array(total);
+  const open = new NodeHeap(Math.min(total, 1 << 16));
+
+  gScore[seedIndex] = 0;
+  cameFrom[seedIndex] = seedIndex;
+  open.push(0, seedIndex);
+
+  let expanded = 0;
+  while (open.size > 0 && expanded < budget) {
+    const current = open.pop();
+    if (closed[current]) continue;
+    closed[current] = 1;
+    expanded += 1;
+
+    const x = current % size[0];
+    const y = Math.floor(current / size[0]) % size[1];
+    const z = Math.floor(current / (size[0] * size[1]));
+    const currentCost = cost[current];
+    const currentScore = gScore[current];
+
+    for (let index = 0; index < OFFSETS.length; index += 1) {
+      const [dx, dy, dz] = OFFSETS[index];
+      const nx = x + dx;
+      const ny = y + dy;
+      const nz = z + dz;
+      if (!inBounds(nx, ny, nz, size)) continue;
+      const neighbour = nodeIndex(nx, ny, nz, size);
+      if (closed[neighbour]) continue;
+      const neighbourCost = cost[neighbour];
+      if (!Number.isFinite(neighbourCost)) continue;
+
+      const tentative =
+        currentScore + stepCost(stepLengths[index], currentCost, neighbourCost);
+      if (tentative >= gScore[neighbour]) continue;
+      gScore[neighbour] = tentative;
+      cameFrom[neighbour] = current;
+      open.push(tentative, neighbour);
+    }
+  }
+
+  // A budget stop leaves frontier nodes with a provisional parent; only
+  // settled nodes carry a path that is actually the cheapest one.
+  if (open.size > 0) {
+    for (let index = 0; index < total; index += 1) {
+      if (!closed[index]) cameFrom[index] = -1;
+    }
+  }
+
+  return cameFrom;
+}
+
+/**
+ * The tree's path from its seed to `node`, seed first, or null when the seed
+ * never reached it.
+ */
+export function traceTreePath(
+  cameFrom: Int32Array,
+  size: readonly [number, number, number],
+  node: TraceNode,
+): TraceNode[] | null {
+  if (!inBounds(...node, size)) return null;
+  let current = nodeIndex(node[0], node[1], node[2], size);
+  if (cameFrom[current] === -1) return null;
+
+  const path: TraceNode[] = [];
+  // Bounded by the node count: a corrupt field must not hang the pointer.
+  for (let guard = 0; guard <= cameFrom.length; guard += 1) {
+    const x = current % size[0];
+    const y = Math.floor(current / size[0]) % size[1];
+    const z = Math.floor(current / (size[0] * size[1]));
+    path.push([x, y, z]);
+    const parent = cameFrom[current];
+    if (parent === current) return path.reverse();
+    if (parent === -1) return null;
+    current = parent;
+  }
+  return null;
+}
