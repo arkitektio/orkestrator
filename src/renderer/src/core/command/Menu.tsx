@@ -14,6 +14,7 @@ import { cn } from "@/core/util/utils";
 import { SmartLink } from "@/core/smart/builder";
 import { PaletteSections } from "@/core/smart/extensions/PaletteSections";
 import { SmartMenuWrappers } from "@/core/smart/extensions/SmartMenuWrappers";
+import type { RelatedContext } from "@/core/smart/extensions/types";
 import { Structure } from "@/core/types";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal } from "@radix-ui/react-dialog";
@@ -35,6 +36,7 @@ import {
   Context,
   ExtensionContext,
   Modifier,
+  selectSmarts,
   useSmartExtension,
 } from "./ExtensionContext";
 
@@ -148,6 +150,7 @@ export const PalettePanel = (props: {
   collection?: string;
   partners?: Structure[];
   returns?: string[];
+  related?: RelatedContext[];
   inputRef: React.RefObject<HTMLInputElement | null>;
   /** The ✕ in the input row: the dialog's shrink-then-close, or hiding the quick bar. */
   onDismiss: () => void;
@@ -192,6 +195,9 @@ export const PalettePanel = (props: {
     [debouncedContext.modifiers, props.objects],
   );
   const hasSmartModifier = context.modifiers.some((m) => m.type === "smart");
+  // What the page also stands for goes with the page: a search result made
+  // context (⇧) replaces both.
+  const related = selectSmarts(debouncedContext.modifiers).length > 0 ? undefined : props.related;
   // With something in context, what you can DO with it leads the list.
   const hasContext = objects.length > 0;
 
@@ -205,6 +211,7 @@ export const PalettePanel = (props: {
       partners={props.partners}
       returns={props.returns}
       collection={props.collection}
+      related={related}
       onDone={closePalette}
     />
   );
@@ -368,6 +375,7 @@ export const CommandMenu = (props: {
   collection?: string;
   partners?: Structure[];
   returns?: string[];
+  related?: RelatedContext[];
 }) => {
   // Mounted exactly once (by `CommandMenuHost`); it used to be mounted per page
   // with a keydown listener each — so two pages on screen meant two listeners
@@ -441,6 +449,7 @@ export const CommandMenu = (props: {
             collection={props.collection}
             partners={props.partners}
             returns={props.returns}
+            related={props.related}
             inputRef={inputRef}
             onDismiss={requestClose}
           />

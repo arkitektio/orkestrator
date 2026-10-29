@@ -1,4 +1,4 @@
-import { useRowPin } from "./rowPin";
+import { useRowPin, useScopedRowValue } from "./rowPin";
 import { useSmartMenuSkinOverride, type ActionRowProps } from "./skin";
 import { LIST_SKIN } from "./skins/list";
 
@@ -15,6 +15,7 @@ export { CommandActionIcon, RowIconButton } from "./skins/parts";
  */
 export const CommandActionRow = (props: ActionRowProps) => {
   const pin = useRowPin();
+  const value = useScopedRowValue(props.value);
   const Row = (useSmartMenuSkinOverride() ?? LIST_SKIN).Row;
-  return <Row {...props} pin={pin} />;
+  return <Row {...props} value={value} pin={pin} />;
 };

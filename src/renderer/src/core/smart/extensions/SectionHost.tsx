@@ -2,7 +2,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { RoleGuard } from "@/core/connection/roles";
 import { useSmartPins } from "./pins";
-import { RowPinProvider, usePinnedSlot, type RowPin } from "./rowPin";
+import { RowPinProvider, RowScopeProvider, usePinnedSlot, type RowPin } from "./rowPin";
 import type {
   SectionPins,
   SmartContextSection,
@@ -13,6 +13,7 @@ import { useReportSectionStatus } from "./sectionStatusContext";
 import { useNarrowedRows } from "./useNarrowedRows";
 import { useSmartMenuSkinOverride } from "./skin";
 import { LIST_SKIN } from "./skins/list";
+import type { RelatedContext } from "./types";
 
 export { SectionHeading } from "./skins/list";
 
@@ -28,16 +29,25 @@ export { SectionHeading } from "./skins/list";
  * to the "Pinned" group at the start of the menu. A section is left with its
  * query and its row. How the group and its rows LOOK is the menu's skin
  * (`skin.tsx`).
+ *
+ * With a `scope` it is the section's mount for one of the page's related
+ * contexts (`context.objects` is then that context's): headed with its label,
+ * its rows' values scoped by its key, and its status reported apart.
  */
 export const SectionHost = <T,>({
   section,
   context,
+  scope,
 }: {
   section: SmartContextSection<T>;
   context: SmartSectionContext;
+  scope?: RelatedContext;
 }) => {
-  const skipped = <SectionSkipped id={section.id} />;
-  const body = <SectionBody section={section} context={context} />;
+  const statusId = scope ? (`${section.id}@${scope.key}` as SmartSectionId) : section.id;
+  const skipped = <SectionSkipped id={statusId} />;
+  const body = (
+    <SectionBody section={section} context={context} scope={scope} statusId={statusId} />
+  );
   const guarded = section.Guard ? <section.Guard fallback={skipped}>{body}</section.Guard> : body;
   if (section.roles === undefined) return guarded;
   return (
@@ -81,14 +91,51 @@ const useRevision = (value: unknown): number => {
   return ref.current.revision;
 };
 
+/**
+ * The rows of a section that folds the related contexts into its one query
+ * (`related.mode: "or"`) that belong to THIS mount: a related mount keeps what
+ * is routed to its identifier, the page's own mount drops only what is routed
+ * to a related one (an unrouted row stays the page's).
+ */
+const useRoutedItems = <T,>(
+  section: SmartContextSection<T>,
+  context: SmartSectionContext,
+  items: readonly T[] | undefined,
+): readonly T[] | undefined => {
+  const routeOf =
+    section.related?.mode === "or" && (context.related?.length ?? 0) > 0
+      ? section.related.routeOf
+      : undefined;
+  const own = context.objects[0]?.identifier;
+  const isRelatedMount = context.primary !== undefined;
+  const relatedKey = (context.related ?? [])
+    .map((related) => related.objects[0]?.identifier ?? "")
+    .join("|");
+  return React.useMemo(() => {
+    if (!routeOf || !items) return items;
+    if (isRelatedMount) return items.filter((item) => routeOf(item) === own);
+    const elsewhere = new Set(relatedKey.split("|").filter((id) => id && id !== own));
+    return items.filter((item) => {
+      const route = routeOf(item);
+      return route === undefined || !elsewhere.has(route);
+    });
+  }, [routeOf, items, own, isRelatedMount, relatedKey]);
+};
+
 const SectionBody = <T,>({
   section,
   context,
+  scope,
+  statusId,
 }: {
   section: SmartContextSection<T>;
   context: SmartSectionContext;
+  scope?: RelatedContext;
+  statusId: SmartSectionId;
 }) => {
-  const result = section.useItems(context);
+  const raw = section.useItems(context);
+  const items = useRoutedItems(section, context, raw.items);
+  const result = { ...raw, items };
   const narrowed = useNarrowedRows({
     rows: result.items,
     serverFilter: context.filter,
@@ -98,7 +145,7 @@ const SectionBody = <T,>({
   });
   const rows = section.searchParts ? narrowed : result.items;
   const revision = useRevision(result.items);
-  useReportSectionStatus(section.id, {
+  useReportSectionStatus(statusId, {
     status: result.status,
     count: rows?.length ?? 0,
     revision,
@@ -108,9 +155,16 @@ const SectionBody = <T,>({
   const pins = usePins(section.id);
   const slot = usePinnedSlot();
   const Group = (useSmartMenuSkinOverride() ?? LIST_SKIN).Group;
+  const title = scope ? (
+    <>
+      {scope.label} · {section.title}
+    </>
+  ) : (
+    section.title
+  );
 
   if (!rows || rows.length === 0) {
-    return result.status === "error" ? <SectionErrorRow title={section.title} /> : null;
+    return result.status === "error" ? <SectionErrorRow title={title} /> : null;
   }
 
   const pinned = rows
@@ -132,14 +186,14 @@ const SectionBody = <T,>({
   const listed = slot === undefined ? [...pinned, ...unpinned] : unpinned;
 
   return (
-    <>
+    <RowScopeProvider value={scope?.key ?? null}>
       {slot ? createPortal(pinned.map(renderRow), slot) : null}
       {listed.length > 0 ? (
-        <Group heading={section.title} icon={section.icon}>
+        <Group heading={title} icon={section.icon}>
           {listed.map(renderRow)}
         </Group>
       ) : null}
-    </>
+    </RowScopeProvider>
   );
 };
 

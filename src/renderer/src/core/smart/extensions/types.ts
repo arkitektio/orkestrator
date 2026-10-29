@@ -10,10 +10,28 @@ import type { SmartSectionContext, SmartSectionSelection } from "./section";
  */
 export type OnDone = (args: { event?: unknown; kind: string }) => void;
 
+/**
+ * Another object the page stands for, offered beside its own: a container's
+ * whole lens, on the container's page. A context of its own (one identifier
+ * per context, so the demands stay matchable), never mixed into `objects`.
+ */
+export type RelatedContext = {
+  /** Stable within the page; scopes the rows' cmdk values. */
+  key: string;
+  /** The heading its rows are listed under ("Whole array"). */
+  label: string;
+  objects: Structure[];
+};
+
 export type SmartContextProps = {
   children?: React.ReactNode;
   className?: string;
   objects: Structure[];
+  /**
+   * What the page also stands for (the ⌘K palette lists each after the
+   * page's own rows). Sections opt in with `related` on their descriptor.
+   */
+  related?: readonly RelatedContext[];
   partners?: Structure[];
   returns?: string[];
   expect?: string[];

@@ -1,5 +1,6 @@
 import { CommandContext } from "@/core/command/CommandContext";
 import { ObjectButton } from "@/core/smart/ObjectButton";
+import type { RelatedContext } from "@/core/smart/extensions/types";
 import { structure } from "@/core/smart/structure";
 import { Identifier, Object } from "@/core/types";
 import {
@@ -110,6 +111,8 @@ export type ModelPageLayoutProps = {
    * the conversation, so it opts out rather than offering a chat about a chat.
    */
   chat?: boolean;
+  /** What the page also stands for in the ⌘K palette (a container's whole lens). */
+  related?: RelatedContext[];
   callback?: (object: Object) => void;
 };
 
@@ -127,6 +130,7 @@ export const ModelPageLayout = ({
   actions,
   pageActions,
   chat = true,
+  related,
 }: ModelPageLayoutProps) => {
   const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
   const objects = useMemo(
@@ -168,7 +172,7 @@ export const ModelPageLayout = ({
       // it is pinned: it stays in the row however tight the row gets.
       pageActions={pageActions || <ObjectButton alwaysShow objects={objects} />}
     >
-      <CommandContext objects={objects} />
+      <CommandContext objects={objects} related={related} />
       {children}
     </PageLayout>
   );

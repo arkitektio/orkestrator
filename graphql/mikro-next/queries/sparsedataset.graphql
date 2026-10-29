@@ -1,6 +1,11 @@
 query GetSparseDataset($id: ID!) {
   sparseDataset(id: $id) {
     ...SparseDataset
+    # Its whole lens: the palette offers what can be done to it beside what
+    # can be done to the sparse dataset itself.
+    fullLens {
+      id
+    }
   }
 }
 

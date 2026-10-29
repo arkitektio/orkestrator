@@ -17522,7 +17522,7 @@ export type GetSparseDatasetQueryVariables = Exact<{
 
 
 export type GetSparseDatasetQuery = { __typename?: 'Query', sparseDataset: (
-    { __typename?: 'SparseDataset' }
+    { __typename?: 'SparseDataset', fullLens?: { __typename?: 'SparseLens', id: string } | null }
     & SparseDatasetFragment
   ) };
 
@@ -17574,7 +17574,7 @@ export type GetTableDatasetQueryVariables = Exact<{
 
 
 export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: (
-    { __typename?: 'TableDataset' }
+    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null }
     & TableDatasetFragment
   ) };
 
@@ -28254,6 +28254,9 @@ export const GetSparseDatasetDocument = gql`
     query GetSparseDataset($id: ID!) {
   sparseDataset(id: $id) {
     ...SparseDataset
+    fullLens {
+      id
+    }
   }
 }
     ${SparseDatasetFragmentDoc}`;
@@ -28476,6 +28479,9 @@ export const GetTableDatasetDocument = gql`
     query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
     ...TableDataset
+    fullLens {
+      id
+    }
   }
 }
     ${TableDatasetFragmentDoc}`;

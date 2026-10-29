@@ -390,6 +390,11 @@ input ActionFilter {
   NOT: ActionFilter
   OR: ActionFilter
 
+  """
+  Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error.
+  """
+  anyDemands: [[PortDemandInput!]!]
+
   """Filter using app identifier"""
   appIdentifier: String
 
@@ -1596,6 +1601,11 @@ input BlokFilter {
   DISTINCT: Boolean
   NOT: BlokFilter
   OR: BlokFilter
+
+  """
+  Only bloks whose args accept at least one of these demand sets (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error.
+  """
+  anyDemands: [[PortDemandInput!]!]
 
   """
   Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none.
@@ -3655,6 +3665,11 @@ input ImplementationActionFilter {
   DISTINCT: Boolean
   NOT: ImplementationActionFilter
   OR: ImplementationActionFilter
+
+  """
+  Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error.
+  """
+  anyDemands: [[PortDemandInput!]!]
   demands: [PortDemandInput!]
   ids: [ID!]
   kind: ActionKind
@@ -4215,6 +4230,11 @@ input MaterializedBlokFilter {
 
   """Filter by agent"""
   agent: ID
+
+  """
+  Only materialized bloks whose blok's args accept at least one of these demand sets. See `BlokFilter.anyDemands`.
+  """
+  anyDemands: [[PortDemandInput!]!]
 
   """
   Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action.
@@ -6341,6 +6361,11 @@ input ShortcutFilter {
   DISTINCT: Boolean
   NOT: ShortcutFilter
   OR: ShortcutFilter
+
+  """
+  Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error.
+  """
+  anyDemands: [[PortDemandInput!]!]
 
   """
   Whether an agent that can take the shortcut's action is connected now (`Action.assignable`).

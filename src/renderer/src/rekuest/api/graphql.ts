@@ -364,6 +364,8 @@ export type ActionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ActionFilter>;
   OR?: InputMaybe<ActionFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Filter using app identifier */
   appIdentifier?: InputMaybe<Scalars['String']['input']>;
   /** Whether an agent that can take the action is connected now (`Action.assignable`). */
@@ -1254,6 +1256,8 @@ export type BlokFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<BlokFilter>;
   OR?: InputMaybe<BlokFilter>;
+  /** Only bloks whose args accept at least one of these demand sets (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Only bloks installed from an origin (true) or only ones made here (false). */
@@ -2714,6 +2718,8 @@ export type ImplementationActionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ImplementationActionFilter>;
   OR?: InputMaybe<ImplementationActionFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<ActionKind>;
@@ -3111,6 +3117,8 @@ export type MaterializedBlokFilter = {
   OR?: InputMaybe<MaterializedBlokFilter>;
   /** Filter by agent */
   agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Only materialized bloks whose blok's args accept at least one of these demand sets. See `BlokFilter.anyDemands`. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action. */
   contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`. */
@@ -5588,6 +5596,8 @@ export type ShortcutFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ShortcutFilter>;
   OR?: InputMaybe<ShortcutFilter>;
+  /** Any of these demand sets: the rows that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`, which tests every row of the organization. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Whether an agent that can take the shortcut's action is connected now (`Action.assignable`). */
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;

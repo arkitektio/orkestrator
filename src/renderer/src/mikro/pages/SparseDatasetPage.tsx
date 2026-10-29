@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { MikroSparseDataset } from "@/core/linkers";
@@ -7,6 +8,7 @@ import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { SparseDatasetInfoSidebar } from "../components/sidebars/SparseDatasetInfoSidebar";
 import { SparseDatasetOverview } from "../components/sparse/SparseDatasetOverview";
 import { MIKRO_HELP } from "../help";
+import { wholeLensContexts } from "../lenses";
 
 /**
  * Laid out like `ArrayDatasetPage` and `TableDatasetPage`: the data fills the
@@ -24,12 +26,19 @@ export const SparseDatasetPage = asDetailQueryRoute(
   useGetSparseDatasetQuery,
   ({ data }) => {
     const dataset = data.sparseDataset;
+    // Its whole lens, offered in the ⌘K palette beside the matrix itself.
+    const wholeLensId = dataset.fullLens?.id;
+    const related = useMemo(
+      () => wholeLensContexts("SparseLens", wholeLensId ? { id: wholeLensId } : null),
+      [wholeLensId],
+    );
 
     return (
       <MikroSparseDataset.ModelPage
         object={dataset}
         help={MIKRO_HELP.sparseDataset}
         title={sparseDatasetTitle(dataset.name)}
+        related={related}
         overlay
         actions={<MikroSparseDataset.Actions object={dataset} />}
         pageActions={<MikroSparseDataset.ObjectButton alwaysShow object={dataset} />}

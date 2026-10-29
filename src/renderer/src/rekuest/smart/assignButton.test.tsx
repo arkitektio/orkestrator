@@ -81,7 +81,13 @@ describe("AssignButton", () => {
     expect(screen.getByText("Choose agent · 2")).toBeTruthy();
     expect(screen.queryByText("open-buttons")).toBeNull();
     fireEvent.click(screen.getByText("Track"));
-    expect(openFor).toHaveBeenCalledWith({ action: stateful });
+    // The row hands the picker what it runs on: a row listed for a related
+    // context (a dataset's whole lens) runs on that context's objects.
+    expect(openFor).toHaveBeenCalledWith({
+      action: stateful,
+      context: { objects, partners: undefined },
+      rowValue: stateful.id,
+    });
     expect(assign).not.toHaveBeenCalled();
   });
 

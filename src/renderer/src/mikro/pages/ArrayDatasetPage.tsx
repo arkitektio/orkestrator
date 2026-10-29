@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { asDetailQueryRoute } from '@/core/layout/routes/DetailQueryRoute'
 import { Sidebars } from '@/core/layout/Sidebars'
 import { MikroArrayDataset } from '@/core/linkers'
@@ -12,6 +13,7 @@ import { SceneSwitcher } from '../components/scene/SceneSwitcher'
 import { sceneSidebarTabs, useWorkspaceScene, WorkspaceViewport } from '../components/scene/workspaceScene'
 import { DatasetFacts, DatasetLineage } from '../components/sidebars/DatasetInfoSidebar'
 import { MIKRO_HELP } from '../help'
+import { wholeLensContexts } from '../lenses'
 import { baseDtypeOf, formatShape } from '../specs'
 
 type PageDataset = GetArrayDatasetQuery['arrayDataset']
@@ -92,6 +94,12 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
     // neighbourhood), and is honoured as it is.
     landOn: dataset.defaultScene?.id
   })
+  // Its whole lens, offered in the ⌘K palette beside the dataset itself.
+  const wholeLensId = dataset.fullLens?.id
+  const related = useMemo(
+    () => wholeLensContexts('ArrayLens', wholeLensId ? { id: wholeLensId } : null),
+    [wholeLensId]
+  )
 
   return (
     // Around the whole ModelPage, so the sidebar tabs reach the scene stores.
@@ -100,6 +108,7 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         object={dataset}
         help={MIKRO_HELP.arrayDataset}
         title={dataset.name}
+        related={related}
         overlay
         actions={<MikroArrayDataset.Actions object={dataset} />}
         pageActions={

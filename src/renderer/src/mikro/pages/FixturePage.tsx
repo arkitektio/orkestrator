@@ -1,6 +1,6 @@
 import { Bounds, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type * as THREE from "three";
 
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
@@ -16,6 +16,7 @@ import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { cloneForView } from "../lib/fixtures/glass";
 import { acquireGltf, releaseGltf } from "../lib/fixtures/gltfCache";
 import { MIKRO_HELP } from "../help";
+import { wholeLensContexts } from "../lenses";
 
 /** "24 × 24 × 0.17 mm": the box the file declares, in the model's own unit. */
 const sizeOf = (model: DetailFixtureFragment): string | null => {
@@ -106,12 +107,19 @@ const FixtureInfo = ({ model }: { model: DetailFixtureFragment }) => {
 
 export const FixturePage = asDetailQueryRoute(useGetFixtureQuery, ({ data }) => {
   const model = data.fixture;
+  // Its whole lens, offered in the ⌘K palette beside the model itself.
+  const wholeLensId = model.fullLens?.id;
+  const related = useMemo(
+    () => wholeLensContexts("FixtureLens", wholeLensId ? { id: wholeLensId } : null),
+    [wholeLensId],
+  );
 
   return (
     <MikroFixture.ModelPage
       object={model}
       help={MIKRO_HELP.fixture}
       title={model.label}
+      related={related}
       actions={<MikroFixture.Actions object={model} />}
       pageActions={<MikroFixture.ObjectButton alwaysShow object={model} />}
       additionalSidebars={

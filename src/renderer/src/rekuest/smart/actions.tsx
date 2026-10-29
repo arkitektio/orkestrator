@@ -19,6 +19,7 @@ import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import { useScopedRowValue } from "@/core/smart/extensions/rowPin";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import {
   ACTIVE_IMPLEMENTATION_ORDERING,
@@ -32,7 +33,7 @@ import {
   useOpenResult,
   type OpenableReturn,
 } from "./openResult";
-import { useRunOnSubmenu } from "./runOnContext";
+import { useRunOnSubmenu, type RunOnTarget } from "./runOnContext";
 import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import { materializeErrorMessage, resolveRun } from "./materialize";
 
@@ -347,8 +348,23 @@ const useAssignActionProgress = (props: SmartContextProps) => {
   };
 };
 
+/**
+ * The shared "Run on" picker's target for a row: the row's own objects (a
+ * row listed for a related context runs on that context's) and its cmdk value.
+ */
+const useRunOnTarget = (
+  action: PrimaryActionFragment,
+  props: Pick<SmartContextProps, "objects" | "partners">,
+): RunOnTarget => {
+  const rowValue = useScopedRowValue(action.id);
+  return React.useMemo(
+    () => ({ action, context: { objects: props.objects, partners: props.partners }, rowValue }),
+    [action, props.objects, props.partners, rowValue],
+  );
+};
+
 /** Right-click on a Run row opens the menu's shared "Run on" picker. */
-const useRunOnRow = (action: PrimaryActionFragment) => {
+const useRunOnRow = (target: RunOnTarget) => {
   const submenu = useRunOnSubmenu();
   return React.useMemo(
     () =>
@@ -356,10 +372,10 @@ const useRunOnRow = (action: PrimaryActionFragment) => {
         ? (event: React.MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
-            submenu.openFor({ action }, event);
+            submenu.openFor(target, event);
           }
         : undefined,
-    [submenu, action],
+    [submenu, target],
   );
 };
 
@@ -368,7 +384,8 @@ export const AssignButton = (
 ) => {
   const { assign } = useAssign();
   const { openDialog } = useDialog();
-  const runOn = useRunOnRow(props.action);
+  const runOnTarget = useRunOnTarget(props.action, props);
+  const runOn = useRunOnRow(runOnTarget);
   const submenu = useRunOnSubmenu();
   const {
     doing,
@@ -450,7 +467,7 @@ export const AssignButton = (
   return (
     <CommandActionRow
       onSelect={() =>
-        choose ? choose.openFor({ action: props.action }) : conditionalAssign(props.action)
+        choose ? choose.openFor(runOnTarget) : conditionalAssign(props.action)
       }
       onContextMenu={runOn}
       value={props.action.id}
@@ -488,7 +505,7 @@ export const BatchAssignButton = (
 ) => {
   const { assign } = useAssign();
   const { openDialog } = useDialog();
-  const runOn = useRunOnRow(props.action);
+  const runOn = useRunOnRow(useRunOnTarget(props.action, props));
   const sink = useResultSink();
   const {
     doing,

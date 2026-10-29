@@ -11,7 +11,8 @@ import {
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
 import { AppWindow, Boxes, PlayCircle, ShieldCheck, Zap } from "lucide-react";
-import { buildDemands, useSmartDemands } from "@/rekuest/smart/demands";
+import { buildDemands, demandKey, useSmartDemands } from "@/rekuest/smart/demands";
+import React from "react";
 import { supervisorOf } from "@/rekuest/smart/agent";
 import type {
   SectionItems,
@@ -48,12 +49,40 @@ const QUERY_OPTIONS = {
 const hasSubject = (props: SmartContextProps) =>
   props.objects.length > 0 || (props.returns?.length ?? 0) > 0;
 
+/**
+ * The page's own selection: in the mount for one of its related contexts it
+ * is `primary`, and the one query is built from it there too.
+ */
+const pageSource = (ctx: SmartSectionContext) => ctx.primary ?? ctx;
+
+/**
+ * The demands of the page's related contexts (its whole lens), which the
+ * selection's query ORs in. Every mount builds the same list, so Apollo sends
+ * one request for all of them.
+ */
+const useRelatedDemands = (ctx: SmartSectionContext) => {
+  const key = (ctx.related ?? []).map((related) => demandKey({ objects: related.objects })).join("‖");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return React.useMemo(
+    () =>
+      (ctx.related ?? [])
+        .filter((related) => related.objects.length > 0)
+        .map((related) => buildDemands({ objects: related.objects }).single),
+    [key],
+  );
+};
+
+/** Which context a row belongs to: what its first arg takes, as the demands asked at 0. */
+const firstArgIdentifier = (item: { args: readonly { identifier?: string | null }[] }) =>
+  item.args[0]?.identifier ?? undefined;
+
 const useShortcutItems = (ctx: SmartSectionContext): SectionItems<ListShortcutFragment> => {
-  const demands = useSmartDemands(ctx);
+  const demands = useSmartDemands(pageSource(ctx));
+  const alsoDemands = useRelatedDemands(ctx);
   const skip = demands.single.length === 0;
   const result = useShortcutsQuery({
     ...QUERY_OPTIONS,
-    variables: shortcutsVariables(demands.single, { search: ctx.filter }),
+    variables: shortcutsVariables(demands.single, { search: ctx.filter, alsoDemands }),
     skip,
   });
   const stable = useStableData(result, skip);
@@ -68,14 +97,17 @@ const selectionSupervisor = (props: Pick<SmartContextProps, "objects">) =>
   props.objects.length === 1 ? supervisorOf(props.objects[0]) : undefined;
 
 const useActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFragment> => {
-  const demands = useSmartDemands(ctx);
+  const page = pageSource(ctx);
+  const demands = useSmartDemands(page);
+  const alsoDemands = useRelatedDemands(ctx);
   const skip = demands.single.length === 0;
   const result = useAllPrimaryActionsQuery({
     ...QUERY_OPTIONS,
     variables: actionsVariables(demands.single, {
       search: ctx.filter,
       collection: ctx.collection,
-      exceptApp: selectionSupervisor(ctx),
+      exceptApp: selectionSupervisor(page),
+      alsoDemands,
     }),
     skip,
   });
@@ -115,11 +147,13 @@ const actionParts = (action: PrimaryActionFragment) => [action.name, action.desc
 
 // Only a selection: a blok is opened FOR something, never to make a return type.
 const useOpenableBlokItems = (ctx: SmartSectionContext): SectionItems<OpenableBlokFragment> => {
-  const demands = useSmartDemands(ctx);
-  const skip = ctx.objects.length === 0;
+  const page = pageSource(ctx);
+  const demands = useSmartDemands(page);
+  const alsoDemands = useRelatedDemands(ctx);
+  const skip = page.objects.length === 0;
   const result = useOpenableBloksQuery({
     ...QUERY_OPTIONS,
-    variables: openableBloksVariables(demands.single, { search: ctx.filter }),
+    variables: openableBloksVariables(demands.single, { search: ctx.filter, alsoDemands }),
     skip,
   });
   const stable = useStableData(result, skip);
@@ -136,6 +170,7 @@ export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment
   tier: "remote",
   Guard: RekuestGuard,
   applies: hasSubject,
+  related: { mode: "or", routeOf: firstArgIdentifier },
   useItems: useShortcutItems,
   itemKey: (shortcut) => shortcut.id,
   searchParts: (shortcut) => [shortcut.name, shortcut.description],
@@ -163,6 +198,7 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
   tier: "remote",
   Guard: RekuestGuard,
   applies: hasSubject,
+  related: { mode: "or", routeOf: firstArgIdentifier },
   useItems: useActionItems,
   itemKey: (action) => action.id,
   searchParts: actionParts,
@@ -234,6 +270,7 @@ export const REKUEST_BLOKS_SECTION: SmartContextSection<OpenableBlokFragment> = 
   tier: "remote",
   Guard: RekuestGuard,
   applies: (props) => props.objects.length > 0,
+  related: { mode: "or", routeOf: (blok) => firstArgIdentifier(blok.blok) },
   useItems: useOpenableBlokItems,
   itemKey: (blok) => blok.id,
   searchParts: (blok) => [blok.name, blok.blok.name, blok.description, blok.blok.description],

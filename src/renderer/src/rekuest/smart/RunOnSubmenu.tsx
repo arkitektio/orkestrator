@@ -41,7 +41,7 @@ export const RunOnSubmenu = ({
   const api = React.useMemo<RunOnApi>(
     () => ({
       openFor: (next, at) => {
-        const point = at ?? rowAnchor(next.action.id);
+        const point = at ?? rowAnchor(next.rowValue ?? next.action.id);
         setTarget(next);
         triggerRef.current?.dispatchEvent(
           new MouseEvent("contextmenu", {
@@ -81,7 +81,11 @@ export const RunOnSubmenu = ({
         >
           {target ? (
             <RekuestGuard fallback={<></>}>
-              <DirectImplementationAssignment {...context} action={target.action} />
+              <DirectImplementationAssignment
+                {...context}
+                {...target.context}
+                action={target.action}
+              />
             </RekuestGuard>
           ) : null}
         </ContextMenuContent>

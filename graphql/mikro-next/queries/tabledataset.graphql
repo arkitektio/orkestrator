@@ -1,6 +1,11 @@
 query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
     ...TableDataset
+    # Its whole lens: the palette offers what can be done to it beside what
+    # can be done to the table itself.
+    fullLens {
+      id
+    }
   }
 }
 

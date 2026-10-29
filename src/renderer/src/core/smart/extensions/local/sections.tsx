@@ -215,6 +215,8 @@ export const LOCAL_ACTIONS_SECTION: SmartContextSection<LocalActionEntry> = {
   priority: 0,
   tier: "instant",
   applies: () => true,
+  // A registry scan: listing the related contexts' costs nothing.
+  related: { mode: "repeat" },
   useItems: useLocalActionItems,
   itemKey: (entry) => entry.id,
   usePins: useLocalActionPins,

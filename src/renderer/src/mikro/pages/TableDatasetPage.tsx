@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
@@ -8,6 +9,7 @@ import { AttributeServiceProvider } from "../lib/attributes/AttributeServiceProv
 import { TableDatasetInfoSidebar } from "../components/sidebars/TableDatasetInfoSidebar";
 import { TableDatasetTable } from "../components/tables/TableDatasetTable";
 import { MIKRO_HELP } from "../help";
+import { wholeLensContexts } from "../lenses";
 
 /**
  * Laid out like `ArrayDatasetPage`: the data fills the middle and everything *about*
@@ -28,6 +30,12 @@ export const TableDatasetPage = asDetailQueryRoute(
   useGetTableDatasetQuery,
   ({ data }) => {
     const dataset = data.tableDataset;
+    // Its whole lens, offered in the ⌘K palette beside the table itself.
+    const wholeLensId = dataset.fullLens?.id;
+    const related = useMemo(
+      () => wholeLensContexts("TableLens", wholeLensId ? { id: wholeLensId } : null),
+      [wholeLensId],
+    );
 
     // The column popover reads a column's values through the shared parquet
     // engine, from the table header AND from the Info rail. The provider sits
@@ -40,6 +48,7 @@ export const TableDatasetPage = asDetailQueryRoute(
           object={dataset}
           help={MIKRO_HELP.tableDataset}
           title={dataset.name}
+          related={related}
           overlay
           actions={<MikroTableDataset.Actions object={dataset} />}
           additionalSidebars={

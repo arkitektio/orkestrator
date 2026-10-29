@@ -1,4 +1,5 @@
 import { Object, Identifier } from "@/core/types";
+import type { RelatedContext } from "./extensions/types";
 import React from "react";
 
 export type SmartObjectContext<T extends Object = Object> = {
@@ -25,6 +26,8 @@ export type SmartModelPage<T extends Object = Object> = {
   sidebarKey?: string;
   /** `false` drops the auto-appended Chat tab (a room page is already the chat). */
   chat?: boolean;
+  /** What the page also stands for in the ⌘K palette (a container's whole lens). */
+  related?: RelatedContext[];
   callback?: (object: T) => void;
 };
 
