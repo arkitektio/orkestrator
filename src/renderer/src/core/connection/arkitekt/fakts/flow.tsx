@@ -4,7 +4,7 @@ import { withGrantHint, type GrantHint } from "./grantHint";
 import { GrantResult, pollToken } from "./pollToken";
 import { popOutWindowOpen } from "./popout";
 import { deviceAuthorization } from "./start";
-import { meshAvailable } from "@/core/connection/mesh/bridge";
+import { asksForMeshKey } from "@/core/connection/mesh/profileMesh";
 
 /**
  * The canonical fakts grant: register + stage a device code, let a human
@@ -50,7 +50,7 @@ export const flow = async ({
     controller,
     manifest,
     expirationTime,
-    requestAuthKey: !!endpoint.mesh_coord_url && requestMeshKey && meshAvailable(),
+    requestAuthKey: asksForMeshKey(endpoint, requestMeshKey),
   });
 
   // 2. Open the configure page for the human, telling it which account and hub

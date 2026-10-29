@@ -6,7 +6,7 @@ const MESH = { id: "lab", label: "Lab", controlUrl: "https://mesh.example.org", 
 const payload = (sidecar: MeshStatusPayload["sidecar"], state?: string, error?: string): MeshStatusPayload => ({
   sidecar,
   meshes: state
-    ? [{ config: { id: "lab", label: "Lab", controlUrl: MESH.controlUrl, hosts: [], hasNodeState: true }, status: { id: "lab", state, error } as never }]
+    ? [{ config: { id: "lab", label: "Lab", controlUrl: MESH.controlUrl, hosts: [] }, status: { id: "lab", state, error } as never }]
     : [],
 });
 const phase = (p: MeshStatusPayload | undefined, demandedBy: string[] = ["mikro"], askingFirewall = false) =>

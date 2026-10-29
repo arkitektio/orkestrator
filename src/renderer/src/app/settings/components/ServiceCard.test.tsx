@@ -24,7 +24,7 @@ const mesh = {
   sidecar: { state: "ready", version: "t" },
   meshes: [
     {
-      config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [], hasNodeState: true },
+      config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [] },
       status: {
         id: "lab",
         state: "running",

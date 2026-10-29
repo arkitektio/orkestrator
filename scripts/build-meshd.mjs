@@ -5,17 +5,18 @@
 //   node scripts/build-meshd.mjs                 # host platform
 //   node scripts/build-meshd.mjs mac arm64       # one target
 //   node scripts/build-meshd.mjs all             # every shipped target
-//   node scripts/build-meshd.mjs --if-missing    # only when not built yet
+//   node scripts/build-meshd.mjs --if-missing    # only when missing or stale
 //
 // `--if-missing` is what `pnpm dev` runs first: it skips when the binary is
-// already there, and a failed build (no Go toolchain, …) only warns, since the
-// app runs without the sidecar (the mesh reports "binary-missing"). It does
-// not notice edited Go sources; run `pnpm build:meshd` after changing them.
+// there and newer than every Go source (`*.go`, go.mod, go.sum), and a failed
+// build (no Go toolchain, …) only warns, since the app runs without the
+// sidecar (the mesh reports "binary-missing", or "outdated" for a sidecar
+// older than the protocol main speaks).
 //
 // The directory names use electron-builder's ${os}/${arch} vocabulary (mac,
 // win, linux / x64, arm64) so electron-builder.yml can reference them.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,6 +34,16 @@ const ALL = [
   ["linux", "x64"],
   ["linux", "arm64"],
 ];
+
+/** The newest modification time among the sidecar's sources. */
+const newestSource = () =>
+  Math.max(
+    ...readdirSync(SRC)
+      .filter((name) => name.endsWith(".go") || name === "go.mod" || name === "go.sum")
+      .map((name) => statSync(join(SRC, name)).mtimeMs),
+  );
+
+const upToDate = (bin) => existsSync(bin) && statSync(bin).mtimeMs >= newestSource();
 
 const hostOs = { darwin: "mac", win32: "win", linux: "linux" }[process.platform];
 const hostArch = process.arch === "arm64" ? "arm64" : "x64";
@@ -52,7 +63,7 @@ for (const [os, arch] of targets) {
   }
   const dir = join(OUT, `${os}-${arch}`);
   const bin = join(dir, os === "win" ? "meshd.exe" : "meshd");
-  if (ifMissing && existsSync(bin)) continue;
+  if (ifMissing && upToDate(bin)) continue;
   mkdirSync(dir, { recursive: true });
   console.log(`meshd → ${os}/${arch}`);
   try {

@@ -117,6 +117,12 @@ export const ProfileMeshSchema = z.object({
    * up, and hold their checks until it is (`lib/mesh/meshGate.ts`).
    */
   magicDnsSuffix: z.string().optional(),
+  /**
+   * When the latest sign-in asked lok for a mesh key and none came back
+   * (epoch ms). Signing in again cannot fix a node that lacks a key then,
+   * and Settings › Mesh says so; the next sign-in that brings a key clears it.
+   */
+  keyMissingAt: z.number().optional(),
 });
 
 export type ProfileMesh = z.infer<typeof ProfileMeshSchema>;
@@ -369,10 +375,22 @@ export const markProfileOk = (
 export const findProfileIdByChain = (
   book: StoredProfileBook,
   clientId: string | undefined,
-): string | undefined =>
-  clientId
-    ? Object.values(book.profiles).find((profile) => profile.session.token.client_id === clientId)?.id
-    : undefined;
+  held?: { refreshToken?: string; profileId?: string | null },
+): string | undefined => {
+  if (!clientId) return undefined;
+  const rows = Object.values(book.profiles).filter((profile) => profile.session.token.client_id === clientId);
+  if (rows.length <= 1) return rows[0]?.id;
+  // Two rows on one chain (a signed-out copy beside the live one, say). Only
+  // the row this window holds may be read: the other's token is an older,
+  // spent one, and refreshing with it revokes the whole chain. By token
+  // first, then the window's own profile, then any row not signed out.
+  return (
+    rows.find((profile) => !!held?.refreshToken && profile.session.token.refresh_token === held.refreshToken) ??
+    rows.find((profile) => profile.id === held?.profileId) ??
+    rows.find((profile) => profile.status !== "stale") ??
+    rows[0]
+  ).id;
+};
 
 export const removeProfile = (
   book: StoredProfileBook,
@@ -478,14 +496,21 @@ export const reidentifyProfile = (
  * A re-approval collapsing onto the row it already had. A grant only carries
  * a mesh when lok minted a key and the node just joined with it, so the
  * grant's id is the node that is logged in now; the row keeps the user's
- * switch and pins.
+ * switch and pins. Whether the key was missing is the grant's to say.
  */
 const mergeProfileMesh = (
   kept: ProfileMesh | undefined,
   granted: ProfileMesh | undefined,
 ): ProfileMesh | undefined => {
   if (!kept || !granted) return granted ?? kept;
-  return { ...kept, id: granted.id, label: granted.label, controlUrl: granted.controlUrl };
+  const { keyMissingAt: _previous, ...rest } = kept;
+  return {
+    ...rest,
+    id: granted.id,
+    label: granted.label,
+    controlUrl: granted.controlUrl,
+    ...(granted.keyMissingAt ? { keyMissingAt: granted.keyMissingAt } : {}),
+  };
 };
 
 /**

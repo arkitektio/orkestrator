@@ -135,6 +135,7 @@ export const deploymentMeshes = (input: DiagnoseInput, sidecar: MeshStatusPayloa
   );
 
 const SIGN_IN_AGAIN = "Sign out of this deployment and sign in again.";
+const ASK_FOR_MESH_KEY = "Ask the deployment's administrator to let this computer into the mesh, then sign in again.";
 
 /**
  * The app's own mesh node, one verdict per way it can be wrong. Membership
@@ -176,13 +177,18 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
       title:
         sidecar.sidecar.reason === "binary-missing"
           ? "This build of Orkestrator has no mesh client"
-          : "Orkestrator's mesh client could not be started",
+          : sidecar.sidecar.reason === "outdated"
+            ? "Orkestrator's mesh client is out of date"
+            : "Orkestrator's mesh client could not be started",
       detail:
         (sidecar.sidecar.reason === "binary-missing"
           ? "The addresses below are on a private mesh, and this build ships without " +
             "the built-in client that joins one, so they cannot be reached from it."
-          : "The addresses below are on a private mesh, and the built-in client that " +
-            "joins one failed to start on this computer.") +
+          : sidecar.sidecar.reason === "outdated"
+            ? "The addresses below are on a private mesh, and the built-in client that " +
+              "joins one is older than this version of Orkestrator expects."
+            : "The addresses below are on a private mesh, and the built-in client that " +
+              "joins one failed to start on this computer.") +
         (sidecar.sidecar.detail ? ` (${sidecar.sidecar.detail})` : ""),
       evidence: hosts,
     });
@@ -263,20 +269,41 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
     const { config, status } = mesh;
     const where = [`mesh: ${config.controlUrl}`, ...uncoveredHosts];
     switch (status.state) {
-      case "needs-login":
+      case "needs-login": {
+        const evidence = status.lastError ? [`mesh server: ${status.lastError}`, ...where] : where;
+        if (config.id === input.context.profileMesh?.id && input.context.profileMesh.keyMissingAt) {
+          findings.push({
+            id: "mesh.sidecar.key-missing",
+            severity: "blocker",
+            title: `Your last sign-in did not bring a key for the ${config.label} mesh`,
+            detail:
+              "Joining the mesh takes a one-time key the deployment hands out when you " +
+              "sign in. The last sign-in asked for one and none came back, so this " +
+              "computer cannot join, and signing in again will not change that until " +
+              "the deployment grants a key.",
+            evidence,
+            remedy: { kind: "manual", instructions: ASK_FOR_MESH_KEY },
+          });
+          break;
+        }
         findings.push({
           id: "mesh.sidecar.needs-login",
           severity: "blocker",
-          title: `This computer is no longer a member of the ${config.label} mesh`,
-          detail:
-            "Its membership expired or was revoked. Membership is granted when you " +
-            "sign in to the deployment, so signing in again — and being allowed the " +
-            "mesh — is what restores it.",
-          evidence: where,
+          title: status.lastError
+            ? `The ${config.label} mesh turned this computer away`
+            : `This computer is no longer a member of the ${config.label} mesh`,
+          detail: status.lastError
+            ? "The mesh server refused the key this computer joined with. Signing in " +
+              "to the deployment again asks for a new one."
+            : "Its membership expired or was revoked. Membership is granted when you " +
+              "sign in to the deployment, so signing in again — and being allowed the " +
+              "mesh — is what restores it.",
+          evidence,
           remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
           steps: [SIGN_IN_AGAIN, "If it keeps lapsing, ask the deployment's admin to let this computer into the mesh."],
         });
         break;
+      }
       case "needs-machine-auth":
         findings.push({
           id: "mesh.sidecar.needs-machine-auth",

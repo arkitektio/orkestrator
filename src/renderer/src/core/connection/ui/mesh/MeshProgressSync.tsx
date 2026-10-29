@@ -10,9 +10,9 @@ import { useEffect, useSyncExternalStore } from "react";
  * the firewall explainer. Narration only: it claims nothing. Renders nothing.
  */
 export const MeshProgressSync = ({ mesh, demandedBy }: { mesh: ProfileMesh | undefined; demandedBy: string[] }) => {
-  const { sidecar, meshes } = useMeshes();
+  const { payload } = useMeshes();
   const askingFirewall = useSyncExternalStore(meshFirewallAsk.subscribe, meshFirewallAsk.getSnapshot);
-  const progress = meshProgressFor({ mesh, payload: { sidecar, meshes }, askingFirewall, demandedBy });
+  const progress = meshProgressFor({ mesh, payload, askingFirewall, demandedBy });
   const key = JSON.stringify(progress ?? null);
 
   useEffect(() => {

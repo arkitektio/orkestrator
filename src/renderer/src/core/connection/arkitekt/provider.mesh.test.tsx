@@ -15,6 +15,7 @@ import {
 import { useArkitektStore } from "./hooks";
 import { ArkitektProvider } from "./provider";
 import { demandedMeshes, resetMeshDemands } from "@/core/connection/mesh/profileMesh";
+import { resetMeshStatusStore } from "@/core/connection/mesh/meshStatusStore";
 import { connectionProgress } from "@/core/connection/progress/store";
 
 /**
@@ -32,7 +33,7 @@ vi.mock("./utils", async (importOriginal) => ({
   report: vi.fn(async () => true),
 }));
 
-const MESH_ALIAS = { id: "m1", host: "mikro.lab.ts.net", ssl: true, challenge: "ht" };
+const MESH_ALIAS = { id: "m1", host: "mikro.lab.mesh.arkitekt.live", ssl: true, challenge: "ht" };
 const SELF_ALIAS = { id: "s1", host: "go.arkitekt.live", ssl: true, challenge: "ht" };
 
 const session = {
@@ -63,13 +64,16 @@ const session = {
 
 const MESH = { id: "lab", label: "lab", controlUrl: "https://mesh.arkitekt.live", hosts: [], enabled: true };
 
+let seq = 0;
 const payload = (state: string, proxyPort?: number): MeshStatusPayload =>
   ({
+    seq: ++seq,
     sidecar: { state: "ready", version: "t" },
     meshes: [
       {
-        config: { ...MESH, hasNodeState: true },
-        status: { id: "lab", state, proxyPort, magicDnsSuffix: "lab.ts.net" },
+        config: MESH,
+        status: { id: "lab", state, proxyPort, magicDnsSuffix: "lab.mesh.arkitekt.live" },
+        joining: false,
       },
     ],
   }) as MeshStatusPayload;
@@ -89,6 +93,7 @@ const Probe = () => {
 
 beforeEach(() => {
   resetMeshDemands();
+  resetMeshStatusStore();
   localStorage.clear();
   status = undefined;
   writeStoredProfileBook(
@@ -148,7 +153,7 @@ describe("services behind the mesh", () => {
     expect(vi.mocked(checkAliasHealth).mock.calls[0][0].host).toBe(MESH_ALIAS.host);
     // The suffix is cached for the next launch.
     await waitFor(() =>
-      expect(loadStoredProfileBook(localStorage).profiles["id-lab"].mesh?.magicDnsSuffix).toBe("lab.ts.net"),
+      expect(loadStoredProfileBook(localStorage).profiles["id-lab"].mesh?.magicDnsSuffix).toBe("lab.mesh.arkitekt.live"),
     );
   });
 

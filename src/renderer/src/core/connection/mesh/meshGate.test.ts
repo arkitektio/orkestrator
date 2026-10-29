@@ -9,7 +9,7 @@ const MESH: ProfileMesh = { id: "lab", label: "Lab", controlUrl: "https://mesh.l
 const payload = (status?: Partial<MeshNodeStatus>, sidecar: MeshStatusPayload["sidecar"] = { state: "ready", version: "t" }): MeshStatusPayload => ({
   sidecar,
   meshes: status
-    ? [{ config: { id: "lab", label: "Lab", controlUrl: "https://mesh.lab", hosts: [], hasNodeState: true }, status: { id: "lab", state: "starting", ...status } as MeshNodeStatus }]
+    ? [{ config: { id: "lab", label: "Lab", controlUrl: "https://mesh.lab", hosts: [] }, status: { id: "lab", state: "starting", ...status } as MeshNodeStatus }]
     : [],
 });
 
@@ -127,7 +127,8 @@ describe("isMeshRouted", () => {
     expect(isMeshRouted("data.lab", mesh)).toBe(true);
     expect(isMeshRouted("mikro.lab.mesh.arkitekt.live", mesh)).toBe(true);
     expect(isMeshRouted("100.64.0.7", mesh)).toBe(true);
-    expect(isMeshRouted("mikro.tailnet-cafe.ts.net", mesh)).toBe(true);
+    // Tailscale Inc's MagicDNS: the system Tailscale's tailnet, not this mesh.
+    expect(isMeshRouted("mikro.tailnet-cafe.ts.net", mesh)).toBe(false);
     expect(isMeshRouted("go.arkitekt.live", mesh)).toBe(false);
   });
 

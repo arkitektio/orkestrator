@@ -76,9 +76,10 @@ export type DoctorContext = (
 ) & {
   /**
    * The active profile's own mesh (meshes belong to a profile): its id, to
-   * pick it out of the sidecar's list, and whether the user switched it off.
+   * pick it out of the sidecar's list, whether the user switched it off, and
+   * whether the latest sign-in asked for a key and got none.
    */
-  profileMesh?: { id: string; enabled: boolean };
+  profileMesh?: { id: string; enabled: boolean; keyMissingAt?: number };
 };
 
 export type DiagnoseInput = {

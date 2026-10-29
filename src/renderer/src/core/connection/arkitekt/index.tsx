@@ -117,6 +117,7 @@ export const arkitektHooks = {
   useForgetAllProfiles: () => useArkitektActions().forgetAllProfiles,
   useSetProfileIdentity: () => useArkitektActions().setProfileIdentity,
   useSetProfileMesh: () => useArkitektActions().setProfileMesh,
+  useRenewMeshKey: () => useArkitektActions().renewMeshKey,
   useReportStatus: () => useArkitektActions().reportStatus,
   useCancelConnection: () => useArkitektActions().cancelConnection,
   useConnectedManifest: () => useArkitektStore((s) => s.connection?.manifest),

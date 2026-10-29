@@ -33,6 +33,7 @@ import type {
 } from "../main/doctor/protocol";
 import type {
   MeshClaimRequest,
+  MeshJoinRequest,
   MeshEvent,
   MeshFirewallState,
   MeshLockInitRequest,
@@ -80,11 +81,10 @@ export type WifiApi = {
 
 export type MeshApi = {
   status: () => Promise<MeshStatusPayload>;
-  /**
-   * Which mesh this window's active profile needs (`null`: none, or switched
-   * off). `authKey` is a one-shot credential from a grant; it is never stored.
-   */
+  /** Which mesh this window needs right now (`null`: none). Desired state only. */
   claim: (request: MeshClaimRequest) => Promise<MeshStatusPayload>;
+  /** Hand main a one-shot key for a mesh's node; main holds it until the node is in. */
+  join: (request: MeshJoinRequest) => Promise<MeshStatusPayload>;
   /** Disco-ping a peer (one of the addresses the status lists); every attempt, last marked final. */
   ping: (request: MeshPingRequest) => Promise<MeshPingResult[]>;
   /** Tailnet Lock: approve one of the mesh's waiting machines (this computer must be a signer). */

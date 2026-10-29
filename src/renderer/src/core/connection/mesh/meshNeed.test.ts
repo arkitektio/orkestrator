@@ -19,7 +19,14 @@ describe("meshAliases", () => {
     expect(meshAliases(fakts(["hub.lab.mesh.arkitekt.live"]), MESH)).toEqual(["hub.lab.mesh.arkitekt.live"]);
     expect(meshAliases(fakts(["hub.lab.example"]), { ...MESH, magicDnsSuffix: "lab.example" })).toEqual(["hub.lab.example"]);
     expect(meshAliases(fakts(["data.internal"]), { ...MESH, hosts: ["data.internal"] })).toEqual(["data.internal"]);
-    expect(meshAliases(fakts(["100.64.0.9", "mikro.cafe.ts.net"]), MESH)).toEqual(["100.64.0.9", "mikro.cafe.ts.net"]);
+    expect(meshAliases(fakts(["100.64.0.9"]), MESH)).toEqual(["100.64.0.9"]);
+  });
+
+  it("does not count a *.ts.net name: that is the system Tailscale's tailnet", () => {
+    expect(meshAliases(fakts(["linz.lab.mesh.arkitekt.live", "lab.hyena-sole.ts.net"]), MESH)).toEqual([
+      "linz.lab.mesh.arkitekt.live",
+    ]);
+    expect(meshNeeded(fakts(["lab.hyena-sole.ts.net"]), MESH)).toBe(false);
   });
 
   it("counts the hub's own alias too", () => {

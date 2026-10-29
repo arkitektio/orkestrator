@@ -54,6 +54,7 @@ const lockSignTimeout = 15 * time.Second
 type lockSignEvent struct {
 	Ev      string `json:"ev"`
 	ID      string `json:"id"`
+	Gen     int64  `json:"gen,omitempty"`
 	NodeKey string `json:"nodeKey"`
 	OK      bool   `json:"ok"`
 	Error   string `json:"error,omitempty"`
@@ -65,6 +66,7 @@ type lockSignEvent struct {
 type lockInitEvent struct {
 	Ev                 string   `json:"ev"`
 	ID                 string   `json:"id"`
+	Gen                int64    `json:"gen,omitempty"`
 	OK                 bool     `json:"ok"`
 	Error              string   `json:"error,omitempty"`
 	DisablementSecrets []string `json:"disablementSecrets,omitempty"`
@@ -138,10 +140,10 @@ func lockSnapshot(st *ipnstate.TailnetLockStatus, allowed bool) *lockStatus {
 // currently lists as filtered — never an arbitrary key — and the rotation key
 // is left empty, because a peer's own lock key is not visible to other nodes.
 func (n *node) lockSign(nodeKey string) {
-	ev := lockSignEvent{Ev: "lock-sign", ID: n.id, NodeKey: nodeKey}
+	ev := lockSignEvent{Ev: "lock-sign", ID: n.id, Gen: n.gen, NodeKey: nodeKey}
 	defer func() {
 		emit(ev)
-		n.refresh(context.Background(), n.port())
+		n.refresh(n.ctx, n.port())
 	}()
 
 	var nk key.NodePublic
@@ -208,10 +210,10 @@ func lockInitKeys(self key.NLPublic, others []string) ([]tka.Key, error) {
 // genesis goes to the coordination server, which answers with every machine
 // on the tailnet, all of which are signed before the lock goes live.
 func (n *node) lockInit(others []string) {
-	ev := lockInitEvent{Ev: "lock-init", ID: n.id}
+	ev := lockInitEvent{Ev: "lock-init", ID: n.id, Gen: n.gen}
 	defer func() {
 		emit(ev)
-		n.refresh(context.Background(), n.port())
+		n.refresh(n.ctx, n.port())
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), lockInitTimeout)

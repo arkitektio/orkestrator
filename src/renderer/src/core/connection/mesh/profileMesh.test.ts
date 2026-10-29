@@ -7,9 +7,10 @@ import {
   type StoredProfile,
   type StoredProfileBook,
 } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
-import { claimProfileMesh, hintedProfileMesh, joinAndPark, joiningMeshes,
-  meshForIdentity, meshClaimFor, meshFromGrant, previousMeshForGrant } from "./profileMesh";
-import type { MeshEvent, MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import { claimProfileMesh, hintedProfileMesh, joinMesh,
+  meshAfterGrant, meshForIdentity, meshClaimFor, meshFromGrant, previousMeshForGrant } from "./profileMesh";
+import { meshStatusStore, resetMeshStatusStore } from "./meshStatusStore";
+import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 
 const endpoint = {
   name: "test",
@@ -39,7 +40,10 @@ const bookOf = (...profiles: StoredProfile[]): StoredProfileBook => ({
 
 afterEach(() => {
   delete (window as any).api;
+  resetMeshStatusStore();
 });
+
+const payload = (seq: number): MeshStatusPayload => ({ seq, sidecar: { state: "ready", version: "t" }, meshes: [] });
 
 describe("meshFromGrant", () => {
   it("is nothing without a key or a usable control server", () => {
@@ -61,6 +65,22 @@ describe("meshFromGrant", () => {
       hosts: ["data.lab"],
       enabled: false,
     });
+  });
+});
+
+describe("meshAfterGrant", () => {
+  it("takes the joining mesh when a key came", () => {
+    expect(meshAfterGrant(endpoint, { authKey: "k" }, { ...MESH, keyMissingAt: 5 }, { asked: true, now: 9 }))
+      .toEqual({ ...MESH, label: "test" });
+  });
+
+  it("marks the row's mesh when a key was asked for and none came", () => {
+    expect(meshAfterGrant(endpoint, undefined, MESH, { asked: true, now: 9 })).toEqual({ ...MESH, keyMissingAt: 9 });
+  });
+
+  it("leaves the row alone when no key was asked for, or it has no mesh", () => {
+    expect(meshAfterGrant(endpoint, undefined, MESH, { asked: false })).toBeUndefined();
+    expect(meshAfterGrant(endpoint, undefined, undefined, { asked: true })).toBeUndefined();
   });
 });
 
@@ -105,79 +125,48 @@ describe("previousMeshForGrant", () => {
 });
 
 describe("claimProfileMesh", () => {
-  it("claims the mesh with the one-shot key, and nothing for a switched-off one", async () => {
-    const claim = vi.fn(async () => ({ sidecar: { state: "idle" as const }, meshes: [] }));
+  it("claims the mesh as desired state only, and nothing for a switched-off one", async () => {
+    const claim = vi.fn(async () => payload(1));
     (window as any).api = { mesh: { claim } };
-    await claimProfileMesh(MESH, "tskey");
+    await claimProfileMesh(MESH);
     await claimProfileMesh({ ...MESH, enabled: false });
     await claimProfileMesh(undefined);
     expect(claim.mock.calls).toEqual([
-      [{ mesh: { id: "mesh-1", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: ["data.lab"] }, authKey: "tskey" }],
-      [{ mesh: null, authKey: undefined }],
-      [{ mesh: null, authKey: undefined }],
+      [{ mesh: { id: "mesh-1", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: ["data.lab"] } }],
+      [{ mesh: null }],
+      [{ mesh: null }],
     ]);
     expect(meshClaimFor(MESH)).not.toHaveProperty("enabled");
   });
 
   it("is a no-op without a bridge, and never throws", async () => {
-    await expect(claimProfileMesh(MESH, "tskey")).resolves.toBeUndefined();
+    await expect(claimProfileMesh(MESH)).resolves.toBeUndefined();
     (window as any).api = { mesh: { claim: async () => Promise.reject(new Error("boom")) } };
     vi.spyOn(console, "warn").mockImplementation(() => {});
     await expect(claimProfileMesh(MESH)).resolves.toBeUndefined();
   });
 });
 
-describe("joinAndPark", () => {
-  /** A bridge whose node state the test moves along. */
-  const bridgeWith = (initial: string) => {
-    const listeners = new Set<(event: MeshEvent) => void>();
-    const status = (state: string, proxyPort?: number): MeshStatusPayload =>
-      ({
-        sidecar: { state: "ready", version: "t" },
-        meshes: [{ config: { ...meshClaimFor(MESH), hasNodeState: true }, status: { id: "mesh-1", state, proxyPort } }],
-      }) as MeshStatusPayload;
-    const claim = vi.fn(async () => status(initial));
-    (window as any).api = {
-      mesh: {
-        claim,
-        status: async () => status(initial),
-        onEvent: (listener: (event: MeshEvent) => void) => {
-          listeners.add(listener);
-          return () => listeners.delete(listener);
-        },
-      },
-    };
-    const emit = (state: string, proxyPort?: number) =>
-      listeners.forEach((listener) => listener({ type: "status", payload: status(state, proxyPort) }));
-    return { claim, emit };
-  };
-
-  it("joins with the one-shot key, stays 'joining' until the node ran, then lets it go", async () => {
-    const { claim, emit } = bridgeWith("starting");
-    const done = joinAndPark(MESH, "tskey-once");
-    await vi.waitFor(() => expect(claim).toHaveBeenCalled());
-
-    expect(claim.mock.calls[0][0]).toMatchObject({ authKey: "tskey-once", mesh: { id: "mesh-1" } });
-    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(true);
-
-    emit("running", 1080);
-    expect(await done).toBe("running");
-    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(false);
+describe("joinMesh", () => {
+  it("hands main the key without claiming anything, and keeps main's answer", async () => {
+    const claim = vi.fn();
+    const join = vi.fn(async () => payload(7));
+    (window as any).api = { mesh: { claim, join, status: async () => payload(1), onEvent: () => () => {} } };
+    await joinMesh(MESH, "tskey-once");
+    expect(join).toHaveBeenCalledWith({
+      mesh: { id: "mesh-1", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: ["data.lab"] },
+      authKey: "tskey-once",
+    });
+    expect(claim).not.toHaveBeenCalled();
+    expect(meshStatusStore().getSnapshot().payload?.seq).toBe(7);
   });
 
-  it("lets it go when the join fails or runs out of time", async () => {
-    vi.useFakeTimers();
-    bridgeWith("starting");
-    const done = joinAndPark(MESH, "k", { timeoutMs: 1000 });
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(await done).toBe("timeout");
-    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(false);
-    vi.useRealTimers();
-  });
-
-  it("does nothing without a bridge or for a switched-off mesh", async () => {
-    expect(await joinAndPark(MESH, "k")).toBe("none");
-    bridgeWith("starting");
-    expect(await joinAndPark({ ...MESH, enabled: false }, "k")).toBe("none");
+  it("does nothing without a bridge or for a switched-off mesh, and lets main's refusal through", async () => {
+    await expect(joinMesh(MESH, "k")).resolves.toBeUndefined();
+    const join = vi.fn(async () => Promise.reject(new Error("Invalid mesh key")));
+    (window as any).api = { mesh: { claim: vi.fn(), join } };
+    await joinMesh({ ...MESH, enabled: false }, "k");
+    expect(join).not.toHaveBeenCalled();
+    await expect(joinMesh(MESH, "k")).rejects.toThrow(/invalid mesh key/i);
   });
 });

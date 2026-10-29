@@ -1,19 +1,25 @@
 import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
-import { classifyHost, isMeshClass } from "@/core/connection/arkitekt/doctor/classify";
+import { classifyHost } from "@/core/connection/arkitekt/doctor/classify";
 import { controlDomain, type MeshNodeStatus, type MeshStatusPayload } from "../../../../../main/mesh/protocol";
-import { meshBridge, type MeshBridge } from "./bridge";
+import type { MeshBridge } from "./bridge";
+import { createMeshStatusStore, meshStatusStore, type MeshStatusStore } from "./meshStatusStore";
 
 /**
  * When may a service behind the mesh be checked?
  *
- * The node is claimed at mount (`MeshSync`) or with the grant's key
- * (`connect`), and takes seconds to join; the aliases behind it used to be
+ * The node is claimed at mount (`MeshSync`) or joined with a key
+ * (`joinMesh`), and takes seconds to get in; the aliases behind it used to be
  * probed in that window, time out, and be marked invalid — with nothing ever
  * checking again once the mesh came up. A gate watches the active profile's
  * node and says when it is `running` with a proxy (main applies the routing
  * BEFORE it broadcasts that, so traffic is routed by then), when it has
  * definitively failed, or that it gave up waiting. It never claims anything
- * itself: there is exactly one claimer per window.
+ * itself: there is exactly one claimer per window. It reads the window's
+ * status store (`meshStatusStore.ts`), so a gate opens no subscription.
+ *
+ * A node joining with a key reads `starting` until the key lands or is
+ * refused — main hides the NeedsLogin tsnet passes through meanwhile — so a
+ * join never fails a gate early.
  *
  * `onRunning` keeps firing on every later transition into `running`, so a mesh
  * that drops and comes back gets its services re-checked.
@@ -50,23 +56,30 @@ export const NO_MESH_GATE: MeshGate = {
   dispose: () => {},
 };
 
-/** States the node will not leave by itself soon. */
+/**
+ * States the node will not leave by itself soon. `needs-machine-auth` too:
+ * the services must not wait on an administrator; `onRunning` re-checks them
+ * once the node is approved.
+ */
 const FAILED_STATES = new Set<MeshNodeStatus["state"]>(["needs-login", "needs-machine-auth", "error"]);
 
 export const watchMesh = (
   mesh: ProfileMesh | undefined,
   {
-    bridge = meshBridge(),
+    bridge,
+    store = bridge ? createMeshStatusStore(bridge) : meshStatusStore(),
     timeoutMs = MESH_GATE_TIMEOUT_MS,
     clockStarts = Promise.resolve(),
   }: {
+    /** Tests: watch this bridge through a store of its own. */
     bridge?: MeshBridge;
+    store?: MeshStatusStore;
     timeoutMs?: number;
     /** When the timeout starts counting: once the claim is on its way. */
     clockStarts?: Promise<void>;
   } = {},
 ): MeshGate => {
-  if (!mesh?.enabled || !bridge) return NO_MESH_GATE;
+  if (!mesh?.enabled || !store.available) return NO_MESH_GATE;
 
   let running = false;
   let settled: GateOutcome | undefined;
@@ -104,11 +117,17 @@ export const watchMesh = (
     if (status.state !== "stopped") moved = true;
   };
 
-  const unsubscribe = bridge.onEvent((event) => {
-    if (event.type === "status") handle(event.payload);
-  });
-  // Subscribed first, then asked: a transition between the two is not lost.
-  bridge.status().then(handle, () => {});
+  let seen: MeshStatusPayload | undefined;
+  const check = () => {
+    const payload = store.getSnapshot().payload;
+    if (!payload || payload === seen) return;
+    seen = payload;
+    handle(payload);
+  };
+  const unsubscribe = store.subscribe(check);
+  // What the window already knows counts at once; subscribing bound the store
+  // (events first, then a status) if nobody else had.
+  check();
   let timer: ReturnType<typeof setTimeout> | undefined;
   void clockStarts.then(() => {
     if (!settled) timer = setTimeout(() => settle("timeout"), timeoutMs);
@@ -139,8 +158,10 @@ const norm = (host: string): string => host.trim().toLowerCase().replace(/\.$/, 
  * Does this host go through the profile's mesh? A pinned host, a name under
  * the mesh's MagicDNS suffix (cached from the last time the node ran, so it is
  * known before the node is up), a subdomain of the mesh's control server, or
- * anything shaped like a mesh address — a CGNAT / mesh-IPv6 literal or a
- * MagicDNS name.
+ * an address shaped like one on it — a CGNAT / mesh-IPv6 literal or a bare
+ * label. Never a `*.ts.net` name: that is Tailscale Inc's own MagicDNS
+ * domain, so the host is on the system Tailscale's tailnet, and ionscale names
+ * its machines under its control domain instead.
  */
 export const isMeshRouted = (rawHost: string, mesh: ProfileMesh | undefined): boolean => {
   if (!mesh?.enabled) return false;
@@ -151,5 +172,6 @@ export const isMeshRouted = (rawHost: string, mesh: ProfileMesh | undefined): bo
   // Under the control server's domain: routed with no pinning (main's pac.ts, rule 5).
   const domain = controlDomain(mesh.controlUrl);
   if (domain && host.endsWith(`.${domain}`)) return true;
-  return isMeshClass(classifyHost(host));
+  const shape = classifyHost(host).class;
+  return shape === "mesh-ip" || shape === "mesh-bare";
 };

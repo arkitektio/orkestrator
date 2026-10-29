@@ -7,9 +7,9 @@ import {
   type StoredProfileBook,
 } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { isValidControlUrl, type MeshConfig } from "../../../../../main/mesh/protocol";
-import { meshBridge } from "./bridge";
+import { meshAvailable, meshBridge } from "./bridge";
 import { meshFirewallGate } from "./firewallNotice";
-import { watchMesh, type GateOutcome } from "./meshGate";
+import { meshStatusStore } from "./meshStatusStore";
 
 /**
  * A mesh belongs to a profile — organisation and hub — and this is how one
@@ -18,11 +18,14 @@ import { watchMesh, type GateOutcome } from "./meshGate";
  *  - a login to a deployment whose `.well-known/fakts` names a mesh asks lok
  *    for a one-shot key (`flow.tsx`), unless the profile being re-approved has
  *    its mesh switched off;
- *  - if the approver allows it, the key comes back with the tokens, the
- *    window claims the mesh with it at once (`claimProfileMesh`), and the
- *    profile record keeps the mesh — never the key;
- *  - from then on every window in that profile claims it (`MeshSync`), and
- *    the node's own state under `<userData>/mesh/<id>` carries the login.
+ *  - if the approver allows it, the key comes back with the tokens and goes
+ *    straight to main (`joinMesh`), which holds it until the node is in and
+ *    keeps the node up meanwhile; the profile record keeps the mesh — never
+ *    the key;
+ *  - from then on every window in that profile claims it when it is needed
+ *    (`MeshSync`, the one claimer), and the node's own state under
+ *    `<userData>/mesh/<id>` carries the login. A node that lost it gets a
+ *    fresh key from lok the same way (`useMeshKeyRenewal`).
  *
  * Nothing here ever opens a sign-in page, and no failure here may turn a
  * successful login into an error.
@@ -94,19 +97,47 @@ export const meshFromGrant = (
   };
 };
 
+/**
+ * Whether a grant asks lok for a mesh key: the deployment names a mesh, this
+ * build has the mesh client, and the profile being re-approved has not
+ * switched its mesh off.
+ */
+export const asksForMeshKey = (endpoint: FaktsEndpoint, requestMeshKey = true): boolean =>
+  !!endpoint.mesh_coord_url && requestMeshKey && meshAvailable();
+
+/**
+ * The mesh a grant hands to the profile row. With a key, the joining mesh
+ * (`meshFromGrant`). Without one although a key was asked for, the row's mesh
+ * marked `keyMissingAt`: its node cannot get in until lok mints a key, and
+ * telling the user to sign in once more would not change that. Otherwise
+ * nothing, which leaves the row alone.
+ */
+export const meshAfterGrant = (
+  endpoint: FaktsEndpoint,
+  granted: GrantedMesh | undefined,
+  previous: ProfileMesh | undefined,
+  { asked, now = Date.now() }: { asked: boolean; now?: number },
+): ProfileMesh | undefined => {
+  if (granted?.authKey) return meshFromGrant(endpoint, granted, previous);
+  return asked && previous ? { ...previous, keyMissingAt: now } : undefined;
+};
+
 /** What main is told for a profile's mesh: nothing when absent or switched off. */
 export const meshClaimFor = (mesh: ProfileMesh | undefined): MeshConfig | null =>
   mesh?.enabled ? { id: mesh.id, label: mesh.label, controlUrl: mesh.controlUrl, hosts: mesh.hosts } : null;
 
-/** Claim this window's profile mesh; `authKey` is used once and forgotten. Best-effort. */
-export const claimProfileMesh = async (mesh: ProfileMesh | undefined, authKey?: string): Promise<void> => {
+/**
+ * Tell main which mesh this window needs: desired state, nothing else. Only
+ * `MeshSync` calls this — one claimer per window. Best-effort.
+ */
+export const claimProfileMesh = async (mesh: ProfileMesh | undefined): Promise<void> => {
   const bridge = meshBridge();
   if (!bridge) return;
   // Starting meshd is when Windows asks about incoming connections.
   const firewall = meshFirewallGate(!!meshClaimFor(mesh));
   if (firewall) await firewall;
   try {
-    await bridge.claim({ mesh: meshClaimFor(mesh), authKey: authKey || undefined });
+    meshStatusStore().accept(await bridge.claim({ mesh: meshClaimFor(mesh) }));
   } catch (error) {
     console.warn("[mesh] could not claim this profile's mesh:", error);
   }
@@ -122,7 +153,7 @@ export const claimProfileMesh = async (mesh: ProfileMesh | undefined, authKey?: 
  * working direct addresses never start it (and never get Windows' firewall
  * question).
  *
- * `MeshSync` claims a mesh while anyone demands it (or it is joining). A
+ * `MeshSync` claims a mesh while anyone demands it. A
  * service that ends up on a direct address releases its demand; one that
  * lives on the mesh keeps it, and so keeps the mesh up.
  */
@@ -172,58 +203,24 @@ export const resetMeshDemands = () => {
   publishDemands();
 };
 
-/* ─────────────────────── join once, then park ─────────────────────────── */
+/* ─────────────────────────────── join ─────────────────────────────────── */
 
 /**
- * Meshes this window is joining right now only to register the node. The
- * grant's key is one-shot: a hub with no address on the mesh does not need it
- * running, but skipping the join would cost a new sign-in the day it gains
- * one. So the node joins (its identity lands on disk), and is then stopped.
- *
- * `MeshSync` is the window's one claimer and must keep claiming a mesh while
- * it joins — otherwise its "not needed" claim of `null`, landing straight
- * after the grant is admitted, would stop the node before it got in.
+ * Hand main a one-shot key for a profile's mesh node: from a grant, or a
+ * fresh one lok minted (`renewMeshKey`). Main holds it until the node is in,
+ * keeps the node up while it joins whether or not a window claims it, and
+ * parks it afterwards unless one does ("join once, then park": a hub with no
+ * address on the mesh yet still registers the node, so the day it gains one
+ * needs no new sign-in). Resolves once main has the key; callers own errors.
  */
-const joining = new Set<string>();
-const joiningListeners = new Set<() => void>();
-let joiningSnapshot: ReadonlySet<string> = new Set();
-
-const publishJoining = () => {
-  joiningSnapshot = new Set(joining);
-  joiningListeners.forEach((listener) => listener());
-};
-
-export const joiningMeshes = {
-  subscribe: (listener: () => void) => {
-    joiningListeners.add(listener);
-    return () => joiningListeners.delete(listener);
-  },
-  getSnapshot: (): ReadonlySet<string> => joiningSnapshot,
-};
-
-export const JOIN_AND_PARK_TIMEOUT_MS = 30_000;
-
-/** Join with the one-shot key, then let the node go once it ran (or gave up). */
-export const joinAndPark = async (
-  mesh: ProfileMesh,
-  authKey: string,
-  { timeoutMs = JOIN_AND_PARK_TIMEOUT_MS }: { timeoutMs?: number } = {},
-): Promise<GateOutcome> => {
-  if (!meshBridge() || !mesh.enabled) return "none";
-  joining.add(mesh.id);
-  publishJoining();
-  // The join's clock starts once the user has read the firewall explainer.
+export const joinMesh = async (mesh: ProfileMesh, authKey: string): Promise<void> => {
+  const bridge = meshBridge();
+  const config = meshClaimFor(mesh);
+  if (!bridge || !config) return;
+  // Starting meshd is when Windows asks about incoming connections.
   const firewall = meshFirewallGate(true);
   if (firewall) await firewall;
-  const gate = watchMesh(mesh, { timeoutMs });
-  try {
-    await claimProfileMesh(mesh, authKey);
-    return await gate.ready;
-  } finally {
-    gate.dispose();
-    joining.delete(mesh.id);
-    publishJoining();
-  }
+  meshStatusStore().accept(await bridge.join({ mesh: config, authKey }));
 };
 
 const newMeshId = (): string => crypto.randomUUID();

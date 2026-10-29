@@ -39,7 +39,7 @@ import { serviceSteps } from "@/core/connection/ui/progress/serviceSteps";
 import { describeMesh, meshIsStuck } from "@/core/connection/progress/describe";
 import type { MeshProgress, ServiceProgress } from "@/core/connection/progress/store";
 import { useMeshProgress, useServiceProgress } from "@/core/connection/progress/hooks";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CopyDetailsButton, StatusPage, statusCopyText, type StatusDetail } from "./StatusPage";
 import { BackButton, HomeButton, MeshSettingsButton } from "./statusActions";
 
@@ -534,8 +534,7 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
   const path = useConnectionPath();
   const progress = useServiceProgress(serviceKey);
   const meshProgress = useMeshProgress();
-  const { sidecar, meshes } = useMeshes();
-  const mesh = useMemo(() => ({ sidecar, meshes }), [sidecar, meshes]);
+  const { payload: mesh } = useMeshes();
   const tailscale = useSystemTailscale(
     anyMeshHost((state?.instance?.aliases ?? []).map((alias) => alias.host)),
   );

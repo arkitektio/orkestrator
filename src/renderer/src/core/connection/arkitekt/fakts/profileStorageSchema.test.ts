@@ -573,6 +573,25 @@ describe("admitGrantedProfile", () => {
     expect(book.profiles[finalId].mesh).toMatchObject({ id: "node-new", hosts: ["pin.lab"], enabled: true });
   });
 
+  it("records a sign-in that brought no mesh key, and the next one with a key clears it", () => {
+    const kept = { id: "node", label: "alpha", controlUrl: "https://mesh.alpha.test", hosts: ["pin.lab"], enabled: true };
+    const existing = {
+      ...createProfileFromSession(sessionFor("alpha.test", "old"), 1, finalId),
+      identity: { baseUrl: "https://alpha.test/lok/f/", userId: "2", organizationId: "3", hubId: "49" },
+      mesh: kept,
+    };
+    const keyless = admitGrantedProfile(
+      upsertProfile(emptyProfileBook(), existing),
+      sessionFor("alpha.test", "new"),
+      identity,
+      { ...kept, keyMissingAt: 7 },
+    ).book;
+    expect(keyless.profiles[finalId].mesh).toEqual({ ...kept, keyMissingAt: 7 });
+
+    const keyed = admitGrantedProfile(keyless, sessionFor("alpha.test", "newer"), identity, { ...kept, hosts: [] }).book;
+    expect(keyed.profiles[finalId].mesh).toEqual(kept);
+  });
+
   it("falls back to a provisional id when the grant names no identity", () => {
     const { profileId } = admitGrantedProfile(emptyProfileBook(), sessionFor("alpha.test"), undefined, undefined);
     expect(isProvisionalProfileId(profileId)).toBe(true);
@@ -585,5 +604,16 @@ describe("findProfileIdByChain", () => {
     expect(findProfileIdByChain(book, "cid")).toBe("renamed");
     expect(findProfileIdByChain(book, "other")).toBeUndefined();
     expect(findProfileIdByChain(book, undefined)).toBeUndefined();
+  });
+
+  it("with two rows on one chain, never reads the other row's older token", () => {
+    const stale = { ...createProfileFromSession(sessionFor("alpha.test", "old"), 1, "a-signed-out"), status: "stale" as const };
+    const live = createProfileFromSession(sessionFor("alpha.test", "live"), 2, "b-live");
+    const book = upsertProfile(upsertProfile(emptyProfileBook(), stale), live);
+    // The token this window holds names its row, wherever the row sorts.
+    expect(findProfileIdByChain(book, "cid", { refreshToken: "rt-live" })).toBe("b-live");
+    // Another window rotated it: the window's own profile, else the live one.
+    expect(findProfileIdByChain(book, "cid", { refreshToken: "rt-gone", profileId: "b-live" })).toBe("b-live");
+    expect(findProfileIdByChain(book, "cid", { refreshToken: "rt-gone" })).toBe("b-live");
   });
 });

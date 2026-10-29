@@ -25,6 +25,7 @@
 export const MESH_EVENT_CHANNEL = "mesh:event";
 export const MESH_STATUS_CHANNEL = "mesh:status";
 export const MESH_CLAIM_CHANNEL = "mesh:claim";
+export const MESH_JOIN_CHANNEL = "mesh:join";
 export const MESH_PING_CHANNEL = "mesh:ping";
 export const MESH_LOCK_SIGN_CHANNEL = "mesh:lock-sign";
 export const MESH_LOCK_INIT_CHANNEL = "mesh:lock-init";
@@ -64,20 +65,26 @@ export type MeshConfig = {
 };
 
 /**
- * A window saying which mesh its active profile needs: the profile's mesh
- * when it has one and it is switched on, else `null`. Main runs the union of
- * every open window's claim and drops a window's claim when it closes, so a
- * mesh is up exactly while some window is in its profile.
- *
- * `authKey` is a ONE-SHOT credential that came with a grant: used for this
- * connect and never stored. lok mints one per grant, it expires within
- * minutes, and once the node has logged in its own state carries it across
- * restarts. A node without a key or state reports `needs-login`, which means
- * "sign in to the deployment again" — never a browser flow of its own.
+ * A window saying which mesh it needs right now: desired state, nothing else.
+ * Re-sent whenever it changes, `null` for none. Main runs the union of every
+ * open window's claim (plus the meshes it is joining, see `MeshJoinRequest`)
+ * and drops a window's claim when the window closes.
  */
 export type MeshClaimRequest = {
   mesh: MeshConfig | null;
-  authKey?: string;
+};
+
+/**
+ * Hand main a ONE-SHOT key for a mesh's node: from a grant, or minted by
+ * lok's `/f/meshkey/` for a node that is not logged in. Main holds it — never
+ * on disk, never broadcast — until the node is in with it, the control server
+ * refuses it, or it expires, and keeps the node up while it joins whether or
+ * not a window claims it ("join once, then park"). A newer key replaces an
+ * older one; a node that is already in ignores it.
+ */
+export type MeshJoinRequest = {
+  mesh: MeshConfig;
+  authKey: string;
 };
 
 export type MeshNodeState =
@@ -205,30 +212,38 @@ export type MeshNodeStatus = {
   /** Absent when the node could not tell (no lock support on either side). */
   lock?: MeshLockStatus;
   error?: string;
+  /**
+   * What the node last reported going wrong while not running, e.g. the
+   * control server refusing its key ("invalid auth key"). Kept across status
+   * polls until the node runs or is connected anew.
+   */
+  lastError?: string;
 };
 
 /** What the renderer sees: the configuration and, if any, its live status. */
 export type MeshSnapshot = {
-  config: MeshConfig & {
-    /**
-     * The node has logged in before and kept its identity on disk, so a
-     * plain connect will do — no key or sign-in needed. This is what decides
-     * whether a grant asks lok for a fresh key.
-     */
-    hasNodeState: boolean;
-  };
+  config: MeshConfig;
   status: MeshNodeStatus;
+  /** Main holds a key for this node and keeps it up until it is in with it. */
+  joining: boolean;
 };
 
 export type MeshSidecarState =
   | { state: "idle" }
   | { state: "starting" }
   | { state: "ready"; version: string }
-  | { state: "unavailable"; reason: "binary-missing" | "spawn-failed"; detail?: string }
+  | {
+      state: "unavailable";
+      /** `outdated`: the sidecar on disk speaks an older protocol than main (rebuild it). */
+      reason: "binary-missing" | "spawn-failed" | "outdated";
+      detail?: string;
+    }
   | { state: "crashed"; detail: string };
 
-/** Every mesh some window currently claims — each window picks out its own. */
+/** Every mesh some window claims or main is joining — each window picks out its own. */
 export type MeshStatusPayload = {
+  /** Rises with every payload main builds; a reader keeps the highest it saw. */
+  seq: number;
   sidecar: MeshSidecarState;
   meshes: MeshSnapshot[];
 };
@@ -240,23 +255,35 @@ export type MeshEvent =
 
 /* ───────────────────────── sidecar (Go) protocol ───────────────────────── */
 
+/**
+ * The stdio protocol main speaks; meshd announces its own in `ready`, and
+ * main refuses a sidecar that speaks another (`unavailable/outdated`).
+ */
+export const MESHD_PROTOCOL = 2;
+
+/**
+ * `gen` is the generation of one connect: main mints a new one for every
+ * connect, meshd stamps it on every event of the node that connect started,
+ * and main drops events of any other generation — a disconnected or replaced
+ * node's late words. Commands about a node carry it too.
+ */
 export type MeshdCommand =
-  | { op: "connect"; id: string; dir: string; controlUrl: string; hostname: string; authKey?: string }
-  | { op: "disconnect"; id: string }
-  | { op: "ping"; id: string; target: string }
-  | { op: "lock-sign"; id: string; nodeKey: string }
-  | { op: "lock-init"; id: string; trustedKeys: string[] }
+  | { op: "connect"; id: string; gen: number; dir: string; controlUrl: string; hostname: string; authKey?: string }
+  | { op: "disconnect"; id: string; gen: number }
+  | { op: "ping"; id: string; gen: number; target: string }
+  | { op: "lock-sign"; id: string; gen: number; nodeKey: string }
+  | { op: "lock-init"; id: string; gen: number; trustedKeys: string[] }
   | { op: "status" }
   | { op: "shutdown" };
 
 export type MeshdEvent =
-  | { ev: "ready"; version: string }
-  | ({ ev: "status" } & MeshNodeStatus)
-  | ({ ev: "ping"; id: string } & MeshPingResult)
-  | ({ ev: "lock-sign"; id: string; nodeKey: string } & MeshLockSignResult)
-  | ({ ev: "lock-init"; id: string } & MeshLockInitResult)
-  | { ev: "log"; id: string; message: string }
-  | { ev: "error"; id: string; message: string };
+  | { ev: "ready"; version: string; protocol?: number }
+  | ({ ev: "status"; gen?: number } & MeshNodeStatus)
+  | ({ ev: "ping"; id: string; gen?: number } & MeshPingResult)
+  | ({ ev: "lock-sign"; id: string; gen?: number; nodeKey: string } & MeshLockSignResult)
+  | ({ ev: "lock-init"; id: string; gen?: number } & MeshLockInitResult)
+  | { ev: "log"; id: string; gen?: number; message: string }
+  | { ev: "error"; id: string; gen?: number; message: string };
 
 /** Parse one stdout line. Anything that is not a known event is dropped. */
 export const parseMeshdLine = (line: string): MeshdEvent | undefined => {
@@ -322,6 +349,12 @@ export const controlDomain = (controlUrl: string): string | undefined => {
 };
 
 const isString = (value: unknown): value is string => typeof value === "string";
+
+/** A pre-auth key as main accepts it: a plain token, never logged. */
+export const sanitizeAuthKey = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim().length > 0 && value.length <= 512 && !/\s/.test(value.trim())
+    ? value.trim()
+    : undefined;
 
 /** Accept only a well-formed mesh; anything else is refused, not repaired. */
 export const sanitizeMeshConfig = (value: unknown): MeshConfig | undefined => {

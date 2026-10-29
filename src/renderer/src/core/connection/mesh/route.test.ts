@@ -7,7 +7,7 @@ const payload = (status: Record<string, unknown> = {}, config: Record<string, un
     sidecar: { state: "ready", version: "t" },
     meshes: [
       {
-        config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [], hasNodeState: true, ...config },
+        config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [], ...config },
         status: {
           id: "lab",
           state: "running",
@@ -30,7 +30,7 @@ describe("serviceRoute, direct against relayed", () => {
       sidecar: { state: "ready", version: "t" },
       meshes: [
         {
-          config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [], hasNodeState: true },
+          config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [] },
           status: {
             id: "lab",
             state: "running",

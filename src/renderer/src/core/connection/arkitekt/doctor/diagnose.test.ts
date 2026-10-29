@@ -434,7 +434,7 @@ describe("built-in mesh findings", () => {
 
   const CONTROL = "https://mesh.example.org";
   const meshWith = (state: NodeStatus["state"], extra: Partial<NodeStatus> = {}): Sidecar["meshes"][number] => ({
-    config: { id: "lab", label: "Lab", controlUrl: CONTROL, hosts: [], hasNodeState: true },
+    config: { id: "lab", label: "Lab", controlUrl: CONTROL, hosts: [] },
     status: {
       id: "lab",
       state,
@@ -584,6 +584,27 @@ describe("built-in mesh findings", () => {
     expect(findings[0].id).toBe("mesh.sidecar.needs-login");
     expect(findings[0].remedy).toEqual({ kind: "manual", instructions: "Sign out of this deployment and sign in again." });
     expect(byId(findings, "net.dns.nxdomain")?.severity).toBe("info");
+  });
+
+  it("a refused key: says so, and carries the server's words as evidence", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("needs-login", { lastError: "invalid auth key" }),
+      network: [failingProbe()],
+    });
+    expect(findings[0]).toMatchObject({ id: "mesh.sidecar.needs-login", title: "The Lab mesh turned this computer away" });
+    expect(findings[0].evidence?.[0]).toBe("mesh server: invalid auth key");
+  });
+
+  it("a sign-in that brought no key: signing in again is not the advice", () => {
+    const findings = run({
+      context: { ...ctx(CONTROL), profileMesh: { id: "lab", enabled: true, keyMissingAt: 1 } },
+      sidecar: sidecarWith("needs-login"),
+      network: [failingProbe()],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.key-missing");
+    expect(findings[0].remedy).not.toEqual({ kind: "manual", instructions: "Sign out of this deployment and sign in again." });
+    expect(ids(findings)).not.toContain("mesh.sidecar.needs-login");
   });
 
   it("lapsed membership, but the other addresses reach the machine and are refused: the server is down", () => {

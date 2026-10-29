@@ -59,6 +59,7 @@ import {
 } from "../main/wifi/protocol";
 import {
   MESH_CLAIM_CHANNEL,
+  MESH_JOIN_CHANNEL,
   MESH_EVENT_CHANNEL,
   MESH_FIREWALL_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
@@ -67,6 +68,7 @@ import {
   MESH_RESTART_CHANNEL,
   MESH_STATUS_CHANNEL,
   type MeshClaimRequest,
+  type MeshJoinRequest,
   type MeshEvent,
   type MeshFirewallState,
   type MeshLockInitRequest,
@@ -305,12 +307,14 @@ const api = {
   /**
    * Organisation meshes: the built-in userspace Tailscale node per mesh. A
    * mesh belongs to a profile and lives in the profile book; the window only
-   * claims its active profile's mesh, which main validates. The sidecar
-   * binary and its arguments are fixed in main.
+   * claims its active profile's mesh, which main validates, and hands main a
+   * one-shot key to join with. The sidecar binary and its arguments are fixed
+   * in main.
    */
   mesh: {
     status: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_STATUS_CHANNEL),
     claim: (request: MeshClaimRequest): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_CLAIM_CHANNEL, request),
+    join: (request: MeshJoinRequest): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_JOIN_CHANNEL, request),
     ping: (request: MeshPingRequest): Promise<MeshPingResult[]> => ipcRenderer.invoke(MESH_PING_CHANNEL, request),
     lockSign: (request: MeshLockSignRequest): Promise<MeshLockSignResult> =>
       ipcRenderer.invoke(MESH_LOCK_SIGN_CHANNEL, request),
