@@ -1,3 +1,59 @@
+# [5.0.0](https://github.com/arkitektio/orkestrator/compare/v4.8.0...v5.0.0) (2026-10-29)
+
+
+* feat!: regenerated from the released servers; organizations by identifier; datalayer 2 uploads ([13b7258](https://github.com/arkitektio/orkestrator/commit/13b7258a6fce188483a201562c89ea32112d1acd))
+* feat(blok)!: blok language v2 runtime ([87e932f](https://github.com/arkitektio/orkestrator/commit/87e932f9ff49a6733849a38e424c1c7ecf2f8cdd))
+* refactor(blok)!: the blok renderer lives in @arkitektio/bsx ([c0b1285](https://github.com/arkitektio/orkestrator/commit/c0b1285f8e0a8590907f2c130b5299b1b33cca97))
+
+
+### Bug Fixes
+
+* **kabinet:** take colours from the theme, not fixed palettes ([31af3c9](https://github.com/arkitektio/orkestrator/commit/31af3c9eb61b0c1cb5357e200d25177e5c43066e))
+* **rekuest:** a stale ask no longer offers an answer ([710add3](https://github.com/arkitektio/orkestrator/commit/710add372c5671dede351e9af90b6e5c4b83dbfc))
+* **settings:** the colour mode and the brand survive a reload ([4a0db9f](https://github.com/arkitektio/orkestrator/commit/4a0db9f1077ce72b5a50b2fc6197639bd3cf7c18))
+* the object store is the `s3` requirement, as every client calls it ([45af7a8](https://github.com/arkitektio/orkestrator/commit/45af7a82b5f563fdb12254f5ead87e45a1124094))
+
+
+### Features
+
+* **alpaka:** draw ```bsx fences in chat as live blok previews ([737e5c8](https://github.com/arkitektio/orkestrator/commit/737e5c8e9dab13f8db79356acd3c71a5fecd03d4))
+* ask for every service's all-scope ([88bce73](https://github.com/arkitektio/orkestrator/commit/88bce7333adfe0bdc13d478fc546d13b68393b21))
+* **connection:** unreachable page leads with the likeliest reason ([7a2065e](https://github.com/arkitektio/orkestrator/commit/7a2065e782d1e840b80542122d32ffaccdda0d32))
+* **kabinet:** a revoke-mandate button on the approval and deployment pages ([ec7425b](https://github.com/arkitektio/orkestrator/commit/ec7425b4afaa97c415775474bcac4ba5aefb6287))
+* **kabinet:** apps, deployments and bloks pages ([4c31fe7](https://github.com/arkitektio/orkestrator/commit/4c31fe7cfdd164e90fb0af400b551ab85555f3f2))
+* **layout:** a floating sidebar, and a Keyboard shortcuts settings page ([63082b2](https://github.com/arkitektio/orkestrator/commit/63082b2dadbb157640ea12b4ad3dc389ae80c508))
+* **layout:** pages follow the theme, only the canvas stays black ([bf4c0cd](https://github.com/arkitektio/orkestrator/commit/bf4c0cde360722378fcc652b47e6a2e1127ce9e8))
+* **mikro:** a drawn shape fills the scene blok's binding ([dc92ccc](https://github.com/arkitektio/orkestrator/commit/dc92ccc361c150c0a90b74cdb08419fa0ee4a624))
+* **mikro:** a file card in the home grid has its own menu button ([99ca42a](https://github.com/arkitektio/orkestrator/commit/99ca42aff5b8853e3a47bdcb4fe27abaaab05793))
+* **mikro:** scene probe layer roles ([3c14b46](https://github.com/arkitektio/orkestrator/commit/3c14b4692bb825a1d5b4bc0f607b5796fe08572d))
+* **mikro:** the lineage rail hides empty sections ([f551b60](https://github.com/arkitektio/orkestrator/commit/f551b6063d734276437149c266b6645ee968076c))
+* **palette:** ⌘K on container pages also lists the whole lens ([3aa3a8e](https://github.com/arkitektio/orkestrator/commit/3aa3a8e68eb791660a7eaa4ef2d7bc9788a54168))
+* **rekuest,kabinet,mikro:** adopt blok language v2 ([f4dc3af](https://github.com/arkitektio/orkestrator/commit/f4dc3af709c6254b1f2a4bcc4cf8e74d85904483))
+* **rekuest:** action bloks drawn as overlays in spaces and on task pages ([a2bbe31](https://github.com/arkitektio/orkestrator/commit/a2bbe31363aec497250899039ecc27ed921b582b))
+* **rekuest:** an admin pins a shortcut for members, locked in their menu ([03f990b](https://github.com/arkitektio/orkestrator/commit/03f990b3f53ab77027b6c277ac183a7438656a28))
+* **rekuest:** an Info tab on the agent page, and a shorter header ([cf2811f](https://github.com/arkitektio/orkestrator/commit/cf2811f7e5a38b5b3b7340b0343adfc2d753fea5))
+* **rekuest:** bloks keep their persisted locals on this device ([8d759a9](https://github.com/arkitektio/orkestrator/commit/8d759a92543020791c79448619428abeacf8f8ea))
+* **rekuest:** pin shortcuts by member, app, client or device ([a08bd37](https://github.com/arkitektio/orkestrator/commit/a08bd37626caab4673fb1e55d9340e2938b2acde))
+* **rekuest:** task page Live and Timeline views, closed asks, info rail ([8e505bb](https://github.com/arkitektio/orkestrator/commit/8e505bbb78c8206a3c7afe5b8e4d4a23757a76b2))
+* **rekuest:** the home page no longer lists materialized bloks ([efd7921](https://github.com/arkitektio/orkestrator/commit/efd792101089d92f18c8d01beaf5d444e95019d7))
+* **theme:** status and spectrum colour roles, blok state variants ([4e44fdc](https://github.com/arkitektio/orkestrator/commit/4e44fdca4ba13ed787d906d466f5eb8bb6382b16))
+* with installable action ([7dcce33](https://github.com/arkitektio/orkestrator/commit/7dcce33d6ccb94b2afaf5e490fdec0a008b31491))
+
+
+### BREAKING CHANGES
+
+* `@/core/blok/{bsx,renderer,logo,preview,spec,tailwind,
+editor,cache}` are gone; import from `@arkitektio/bsx` instead.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+* needs the servers above.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+* bloks are authored against vocab 2; demoState is
+replaced by declared locals/demo.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 # [4.8.0](https://github.com/arkitektio/orkestrator/compare/v4.7.0...v4.8.0) (2026-10-24)
 
 
