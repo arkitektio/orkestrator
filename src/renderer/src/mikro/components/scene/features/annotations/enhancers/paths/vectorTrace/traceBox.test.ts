@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import {
   chooseTraceLevel,
+  DEFAULT_TRACE_DEPTH_SLICES,
   extractTraceValues,
   layerLocalToVoxel,
   planTraceBox,
+  traceDepthPlan,
+  traceNodeInBox,
   traceNodeOf,
   traceVoxelOf,
   voxelToLayerLocal,
@@ -138,6 +141,45 @@ describe("planTraceBox", () => {
     expect(scrubbed.origin[2]).toBe(10);
     expect(scrubbed.size[2]).toBeGreaterThan(1);
   });
+
+  it("gives a 3D trace real room through depth, even on anisotropic data", () => {
+    // 0.3 µm xy over 4 µm z: the physical pad rounds to zero slices, so
+    // without a slice floor two clicks on one slice search only that slice.
+    const thin = plan([100, 100, 10], [140, 140, 10], { voxelSize: [0.3, 0.3, 4] });
+    expect(thin.size[2]).toBe(1);
+    const deep = plan([100, 100, 10], [140, 140, 10], {
+      voxelSize: [0.3, 0.3, 4],
+      ...traceDepthPlan("3D"),
+    });
+    expect(deep.origin[2]).toBe(10 - DEFAULT_TRACE_DEPTH_SLICES);
+    expect(deep.size[2]).toBe(2 * DEFAULT_TRACE_DEPTH_SLICES + 1);
+    // And "2D" is the flattened box.
+    const flat = plan([100, 100, 10], [140, 140, 10], traceDepthPlan("2D"));
+    expect(flat.size[2]).toBe(1);
+    // The volume keeps its old box: probed waypoints carry their own depth.
+    expect(traceDepthPlan("3D", "3D")).toEqual({ flatten: false });
+  });
+
+  it("keeps a screen-sized pad out of z when the pad is planar", () => {
+    const box = plan([100, 100, 10], [100, 100, 10], {
+      voxelSize: [1, 1, 1],
+      minPad: 50,
+      planarPad: true,
+      depthSlices: 2,
+    });
+    expect(box.origin).toEqual([50, 50, 8]);
+    expect(box.size[2]).toBe(5);
+  });
+
+  it("holds every stroke sample, not just the two ends", () => {
+    const box = plan([100, 100, 10], [140, 100, 10], {
+      through: [[120, 180, 10]],
+      margin: 0,
+      flatten: true,
+    });
+    expect(box.origin[1]).toBeLessThanOrEqual(100);
+    expect(box.origin[1] + (box.size[1] - 1) * box.step[1]).toBeGreaterThanOrEqual(180);
+  });
 });
 
 describe("node ↔ voxel", () => {
@@ -161,6 +203,12 @@ describe("node ↔ voxel", () => {
 
   it("snaps a voxel between nodes to the nearest one", () => {
     expect(traceNodeOf(box, [105, 200, 8])).toEqual([3, 0, 0]); // 2.5 → 3
+  });
+
+  it("answers null outside the box when asked not to clamp", () => {
+    expect(traceNodeInBox(box, [104, 206, 11])).toEqual(traceNodeOf(box, [104, 206, 11]));
+    expect(traceNodeInBox(box, [0, 0, 0])).toBeNull();
+    expect(traceNodeInBox(box, [10_000, 20, 4])).toBeNull();
   });
 
   it("clamps a waypoint outside the box instead of indexing off the end", () => {

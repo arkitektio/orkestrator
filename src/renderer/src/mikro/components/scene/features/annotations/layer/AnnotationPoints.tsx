@@ -8,6 +8,7 @@ import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
 import type { PointEntry } from "./placedAnnotations";
 import { samePointEntries, syncPointColors, syncPointMatrices } from "./pointsInstancing";
+import { DRAG_THRESHOLD_PX } from "../drawGesture";
 
 /**
  * Point annotations, held at a constant size on screen: ONE `InstancedMesh`
@@ -89,6 +90,9 @@ export const AnnotationPoints = ({
 
   const handleClick = selectable
     ? (event: ThreeEvent<MouseEvent>) => {
+        // A drag's release is not a pick: a pan (Space-, middle- or right-drag)
+        // ending over a shape would otherwise toggle it.
+        if (event.delta > DRAG_THRESHOLD_PX) return;
         const entry = event.instanceId !== undefined ? entries[event.instanceId] : undefined;
         if (!entry) return;
         event.stopPropagation();

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   findTracePath,
+  growTraceTree,
+  traceTreePath,
   TRACE_BASE_COST,
   type TraceGrid,
   type TraceNode,
@@ -158,5 +160,51 @@ describe("findTracePath", () => {
     if (result.ok) return;
     expect(result.reason).toBe("budget");
     expect(result.expanded).toBe(10);
+  });
+});
+
+describe("growTraceTree", () => {
+  const flat = (values: number[]): Float32Array => Float32Array.from(values);
+
+  it("reads the same path off the tree that A* finds for the same field", () => {
+    // A cheap row at y = 2 in an expensive 7x5 field.
+    const size: [number, number, number] = [7, 5, 1];
+    const cost = flat(
+      Array.from({ length: 35 }, (_, index) => (Math.floor(index / 7) === 2 ? 0 : 1)),
+    );
+    const grid = { size, spacing: [1, 1, 1] as const, cost };
+    const tree = growTraceTree(grid, [0, 0, 0]);
+    const fromTree = traceTreePath(tree, size, [6, 4, 0]);
+    const fromSearch = findTracePath(grid, [0, 0, 0], [6, 4, 0]);
+    expect(fromSearch.ok).toBe(true);
+    if (!fromSearch.ok) return;
+    expect(fromTree).not.toBeNull();
+    // Equal cost, not necessarily the same tie-break: compare the price.
+    const price = (path: [number, number, number][]) =>
+      path.reduce((sum, node) => sum + cost[node[0] + node[1] * 7], 0);
+    expect(price(fromTree!)).toBeCloseTo(price(fromSearch.path), 6);
+    expect(fromTree![0]).toEqual([0, 0, 0]);
+    expect(fromTree![fromTree!.length - 1]).toEqual([6, 4, 0]);
+  });
+
+  it("answers null for what the seed cannot reach", () => {
+    // A wall of impassable nodes at x = 2.
+    const size: [number, number, number] = [5, 3, 1];
+    const cost = flat(Array.from({ length: 15 }, (_, index) => (index % 5 === 2 ? Infinity : 0)));
+    const tree = growTraceTree({ size, spacing: [1, 1, 1], cost }, [0, 1, 0]);
+    expect(traceTreePath(tree, size, [1, 1, 0])).not.toBeNull();
+    expect(traceTreePath(tree, size, [4, 1, 0])).toBeNull();
+    expect(traceTreePath(tree, size, [9, 9, 0])).toBeNull();
+  });
+
+  it("keeps only settled nodes when the budget runs out", () => {
+    const size: [number, number, number] = [50, 50, 1];
+    const tree = growTraceTree(
+      { size, spacing: [1, 1, 1], cost: new Float32Array(2500) },
+      [0, 0, 0],
+      { budget: 10 },
+    );
+    expect(traceTreePath(tree, size, [49, 49, 0])).toBeNull();
+    expect(traceTreePath(tree, size, [0, 0, 0])).toEqual([[0, 0, 0]]);
   });
 });

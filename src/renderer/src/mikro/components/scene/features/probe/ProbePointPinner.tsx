@@ -106,7 +106,12 @@ export function ProbePointPinner() {
         viewerStore.getState().refreshProbePoint(probe, lookupFor(probe), readingsFor(probe)),
     });
 
-    const onPointerDown = (event: PointerEvent) =>
+    const onPointerDown = (event: PointerEvent) => {
+      // Space + left button pans: a press of the hand never pins a probe.
+      if (modeStore.getState().handHeld) {
+        gate.cancel();
+        return;
+      }
       gate.pointerDown({
         x: event.clientX,
         y: event.clientY,
@@ -114,6 +119,7 @@ export function ProbePointPinner() {
         shift: event.shiftKey,
         onCanvas: event.target instanceof Element && event.target.closest("canvas") !== null,
       });
+    };
     const onClick = (event: MouseEvent) => gate.click({ x: event.clientX, y: event.clientY });
 
     let last = viewerStore.getState().probedCoordinate;

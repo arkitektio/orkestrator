@@ -7,6 +7,7 @@ import { roiForSegment } from "../annotationBatch";
 import { interiorColors, type InteriorBatch } from "../interiorBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
+import { DRAG_THRESHOLD_PX } from "../drawGesture";
 
 /**
  * One merged interior mesh for a batch of flat shapes (rectangles, ellipses,
@@ -83,6 +84,9 @@ export const AnnotationInteriorBatch = ({
 
   const handleClick = selectable
     ? (event: ThreeEvent<MouseEvent>) => {
+        // A drag's release is not a pick: a pan (Space-, middle- or right-drag)
+        // ending over a shape would otherwise toggle it.
+        if (event.delta > DRAG_THRESHOLD_PX) return;
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
         event.stopPropagation();

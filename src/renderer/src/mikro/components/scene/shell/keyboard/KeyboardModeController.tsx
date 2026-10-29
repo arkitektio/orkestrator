@@ -7,6 +7,9 @@ import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStor
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { stepSceneZ } from "@/core/data/scene/camera/sceneNavigation";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
+import { useSettings } from "@/core/settings/store/SettingsContext";
+import { useRoiDrawingStoreApi } from "../../features/annotations/roiDrawingStore";
+import { holdReleaseAction } from "./holdRelease";
 
 /** Hold-to-activate bindings. Release restores whatever was active before. */
 const HOLD_MODES: Record<string, InteractionMode> = {
@@ -32,6 +35,12 @@ export const KeyboardModeController = () => {
   const layersKey = useSceneStore((s) => layersPlanKey(s.layers));
   const viewerStoreApi = useViewerStoreApi();
   const setCurrentZ = useViewerStore((s) => s.setCurrentZ);
+  const roiDrawingApi = useRoiDrawingStoreApi();
+  // Read at key-release time through a ref, so a settings change does not
+  // tear down (and lose) a hold in flight by rebuilding the listeners.
+  const { settings } = useSettings();
+  const keepAnnotatingRef = useRef(settings.keepAnnotatingWhileDrawing);
+  keepAnnotatingRef.current = settings.keepAnnotatingWhileDrawing;
 
   // `sceneZExtent` has no display-mode gate of its own — `currentZ` is only the
   // flat view's slice plane, so the gate belongs here.
@@ -55,7 +64,24 @@ export const KeyboardModeController = () => {
       if (mode.designToolHeld) mode.releaseDesignTool();
     };
 
+    // Space is the hand, in every mode: the left button pans while it is
+    // down (`platform/input/navigationBindings`).
+    const releaseHand = () => modeApi.getState().setHandHeld(false);
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.code === "Space" &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !isTypingTarget(e.target as { tagName?: string; isContentEditable?: boolean } | null)
+      ) {
+        // Before the repeat guard: the held key's auto-repeat must not
+        // scroll the page or press a focused button either.
+        e.preventDefault();
+        modeApi.getState().setHandHeld(true);
+        return;
+      }
       if (e.repeat) return; // Ignore auto-repeat when key is held
       // Without these, Cmd+A flips the scene into a tool mode and so does typing
       // "a" in any panel input.
@@ -108,26 +134,64 @@ export const KeyboardModeController = () => {
       if (!next || heldKeyRef.current) return;
 
       // Restore what the user actually had, not a hard-coded base — they may
-      // have picked a mode in the toolbar before reaching for the key.
+      // have picked a mode in the toolbar before reaching for the key. A
+      // restore still waiting on an unfinished shape hands over its target:
+      // holding A again mid-shape must not make ANNOTATE the mode to go
+      // back to.
+      const waiting = deferredRestore;
+      cancelDeferredRestore();
       heldKeyRef.current = key;
-      restoreModeRef.current = modeApi.getState().interactionMode;
+      restoreModeRef.current = waiting ?? modeApi.getState().interactionMode;
       setInteractionMode(next);
+    };
+
+    // A release that found a shape half-drawn: the mode to go back to, and
+    // the subscription that goes back once the shape is done.
+    let deferredRestore: InteractionMode | null = null;
+    let stopWaiting: (() => void) | null = null;
+    const cancelDeferredRestore = () => {
+      stopWaiting?.();
+      stopWaiting = null;
+      deferredRestore = null;
     };
 
     const releaseHold = () => {
       const held = heldKeyRef.current;
       if (!held) return;
       heldKeyRef.current = null;
-      // A toolbar click during the hold wins over the restore.
-      if (modeApi.getState().interactionMode === HOLD_MODES[held]) {
-        setInteractionMode(restoreModeRef.current ?? "NAVIGATE");
-      }
+      const restore = restoreModeRef.current ?? "NAVIGATE";
       restoreModeRef.current = null;
+
+      const action = holdReleaseAction({
+        heldMode: HOLD_MODES[held],
+        currentMode: modeApi.getState().interactionMode,
+        shapeInProgress: roiDrawingApi.getState().shapeInProgress,
+        keepAnnotatingWhileDrawing: keepAnnotatingRef.current,
+      });
+      if (action === "restore") setInteractionMode(restore);
+      if (action !== "defer") return;
+
+      // Stay until the shape is finished or discarded — or until the user
+      // leaves ANNOTATE some other way, which ends the wait unasked.
+      deferredRestore = restore;
+      const unsubscribeShape = roiDrawingApi.subscribe((state) => {
+        if (state.shapeInProgress) return;
+        cancelDeferredRestore();
+        if (modeApi.getState().interactionMode === "ANNOTATE") setInteractionMode(restore);
+      });
+      const unsubscribeMode = modeApi.subscribe((state) => {
+        if (state.interactionMode !== "ANNOTATE") cancelDeferredRestore();
+      });
+      stopWaiting = () => {
+        unsubscribeShape();
+        unsubscribeMode();
+      };
     };
 
     // Keyed off the armed hold rather than the event target, because focus can
     // move mid-hold.
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") releaseHand();
       const key = e.key.toLowerCase();
       if (heldToolKey === key) releaseTool();
       if (heldKeyRef.current !== key) return;
@@ -139,6 +203,7 @@ export const KeyboardModeController = () => {
     const handleBlur = () => {
       releaseHold();
       releaseTool();
+      releaseHand();
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -147,12 +212,22 @@ export const KeyboardModeController = () => {
       const target = e.target;
       if (!(target instanceof Element) || !target.closest("canvas")) return;
 
+      // Shift+wheel is the z slider's, and only its. This listener runs in the
+      // CAPTURE phase so it can stop the event before it reaches the canvas,
+      // where the camera controls would otherwise dolly on the same tick —
+      // `preventDefault` alone only stops the page scrolling.
       e.preventDefault();
+      e.stopPropagation();
+
+      // Some platforms turn a shifted wheel into a horizontal one (deltaY 0,
+      // the motion in deltaX): read whichever axis actually moved.
+      const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (delta === 0) return;
 
       // Same stepping as Shift+←/→ (`KeyboardSceneNavigation`), so the two ways
       // of walking the stack cannot disagree about where a slice is.
       const { currentZ } = viewerStoreApi.getState();
-      const nextZ = stepSceneZ(zNavigation, currentZ, e.deltaY > 0 ? 1 : -1);
+      const nextZ = stepSceneZ(zNavigation, currentZ, delta > 0 ? 1 : -1);
 
       if (nextZ !== currentZ) {
         setCurrentZ(nextZ);
@@ -162,15 +237,16 @@ export const KeyboardModeController = () => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
-    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("wheel", handleWheel, { passive: false, capture: true });
 
     return () => {
+      cancelDeferredRestore();
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("wheel", handleWheel, { capture: true });
     };
-  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, zNavigation]);
+  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, roiDrawingApi, zNavigation]);
 
   return null; // This is a headless component, it renders nothing
 };

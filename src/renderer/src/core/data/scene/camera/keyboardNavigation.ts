@@ -64,8 +64,14 @@ export const panCamera = (
 };
 
 /** +1 magnifies, -1 pulls back. */
-export const zoomCamera = (camera: THREE.Camera, ctrl: NavControls, direction: 1 | -1) => {
-  const factor = direction === 1 ? ZOOM_STEP : 1 / ZOOM_STEP;
+export const zoomCamera = (camera: THREE.Camera, ctrl: NavControls, direction: 1 | -1) =>
+  zoomCameraBy(camera, ctrl, direction === 1 ? ZOOM_STEP : 1 / ZOOM_STEP);
+
+/**
+ * Magnify by `factor` (> 1 zooms in) — the continuous form of `zoomCamera`,
+ * for gestures that arrive in fractions of a step (a trackpad pinch).
+ */
+export const zoomCameraBy = (camera: THREE.Camera, ctrl: NavControls, factor: number) => {
   const ortho = camera as THREE.OrthographicCamera;
 
   if (ortho.isOrthographicCamera) {

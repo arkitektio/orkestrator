@@ -5,7 +5,7 @@ import { Line } from "@/core/data/scene/draw/Line";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import { VertexHandles } from "./VertexHandles";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";
-import { useModeStore } from "../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import {
   useRoiDrawingStore,
   DRAWING_TOOL_TO_ROI_KIND,
@@ -17,10 +17,15 @@ import {
 import {
   traceFailureMessage,
   useTraceHop,
+  useTraceHopLevel,
   useTraceWaypoints,
   type TraceWaypoint,
 } from "./enhancers/paths/vectorTrace/useTraceHop";
 import { closingInsert, hopExtension } from "./enhancers/paths/vectorTrace/vectorEnhance";
+import { useTraceStroke } from "./enhancers/paths/vectorTrace/useTraceStroke";
+import { useLiveWire } from "./enhancers/paths/vectorTrace/useLiveWire";
+import { simplifyPath, type PathPoint } from "./enhancers/shared/pathSimplify";
+import { worldUnitsPerPixelAt } from "@/core/data/scene/camera/sceneNavigation";
 import { planarRadius, primitiveCornerVectors, spatialRadius } from "./primitiveDraw";
 import { useRoiDrawSessionStoreApi } from "./roiDrawSessionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
@@ -29,6 +34,7 @@ import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerS
 import { useCreateSceneAnnotation } from "./useCreateSceneAnnotation";
 import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
+  DOUBLE_CLICK_SLOP_PX,
   DRAG_THRESHOLD_PX,
   exceedsDragThreshold,
   intersectDrawPlane,
@@ -72,6 +78,31 @@ const COMMITTED_COLOR = "#f59e0b";
 
 type Phase = "idle" | "pressed" | "dragging" | "anchored";
 
+/**
+ * How far a snapped freehand stroke may stray from where it was drawn, in
+ * screen pixels — about a fingertip's slop either side of the line. Screen
+ * pixels for the `DRAG_THRESHOLD_PX` reason: the same hand wobble means the
+ * same thing at every zoom.
+ */
+const STROKE_CORRIDOR_PX = 12;
+
+/** Freehand samples closer than this on screen add nothing to the stroke. */
+const STROKE_SAMPLE_PX = 2;
+
+/**
+ * How far the live-wire window reaches from its anchor, in viewport sizes —
+ * most of the screen around a click. Kept modest because the window shares
+ * one node budget: the further it reaches, the coarser the level it must
+ * search at, and an edge it commits is only as fine as that level.
+ */
+const LIVE_WIRE_VIEWPORT_SPAN = 0.6;
+
+/**
+ * How long the sliders must rest before the live-wire tree is regrown under
+ * the new weights — a drag across a slider is one regrow, not one per tick.
+ */
+const LIVE_WIRE_REGROW_MS = 150;
+
 /** One click of an enhanceable chain: where it landed, and what it resolved to. */
 interface DrawAnchor {
   world: THREE.Vector3;
@@ -107,6 +138,31 @@ interface DrawSession {
    * clicks rather than to what the search returned.
    */
   anchors: DrawAnchor[];
+  /**
+   * The rubber band's traced route from the last anchor to the cursor, ends
+   * included — the live-wire's answer for where the pointer is, or null when
+   * it has none (no tree yet, off its window) and the band runs straight.
+   */
+  livePath: THREE.Vector3[] | null;
+  /** The anchor the live-wire tree was grown from; its path is only valid from there. */
+  treeSeed: DrawAnchor | null;
+  /** The freehand PATH stroke being dragged, on the slice it started on. */
+  stroke: THREE.Vector3[] | null;
+  /** Canvas px of the last kept stroke sample. */
+  strokePx: ScreenPoint | null;
+  /**
+   * Where a flat PATH press landed. It becomes the stroke's first sample if
+   * the press turns into a drag; a press that never does is a click, and
+   * `onClick` places that vertex as before.
+   */
+  pressWorld: THREE.Vector3 | null;
+  /**
+   * The press in flight is the camera's (`modeStore.leftPress`): Space was
+   * down, or no shape is under way and this is not a double-click's second
+   * press. Its move and release must not touch the shape — an anchored
+   * rectangle would otherwise commit on the pan's release.
+   */
+  cameraPress: boolean;
 }
 
 const freshSession = (): DrawSession => ({
@@ -119,6 +175,12 @@ const freshSession = (): DrawSession => ({
   cursor: null,
   lastClickPx: null,
   anchors: [],
+  livePath: null,
+  treeSeed: null,
+  stroke: null,
+  strokePx: null,
+  pressWorld: null,
+  cameraPress: false,
 });
 
 const eventPx = (event: ThreeEvent<PointerEvent | MouseEvent>): ScreenPoint => ({
@@ -140,9 +202,14 @@ export const RoiDrawer = () => {
     (s) => s.enhancersOn["vector-trace"] ?? false,
   );
   const setTraceMessage = useRoiDrawingStore((s) => s.setEnhancerMessage);
+  const setShapeInProgress = useRoiDrawingStore((s) => s.setShapeInProgress);
+  const traceDepth = useRoiDrawingStore((s) => s.traceDepth[displayMode]);
+  // Slider cadence, not pointer cadence: only the live-wire regrow reads it.
+  const traceWeights = useRoiDrawingStore((s) => s.traceWeights);
   const spatialUnit = useSceneStore((s) => s.spatialUnit);
   const currentZ = useViewerStore((s) => s.currentZ);
   const viewerStoreApi = useViewerStoreApi();
+  const modeStoreApi = useModeStoreApi();
   const camera = useThree((s) => s.camera);
   const canvas = useThree((s) => s.gl.domElement);
   const invalidate = useThree((s) => s.invalidate);
@@ -150,6 +217,9 @@ export const RoiDrawer = () => {
 
   const { createSceneAnnotation } = useCreateSceneAnnotation();
   const runTraceHop = useTraceHop();
+  const traceHopLevel = useTraceHopLevel();
+  const runTraceStroke = useTraceStroke();
+  const liveWire = useLiveWire();
   const traceWaypoints = useTraceWaypoints();
 
   /**
@@ -165,6 +235,12 @@ export const RoiDrawer = () => {
   const closingRef = useRef<PreviewLineHandle | null>(null);
   const scratch = useRef(new THREE.Vector3());
   const cursorPxRef = useRef<ScreenPoint>({ x: 0, y: 0 });
+  /**
+   * Escape's answer for a PATH: commit what is drawn, true when it did. A
+   * ref because `finishChain` lives below the early return (it is no hook),
+   * while the key listener is an effect above it.
+   */
+  const finishPathRef = useRef<(() => boolean) | null>(null);
 
   const tool: DrawingTool | null = isDrawingTool(activeTool) ? activeTool : null;
   const isPolygonLike = tool === "POLYGON" || tool === "PATH";
@@ -184,6 +260,22 @@ export const RoiDrawer = () => {
    * which is the gesture the volumetric primitives already use.
    */
   const probePlaced = displayMode === "3D";
+  /**
+   * A flat-view PATH follows the z slider: each vertex lands on the slice
+   * showing when it was clicked, so a path can be started on one slice,
+   * scrubbed through the stack and continued where the structure went. The
+   * other flat tools stay frozen on their first slice (see `planeZ`) — a
+   * rectangle or polygon across slices is not a shape anyone drew.
+   */
+  const followsZ = tool === "PATH" && !probePlaced;
+  /**
+   * The live-wire band: flat view only, where a click is a point on a slice
+   * and a whole screen of it is cheap to search. In the volume the cursor is
+   * the probe, and a tree through the volume per anchor is not.
+   */
+  const liveWireOn = enhanceOn && !probePlaced;
+  /** A press-and-drag draws a freehand stretch of a flat-view PATH. */
+  const strokeOn = tool === "PATH" && !probePlaced;
 
   /**
    * A volumetric primitive's radius from its anchor. The flat gesture measures
@@ -200,13 +292,35 @@ export const RoiDrawer = () => {
     [probePlaced],
   );
 
+  /** The live-wire's route to `cursor` from the anchor its tree grew from. */
+  const liveBandTo = useCallback(
+    (cursor: THREE.Vector3 | null): THREE.Vector3[] | null =>
+      liveWireOn && cursor && sessionRef.current.treeSeed ? liveWire.pathTo(cursor) : null,
+    [liveWireOn, liveWire],
+  );
+
   const paint = useCallback(() => {
     const session = sessionRef.current;
     if (!tool) return;
 
-    let points = session.cursor
-      ? [...session.vertices, session.cursor]
-      : session.vertices;
+    // The band is walked here, once per painted frame, rather than in the
+    // pointer handlers that only move the cursor: a tree walk plus its
+    // simplification per pointer event is the cost P17 keeps off the hot path.
+    session.livePath = session.stroke ? null : liveBandTo(session.cursor);
+
+    // What follows the placed chain: the stroke being dragged, else the
+    // live-wire's route to the cursor, else the straight band to it.
+    let points = session.stroke
+      ? [...session.vertices, ...session.stroke]
+      : session.livePath
+        ? [...session.vertices, ...session.livePath.slice(1)]
+        : session.cursor
+          ? [...session.vertices, session.cursor]
+          : session.vertices;
+    // A traced LINE commits as a PATH (see `finishShape`), so it previews as
+    // one: the LINE outline keeps only its first two points.
+    const outlineTool: DrawingTool =
+      tool === "LINE" && session.livePath ? "PATH" : tool;
 
     /**
      * The depth the planar preview sits on: the ANCHOR's, read before the
@@ -247,7 +361,7 @@ export const RoiDrawer = () => {
     // `closePolygon: false` — the closing edge is the separate faint line below,
     // so the user can see the finished shape before committing to it.
     mainRef.current?.setPoints(
-      roiOutline(tool, lifted, z, { closePolygon: false }),
+      roiOutline(outlineTool, lifted, z, { closePolygon: false }),
     );
 
     // Always a STRAIGHT line, even when the enhancer will trace the closure on
@@ -272,7 +386,7 @@ export const RoiDrawer = () => {
         : [],
     );
 
-    const label = formatDrawMeasure(measureDraw(tool, points), unit);
+    const label = formatDrawMeasure(measureDraw(outlineTool, points), unit);
     readoutApi.getState().setReadout(
       label
         ? { label, x: cursorPxRef.current.x, y: cursorPxRef.current.y }
@@ -280,7 +394,7 @@ export const RoiDrawer = () => {
     );
 
     invalidate(); // the Canvas is frameloop="demand"
-  }, [tool, unit, readoutApi, invalidate, sizingRadius]);
+  }, [tool, unit, readoutApi, invalidate, sizingRadius, liveBandTo]);
 
   // Pointer-move storms coalesce to ≤1 repaint per frame, leading (same idiom
   // as the brick layers): the first paint of a frame runs inside the event — in
@@ -304,8 +418,57 @@ export const RoiDrawer = () => {
     // volume may seed the next primitive anchor again.
     setPrimitiveSessionActive(false);
     setTraceMessage(null);
+    liveWire.cancel();
     invalidate();
-  }, [paintCoalescer, readoutApi, setPrimitiveSessionActive, setTraceMessage, invalidate]);
+  }, [paintCoalescer, readoutApi, setPrimitiveSessionActive, setTraceMessage, liveWire, invalidate]);
+
+  /**
+   * Grow the live-wire tree from a freshly placed anchor. The window is
+   * about a screen across, so its reach follows the zoom; the level picker
+   * coarsens it to fit. When the tree lands the band catches up even if the
+   * pointer has not moved since the click.
+   */
+  const growFrom = useCallback(
+    (anchor: DrawAnchor) => {
+      const session = sessionRef.current;
+      session.treeSeed = null;
+      session.livePath = null;
+      if (!liveWireOn || !anchor.waypoint) return;
+      session.treeSeed = anchor;
+      const unitsPerPixel = worldUnitsPerPixelAt(
+        camera as { isOrthographicCamera?: boolean; zoom?: number; fov?: number },
+        camera.position.distanceTo(anchor.world),
+        canvas.clientHeight,
+      );
+      liveWire.start(anchor.waypoint, {
+        depth: traceDepth,
+        radiusWorld:
+          Math.max(canvas.clientWidth, canvas.clientHeight) *
+          unitsPerPixel *
+          LIVE_WIRE_VIEWPORT_SPAN,
+        onReady: () => {
+          const current = sessionRef.current;
+          if (current.treeSeed !== anchor || current.stroke) return;
+          paintCoalescer.schedule(paint);
+        },
+      });
+    },
+    [liveWireOn, liveWire, traceDepth, camera, canvas, paintCoalescer, paint],
+  );
+
+  /**
+   * New weights or a new depth regrow the tree from the same anchor, so the
+   * band — and the edge the next click commits from it — answers to the
+   * slider the user just moved, as a clicked hop always has.
+   */
+  useEffect(() => {
+    const seed = sessionRef.current.treeSeed;
+    if (!seed) return;
+    const timer = setTimeout(() => {
+      if (sessionRef.current.treeSeed === seed) growFrom(seed);
+    }, LIVE_WIRE_REGROW_MS);
+    return () => clearTimeout(timer);
+  }, [traceWeights, growFrom]);
 
   const submitRoi = useCallback(
     async (roi: DrawnRoi) => {
@@ -393,6 +556,23 @@ export const RoiDrawer = () => {
   }, [probePlaced, interactionMode, tool, viewerStoreApi, paint, paintCoalescer]);
 
   /**
+   * A flat PATH's band follows the z slider too. Scrubbing with the pointer
+   * held still fires no pointermove, so without this the band would stay on
+   * the slice it was last moved over while the next click lands on the new
+   * one.
+   */
+  useEffect(() => {
+    if (!followsZ || interactionMode !== "ANNOTATE") return;
+    return viewerStoreApi.subscribe((state, previous) => {
+      if (state.currentZ === previous.currentZ) return;
+      const session = sessionRef.current;
+      if (!session.cursor || session.vertices.length === 0 || session.stroke) return;
+      session.cursor = session.cursor.clone().setZ(state.currentZ);
+      paintCoalescer.schedule(paint);
+    });
+  }, [followsZ, interactionMode, viewerStoreApi, paint, paintCoalescer]);
+
+  /**
    * Where to hang the measure readout in 3D. The geometry comes from the probe,
    * but its LABEL follows the pointer — and the draw plane no longer sees
    * pointermove there, so the position is read off the canvas directly. Stores
@@ -439,20 +619,37 @@ export const RoiDrawer = () => {
     setPrimitiveSessionActive,
   ]);
 
+  // Whether a shape is under way, for the press arbiter (single clicks belong
+  // to it; without one, a press moves the view until a double-click) and for
+  // Backspace. The handles are exactly the placed points, so their count is
+  // the answer — and it moves at click cadence.
+  useEffect(() => {
+    setShapeInProgress(placedVertices.length > 0);
+  }, [placedVertices.length, setShapeInProgress]);
+  useEffect(() => () => setShapeInProgress(false), [setShapeInProgress]);
+
+  // Backspace discards the shape under way, whatever the tool (and only then:
+  // with nothing half-drawn it is `RoiDeleteKeybinding`'s, deleting the
+  // selection).
   // Escape abandons the shape. Without it a half-placed polygon has no exit —
   // you have to finish a shape you don't want and then delete it server-side.
+  // A PATH is the exception: Escape is where it ENDS, keeping every point
+  // placed so far (a path has no closing click to aim for, and double-clicking
+  // on top of a live band is fiddly). Too short to be a path, it is dropped.
   // `pointercancel` has to be a window listener: R3F handles it at the canvas
   // and never forwards it to object handlers. (Deliberately NOT
   // `lostpointercapture`, which fires *before* pointerup and would kill every
   // gesture before it commits.)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      const discard = event.key === "Backspace";
+      if (event.key !== "Escape" && !discard) return;
       if (isTypingTarget(event.target as HTMLElement | null)) return;
       if (sessionRef.current.phase === "idle" && sessionRef.current.vertices.length === 0) {
-        return; // nothing of ours to cancel; leave Escape to whoever else wants it
+        return; // nothing of ours to cancel; leave the key to whoever else wants it
       }
       event.preventDefault();
+      if (!discard && finishPathRef.current?.()) return;
       resetSession();
     };
     const onCancel = () => resetSession();
@@ -517,6 +714,7 @@ export const RoiDrawer = () => {
   // `RectangleDrawer` instead, so the two are mutually exclusive by
   // construction. Arming a layer is not part of it either: shapes land in the
   // scene's own coordinate system, so there is no layer to point at.
+  finishPathRef.current = null;
   if (interactionMode !== "ANNOTATE" || !tool) return null;
 
   /** The live pointer position on the slice being drawn — never `event.point`. */
@@ -538,9 +736,10 @@ export const RoiDrawer = () => {
         scratch.current,
       );
     }
-    const planeZ = session.phase === "idle" && session.vertices.length === 0
-      ? currentZ
-      : session.planeZ;
+    const planeZ =
+      followsZ || (session.phase === "idle" && session.vertices.length === 0)
+        ? viewerStoreApi.getState().currentZ
+        : session.planeZ;
     return intersectDrawPlane(event.ray, planeZ, scratch.current);
   };
 
@@ -569,8 +768,24 @@ export const RoiDrawer = () => {
       setTraceMessage("Click landed off the data — straight edge used");
       return [next.world];
     }
-    // The flat view draws one slice; the box must not reach past it.
-    const hop = runTraceHop(prev.waypoint, next.waypoint, { flatten: !probePlaced });
+    const hopOptions = { depth: traceDepth, view: displayMode };
+    // The band already showed this edge: commit exactly what was drawn —
+    // unless its tree, grown over a whole screen, had to coarsen past the
+    // level this one edge would be traced at. Then the band was the preview
+    // and the edge is traced at its own, finer level.
+    if (liveWireOn && prev === sessionRef.current.treeSeed) {
+      const treeLevel = liveWire.level();
+      const edgeLevel = traceHopLevel(prev.waypoint, next.waypoint, hopOptions);
+      const live =
+        treeLevel !== null && (edgeLevel === null || treeLevel <= edgeLevel)
+          ? liveWire.pathTo(next.world)
+          : null;
+      if (live) {
+        setTraceMessage(null);
+        return hopExtension(live);
+      }
+    }
+    const hop = runTraceHop(prev.waypoint, next.waypoint, hopOptions);
     if (!hop.ok) {
       setTraceMessage(traceFailureMessage(hop.reason));
       return [next.world];
@@ -594,7 +809,8 @@ export const RoiDrawer = () => {
       const last = session.anchors[session.anchors.length - 1];
       if (first.waypoint && last.waypoint) {
         const hop = runTraceHop(last.waypoint, first.waypoint, {
-          flatten: !probePlaced,
+          depth: traceDepth,
+          view: displayMode,
         });
         if (hop.ok) vertices = [...vertices, ...closingInsert(hop.points)];
         else failure = traceFailureMessage(hop.reason);
@@ -603,6 +819,19 @@ export const RoiDrawer = () => {
     finishShape(vertices);
     if (failure) setTraceMessage(failure);
   };
+
+  if (tool === "PATH") {
+    finishPathRef.current = () => {
+      const session = sessionRef.current;
+      // A freehand stroke still being dragged is dropped; what was already
+      // placed stays. (Its release then finds no stroke and does nothing.)
+      session.stroke = null;
+      session.strokePx = null;
+      if (session.vertices.length < 2) return false;
+      finishChain();
+      return true;
+    };
+  }
 
   /** One clicked point of a chain: resolve it onto the data when enhancing. */
   const anchorAt = (world: THREE.Vector3): DrawAnchor => ({
@@ -613,6 +842,76 @@ export const RoiDrawer = () => {
         : traceWaypoints.fromWorld(world)
       : null,
   });
+
+  /** World units per screen pixel at `at` — what a pixel tolerance means there. */
+  const unitsPerPixelAt = (at: THREE.Vector3): number =>
+    worldUnitsPerPixelAt(
+      camera as { isOrthographicCamera?: boolean; zoom?: number; fov?: number },
+      camera.position.distanceTo(at),
+      canvas.clientHeight,
+    );
+
+  /**
+   * A freehand stroke's own stretch of the chain, its first point excluded
+   * (the chain already ends there). Enhanced, it is snapped onto the
+   * structure it was drawn along; plain — or when the snap finds nothing — it
+   * is the stroke as drawn, thinned to what a pixel can show.
+   */
+  const strokeSegment = (stroke: THREE.Vector3[]): THREE.Vector3[] => {
+    const unitsPerPixel = unitsPerPixelAt(stroke[0]);
+    const asDrawn = () =>
+      simplifyPath(
+        stroke.map((point) => [point.x, point.y, point.z] as PathPoint),
+        unitsPerPixel,
+      )
+        .slice(1)
+        .map((point) => new THREE.Vector3(point[0], point[1], point[2]));
+    if (!enhanceOn) return asDrawn();
+    const snapped = runTraceStroke(stroke, {
+      depth: traceDepth,
+      radiusWorld: STROKE_CORRIDOR_PX * unitsPerPixel,
+    });
+    if (!snapped.ok) {
+      setTraceMessage(`${traceFailureMessage(snapped.reason)} — stroke kept as drawn`);
+      return asDrawn();
+    }
+    return hopExtension(snapped.points);
+  };
+
+  /**
+   * Append a released freehand stroke to the chain. Its two ends become
+   * anchors — handles, and the ends further clicks trace from — and the edge
+   * from the chain's last anchor to the stroke's start is an ordinary edge,
+   * exactly as if the press had been a click.
+   */
+  const commitStroke = (stroke: THREE.Vector3[], px: ScreenPoint) => {
+    const session = sessionRef.current;
+    session.stroke = null;
+    session.strokePx = null;
+    if (stroke.length < 2) return;
+
+    const last = session.anchors[session.anchors.length - 1];
+    // A stroke started ON the chain's end continues it: no lead edge, no
+    // second handle on top of the first.
+    const continues =
+      last !== undefined &&
+      last.world.distanceTo(stroke[0]) <= DOUBLE_CLICK_SLOP_PX * unitsPerPixelAt(stroke[0]);
+    if (continues) stroke[0] = last.world.clone();
+    const start = continues ? last : anchorAt(stroke[0]);
+    const end = anchorAt(stroke[stroke.length - 1]);
+    if (session.vertices.length === 0) session.planeZ = stroke[0].z;
+    const lead = continues ? [] : last ? enhanceEdge(last, start) : [start.world];
+
+    session.vertices = [...session.vertices, ...lead, ...strokeSegment(stroke)];
+    session.anchors = continues ? [...session.anchors, end] : [...session.anchors, start, end];
+    session.lastClickPx = px;
+    session.phase = "anchored";
+    session.cursor = end.world.clone();
+    cursorPxRef.current = px;
+    setPlacedVertices(session.anchors.map((a) => a.world));
+    growFrom(end);
+    paintCoalescer.schedule(paint);
+  };
 
   return (
     <group>
@@ -627,6 +926,25 @@ export const RoiDrawer = () => {
         position={[0, 0, 0.01]}
         scale={FLAT_CAPTURE_SIZE}
         onPointerDown={(e) => {
+          // The camera's press: it moves the view, the shape waits.
+          if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") {
+            sessionRef.current.cameraPress = true;
+            return;
+          }
+          // A flat PATH press may turn into a freehand stroke. Nothing is
+          // claimed yet — below the drag threshold it is a click, and
+          // `onClick` places the vertex exactly as it always has.
+          if (strokeOn) {
+            if (e.button !== 0) return;
+            const hit = pointOnPlane(e);
+            if (!hit) return;
+            const session = sessionRef.current;
+            session.downPx = eventPx(e);
+            session.pressWorld = hit.clone();
+            session.stroke = null;
+            session.strokePx = null;
+            return;
+          }
           // Click tools opt out entirely, so R3F's post-drag click can't
           // interfere with them. Primitives are click tools too — and their
           // anchor never comes from this plane (the volume seeds it). In 3D
@@ -654,6 +972,8 @@ export const RoiDrawer = () => {
             session.vertices = [hit.clone().setZ(currentZ)];
             session.anchorPress = true;
             setPlacedVertices(session.vertices);
+            // A traced LINE's band follows the data from its first press.
+            if (liveWireOn) growFrom(anchorAt(session.vertices[0]));
           } else {
             session.anchorPress = false;
           }
@@ -665,6 +985,9 @@ export const RoiDrawer = () => {
         }}
         onPointerMove={(e) => {
           const session = sessionRef.current;
+          // A pan in progress: the band holds still rather than chasing the
+          // pointer across a view that is moving under it.
+          if (session.cameraPress && e.buttons !== 0) return;
           // A primitive tool with no anchor yet: the VOLUME owns the pointer
           // (hover probing, the anchoring click) — the plane must neither
           // consume the ray nor block propagation to it.
@@ -681,6 +1004,28 @@ export const RoiDrawer = () => {
           const hit = pointOnPlane(e);
           if (!hit) return; // keep the last valid cursor rather than jumping
 
+          if (strokeOn && session.pressWorld && session.downPx && e.buttons !== 0) {
+            const px = eventPx(e);
+            if (!session.stroke) {
+              if (!exceedsDragThreshold(px, session.downPx)) return;
+              // Past the slop: this press is a stroke, not a click.
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+              session.stroke = [session.pressWorld.clone()];
+              session.livePath = null;
+              viewerStoreApi.getState().setProbedCoordinate(null);
+            }
+            if (
+              !session.strokePx ||
+              exceedsDragThreshold(px, session.strokePx, STROKE_SAMPLE_PX)
+            ) {
+              session.stroke.push(hit.clone());
+              session.strokePx = px;
+            }
+            cursorPxRef.current = px;
+            paintCoalescer.schedule(paint);
+            return;
+          }
+
           if (session.phase === "pressed" && session.downPx) {
             if (exceedsDragThreshold(eventPx(e), session.downPx)) {
               session.phase = "dragging";
@@ -696,6 +1041,21 @@ export const RoiDrawer = () => {
           paintCoalescer.schedule(paint);
         }}
         onPointerUp={(e) => {
+          if (sessionRef.current.cameraPress) {
+            sessionRef.current.cameraPress = false;
+            return;
+          }
+          if (strokeOn) {
+            const session = sessionRef.current;
+            const stroke = session.stroke;
+            session.downPx = null;
+            session.pressWorld = null;
+            if (!stroke) return; // a click: `onClick` places the vertex
+            e.stopPropagation();
+            (e.target as Element).releasePointerCapture?.(e.pointerId);
+            commitStroke(stroke, eventPx(e));
+            return;
+          }
           if (probePlaced || isPolygonLike || tool === "POINT" || isPrimitive) {
             return;
           }
@@ -722,7 +1082,7 @@ export const RoiDrawer = () => {
               // straight because A* at pointermove cadence is off the table.
               // Both endpoints resolve here (the drag flow kept no anchors).
               finishShape(
-                [start, ...enhanceEdge(anchorAt(start), anchorAt(end))],
+                [start, ...enhanceEdge(session.treeSeed ?? anchorAt(start), anchorAt(end))],
                 "PATH",
               );
               return;
@@ -735,6 +1095,9 @@ export const RoiDrawer = () => {
           session.downPx = null;
         }}
         onClick={(e) => {
+          // A click that ends a camera press places nothing — in ANNOTATE
+          // that is every single click until a double-click starts a shape.
+          if (modeStoreApi.getState().leftPress === "camera") return;
           if (isPrimitive) {
             const session = sessionRef.current;
             // Only a probe-anchored session sizes and commits here. Early
@@ -819,6 +1182,8 @@ export const RoiDrawer = () => {
           }
 
           if (!isPolygonLike && tool !== "POINT") return;
+          // The release of a freehand stroke (or of any drag) is not a vertex.
+          if (isPolygonLike && e.delta > DRAG_THRESHOLD_PX) return;
           e.stopPropagation();
 
           const hit = pointOnPlane(e);
@@ -848,8 +1213,10 @@ export const RoiDrawer = () => {
             return;
           }
 
-          if (session.vertices.length === 0) session.planeZ = currentZ;
-          const anchor = anchorAt(hit.clone().setZ(session.planeZ));
+          const sliceZ = viewerStoreApi.getState().currentZ;
+          if (session.vertices.length === 0) session.planeZ = sliceZ;
+          // A PATH vertex lands on the slice showing NOW (`followsZ`).
+          const anchor = anchorAt(hit.clone().setZ(followsZ ? sliceZ : session.planeZ));
           session.vertices = [
             ...session.vertices,
             ...enhanceEdge(session.anchors[session.anchors.length - 1], anchor),
@@ -861,6 +1228,7 @@ export const RoiDrawer = () => {
           cursorPxRef.current = px;
           // Handles mark the CLICKS, not the points a traced edge found.
           setPlacedVertices(session.anchors.map((a) => a.world));
+          growFrom(anchor);
           paintCoalescer.schedule(paint);
         }}
       >

@@ -58,6 +58,7 @@ export const RoiToolbar = () => {
     (s) => s.enhancersOn["vector-trace"] ?? false,
   );
   const enhancerMessage = useRoiDrawingStore((s) => s.enhancerMessage);
+  const shapeInProgress = useRoiDrawingStore((s) => s.shapeInProgress);
 
   if (interactionMode !== "ANNOTATE") return null;
 
@@ -86,14 +87,28 @@ export const RoiToolbar = () => {
         <span className="text-[10px] text-white/70">
           {enhancerMessage && isEnhanceableTool(activeTool) ? (
             <span className="text-amber-300/90">{enhancerMessage}</span>
+          ) : activeTool === "BRUSH" ? (
+            "Double-click and drag over the volume to paint a stroke along the structure — drag alone moves the view"
+          ) : activeTool !== "SELECT" && !shapeInProgress ? (
+            // Nothing under way: a press moves the view, and only a
+            // double-click starts a shape (`navigationBindings.leftPressOwner`).
+            activeTool === "PATH" && displayMode === "2D"
+              ? "Double-click to start a path (or double-click and drag freehand) — drag moves the view"
+              : "Double-click to start — drag moves the view"
           ) : isEnhanceableTool(activeTool) && vectorEnhance ? (
-            "Click points — each edge follows the data. Double-click to finish"
+            displayMode === "3D" ? (
+              "Click points — each edge follows the data. Double-click to finish"
+            ) : activeTool === "PATH" ? (
+              "Click or drag along the structure — the line follows the data. Scrub z to go on in another slice. Esc or double-click to finish, Backspace discards"
+            ) : (
+              "Click points — the line follows the data. Double-click to finish"
+            )
+          ) : activeTool === "PATH" && displayMode === "2D" ? (
+            "Click points or drag freehand — scrub z to go on in another slice. Esc or double-click to finish, Backspace discards"
           ) : activeTool === "SELECT" ? (
             "Drag to select annotations"
-          ) : activeTool === "BRUSH" ? (
-            "Drag over the volume to paint a stroke along the structure"
           ) : displayMode === "3D" ? (
-            "Click the volume to place each point — probed onto the data"
+            "Click the volume to place each point — probed onto the data. Backspace discards"
           ) : (
             "Drawing annotations on the scene"
           )}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
-import { useModeStore } from "../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import {
   useRoiSelectionStore,
@@ -39,6 +39,7 @@ function isContained(
 export const RectangleDrawer = () => {
   const interactionMode = useModeStore((s) => s.interactionMode);
   const displayMode = useModeStore((s) => s.displayMode);
+  const modeStoreApi = useModeStoreApi();
   const activeTool = useRoiDrawingStore((s) => s.activeTool);
   const replaceSelectedRois = useRoiSelectionStore((s) => s.replaceSelectedRois);
   const mergeSelectedRois = useRoiSelectionStore((s) => s.mergeSelectedRois);
@@ -112,6 +113,8 @@ export const RectangleDrawer = () => {
       <mesh
         position={[0, 0, 0]}
         onClick={(e) => {
+          // A click that ends a camera press (Space + drag) is not a deselect.
+          if (modeStoreApi.getState().leftPress === "camera") return;
           e.stopPropagation();
           // Only a real click clears the selection. Without the distance gate,
           // the click R3F synthesizes at the end of a marquee drag ran here with
@@ -121,6 +124,8 @@ export const RectangleDrawer = () => {
           }
         }}
         onPointerDown={(e) => {
+          // The camera's press (Space held): the marquee waits.
+          if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
           const hit = pointOnPlane(e);
           if (!hit) return;
           e.stopPropagation();

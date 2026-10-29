@@ -3,6 +3,8 @@ import { immer } from "zustand/middleware/immer";
 import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 import { AnnotationKind } from "@/mikro/api/graphql";
 import { DEFAULT_TRACE_WEIGHTS, type TraceWeights } from "./enhancers/paths/vectorTrace/traceCost";
+import type { TraceDepth } from "./enhancers/paths/vectorTrace/traceBox";
+import type { DisplayMode } from "../../platform/stores/modeStore";
 
 /**
  * The drawing tool types the drawer implements. Each maps to a AnnotationKind for
@@ -166,12 +168,29 @@ export interface RoiDrawingState {
   traceWeights: TraceWeights;
   setTraceWeights: (weights: Partial<TraceWeights>) => void;
   /**
+   * How far an enhanced trace may leave the slices its waypoints sit on
+   * (`traceBox.TraceDepth`), remembered PER VIEW: the flat view starts on
+   * "2D" — stay on the drawn slice, or on the slices a scrubbed chain spans —
+   * and the volume on "3D". Both defaults trace exactly as each view did
+   * before the choice existed (`traceDepthPlan` keeps the volume's box).
+   */
+  traceDepth: Record<DisplayMode, TraceDepth>;
+  setTraceDepth: (displayMode: DisplayMode, depth: TraceDepth) => void;
+  /**
    * The active enhancer's status line — why the last enhanced edge fell back
    * to a straight segment, why an extraction detoured, or null. The toolbar
    * shows it: a silently degraded result just looks broken.
    */
   enhancerMessage: string | null;
   setEnhancerMessage: (message: string | null) => void;
+  /**
+   * A shape is half-drawn (`RoiDrawer`). While one is, every left press is
+   * the shape's; while none is, a press moves the view until a double-click
+   * starts one (`navigationBindings.leftPressOwner`). It also tells
+   * Backspace to discard the shape rather than delete the selection.
+   */
+  shapeInProgress: boolean;
+  setShapeInProgress: (inProgress: boolean) => void;
   setActiveTool: (tool: AnnotateTool | null) => void;
   addDrawnRoi: (roi: DrawnRoi) => void;
   removeDrawnRoi: (id: string) => void;
@@ -220,6 +239,16 @@ export const createRoiDrawingStore = () =>
       setTraceWeights: (weights) =>
         set((state) => {
           state.traceWeights = { ...state.traceWeights, ...weights };
+        }),
+      traceDepth: { "2D": "2D", "3D": "3D" },
+      setTraceDepth: (displayMode, depth) =>
+        set((state) => {
+          state.traceDepth[displayMode] = depth;
+        }),
+      shapeInProgress: false,
+      setShapeInProgress: (inProgress) =>
+        set((state) => {
+          if (state.shapeInProgress !== inProgress) state.shapeInProgress = inProgress;
         }),
       enhancerMessage: null,
       setEnhancerMessage: (message) =>

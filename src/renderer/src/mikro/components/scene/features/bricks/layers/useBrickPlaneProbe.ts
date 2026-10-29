@@ -74,6 +74,7 @@ export type BrickPlaneProbeHandlers = {
   onPointerDown?: (event: {
     point: THREE.Vector3;
     shiftKey: boolean;
+    button: number;
     stopPropagation: () => void;
   }) => void;
 };
@@ -411,6 +412,8 @@ export const useBrickPlaneProbe = ({
     onPointerDown: !clickEnabled
       ? undefined
       : (event) => {
+          // The camera's press (Space held): no probe, no design click.
+          if (event.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
           if (!answersProbe()) return;
           const group = groupRef.current;
           if (!group) return;

@@ -36,6 +36,19 @@ export const settingsValidator = zod.object({
    */
   autoSceneSnapshot: zod.boolean(),
   /**
+   * What a plain two-finger swipe / wheel scroll does in a scene: `"zoom"`
+   * (a mouse wheel), `"pan"` (a trackpad — pans in 2D, orbits in 3D), or
+   * `"auto"`, which guesses per gesture from the deltas it sends. A pinch
+   * always zooms. A device preference, so it lives with the app settings.
+   */
+  sceneScrollGesture: zod.enum(["auto", "zoom", "pan"]),
+  /**
+   * Letting go of the hold-to-annotate key (A) while a shape is half-drawn
+   * keeps the scene in annotate mode until that shape is finished or
+   * discarded, instead of dropping back mid-path.
+   */
+  keepAnnotatingWhileDrawing: zod.boolean(),
+  /**
    * Translucent sidebar: the OS blurs the desktop behind the rail (macOS
    * vibrancy, Windows acrylic). Ignored where the platform cannot draw it.
    */
@@ -219,6 +232,8 @@ export const defaultSettings: Settings = {
   brandSource: "membership",
   sceneThemeSync: true,
   autoSceneSnapshot: true,
+  sceneScrollGesture: "auto",
+  keepAnnotatingWhileDrawing: true,
   railGlass: false,
   railGlassTransparency: 0.7,
   railBackdrop: "none",

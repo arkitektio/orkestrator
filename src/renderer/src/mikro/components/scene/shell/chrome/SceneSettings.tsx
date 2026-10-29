@@ -701,6 +701,20 @@ const PlaneSection = () => {
   );
 };
 
+const SCROLL_GESTURES = [
+  {
+    value: "auto",
+    label: "Auto",
+    hint: "Guess per gesture: a trackpad swipe pans (orbits in 3D), a mouse wheel zooms",
+  },
+  { value: "zoom", label: "Zoom", hint: "Scrolling zooms — for a mouse wheel" },
+  {
+    value: "pan",
+    label: "Pan",
+    hint: "Scrolling pans (orbits in 3D) — for a trackpad; pinch to zoom",
+  },
+] as const;
+
 export const SceneSettings = () => {
   const displayMode = useModeStore((s) => s.displayMode);
   const zoomToCursor = useModeStore((s) => s.zoomToCursor);
@@ -818,6 +832,35 @@ export const SceneSettings = () => {
             checked={smoothOrbit}
             onChange={setSmoothOrbit}
           />
+          {/* What a plain scroll does — an app preference (it belongs to the
+              mouse or trackpad, not the scene). A pinch always zooms. */}
+          <div className="flex items-center justify-between gap-4 py-1">
+            <span className="text-xs text-muted-foreground">Scroll</span>
+            <ToggleGroup
+              type="single"
+              size="sm"
+              variant="outline"
+              value={settings.sceneScrollGesture}
+              onValueChange={(value) =>
+                value &&
+                setSettings({
+                  ...settings,
+                  sceneScrollGesture: value as typeof settings.sceneScrollGesture,
+                })
+              }
+            >
+              {SCROLL_GESTURES.map(({ value, label, hint }) => (
+                <ToggleGroupItem
+                  key={value}
+                  value={value}
+                  className="h-6 px-2 text-[10px]"
+                  title={hint}
+                >
+                  {label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
           {displayMode === "3D" && (
             <>
               <SettingRow
@@ -832,6 +875,17 @@ export const SceneSettings = () => {
               />
             </>
           )}
+        </div>
+
+        {/* An app preference: how the A hold behaves mid-shape. */}
+        <div className="mt-1 border-t pt-1">
+          <SettingRow
+            label="Keep annotating while drawing"
+            checked={settings.keepAnnotatingWhileDrawing}
+            onChange={(keepAnnotatingWhileDrawing) =>
+              setSettings({ ...settings, keepAnnotatingWhileDrawing })
+            }
+          />
         </div>
 
         <CinematicSection />
