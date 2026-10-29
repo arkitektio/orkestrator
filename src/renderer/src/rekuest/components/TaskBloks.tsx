@@ -5,7 +5,7 @@ import { cn } from "@/core/util/utils";
 import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, useDecideMutation, useTaskBloksQuery } from "../api/graphql";
 import { useTask } from "../hooks/useTasks";
 import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
-import { openAsks, type TaskRootSource } from "../run/taskRoot";
+import { openAsks, shownAsk, type TaskRootSource } from "../run/taskRoot";
 import { MaterializedBlokEmbed } from "./MaterializedBlokEmbed";
 import { HoldCard } from "./task/HoldCard";
 
@@ -68,6 +68,15 @@ export const TaskBlokView = ({
   const live = useTask({ task });
   const host = useTaskBlokHost(live, blok.materializedBlok);
   const asks = blok.role === TaskBlokRole.Ask;
+  // `decide` answers whatever the task is held on now: only the ask it is held on may answer.
+  // A list read before an answer's DECIDED still says WAITING for it, while the task already
+  // holds on its next ask; the live events say which one is open (the server's word without them).
+  const stale =
+    asks &&
+    blok.status === TaskBlokStatus.Waiting &&
+    live !== undefined &&
+    shownAsk(live)?.blok !== blok.materializedBlok.id;
+  const status = stale ? TaskBlokStatus.Answered : blok.status;
   const onReturn = React.useCallback(
     (values: Record<string, unknown>) =>
       decide({ variables: { input: { task, approved: true, values } } }).catch(
@@ -83,13 +92,13 @@ export const TaskBlokView = ({
         ask={
           asks
             ? {
-                status: blok.status,
+                status,
                 values: (blok.values as Record<string, unknown> | null) ?? null,
                 decidedBy: blok.decidedBy,
               }
             : undefined
         }
-        onReturn={asks && blok.status === TaskBlokStatus.Waiting ? onReturn : undefined}
+        onReturn={asks && status === TaskBlokStatus.Waiting ? onReturn : undefined}
       />
     </BlokRunHostProvider>
   );
