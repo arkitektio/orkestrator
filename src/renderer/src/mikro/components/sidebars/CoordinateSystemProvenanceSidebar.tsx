@@ -40,7 +40,10 @@ export const CoordinateSystemProvenanceSidebar = ({ id }: { id: string }) => {
 
   return (
     <div className="flex flex-col gap-4 overflow-y-auto p-4">
-      <ProvenanceSection entries={data.coordinateSystem.provenanceEntries} />
+      <ProvenanceSection
+        entries={data.coordinateSystem.provenanceEntries}
+        emptyText="No changes recorded since it was created."
+      />
     </div>
   );
 };

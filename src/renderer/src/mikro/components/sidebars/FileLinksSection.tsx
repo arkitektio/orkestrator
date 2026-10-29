@@ -1,4 +1,3 @@
-import { Empty, EmptyDescription, EmptyTitle } from "@/core/ui/empty";
 import { MikroArrayDataset, MikroTableDataset } from "@/core/linkers";
 import { Boxes, FileType2, Grid3x3, Shapes, Table2 } from "lucide-react";
 import { FileLinkFragment } from "../../api/graphql";
@@ -85,16 +84,12 @@ const ContainerName = ({ container }: { container: QueryContainer }) => {
 export const FileLinksSection = ({
   title,
   links,
-  emptyTitle,
-  emptyDescription,
 }: {
   title: string;
   links: readonly FileLinkFragment[];
-  /** Without one, an empty relation renders nothing (the file page's body). */
-  emptyTitle?: string;
-  emptyDescription?: string;
 }) => {
-  if (links.length === 0 && !emptyTitle) return null;
+  // An empty relation renders nothing: the rail shows what is set.
+  if (links.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -105,36 +100,29 @@ export const FileLinksSection = ({
         </span>
       </div>
 
-      {links.length === 0 ? (
-        <Empty>
-          <EmptyTitle>{emptyTitle}</EmptyTitle>
-          <EmptyDescription>{emptyDescription}</EmptyDescription>
-        </Empty>
-      ) : (
-        links.map((link) => {
-          const Icon = containerIcon(link.container);
+      {links.map((link) => {
+        const Icon = containerIcon(link.container);
 
-          return (
-            <div
-              key={link.id}
-              className="flex flex-row items-start gap-2 rounded-md border border-border/60 p-2"
-            >
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-col gap-1">
-                <ContainerName container={link.container} />
+        return (
+          <div
+            key={link.id}
+            className="flex flex-row items-start gap-2 rounded-md border border-border/60 p-2"
+          >
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="flex min-w-0 flex-col gap-1">
+              <ContainerName container={link.container} />
 
-                <div className="flex flex-row flex-wrap items-center gap-x-2 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                  {/* The series is part of the link's IDENTITY — one multi-series
-                      LIF has one link per series, so without it two rows to the
-                      same file read as a duplicate of each other. */}
-                  {link.seriesIdentifier && <span>{link.seriesIdentifier}</span>}
-                  {link.valueRelation && <span>· {link.valueRelation}</span>}
-                </div>
+              <div className="flex flex-row flex-wrap items-center gap-x-2 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                {/* The series is part of the link's IDENTITY — one multi-series
+                    LIF has one link per series, so without it two rows to the
+                    same file read as a duplicate of each other. */}
+                {link.seriesIdentifier && <span>{link.seriesIdentifier}</span>}
+                {link.valueRelation && <span>· {link.valueRelation}</span>}
               </div>
             </div>
-          );
-        })
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 };

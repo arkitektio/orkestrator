@@ -1,9 +1,4 @@
 import { Badge } from "@/core/ui/badge";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyTitle,
-} from "@/core/ui/empty";
 import { MikroArrayDataset } from "@/core/linkers";
 import { Grid3x3 } from "lucide-react";
 import {
@@ -136,6 +131,9 @@ export const DerivedDatasetsSection = ({
   lenses: readonly GetArrayDatasetDerivedQuery["lenses"][number][];
   derived: readonly QueryDerived[];
 }) => {
+  // Nothing at all until something has been derived: the rail shows what is set.
+  if (derived.length === 0) return null;
+
   const arrayLenses = lenses.filter(
     (lens): lens is QueryLens => lens.__typename === "ArrayLens",
   );
@@ -155,37 +153,27 @@ export const DerivedDatasetsSection = ({
         </span>
       </div>
 
-      {derived.length === 0 ? (
-        <Empty>
-          <EmptyTitle>Nothing derived yet</EmptyTitle>
-          <EmptyDescription>
-            Datasets computed from this one — a deconvolution, a segmentation, a
-            projection — will show up here, grouped by the lens they came through.
-          </EmptyDescription>
-        </Empty>
-      ) : (
-        groups.map((group) => (
-          <div key={group.key} className="flex flex-col gap-2">
-            <div className="flex flex-col gap-0.5">
-              <div className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                {group.title}
-              </div>
-              {group.subtitle && (
-                <div className="break-all font-mono text-[0.625rem] text-muted-foreground">
-                  {group.subtitle}
-                </div>
-              )}
+      {groups.map((group) => (
+        <div key={group.key} className="flex flex-col gap-2">
+          <div className="flex flex-col gap-0.5">
+            <div className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+              {group.title}
             </div>
-            {group.items.map((item) => (
-              <DerivedRow
-                key={item.dataset.id}
-                dataset={item.dataset}
-                otherParents={item.otherParents}
-              />
-            ))}
+            {group.subtitle && (
+              <div className="break-all font-mono text-[0.625rem] text-muted-foreground">
+                {group.subtitle}
+              </div>
+            )}
           </div>
-        ))
-      )}
+          {group.items.map((item) => (
+            <DerivedRow
+              key={item.dataset.id}
+              dataset={item.dataset}
+              otherParents={item.otherParents}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 };

@@ -8,12 +8,19 @@ import { ProvenanceEntryBody } from "../provenance/ProvenanceEntryBody";
  * Same content as `cards/HistoryCard` — both draw `ProvenanceEntryBody` — in the
  * bordered-row frame the rest of the Info tab uses, because here it is one
  * section among five rather than a rail of its own.
+ *
+ * Nothing at all when nothing was recorded, unless the caller passes
+ * `emptyText` — a tab that IS the history has nothing else to show.
  */
 export const ProvenanceSection = ({
   entries,
+  emptyText,
 }: {
   entries: readonly ProvenanceEntryFragment[];
+  emptyText?: string;
 }) => {
+  if (entries.length === 0 && !emptyText) return null;
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row items-baseline justify-between gap-2">
@@ -25,7 +32,7 @@ export const ProvenanceSection = ({
 
       {entries.length === 0 ? (
         <span className="text-xs text-muted-foreground">
-          No changes recorded since it was created.
+          {emptyText}
         </span>
       ) : (
         entries.map((entry) => (

@@ -118,24 +118,12 @@ export const SparseDatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) 
         </div>
       ) : (
         <>
-          <DerivedFromSection
-            edges={data.sparseDataset.derivedFrom}
-            // Not "acquired": nothing measures a matrix off an instrument. A
-            // matrix with no parent edge is one that claims no data underneath
-            // it at all.
-            emptyTitle="Freestanding matrix"
-            emptyDescription="This matrix names no parent, so its cells are not recorded as computed over any other data."
-          />
+          <DerivedFromSection edges={data.sparseDataset.derivedFrom} />
 
           {/* Which BYTES this matrix came out of, next to which DATA it was
               computed from — two different questions, and both can have an
               answer. */}
-          <FileLinksSection
-            title="Loaded from"
-            links={data.sparseDataset.sourceFiles}
-            emptyTitle="No source file"
-            emptyDescription="These cells were written directly rather than converted out of a file held here."
-          />
+          <FileLinksSection title="Loaded from" links={data.sparseDataset.sourceFiles} />
 
           {/* The run that produced it, as the document the server holds it as:
               its parameters and inputs are whatever the producing task wrote,
