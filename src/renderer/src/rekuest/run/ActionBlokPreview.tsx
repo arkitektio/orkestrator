@@ -98,7 +98,8 @@ export const ActionBlokPreview = ({
         <ActionBlokRenderer
           surfaceId={`action-${actionId}-preview`}
           chrome="minimal"
-          sizing="intrinsic"
+          // Fill, never intrinsic: a CardHeader is a size container and gives a shrink-to-fit box no width.
+          sizing="fill"
           actionBlok={html}
           run={run}
         />

@@ -383,17 +383,21 @@ export const REKUEST_HELP = {
   ),
   task: (
     <PageHelp
-      intro="One run of an action, from start to finish. The band at the top says where it stands; the lane below it draws everything that happened over time."
+      intro="One run of an action, from start to finish. Switch in the header between Live, the run as it is now, and Timeline, everything that happened over time."
       steps={[
+        <><b>Live</b> shows the run as its action draws it, and nothing else, when the action has a view of its own. Otherwise it shows where the task stands, the latest thing it showed, and <b>Flow</b>, <b>Space</b> or <b>Result</b> where the task has them.</>,
+        <>When the task asks you something, the question waits until you answer it: on its card above the page, or inside the action's own view when that view draws it.</>,
+        <><b>Timeline</b> holds the lane, <b>Inputs</b>, and every earlier question with its answer. Press <b>Show</b> on a question to see it as it was asked.</>,
         <>Click a mark or a bar on the lane to read that event or call below it, next to <b>Inputs</b> and the result.</>,
         <>Hold ⌘ or Ctrl and scroll over the lane to zoom in on a moment.</>,
-        <>Press <b>Stage</b> to show or hide the large view above the lane. Depending on the task it offers <b>Flow</b>, <b>Space</b> and <b>Result</b>.</>,
+        <>On the Timeline, press <b>Stage</b> to show or hide the large view above the lane. Depending on the task it offers <b>Flow</b>, <b>Space</b> and <b>Result</b>.</>,
         <><b>Space</b> shows the space the task's apps stand in. Drag the slider under it, or click a mark on the lane, to see the devices as they stood at that moment; press <b>Go live</b> to follow a running task again.</>,
         <>Press <b>Cancel</b> or <b>Interrupt</b> to stop a task that is still running, and <b>Pause</b> to hold it.</>,
         <>Press <b>Resume</b> on a paused task to let it continue. The arrow next to it offers <b>Step to next breakpoint</b>.</>,
         <>Press <b>Rerun</b> to run the task again with the same inputs. You are taken to the new task.</>,
       ]}
       tips={[
+        <>The <b>Info</b> tab of the sidebar says what the task ran, who started it, where it ran and how long it took, with its ids to copy.</>,
         <>The <b>Log</b> tab of the sidebar holds the complete record line by line; <b>Logs</b> in the header opens it as plain text that is easy to copy.</>,
         <>The devices in <b>Space</b> are there to look at: nothing in them can be run from the task. They are shown where they are placed today.</>,
         <>Rerunning a lost task can ask for confirmation first: it may have started before its agent disappeared, and so may already have acted on a device.</>,

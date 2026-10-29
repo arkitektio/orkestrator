@@ -8515,10 +8515,10 @@ export type NoChildrenDetailTaskFragment = (
 );
 
 export type DetailTaskFragment = (
-  { __typename?: 'Task', finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
+  { __typename?: 'Task', capture: boolean, notBefore?: any | null, finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
     { __typename?: 'Task', parentStep?: number | null, callKey?: string | null }
     & PostmanTaskFragment
-  )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
+  )>, parent?: { __typename?: 'Task', id: string } | null, root?: { __typename?: 'Task', id: string } | null, caller?: { __typename?: 'Caller', id: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } | null, space?: { __typename?: 'Space', id: string, name: string } | null, resolution?: { __typename?: 'Resolution', id: string, name: string } | null, heldLocks: Array<{ __typename?: 'Lock', id: string, key: string }>, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
         { __typename?: 'Placement' }
         & AgentPlacementFragment
       )> }, dependencies: Array<{ __typename?: 'Dependency', id: string, key: string, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, actionDependencies: Array<{ __typename?: 'ActionDependency', key: string }> }> } | null, resolvedDependencies: Array<{ __typename?: 'ResolvedAgentDependency', key: string, values?: string | null, mappedAgents: Array<{ __typename?: 'AgentMapping', agent: { __typename?: 'Agent', id: string, name: string, placements: Array<(
@@ -13865,6 +13865,32 @@ export const DetailTaskFragmentDoc = gql`
   parent {
     id
   }
+  root {
+    id
+  }
+  caller {
+    id
+    user {
+      sub
+    }
+    client {
+      clientId
+    }
+  }
+  space {
+    id
+    name
+  }
+  resolution {
+    id
+    name
+  }
+  heldLocks {
+    id
+    key
+  }
+  capture
+  notBefore
   finishedAt
   implementation {
     execution

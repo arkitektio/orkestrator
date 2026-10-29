@@ -6,6 +6,7 @@ import {TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskF
 import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer} from '../components/MaterializedBlokRenderer';
 import {HoldCard} from '../components/task/HoldCard';
+import {askClosed} from '../lib/holds';
 import {agentMappingsOf, agentsByKey, type RunBinding, type RunBoundAgent} from './binding';
 import {useBlokTravelMoment} from '../travel/context';
 import {parseTimestamp} from '../travel/travelSource';
@@ -45,11 +46,11 @@ export const runOfTask = (task: RunTaskFragment): ActionBlokRun => ({
   task,
 });
 
-/** The ask `task.ask` shows, answered in place: answering resumes the run. */
+/** The ask `task.ask` shows, answered in place: answering resumes the run. Grayed while the run is being stopped. */
 export const RunAsk = ({task}: {task: RunTaskFragment}) => {
   const hold = React.useMemo(() => shownAsk(task), [task]);
   if (!hold) return null;
-  return <HoldCard key={hold.task} hold={hold} />;
+  return <HoldCard key={hold.task} hold={hold} closed={askClosed(task)} />;
 };
 
 const AskPlaceholder = () => (
@@ -94,13 +95,22 @@ export const unboundOfRun = (actionBlok: ActionBlokFragment, binding: RunBinding
   return dependencyKeysRead(nodes, variables).filter(key => !bound.has(key));
 };
 
+/** Whether `actionBlok`'s tree draws the run's open ask itself (an `<ask />` anywhere in it). */
+export const drawsAsk = (actionBlok: ActionBlokFragment): boolean => {
+  const {roots} = normalizeBlokComponentTree(actionBlok.blok.componentTree as unknown[] | null);
+  const visit = (node: unknown): boolean =>
+    isComponentNode(node) && (node.component === 'ask' || (Array.isArray(node.children) && node.children.some(visit)));
+  return roots.some(visit);
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** `task.answer(values)`: the ask `task.ask` shows, approved with what the blok answered. */
 const useAnswerShownAsk = (task: RunTaskFragment | null): ((values: Record<string, unknown>) => Promise<unknown>) | undefined => {
   const [decide] = useDecideMutation();
-  const held = React.useMemo(() => (task ? shownAsk(task)?.task : undefined), [task]);
+  // A run being stopped takes no answer.
+  const held = React.useMemo(() => (task && !askClosed(task) ? shownAsk(task)?.task : undefined), [task]);
   return React.useMemo(
     () => (held ? (values: Record<string, unknown>) => decide({variables: {input: {task: held, approved: true, values}}}) : undefined),
     [decide, held],

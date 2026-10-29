@@ -18,9 +18,10 @@ export const spaceRunLink = (spaceId: string, taskId: string): string =>
 /**
  * The task panel's own blok: the html blok its action declared, drawn for
  * this run. Nothing for an action without one (or a server without action
- * bloks).
+ * bloks). `showAsk`: its `<ask />` draws the run's open ask, where the page
+ * shows no cards for it.
  */
-export const TaskRunPanel = ({taskId, className}: {taskId: string; className?: string}) => {
+export const TaskRunPanel = ({taskId, showAsk = false, className}: {taskId: string; showAsk?: boolean; className?: string}) => {
   const {task} = useRunTask(taskId);
   const shown = useTaskActionBlok(task, ComponentContext.Html);
   if (!shown) return null;
@@ -29,11 +30,11 @@ export const TaskRunPanel = ({taskId, className}: {taskId: string; className?: s
       <ActionBlokRenderer
         surfaceId={`task-${taskId}-panel`}
         chrome="minimal"
-        sizing="intrinsic"
+        // Fill, never intrinsic: a CardHeader is a size container and gives a shrink-to-fit box no width.
+        sizing="fill"
         actionBlok={shown.actionBlok}
         run={shown.run}
-        // The task page shows the run's asks above, as cards of their own.
-        showAsk={false}
+        showAsk={showAsk}
       />
     </div>
   );

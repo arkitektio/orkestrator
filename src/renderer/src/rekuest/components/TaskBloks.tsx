@@ -6,6 +6,7 @@ import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, useDecideMutation, useT
 import { useTask } from "../hooks/useTasks";
 import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { openAsks, shownAsk, type TaskRootSource } from "../run/taskRoot";
+import { askClosed, askClosedText } from "../lib/holds";
 import { MaterializedBlokEmbed } from "./MaterializedBlokEmbed";
 import { HoldCard } from "./task/HoldCard";
 
@@ -30,7 +31,7 @@ export const TaskOpenAsk = ({
         : undefined,
     [task, blok],
   );
-  return hold ? <HoldCard key={hold.task} hold={hold} /> : null;
+  return hold ? <HoldCard key={hold.task} hold={hold} closed={task ? askClosed(task) : null} /> : null;
 };
 
 /** The run host a task blok's tree reads: its agents by key, and `<ask>` drawing the task's open ask. */
@@ -59,10 +60,13 @@ export const TaskBlokView = ({
   task,
   blok,
   alongside,
+  compact,
 }: {
   task: string;
   blok: TaskBlokFragment;
   alongside?: readonly Structure[];
+  /** A settled ask as its answer line only. */
+  compact?: boolean;
 }) => {
   const [decide] = useDecideMutation();
   const live = useTask({ task });
@@ -77,6 +81,8 @@ export const TaskBlokView = ({
     live !== undefined &&
     shownAsk(live)?.blok !== blok.materializedBlok.id;
   const status = stale ? TaskBlokStatus.Answered : blok.status;
+  // A task being stopped takes no answer: a waiting ask freezes, saying why.
+  const closed = asks && status === TaskBlokStatus.Waiting && live ? askClosed(live) : null;
   const onReturn = React.useCallback(
     (values: Record<string, unknown>) =>
       decide({ variables: { input: { task, approved: true, values } } }).catch(
@@ -89,16 +95,18 @@ export const TaskBlokView = ({
       <MaterializedBlokEmbed
         materialized={blok.materializedBlok}
         alongside={alongside}
+        compact={compact}
         ask={
           asks
             ? {
                 status,
                 values: (blok.values as Record<string, unknown> | null) ?? null,
                 decidedBy: blok.decidedBy,
+                closed: closed ? askClosedText(closed) : null,
               }
             : undefined
         }
-        onReturn={asks && status === TaskBlokStatus.Waiting ? onReturn : undefined}
+        onReturn={asks && status === TaskBlokStatus.Waiting && !closed ? onReturn : undefined}
       />
     </BlokRunHostProvider>
   );
@@ -110,17 +118,23 @@ export const TaskBlokView = ({
  * older ones gone to their line. Follows the task: a blok it shows later, or
  * an answer given elsewhere, appears without a reload. `answeredElsewhere`:
  * the waiting asks a hold card on the same page answers already, left out.
+ * `only="latestInform"`: just the live inform, nothing else. `compact`:
+ * settled asks as their answer line, the blok behind "Show".
  */
 export const TaskBloks = ({
   task,
   alongside,
   answeredElsewhere,
+  only,
+  compact,
   fallback = null,
   className,
 }: {
   task: string;
   alongside?: readonly Structure[];
   answeredElsewhere?: ReadonlySet<string>;
+  only?: "latestInform";
+  compact?: boolean;
   fallback?: React.ReactNode;
   className?: string;
 }) => {
@@ -140,8 +154,16 @@ export const TaskBloks = ({
         answeredElsewhere?.has(blok.materializedBlok.id)
       ),
   );
-  if (bloks.length === 0) return <>{fallback}</>;
   const lastInform = bloks.findLastIndex((blok) => blok.role === TaskBlokRole.Inform);
+  if (only === "latestInform") {
+    const inform = bloks[lastInform];
+    return inform ? (
+      <TaskBlokView key={inform.materializedBlok.id} task={task} blok={inform} alongside={alongside} />
+    ) : (
+      <>{fallback}</>
+    );
+  }
+  if (bloks.length === 0) return <>{fallback}</>;
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {bloks.map((blok, index) =>
@@ -150,7 +172,13 @@ export const TaskBloks = ({
             {blok.message || blok.materializedBlok.name || blok.materializedBlok.blok.name}
           </div>
         ) : (
-          <TaskBlokView key={blok.materializedBlok.id} task={task} blok={blok} alongside={alongside} />
+          <TaskBlokView
+            key={blok.materializedBlok.id}
+            task={task}
+            blok={blok}
+            alongside={alongside}
+            compact={compact}
+          />
         ),
       )}
     </div>

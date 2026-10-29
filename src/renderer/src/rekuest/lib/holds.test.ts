@@ -2,7 +2,7 @@
 // (the generated rekuest API module reads `window` on import)
 import { describe, expect, it } from "vitest";
 import { TaskEventKind } from "../api/graphql";
-import { decisionFromEvent, holdFromEvent, informFromEvent, pendingHolds } from "./holds";
+import { askClosed, decisionFromEvent, holdFromEvent, informFromEvent, pendingHolds } from "./holds";
 
 const ev = (kind: TaskEventKind, value: unknown, createdAt: string, message: string | null = null) => ({
   kind,
@@ -61,5 +61,22 @@ describe("bloks a task shows", () => {
       message: "Halfway",
     });
     expect(informFromEvent(ev(TaskEventKind.Log, { blok: "m4" }, "1"))).toBeNull();
+  });
+});
+
+describe("askClosed", () => {
+  const held = { kind: TaskEventKind.Held };
+  it("leaves the asks of a task that goes on open", () => {
+    expect(askClosed({ isDone: false, latestEventKind: TaskEventKind.Held, events: [held] })).toBeNull();
+  });
+  it("closes them once a cancel or interrupt is asked for, even after a later log", () => {
+    expect(
+      askClosed({ latestEventKind: TaskEventKind.Log, events: [held, { kind: TaskEventKind.Cancelling }, { kind: TaskEventKind.Log }] }),
+    ).toBe("cancelling");
+    expect(askClosed({ latestEventKind: TaskEventKind.Interrupting, events: [held] })).toBe("interrupting");
+  });
+  it("says ended once the task is done, whatever it was doing before", () => {
+    expect(askClosed({ isDone: true, latestEventKind: TaskEventKind.Held })).toBe("ended");
+    expect(askClosed({ events: [held, { kind: TaskEventKind.Cancelling }, { kind: TaskEventKind.Cancelled }] })).toBe("ended");
   });
 });

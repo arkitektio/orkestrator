@@ -141,3 +141,45 @@ export const pendingHolds = (
     .sort((a, b) => String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? "")))
     .reduce<readonly HoldRequest[]>(applyHoldEvent, [])
     .slice();
+
+/** Why a task's open asks can no longer be answered: it is being stopped, or it ended. */
+export type AskClosed = "cancelling" | "interrupting" | "ended";
+
+// The task's endings (`TERMINAL_EVENT_KINDS` in taskTracker, kept here so this stays a leaf).
+const ENDED_KINDS: readonly TaskEventKind[] = [
+  TaskEventKind.Completed,
+  TaskEventKind.Cancelled,
+  TaskEventKind.Critical,
+  TaskEventKind.Failed,
+  TaskEventKind.Interrupted,
+  TaskEventKind.Lost,
+  TaskEventKind.Denied,
+];
+
+/**
+ * Whether `task`'s open asks are closed, and why; null while they can be
+ * answered. Once a cancel or interrupt is asked for, an answer would reach a
+ * task that is going away, so nothing takes one from then on.
+ */
+export const askClosed = (task: {
+  isDone?: boolean | null;
+  latestEventKind?: TaskEventKind | null;
+  events?: readonly { kind: TaskEventKind }[] | null;
+}): AskClosed | null => {
+  const kinds = [
+    ...(task.latestEventKind ? [task.latestEventKind] : []),
+    ...(task.events ?? []).map((event) => event.kind),
+  ];
+  if (task.isDone || kinds.some((kind) => ENDED_KINDS.includes(kind))) return "ended";
+  if (kinds.includes(TaskEventKind.Cancelling)) return "cancelling";
+  if (kinds.includes(TaskEventKind.Interrupting)) return "interrupting";
+  return null;
+};
+
+/** {@link AskClosed} as the sentence a closed ask shows in place of its buttons. */
+export const askClosedText = (closed: AskClosed): string =>
+  closed === "cancelling"
+    ? "The task is being cancelled: this can no longer be answered."
+    : closed === "interrupting"
+      ? "The task is being interrupted: this can no longer be answered."
+      : "The task has ended: this can no longer be answered.";

@@ -27,6 +27,8 @@ export type BlokAsk = {
   values?: Record<string, unknown> | null;
   /** The user (sub) who answered or dismissed it. */
   decidedBy?: string | null;
+  /** Why it waits but takes no answer any more (its task is being stopped): shown in place of the answer. */
+  closed?: string | null;
 };
 
 /**
@@ -91,19 +93,22 @@ const AnswerLine = ({ ask, returns }: { ask: BlokAsk; returns: readonly ArgPortF
  * (`alongside`, matched by identifier). With an `ask`, its tree reads it as
  * `task` (`task.ask` while it waits, `task.answer` once answered); while the
  * ask waits `task.answer(...)` goes to `onReturn`, and once settled the blok is
- * frozen with the answer under it.
+ * frozen with the answer under it. `compact`: a settled ask shows only its
+ * answer line, the frozen blok behind "Show".
  */
 export const MaterializedBlokEmbed = ({
   materialized,
   alongside,
   ask,
   onReturn,
+  compact = false,
   className,
 }: {
   materialized: MaterializedBlokFragment;
   alongside?: readonly Structure[];
   ask?: BlokAsk;
   onReturn?: (values: Record<string, unknown>) => unknown;
+  compact?: boolean;
   className?: string;
 }) => {
   const { blok } = materialized;
@@ -124,8 +129,11 @@ export const MaterializedBlokEmbed = ({
   );
   // A scene fills its box, so it gets one; a panel takes the height it needs.
   const scene = blok.context === ComponentContext.Scene;
-  const waiting = ask?.status === TaskBlokStatus.Waiting;
+  const closed = ask?.closed ?? null;
+  const waiting = ask?.status === TaskBlokStatus.Waiting && closed == null;
   const frozen = ask !== undefined && !waiting;
+  const [shown, setShown] = React.useState(false);
+  const folded = compact && frozen && !shown;
   const task = React.useMemo<BlokTaskRecord | undefined>(
     () => (ask ? askRecord(ask.status, ask.values) : undefined),
     [ask?.status, ask?.values], // eslint-disable-line react-hooks/exhaustive-deps
@@ -138,11 +146,23 @@ export const MaterializedBlokEmbed = ({
         <LayoutDashboard className="size-3.5 shrink-0" />
         <span className="truncate">{name}</span>
         <BlokServiceChips services={services} />
-        <Link className="ml-auto shrink-0 underline-offset-2 hover:underline" to={page}>
+        {compact && frozen && (
+          <button
+            type="button"
+            className="ml-auto shrink-0 underline-offset-2 hover:underline"
+            onClick={() => setShown(!shown)}
+          >
+            {shown ? "Hide" : "Show"}
+          </button>
+        )}
+        <Link
+          className={cn("shrink-0 underline-offset-2 hover:underline", !(compact && frozen) && "ml-auto")}
+          to={page}
+        >
           Open
         </Link>
       </div>
-      {missing.length > 0 ? (
+      {folded ? null : missing.length > 0 ? (
         <div className="px-1 text-sm text-muted-foreground">
           Opens for {missing.map((port) => port.label || port.key).join(", ")}:{" "}
           <Link className="underline" to={page}>
@@ -172,12 +192,15 @@ export const MaterializedBlokEmbed = ({
               task={task}
               onAnswer={waiting ? onReturn : undefined}
               chrome={scene ? "none" : "minimal"}
-              sizing={scene ? "fill" : "intrinsic"}
+              // Fill, never intrinsic: a CardHeader is a size container and gives a shrink-to-fit box no width.
+              sizing="fill"
             />
           </BlokServicesGuard>
         </div>
       )}
-      {frozen && ask && (
+      {closed != null ? (
+        closed && <div className="px-1 text-[11px] text-muted-foreground">{closed}</div>
+      ) : frozen && ask && (
         <div className="px-1 text-[11px] text-muted-foreground">
           <AnswerLine ask={ask} returns={blok.returns as unknown as readonly ArgPortFragment[]} />
         </div>
