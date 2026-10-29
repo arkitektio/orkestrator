@@ -1,3 +1,17 @@
+# [5.1.0](https://github.com/arkitektio/orkestrator/compare/v5.0.0...v5.1.0) (2026-10-29)
+
+
+### Bug Fixes
+
+* **datalayer:** one signed URL per media object, so Chromium's cache hits ([736d46a](https://github.com/arkitektio/orkestrator/commit/736d46ac53af712502bedf73c39b13ff5ae4ce8f))
+* **settings:** adopt another window's save without saving it back ([2547130](https://github.com/arkitektio/orkestrator/commit/25471307673f31d0d00e5bd9d64572766fc0b7d7))
+
+
+### Features
+
+* **mesh:** node generations, window claims and key renewal without a sign-in ([174dc83](https://github.com/arkitektio/orkestrator/commit/174dc83bc9f10373bc57fadb342ab7b9b88387fa))
+* **mikro:** traced 2D/3D paths, live-wire, freehand strokes and one movement grammar ([c0afc53](https://github.com/arkitektio/orkestrator/commit/c0afc53a433a0829f5a75bec5fde36920ed6349e))
+
 # [5.0.0](https://github.com/arkitektio/orkestrator/compare/v4.8.0...v5.0.0) (2026-10-29)
 
 
