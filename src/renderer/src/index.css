@@ -54,6 +54,14 @@
   zoom: var(--chrome-zoom);
 }
 
+/* The floating rail, tucked away off the window's left edge (`AppLayout`).
+ * Its top row is a window-drag region, and Electron collects drag regions from
+ * the layout, so a translated-away rail could leave one behind over the page,
+ * swallowing clicks there. Out of sight, nothing in it drags. */
+[data-rail-floating="tucked"] .app-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* The command palette's open and close are box animations driven from
  * `command/usePaletteGrow.ts` (Web Animations API): the panel grows out of
  * the search pill's published `--palette-origin-*` rect and shrinks back into

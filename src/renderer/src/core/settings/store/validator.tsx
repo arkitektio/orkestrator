@@ -1,5 +1,10 @@
 import * as zod from "zod";
 
+/** Docks or floats the rail (`railFloat.ts`). */
+export const DEFAULT_RAIL_FLOAT_SHORTCUT = "CommandOrControl+Shift+S";
+/** Shows or hides the focused page's sidebar (`PageLayout`). */
+export const DEFAULT_PAGE_SIDEBAR_SHORTCUT = "CommandOrControl+.";
+
 export const settingsValidator = zod.object({
   autoResolve: zod.boolean(),
   allowAutoRequest: zod.boolean(),
@@ -53,6 +58,25 @@ export const settingsValidator = zod.object({
   railBackdropOpacity: zod.number().min(0.1).max(1),
   /** `fill` covers the rail; `bottom` keeps the image whole at its foot. */
   railBackdropFit: zod.enum(["fill", "bottom"]),
+  /**
+   * The floating rail: hidden, sliding in over the page from the left edge.
+   * Fullscreen floats regardless (a session toggle can dock it there).
+   */
+  railFloating: zod.boolean(),
+  /**
+   * The in-app shortcut that docks or floats the rail, as an accelerator
+   * string (`core/command/accelerator.ts`); null turns it off.
+   *
+   * Its first default was ⌘\, which split view already holds (`TabsProvider`
+   * takes it first), so it could never fire: a stored ⌘\ moves to the
+   * current default.
+   */
+  railFloatShortcut: zod
+    .string()
+    .nullable()
+    .transform((value) => (value === "CommandOrControl+\\" ? DEFAULT_RAIL_FLOAT_SHORTCUT : value)),
+  /** The in-app shortcut that shows or hides the focused page's sidebar; null turns it off. */
+  pageSidebarShortcut: zod.string().nullable(),
   /**
    * The SYSTEM-WIDE shortcut that brings Orkestrator forward with the palette
    * open, as an Electron accelerator; null turns it off. Registered by main
@@ -201,6 +225,9 @@ export const defaultSettings: Settings = {
   railBackdropVersion: 0,
   railBackdropOpacity: 1,
   railBackdropFit: "fill",
+  railFloating: false,
+  railFloatShortcut: DEFAULT_RAIL_FLOAT_SHORTCUT,
+  pageSidebarShortcut: DEFAULT_PAGE_SIDEBAR_SHORTCUT,
   globalPaletteShortcut: "CommandOrControl+Shift+Space",
   experimentMenuPrefetch: true,
   experimentAnnotationHover: true,

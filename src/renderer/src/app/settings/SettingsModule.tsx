@@ -13,6 +13,7 @@ import PalettePage from "./pages/PalettePage";
 import RendererPage from "./pages/RendererPage";
 import ResetPage from "./pages/ResetPage";
 import ServicesPage from "./pages/ServicesPage";
+import ShortcutsPage from "./pages/ShortcutsPage";
 import TelemetryPage from "./pages/TelemetryPage";
 import VoicePage from "./pages/VoicePage";
 import { DEFAULT_SECTION, SETTINGS_SECTIONS } from "./sections";
@@ -24,6 +25,7 @@ const PAGES: Record<string, React.FC> = {
   appearance: AppearancePage,
   renderer: RendererPage,
   voice: VoicePage,
+  shortcuts: ShortcutsPage,
   palette: PalettePage,
   services: ServicesPage,
   mesh: MeshPage,

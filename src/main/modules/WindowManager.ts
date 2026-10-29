@@ -87,6 +87,12 @@ const CHROME_COLORS: Record<ChromeTheme, { background: string }> = {
 };
 
 /**
+ * Where macOS draws the traffic lights: in the gap the rail reserves above its
+ * search pill — docked or floating, the rail's top row is in the same place.
+ */
+const TRAFFIC_LIGHT_POSITION = { x: 12, y: 14 };
+
+/**
  * The best guess before any renderer has reported: the OS setting, which is
  * also what `ThemeProvider` resolves `system` to.
  */
@@ -131,7 +137,7 @@ const chromeOptions = (): Partial<Electron.BrowserWindowConstructorOptions> =>
     process.platform === "darwin"
         ? {
             titleBarStyle: "hiddenInset",
-            trafficLightPosition: { x: 12, y: 14 },
+            trafficLightPosition: TRAFFIC_LIGHT_POSITION,
         }
         : process.platform === "win32"
             ? { titleBarStyle: "hidden" }
@@ -755,6 +761,30 @@ export class WindowManager implements AppModule {
                 }
             },
         );
+
+        // Per window: the floating rail hides the traffic lights while it is
+        // tucked away, since they would otherwise sit over the page card, and
+        // shows them again when it slides in. macOS only; elsewhere there are
+        // no such buttons.
+        //
+        // Shown again, AppKit lays the buttons out at ITS default place, not
+        // at `trafficLightPosition`: Electron only puts them back on its next
+        // relayout, which is the next resize — so after a hide they came back
+        // in the wrong spot until the window was resized. The position is
+        // asserted after every show, and again a tick later, after AppKit's
+        // own layout pass has run.
+        this.ipcTransport.onChannel("window:set-buttons-visible", (event, visible: unknown) => {
+            if (process.platform !== "darwin" || typeof visible !== "boolean") return;
+            const win = senderWindow(event);
+            if (!win) return;
+            win.setWindowButtonVisibility(visible);
+            if (!visible) return;
+            const place = () => {
+                if (!win.isDestroyed()) win.setWindowButtonPosition(TRAFFIC_LIGHT_POSITION);
+            };
+            place();
+            setTimeout(place, 0);
+        });
 
         // Global, not per window: one preference, every window follows it.
         this.ipcTransport.onChannel("window:set-rail-glass", (_, enabled: unknown) => {

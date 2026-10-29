@@ -87,16 +87,30 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
   ),
   palette: (
     <PageHelp
-      intro="The command palette (⌘K) finds pages, objects and actions by name. Here you decide which actions sit at its top, and the shortcut that opens it from anywhere on your computer."
+      intro="The command palette (⌘K) finds pages, objects and actions by name. Here you decide which actions sit at its top."
       steps={[
         <>Type into the search field to find an action by title, description or id.</>,
         <>Press <b>Pin</b> next to an action to show it first in the palette, before anything is typed.</>,
         <>Press <b>Unpin</b> to remove it from the top again.</>,
-        <>Enable the system-wide <b>Shortcut</b> to open the palette while another application is in front.</>,
       ]}
       tips={[
         <>Actions marked <b>Always</b> are pinned by the app and cannot be unpinned.</>,
-        <>The system-wide shortcut is only available in the desktop app.</>,
+        <>The shortcut that opens the palette from any app is under <b>Keyboard shortcuts</b>.</>,
+      ]}
+    />
+  ),
+  shortcuts: (
+    <PageHelp
+      intro="Every keyboard shortcut in the app. Some you can change; the rest are listed so you know they are taken."
+      steps={[
+        <>Under <b>Yours to change</b>, click a shortcut and press the new combination. Esc cancels.</>,
+        <>Press <b>Reset</b> to go back to the default, or <b>Turn off</b> to have no shortcut at all.</>,
+        <>Under <b>Global shortcut</b>, set the combination that opens the quick bar while another application is in front.</>,
+      ]}
+      tips={[
+        <>A combination another shortcut already uses is refused, with what uses it.</>,
+        <>The dictation key is changed under <b>Voice input</b>.</>,
+        <>The global shortcut is only available in the desktop app.</>,
       ]}
     />
   ),

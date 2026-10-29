@@ -1,6 +1,7 @@
 import {
   Bug,
   Cpu,
+  Keyboard,
   Mic,
   Network,
   Pin,
@@ -79,9 +80,16 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     group: "app",
   },
   {
+    slug: "shortcuts",
+    label: "Keyboard shortcuts",
+    description: "Every shortcut in the app, and the ones you can change.",
+    icon: Keyboard,
+    group: "app",
+  },
+  {
     slug: "palette",
     label: "Command palette",
-    description: "The system-wide shortcut, and which actions sit pinned at the top of ⌘K.",
+    description: "Which actions sit pinned at the top of ⌘K.",
     icon: Pin,
     group: "app",
   },

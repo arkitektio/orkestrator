@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const open = vi.hoisted(() => vi.fn());
@@ -16,6 +16,16 @@ vi.mock("@/app/components/chrome/RailBackdrop", () => ({
 }));
 vi.mock("@/app/components/chrome/AutoHideTitleBar", () => ({
   AutoHideTitleBar: () => null,
+}));
+// Reads the settings store; it has its own test.
+vi.mock("@/core/layout/pageSidebarToggle", () => ({
+  PageSidebarShortcut: () => null,
+}));
+// Reads the settings store; it has its own test. Floating is flipped per test.
+const float = vi.hoisted(() => ({ floating: false }));
+vi.mock("@/app/components/chrome/railFloat", () => ({
+  useRailFloating: () => float.floating,
+  useRailFloatShortcut: () => undefined,
 }));
 
 import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
@@ -167,5 +177,94 @@ describe("dropping a card on the rail", () => {
     expect(overlay.className).toContain("pointer-events-none");
     // The rail surface stays clean — the assertion the rail's own test makes.
     expect(rail().className).not.toMatch(/\bbg-/);
+  });
+});
+
+/**
+ * Floating, the rail leaves the layout and slides in over the page from the
+ * left edge. The same element either way, so nothing in it remounts.
+ */
+describe("the floating rail", () => {
+  const rail = () => screen.getByLabelText("Modules and pinned pages").parentElement!;
+
+  /** A move somewhere over the page, far right of the rail (jsdom rects are 0). */
+  const moveOverPage = () =>
+    act(() => {
+      document.dispatchEvent(new MouseEvent("pointermove", { clientX: 600, bubbles: true }));
+    });
+
+  beforeEach(() => {
+    float.floating = true;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    float.floating = false;
+    vi.useRealTimers();
+  });
+
+  it("is tucked away off the edge, out of the layout and out of reach", () => {
+    renderLayout();
+    expect(rail().dataset.railFloating).toBe("tucked");
+    expect(rail().className).toContain("absolute");
+    expect(rail().className).toContain("-translate-x-");
+    expect(rail().hasAttribute("inert")).toBe(true);
+    // Over the page it is never a drag region of its own.
+    expect(rail().className).not.toMatch(/(^|\s)app-drag(\s|$)/);
+    expect(screen.getByTestId("rail-float-sentinel")).toBeTruthy();
+  });
+
+  it("slides in from the left edge, and away once the pointer is over the page", () => {
+    renderLayout();
+    fireEvent.pointerEnter(screen.getByTestId("rail-float-sentinel"));
+    expect(rail().dataset.railFloating).toBe("revealed");
+    expect(rail().hasAttribute("inert")).toBe(false);
+    expect(rail().className).not.toContain("-translate-x-");
+    expect(screen.queryByTestId("rail-float-sentinel")).toBeNull();
+
+    moveOverPage();
+    // A grace, not a snap: overshooting the edge for a moment is forgiven.
+    expect(rail().dataset.railFloating).toBe("revealed");
+    act(() => vi.advanceTimersByTime(250));
+    expect(rail().dataset.railFloating).toBe("tucked");
+  });
+
+  it("stays out while a menu opened from it is open", () => {
+    renderLayout();
+    fireEvent.pointerEnter(screen.getByTestId("rail-float-sentinel"));
+
+    // What a portaled chrome overlay looks like (`ChromeSurface.tsx`).
+    const menu = document.createElement("div");
+    menu.className = "chrome-zoom app-no-drag";
+    menu.dataset.state = "open";
+    document.body.appendChild(menu);
+
+    moveOverPage();
+    act(() => vi.advanceTimersByTime(250));
+    expect(rail().dataset.railFloating).toBe("revealed");
+
+    menu.remove();
+    moveOverPage();
+    act(() => vi.advanceTimersByTime(250));
+    expect(rail().dataset.railFloating).toBe("tucked");
+  });
+
+  it("goes away on Escape", () => {
+    renderLayout();
+    fireEvent.pointerEnter(screen.getByTestId("rail-float-sentinel"));
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(rail().dataset.railFloating).toBe("tucked");
+  });
+
+  it("docked, sits in the layout as before", () => {
+    float.floating = false;
+    renderLayout();
+    expect(rail().dataset.railFloating).toBeUndefined();
+    expect(rail().className).toContain("relative");
+    expect(rail().className).not.toContain("absolute");
+    expect(rail().hasAttribute("inert")).toBe(false);
+    expect(screen.queryByTestId("rail-float-sentinel")).toBeNull();
   });
 });

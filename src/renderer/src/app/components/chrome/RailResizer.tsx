@@ -49,10 +49,12 @@ export const RailResizer = () => {
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
 
-    // The rail starts at the viewport's left edge, so the pointer's x IS the
-    // width — once page pixels are turned into the counter-zoomed rail's own
-    // (`railWidthFromPointer`). Coalesced into one write per frame.
-    const next = railWidthFromPointer(event.clientX, event.currentTarget.currentCSSZoom);
+    // The pointer's distance from the rail's left edge IS the width — once
+    // page pixels are turned into the counter-zoomed rail's own
+    // (`railWidthFromPointer`). Docked, that edge is the viewport's; floating,
+    // the rail is inset from it. Coalesced into one write per frame.
+    const left = event.currentTarget.parentElement?.getBoundingClientRect().left ?? 0;
+    const next = railWidthFromPointer(event.clientX - left, event.currentTarget.currentCSSZoom);
     latest.current = next;
 
     if (frame.current === null) {

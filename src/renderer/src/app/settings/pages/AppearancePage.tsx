@@ -70,6 +70,15 @@ const GlassFields = () => {
   );
 };
 
+/** Docked beside the page, or floating over it and sliding in from the left edge. */
+const FloatingFields = () => (
+  <SwitchField
+    name="railFloating"
+    label="Floating sidebar"
+    description="Hide the sidebar and slide it in over the page when the pointer reaches the left edge. Fullscreen always floats it. Its shortcut is under Keyboard shortcuts"
+  />
+);
+
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.05;
@@ -163,9 +172,10 @@ export const AppearancePage = () => (
       <Card>
         <CardHeader>
           <CardTitle>Sidebar</CardTitle>
-          <CardDescription>What is behind the rail and around the page: your desktop, a backdrop, or both.</CardDescription>
+          <CardDescription>Where the rail sits, and what is behind it and around the page: your desktop, a backdrop, or both.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <FloatingFields />
           {canDrawGlass() && <GlassFields />}
           <BackdropFields />
         </CardContent>

@@ -28,6 +28,7 @@ import {
   ResizablePanelGroup,
 } from "../ui/resizable";
 import { HelpSidebar } from "./help";
+import { useRegisterPageSidebarToggle } from "./pageSidebarToggle";
 import { Sidebars } from "./Sidebars";
 
 export type PageLayoutProps = {
@@ -145,6 +146,9 @@ export const PageLayout = ({
   const togglePageSidebar = useCallback(() => {
     setSidebarParam("pageSidebar", pageSidebarShown ? "false" : "true");
   }, [pageSidebarShown, setSidebarParam]);
+  // The keyboard's way in (⌘. by default, `pageSidebarToggle.tsx`), which only
+  // the focused tab's page answers.
+  useRegisterPageSidebarToggle(togglePageSidebar);
 
   const toggleSidebar = useCallback(() => {
     setSidebarParam(
