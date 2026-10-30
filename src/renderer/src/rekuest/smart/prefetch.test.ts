@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { AllPrimaryActionsDocument, ShortcutsDocument } from "@/rekuest/api/graphql";
 import { buildDemands } from "./demands";
-import { actionsVariables, shortcutsVariables } from "./queries";
+import { actionsVariables, estimateFor, shortcutsVariables } from "./queries";
 import { agentStructure } from "./agent";
 import {
   REKUEST_ACTIONS_SECTION,
@@ -42,7 +42,7 @@ describe("rekuest's menu prefetch", () => {
       },
     ]);
     expect(REKUEST_ACTIONS_SECTION.prefetch?.(target)?.[0].variables).toEqual(
-      actionsVariables(demands.single, { exceptApp: "plugin_engine" }),
+      actionsVariables(demands.single, { exceptApp: "plugin_engine", estimate: estimateFor(target.objects) }),
     );
   });
 

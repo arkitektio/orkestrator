@@ -8,6 +8,7 @@ import { portRequires } from "@/core/ports/engine/constraints";
 import { dependencyScope } from "@/core/ports/engine/portCalls";
 import { dependencyFieldName } from "@/core/ports/engine/portPaths";
 import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
+import { CurrentPortFitsContext, usePortFits } from "@/core/ports/engine/PortFitsContext";
 import { usePortsRoot } from "@/core/ports/engine/PortsRootContext";
 import { InputWidgetProps } from "@/core/ports/engine/types";
 import { pathToName } from "@/core/ports/engine/utils";
@@ -115,6 +116,8 @@ export const CatalogWidget = ({
   );
   if (!hostable) return <>{fallback}</>;
 
+  const portFits = usePortFits(port.key ?? undefined);
+
   return (
     <FormField
       control={form.control}
@@ -122,6 +125,7 @@ export const CatalogWidget = ({
       render={() => (
         <FormItem className="flex flex-col">
           <FormLabel>{portLabel(port)}</FormLabel>
+          <CurrentPortFitsContext.Provider value={portFits}>
           <BlokComponentHost
             component={component}
             props={componentProps}
@@ -131,6 +135,7 @@ export const CatalogWidget = ({
             fallback={fallback}
             catalog={defaultBlokCatalog}
           />
+          </CurrentPortFitsContext.Provider>
           {port.description && <FormDescription>{portDescription(port, widget)}</FormDescription>}
           <FormMessage />
         </FormItem>

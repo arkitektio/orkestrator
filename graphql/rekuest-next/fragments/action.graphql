@@ -194,6 +194,8 @@ fragment PrimaryAction on Action {
   assignable
   # How many agents could take it now: a stateful action with more than one asks which.
   liveImplementations
+  hasFits
+  estimatedRuntimeSeconds
   implementations {
     id
     interface

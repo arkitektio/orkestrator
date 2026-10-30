@@ -88,13 +88,8 @@ export type PortCallScope = {
   dependencies: Record<string, unknown>;
 };
 
-const createContext = (scope: PortCallScope): BlokResolutionContext => ({
-  readPath: (path) => {
-    if (path === PORT_CALL_SELF_PATH) return scope.value;
-    return Object.prototype.hasOwnProperty.call(scope.dependencies, path)
-      ? scope.dependencies[path]
-      : undefined;
-  },
+const createContext = (readPath: (path: string) => unknown): BlokResolutionContext => ({
+  readPath,
   resolvePath: (path) => path,
   invokeFunction: invokeBlokFunction,
   dispatchAction: async () => ({
@@ -107,7 +102,19 @@ const createContext = (scope: PortCallScope): BlokResolutionContext => ({
 export const evaluatePortCall = (
   call: BlokUtilCall,
   scope: PortCallScope,
-): BlokResolved<unknown> => invokeUtilCall(call, createContext(scope), true);
+): BlokResolved<unknown> =>
+  evaluateCallAt(call, (path) => {
+    if (path === PORT_CALL_SELF_PATH) return scope.value;
+    return Object.prototype.hasOwnProperty.call(scope.dependencies, path)
+      ? scope.dependencies[path]
+      : undefined;
+  });
+
+/** Evaluate a parsed call against whatever `readPath` answers. Never throws. */
+export const evaluateCallAt = (
+  call: BlokUtilCall,
+  readPath: (path: string) => unknown,
+): BlokResolved<unknown> => invokeUtilCall(call, createContext(readPath), true);
 
 /** Parse and evaluate in one step, for callers holding the raw payload. */
 export const runPortCall = (raw: unknown, scope: PortCallScope): BlokResolved<unknown> => {

@@ -64,6 +64,10 @@ export type Action = {
   description?: Maybe<Scalars['String']['output']>;
   /** This action's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
+  /** The estimate in seconds for the object named in the `estimatedRuntime` filter: its fastest live implementation that fits. Null without that filter, or when it cannot be computed for this object. */
+  estimatedRuntimeSeconds?: Maybe<Scalars['Float']['output']>;
+  /** Whether any implementation states a `Fits`, so which agent takes a task can matter. */
+  hasFits: Scalars['Boolean']['output'];
   /** Unique hash identifying the action definition. */
   hash: Scalars['ActionHash']['output'];
   /** Unique ID of the action. */
@@ -368,11 +372,25 @@ export type ActionFilter = {
   anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
   /** Filter using app identifier */
   appIdentifier?: InputMaybe<Scalars['String']['input']>;
+  /** Whether any of its implementations may ask a person (a declared ask, or `dynamicAsks`). False: none ever asks. */
+  asks?: InputMaybe<Scalars['Boolean']['input']>;
   /** Whether an agent that can take the action is connected now (`Action.assignable`). */
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether any of its implementations may call other actions (a declared dependency, or `dynamicCalls`). False: none ever calls. */
+  calls?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
+  /** Whether any of its implementations declares `dynamicAsks`. */
+  dynamicAsks?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether any of its implementations declares `dynamicCalls`. */
+  dynamicCalls?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether any of its implementations declares `dynamicInforms`. */
+  dynamicInforms?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The estimate for one object, for `ActionOrder.estimatedRuntime` and `Action.estimatedRuntimeSeconds`. With `lte`, leaves out actions known to take longer: one with no estimate for this object stays. */
+  estimatedRuntime?: InputMaybe<EstimatedRuntimeFilterInput>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   inCollection?: InputMaybe<Scalars['String']['input']>;
+  /** Whether any of its implementations may show a person a blok (a declared inform, or `dynamicInforms`). False: none ever informs. */
+  informs?: InputMaybe<Scalars['Boolean']['input']>;
   kind?: InputMaybe<ActionKind>;
   name?: InputMaybe<StrFilterLookup>;
   objectDemands?: InputMaybe<Array<PortDemandInput>>;
@@ -392,9 +410,11 @@ export enum ActionKind {
 
 export type ActionOrder =
   /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
-  { assignable: Ordering; definedAt?: never; usedAt?: never; }
-  |  { assignable?: never; definedAt: Ordering; usedAt?: never; }
-  |  { assignable?: never; definedAt?: never; usedAt: Ordering; };
+  { assignable: Ordering; definedAt?: never; estimatedRuntime?: never; usedAt?: never; }
+  |  { assignable?: never; definedAt: Ordering; estimatedRuntime?: never; usedAt?: never; }
+  |  /** Runnable first, then by the estimate for the object named in the `estimatedRuntime` filter, with no estimate last. Does nothing without that filter. */
+  { assignable?: never; definedAt?: never; estimatedRuntime: Ordering; usedAt?: never; }
+  |  { assignable?: never; definedAt?: never; estimatedRuntime?: never; usedAt: Ordering; };
 
 export enum ActionScope {
   BridgeGlobalToLocal = 'BRIDGE_GLOBAL_TO_LOCAL',
@@ -483,6 +503,8 @@ export type Agent = {
   description?: Maybe<Scalars['String']['output']>;
   /** Device associated with the agent, via its client (if any). */
   device?: Maybe<Device>;
+  /** What this agent's machine has, as stated on its last registration; null for an agent that never said. */
+  hardware?: Maybe<AgentHardware>;
   /** Hash representing the agent's definition for change detection. */
   hash: Scalars['String']['output'];
   /** Webhook URL for this Agent (only if webhook) */
@@ -714,6 +736,26 @@ export type AgentFilter = {
   user?: InputMaybe<Scalars['ID']['input']>;
   /** Filter based on version string */
   versionNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One GPU of an agent's machine. */
+export type AgentGpu = {
+  __typename?: 'AgentGpu';
+  /** Its memory in MiB, if known. */
+  memoryMib?: Maybe<Scalars['Int']['output']>;
+  /** The GPU's name. */
+  name: Scalars['String']['output'];
+};
+
+/** What an agent's machine has. Self-declared; unknown is null. */
+export type AgentHardware = {
+  __typename?: 'AgentHardware';
+  /** The CPUs its process may use: a container's limit counts. */
+  cpuCount?: Maybe<Scalars['Int']['output']>;
+  /** Its GPUs. */
+  gpus: Array<AgentGpu>;
+  /** The memory its process may use, in MiB: a container's limit counts. */
+  memoryMib?: Maybe<Scalars['Int']['output']>;
 };
 
 export type AgentInput = {
@@ -2474,6 +2516,41 @@ export enum Effects {
   Unknown = 'UNKNOWN'
 }
 
+/** A formula for how long an implementation runs, in seconds. The action query filters and sorts by it. */
+export type EstimatedRuntime = {
+  __typename?: 'EstimatedRuntime';
+  /** The pure blok call: arithmetic over args/<port>/<descriptor key> of one structure argument and agent/<hardware>. */
+  callJson: Scalars['JSONSerializable']['output'];
+  /** The formula as its author wrote it. */
+  source?: Maybe<Scalars['String']['output']>;
+  /** A richer call for the form, which only the frontend evaluates: any pure function, over args/<port>, args/<port>/<descriptor key> and agent/<hardware>. */
+  uiCallJson?: Maybe<Scalars['JSONSerializable']['output']>;
+  /** That formula as its author wrote it. */
+  uiSource?: Maybe<Scalars['String']['output']>;
+};
+
+/** One object an action's estimate is computed for. */
+export type EstimatedRuntimeFilterInput = {
+  /** What the object says of itself, as for `objectDemands`. */
+  descriptors: Array<DescriptorInput>;
+  /** The object's structure. */
+  identifier: Scalars['String']['input'];
+  /** Leave out actions known to take longer than this many seconds. */
+  lte?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** A formula for how long an implementation runs, in seconds, that the action query filters and sorts by. */
+export type EstimatedRuntimeInput = {
+  /** The pure blok UtilCall giving seconds, which the server compiles and the frontend evaluates: arithmetic over args/<port>/<descriptor key> of one structure argument and agent/<hardware>. */
+  call: UtilCallInput;
+  /** The formula as its author wrote it (informational; never parsed or evaluated by the server). */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** A richer formula for the form, which only the frontend evaluates: any pure function, over args/<port>, args/<port>/<descriptor key> and agent/<hardware>. */
+  uiCall?: InputMaybe<UtilCallInput>;
+  /** That formula as its author wrote it (informational). */
+  uiSource?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** How an implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies; a PLAIN one's task ends LOST. */
 export enum Execution {
   Plain = 'PLAIN',
@@ -2546,6 +2623,16 @@ export enum FiringOutcome {
   Fired = 'FIRED',
   Rejected = 'REJECTED'
 }
+
+/** What an implementation can handle of one structure argument. */
+export type FitsInput = {
+  /** The pure blok UtilCall: a comparison of numbers, or several joined by logic.all/any. Its value_paths read value/<descriptor key> and agent/<hardware>. */
+  call: UtilCallInput;
+  /** The key of the structure argument it is about. */
+  port: Scalars['String']['input'];
+  /** The formula as its author wrote it (informational). */
+  source?: InputMaybe<Scalars['String']['input']>;
+};
 
 /** Copy a blok an app provides into a custom blok of the caller's organization, to edit it or bind other agents to it. */
 export type ForkBlokInput = {
@@ -2697,8 +2784,12 @@ export type Implementation = {
   dynamicInforms: Scalars['Boolean']['output'];
   /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
   effects: Effects;
+  /** A formula for how long it runs, in seconds. The frontend evaluates it against the form, the descriptors of the structures picked there and the agent; null when none was declared. */
+  estimatedRuntime?: Maybe<EstimatedRuntime>;
   /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
   execution: Execution;
+  /** What it can handle, per argument: an action is not offered for an object no live implementation fits, and the agent refuses one that reaches it anyway. */
+  fits: Array<ImplementationFit>;
   /** Projection config (bound params, arg/dependency/return maps) when this is a higher-order implementation. */
   higherOrderConfig: Scalars['AnyDefault']['output'];
   /** If this is a higher-order (wrapper) implementation, the lower implementation it wraps. */
@@ -2797,11 +2888,36 @@ export type ImplementationFilter = {
   /** Whether an agent can run it now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule). */
   active?: InputMaybe<Scalars['Boolean']['input']>;
   agent?: InputMaybe<ImplementationAgentFilter>;
+  /** Whether its tasks may ask a person (hold until answered): it declares an ask, or `dynamicAsks`. False: never asks. */
+  asks?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether its tasks may call other actions: it declares a dependency, or `dynamicCalls`. False: never calls. */
+  calls?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether it declares `dynamicAsks`: its tasks may ask through a blok made at run time. */
+  dynamicAsks?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether it declares `dynamicCalls`: its tasks may call actions found at run time. */
+  dynamicCalls?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether it declares `dynamicInforms`: its tasks may show a blok made at run time. */
+  dynamicInforms?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Whether its tasks may show a person a blok while they go on: it declares an inform, or `dynamicInforms`. False: never informs. */
+  informs?: InputMaybe<Scalars['Boolean']['input']>;
   interface?: InputMaybe<StrFilterLookup>;
   parameters?: InputMaybe<Array<ParamPair>>;
   resolvableFor?: InputMaybe<Scalars['ID']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** What an implementation can handle of one structure argument. */
+export type ImplementationFit = {
+  __typename?: 'ImplementationFit';
+  /** The pure blok call: a comparison over value/<descriptor key> and agent/<hardware>. */
+  callJson: Scalars['JSONSerializable']['output'];
+  /** The formula as the Postgres jsonpath the server tests. A picker hands it to the service that filters the objects. */
+  compiledPath: Scalars['String']['output'];
+  /** The key of the argument. */
+  port: Scalars['String']['output'];
+  /** The formula as its author wrote it. */
+  source?: Maybe<Scalars['String']['output']>;
 };
 
 /** A implementation is a blueprint for a action. It is composed of a definition, a list of dependencies, and a list of params. */
@@ -2822,8 +2938,12 @@ export type ImplementationInput = {
   dynamicInforms?: InputMaybe<Scalars['Boolean']['input']>;
   /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
   effects?: Effects;
+  /** How long this implementation runs, in seconds, given its arguments, the descriptors of the structures picked for them and the agent. The frontend evaluates it to show an estimate; the server only stores it. */
+  estimatedRuntime?: InputMaybe<EstimatedRuntimeInput>;
   /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
   execution?: Execution;
+  /** What this implementation can handle, per argument. An action is not offered for an object no live implementation fits. */
+  fits?: InputMaybe<Array<FitsInput>>;
   /** The bloks this implementation shows a person while a task goes on, declared up front: a task shows one by its key. */
   informs?: InputMaybe<Array<InformBlokInput>>;
   /** The instance id of the agent this implementation is bound to. */
@@ -7511,7 +7631,7 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, logo?: (
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, hasFits: boolean, estimatedRuntimeSeconds?: number | null, description?: string | null, logo?: (
     { __typename?: 'Blok' }
     & BlokLogoFragment
   ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
@@ -7969,10 +8089,19 @@ export type FrozenBindingFragment = { __typename?: 'ResolvedAgentDependency', ke
 export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, dynamicAsks: boolean, dynamicCalls: boolean, dynamicInforms: boolean, effects: Effects, codeHash?: string | null, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, interactions: Array<(
     { __typename?: 'ImplementationInteraction' }
     & ImplementationInteractionFragment
+  )>, estimatedRuntime?: (
+    { __typename?: 'EstimatedRuntime' }
+    & EstimatedRuntimeFragment
+  ) | null, fits: Array<(
+    { __typename?: 'ImplementationFit' }
+    & ImplementationFitFragment
   )>, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
-  ), agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, kind: AgentKind, lastSeen?: any | null, hash: string, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
+  ), agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, kind: AgentKind, lastSeen?: any | null, hash: string, hardware?: (
+      { __typename?: 'AgentHardware' }
+      & AgentHardwareFragment
+    ) | null, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
     { __typename?: 'Dependency' }
     & ListDependencyFragment
   )>, tracks: Array<{ __typename?: 'Track', dependencyKey?: string | null, stateKey: string, valueKey: string, label?: string | null, description?: string | null }>, manipulates: Array<{ __typename?: 'State', id: string, interface: string, definition: { __typename?: 'StateDefinition', name: string } }>, resolutions: Array<{ __typename?: 'Resolution', id: string, name: string, resolvedAt: any }>, higherOrderFor?: { __typename?: 'Implementation', id: string, interface: string, name: string } | null, lowerOrderImplementations: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, tests: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, myLatestTask?: (
@@ -7985,7 +8114,22 @@ export type ListImplementationFragment = { __typename?: 'Implementation', id: st
       & BlokLogoFragment
     ) | null }, agent: { __typename?: 'Agent', name: string, active: boolean } };
 
-export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', name: string } };
+export type EstimatedRuntimeFragment = { __typename?: 'EstimatedRuntime', callJson: any, source?: string | null, uiCallJson?: any | null, uiSource?: string | null };
+
+export type ImplementationFitFragment = { __typename?: 'ImplementationFit', port: string, callJson: any, source?: string | null, compiledPath: string };
+
+export type AgentHardwareFragment = { __typename?: 'AgentHardware', cpuCount?: number | null, memoryMib?: number | null, gpus: Array<{ __typename?: 'AgentGpu', name: string, memoryMib?: number | null }> };
+
+export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, estimatedRuntime?: (
+    { __typename?: 'EstimatedRuntime' }
+    & EstimatedRuntimeFragment
+  ) | null, fits: Array<(
+    { __typename?: 'ImplementationFit' }
+    & ImplementationFitFragment
+  )>, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, hardware?: (
+      { __typename?: 'AgentHardware' }
+      & AgentHardwareFragment
+    ) | null } };
 
 export type ImplementationStatsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10922,6 +11066,8 @@ export const PrimaryActionFragmentDoc = gql`
   hash
   assignable
   liveImplementations
+  hasFits
+  estimatedRuntimeSeconds
   implementations {
     id
     interface
@@ -13316,6 +13462,22 @@ export const ImplementationInteractionFragmentDoc = gql`
 }
     ${ResolvedBlokLocalFragmentDoc}
 ${BlokArgumentFragmentDoc}`;
+export const EstimatedRuntimeFragmentDoc = gql`
+    fragment EstimatedRuntime on EstimatedRuntime {
+  callJson
+  source
+  uiCallJson
+  uiSource
+}
+    `;
+export const ImplementationFitFragmentDoc = gql`
+    fragment ImplementationFit on ImplementationFit {
+  port
+  callJson
+  source
+  compiledPath
+}
+    `;
 export const PortGroupFragmentDoc = gql`
     fragment PortGroup on PortGroup {
   key
@@ -13363,15 +13525,38 @@ export const GraphNodeActionFragmentDoc = gql`
   }
 }
     ${PortsFragmentDoc}`;
+export const AgentHardwareFragmentDoc = gql`
+    fragment AgentHardware on AgentHardware {
+  cpuCount
+  memoryMib
+  gpus {
+    name
+    memoryMib
+  }
+}
+    `;
 export const MinimalImplementationFragmentDoc = gql`
     fragment MinimalImplementation on Implementation {
   id
   interface
+  estimatedRuntime {
+    ...EstimatedRuntime
+  }
+  fits {
+    ...ImplementationFit
+  }
   agent {
+    id
     name
+    active
+    hardware {
+      ...AgentHardware
+    }
   }
 }
-    `;
+    ${EstimatedRuntimeFragmentDoc}
+${ImplementationFitFragmentDoc}
+${AgentHardwareFragmentDoc}`;
 export const DetailActionFragmentDoc = gql`
     fragment DetailAction on Action {
   ...GraphNodeAction
@@ -13458,12 +13643,21 @@ export const DetailImplementationFragmentDoc = gql`
   provenanceAudience
   params
   higherOrderConfig
+  estimatedRuntime {
+    ...EstimatedRuntime
+  }
+  fits {
+    ...ImplementationFit
+  }
   action {
     ...DetailAction
   }
   agent {
     id
     name
+    hardware {
+      ...AgentHardware
+    }
     active
     connected
     blocked
@@ -13519,7 +13713,10 @@ export const DetailImplementationFragmentDoc = gql`
   }
 }
     ${ImplementationInteractionFragmentDoc}
+${EstimatedRuntimeFragmentDoc}
+${ImplementationFitFragmentDoc}
 ${DetailActionFragmentDoc}
+${AgentHardwareFragmentDoc}
 ${ListDependencyFragmentDoc}
 ${PostmanTaskFragmentDoc}`;
 export const ResolutionFragmentDoc = gql`

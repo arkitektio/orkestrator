@@ -14,6 +14,8 @@ import {
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
+import { formatEstimate } from "@/rekuest/lib/estimatedRuntime";
+import { fitsImplementation } from "@/rekuest/lib/fits";
 import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
 import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
@@ -70,8 +72,29 @@ export const canTakeWork = (agent: Pick<DetailImplementationFragment["agent"], "
  * takt can only pick that one, and the row just runs.
  */
 export const needsAgentChoice = (
-  action: Pick<PrimaryActionFragment, "stateful" | "liveImplementations">,
-) => action.stateful && action.liveImplementations > 1;
+  action: Pick<PrimaryActionFragment, "stateful" | "liveImplementations"> &
+    Partial<Pick<PrimaryActionFragment, "hasFits">>,
+) => (action.stateful || Boolean(action.hasFits)) && action.liveImplementations > 1;
+
+/**
+ * Whether an implementation can handle the picked object: "Run on" disables it like an offline
+ * one. The object goes to the argument of its structure, whose `Fits` is what is tested.
+ */
+export const implementationFitsObjects = (
+  implementation: Pick<DetailImplementationFragment, "fits" | "agent">,
+  action: Pick<PrimaryActionFragment, "args">,
+  objects: readonly { identifier: string; descriptors?: unknown }[],
+) => {
+  const descriptors = Object.fromEntries(
+    objects.flatMap((object) => {
+      const port = action.args.find((arg) => arg.identifier === object.identifier);
+      return port?.key && object.descriptors
+        ? [[port.key, object.descriptors as Record<string, unknown>]]
+        : [];
+    }),
+  );
+  return fitsImplementation(implementation, descriptors).verdict !== "no";
+};
 
 /**
  * A selection the action's arguments cannot take. The menu only offers rows
@@ -228,7 +251,7 @@ export const DirectImplementationAssignment = (
               variant="outline"
               size="lg"
               className="flex flex-col gap-1"
-              disabled={!live}
+              disabled={!live || !implementationFitsObjects(implementation, props.action, props.objects)}
               onClick={() => onTemplateSelect(props.action, implementation)}
             >
               <div className="flex items-center gap-2 text-md text-foreground">
@@ -482,6 +505,10 @@ export const AssignButton = (
         choose ? (
           <span className="shrink-0 text-[10px] text-muted-foreground">
             Choose agent · {props.action.liveImplementations}
+          </span>
+        ) : props.action.estimatedRuntimeSeconds != null ? (
+          <span className="shrink-0 text-[10px] text-muted-foreground">
+            {formatEstimate([props.action.estimatedRuntimeSeconds])}
           </span>
         ) : undefined
       }

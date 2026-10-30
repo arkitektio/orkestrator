@@ -12,7 +12,10 @@ import type { AssignTarget } from "./target";
 export type TargetAssignInput = Omit<
   AssignInput,
   "capture" | "action" | "implementation" | "resolution"
->;
+> & {
+  /** The implementation that can handle what is picked, for an action target. */
+  implementation?: string;
+};
 
 /**
  * What an assign form needs of its target: the action (ports, name, logo), the
@@ -44,13 +47,15 @@ export const useAssignTarget = (target: AssignTarget) => {
 
   const { assign: rawAssign } = useAssign();
   const assign = useCallback(
-    (input: TargetAssignInput) =>
+    ({ implementation: pinned, ...input }: TargetAssignInput) =>
       rawAssign(
         buildAssignInput({
           ...input,
           ...(implementationId
             ? { implementation: implementationId, ...(resolution ? { resolution } : {}) }
-            : { action: actionId }),
+            : pinned
+              ? { implementation: pinned }
+              : { action: actionId }),
         }),
       ),
     [rawAssign, implementationId, actionId, resolution],

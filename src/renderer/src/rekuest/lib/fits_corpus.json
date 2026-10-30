@@ -1,0 +1,1111 @@
+{
+ "fits": [
+  {
+   "formula": "@mikro/size * @mikro/dsize < agent.memory_mib * 1048576",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "value/@mikro~1size"
+        },
+        {
+         "key": "b",
+         "value_path": "value/@mikro~1dsize"
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "agent/memory_mib"
+        },
+        {
+         "key": "b",
+         "value_literal": 1048576
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/size * @mikro/dsize > agent.memory_mib * 1048576",
+   "call": {
+    "operation": "cmp.gt",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "value/@mikro~1size"
+        },
+        {
+         "key": "b",
+         "value_path": "value/@mikro~1dsize"
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "agent/memory_mib"
+        },
+        {
+         "key": "b",
+         "value_literal": 1048576
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "@mikro/size <= 1000",
+   "call": {
+    "operation": "cmp.lte",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "value/@mikro~1size"
+     },
+     {
+      "key": "b",
+      "value_literal": 1000
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/size >= 1001",
+   "call": {
+    "operation": "cmp.gte",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "value/@mikro~1size"
+     },
+     {
+      "key": "b",
+      "value_literal": 1001
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "@mikro/missing < 5",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "value/@mikro~1missing"
+     },
+     {
+      "key": "b",
+      "value_literal": 5
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "@mikro/missing * 2 < 5",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "value/@mikro~1missing"
+        },
+        {
+         "key": "b",
+         "value_literal": 2
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 5
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "@mikro/size < agent.memory_mib",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "value/@mikro~1size"
+     },
+     {
+      "key": "b",
+      "value_path": "agent/memory_mib"
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {},
+   "expected": false
+  },
+  {
+   "formula": "@mikro/size / 0 < 5",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.div",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "value/@mikro~1size"
+        },
+        {
+         "key": "b",
+         "value_literal": 0
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 5
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "@mikro/size / 0 < 5 or @mikro/size < 5000",
+   "call": {
+    "operation": "logic.any",
+    "arguments": [
+     {
+      "key": "values",
+      "value_list": [
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "util_call": {
+            "operation": "math.div",
+            "arguments": [
+             {
+              "key": "a",
+              "value_path": "value/@mikro~1size"
+             },
+             {
+              "key": "b",
+              "value_literal": 0
+             }
+            ]
+           }
+          },
+          {
+           "key": "b",
+           "value_literal": 5
+          }
+         ]
+        }
+       },
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1size"
+          },
+          {
+           "key": "b",
+           "value_literal": 5000
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/missing < 5 or @mikro/size < 5000",
+   "call": {
+    "operation": "logic.any",
+    "arguments": [
+     {
+      "key": "values",
+      "value_list": [
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1missing"
+          },
+          {
+           "key": "b",
+           "value_literal": 5
+          }
+         ]
+        }
+       },
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1size"
+          },
+          {
+           "key": "b",
+           "value_literal": 5000
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/size < 5000 and @mikro/dsize >= 2",
+   "call": {
+    "operation": "logic.all",
+    "arguments": [
+     {
+      "key": "values",
+      "value_list": [
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1size"
+          },
+          {
+           "key": "b",
+           "value_literal": 5000
+          }
+         ]
+        }
+       },
+       {
+        "util_call": {
+         "operation": "cmp.gte",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1dsize"
+          },
+          {
+           "key": "b",
+           "value_literal": 2
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/size < 5000 and @mikro/dsize >= 3",
+   "call": {
+    "operation": "logic.all",
+    "arguments": [
+     {
+      "key": "values",
+      "value_list": [
+       {
+        "util_call": {
+         "operation": "cmp.lt",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1size"
+          },
+          {
+           "key": "b",
+           "value_literal": 5000
+          }
+         ]
+        }
+       },
+       {
+        "util_call": {
+         "operation": "cmp.gte",
+         "arguments": [
+          {
+           "key": "a",
+           "value_path": "value/@mikro~1dsize"
+          },
+          {
+           "key": "b",
+           "value_literal": 3
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "agent.gpu_count >= 2",
+   "call": {
+    "operation": "cmp.gte",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "agent/gpu_count"
+     },
+     {
+      "key": "b",
+      "value_literal": 2
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "agent.gpu_memory_mib >= 8192",
+   "call": {
+    "operation": "cmp.gte",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "agent/gpu_memory_mib"
+     },
+     {
+      "key": "b",
+      "value_literal": 8192
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "agent.gpu_memory_mib > 0",
+   "call": {
+    "operation": "cmp.gt",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "agent/gpu_memory_mib"
+     },
+     {
+      "key": "b",
+      "value_literal": 0
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "gpus": []
+   },
+   "expected": false
+  },
+  {
+   "formula": "agent.gpu_count > 0",
+   "call": {
+    "operation": "cmp.gt",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "agent/gpu_count"
+     },
+     {
+      "key": "b",
+      "value_literal": 0
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "gpus": []
+   },
+   "expected": false
+  },
+  {
+   "formula": "math.floor(@mikro/size / 3) <= 333",
+   "call": {
+    "operation": "cmp.lte",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.floor",
+       "arguments": [
+        {
+         "key": "value",
+         "util_call": {
+          "operation": "math.div",
+          "arguments": [
+           {
+            "key": "a",
+            "value_path": "value/@mikro~1size"
+           },
+           {
+            "key": "b",
+            "value_literal": 3
+           }
+          ]
+         }
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 333
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "math.ceil(@mikro/size / 3) <= 333",
+   "call": {
+    "operation": "cmp.lte",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.ceil",
+       "arguments": [
+        {
+         "key": "value",
+         "util_call": {
+          "operation": "math.div",
+          "arguments": [
+           {
+            "key": "a",
+            "value_path": "value/@mikro~1size"
+           },
+           {
+            "key": "b",
+            "value_literal": 3
+           }
+          ]
+         }
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 333
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  },
+  {
+   "formula": "math.abs(-@mikro/size) >= 1000",
+   "call": {
+    "operation": "cmp.gte",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.abs",
+       "arguments": [
+        {
+         "key": "value",
+         "util_call": {
+          "operation": "math.neg",
+          "arguments": [
+           {
+            "key": "a",
+            "value_path": "value/@mikro~1size"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 1000
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": true
+  },
+  {
+   "formula": "@mikro/dtype < 5",
+   "call": {
+    "operation": "cmp.lt",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "value/@mikro~1dtype"
+     },
+     {
+      "key": "b",
+      "value_literal": 5
+     }
+    ]
+   },
+   "object": {
+    "@mikro/dtype": "uint8"
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": false
+  }
+ ],
+ "estimated_runtime": [
+  {
+   "formula": "args.image[\"@mikro/size\"] * args.image[\"@mikro/dsize\"] / agent.cpu_count",
+   "port": "image",
+   "call": {
+    "operation": "math.div",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.mul",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "args/image/@mikro~1size"
+        },
+        {
+         "key": "b",
+         "value_path": "args/image/@mikro~1dsize"
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_path": "agent/cpu_count"
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": 250
+  },
+  {
+   "formula": "args.image[\"@mikro/size\"] / agent.memory_mib + 1",
+   "port": "image",
+   "call": {
+    "operation": "math.add",
+    "arguments": [
+     {
+      "key": "a",
+      "util_call": {
+       "operation": "math.div",
+       "arguments": [
+        {
+         "key": "a",
+         "value_path": "args/image/@mikro~1size"
+        },
+        {
+         "key": "b",
+         "value_path": "agent/memory_mib"
+        }
+       ]
+      }
+     },
+     {
+      "key": "b",
+      "value_literal": 1
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": 1.9765625
+  },
+  {
+   "formula": "args.image[\"@mikro/missing\"] * 2",
+   "port": "image",
+   "call": {
+    "operation": "math.mul",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "args/image/@mikro~1missing"
+     },
+     {
+      "key": "b",
+      "value_literal": 2
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": null
+  },
+  {
+   "formula": "args.image[\"@mikro/size\"] / agent.cpu_count",
+   "port": "image",
+   "call": {
+    "operation": "math.div",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "args/image/@mikro~1size"
+     },
+     {
+      "key": "b",
+      "value_path": "agent/cpu_count"
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {},
+   "expected": null
+  },
+  {
+   "formula": "args.image[\"@mikro/size\"] / 0",
+   "port": "image",
+   "call": {
+    "operation": "math.div",
+    "arguments": [
+     {
+      "key": "a",
+      "value_path": "args/image/@mikro~1size"
+     },
+     {
+      "key": "b",
+      "value_literal": 0
+     }
+    ]
+   },
+   "object": {
+    "@mikro/size": 1000,
+    "@mikro/dsize": 2
+   },
+   "hardware": {
+    "cpu_count": 8,
+    "memory_mib": 1024,
+    "gpus": [
+     {
+      "name": "A",
+      "memory_mib": 4096
+     },
+     {
+      "name": "B",
+      "memory_mib": 8192
+     }
+    ]
+   },
+   "expected": null
+  }
+ ]
+}

@@ -84,3 +84,7 @@ export const requiredQueryVariables = (query: string): string[] => {
  */
 export const queryDeclaresRequires = (query: string): boolean =>
   queryVariables(query).includes("requires");
+
+/** The same for `$fits`: what the agents that could take the form can handle. */
+export const queryDeclaresFits = (query: string): boolean =>
+  queryVariables(query).includes("fits");

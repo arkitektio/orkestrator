@@ -2,6 +2,7 @@ import {
   ActionOrder,
   AllPrimaryActionsQueryVariables,
   DemandKind,
+  EstimatedRuntimeFilterInput,
   ImplementationOrder,
   OpenableBloksQueryVariables,
   Ordering,
@@ -103,7 +104,33 @@ export const shortcutsVariables = (
  * `app` keeps only that app's actions, `exceptApp` drops them: a supervised
  * agent's supervisor actions are listed under Supervisor, so Run leaves them out.
  */
-export type ActionScopeOptions = { collection?: string; app?: string; exceptApp?: string };
+export type ActionScopeOptions = {
+  collection?: string;
+  app?: string;
+  exceptApp?: string;
+  estimate?: EstimatedRuntimeFilterInput;
+};
+
+/** Runnable first, then fastest for the object asked about: `ActionOrder.estimatedRuntime`. */
+const FASTEST_ACTION_ORDERING: ActionOrder[] = [{ estimatedRuntime: Ordering.AscNullsLast }];
+
+/**
+ * What the estimate is computed for: one picked object that says something of itself. A
+ * selection of several has no single estimate.
+ */
+export const estimateFor = (
+  objects: readonly { identifier: string; descriptors?: unknown }[],
+  lte?: number,
+): EstimatedRuntimeFilterInput | undefined => {
+  const [object, ...others] = objects;
+  const descriptors = object?.descriptors as Record<string, unknown> | undefined;
+  if (!object || others.length > 0 || !descriptors || Object.keys(descriptors).length === 0) return undefined;
+  return {
+    identifier: object.identifier,
+    descriptors: Object.entries(descriptors).map(([key, value]) => ({ key, value })),
+    ...(lte !== undefined ? { lte } : {}),
+  } as EstimatedRuntimeFilterInput;
+};
 
 export const actionsVariables = (
   demands: PortDemandInput[],
@@ -115,8 +142,9 @@ export const actionsVariables = (
     ...(options.collection ? { inCollection: options.collection } : {}),
     ...(options.app ? { appIdentifier: options.app } : {}),
     ...(options.exceptApp ? { NOT: { appIdentifier: options.exceptApp } } : {}),
+    ...(options.estimate ? { estimatedRuntime: options.estimate } : {}),
   },
-  ordering: RUNNABLE_FIRST_ACTION_ORDERING,
+  ordering: options.estimate ? FASTEST_ACTION_ORDERING : RUNNABLE_FIRST_ACTION_ORDERING,
   pagination: { limit: limitFor(SMART_ACTION_LIMIT, options, demands) },
 });
 

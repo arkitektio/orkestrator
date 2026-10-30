@@ -31,7 +31,9 @@ import { ActionKind } from "../api/graphql";
 import {
   ActionFacetFilter,
   ActionFacets,
+  NO_ACTION_FACETS,
 } from "../components/filter/ActionFacetFilter";
+import { useCapabilityFacets } from "../components/filter/CapabilityFacets";
 import { StructureDemandFilter } from "../components/filter/StructureDemandFilter";
 import ActionBrowseList from "../components/lists/ActionBrowseList";
 import {
@@ -46,6 +48,7 @@ import {
   buildActionOrdering,
   isRunnable,
 } from "../lib/actionBrowse";
+import { pickCapabilityFacets } from "../lib/capabilities";
 import { ActionsManageSidebar } from "../sidebars/ActionsManageSidebar";
 import { ActionsStatisticsSidebar } from "../sidebars/ActionsStatisticsSidebar";
 import { REKUEST_HELP } from "../help";
@@ -69,6 +72,7 @@ const Page = () => {
   const [app, setApp] = useQueryState("app", parseAsString);
   const [protocol, setProtocol] = useQueryState("protocol", parseAsString);
   const [collection, setCollection] = useQueryState("collection", parseAsString);
+  const [capabilities, setCapabilities] = useCapabilityFacets();
   const [structure, setStructure] = useQueryState("structure", parseAsString);
   const [dir, setDir] = useQueryState(
     "dir",
@@ -89,13 +93,14 @@ const Page = () => {
   const [usedAfter, setUsedAfter] = useQueryState("after", parseAsIsoDateTime);
   const [usedBefore, setUsedBefore] = useQueryState("before", parseAsIsoDateTime);
 
-  const facets: ActionFacets = { kind, stateful, app, protocol, collection };
+  const facets: ActionFacets = { kind, stateful, app, protocol, collection, ...capabilities };
   const setFacets = (next: Partial<ActionFacets>) => {
     if ("kind" in next) setKind(next.kind ?? null);
     if ("stateful" in next) setStateful(next.stateful ?? null);
     if ("app" in next) setApp(next.app ?? null);
     if ("protocol" in next) setProtocol(next.protocol ?? null);
     if ("collection" in next) setCollection(next.collection ?? null);
+    setCapabilities(pickCapabilityFacets(next));
   };
 
   const afterKey = usedAfter?.getTime();
@@ -113,10 +118,11 @@ const Page = () => {
         dir,
         after: usedAfter,
         before: usedBefore,
+        capabilities,
       }),
     // Dates are fresh objects on every parse; key them by value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey],
+    [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey, capabilities],
   );
   const ordering = useMemo(
     () => buildActionOrdering(sort === "default" ? null : sort),
@@ -133,7 +139,7 @@ const Page = () => {
   );
   const clearAll = () => {
     setSearch(null);
-    setFacets({ kind: null, stateful: null, app: null, protocol: null, collection: null });
+    setFacets(NO_ACTION_FACETS);
     setStructure(null);
     setRunnable(null);
     setUsedAfter(null);

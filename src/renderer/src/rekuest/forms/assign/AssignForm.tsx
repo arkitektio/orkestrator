@@ -1,6 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
 import { DependencyDefinitionsProvider } from "@/core/ports/engine/DependencyContext";
+import { PortFitsContext } from "@/core/ports/engine/PortFitsContext";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
@@ -27,6 +28,8 @@ import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/Aut
 import { DependencyTreeNotice } from "../../components/dependencies/DependencyTreeNotice";
 import { ActionLogo } from "../../components/logo/ActionLogo";
 import { useDependencyTree } from "../../hooks/useDependencyTree";
+import { EstimatedRuntimeHint } from "./EstimatedRuntimeHint";
+import { FitsGuard, portFitsOf, type FitDecision } from "./FitsGuard";
 import { useAssignForm } from "./useAssignForm";
 import type { AssignTarget, AssignTrack } from "./target";
 import { useAssignTarget } from "./useAssignTarget";
@@ -114,6 +117,10 @@ export const AssignForm = ({
   const [failure, setFailure] = useState<unknown>(null);
   // The button shakes once per refusal; cleared when the animation ends.
   const [refused, setRefused] = useState(false);
+  // Which agent can handle what is picked: takt alone would take the first available.
+  const [fit, setFit] = useState<FitDecision>({});
+  const candidates = implementation ? [implementation] : action?.implementations;
+  const portFits = useMemo(() => portFitsOf(candidates), [candidates]);
   // Counts refusals: keys the reason so it slides in again on a repeat.
   const [refusals, setRefusals] = useState(0);
 
@@ -136,6 +143,8 @@ export const AssignForm = ({
         reference,
         hooks: [],
         policy: autoMode.policy,
+        // A resolution has bound its agents already.
+        ...(fit.pin && !target.resolution ? { implementation: fit.pin } : {}),
       });
       onAssigned?.(task, reference);
       if (layout === "dialog" && !keepOpen) closeDialog();
@@ -195,6 +204,7 @@ export const AssignForm = ({
           </DialogHeader>
         )}
 
+        <PortFitsContext.Provider value={portFits}>
         <DependencyDefinitionsProvider dependencies={pinning?.dependencies || []}>
           {formPorts && formPorts.length == 0 && (
             <div className="text-sm text-muted-foreground">No arguments needed</div>
@@ -216,7 +226,20 @@ export const AssignForm = ({
             />
           )}
         </DependencyDefinitionsProvider>
+        </PortFitsContext.Provider>
         <DependencyTreeNotice tree={tree} />
+
+        <FitsGuard
+          control={form.control}
+          ports={formPorts}
+          implementations={candidates}
+          onDecision={setFit}
+        />
+        {fit.refused && (
+          <div className="text-xs text-destructive">
+            No agent fits this {fit.refused.port}: {fit.refused.source}
+          </div>
+        )}
 
         <DialogFooter className="sm:items-center">
           {/* To the left of the button that was pressed. */}
@@ -226,12 +249,18 @@ export const AssignForm = ({
             variant="line"
             className="animate-refuse-reason sm:mr-auto"
           />
+          <EstimatedRuntimeHint
+            control={form.control}
+            ports={formPorts}
+            implementations={candidates}
+            className="shrink-0"
+          />
           <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" />
           <Button
             type="submit"
             // Red while it shakes, then back to the plain button.
             variant={refused ? "destructive" : "outline"}
-            disabled={isSubmitting || tree.satisfied === false}
+            disabled={isSubmitting || tree.satisfied === false || Boolean(fit.refused)}
             className={cn("shrink-0 gap-2", refused && "animate-refuse-shake")}
             onAnimationEnd={() => setRefused(false)}
             onClick={(e) => {

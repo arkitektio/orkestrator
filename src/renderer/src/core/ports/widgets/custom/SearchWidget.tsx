@@ -30,7 +30,8 @@ import {
   PopoverTrigger,
 } from "@/core/ui/popover";
 import { cn, notEmpty } from "@/core/util/utils";
-import { portRequires, queryDeclaresRequires, queryVariables } from "@/core/ports/engine/constraints";
+import { portRequires, queryDeclaresFits, queryDeclaresRequires, queryVariables } from "@/core/ports/engine/constraints";
+import { usePortFits } from "@/core/ports/engine/PortFitsContext";
 import { AlertCircle, ChevronsUpDown, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -156,6 +157,8 @@ export const SearchWidget = (
   const requiresKey = queryDeclaresRequires(thequery)
     ? JSON.stringify(portRequires(props.port))
     : undefined;
+  const portFits = usePortFits(props.port?.key ?? undefined);
+  const fitsKey = queryDeclaresFits(thequery) && portFits.length > 0 ? JSON.stringify(portFits) : undefined;
 
   const search = useCallback(
     async (searching: SearchOptions) => {
@@ -167,13 +170,14 @@ export const SearchWidget = (
         variables: {
           ...searching,
           ...(requiresKey !== undefined ? { requires: JSON.parse(requiresKey) } : {}),
+          ...(fitsKey !== undefined ? { fits: JSON.parse(fitsKey) } : {}),
           ...values,
         },
       });
 
       return options;
     },
-    [theward, thequery, values, met, requiresKey],
+    [theward, thequery, values, met, requiresKey, fitsKey],
   );
 
   const form = useFormContext();

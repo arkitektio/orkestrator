@@ -15,12 +15,21 @@ fragment DetailImplementation on Implementation {
   provenanceAudience
   params
   higherOrderConfig
+  estimatedRuntime {
+    ...EstimatedRuntime
+  }
+  fits {
+    ...ImplementationFit
+  }
   action {
     ...DetailAction
   }
   agent {
     id
     name
+    hardware {
+      ...AgentHardware
+    }
     active
     connected
     blocked
@@ -101,11 +110,45 @@ fragment ListImplementation on Implementation {
   }
 }
 
+fragment EstimatedRuntime on EstimatedRuntime {
+  callJson
+  source
+  uiCallJson
+  uiSource
+}
+
+fragment ImplementationFit on ImplementationFit {
+  port
+  callJson
+  source
+  compiledPath
+}
+
+fragment AgentHardware on AgentHardware {
+  cpuCount
+  memoryMib
+  gpus {
+    name
+    memoryMib
+  }
+}
+
 fragment MinimalImplementation on Implementation {
   id
   interface
+  estimatedRuntime {
+    ...EstimatedRuntime
+  }
+  fits {
+    ...ImplementationFit
+  }
   agent {
+    id
     name
+    active
+    hardware {
+      ...AgentHardware
+    }
   }
 }
 

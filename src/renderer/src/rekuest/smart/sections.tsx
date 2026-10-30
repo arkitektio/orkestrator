@@ -23,7 +23,8 @@ import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { useStableData } from "@/core/smart/extensions/useStableData";
 import { AssignButton, BatchAssignButton } from "./actions";
 import { OpenInBlokRow } from "./bloks";
-import { actionsVariables, openableBloksVariables, shortcutsVariables } from "./queries";
+import { actionsVariables, estimateFor, openableBloksVariables, shortcutsVariables } from "./queries";
+import { RunLimitSelector, useRunLimit } from "./RunLimit";
 import { ShortcutButton } from "./shortcuts";
 import { useShortcutPins } from "./pins";
 
@@ -101,6 +102,7 @@ const useActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFra
   const demands = useSmartDemands(page);
   const alsoDemands = useRelatedDemands(ctx);
   const skip = demands.single.length === 0;
+  const limit = useRunLimit();
   const result = useAllPrimaryActionsQuery({
     ...QUERY_OPTIONS,
     variables: actionsVariables(demands.single, {
@@ -108,6 +110,7 @@ const useActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFra
       collection: ctx.collection,
       exceptApp: selectionSupervisor(page),
       alsoDemands,
+      estimate: estimateFor(page.objects, limit),
     }),
     skip,
   });
@@ -192,7 +195,11 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
   id: "rekuest.actions",
   palette: true,
   module: "rekuest",
-  title: "Run",
+  title: (
+    <span className="flex items-center gap-2">
+      Run <RunLimitSelector />
+    </span>
+  ),
   icon: PlayCircle,
   priority: 40,
   tier: "remote",
@@ -212,6 +219,7 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
       variables: actionsVariables(buildDemands(target).single, {
         collection: target.collection,
         exceptApp: selectionSupervisor(target),
+        estimate: estimateFor(target.objects),
       }),
     },
   ],

@@ -4,6 +4,7 @@ import {StructurePickerControl, type PickerRequest} from '@/core/forms/Structure
 import {useServiceQuery} from '@/core/modules/hooks/useServiceQuery';
 import {useOptionSourceHonoursRequires, useStructureOptions} from '@/core/modules/hooks/useStructureOptions';
 import {queryVariables, requiredQueryVariables} from '@/core/ports/engine/constraints';
+import {CurrentPortFitsContext} from '@/core/ports/engine/PortFitsContext';
 import {StructureDisplay} from '@/core/smart/display/StructureDisplay';
 import {StructureViewer} from '@/core/smart/display/StructureViewer';
 import {cn} from '@/core/util/utils';
@@ -59,7 +60,7 @@ const renderChosen = (option: Option) => <span className="truncate">{option.labe
  * user typed, the ids to resolve, a page, and what the port being filled
  * requires. Every other variable is the author's and is read from the data.
  */
-const RESERVED_VARIABLES = new Set(['search', 'values', 'limit', 'offset', 'requires']);
+const RESERVED_VARIABLES = new Set(['search', 'values', 'limit', 'offset', 'requires', 'fits']);
 
 /**
  * A value as a query variable. A structure is held as `{__identifier, object}`
@@ -122,6 +123,8 @@ const StructurePickerRender: BlokRender<(typeof structureCatalog.components)['St
       free.map(name => asVariable(explicit && name in explicit ? explicit[name] : read.get(name))),
     );
     const requiresKey = JSON.stringify(port?.requires ?? []);
+    const portFits = React.useContext(CurrentPortFitsContext);
+    const fitsKey = portFits.length > 0 ? JSON.stringify(portFits) : undefined;
     // A variable declared non-null is one the query cannot be asked without:
     // the picker waits for it, and it is never lifted. A nullable one narrows
     // the list while it has a value, and the user may lift that.
@@ -160,6 +163,7 @@ const StructurePickerRender: BlokRender<(typeof structureCatalog.components)['St
           limit: request.limit,
           offset: request.offset,
           requires: listing ? JSON.parse(requiresKey) : undefined,
+          fits: listing && fitsKey ? JSON.parse(fitsKey) : undefined,
         };
         const variables: Record<string, unknown> = {};
         declared.forEach(name => {
@@ -173,7 +177,7 @@ const StructurePickerRender: BlokRender<(typeof structureCatalog.components)['St
         const data = await run(query as string, variables);
         return asOptions(data.options);
       },
-      [queried, source, run, query, declared, free, required, boundKey, requiresKey, narrowed],
+      [queried, source, run, query, declared, free, required, boundKey, requiresKey, fitsKey, narrowed],
     );
 
     if (!identifier || (!queried && !source)) {

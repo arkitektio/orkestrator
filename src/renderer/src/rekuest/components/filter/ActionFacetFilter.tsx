@@ -17,6 +17,13 @@ import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { ActionKind, useProtocolOptionsLazyQuery } from "@/rekuest/api/graphql";
 import { Filter, X } from "lucide-react";
 import { useCallback } from "react";
+import {
+  CapabilityFacets,
+  countCapabilityFacets,
+  NO_CAPABILITY_FACETS,
+} from "../../lib/capabilities";
+import { CapabilityFacetRows } from "./CapabilityFacets";
+import { FacetRow } from "./FacetRow";
 
 export type ActionFacets = {
   kind: ActionKind | null;
@@ -24,16 +31,18 @@ export type ActionFacets = {
   app: string | null;
   protocol: string | null;
   collection: string | null;
+} & CapabilityFacets;
+
+export const NO_ACTION_FACETS: ActionFacets = {
+  kind: null,
+  stateful: null,
+  app: null,
+  protocol: null,
+  collection: null,
+  ...NO_CAPABILITY_FACETS,
 };
 
 const ANY = "any";
-
-const FacetRow = (props: { label: string; children: React.ReactNode }) => (
-  <div className="flex flex-col gap-1.5">
-    <div className="text-xs font-medium text-muted-foreground">{props.label}</div>
-    {props.children}
-  </div>
-);
 
 /**
  * Every server-side action facet in one popover. A popover rather than Home's
@@ -89,7 +98,7 @@ export const ActionFacetFilter = ({
     facets.app,
     facets.protocol,
     facets.collection,
-  ].filter(Boolean).length;
+  ].filter(Boolean).length + countCapabilityFacets(facets);
 
   return (
     <Popover>
@@ -102,7 +111,10 @@ export const ActionFacetFilter = ({
           </ActionLabel>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="flex w-72 flex-col gap-4">
+      <PopoverContent
+        align="end"
+        className="flex max-h-[min(80vh,40rem)] w-80 flex-col gap-4 overflow-y-auto"
+      >
         <FacetRow label="Kind">
           <ToggleGroup
             type="single"
@@ -157,6 +169,8 @@ export const ActionFacetFilter = ({
           />
         </FacetRow>
 
+        <CapabilityFacetRows facets={facets} onChange={onChange} />
+
         {/* Collections have no root query to pick from; the facet is only ever
             set by following a collection chip, so it is shown to be cleared. */}
         {facets.collection && (
@@ -179,15 +193,7 @@ export const ActionFacetFilter = ({
             variant="ghost"
             size="sm"
             className="text-muted-foreground"
-            onClick={() =>
-              onChange({
-                kind: null,
-                stateful: null,
-                app: null,
-                protocol: null,
-                collection: null,
-              })
-            }
+            onClick={() => onChange(NO_ACTION_FACETS)}
           >
             Clear filters
           </Button>

@@ -8,6 +8,7 @@ import {
   PortDemandInput,
   PortKind,
 } from "@/rekuest/api/graphql";
+import { buildCapabilityFilter, CapabilityFacets } from "./capabilities";
 
 // Pure helpers behind the actions catalog (ActionsPage) and the action detail
 // panels. Inputs are typed structurally so they accept any fragment that
@@ -93,6 +94,8 @@ export type ActionBrowseState = {
   dir?: DemandDirection | null;
   after?: Date | null;
   before?: Date | null;
+  /** Whether it asks, informs or calls (see `capabilities`). */
+  capabilities?: Partial<CapabilityFacets> | null;
 };
 
 /** Matches a structure at any port position (no `at`). */
@@ -105,7 +108,7 @@ export const structureDemand = (
 });
 
 export const buildActionFilter = (state: ActionBrowseState): ActionFilter => {
-  const filter: ActionFilter = {};
+  const filter: ActionFilter = buildCapabilityFilter(state.capabilities);
 
   const search = state.search?.trim();
   if (search) filter.search = search;

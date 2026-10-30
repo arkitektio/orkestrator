@@ -38,6 +38,7 @@ import {
   DeclaredInteractions,
   DynamicCapabilityBadges,
 } from "../components/implementation/DeclaredInteractions";
+import { DeclaredFits } from "../components/implementation/DeclaredFits";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
 import { ReturnsContainer } from "@/core/ports/engine/tailwind";
@@ -541,6 +542,8 @@ export const DefaultRenderer = (props: {
       </div>
 
       <DoForm id={i.id} />
+
+      <DeclaredFits implementation={i} />
 
       <DeclaredInteractions interactions={i.interactions} />
 
