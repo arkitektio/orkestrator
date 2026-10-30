@@ -10,6 +10,7 @@ import { useSettings } from "@/core/settings/store/SettingsContext";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
 import {
+  findVisibleRoi,
   useRoiSelectionStore,
   useRoiSelectionStoreApi,
   type VisibleRoi,
@@ -90,7 +91,9 @@ export const AnnotationHoverCard = () => {
   // The world box, by identity: rewritten only when the layer's shown set
   // changes. Undefined once the shape scrolls out of the slab — and for a
   // shape just drawn until its layer shows it: no box, no card.
-  const visible = useRoiSelectionStore((s) => (targetId ? s.visibleRois[targetId] : undefined));
+  const visible = useRoiSelectionStore((s) =>
+    targetId ? findVisibleRoi(s.visibleRois, targetId) : undefined,
+  );
   if (!targetId || !visible) return null;
   // Keyed by the shape, not the click: a hover that turns into a click on the
   // same shape keeps its card (and its queries) and just unfolds.

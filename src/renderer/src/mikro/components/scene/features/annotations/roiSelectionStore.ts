@@ -47,7 +47,13 @@ export const HOVER_GRACE_MS = 350;
 
 interface RoiSelectionState {
   selectedRois: SelectedRoi[];
-  visibleRois: Record<string, VisibleRoi>;
+  /**
+   * What each layer shows now, by layer id then shape id: rewritten whole per
+   * layer whenever its shown set changes, a z-scrub's cadence. Published frozen
+   * and outside Immer (`setVisibleLayerRois`): reading a dictionary of thousands
+   * through a draft costs a proxy per shape, and Immer would deep-freeze it all.
+   */
+  visibleRois: Readonly<Record<string, ReadonlyMap<string, VisibleRoi>>>;
   /**
    * The shape under the pointer (UI cadence: it CHANGES on enter/leave only —
    * the pick surfaces call `hoverRoi` per move, and the same id is a no-op).
@@ -104,6 +110,18 @@ interface RoiSelectionState {
   setVisibleLayerRois: (layerId: string, rois: VisibleRoi[]) => void;
   clearVisibleLayerRois: (layerId: string) => void;
 }
+
+/** A shape's visible entry, whichever layer shows it. */
+export const findVisibleRoi = (
+  visibleRois: RoiSelectionState["visibleRois"],
+  id: string,
+): VisibleRoi | undefined => {
+  for (const layerId in visibleRois) {
+    const hit = visibleRois[layerId].get(id);
+    if (hit) return hit;
+  }
+  return undefined;
+};
 
 export const createRoiSelectionStore = () => {
   // Hover bookkeeping lives in the closure, not the state: a timer handle and
@@ -217,28 +235,22 @@ export const createRoiSelectionStore = () => {
             if (state.menuRoi && gone.has(state.menuRoi.roi.layerId)) state.menuRoi = null;
           }),
         setVisibleLayerRois: (layerId, rois) =>
-          set((state) => {
-            Object.keys(state.visibleRois).forEach((roiId) => {
-              if (state.visibleRois[roiId]?.layerId === layerId) {
-                delete state.visibleRois[roiId];
-              }
-            });
-
-            rois.forEach((roi) => {
-              state.visibleRois[roi.id] = roi;
-            });
+          set({
+            visibleRois: Object.freeze({
+              ...get().visibleRois,
+              [layerId]: new Map(rois.map((roi) => [roi.id, roi])),
+            }),
           }),
-        clearVisibleLayerRois: (layerId) =>
-          set((state) => {
-            Object.keys(state.visibleRois).forEach((roiId) => {
-              if (state.visibleRois[roiId]?.layerId === layerId) {
-                delete state.visibleRois[roiId];
-              }
-            });
+        clearVisibleLayerRois: (layerId) => {
+          const { [layerId]: _gone, ...visibleRois } = get().visibleRois;
+          const { hoveredRoi, menuRoi } = get();
+          set({
+            visibleRois: Object.freeze(visibleRois),
             // The layer unmounted: its shapes can no longer report a leave.
-            if (state.hoveredRoi?.layerId === layerId) state.hoveredRoi = null;
-            if (state.menuRoi?.roi.layerId === layerId) state.menuRoi = null;
-          }),
+            hoveredRoi: hoveredRoi?.layerId === layerId ? null : hoveredRoi,
+            menuRoi: menuRoi?.roi.layerId === layerId ? null : menuRoi,
+          });
+        },
       };
     }),
   );

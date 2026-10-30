@@ -7,6 +7,8 @@ import {
   HOVER_GRACE_MS,
   createRoiSelectionStore,
   type SelectedRoi,
+  findVisibleRoi,
+  type VisibleRoi,
 } from "./roiSelectionStore";
 
 const roi = (id: string, layerId: string): SelectedRoi => ({
@@ -224,5 +226,49 @@ describe("menuRoi", () => {
     store.getState().openRoiMenu(roi("ann:2", "layer:b"));
     store.getState().clearVisibleLayerRois("layer:b");
     expect(store.getState().menuRoi).toBeNull();
+  });
+});
+
+describe("visibleRois", () => {
+  const visible = (id: string, layerId: string) =>
+    ({ id, layerId, vectors: [[0, 0, 0]], bounds: {}, zSpan: {} }) as unknown as VisibleRoi;
+
+  it("replaces one layer's shapes and leaves the others", () => {
+    const store = createRoiSelectionStore();
+    const { setVisibleLayerRois } = store.getState();
+    setVisibleLayerRois("a", [visible("1", "a"), visible("2", "a")]);
+    setVisibleLayerRois("b", [visible("3", "b")]);
+    setVisibleLayerRois("a", [visible("4", "a")]);
+    const { visibleRois } = store.getState();
+    expect([...visibleRois.a.keys()]).toEqual(["4"]);
+    expect(visibleRois.b.size).toBe(1);
+    expect(findVisibleRoi(visibleRois, "3")?.layerId).toBe("b");
+    expect(findVisibleRoi(visibleRois, "1")).toBeUndefined();
+  });
+
+  it("is not walked by the store's other writes", () => {
+    const store = createRoiSelectionStore();
+    const roi = visible("1", "a");
+    store.getState().setVisibleLayerRois("a", [roi]);
+    store.getState().hoverRoi(visible("2", "b"));
+    store.getState().selectOnlyRoi(visible("2", "b"));
+    // Immer freezes whatever it walks: a frozen roi means it read all of them.
+    expect(Object.isFrozen(roi)).toBe(false);
+    expect(store.getState().visibleRois.a.get("1")).toBe(roi);
+  });
+
+  it("clearing a layer drops its shapes, and its hover and menu with it", () => {
+    const store = createRoiSelectionStore();
+    const roi = visible("1", "a");
+    store.getState().setVisibleLayerRois("a", [roi]);
+    store.getState().setVisibleLayerRois("b", [visible("2", "b")]);
+    store.getState().hoverRoi(roi);
+    store.getState().openRoiMenu(roi);
+    store.getState().clearVisibleLayerRois("a");
+    const state = store.getState();
+    expect(state.visibleRois.a).toBeUndefined();
+    expect(state.visibleRois.b.size).toBe(1);
+    expect(state.hoveredRoi).toBeNull();
+    expect(state.menuRoi).toBeNull();
   });
 });

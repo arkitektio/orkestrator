@@ -89,19 +89,10 @@ export const AnnotationLayerCard = memo(
       return [...counts.entries()].sort((a, b) => b[1] - a[1]);
     }, [annotations]);
 
-    // A SCALAR selector, deliberately: `visibleRois` is rewritten whenever the
-    // z-plane moves, and subscribing to the objects would re-render this card
-    // at scrub cadence (P17). A count only re-renders when the count changes.
-    const inView = useRoiSelectionStore((s) => {
-      // Counted without allocating (`Object.values` + `filter` per store
-      // write, per card).
-      let count = 0;
-      const visible = s.visibleRois;
-      for (const key in visible) {
-        if (visible[key].layerId === layer.id) count += 1;
-      }
-      return count;
-    });
+    // A SCALAR selector, deliberately: a layer's visible shapes are rewritten
+    // whenever the z-plane moves, and subscribing to the objects would re-render
+    // this card at scrub cadence (P17). A count only re-renders when it changes.
+    const inView = useRoiSelectionStore((s) => s.visibleRois[layer.id]?.size ?? 0);
 
     const total = annotations?.length ?? 0;
 

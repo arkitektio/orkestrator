@@ -151,9 +151,8 @@ export const RectangleDrawer = () => {
           const hit = pointOnPlane(e);
           const end = hit ? hit.clone() : (cursorRef.current ?? start);
           const selectionBounds = normalizeBounds(start, end);
-          const containedRois = Object.values(
-            selectionApi.getState().visibleRois,
-          )
+          const containedRois = Object.values(selectionApi.getState().visibleRois)
+            .flatMap((layerRois) => [...layerRois.values()])
             .filter((roi) => isContained(selectionBounds, roi.bounds))
             .map(({ bounds: _bounds, ...roi }) => roi);
 
