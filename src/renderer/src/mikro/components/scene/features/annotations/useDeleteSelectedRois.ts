@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { reportError, toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
 import { removeSceneAnnotation } from "../../../../lib/annotations/annotationCache";
@@ -15,6 +15,49 @@ export function selectionLayerIds(selected: readonly Pick<SelectedRoi, "layerId"
   return [...new Set(selected.map((roi) => roi.layerId))];
 }
 
+const useDeleteAnnotation = () =>
+  useDeleteAnnotationMutation({
+    // Drop the shape from the cached lists instead of fetching them again.
+    update: (cache, _result, { variables }) => {
+      if (variables) removeSceneAnnotation(cache, variables.input.id);
+    },
+  });
+
+/**
+ * Delete one annotation by id, whether or not it is selected: the delete button
+ * on each row of the layer card's list. A failure keeps the shape, and its
+ * place in the selection, and says why.
+ */
+export const useDeleteRoi = (): {
+  deleteRoi: (id: string) => Promise<void>;
+  deletingIds: ReadonlySet<string>;
+} => {
+  const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
+  const [deleteAnnotationMutation] = useDeleteAnnotation();
+  const [deletingIds, setDeletingIds] = useState<ReadonlySet<string>>(new Set());
+
+  const deleteRoi = useCallback(
+    async (id: string) => {
+      setDeletingIds((ids) => new Set(ids).add(id));
+      try {
+        await deleteAnnotationMutation({ variables: { input: { id } } });
+        removeSelectedRoi(id);
+      } catch (error) {
+        reportError(error, "Couldn't delete the annotation");
+      } finally {
+        setDeletingIds((ids) => {
+          const next = new Set(ids);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [deleteAnnotationMutation, removeSelectedRoi],
+  );
+
+  return { deleteRoi, deletingIds };
+};
+
 /**
  * Delete every selected annotation, one mutation each, dropping only the
  * fulfilled ones from the selection — a partial failure leaves the failed
@@ -27,12 +70,7 @@ export const useDeleteSelectedRois = (): {
 } => {
   const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
-  const [deleteAnnotationMutation, { loading: isDeleting }] = useDeleteAnnotationMutation({
-    // Drop the shape from the cached lists instead of fetching them again.
-    update: (cache, _result, { variables }) => {
-      if (variables) removeSceneAnnotation(cache, variables.input.id);
-    },
-  });
+  const [deleteAnnotationMutation, { loading: isDeleting }] = useDeleteAnnotation();
 
   const deleteSelectedRois = useCallback(async () => {
     if (selectedRois.length === 0 || isDeleting) return;

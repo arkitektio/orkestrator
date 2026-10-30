@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import * as THREE from "three";
-import { Focus, X } from "lucide-react";
+import { Focus, Trash2, X } from "lucide-react";
 import { Button } from "@/core/ui/button";
 import { MikroAnnotation } from "@/core/linkers";
 import { type SceneAnnotationFragment } from "@/mikro/api/graphql";
@@ -8,7 +8,7 @@ import { resolveCollectionMatrix, type AnnotationLayerVariant } from "./annotati
 import { formatAnnotationMeasure, measureAnnotation } from "./roiMeasure";
 import { unitLabel } from "../../platform/coords/sceneUnits";
 import { useNavigateToAnnotation } from "./useNavigateToAnnotation";
-import { useDeleteSelectedRois } from "./useDeleteSelectedRois";
+import { useDeleteRoi, useDeleteSelectedRois } from "./useDeleteSelectedRois";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { RoiAttributeSection } from "./RoiAttributeSection";
@@ -150,6 +150,7 @@ export const AnnotationList = ({
   const collection = layer.annotationCollection!;
   const toggleSelectedRoi = useRoiSelectionStore((s) => s.toggleSelectedRoi);
   const navigateToAnnotation = useNavigateToAnnotation();
+  const { deleteRoi, deletingIds } = useDeleteRoi();
   const measureOf = useMeasureOf(layer);
   const systemId = collection.coordinateSystem.id ?? null;
   const axisNames = useMemo(
@@ -175,6 +176,7 @@ export const AnnotationList = ({
     <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto border-t border-foreground/5 px-2 py-1.5">
       {annotations.map((annotation, index) => {
         const isSelected = selectedIds.has(annotation.id);
+        const isDeleting = deletingIds.has(annotation.id);
         const measure = measureOf(annotation);
         return (
           <div
@@ -216,6 +218,23 @@ export const AnnotationList = ({
               }}
             >
               <Focus className="h-3 w-3" />
+            </Button>
+            {/* Not `disabled` while deleting: a disabled button lets the click
+                through to the row, which would toggle the selection. */}
+            <Button
+              variant="ghost"
+              size="xs"
+              className={`h-5 w-5 shrink-0 p-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300 ${
+                isDeleting ? "opacity-40" : ""
+              }`}
+              title={isDeleting ? "Deleting…" : "Delete annotation"}
+              aria-busy={isDeleting}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!isDeleting) void deleteRoi(annotation.id);
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         );
