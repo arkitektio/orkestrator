@@ -73,7 +73,6 @@ export const settingsValidator = zod.object({
   railBackdropFit: zod.enum(["fill", "bottom"]),
   /**
    * The floating rail: hidden, sliding in over the page from the left edge.
-   * Fullscreen floats regardless (a session toggle can dock it there).
    */
   railFloating: zod.boolean(),
   /**

@@ -75,7 +75,7 @@ const FloatingFields = () => (
   <SwitchField
     name="railFloating"
     label="Floating sidebar"
-    description="Hide the sidebar and slide it in over the page when the pointer reaches the left edge. Fullscreen always floats it. Its shortcut is under Keyboard shortcuts"
+    description="Hide the sidebar and slide it in over the page when the pointer reaches the left edge. Its shortcut is under Keyboard shortcuts"
   />
 );
 

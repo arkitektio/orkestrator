@@ -1,8 +1,7 @@
 import { acceleratorFromKeyPress } from "@/core/command/accelerator";
 import { useSettings, useSettingsStoreApi } from "@/core/settings/store/SettingsContext";
 import { defaultSettings } from "@/core/settings/store/validator";
-import { useWindowState } from "@/core/util/platform";
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect } from "react";
 
 /**
  * Whether the rail is docked beside the page or floating over it.
@@ -11,75 +10,23 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
  * whole window and the rail slides in from the left edge when the pointer is
  * pushed against it (`useRailFloatReveal`).
  *
- * Two inputs decide it:
- *
- * - **Windowed**, the `railFloating` setting: a preference, persisted, the
- *   same in every window.
- * - **Fullscreen** floats by default — the point of fullscreen is the page —
- *   and the shortcut docks it there for as long as this window stays
- *   fullscreen. Session-only and per window, so leaving fullscreen forgets it
- *   and the setting is never rewritten by a toggle the user meant for now.
+ * The `railFloating` setting alone decides it: a preference, persisted, the
+ * same in every window, and untouched by going fullscreen.
  */
-export const effectiveRailFloating = (
-  setting: boolean,
-  fullscreen: boolean,
-  fullscreenDocked: boolean,
-): boolean => (fullscreen ? !fullscreenDocked : setting);
-
-/** One window, one answer — a module-level store, as `useWindowState` is. */
-let fullscreenDocked = false;
-const listeners = new Set<() => void>();
-
-export const setFullscreenDocked = (docked: boolean): void => {
-  if (fullscreenDocked === docked) return;
-  fullscreenDocked = docked;
-  listeners.forEach((listener) => listener());
-};
-
-const subscribe = (listener: () => void): (() => void) => {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-};
-
-const getFullscreenDocked = (): boolean => fullscreenDocked;
-
-const useFullscreenDocked = (): boolean =>
-  useSyncExternalStore(subscribe, getFullscreenDocked, getFullscreenDocked);
-
-export const useRailFloating = (): boolean => {
-  const { settings } = useSettings();
-  const { fullscreen } = useWindowState();
-  const docked = useFullscreenDocked();
-
-  // Leaving fullscreen forgets the session's "dock it here", so the next
-  // fullscreen floats again.
-  useEffect(() => {
-    if (!fullscreen) setFullscreenDocked(false);
-  }, [fullscreen]);
-
-  return effectiveRailFloating(settings.railFloating, fullscreen, docked);
-};
+export const useRailFloating = (): boolean => useSettings().settings.railFloating;
 
 /**
- * Flips whichever input is in charge right now: the session flag in
- * fullscreen, the setting otherwise. Reads the store at call time rather than
- * closing over a render's settings, so two quick presses do not both write
- * from the same stale copy.
+ * Flips the setting. Reads the store at call time rather than closing over a
+ * render's settings, so two quick presses do not both write from the same
+ * stale copy.
  */
 export const useToggleRailFloating = (): (() => void) => {
   const api = useSettingsStoreApi();
-  const { fullscreen } = useWindowState();
 
   return useCallback(() => {
-    if (fullscreen) {
-      setFullscreenDocked(!fullscreenDocked);
-      return;
-    }
     const { settings = defaultSettings, setSettings } = api.getState();
     setSettings({ ...settings, railFloating: !settings.railFloating });
-  }, [api, fullscreen]);
+  }, [api]);
 };
 
 /**
