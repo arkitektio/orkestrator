@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { positionGeometry, positionLocal, uniform } from "three/tsl";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 
 import type { PointEntry } from "./placedAnnotations";
 
@@ -6,12 +8,11 @@ import type { PointEntry } from "./placedAnnotations";
  * The imperative half of the instanced point annotations, pure enough to
  * unit-test against real three objects.
  *
- * `computeBoundingSphere()` after every matrix rewrite is LOAD-BEARING:
- * `InstancedMesh` computes its sphere lazily ONCE and `setMatrixAt` never
- * invalidates it, while both the frustum cull and `InstancedMesh.raycast`
- * trust the cached value. Without the recompute, scrubbing z to a different
- * subset of points left the sphere around the OLD ones — points outside it
- * vanished when their region left the frustum and never answered a click.
+ * An instance matrix holds a point's POSITION only. Its constant on-screen size
+ * is one uniform in the vertex shader, so a zoom writes a number instead of
+ * rewriting and re-uploading every matrix per frame. Nothing here reads a
+ * bounding sphere (the mesh is not frustum-culled, and the raycast is ours), so
+ * a z-scrub that swaps in a far subset of points cannot leave a stale one behind.
  */
 const SCRATCH_MATRIX = new THREE.Matrix4();
 const SCRATCH_COLOR = new THREE.Color();
@@ -19,16 +20,70 @@ const SCRATCH_COLOR = new THREE.Color();
 export function syncPointMatrices(
   mesh: THREE.InstancedMesh,
   entries: readonly PointEntry[],
-  scale: number,
 ): void {
   for (let i = 0; i < entries.length; i++) {
     const [x, y, z] = entries[i].position;
-    SCRATCH_MATRIX.makeScale(scale, scale, scale).setPosition(x, y, z);
-    mesh.setMatrixAt(i, SCRATCH_MATRIX);
+    mesh.setMatrixAt(i, SCRATCH_MATRIX.makeTranslation(x, y, z));
   }
   mesh.count = entries.length;
   mesh.instanceMatrix.needsUpdate = true;
-  mesh.computeBoundingSphere();
+}
+
+/**
+ * The unit disc each instance draws, at `scale` around its position. `uScale`
+ * drives the same number the raycast below reads.
+ */
+export function createPointMaterial(opacity: number): {
+  material: MeshBasicNodeMaterial;
+  uScale: ReturnType<typeof uniform<number>>;
+} {
+  const uScale = uniform(0);
+  const material = new MeshBasicNodeMaterial({
+    transparent: true,
+    opacity,
+    side: THREE.DoubleSide,
+  });
+  // `positionLocal` already carries the instance's translation here; only the
+  // geometry's own offset from it scales.
+  material.positionNode = positionLocal.add(positionGeometry.mul(uScale.sub(1)));
+  return { material, uScale };
+}
+
+const localRay = new THREE.Ray();
+const inverseWorld = new THREE.Matrix4();
+const localHit = new THREE.Vector3();
+
+/**
+ * A `raycast` for the points: the ray against each instance's disc, in the
+ * collection's frame where the discs lie flat, as `InstancedMesh.raycast` found
+ * them but without a mesh raycast per instance. On every pointer move while
+ * hover is armed. Every disc hit is reported, nearest sorted by the event system.
+ */
+export function createPointsRaycast(
+  scaleOf: () => number,
+): (this: THREE.InstancedMesh, raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) => void {
+  return function raycast(raycaster, intersects) {
+    const scale = scaleOf();
+    if (scale <= 0) return;
+    const radiusSq = scale * scale;
+    localRay.copy(raycaster.ray).applyMatrix4(inverseWorld.copy(this.matrixWorld).invert());
+    const { origin, direction } = localRay;
+    if (direction.z === 0) return;
+    const matrices = this.instanceMatrix.array;
+    for (let i = 0; i < this.count; i++) {
+      const at = i * 16;
+      const t = (matrices[at + 14] - origin.z) / direction.z;
+      if (t < 0) continue;
+      const dx = origin.x + direction.x * t - matrices[at + 12];
+      const dy = origin.y + direction.y * t - matrices[at + 13];
+      if (dx * dx + dy * dy > radiusSq) continue;
+      localHit.set(origin.x + direction.x * t, origin.y + direction.y * t, matrices[at + 14]);
+      const point = localHit.clone().applyMatrix4(this.matrixWorld);
+      const distance = raycaster.ray.origin.distanceTo(point);
+      if (distance < raycaster.near || distance > raycaster.far) continue;
+      intersects.push({ distance, point, object: this, instanceId: i } as THREE.Intersection);
+    }
+  };
 }
 
 export function syncPointColors(mesh: THREE.InstancedMesh, entries: readonly PointEntry[]): void {
@@ -41,8 +96,7 @@ export function syncPointColors(mesh: THREE.InstancedMesh, entries: readonly Poi
 /**
  * Do two entry lists demand the same instances? Value-compared (id, position,
  * color): a z-scrub recomputes the groups every tick, and when the same
- * points survive the filter the rewrite — and the bounding-sphere pass — can
- * be skipped wholesale.
+ * points survive the filter the rewrite can be skipped wholesale.
  */
 export function samePointEntries(
   a: readonly PointEntry[] | null,

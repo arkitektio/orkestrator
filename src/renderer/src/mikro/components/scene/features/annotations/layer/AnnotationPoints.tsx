@@ -8,17 +8,23 @@ import { computeWorldUnitsPerPixel } from "../../../platform/probe/probeWorld";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
 import type { PointEntry } from "./placedAnnotations";
-import { samePointEntries, syncPointColors, syncPointMatrices } from "./pointsInstancing";
+import {
+  createPointMaterial,
+  createPointsRaycast,
+  samePointEntries,
+  syncPointColors,
+  syncPointMatrices,
+} from "./pointsInstancing";
 import { DRAG_THRESHOLD_PX } from "../drawGesture";
 
 /**
  * Point annotations, held at a constant size on screen: ONE `InstancedMesh`
  * per distinct opacity. The screen-size scaling stays imperative off the
  * camera (P17 — subscribing to a worldUnitsPerPixel store field would
- * re-render every annotation on every camera move); the scale lives in the
- * instance MATRICES so the raycast picks exactly what is drawn. The z-scrub
- * recomputes the entry lists every tick — `samePointEntries` skips the
- * rewrite (and the bounding-sphere pass) when the same points survived.
+ * re-render every annotation on every camera move), and is one uniform per
+ * frame, which the raycast reads too, so it picks exactly what is drawn. The
+ * z-scrub recomputes the entry lists every tick — `samePointEntries` skips the
+ * rewrite when the same points survived.
  */
 const POINT_RADIUS_PX = 5;
 
@@ -60,6 +66,9 @@ export const AnnotationPoints = ({
   }, [hoverable, onUnhoverRoi]);
   /** Last written screen-size scale; 0 until the first frame. */
   const scaleRef = useRef(0);
+  const { material, uScale } = useMemo(() => createPointMaterial(opacity), [opacity]);
+  useEffect(() => () => material.dispose(), [material]);
+  const raycast = useMemo(() => createPointsRaycast(() => scaleRef.current), []);
   const writtenRef = useRef<PointEntry[] | null>(null);
 
   // Grow-only capacity so entry-count churn (z-scrub filtering) doesn't
@@ -74,18 +83,14 @@ export const AnnotationPoints = ({
     if (!mesh) return;
     if (samePointEntries(writtenRef.current, entries)) return; // scrub no-op
     writtenRef.current = entries;
-    syncPointMatrices(mesh, entries, scaleRef.current);
+    syncPointMatrices(mesh, entries);
     syncPointColors(mesh, entries);
   }, [entries, capacity]);
 
   useFrame(({ camera, size }) => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
     const scale = computeWorldUnitsPerPixel(camera, size.height) * POINT_RADIUS_PX;
-    // One epsilon-gated batch rewrite instead of N per-frame closures.
-    if (Math.abs(scale - scaleRef.current) <= scaleRef.current * 0.002) return;
     scaleRef.current = scale;
-    syncPointMatrices(mesh, writtenRef.current ?? entries, scale);
+    uScale.value = scale;
   });
 
   const handleClick = selectable
@@ -125,11 +130,13 @@ export const AnnotationPoints = ({
       key={capacity}
       ref={meshRef}
       args={[UNIT_CIRCLE_16, undefined, capacity]}
+      frustumCulled={false}
+      raycast={raycast}
       onClick={handleClick}
       onPointerMove={handleHoverMove}
       onPointerOut={handleHoverOut}
     >
-      <meshBasicMaterial transparent opacity={opacity} side={THREE.DoubleSide} />
+      <primitive object={material} attach="material" />
     </instancedMesh>
   );
 };
