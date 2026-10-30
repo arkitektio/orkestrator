@@ -1,3 +1,10 @@
+# [5.3.0](https://github.com/arkitektio/orkestrator/compare/v5.2.0...v5.3.0) (2026-10-30)
+
+
+### Features
+
+* **rekuest:** Fits and estimated runtimes in the menu, the form and pickers ([2eda32c](https://github.com/arkitektio/orkestrator/commit/2eda32cb047193def67aea35c6fbf4c38c977d96))
+
 # [5.2.0](https://github.com/arkitektio/orkestrator/compare/v5.1.0...v5.2.0) (2026-10-29)
 
 
