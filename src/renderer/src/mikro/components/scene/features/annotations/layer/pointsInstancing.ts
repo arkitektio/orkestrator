@@ -17,6 +17,17 @@ import type { PointEntry } from "./placedAnnotations";
 const SCRATCH_MATRIX = new THREE.Matrix4();
 const SCRATCH_COLOR = new THREE.Color();
 
+/**
+ * Ask for a whole attribute, over whatever a partial sync left pending: with any
+ * range queued the backend uploads only those, so a partial and a full sync
+ * inside one frame (a fast z-scrub) would otherwise lose the full one.
+ */
+const uploadWhole = (attribute: THREE.BufferAttribute): void => {
+  attribute.clearUpdateRanges();
+  attribute.addUpdateRange(0, attribute.array.length);
+  attribute.needsUpdate = true;
+};
+
 export function syncPointMatrices(
   mesh: THREE.InstancedMesh,
   entries: readonly PointEntry[],
@@ -26,7 +37,7 @@ export function syncPointMatrices(
     mesh.setMatrixAt(i, SCRATCH_MATRIX.makeTranslation(x, y, z));
   }
   mesh.count = entries.length;
-  mesh.instanceMatrix.needsUpdate = true;
+  uploadWhole(mesh.instanceMatrix);
 }
 
 /**
@@ -90,7 +101,59 @@ export function syncPointColors(mesh: THREE.InstancedMesh, entries: readonly Poi
   for (let i = 0; i < entries.length; i++) {
     mesh.setColorAt(i, SCRATCH_COLOR.set(entries[i].color));
   }
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  if (mesh.instanceColor) uploadWhole(mesh.instanceColor);
+}
+
+/** Above this many changed points, a rewrite is the cheaper upload. */
+const MAX_PARTIAL_POINTS = 32;
+
+/**
+ * Bring the instances from `previous` to `next`, writing and uploading only the
+ * points that differ: a click on one point used to rewrite every matrix and
+ * every color. A length change (or no `previous`, a new mesh) is a full sync.
+ */
+export function syncPointEntries(
+  mesh: THREE.InstancedMesh,
+  previous: readonly PointEntry[] | null,
+  next: readonly PointEntry[],
+): void {
+  const fullSync = () => {
+    syncPointMatrices(mesh, next);
+    syncPointColors(mesh, next);
+  };
+  if (previous === null || previous.length !== next.length || !mesh.instanceColor) {
+    fullSync();
+    return;
+  }
+  const moved: number[] = [];
+  const recolored: number[] = [];
+  for (let i = 0; i < next.length; i++) {
+    const p = previous[i];
+    const q = next[i];
+    if (
+      p.position[0] !== q.position[0] ||
+      p.position[1] !== q.position[1] ||
+      p.position[2] !== q.position[2]
+    ) {
+      moved.push(i);
+    }
+    if (p.color !== q.color) recolored.push(i);
+    if (moved.length + recolored.length > MAX_PARTIAL_POINTS) {
+      fullSync();
+      return;
+    }
+  }
+  for (const i of moved) {
+    const [x, y, z] = next[i].position;
+    mesh.setMatrixAt(i, SCRATCH_MATRIX.makeTranslation(x, y, z));
+    mesh.instanceMatrix.addUpdateRange(i * 16, 16);
+  }
+  if (moved.length > 0) mesh.instanceMatrix.needsUpdate = true;
+  for (const i of recolored) {
+    mesh.setColorAt(i, SCRATCH_COLOR.set(next[i].color));
+    mesh.instanceColor.addUpdateRange(i * 3, 3);
+  }
+  if (recolored.length > 0) mesh.instanceColor.needsUpdate = true;
 }
 
 /**

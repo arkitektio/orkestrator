@@ -12,8 +12,7 @@ import {
   createPointMaterial,
   createPointsRaycast,
   samePointEntries,
-  syncPointColors,
-  syncPointMatrices,
+  syncPointEntries,
 } from "./pointsInstancing";
 import { DRAG_THRESHOLD_PX } from "../drawGesture";
 
@@ -70,6 +69,7 @@ export const AnnotationPoints = ({
   useEffect(() => () => material.dispose(), [material]);
   const raycast = useMemo(() => createPointsRaycast(() => scaleRef.current), []);
   const writtenRef = useRef<PointEntry[] | null>(null);
+  const writtenMeshRef = useRef<THREE.InstancedMesh | null>(null);
 
   // Grow-only capacity so entry-count churn (z-scrub filtering) doesn't
   // reconstruct the InstancedMesh every step; `count` trims the draw.
@@ -81,10 +81,12 @@ export const AnnotationPoints = ({
   useDrawEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    if (samePointEntries(writtenRef.current, entries)) return; // scrub no-op
+    // A capacity change remounted the mesh (`key`): nothing on it to diff against.
+    const previous = writtenMeshRef.current === mesh ? writtenRef.current : null;
+    if (samePointEntries(previous, entries)) return; // scrub no-op
     writtenRef.current = entries;
-    syncPointMatrices(mesh, entries);
-    syncPointColors(mesh, entries);
+    writtenMeshRef.current = mesh;
+    syncPointEntries(mesh, previous, entries);
   }, [entries, capacity]);
 
   useFrame(({ camera, size }) => {

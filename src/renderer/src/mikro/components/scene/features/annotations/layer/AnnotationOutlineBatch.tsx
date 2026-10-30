@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import type { InterleavedBufferAttribute } from "three";
+import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
@@ -9,7 +9,16 @@ import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
 import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { lazyPickIndex, raycastNearestOnly, type PickIndex } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
-import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
+import {
+  STROKE_FLOATS,
+  createRangeTints,
+  markTinted,
+  roiForSegment,
+  strokeColorOf,
+  tintRanges,
+  type OutlineBatch,
+  type RangeTints,
+} from "../annotationBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
 import { DRAG_THRESHOLD_PX } from "../drawGesture";
@@ -24,8 +33,8 @@ import { DRAG_THRESHOLD_PX } from "../drawGesture";
  * by construction — sectioned ellipsoids are excluded), as a NEW geometry
  * (`swapGeometry`: re-uploading into the drawn one froze the canvas as soon as
  * a batch grew); a SELECTION change is genuinely a color-only pass
- * (`batchColors`, written in place), which is the perf property the batching
- * was built for.
+ * (`tintRanges`, the changed shapes written and uploaded in place), which is the
+ * perf property the batching was built for.
  */
 export const AnnotationOutlineBatch = ({
   batch,
@@ -103,19 +112,30 @@ export const AnnotationOutlineBatch = ({
 
   // Declared AFTER the upload above, so on a new batch it runs against that
   // batch's geometry: the first pass creates the color attributes (nothing has
-  // drawn them yet), every later one — a selection change — rewrites them in
-  // place, the one kind of update the renderer picks up on a drawn geometry.
+  // drawn them yet), every later one — a hover, a selection — rewrites the
+  // shapes that changed in place, the one kind of update the renderer picks up
+  // on a drawn geometry.
+  const tintsRef = useRef<{
+    geometry: unknown;
+    tints: RangeTints;
+    attributes: [THREE.InstancedBufferAttribute, THREE.InstancedBufferAttribute];
+  } | null>(null);
   useDrawEffect(() => {
-    const colors = batchColors(batch, (id) => selectedIds.has(id), hoveredId, muted);
-    const attribute = line.geometry.attributes.instanceColorStart as
-      | InterleavedBufferAttribute
-      | undefined;
-    if (attribute && attribute.data.array.length === colors.length) {
-      (attribute.data.array as Float32Array).set(colors);
-      attribute.data.needsUpdate = true;
+    const colorOf = strokeColorOf(batch, (id) => selectedIds.has(id), hoveredId, muted);
+    const held = tintsRef.current;
+    if (!held || held.geometry !== line.geometry) {
+      const tints = createRangeTints(batch.segmentCount * STROKE_FLOATS, batch.ranges.length);
+      tintRanges(tints, batch.ranges, STROKE_FLOATS, colorOf);
+      // See `STROKE_FLOATS`: one array, two attributes, each uploading on its own.
+      const start = new THREE.InstancedBufferAttribute(tints.colors, STROKE_FLOATS);
+      const end = new THREE.InstancedBufferAttribute(tints.colors, STROKE_FLOATS);
+      line.geometry.setAttribute("instanceColorStart", start);
+      line.geometry.setAttribute("instanceColorEnd", end);
+      tintsRef.current = { geometry: line.geometry, tints, attributes: [start, end] };
       return;
     }
-    line.geometry.setColors(colors);
+    const upload = tintRanges(held.tints, batch.ranges, STROKE_FLOATS, colorOf);
+    for (const attribute of held.attributes) markTinted(attribute, upload);
   }, [batch, selectedIds, hoveredId, muted, line]);
 
   useDrawEffect(() => {

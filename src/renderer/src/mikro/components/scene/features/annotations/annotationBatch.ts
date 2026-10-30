@@ -301,11 +301,117 @@ function foldOutlineBatches<R>(
 }
 
 /**
- * The color buffer for one batch under one selection — the ONLY thing a
- * selection change recomputes: `setColors` re-tints in place while the
- * positions (and their GPU buffer) stay untouched. The hovered shape, when
- * there is one, wears `HOVER_STROKE` — unless it is selected, which wins.
- * `muted` (a new shape is being drawn) wins over everything.
+ * One color per segment. Three's `setColors` interleaves a start and an end
+ * color into one buffer, and that cannot upload in part: the backend updates
+ * per attribute, so the second attribute finds the ranges cleared and writes
+ * everything. A stroke's two ends always match here, so `strokeColorAttributes`
+ * gives each its own buffer, the same bytes in total.
+ */
+export const STROKE_FLOATS = 3;
+
+/**
+ * Above this many changed ranges a pass uploads the whole buffer: one
+ * `writeBuffer` per range stops being the cheaper way once most of it moved.
+ */
+const MAX_PARTIAL_RANGES = 32;
+
+/** A batch's color buffer and the color each range last got written. */
+export type RangeTints = { colors: Float32Array; written: (string | null)[] };
+
+export const createRangeTints = (floats: number, rangeCount: number): RangeTints => ({
+  colors: new Float32Array(floats),
+  written: new Array<string | null>(rangeCount).fill(null),
+});
+
+/**
+ * Bring a color buffer up to `colorOf`, writing only the ranges whose color
+ * changed: a hover touches two shapes, and used to allocate and re-upload the
+ * whole batch for them. `floatsPerPrimitive` is `STROKE_FLOATS` for a segment,
+ * 9 for a triangle (a color per vertex).
+ *
+ * Reports what to upload: nothing, the listed float ranges, or all of it.
+ */
+export function tintRanges(
+  tints: RangeTints,
+  ranges: readonly { start: number; end: number }[],
+  floatsPerPrimitive: number,
+  colorOf: (rangeIndex: number) => string,
+): "none" | "all" | { start: number; count: number }[] {
+  const { colors, written } = tints;
+  const changed: { start: number; count: number }[] = [];
+  let all = true;
+  for (let k = 0; k < ranges.length; k++) {
+    const color = colorOf(k);
+    if (written[k] === color) {
+      all = false;
+      continue;
+    }
+    written[k] = color;
+    SCRATCH_COLOR.set(color);
+    const r = SCRATCH_COLOR.r;
+    const g = SCRATCH_COLOR.g;
+    const b = SCRATCH_COLOR.b;
+    const start = ranges[k].start * floatsPerPrimitive;
+    const end = ranges[k].end * floatsPerPrimitive;
+    for (let i = start; i < end; i += 3) {
+      colors[i] = r;
+      colors[i + 1] = g;
+      colors[i + 2] = b;
+    }
+    if (changed.length <= MAX_PARTIAL_RANGES) changed.push({ start, count: end - start });
+  }
+  if (changed.length === 0) return "none";
+  return all || changed.length > MAX_PARTIAL_RANGES ? "all" : changed;
+}
+
+/**
+ * Hand a tint pass's answer to the attribute it wrote into. Ranges only ever
+ * ADD: a second pass before the next frame must not lose the first one's, and
+ * the backend clears them once uploaded. "All" is one range over the whole
+ * array, for the same reason; an empty list would read as all to the backend,
+ * and a later partial pass would then quietly narrow that upload.
+ */
+export function markTinted(
+  attribute: {
+    array: { length: number };
+    updateRanges: unknown[];
+    needsUpdate: boolean;
+    addUpdateRange(start: number, count: number): void;
+    clearUpdateRanges(): void;
+  },
+  upload: ReturnType<typeof tintRanges>,
+): void {
+  if (upload === "none") return;
+  if (upload === "all" || attribute.updateRanges.length + upload.length > MAX_PARTIAL_RANGES) {
+    attribute.clearUpdateRanges();
+    attribute.addUpdateRange(0, attribute.array.length);
+  } else {
+    for (const { start, count } of upload) attribute.addUpdateRange(start, count);
+  }
+  attribute.needsUpdate = true;
+}
+
+/**
+ * The color a batch's stroke wears: `muted` (a new shape is being drawn) wins
+ * over everything, then the selection, then `HOVER_STROKE` on the hovered shape.
+ */
+export const strokeColorOf =
+  <R>(
+    batch: OutlineBatch<R>,
+    isActive: (annotationId: string) => boolean,
+    hoveredId: string | null = null,
+    muted = false,
+  ) =>
+  (k: number): string => {
+    const stroke = batch.strokes[k];
+    if (muted) return MUTED_STROKE;
+    if (isActive(stroke.annotationId)) return stroke.selectedStroke;
+    return stroke.annotationId === hoveredId ? HOVER_STROKE : stroke.stroke;
+  };
+
+/**
+ * The whole color buffer for one batch under one selection, from nothing: what
+ * a batch's first pass starts from, and what every later partial one must equal.
  */
 export function batchColors<R>(
   batch: OutlineBatch<R>,
@@ -313,29 +419,9 @@ export function batchColors<R>(
   hoveredId: string | null = null,
   muted = false,
 ): Float32Array {
-  const colors = new Float32Array(batch.segmentCount * 6);
-  for (let k = 0; k < batch.ranges.length; k++) {
-    const range = batch.ranges[k];
-    const stroke = batch.strokes[k];
-    SCRATCH_COLOR.set(
-      muted
-        ? MUTED_STROKE
-        : isActive(stroke.annotationId)
-          ? stroke.selectedStroke
-          : stroke.annotationId === hoveredId
-            ? HOVER_STROKE
-            : stroke.stroke,
-    );
-    const r = SCRATCH_COLOR.r;
-    const g = SCRATCH_COLOR.g;
-    const b = SCRATCH_COLOR.b;
-    for (let i = range.start * 6; i < range.end * 6; i += 3) {
-      colors[i] = r;
-      colors[i + 1] = g;
-      colors[i + 2] = b;
-    }
-  }
-  return colors;
+  const tints = createRangeTints(batch.segmentCount * STROKE_FLOATS, batch.ranges.length);
+  tintRanges(tints, batch.ranges, STROKE_FLOATS, strokeColorOf(batch, isActive, hoveredId, muted));
+  return tints.colors;
 }
 
 /**

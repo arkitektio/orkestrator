@@ -4,7 +4,12 @@ import { describe, expect, it } from "vitest";
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import {
   ELLIPSE_SEGMENTS,
+  STROKE_FLOATS,
   batchColors,
+  createRangeTints,
+  markTinted,
+  strokeColorOf,
+  tintRanges,
   buildOutlineBatches,
   buildSectionedOutlineBatches,
   drawsOwnMesh,
@@ -127,28 +132,28 @@ describe("buildOutlineBatches", () => {
     const active = new THREE.Color(ACTIVE_STROKE);
     const idle = new THREE.Color(DEFAULT_STROKE);
     const colors = batchColors(thin, (id) => id === "selected");
-    expect(colors).toHaveLength(18);
+    expect(colors).toHaveLength(3 * STROKE_FLOATS);
     expect(colors[0]).toBeCloseTo(idle.r);
-    expect(colors[2 * 6]).toBeCloseTo(active.r);
-    expect(colors[2 * 6 + 1]).toBeCloseTo(active.g);
+    expect(colors[2 * STROKE_FLOATS]).toBeCloseTo(active.r);
+    expect(colors[2 * STROKE_FLOATS + 1]).toBeCloseTo(active.g);
     // A selection change re-tints without touching the positions.
     const none = batchColors(thin, () => false);
-    expect(none[2 * 6]).toBeCloseTo(idle.r);
+    expect(none[2 * STROKE_FLOATS]).toBeCloseTo(idle.r);
     // The hovered shape wears the hover tint — unless it is selected.
     const hover = new THREE.Color(HOVER_STROKE);
     const hovered = batchColors(thin, () => false, "selected");
-    expect(hovered[2 * 6]).toBeCloseTo(hover.r);
-    expect(hovered[2 * 6 + 2]).toBeCloseTo(hover.b);
+    expect(hovered[2 * STROKE_FLOATS]).toBeCloseTo(hover.r);
+    expect(hovered[2 * STROKE_FLOATS + 2]).toBeCloseTo(hover.b);
     expect(hovered[0]).toBeCloseTo(idle.r);
     const both = batchColors(thin, (id) => id === "selected", "selected");
-    expect(both[2 * 6]).toBeCloseTo(active.r);
+    expect(both[2 * STROKE_FLOATS]).toBeCloseTo(active.r);
     // A shape being drawn grays out every other one, selected and hovered too.
     const muted = new THREE.Color(MUTED_STROKE);
     const grayed = batchColors(thin, (id) => id === "selected", "selected", true);
     expect(grayed[0]).toBeCloseTo(muted.r);
-    expect(grayed[2 * 6]).toBeCloseTo(muted.r);
-    expect(grayed[2 * 6 + 2]).toBeCloseTo(muted.b);
-    expect(both[2 * 6 + 1]).toBeCloseTo(active.g);
+    expect(grayed[2 * STROKE_FLOATS]).toBeCloseTo(muted.r);
+    expect(grayed[2 * STROKE_FLOATS + 2]).toBeCloseTo(muted.b);
+    expect(both[2 * STROKE_FLOATS + 1]).toBeCloseTo(active.g);
   });
 
   it("sectioned ellipsoids stay OUT of the static batch — their ring moves with the plane", () => {
@@ -249,5 +254,91 @@ describe("roiForSegment", () => {
     expect(roiForSegment(ranges, 7)).toBeNull();
     expect(roiForSegment(ranges, undefined)).toBeNull();
     expect(roiForSegment([], 0)).toBeNull();
+  });
+});
+
+describe("tintRanges", () => {
+  const rect = (id: string) =>
+    annotation(AnnotationKind.Rectangle, [[0, 0, 0], [1, 1, 0]], { id });
+  const batch = buildOutlineBatches(
+    [
+      { annotation: rect("a"), roi: "a" },
+      { annotation: rect("b"), roi: "b" },
+      { annotation: rect("c"), roi: "c" },
+    ],
+    true,
+  )[0];
+
+  it("reports all on the first pass, then only what changed, then nothing", () => {
+    const tints = createRangeTints(batch.segmentCount * STROKE_FLOATS, batch.ranges.length);
+    const pass = (selected: string | null, hovered: string | null) =>
+      tintRanges(
+        tints,
+        batch.ranges,
+        STROKE_FLOATS,
+        strokeColorOf(batch, (id) => id === selected, hovered),
+      );
+    expect(pass(null, null)).toBe("all");
+    expect(pass(null, null)).toBe("none");
+    expect(pass(null, "b")).toEqual([
+      { start: batch.ranges[1].start * STROKE_FLOATS, count: 4 * STROKE_FLOATS },
+    ]);
+    expect(pass("a", "c")).toHaveLength(3);
+  });
+
+  it("any sequence of passes equals a buffer built from nothing", () => {
+    const tints = createRangeTints(batch.segmentCount * STROKE_FLOATS, batch.ranges.length);
+    const ids = [null, "a", "b", "c"];
+    let seed = 5;
+    const pick = () => ids[(seed = (seed * 16807) % 2147483647) % ids.length];
+    for (let i = 0; i < 200; i++) {
+      const selected = pick();
+      const hovered = pick();
+      const muted = i % 17 === 0;
+      const isActive = (id: string) => id === selected;
+      tintRanges(
+        tints,
+        batch.ranges,
+        STROKE_FLOATS,
+        strokeColorOf(batch, isActive, hovered, muted),
+      );
+      expect(Array.from(tints.colors)).toEqual(
+        Array.from(batchColors(batch, isActive, hovered, muted)),
+      );
+    }
+  });
+});
+
+describe("markTinted", () => {
+  const attribute = () => {
+    const made = new THREE.BufferAttribute(new Float32Array(30), 3);
+    made.needsUpdate = false;
+    return made;
+  };
+
+  it("adds to what a pass before the next frame left pending", () => {
+    const made = attribute();
+    markTinted(made, [{ start: 0, count: 3 }]);
+    markTinted(made, [{ start: 6, count: 3 }]);
+    expect(made.updateRanges).toEqual([
+      { start: 0, count: 3 },
+      { start: 6, count: 3 },
+    ]);
+  });
+
+  it("all covers the array, and a later partial pass does not narrow it", () => {
+    const made = attribute();
+    markTinted(made, "all");
+    markTinted(made, [{ start: 6, count: 3 }]);
+    expect(made.updateRanges[0]).toEqual({ start: 0, count: 30 });
+    expect(made.updateRanges).toHaveLength(2);
+  });
+
+  it("does not ask for an upload when nothing changed", () => {
+    const made = attribute();
+    const version = made.version;
+    markTinted(made, "none");
+    expect(made.version).toBe(version);
+    expect(made.updateRanges).toHaveLength(0);
   });
 });

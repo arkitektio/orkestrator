@@ -5,8 +5,8 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { createPickMeshRaycast, lazyPickIndex } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
-import { roiForSegment } from "../annotationBatch";
-import { interiorColors, type InteriorBatch } from "../interiorBatch";
+import { createRangeTints, markTinted, roiForSegment, tintRanges } from "../annotationBatch";
+import { fillColorOf, type InteriorBatch } from "../interiorBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { clickPointOf } from "../hover/annotationActionTarget";
 import { DRAG_THRESHOLD_PX } from "../drawGesture";
@@ -66,17 +66,20 @@ export const AnnotationInteriorBatch = ({
   // fixed per component (keyed by `batch.key`), so the WebGPU pipeline is
   // reused; the color attribute exists from the first frame (zeros until the
   // layout effect below fills it) so the vertex layout never changes under it.
+  // A new batch starts its colors from nothing; every later pass (a selection,
+  // a mute) writes and uploads only the shapes that changed.
+  const tints = useMemo(
+    () => createRangeTints(batch.filled ? batch.positions.length : 0, batch.ranges.length),
+    [batch],
+  );
   const geometry = useMemo(() => {
     const created = new THREE.BufferGeometry();
     created.setAttribute("position", new THREE.BufferAttribute(batch.positions, 3));
     if (batch.filled) {
-      created.setAttribute(
-        "color",
-        new THREE.BufferAttribute(new Float32Array(batch.positions.length), 3),
-      );
+      created.setAttribute("color", new THREE.BufferAttribute(tints.colors, 3));
     }
     return created;
-  }, [batch]);
+  }, [batch, tints]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -88,12 +91,11 @@ export const AnnotationInteriorBatch = ({
 
   useDrawEffect(() => {
     if (!batch.filled) return;
-    const attribute = geometry.getAttribute("color") as THREE.BufferAttribute;
-    (attribute.array as Float32Array).set(
-      interiorColors(batch, (id) => selectedIds.has(id), muted),
+    markTinted(
+      geometry.getAttribute("color") as THREE.BufferAttribute,
+      tintRanges(tints, batch.ranges, 9, fillColorOf(batch, (id) => selectedIds.has(id), muted)),
     );
-    attribute.needsUpdate = true;
-  }, [batch, selectedIds, muted, geometry]);
+  }, [batch, selectedIds, muted, geometry, tints]);
 
   const handleClick = selectable
     ? (event: ThreeEvent<MouseEvent>) => {

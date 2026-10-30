@@ -3,8 +3,10 @@ import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphq
 import { MIN_DEPTH, ellipseRing, getVectorPoint } from "./annotationBounds";
 import {
   ELLIPSE_SEGMENTS,
+  createRangeTints,
   ellipseRingOf,
   isSectionedEllipse,
+  tintRanges,
   type OutlineRange,
 } from "./annotationBatch";
 import { MUTED_STROKE, resolveStyle } from "./annotationStyle";
@@ -189,33 +191,29 @@ export function buildInteriorBatches<R>(
   }));
 }
 
-const SCRATCH_COLOR = new THREE.Color();
+/** The color a filled batch's interior wears (an unnamed fill follows the stroke). */
+export const fillColorOf =
+  <R>(
+    batch: InteriorBatch<R>,
+    isActive: (annotationId: string) => boolean,
+    muted = false,
+  ) =>
+  (k: number): string => {
+    const fill = batch.fills[k];
+    if (muted) return MUTED_STROKE;
+    return isActive(fill.annotationId) ? fill.selectedFill : fill.fill;
+  };
 
 /**
- * The per-vertex color buffer for one filled batch under one selection — the
- * ONLY thing a selection change recomputes (an unnamed fill follows the
- * stroke, which the selection overrides).
+ * The whole per-vertex color buffer for one filled batch under one selection,
+ * from nothing — what every partial pass (`tintRanges`) must equal.
  */
 export function interiorColors<R>(
   batch: InteriorBatch<R>,
   isActive: (annotationId: string) => boolean,
   muted = false,
 ): Float32Array {
-  const colors = new Float32Array(batch.triangleCount * 9);
-  for (let k = 0; k < batch.ranges.length; k++) {
-    const range = batch.ranges[k];
-    const fill = batch.fills[k];
-    SCRATCH_COLOR.set(
-      muted ? MUTED_STROKE : isActive(fill.annotationId) ? fill.selectedFill : fill.fill,
-    );
-    const r = SCRATCH_COLOR.r;
-    const g = SCRATCH_COLOR.g;
-    const b = SCRATCH_COLOR.b;
-    for (let i = range.start * 9; i < range.end * 9; i += 3) {
-      colors[i] = r;
-      colors[i + 1] = g;
-      colors[i + 2] = b;
-    }
-  }
-  return colors;
+  const tints = createRangeTints(batch.triangleCount * 9, batch.ranges.length);
+  tintRanges(tints, batch.ranges, 9, fillColorOf(batch, isActive, muted));
+  return tints.colors;
 }

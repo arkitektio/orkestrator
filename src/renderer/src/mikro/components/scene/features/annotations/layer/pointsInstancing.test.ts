@@ -5,6 +5,7 @@ import {
   createPointsRaycast,
   samePointEntries,
   syncPointColors,
+  syncPointEntries,
   syncPointMatrices,
 } from "./pointsInstancing";
 import type { PointEntry } from "./placedAnnotations";
@@ -132,6 +133,73 @@ describe("createPointsRaycast", () => {
     }
     expect(compared).toBeGreaterThan(50);
     expect(hits).toBeGreaterThan(20);
+  });
+});
+
+describe("syncPointEntries", () => {
+  const snapshot = (mesh: THREE.InstancedMesh) => ({
+    matrices: Array.from(mesh.instanceMatrix.array.slice(0, mesh.count * 16)),
+    colors: Array.from(mesh.instanceColor!.array.slice(0, mesh.count * 3)),
+    count: mesh.count,
+  });
+
+  it("ends where a full sync does, and uploads only what changed", () => {
+    const before = [entry("a", [0, 0, 0]), entry("b", [1, 0, 0]), entry("c", [2, 0, 0])];
+    const after = [entry("a", [0, 0, 0]), entry("b", [1, 0, 0], "#00ff00"), entry("c", [2, 5, 0])];
+    const mesh = makeMesh();
+    syncPointEntries(mesh, null, before);
+    mesh.instanceMatrix.clearUpdateRanges();
+    mesh.instanceColor!.clearUpdateRanges();
+
+    syncPointEntries(mesh, before, after);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 32, count: 16 }]);
+    expect(mesh.instanceColor!.updateRanges).toEqual([{ start: 3, count: 3 }]);
+
+    const fresh = makeMesh();
+    syncPointEntries(fresh, null, after);
+    expect(snapshot(mesh)).toEqual(snapshot(fresh));
+  });
+
+  it("a full sync after a partial one, before any upload, still uploads everything", () => {
+    const first = [entry("a", [0, 0, 0]), entry("b", [1, 0, 0])];
+    const moved = [entry("a", [0, 0, 0]), entry("b", [1, 9, 0], "#00ff00")];
+    const mesh = makeMesh();
+    syncPointEntries(mesh, null, first);
+    mesh.instanceMatrix.clearUpdateRanges();
+    mesh.instanceColor!.clearUpdateRanges();
+
+    syncPointEntries(mesh, first, moved);
+    expect(mesh.instanceMatrix.updateRanges).toHaveLength(1);
+
+    syncPointEntries(mesh, moved, [...moved, entry("c", [2, 0, 0])]);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([
+      { start: 0, count: mesh.instanceMatrix.array.length },
+    ]);
+    expect(mesh.instanceColor!.updateRanges).toEqual([
+      { start: 0, count: mesh.instanceColor!.array.length },
+    ]);
+  });
+
+  it("a partial sync after a full one does not narrow it", () => {
+    const first = [entry("a", [0, 0, 0]), entry("b", [1, 0, 0])];
+    const mesh = makeMesh();
+    syncPointEntries(mesh, null, first);
+    syncPointEntries(mesh, first, [entry("a", [0, 0, 0]), entry("b", [1, 9, 0])]);
+    expect(mesh.instanceMatrix.updateRanges[0]).toEqual({
+      start: 0,
+      count: mesh.instanceMatrix.array.length,
+    });
+  });
+
+  it("falls back to a full sync when the list changed length", () => {
+    const mesh = makeMesh();
+    syncPointEntries(mesh, null, [entry("a", [0, 0, 0])]);
+    const next = [entry("a", [0, 0, 0]), entry("b", [1, 1, 1])];
+    syncPointEntries(mesh, [entry("a", [0, 0, 0])], next);
+    expect(mesh.count).toBe(2);
+    const fresh = makeMesh();
+    syncPointEntries(fresh, null, next);
+    expect(snapshot(mesh)).toEqual(snapshot(fresh));
   });
 });
 
