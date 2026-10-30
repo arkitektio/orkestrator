@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Arkitekt } from "@/core/connection/arkitekt/host";
-import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
 import type { VpnInterface } from "../../../../../main/doctor/protocol";
 import { type ConnectionPath, summarizeConnectionPath } from "./connectionPath";
 import { useMeshes } from "./useMeshes";
-import { useSystemTailscale } from "./useSystemTailscale";
 
 /** How often the tunnel interfaces are read again. */
 const REFRESH_MS = 60_000;
@@ -18,10 +16,7 @@ const probeInterfaces = (): Promise<VpnInterface[]> => {
 /**
  * How this window reaches the active organization's services — see
  * `summarizeConnectionPath`. Mesh status is live (pushed by main); tunnel
- * interfaces are re-read on focus and every minute; the Tailscale CLI is only
- * asked when a service sits at a tailnet-looking address in the first place,
- * and only once the user has allowed it (`useSystemTailscale`). Until then a
- * system Tailscale is still recognised by its interface being up.
+ * interfaces are re-read on focus and every minute.
  * In a browser build only the mesh half exists, so it reads `direct`.
  */
 export const useConnectionPath = (): ConnectionPath => {
@@ -35,9 +30,6 @@ export const useConnectionPath = (): ConnectionPath => {
 
   const { payload } = useMeshes();
   const [vpn, setVpn] = useState<VpnInterface[]>([]);
-
-  const wantsTailscale = anyMeshHost(hosts);
-  const { status: tailscale } = useSystemTailscale(wantsTailscale);
 
   useEffect(() => {
     let live = true;
@@ -59,9 +51,8 @@ export const useConnectionPath = (): ConnectionPath => {
       summarizeConnectionPath({
         hosts,
         mesh: payload,
-        tailscale,
         vpn,
       }),
-    [hosts, payload, tailscale, vpn],
+    [hosts, payload, vpn],
   );
 };

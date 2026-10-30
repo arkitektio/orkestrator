@@ -1,5 +1,4 @@
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeTarget,
 } from "../../../../../../main/doctor/protocol";
@@ -11,7 +10,6 @@ import type { DiagnoseInput, Finding } from "./findings";
 import { rankFindings } from "./findings";
 import type { HubHealthFacts } from "./hubHealth";
 import { HUB_VERDICT_TEXT, compareService } from "./hubHealth";
-import { matchPeer, tailnetMismatch } from "./meshMatch";
 import { failureLine } from "./stages";
 import { isUpstream } from "./targets";
 
@@ -21,13 +19,12 @@ import { isUpstream } from "./targets";
  * Every judgement the doctor makes lives here, which is why main is kept
  * decision-free — the whole diagnosis is testable from fixtures.
  *
- * The ordering matters as much as the rules. A user whose laptop is signed out
- * of Tailscale would otherwise be shown six identical connection timeouts
- * above the one sentence that explains all of them, so mesh causes are found
+ * The ordering matters as much as the rules. A user whose laptop has left the
+ * mesh would otherwise be shown six identical connection timeouts above the
+ * one sentence that explains all of them, so mesh causes are found
  * first and their symptoms are demoted (see `demoteSymptoms`).
  */
 
-const TAILSCALE_DOWNLOAD = "https://tailscale.com/download";
 const MESH_SETTINGS = "/settings/mesh";
 const ARKITEKT_DOCS = "https://arkitekt.live/docs/introduction/basics";
 
@@ -53,8 +50,18 @@ const builtInMeshTargets = (input: DiagnoseInput, targets: ProbeTarget[]): Probe
       // mesh's business when a running mesh actually routes it.
       (isMeshClass(classifyHost(target.host)) && shape !== "mesh-bare") ||
       (!!domain && norm(target.host).endsWith(`.${domain}`)) ||
-      !!coveringMesh(input.sidecar, target.host)
+      !!coveringMesh(input.sidecar, target.host) ||
+      ownedByDeploymentMesh(input, target.host)
     );
+  });
+};
+
+/** Pinned to the deployment's mesh or under its name space, whether or not its node is up right now. */
+const ownedByDeploymentMesh = (input: DiagnoseInput, rawHost: string): boolean => {
+  const host = norm(rawHost);
+  return (input.sidecar ? deploymentMeshes(input, input.sidecar) : []).some(({ config, status }) => {
+    const suffix = status.magicDnsSuffix ? norm(status.magicDnsSuffix) : undefined;
+    return config.hosts.map(norm).includes(host) || (!!suffix && (host === suffix || host.endsWith(`.${suffix}`)));
   });
 };
 
@@ -251,7 +258,7 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
       detail:
         "Orkestrator routes these addresses through its own mesh client, and the " +
         "checks below went the same way, so they describe the machine on the mesh " +
-        "and the service on it — not this computer's DNS or the system Tailscale app.",
+        "and the service on it — not this computer's DNS.",
       evidence: covered.map((target) => {
         const peer = peerFor(coveringMesh(sidecar, target.host)!, target.host);
         return `${labelOf(target)}: ${target.host}${peer ? ` → ${peer.dnsName ?? peer.hostName} (${peer.online ? "online" : "offline"})` : ""}`;
@@ -380,11 +387,7 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
 
   if (ours.length > 0) return findings;
 
-  // No mesh of ours at all for this deployment. If the system Tailscale app
-  // covers it, the system-client rules have the floor.
-  const systemMeshUp = input.mesh?.available && input.mesh.backendState === "Running";
-  if (systemMeshUp) return findings;
-
+  // No mesh of ours at all for this deployment.
   const meshCoordUrl = input.context.meshCoordUrl;
   if (meshCoordUrl === null) {
     findings.push({
@@ -431,215 +434,9 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
   return findings;
 };
 
-/* ────────────────────────────── mesh rules ────────────────────────────── */
-
-/**
- * Everything we can say about the tailnet. Only ever raised when at least one
- * alias actually looks like a mesh address — telling somebody connecting to
- * `go.arkitekt.live` that Tailscale is not installed is noise.
- */
-const meshFindings = (
-  mesh: MeshProbeResult | undefined,
-  targets: ProbeTarget[],
-): Finding[] => {
-  const relevant = meshTargets(targets);
-  if (relevant.length === 0 || !mesh) return [];
-
-  const findings: Finding[] = [];
-  const hosts = relevant.map((target) => target.host);
-
-  if (!mesh.available) {
-    if (mesh.reason === "cli-not-found") {
-      findings.push({
-        id: "mesh.cli-missing",
-        severity: "blocker",
-        title: "This deployment is only reachable over a Tailscale network",
-        detail:
-          `The address ${hosts[0]} is a Tailscale address, but no Tailscale ` +
-          "command line tool was found on this computer, so there is no way to " +
-          "check or join the network. If Tailscale is installed from the Mac " +
-          "App Store it ships without the command line tool — the app itself " +
-          "still works, it just cannot be inspected from here.",
-        evidence: hosts,
-        remedy: { kind: "open-url", label: "Get Tailscale", url: TAILSCALE_DOWNLOAD },
-        docs: ARKITEKT_DOCS,
-      });
-    } else {
-      findings.push({
-        id: "mesh.cli-failed",
-        severity: "warning",
-        title: "Tailscale is installed but did not answer",
-        detail:
-          "Tailscale is on this computer, but asking it for its status failed, " +
-          "so the network side of this could not be checked.",
-        evidence: mesh.detail ? [mesh.detail] : undefined,
-      });
-    }
-    return findings;
-  }
-
-  const state = mesh.backendState;
-
-  if (state === "NeedsLogin") {
-    findings.push({
-      id: "mesh.needs-login",
-      severity: "blocker",
-      title: "You are signed out of Tailscale",
-      detail:
-        `This deployment is reached over a Tailscale network, and this computer ` +
-        "is not signed in to one. Signing in should make every address below " +
-        "reachable again.",
-      evidence: [`backend state: ${state}`, ...hosts],
-      remedy: {
-        kind: "run",
-        label: "Sign in to Tailscale",
-        id: "tailscale.up",
-        confirm: "tailscale up",
-      },
-    });
-  } else if (state === "Stopped" || state === "NoState") {
-    findings.push({
-      id: "mesh.not-running",
-      severity: "blocker",
-      title: "Tailscale is not running",
-      detail:
-        "This deployment is reached over a Tailscale network, and Tailscale is " +
-        "switched off on this computer.",
-      evidence: [`backend state: ${state}`, ...hosts],
-      remedy: {
-        kind: "run",
-        label: "Start Tailscale",
-        id: "tailscale.up",
-        confirm: "tailscale up",
-      },
-    });
-  }
-
-  // Per-host: wrong tailnet, unknown machine, offline machine, expired key.
-  for (const target of relevant) {
-    const host = target.host;
-    const label = labelOf(target);
-
-    const mismatch = tailnetMismatch(host, mesh);
-    if (mismatch) {
-      findings.push({
-        id: "mesh.wrong-tailnet",
-        severity: "blocker",
-        title: "You are connected to a different tailnet",
-        detail:
-          `${host} belongs to the tailnet ${mismatch.host}, but this computer is ` +
-          `signed in to ${mismatch.expected}. A machine in one tailnet cannot see ` +
-          "a machine in another, so nothing here will connect until you switch.",
-        evidence: [`alias tailnet: ${mismatch.host}`, `signed in to: ${mismatch.expected}`],
-        remedy: {
-          kind: "manual",
-          instructions:
-            "Sign in to the tailnet that hosts this deployment, or ask its " +
-            "administrator to invite this account to it.",
-        },
-        targetLabel: label,
-      });
-      continue;
-    }
-
-    if (state !== "Running") continue;
-
-    const peer = matchPeer(host, mesh);
-    if (!peer) {
-      findings.push({
-        id: "mesh.peer-unknown",
-        severity: "blocker",
-        title: `No machine called ${host} in your tailnet`,
-        detail:
-          "You are signed in to Tailscale, but this tailnet holds no machine " +
-          "under that name. Either the machine has left the network, or this " +
-          "deployment lives in a different tailnet.",
-        evidence: [`signed in to: ${mesh.magicDnsSuffix ?? mesh.tailnetName ?? "unknown"}`],
-        targetLabel: label,
-      });
-      continue;
-    }
-
-    if (peer.expired) {
-      findings.push({
-        id: "mesh.peer-key-expired",
-        severity: "blocker",
-        title: `The machine hosting ${host} has an expired Tailscale key`,
-        detail:
-          "The machine is in your tailnet but its key has expired, so it can no " +
-          "longer be reached. Somebody has to re-authenticate it, or disable key " +
-          "expiry for it in the Tailscale admin console.",
-        evidence: [peer.keyExpiry ? `key expired: ${peer.keyExpiry}` : "key expired"],
-        remedy: {
-          kind: "open-url",
-          label: "Open the Tailscale admin console",
-          url: "https://login.tailscale.com/admin/machines",
-        },
-        targetLabel: label,
-      });
-      continue;
-    }
-
-    if (peer.online === false) {
-      findings.push({
-        id: "mesh.peer-offline",
-        severity: "blocker",
-        title: `The machine hosting ${host} is offline`,
-        detail:
-          "The machine is part of your tailnet but is not currently connected, " +
-          "so nothing on it can answer. This is a problem on that machine, not " +
-          "on this one.",
-        evidence: [
-          peer.lastSeen ? `last seen: ${peer.lastSeen}` : "not connected",
-          ...peer.ips,
-        ],
-        remedy: {
-          kind: "manual",
-          instructions:
-            "Wake or restart the machine that hosts this deployment, or ask its " +
-            "administrator to.",
-        },
-        targetLabel: label,
-      });
-    }
-  }
-
-  return findings;
-};
-
-/**
- * Tailscale is up, the machine is there — said once, so the report never comes
- * back looking empty and the user knows where to point the finger next.
- */
-const meshHealthy = (
-  mesh: MeshProbeResult | undefined,
-  targets: ProbeTarget[],
-  findings: Finding[],
-): Finding[] => {
-  const relevant = meshTargets(targets);
-  if (relevant.length === 0 || !mesh || !mesh.available) return [];
-  if (mesh.backendState !== "Running") return [];
-  if (findings.some((finding) => finding.id.startsWith("mesh."))) return [];
-
-  return [
-    {
-      id: "mesh.healthy",
-      severity: "info",
-      title: "Your Tailscale connection looks healthy",
-      detail:
-        `This computer is signed in to ${mesh.magicDnsSuffix ?? mesh.tailnetName ?? "a tailnet"} ` +
-        "and the machines behind these addresses are online, so the network is " +
-        "not what is blocking this.",
-    },
-  ];
-};
-
 /* ──────────────────────────── network rules ───────────────────────────── */
 
-const dnsFindings = (
-  probe: NetworkProbeResult,
-  mesh: MeshProbeResult | undefined,
-): Finding[] => {
+const dnsFindings = (probe: NetworkProbeResult): Finding[] => {
   const { dns } = probe;
   const label = labelOf(probe.target);
   const host = probe.target.host;
@@ -673,44 +470,36 @@ const dnsFindings = (
   }
 
   // The interesting asymmetry: the OS knows it, public DNS does not. That is
-  // MagicDNS doing its job — reported as reassurance, not as a problem.
+  // a private network's name — reported as reassurance, not as a problem.
   if (lookupOk && !resolveOk) {
     return [
       {
         id: "net.dns.magicdns-only",
         severity: "info",
-        title: `${host} is a private name resolved by Tailscale`,
+        title: `${host} is a private name`,
         detail:
           "This computer resolves the name but public DNS does not, which is " +
-          "what a MagicDNS name looks like. The name itself is fine.",
+          "what a private network's name looks like. The name itself is fine.",
         evidence: [`resolves to ${dns.lookupAddresses.join(", ")}`],
         targetLabel: label,
       },
     ];
   }
 
-  // The reverse: public DNS knows it, the OS does not. The resolver is not
-  // picking up Tailscale's DNS, which is a real and fixable misconfiguration.
+  // The reverse: public DNS knows it, the OS does not.
   if (!lookupOk && resolveOk) {
-    const onMesh = mesh?.available && mesh.backendState === "Running";
     return [
       {
         id: "net.dns.os-resolver-bypassed",
-        severity: onMesh ? "blocker" : "warning",
+        severity: "warning",
         title: `This computer cannot resolve ${host}, although public DNS can`,
-        detail: onMesh
-          ? "Tailscale is running, but this computer's DNS settings are not using " +
-            "it, so private names do not resolve. Turning on 'Use Tailscale DNS' " +
-            "(`tailscale up --accept-dns`) usually fixes this."
-          : "The name exists publicly but this computer's resolver will not " +
-            "return it, which usually means a VPN or a DNS override is in the way.",
+        detail:
+          "The name exists publicly but this computer's resolver will not " +
+          "return it, which usually means a VPN or a DNS override is in the way.",
         evidence: [
           dns.lookupError ? `lookup: ${dns.lookupError}` : "lookup: no addresses",
           `public DNS: ${dns.resolveAddresses.join(", ")}`,
         ],
-        remedy: onMesh
-          ? { kind: "copy", label: "Copy the command", value: "tailscale up --accept-dns" }
-          : undefined,
         targetLabel: label,
       },
     ];
@@ -1291,25 +1080,19 @@ const diagnoseServices = (input: DiagnoseInput): Finding[] => {
   // A target the built-in mesh routes is probed THROUGH that mesh (main asks
   // the same routing table), and only such a probe may speak for it: a
   // direct probe of a mesh-routed host would report this computer's DNS,
-  // which the app never uses for it. The system-client rules only get the
-  // addresses our mesh does not cover.
+  // which the app never uses for it.
   const isCovered = (host: string) => !!coveringMesh(input.sidecar, host);
-  const uncoveredTargets = targets.filter((target) => !isCovered(target.host));
-  const systemMeshTargets = meshTargets(uncoveredTargets);
-
   findings.push(...sidecarFindings(input, targets));
-  if (systemMeshTargets.length > 0) findings.push(...meshFindings(input.mesh, uncoveredTargets));
   findings.push(...discoveryFindings(input));
 
   for (const probe of input.network) {
     if (isCovered(probe.target.host) && !probe.viaMeshProxy) continue;
-    findings.push(...dnsFindings(probe, input.mesh));
+    findings.push(...dnsFindings(probe));
     findings.push(...tcpFindings(probe));
     findings.push(...tlsFindings(probe));
     findings.push(...httpFindings(probe, input.context));
   }
 
-  if (systemMeshTargets.length > 0) findings.push(...meshHealthy(input.mesh, uncoveredTargets, findings));
   findings.push(...notRunningFindings(input));
 
   // Main got through where the app did not — the only finding that points at
@@ -1441,9 +1224,7 @@ const upstreamFindings = (
   // Any HTTP answer at all proves the server is there; its root has no contract.
   if (control.length > 0 && !control.some((probe) => probe.http.status !== undefined)) {
     const host = control[0].target.host;
-    const meshRunning =
-      (input.sidecar ? deploymentMeshes(input, input.sidecar) : []).some((mesh) => mesh.status.state === "running") ||
-      (input.mesh?.available === true && input.mesh.backendState === "Running");
+    const meshRunning = (input.sidecar ? deploymentMeshes(input, input.sidecar) : []).some((mesh) => mesh.status.state === "running");
     findings.push({
       id: "upstream.mesh-control.unreachable",
       severity: meshRunning ? "info" : "blocker",

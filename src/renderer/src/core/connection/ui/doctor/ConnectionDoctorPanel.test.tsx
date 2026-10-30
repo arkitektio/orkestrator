@@ -15,20 +15,19 @@ const report = (findings: Finding[]): DoctorReport => ({
 });
 
 const finding = (overrides: Partial<Finding> = {}): Finding => ({
-  id: "mesh.needs-login",
+  id: "mesh.sidecar.needs-login",
   severity: "blocker",
-  title: "You are signed out of Tailscale",
-  detail: "This deployment is reached over a Tailscale network.",
+  title: "This computer is no longer a member of the Lab mesh",
+  detail: "Membership is granted when you sign in to the deployment.",
   ...overrides,
 });
 
 const renderPanel = (props: Partial<React.ComponentProps<typeof ConnectionDoctorPanel>> = {}) => {
   const onRun = vi.fn();
-  const onRemedy = vi.fn();
   render(
-    <ConnectionDoctorPanel status="idle" onRun={onRun} onRemedy={onRemedy} {...props} />,
+    <ConnectionDoctorPanel status="idle" onRun={onRun} {...props} />,
   );
-  return { onRun, onRemedy };
+  return { onRun };
 };
 
 describe("ConnectionDoctorPanel", () => {
@@ -57,12 +56,12 @@ describe("ConnectionDoctorPanel", () => {
 
     // The verdict is stated as a heading, not as one bullet among many.
     expect(
-      screen.getByRole("heading", { name: "You are signed out of Tailscale" }),
+      screen.getByRole("heading", { name: "This computer is no longer a member of the Lab mesh" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/most likely reason/i)).toBeInTheDocument();
     expect(screen.getByText(/why we think this/i)).toBeInTheDocument();
     expect(
-      screen.getByText("This deployment is reached over a Tailscale network."),
+      screen.getByText("Membership is granted when you sign in to the deployment."),
     ).toBeInTheDocument();
   });
 
@@ -117,58 +116,18 @@ describe("ConnectionDoctorPanel", () => {
     expect(screen.getByRole("heading", { name: "Every address answered" })).toBeInTheDocument();
   });
 
-  it("does not run a remedy until it has been confirmed", async () => {
-    const { onRemedy } = renderPanel({
+  it("renders a link remedy as a link", () => {
+    renderPanel({
       status: "done",
       report: report([
         finding({
-          remedy: {
-            kind: "run",
-            label: "Sign in to Tailscale",
-            id: "tailscale.up",
-            confirm: "tailscale up",
-          },
+          remedy: { kind: "open-url", label: "Read the docs", url: "https://arkitekt.live/docs" },
         }),
       ]),
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Sign in to Tailscale" }));
-    // The dialog is open and shows the literal command, but nothing has run.
-    expect(screen.getByText("tailscale up")).toBeInTheDocument();
-    expect(onRemedy).not.toHaveBeenCalled();
-
-    await userEvent.click(screen.getByRole("button", { name: /run it/i }));
-    expect(onRemedy).toHaveBeenCalledWith("tailscale.up");
-  });
-
-  it("lets the confirmation be cancelled without running anything", async () => {
-    const { onRemedy } = renderPanel({
-      status: "done",
-      report: report([
-        finding({
-          remedy: { kind: "run", label: "Start Tailscale", id: "tailscale.up", confirm: "tailscale up" },
-        }),
-      ]),
-    });
-
-    await userEvent.click(screen.getByRole("button", { name: "Start Tailscale" }));
-    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
-    expect(onRemedy).not.toHaveBeenCalled();
-  });
-
-  it("renders a link remedy as a link, not a button that runs something", () => {
-    const { onRemedy } = renderPanel({
-      status: "done",
-      report: report([
-        finding({
-          remedy: { kind: "open-url", label: "Get Tailscale", url: "https://tailscale.com/download" },
-        }),
-      ]),
-    });
-
-    const link = screen.getByRole("link", { name: /get tailscale/i });
-    expect(link).toHaveAttribute("href", "https://tailscale.com/download");
-    expect(onRemedy).not.toHaveBeenCalled();
+    const link = screen.getByRole("link", { name: /read the docs/i });
+    expect(link).toHaveAttribute("href", "https://arkitekt.live/docs");
   });
 
   it("shows manual instructions as plain text", () => {
@@ -186,23 +145,6 @@ describe("ConnectionDoctorPanel", () => {
     expect(screen.getByText(/bridge exploded/)).toBeInTheDocument();
   });
 
-  it("shows the outcome of a remedy, including a login link", () => {
-    renderPanel({
-      status: "done",
-      report: report([finding()]),
-      remedyResult: {
-        ok: false,
-        message: "Tailscale needs you to finish signing in from your browser.",
-        loginUrl: "https://login.tailscale.com/a/abc",
-      },
-    });
-
-    expect(screen.getByText(/finish signing in from your browser/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /finish signing in/i })).toHaveAttribute(
-      "href",
-      "https://login.tailscale.com/a/abc",
-    );
-  });
 
   const failedProbe = {
     target: { host: "mikro.tailnet-cafe.ts.net", ssl: true, serviceKey: "mikro", label: "mikro", role: "service" as const },

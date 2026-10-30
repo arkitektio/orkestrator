@@ -1,5 +1,5 @@
 import { formatDistanceStrict } from "date-fns";
-import type { MeshProbeResult, NetworkProbeResult } from "../../../../../../main/doctor/protocol";
+import type { NetworkProbeResult } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import { serviceRoute, type ServiceRoute } from "@/core/connection/mesh/route";
 import { aliasToHttpPath } from "../alias/helpers";
@@ -8,7 +8,6 @@ import type { ServiceHealthStatus, ServiceRuntimeState } from "../types";
 import type { DoctorReport, Finding } from "./findings";
 import { classifyHost, isMeshClass } from "./classify";
 import { compareService, type HubHealthFacts } from "./hubHealth";
-import { matchPeer } from "./meshMatch";
 import { buildConnectionPath, serviceKeyOf, type PathHop } from "./path";
 import { failureLine, stageOf, STAGES } from "./stages";
 import { isUpstream } from "./targets";
@@ -74,11 +73,11 @@ export type AliasPath = {
   state: PartState;
   /**
    * Which kind of road it is: straight over a network this computer is on, or
-   * through a mesh (the built-in one, or a Tailscale the system runs). Two
+   * through the built-in mesh. Two
    * different things to go wrong, so they are drawn apart.
    */
   lane: "direct" | "mesh";
-  /** The mesh that carries it: "Lab", "Tailscale". Mesh lane only. */
+  /** The mesh that carries it: "Lab". Mesh lane only. */
   network?: string;
   /**
    * The DERP region the tunnel is relayed through. Set only when the mesh
@@ -105,7 +104,7 @@ export type AliasPath = {
   standby?: boolean;
   /**
    * A mesh-looking address nothing here can vouch for: no built-in mesh
-   * routes it and the system Tailscale has not been asked.
+   * routes it.
    */
   unrouted?: boolean;
   /** What this one attempt ran into: "TCP: ETIMEDOUT 4000ms". */
@@ -127,11 +126,6 @@ export type ConnectionDiagram = {
   serviceLink: DiagramPart & {
     via?: string;
     aliases: AliasPath[];
-    /**
-     * Some address sits on a Tailscale network the app does not run, and the
-     * user has not yet said whether `tailscale status` may be asked about it.
-     */
-    askTailscale?: boolean;
   };
   /** Hub → coordination server: the hub's own health report. */
   reportLink: DiagramPart;
@@ -154,10 +148,6 @@ export type ConnectionDiagramInput = {
   tunnel?: string;
   /** The live mesh status, to say how each address is reached through it. */
   mesh?: MeshStatusPayload;
-  /** The system Tailscale's status, once the user has allowed asking it. */
-  tailscale?: MeshProbeResult;
-  /** Whether asking the system Tailscale is still an open question. */
-  tailscaleConsent?: "ask" | "allowed" | "denied";
   doctor?: { status: DoctorStatus; report?: DoctorReport };
   now?: number;
 };
@@ -232,37 +222,16 @@ export const describeRoute = (route: ServiceRoute): Travel => {
 };
 
 /**
- * How a request to this host travels. Three answers, in the order they can
- * be trusted: the built-in mesh routes it (the app's own table says so); the
- * system Tailscale knows the machine (only when it was asked); or the address
- * merely LOOKS like a mesh's and nothing here can say more.
+ * How a request to this host travels. The built-in mesh routes it (the app's
+ * own table says so), or the address merely LOOKS like a mesh's and nothing
+ * here can say more, or it is any other road: whatever the OS does with it,
+ * a VPN or a Tailscale of its own included, is not the app's to know.
  */
-const routeOf = (
-  host: string,
-  mesh: MeshStatusPayload | undefined,
-  tailscale: MeshProbeResult | undefined,
-): Partial<Travel> => {
+const routeOf = (host: string, mesh: MeshStatusPayload | undefined): Partial<Travel> => {
   const builtIn = mesh ? serviceRoute(host, mesh) : undefined;
   if (builtIn?.kind === "mesh") return describeRoute(builtIn);
 
-  const peer = matchPeer(host, tailscale);
-  const meshShaped = isMeshClass(classifyHost(host));
-  if (tailscale?.available && (peer || meshShaped)) {
-    const name = `through Tailscale${tailscale.tailnetName ? ` ${tailscale.tailnetName}` : ""}`;
-    const base = { lane: "mesh" as const, network: "Tailscale" };
-    if (tailscale.backendState !== "Running") {
-      return { ...base, tunnel: "Tailscale off", travel: `${name} · Tailscale is ${tailscale.backendState}` };
-    }
-    if (!peer) return { ...base, tunnel: "unknown peer", travel: `${name} · no machine by that name in the tailnet` };
-    if (peer.online === false) return { ...base, peerOffline: true, travel: `${name} · its machine is offline` };
-    if (peer.curAddr) return { ...base, tunnel: "direct tunnel", travel: `${name} · direct tunnel` };
-    // No session yet means no path yet: `tailscale status` says "idle" here
-    // too, and only names a relay once traffic is actually going through one.
-    if (peer.active === false) return { ...base, tunnel: "idle", travel: `${name} · no tunnel open yet` };
-    if (peer.relay) return { ...base, relay: peer.relay, travel: `${name} · relayed via ${peer.relay}` };
-    return { ...base, travel: name };
-  }
-  if (meshShaped) {
+  if (isMeshClass(classifyHost(host))) {
     return {
       lane: "mesh",
       unrouted: true,
@@ -283,7 +252,7 @@ const livePaths = (input: ConnectionDiagramInput): AliasPath[] => {
   const aliases = input.aliases?.length ? input.aliases : chosenAlias ? [chosenAlias] : [];
   return byLane(distinct(aliases.map((alias, index) => {
     const chosen = !!chosenAlias && sameAddress(alias, chosenAlias);
-    const travel = routeOf(alias.host, input.mesh, input.tailscale);
+    const travel = routeOf(alias.host, input.mesh);
     // A machine the mesh reports offline is a road that leads nowhere, whatever
     // the service's own state: red, unless this very address is the one in use.
     const offline = !!travel.peerOffline && !(status === "ready" && chosen);
@@ -313,10 +282,6 @@ const livePaths = (input: ConnectionDiagramInput): AliasPath[] => {
     };
   })));
 };
-
-/** Is there something `tailscale status` could tell us that we have not been allowed to ask? */
-const shouldAsk = (aliases: AliasPath[], consent: ConnectionDiagramInput["tailscaleConsent"]): boolean =>
-  consent === "ask" && aliases.some((path) => path.unrouted);
 
 const liveDiagram = (input: ConnectionDiagramInput): ConnectionDiagram => {
   const { status, serviceName, errors, coordination, hubName, tunnel } = input;
@@ -350,7 +315,6 @@ const liveDiagram = (input: ConnectionDiagramInput): ConnectionDiagram => {
         ...part("failed", "no answer", { reason: errors?.[0] ? describeError(errors[0]) : undefined }),
         via: tunnel,
         aliases,
-        askTailscale: shouldAsk(aliases, input.tailscaleConsent),
       },
     };
   }
@@ -360,7 +324,7 @@ const liveDiagram = (input: ConnectionDiagramInput): ConnectionDiagram => {
     ...base,
     hub: part(state === "ok" ? "ok" : "unknown", "Hub", { detail: hubName }),
     service: part(state, serviceName),
-    serviceLink: { ...part(state, state === "ok" ? "connected" : "checking"), via: tunnel, aliases, askTailscale: shouldAsk(aliases, input.tailscaleConsent) },
+    serviceLink: { ...part(state, state === "ok" ? "connected" : "checking"), via: tunnel, aliases },
   };
 };
 
@@ -594,7 +558,7 @@ const applyReport = (live: ConnectionDiagram, report: DoctorReport, serviceKey: 
 const applyPeerOffline = (diagram: ConnectionDiagram): void => {
   const offline = diagram.serviceLink.aliases.find((path) => path.peerOffline);
   if (!offline) return;
-  const mesh = offline.network === "Tailscale" ? "Tailscale" : `the mesh ${offline.network ?? ""}`.trim();
+  const mesh = `the mesh ${offline.network ?? ""}`.trim();
   diagram.hub = { ...diagram.hub, state: "failed", reason: `offline on ${mesh}` };
 };
 
@@ -677,8 +641,6 @@ export const buildConnectionDiagram = (input: ConnectionDiagramInput): Connectio
 /* ───────────────────────── the whole deployment ───────────────────────── */
 
 /** How a request to this host travels: for a surface that only has a line of text for it. */
-export const travelOf = routeOf;
-
 export type DeploymentDiagramInput = {
   /** Every service the deployment offers, as the store has them. */
   services: ServiceRuntimeState[];
@@ -688,8 +650,6 @@ export type DeploymentDiagramInput = {
   hubName?: string;
   tunnel?: string;
   mesh?: MeshStatusPayload;
-  tailscale?: MeshProbeResult;
-  tailscaleConsent?: "ask" | "allowed" | "denied";
   now?: number;
 };
 
@@ -726,7 +686,6 @@ export const buildDeploymentDiagram = (input: DeploymentDiagramInput): Connectio
       aliases: service.instance?.aliases,
       chosenAlias: service.alias,
       mesh,
-      tailscale: input.tailscale,
     });
     for (const path of single.serviceLink.aliases) {
       const known = paths.get(path.label);
@@ -761,7 +720,6 @@ export const buildDeploymentDiagram = (input: DeploymentDiagramInput): Connectio
             : part("ok", "connected")),
       via: tunnel,
       aliases: byLane([...paths.values()]),
-      askTailscale: shouldAsk([...paths.values()], input.tailscaleConsent),
     },
   };
 

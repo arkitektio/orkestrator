@@ -206,16 +206,6 @@ describe("RailFooter", () => {
       expect(screen.getByText("Connected through Arkitekt mesh · Lab")).toBeInTheDocument();
     });
 
-    it("names a system Tailscale and its tailnet", () => {
-      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
-      connectionPath.mockReturnValue({ kind: "system-tailscale", tailnet: "lab.example", viaMesh: 1, total: 1 });
-      renderFooter();
-
-      expect(frame()).toHaveAttribute("data-path", "system-tailscale");
-      const note = screen.getByTestId("rail-footer-path-note");
-      expect(note).toHaveTextContent("Tailscale · lab.example");
-    });
-
     it("names another VPN by its interface", () => {
       activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
       connectionPath.mockReturnValue({ kind: "vpn", interfaces: ["wg0"] });

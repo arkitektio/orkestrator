@@ -1,21 +1,9 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/core/ui/alert-dialog";
 import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/core/ui/collapsible";
-import type { RemedyId, RemedyResult } from "../../../../../../main/doctor/protocol";
 import type {
   DoctorReport,
   Finding,
@@ -45,9 +33,7 @@ import { useMemo, useState } from "react";
  * a differential. Everything else the check noticed is kept, folded away
  * underneath, for the times the verdict is wrong.
  *
- * Only one interaction here changes anything on the machine, and it is
- * deliberately the most awkward one: a `run` remedy goes through a confirm
- * dialog that prints the literal command first.
+ * Nothing here changes anything on the machine.
  */
 
 const SEVERITY_ICON: Record<FindingSeverity, React.ReactNode> = {
@@ -68,9 +54,7 @@ export type ConnectionDoctorPanelProps = {
   report?: DoctorReport;
   status: DoctorStatus;
   error?: string;
-  remedyResult?: RemedyResult;
   onRun: () => void;
-  onRemedy: (id: RemedyId) => void;
   /** Shown before the first run, to say what is about to be checked. */
   subject?: string;
   /**
@@ -82,10 +66,8 @@ export type ConnectionDoctorPanelProps = {
 
 export const RemedyButton = ({
   remedy,
-  onRemedy,
 }: {
   remedy: Remedy;
-  onRemedy: (id: RemedyId) => void;
 }) => {
   const [copied, setCopied] = useState(false);
   // The welcome screen renders the doctor outside any router; a <Link> there
@@ -129,38 +111,13 @@ export const RemedyButton = ({
     );
   }
 
-  if (remedy.kind === "open-url") {
-    return (
-      <Button size="sm" variant="outline" asChild>
-        <a href={remedy.url} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="mr-2 size-3.5" />
-          {remedy.label}
-        </a>
-      </Button>
-    );
-  }
-
-  // `run`: the only thing here that touches the machine, so it says exactly
-  // what it will do before it does it.
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button size="sm">{remedy.label}</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{remedy.label}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This runs the following command on this computer:
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <pre className="rounded bg-muted px-3 py-2 font-mono text-xs">{remedy.confirm}</pre>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onRemedy(remedy.id)}>Run it</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Button size="sm" variant="outline" asChild>
+      <a href={remedy.url} target="_blank" rel="noopener noreferrer">
+        <ExternalLink className="mr-2 size-3.5" />
+        {remedy.label}
+      </a>
+    </Button>
   );
 };
 
@@ -178,10 +135,8 @@ const SEVERITY_LEAD: Record<FindingSeverity, string> = {
  */
 const Verdict = ({
   finding,
-  onRemedy,
 }: {
   finding: Finding;
-  onRemedy: (id: RemedyId) => void;
 }) => {
   const [showEvidence, setShowEvidence] = useState(false);
 
@@ -203,7 +158,7 @@ const Verdict = ({
 
       {(finding.remedy || finding.docs) && (
         <div className="flex flex-wrap items-center gap-2">
-          {finding.remedy && <RemedyButton remedy={finding.remedy} onRemedy={onRemedy} />}
+          {finding.remedy && <RemedyButton remedy={finding.remedy} />}
           {finding.docs && (
             <Button variant="ghost" size="sm" asChild className="text-xs">
               <a href={finding.docs} target="_blank" rel="noopener noreferrer">
@@ -248,10 +203,8 @@ const Verdict = ({
 
 const FindingRow = ({
   finding,
-  onRemedy,
 }: {
   finding: Finding;
-  onRemedy: (id: RemedyId) => void;
 }) => {
   const [showEvidence, setShowEvidence] = useState(false);
 
@@ -273,7 +226,7 @@ const FindingRow = ({
 
         {(finding.remedy || finding.docs) && (
           <div className="flex flex-wrap items-center gap-2 pt-0.5">
-            {finding.remedy && <RemedyButton remedy={finding.remedy} onRemedy={onRemedy} />}
+            {finding.remedy && <RemedyButton remedy={finding.remedy} />}
             {finding.docs && (
               <Button variant="ghost" size="sm" asChild className="text-xs">
                 <a href={finding.docs} target="_blank" rel="noopener noreferrer">
@@ -327,10 +280,10 @@ export const CopyReportButton = ({ report }: { report: DoctorReport }) => {
   );
 };
 
-export const FindingList = ({ findings, onRemedy }: { findings: Finding[]; onRemedy: (id: RemedyId) => void }) => (
+export const FindingList = ({ findings }: { findings: Finding[] }) => (
   <ul role="list">
     {findings.map((finding) => (
-      <FindingRow key={`${finding.id}-${finding.targetLabel ?? ""}`} finding={finding} onRemedy={onRemedy} />
+      <FindingRow key={`${finding.id}-${finding.targetLabel ?? ""}`} finding={finding} />
     ))}
   </ul>
 );
@@ -339,9 +292,7 @@ export const ConnectionDoctorPanel = ({
   report,
   status,
   error,
-  remedyResult,
   onRun,
-  onRemedy,
   subject,
   centered,
 }: ConnectionDoctorPanelProps) => {
@@ -388,29 +339,13 @@ export const ConnectionDoctorPanel = ({
         </p>
       )}
 
-      {remedyResult && (
-        <div className="space-y-1 rounded-md border border-border/60 px-3 py-2">
-          <p className={`text-xs ${remedyResult.ok ? "text-emerald-500" : "text-destructive"}`}>
-            {remedyResult.message}
-          </p>
-          {remedyResult.loginUrl && (
-            <Button size="sm" variant="outline" asChild>
-              <a href={remedyResult.loginUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 size-3.5" />
-                Finish signing in
-              </a>
-            </Button>
-          )}
-        </div>
-      )}
-
-      {verdict && <Verdict finding={verdict} onRemedy={onRemedy} />}
+      {verdict && <Verdict finding={verdict} />}
 
       {report && path.length > 1 && (
         <ConnectionPath
           hops={path}
           breaking={breaking}
-          renderFindings={(findings) => <FindingList findings={findings} onRemedy={onRemedy} />}
+          renderFindings={(findings) => <FindingList findings={findings} />}
         />
       )}
 
@@ -430,7 +365,7 @@ export const ConnectionDoctorPanel = ({
                 <FindingRow
                   key={`${finding.id}-${finding.targetLabel ?? ""}`}
                   finding={finding}
-                  onRemedy={onRemedy}
+                 
                 />
               ))}
             </ul>

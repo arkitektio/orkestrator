@@ -1,4 +1,4 @@
-import { ConnectionDiagram, DiagramLegend, TailscaleQuestion } from "@/core/connection/ui/doctor/ConnectionDiagram";
+import { ConnectionDiagram, DiagramLegend } from "@/core/connection/ui/doctor/ConnectionDiagram";
 import {
   CopyReportButton,
   FindingList,
@@ -24,13 +24,6 @@ import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { pathTitle } from "@/core/connection/mesh/connectionPath";
 import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
-import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
-import {
-  useSystemTailscale,
-  useTailscaleConsent,
-  type TailscaleConsent,
-} from "@/core/connection/mesh/useSystemTailscale";
-import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { ChevronDown, Loader2, RefreshCw, Stethoscope, Unplug, Waypoints, Wrench } from "lucide-react";
 import { cn } from "@/core/util/utils";
@@ -209,14 +202,6 @@ export type ServiceStatusPanelProps = {
   /** The live mesh status: how each address travels (relayed, direct tunnel). */
   mesh?: MeshStatusPayload;
   /**
-   * The Tailscale the system runs (not the built-in mesh), once the user has
-   * allowed asking it; `tailscaleConsent` says whether that is still an open
-   * question, and `onTailscaleAnswer` takes the answer.
-   */
-  tailscale?: MeshProbeResult;
-  tailscaleConsent?: TailscaleConsent;
-  onTailscaleAnswer?: (allow: boolean, remember: boolean) => void;
-  /**
    * The doctor's run, when there is one: it moves the break in the diagram
    * from "somewhere on the way" to the part that is actually at fault.
    */
@@ -248,9 +233,6 @@ export const ServiceStatusPanel = ({
   hubName,
   tunnel,
   mesh,
-  tailscale,
-  tailscaleConsent,
-  onTailscaleAnswer,
   doctor,
   renderFindings,
   leaveActions,
@@ -342,8 +324,6 @@ export const ServiceStatusPanel = ({
     hubName,
     tunnel,
     mesh,
-    tailscale,
-    tailscaleConsent,
     doctor,
   });
   const subject = allDown ? (deployment?.name ?? "this deployment") : name;
@@ -351,21 +331,15 @@ export const ServiceStatusPanel = ({
   // would change under the reader. So it says "Diagnosing…" and offers no
   // map. Without a doctor at all the live state is all there is.
   const diagnosing = !!doctor && (doctor.status === "idle" || doctor.status === "running");
-  // The one question worth asking on the page itself: an address only a
-  // Tailscale the app does not run can explain, while nothing else does.
-  const askTailscale =
-    !diagnosing && !!onTailscaleAnswer && !!diagram.serviceLink.askTailscale && verdict?.id !== "service.not-running";
   // The investigated reason leads the page; the mesh's own, when that is
   // what is stuck, stays the one line under the heading instead.
   const diagnosed = verdict && !meshStuck && !diagnosing && doctor?.status !== "error" ? verdict : undefined;
   const addresses = (state.instance?.aliases ?? []).map(
     (alias) => `${alias.host}${alias.port ? `:${alias.port}` : ""}`,
   );
-  // The verdict's own way out, as a button. A manual one is already a hint,
-  // and one that runs a command answers in the doctor's panel, which this
-  // page does not have, so neither is offered here.
+  // The verdict's own way out, as a button. A manual one is already a hint.
   const remedy =
-    verdict?.remedy && !meshStuck && !diagnosing && verdict.remedy.kind !== "manual" && verdict.remedy.kind !== "run"
+    verdict?.remedy && !meshStuck && !diagnosing && verdict.remedy.kind !== "manual"
       ? verdict.remedy
       : undefined;
 
@@ -400,11 +374,6 @@ export const ServiceStatusPanel = ({
     >
       {diagnosing && <Investigating name={name} addresses={addresses} />}
       {diagnosed && <Diagnosis verdict={diagnosed} steps={diagnosed.steps ?? []} />}
-      {askTailscale && (
-        <div className={CARD}>
-          <TailscaleQuestion onAnswer={onTailscaleAnswer!} />
-        </div>
-      )}
 
       {/* The actions under the steps they act on, not under the map. */}
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -420,7 +389,7 @@ export const ServiceStatusPanel = ({
           {allDown ? "Retry all services" : `Retry ${name}`}
         </Button>
         {meshStuck && meshAction}
-        {remedy && <RemedyButton remedy={remedy} onRemedy={() => {}} />}
+        {remedy && <RemedyButton remedy={remedy} />}
         {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
       </div>
       {!diagnosing && (
@@ -477,8 +446,7 @@ export const ServiceStatusPanel = ({
               }}
             >
               <ConnectionDiagram
-                // The question is asked on the page, not again in the picture.
-                diagram={{ ...diagram, serviceLink: { ...diagram.serviceLink, askTailscale: false } }}
+                diagram={diagram}
                 renderFindings={renderFindings}
               />
               <DiagramLegend className="mt-2 justify-center" />
@@ -535,9 +503,6 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
   const progress = useServiceProgress(serviceKey);
   const meshProgress = useMeshProgress();
   const { payload: mesh } = useMeshes();
-  const tailscale = useSystemTailscale(
-    anyMeshHost((state?.instance?.aliases ?? []).map((alias) => alias.host)),
-  );
 
   const allDown =
     state?.status === "invalid" &&
@@ -554,12 +519,9 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
   hasReport.current = !!doctor.report;
   const status = state?.status;
   const lastCheckedAt = state?.lastCheckedAt;
-  // Being allowed to ask the system Tailscale is the same: what the last run
-  // could not look at, the next one can.
-  const consent = tailscale.consent;
   useEffect(() => {
     if (status === "invalid" && hasReport.current) run.current();
-  }, [status, lastCheckedAt, consent]);
+  }, [status, lastCheckedAt]);
 
   return (
     <ServiceStatusPanel
@@ -575,13 +537,10 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
       hubName={activeProfile?.label.hubName || deploymentName}
       tunnel={path.kind === "direct" ? undefined : pathTitle(path)}
       mesh={mesh}
-      tailscale={tailscale.status}
-      tailscaleConsent={tailscale.consent}
-      onTailscaleAnswer={tailscale.answer}
       doctor={{ status: doctor.status, report: doctor.report, error: doctor.error }}
       // What the doctor found about a part opens under the diagram when that
       // part is clicked, with whatever can be done about it.
-      renderFindings={(findings) => <FindingList findings={findings} onRemedy={doctor.onRemedy} />}
+      renderFindings={(findings) => <FindingList findings={findings} />}
       progress={progress}
       meshProgress={meshProgress}
       meshAction={<MeshSettingsButton />}
@@ -600,7 +559,6 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
   const state = useServiceState(serviceKey);
   const instance = useArkitektStore((state) => state.storedSession?.fakts.instances[serviceKey]);
   const activeProfile = useActiveProfile();
-  const { consent } = useTailscaleConsent();
 
   return (
     // This is where "No working alias found" actually lands, so the doctor
@@ -608,9 +566,6 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
     // and not before: a service still being checked is not a failure yet.
     <HubAwareConnectionDoctor
       autoRun={state?.status === "invalid"}
-      // Nobody asked for this run, so it does not read the system Tailscale
-      // until the user has said it may (the diagram asks, once).
-      systemMesh={consent === "allowed"}
       centered
       context={{
         kind: "service",

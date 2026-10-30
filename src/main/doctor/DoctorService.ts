@@ -1,4 +1,3 @@
-import { shell } from "electron";
 import type { AppModule } from "../modules/AppModule";
 import type { IpcTransport } from "../modules/IpcTransport";
 import { probeTarget } from "./networkProbe";
@@ -7,34 +6,24 @@ import {
   DOCTOR_INTERFACES_CHANNEL,
   DOCTOR_MAX_TARGETS,
   DOCTOR_MAX_TIMEOUT_MS,
-  DOCTOR_MESH_CHANNEL,
   DOCTOR_MIN_TIMEOUT_MS,
   DOCTOR_NETWORK_CHANNEL,
-  DOCTOR_REMEDY_CHANNEL,
-  isRemedyId,
   PROBE_ROLES,
 } from "./protocol";
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeNetworkRequest,
   ProbeRole,
   ProbeTarget,
-  RemedyId,
-  RemedyResult,
   VpnInterface,
 } from "./protocol";
 import { findVpnInterfaces } from "./interfaces";
-import { defaultTailscaleDeps, probeTailscale, runTailscaleRemedy } from "./tailscale";
 
 /**
- * The connection doctor's main-process half: four channels, no opinions.
+ * The connection doctor's main-process half: two channels, no opinions.
  *
- * Everything it can do is bounded before it does it — how many addresses, for
- * how long, and (above all) which remedies exist at all. `runRemedy` is the
- * only path in this app by which the renderer can cause a process to be
- * spawned, so it takes an id from a closed enum and nothing else; an unknown
- * id is refused here, before any dependency is touched.
+ * Everything it can do is bounded before it does it: how many addresses, and
+ * for how long. It reads, and changes nothing on the machine.
  *
  * Dependencies are injected for the same reason `VoiceService` injects its
  * `fork`: so the wiring can be tested without sockets or subprocesses.
@@ -42,8 +31,6 @@ import { defaultTailscaleDeps, probeTailscale, runTailscaleRemedy } from "./tail
 
 export type DoctorServiceDeps = {
   probeNetwork: (target: ProbeTarget, timeoutMs: number, viaMeshProxy?: number) => Promise<NetworkProbeResult>;
-  probeMesh: () => Promise<MeshProbeResult>;
-  runRemedy: (id: RemedyId) => Promise<RemedyResult>;
   /** Tunnel interfaces that are up. Absent = read from the OS. */
   probeInterfaces?: () => VpnInterface[];
   /**
@@ -57,18 +44,9 @@ export type DoctorServiceDeps = {
 /** Probes run in parallel, but not unboundedly — a deployment can list many aliases. */
 const CONCURRENCY = 4;
 
-export const defaultDoctorDeps = (): DoctorServiceDeps => {
-  const tailscale = {
-    ...defaultTailscaleDeps(),
-    openPath: (path: string) => shell.openPath(path),
-  };
-
-  return {
-    probeNetwork: probeTarget,
-    probeMesh: () => probeTailscale(tailscale),
-    runRemedy: (id) => runTailscaleRemedy(id, tailscale),
-  };
-};
+export const defaultDoctorDeps = (): DoctorServiceDeps => ({
+  probeNetwork: probeTarget,
+});
 
 const clampTimeout = (value: unknown): number => {
   const requested = typeof value === "number" && Number.isFinite(value)
@@ -147,25 +125,8 @@ export class DoctorService implements AppModule {
     );
 
     this.ipcTransport.handleChannel(
-      DOCTOR_MESH_CHANNEL,
-      async (): Promise<MeshProbeResult> => this.deps.probeMesh(),
-    );
-
-    this.ipcTransport.handleChannel(
       DOCTOR_INTERFACES_CHANNEL,
       async (): Promise<VpnInterface[]> => (this.deps.probeInterfaces ?? findVpnInterfaces)(),
-    );
-
-    this.ipcTransport.handleChannel(
-      DOCTOR_REMEDY_CHANNEL,
-      async (_event, request: { id?: unknown }): Promise<RemedyResult> => {
-        // The allowlist gate. Anything not in the enum stops here, before any
-        // path is resolved and before any process is spawned.
-        if (!isRemedyId(request?.id)) {
-          return { ok: false, message: "Unknown fix — nothing was run." };
-        }
-        return this.deps.runRemedy(request.id);
-      },
     );
   }
 }

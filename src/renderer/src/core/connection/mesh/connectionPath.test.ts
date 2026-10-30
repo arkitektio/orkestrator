@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { summarizeConnectionPath } from "./connectionPath";
 
@@ -23,15 +22,6 @@ const mesh = (state = "running"): MeshStatusPayload =>
     ],
   }) as MeshStatusPayload;
 
-const tailscale = (backendState = "Running"): MeshProbeResult => ({
-  vendor: "tailscale",
-  available: true,
-  backendState,
-  tailnetName: "lab.example",
-  magicDnsSuffix: "tail1234.ts.net",
-  peers: [{ dnsName: "mikro.tail1234.ts.net.", hostName: "mikro", ips: ["100.100.1.2"], online: true }],
-});
-
 describe("summarizeConnectionPath", () => {
   it("names the built-in mesh and counts what it carries", () => {
     expect(
@@ -42,47 +32,30 @@ describe("summarizeConnectionPath", () => {
     ).toEqual({ kind: "arkitekt-mesh", meshLabel: "Lab mesh", viaMesh: 2, total: 3, relayed: 1, offlinePeers: 1 });
   });
 
-  it("prefers the built-in mesh over a system Tailscale that is also up", () => {
+  it("prefers the built-in mesh over a tunnel that is also up", () => {
     expect(
       summarizeConnectionPath({
         hosts: ["hub.lab.mesh.arkitekt.live", "mikro.tail1234.ts.net"],
         mesh: mesh(),
-        tailscale: tailscale(),
+        vpn: [{ name: "tailscale0", addresses: ["100.101.0.1"], kind: "tailscale" }],
       }).kind,
     ).toBe("arkitekt-mesh");
   });
 
-  it("attributes tailnet hosts to a running system Tailscale", () => {
-    expect(
-      summarizeConnectionPath({ hosts: ["mikro.tail1234.ts.net", "go.arkitekt.live"], tailscale: tailscale() }),
-    ).toEqual({ kind: "system-tailscale", tailnet: "lab.example", viaMesh: 1, total: 2 });
-  });
-
-  it("takes a Tailscale interface as enough when the CLI was not asked", () => {
+  it("takes a system Tailscale for a tunnel like any other", () => {
     expect(
       summarizeConnectionPath({
-        hosts: ["100.100.1.2"],
-        vpn: [{ name: "utun4", addresses: ["100.101.0.1"], kind: "tailscale" }],
-      }),
-    ).toEqual({ kind: "system-tailscale", tailnet: undefined, viaMesh: 1, total: 1 });
-  });
-
-  it("does not credit a stopped Tailscale", () => {
-    expect(summarizeConnectionPath({ hosts: ["mikro.tail1234.ts.net"], tailscale: tailscale("Stopped") }).kind).toBe(
-      "direct",
-    );
-  });
-
-  it("reports another VPN by its interfaces", () => {
-    expect(
-      summarizeConnectionPath({
-        hosts: ["go.arkitekt.live"],
+        hosts: ["mikro.tail1234.ts.net", "go.arkitekt.live"],
         vpn: [
-          { name: "utun4", addresses: ["100.101.0.1"], kind: "tailscale" },
+          { name: "tailscale0", addresses: ["100.101.0.1"], kind: "tailscale" },
           { name: "wg0", addresses: ["10.8.0.2"], kind: "wireguard" },
         ],
       }),
-    ).toEqual({ kind: "vpn", interfaces: ["wg0"] });
+    ).toEqual({ kind: "vpn", interfaces: ["tailscale0", "wg0"] });
+  });
+
+  it("a *.ts.net address with no tunnel up is simply direct", () => {
+    expect(summarizeConnectionPath({ hosts: ["mikro.tail1234.ts.net"] })).toEqual({ kind: "direct" });
   });
 
   it("is direct otherwise, including when the mesh is stopped", () => {

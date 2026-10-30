@@ -11,7 +11,7 @@ import type { MeshFirewallState } from "./protocol";
  * whether the user has been asked yet ("none": not yet). Reading rules needs
  * no admin rights.
  *
- * Same rules as `doctor/tailscale.ts`: `execFile` (no shell), an absolute
+ * `execFile` (no shell), an absolute
  * binary path, a literal script, a timeout. The one variable — our own
  * meshd path — goes in through the environment, never into the script text.
  */

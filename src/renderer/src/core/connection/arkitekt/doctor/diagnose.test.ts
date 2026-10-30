@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeTarget,
 } from "../../../../../../main/doctor/protocol";
@@ -32,25 +31,6 @@ const probe = (overrides: Partial<NetworkProbeResult> = {}): NetworkProbeResult 
   ...overrides,
 });
 
-const runningMesh = (overrides: Partial<Extract<MeshProbeResult, { available: true }>> = {}): MeshProbeResult => ({
-  vendor: "tailscale",
-  available: true,
-  backendState: "Running",
-  magicDnsSuffix: "tailnet-cafe.ts.net",
-  tailnetName: "tailnet-cafe.ts.net",
-  self: { dnsName: "laptop.tailnet-cafe.ts.net.", hostName: "laptop", ips: ["100.64.0.1"], online: true },
-  peers: [
-    {
-      dnsName: "mikro.tailnet-cafe.ts.net.",
-      hostName: "mikro",
-      ips: ["100.64.0.2"],
-      online: true,
-      expired: false,
-    },
-  ],
-  ...overrides,
-});
-
 const run = (overrides: Partial<DiagnoseInput> = {}): Finding[] =>
   diagnose({
     context: { kind: "service", serviceKey: "mikro" },
@@ -63,108 +43,27 @@ const ids = (findings: Finding[]): string[] => findings.map((finding) => finding
 const byId = (findings: Finding[], id: string): Finding | undefined =>
   findings.find((finding) => finding.id === id);
 
-/* ────────────────────────────── mesh rules ────────────────────────────── */
+/* ─────────────────────── a route the OS may carry ─────────────────────── */
 
-describe("mesh findings", () => {
-  it("signed out of Tailscale is a blocker with a runnable remedy", () => {
+describe("a *.ts.net address", () => {
+  // Only the sidecar is a mesh. Such a name is one road among others: if a
+  // system Tailscale carries it, fine, and if not, it simply did not answer.
+  const timedOut = probe({ tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 }, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } });
+
+  it("fails like any other address, with no word about Tailscale", () => {
+    const findings = run({ network: [timedOut] });
+    expect(ids(findings)).toContain("net.tcp.timeout");
+    expect(ids(findings).filter((id) => id.startsWith("mesh."))).toEqual([]);
+    expect(JSON.stringify(findings)).not.toMatch(/tailscale/i);
+  });
+
+  it("is not held against the built-in mesh when its node is down", () => {
     const findings = run({
-      mesh: runningMesh({ backendState: "NeedsLogin" }),
-      network: [probe({ tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 }, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } })],
+      context: { kind: "service", serviceKey: "mikro", meshCoordUrl: "https://mesh.arkitekt.live" },
+      sidecar: { sidecar: { state: "ready", version: "t" }, meshes: [] },
+      network: [timedOut],
     });
-
-    const finding = byId(findings, "mesh.needs-login");
-    expect(finding?.severity).toBe("blocker");
-    expect(finding?.remedy).toEqual({
-      kind: "run",
-      label: "Sign in to Tailscale",
-      id: "tailscale.up",
-      confirm: "tailscale up",
-    });
-    // and it comes first, above its own symptom
-    expect(findings[0].id).toBe("mesh.needs-login");
-  });
-
-  it("a stopped daemon reports not-running, not needs-login", () => {
-    expect(ids(run({ mesh: runningMesh({ backendState: "Stopped" }) }))).toContain(
-      "mesh.not-running",
-    );
-  });
-
-  it("a missing CLI is only reported when an address is actually mesh-like", () => {
-    const missing: MeshProbeResult = { vendor: "tailscale", available: false, reason: "cli-not-found" };
-
-    expect(ids(run({ mesh: missing }))).toContain("mesh.cli-missing");
-
-    const publicTarget = target({ host: "go.arkitekt.live", label: "lok" });
-    expect(
-      ids(run({ mesh: missing, targets: [publicTarget], network: [probe({ target: publicTarget })] })),
-    ).not.toContain("mesh.cli-missing");
-  });
-
-  it("points at the download page when the CLI is missing", () => {
-    const findings = run({
-      mesh: { vendor: "tailscale", available: false, reason: "cli-not-found" },
-    });
-    expect(byId(findings, "mesh.cli-missing")?.remedy).toMatchObject({ kind: "open-url" });
-  });
-
-  it("a CLI that fails to answer is a warning, not a blocker", () => {
-    const findings = run({
-      mesh: { vendor: "tailscale", available: false, reason: "cli-failed", detail: "exit 1" },
-    });
-    expect(byId(findings, "mesh.cli-failed")?.severity).toBe("warning");
-  });
-
-  it("detects the wrong tailnet and does not also claim the peer is unknown", () => {
-    const other = target({ host: "mikro.other-net.ts.net" });
-    const findings = run({
-      mesh: runningMesh(),
-      targets: [other],
-      network: [probe({ target: other })],
-    });
-    expect(ids(findings)).toContain("mesh.wrong-tailnet");
-    expect(ids(findings)).not.toContain("mesh.peer-unknown");
-    expect(byId(findings, "mesh.wrong-tailnet")?.detail).toContain("other-net.ts.net");
-  });
-
-  it("reports an offline machine", () => {
-    const mesh = runningMesh({
-      peers: [{ dnsName: "mikro.tailnet-cafe.ts.net.", hostName: "mikro", ips: ["100.64.0.2"], online: false, lastSeen: "2026-09-21T10:00:00Z" }],
-    });
-    const finding = byId(run({ mesh }), "mesh.peer-offline");
-    expect(finding?.severity).toBe("blocker");
-    expect(finding?.evidence?.[0]).toContain("2026-09-21");
-  });
-
-  it("reports an expired key ahead of offline", () => {
-    const mesh = runningMesh({
-      peers: [{ dnsName: "mikro.tailnet-cafe.ts.net.", hostName: "mikro", ips: ["100.64.0.2"], online: false, expired: true, keyExpiry: "2026-09-01" }],
-    });
-    const findings = run({ mesh });
-    expect(ids(findings)).toContain("mesh.peer-key-expired");
-    expect(ids(findings)).not.toContain("mesh.peer-offline");
-  });
-
-  it("reports an unknown machine when signed in to a tailnet that lacks it", () => {
-    const ghost = target({ host: "ghost" });
-    expect(
-      ids(run({ mesh: runningMesh(), targets: [ghost], network: [probe({ target: ghost })] })),
-    ).toContain("mesh.peer-unknown");
-  });
-
-  it("says the mesh is healthy when it is, so the report is never empty-handed", () => {
-    const findings = run({
-      mesh: runningMesh(),
-      network: [probe({ tcp: { attempted: true, ok: false, code: "ECONNREFUSED", ms: 3 }, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } })],
-    });
-    expect(ids(findings)).toContain("mesh.healthy");
-    expect(byId(findings, "mesh.healthy")?.severity).toBe("info");
-  });
-
-  it("does not claim health when a mesh problem was already found", () => {
-    expect(ids(run({ mesh: runningMesh({ backendState: "NeedsLogin" }) }))).not.toContain(
-      "mesh.healthy",
-    );
+    expect(ids(findings).filter((id) => id.startsWith("mesh."))).toEqual([]);
   });
 });
 
@@ -188,17 +87,7 @@ describe("dns findings", () => {
     expect(byId(findings, "net.dns.magicdns-only")?.severity).toBe("info");
   });
 
-  it("public DNS resolves but the OS does not, with Tailscale up: a blocker with a copyable fix", () => {
-    const findings = run({
-      mesh: runningMesh(),
-      network: [dnsProbe({ ok: false, lookupAddresses: [], resolveAddresses: ["1.2.3.4"], lookupError: "ENOTFOUND" })],
-    });
-    const finding = byId(findings, "net.dns.os-resolver-bypassed");
-    expect(finding?.severity).toBe("blocker");
-    expect(finding?.remedy).toMatchObject({ kind: "copy", value: "tailscale up --accept-dns" });
-  });
-
-  it("the same asymmetry without Tailscale is only a warning", () => {
+  it("public DNS resolves but the OS does not: only a warning", () => {
     const findings = run({
       network: [dnsProbe({ ok: false, lookupAddresses: [], resolveAddresses: ["1.2.3.4"], lookupError: "ENOTFOUND" })],
     });
@@ -351,10 +240,12 @@ describe("discovery findings", () => {
 
 describe("assembly", () => {
   it("demotes symptoms that a mesh blocker already explains", () => {
+    const onMesh = target({ host: "100.64.0.2" });
     const findings = run({
-      mesh: runningMesh({ backendState: "NeedsLogin" }),
+      targets: [onMesh],
+      sidecar: { sidecar: { state: "unavailable", reason: "binary-missing" }, meshes: [] } as never,
       network: [
-        probe({ tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 }, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } }),
+        probe({ target: onMesh, tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 }, tls: { attempted: false, ok: false }, http: { attempted: false, ok: false } }),
       ],
     });
     expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
@@ -370,7 +261,6 @@ describe("assembly", () => {
 
   it("sorts blockers before warnings before info", () => {
     const findings = run({
-      mesh: runningMesh(),
       network: [
         probe({ tls: { attempted: true, ok: false, selfSigned: true }, http: { attempted: true, ok: false, status: 502 } }),
       ],
@@ -396,7 +286,7 @@ describe("assembly", () => {
   });
 
   it("degrades to address-only advice when the probes are unavailable", () => {
-    const findings = run({ probesAvailable: false, network: [] });
+    const findings = run({ probesAvailable: false, network: [], targets: [target({ host: "100.64.0.2" })] });
     expect(ids(findings)).toEqual(["doctor.unavailable"]);
     expect(findings[0].detail).toContain("mesh address");
   });
@@ -433,6 +323,7 @@ describe("built-in mesh findings", () => {
   type NodeStatus = import("../../../../../../main/mesh/protocol").MeshNodeStatus;
 
   const CONTROL = "https://mesh.example.org";
+  const meshIp = target({ host: "100.64.0.9" });
   const meshWith = (state: NodeStatus["state"], extra: Partial<NodeStatus> = {}): Sidecar["meshes"][number] => ({
     config: { id: "lab", label: "Lab", controlUrl: CONTROL, hosts: [] },
     status: {
@@ -476,8 +367,9 @@ describe("built-in mesh findings", () => {
   it("says so when this build has no mesh client at all", () => {
     const findings = run({
       context: ctx(CONTROL),
+      targets: [meshIp],
       sidecar: { sidecar: { state: "unavailable", reason: "binary-missing" }, meshes: [] },
-      network: [failingProbe()],
+      network: [failingProbe({ target: meshIp })],
     });
     expect(findings[0].id).toBe("mesh.sidecar.unavailable");
   });
@@ -485,8 +377,9 @@ describe("built-in mesh findings", () => {
   it("the profile's mesh switched off: says so, and blames nothing else", () => {
     const findings = run({
       context: { ...ctx(CONTROL), profileMesh: { id: "lab", enabled: false } },
+      targets: [meshIp],
       sidecar: none,
-      network: [failingProbe()],
+      network: [failingProbe({ target: meshIp })],
     });
     expect(findings[0].id).toBe("mesh.sidecar.disabled");
     expect(ids(findings)).not.toContain("mesh.sidecar.stopped");
@@ -684,27 +577,24 @@ describe("built-in mesh findings", () => {
   it("mesh up but the address is not on it: says what the mesh does know, offers pinning", () => {
     const findings = run({
       context: ctx(CONTROL),
-      targets: [target({ host: "other.tailnet-zebra.ts.net" })],
+      targets: [meshIp],
       sidecar: sidecarWith("running", { proxyPort: 5000 }),
-      network: [failingProbe({ target: target({ host: "other.tailnet-zebra.ts.net" }) })],
+      network: [failingProbe({ target: meshIp })],
     });
     expect(findings[0].id).toBe("mesh.sidecar.host-not-routed");
-    expect(findings[0].evidence).toEqual(expect.arrayContaining(["not routed: other.tailnet-zebra.ts.net", "mesh machines: mikro.tailnet-cafe.ts.net"]));
+    expect(findings[0].evidence).toEqual(expect.arrayContaining(["not routed: 100.64.0.9", "mesh machines: mikro.tailnet-cafe.ts.net"]));
     expect(findings[0].remedy).toEqual({ kind: "navigate", label: "Open mesh settings", path: "/settings/mesh" });
   });
 
   it("no mesh of ours: tells not-let-in, not-advertised and unknown apart", () => {
-    expect(run({ context: ctx(CONTROL), sidecar: none, network: [failingProbe()] })[0]).toMatchObject({
+    const noMesh = (meshCoordUrl?: string | null) =>
+      run({ context: ctx(meshCoordUrl), targets: [meshIp], sidecar: none, network: [failingProbe({ target: meshIp })] });
+    expect(noMesh(CONTROL)[0]).toMatchObject({
       id: "mesh.sidecar.not-granted",
       evidence: expect.arrayContaining([`mesh: ${CONTROL}`]),
     });
-    expect(run({ context: ctx(null), sidecar: none, network: [failingProbe()] })[0].id).toBe("mesh.sidecar.not-advertised");
-    expect(run({ context: ctx(undefined), sidecar: none, network: [failingProbe()] })[0].id).toBe("mesh.sidecar.not-joined");
-  });
-
-  it("stays quiet when the system Tailscale app is the one on the mesh", () => {
-    const findings = run({ context: ctx(CONTROL), sidecar: none, mesh: runningMesh() });
-    expect(ids(findings).filter((id) => id.startsWith("mesh.sidecar."))).toEqual([]);
+    expect(noMesh(null)[0].id).toBe("mesh.sidecar.not-advertised");
+    expect(noMesh(undefined)[0].id).toBe("mesh.sidecar.not-joined");
   });
 
   it("says nothing about the mesh for a public address", () => {
@@ -785,7 +675,8 @@ describe("the hub's own report", () => {
   });
 
   it("the hub is off the mesh and the addresses are mesh addresses", () => {
-    const findings = run({ targets: [mikro], network: [down], hub: hub({ meshConnected: false }), mesh: runningMesh() });
+    const onMesh = target({ host: "100.64.0.2", serviceKey: "mikro" });
+    const findings = run({ targets: [onMesh], network: [{ ...down, target: onMesh }], hub: hub({ meshConnected: false }) });
     expect(findings[0]).toMatchObject({ id: "hub.mesh-disconnected", severity: "blocker" });
   });
 
@@ -818,11 +709,10 @@ describe("upstream hops", () => {
     probe({ target: t, http: { attempted: true, ok: status < 400, status } });
   const ctx = { kind: "service" as const, serviceKey: "mikro", endpointUrl: "https://go.arkitekt.live", meshCoordUrl: "https://mesh.arkitekt.live" };
   const all = (network: NetworkProbeResult[], extra: Partial<DiagnoseInput> = {}) =>
-    run({ context: ctx, targets: [coord, control, mikro], network, mesh: runningMesh(), ...extra });
+    run({ context: ctx, targets: [coord, control, mikro], network, ...extra });
 
   it("everything answers: the all-clear still leads", () => {
-    // mikro is a tailnet name and Tailscale runs, so the ok verdict is the mesh's.
-    expect(ids(all([answers(coord), answers(control, 404), answers(mikro)]))).toEqual(["mesh.healthy"]);
+    expect(ids(all([answers(coord), answers(control, 404), answers(mikro)]))).toEqual(["net.all-clear"]);
   });
 
   it("an HTTP 404 on the mesh control root is not a finding, and never a service one", () => {
@@ -845,13 +735,18 @@ describe("upstream hops", () => {
   });
 
   it("mesh control down while the mesh runs is only a note", () => {
-    const findings = all([answers(coord), dead(control), answers(mikro)]);
-    expect(ids(findings)).toEqual(["mesh.healthy", "upstream.mesh-control.unreachable"]);
+    const findings = all([answers(coord), dead(control), answers(mikro)], {
+      sidecar: {
+        sidecar: { state: "ready", version: "t" },
+        meshes: [{ config: { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [] }, status: { id: "lab", state: "running", proxyPort: 1 } }],
+      } as never,
+    });
+    expect(ids(findings)).toContain("upstream.mesh-control.unreachable");
     expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("info");
   });
 
   it("mesh control down and no mesh up blocks joining", () => {
-    const findings = all([answers(coord), dead(control), dead(mikro)], { mesh: runningMesh({ backendState: "Stopped" }) });
+    const findings = all([answers(coord), dead(control), dead(mikro)]);
     expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("blocker");
   });
 

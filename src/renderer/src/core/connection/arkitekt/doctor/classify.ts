@@ -3,15 +3,14 @@
  *
  * This is the guess the whole doctor hangs off: an alias that is a tailnet
  * address fails for completely different reasons than a public hostname, and
- * the remedy ("you are signed out of Tailscale") only makes sense for the
- * former. Pure, no network, no I/O — so every case below is a cheap test.
+ * the remedy ("this computer has not joined the mesh") only makes sense for
+ * the former. Pure, no network, no I/O — so every case below is a cheap test.
  */
 
 export type HostClass =
   | "loopback"
   | "lan"
   | "mesh-ip"
-  | "mesh-magicdns"
   | "mesh-bare"
   | "public-dns"
   | "public-ip";
@@ -87,9 +86,6 @@ export const classifyHost = (rawHost: string): HostClassification => {
   if (host === "localhost" || host.endsWith(".localhost")) {
     return { class: "loopback" };
   }
-  if (host.endsWith(".ts.net")) {
-    return { class: "mesh-magicdns", meshVendor: "tailscale" };
-  }
   if (host.endsWith(".local") || host.endsWith(".lan") || host.endsWith(".home.arpa")) {
     return { class: "lan" };
   }
@@ -103,11 +99,7 @@ export const classifyHost = (rawHost: string): HostClassification => {
   return { class: "public-dns" };
 };
 
-const MESH_CLASSES: readonly HostClass[] = ["mesh-ip", "mesh-magicdns", "mesh-bare"];
+const MESH_CLASSES: readonly HostClass[] = ["mesh-ip", "mesh-bare"];
 
 export const isMeshClass = (classification: HostClassification): boolean =>
   MESH_CLASSES.includes(classification.class);
-
-/** Is it worth asking the OS about a mesh at all? */
-export const anyMeshHost = (hosts: string[]): boolean =>
-  hosts.some((host) => isMeshClass(classifyHost(host)));

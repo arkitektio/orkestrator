@@ -4,13 +4,10 @@
  * preload and the renderer can import the types and main can import them too.
  *
  *   renderer ──ipc invoke──► main : ProbeTarget[]      ("doctor:probeNetwork")
- *   renderer ──ipc invoke──► main : (nothing)          ("doctor:probeMesh")
- *   renderer ──ipc invoke──► main : RemedyId           ("doctor:runRemedy")
  *   renderer ──ipc invoke──► main : (nothing)          ("doctor:probeInterfaces")
  *
  * Main answers with STAGE-SHAPED results and no opinions. Every judgement —
- * "this is a tailnet address", "you are signed out of Tailscale" — is made by
- * the pure `diagnose()` in the renderer, so it can be tested without a socket.
+ * "this is a mesh address", "the name does not resolve" — is made by the pure `diagnose()` in the renderer, so it can be tested without a socket.
  *
  * PRIVACY: a probe result carries hostnames, IP addresses and the tailnet name.
  * Nothing here may be attached to `src/main/issue-reporter.ts` without a
@@ -18,8 +15,6 @@
  */
 
 export const DOCTOR_NETWORK_CHANNEL = "doctor:probeNetwork";
-export const DOCTOR_MESH_CHANNEL = "doctor:probeMesh";
-export const DOCTOR_REMEDY_CHANNEL = "doctor:runRemedy";
 export const DOCTOR_INTERFACES_CHANNEL = "doctor:probeInterfaces";
 
 /** Main refuses more than this per call; the renderer batches to match. */
@@ -133,47 +128,6 @@ export type NetworkProbeResult = {
   totalMs: number;
 };
 
-export type MeshNode = {
-  id?: string;
-  dnsName?: string;
-  hostName?: string;
-  ips: string[];
-  online?: boolean;
-  expired?: boolean;
-  keyExpiry?: string;
-  os?: string;
-  lastSeen?: string;
-  /** The DERP region its traffic is relayed through, when it is not direct. */
-  relay?: string;
-  /** Its endpoint when the tunnel runs straight to it; absent while relayed. */
-  curAddr?: string;
-  /** Whether there is a live session with it right now; false is "idle". */
-  active?: boolean;
-};
-
-export type MeshUnavailableReason =
-  | "cli-not-found"
-  | "cli-failed"
-  | "unsupported-platform";
-
-export type MeshProbeResult =
-  | {
-      vendor: "tailscale";
-      available: false;
-      reason: MeshUnavailableReason;
-      detail?: string;
-    }
-  | {
-      vendor: "tailscale";
-      available: true;
-      /** "Running" | "NeedsLogin" | "Stopped" | "NoState" | anything new. */
-      backendState: string;
-      magicDnsSuffix?: string;
-      tailnetName?: string;
-      self?: MeshNode;
-      peers: MeshNode[];
-    };
-
 /**
  * A tunnel interface that is up on this computer: a VPN, WireGuard, or a
  * system Tailscale. Presence only — whether a given request travels through
@@ -185,28 +139,6 @@ export type VpnInterface = {
   /** Its IPv4 addresses (link-local and loopback already dropped). */
   addresses: string[];
   kind: "tailscale" | "wireguard" | "vpn";
-};
-
-/**
- * The closed set of things the doctor may DO. A remedy is an id, never a
- * command string from the renderer, and nothing user-supplied ever reaches an
- * argv. Growing this list is a deliberate, reviewed act.
- */
-export type RemedyId = "tailscale.up" | "tailscale.open-app";
-
-export const REMEDY_IDS: readonly RemedyId[] = [
-  "tailscale.up",
-  "tailscale.open-app",
-] as const;
-
-export const isRemedyId = (value: unknown): value is RemedyId =>
-  typeof value === "string" && (REMEDY_IDS as readonly string[]).includes(value);
-
-export type RemedyResult = {
-  ok: boolean;
-  message: string;
-  /** A `https://login.tailscale.com/…` URL scraped out of `tailscale up`. */
-  loginUrl?: string;
 };
 
 export type ProbeNetworkRequest = {

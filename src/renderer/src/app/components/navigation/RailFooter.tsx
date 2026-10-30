@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
 import { cn } from "@/core/util/utils";
-import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound, Waypoints } from "lucide-react";
+import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -25,12 +25,11 @@ import { useRailSwitcherRequests } from "@/core/connection/profile/ui/railSwitch
  * How the org switcher marks a tunnel: a thin ring on the avatar and a small
  * badge in its corner. Theme tokens only, so it follows light, dark and the
  * brand colour: the app's own mesh takes `primary`, anything the OS runs
- * (a system Tailscale, another VPN) stays in the muted foreground — the glyph
+ * (a VPN, a system Tailscale) stays in the muted foreground — the glyph
  * tells them apart.
  */
 const PATH_STYLE: Record<TunnelPath["kind"], { ring: string; glyph: string; Icon: typeof Network }> = {
   "arkitekt-mesh": { ring: "ring-primary/60", glyph: "text-primary", Icon: Network },
-  "system-tailscale": { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: Waypoints },
   vpn: { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: ShieldCheck },
 };
 

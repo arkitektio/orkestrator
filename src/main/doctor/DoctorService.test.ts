@@ -3,9 +3,7 @@ import { DoctorService, type DoctorServiceDeps } from "./DoctorService";
 import {
   DOCTOR_INTERFACES_CHANNEL,
   DOCTOR_MAX_TARGETS,
-  DOCTOR_MESH_CHANNEL,
   DOCTOR_NETWORK_CHANNEL,
-  DOCTOR_REMEDY_CHANNEL,
 } from "./protocol";
 import type { NetworkProbeResult, ProbeTarget } from "./protocol";
 
@@ -38,23 +36,15 @@ const setup = (overrides: Partial<DoctorServiceDeps> = {}) => {
       totalMs: 1,
     }),
   );
-  const probeMesh = vi.fn(async () => ({
-    vendor: "tailscale" as const,
-    available: false as const,
-    reason: "cli-not-found" as const,
-  }));
-  const runRemedy = vi.fn(async () => ({ ok: true, message: "done" }));
 
   const transport = new FakeTransport();
   const service = new DoctorService(transport as never, {
     probeNetwork,
-    probeMesh,
-    runRemedy,
     ...overrides,
   });
   service.setup();
 
-  return { transport, probeNetwork, probeMesh, runRemedy };
+  return { transport, probeNetwork };
 };
 
 const target = (host: string): ProbeTarget => ({
@@ -66,10 +56,10 @@ const target = (host: string): ProbeTarget => ({
 });
 
 describe("DoctorService wiring", () => {
-  it("registers exactly the four channels", () => {
+  it("registers exactly the two channels", () => {
     const { transport } = setup();
     expect([...transport.handlers.keys()].sort()).toEqual(
-      [DOCTOR_INTERFACES_CHANNEL, DOCTOR_MESH_CHANNEL, DOCTOR_NETWORK_CHANNEL, DOCTOR_REMEDY_CHANNEL].sort(),
+      [DOCTOR_INTERFACES_CHANNEL, DOCTOR_NETWORK_CHANNEL].sort(),
     );
   });
 
@@ -88,11 +78,6 @@ describe("DoctorService wiring", () => {
     expect(probeNetwork).toHaveBeenCalledTimes(2);
   });
 
-  it("asks the mesh provider on the mesh channel", async () => {
-    const { transport, probeMesh } = setup();
-    await transport.invoke(DOCTOR_MESH_CHANNEL);
-    expect(probeMesh).toHaveBeenCalledOnce();
-  });
 });
 
 describe("DoctorService bounds", () => {
@@ -168,34 +153,3 @@ describe("DoctorService bounds", () => {
   });
 });
 
-describe("DoctorService remedy allowlist", () => {
-  it("runs a remedy that is in the enum", async () => {
-    const { transport, runRemedy } = setup();
-    expect(await transport.invoke(DOCTOR_REMEDY_CHANNEL, { id: "tailscale.up" })).toEqual({
-      ok: true,
-      message: "done",
-    });
-    expect(runRemedy).toHaveBeenCalledWith("tailscale.up");
-  });
-
-  it.each([
-    ["rm -rf /"],
-    ["tailscale.down"],
-    [""],
-    [undefined],
-    [42],
-    [{ id: "tailscale.up" }],
-  ])("refuses %p without invoking anything", async (id) => {
-    const { transport, runRemedy } = setup();
-    const result = await transport.invoke(DOCTOR_REMEDY_CHANNEL, { id });
-    expect(result.ok).toBe(false);
-    expect(result.message).toContain("nothing was run");
-    expect(runRemedy).not.toHaveBeenCalled();
-  });
-
-  it("refuses a missing payload entirely", async () => {
-    const { transport, runRemedy } = setup();
-    expect((await transport.invoke(DOCTOR_REMEDY_CHANNEL)).ok).toBe(false);
-    expect(runRemedy).not.toHaveBeenCalled();
-  });
-});

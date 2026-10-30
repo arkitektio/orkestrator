@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MeshProbeResult, NetworkProbeResult, ProbeTarget } from "../../../../../../main/doctor/protocol";
+import type { NetworkProbeResult, ProbeTarget } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import { diagnose } from "./diagnose";
 import type { DoctorContext, DoctorReport } from "./findings";
@@ -9,8 +9,8 @@ import { breakingHop, buildConnectionPath, type PathHop } from "./path";
 const NOW = Date.parse("2026-09-23T10:20:00Z");
 
 const coord: ProbeTarget = { host: "go.arkitekt.live", ssl: true, probePath: ".well-known/fakts", label: "https://go.arkitekt.live", role: "coordination" };
-const mikro: ProbeTarget = { host: "mikro.tailnet-cafe.ts.net", ssl: true, label: "mikro", serviceKey: "mikro", role: "service" };
-const rekuest: ProbeTarget = { host: "rekuest.tailnet-cafe.ts.net", ssl: true, label: "rekuest", serviceKey: "rekuest", role: "service" };
+const mikro: ProbeTarget = { host: "100.64.0.2", ssl: true, label: "mikro", serviceKey: "mikro", role: "service" };
+const rekuest: ProbeTarget = { host: "100.64.0.3", ssl: true, label: "rekuest", serviceKey: "rekuest", role: "service" };
 
 const ok = (target: ProbeTarget): NetworkProbeResult => ({
   target,
@@ -27,19 +27,6 @@ const dead = (target: ProbeTarget): NetworkProbeResult => ({
   tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 },
   tls: { attempted: false, ok: false },
   http: { attempted: false, ok: false },
-});
-
-const tailscale = (backendState = "Running"): MeshProbeResult => ({
-  vendor: "tailscale",
-  available: true,
-  backendState,
-  magicDnsSuffix: "tailnet-cafe.ts.net",
-  tailnetName: "tailnet-cafe.ts.net",
-  self: { dnsName: "laptop.tailnet-cafe.ts.net.", hostName: "laptop", ips: ["100.64.0.1"], online: true },
-  peers: [
-    { dnsName: "mikro.tailnet-cafe.ts.net.", hostName: "mikro", ips: ["100.64.0.2"], online: true, expired: false },
-    { dnsName: "rekuest.tailnet-cafe.ts.net.", hostName: "rekuest", ips: ["100.64.0.3"], online: true, expired: false },
-  ],
 });
 
 const hub = (overrides: Partial<HubHealthFacts> = {}): HubHealthFacts => ({
@@ -59,14 +46,12 @@ const context: DoctorContext = { kind: "service", serviceKey: "all", endpointUrl
 const reportFor = ({
   targets = [coord, mikro, rekuest],
   network,
-  mesh = tailscale(),
   sidecar,
   facts,
   ctx = context,
 }: {
   targets?: ProbeTarget[];
   network: NetworkProbeResult[];
-  mesh?: MeshProbeResult;
   sidecar?: MeshStatusPayload;
   facts?: HubHealthFacts;
   ctx?: DoctorContext;
@@ -76,11 +61,10 @@ const reportFor = ({
   context: ctx,
   targets,
   network,
-  mesh,
   sidecar,
   hub: facts,
   lok: facts ? { status: "ok", hub: facts } : { status: "not-available" },
-  findings: diagnose({ context: ctx, targets, network, mesh, sidecar, hub: facts }),
+  findings: diagnose({ context: ctx, targets, network, sidecar, hub: facts }),
 });
 
 const hopById = (hops: PathHop[], id: string): PathHop | undefined =>
@@ -90,7 +74,7 @@ describe("buildConnectionPath", () => {
   it("everything works: every hop ok, nothing breaks", () => {
     const hops = buildConnectionPath(reportFor({ network: [ok(coord), ok(mikro), ok(rekuest)], facts: hub() }), NOW);
     expect(hops.map((hop) => hop.id)).toEqual(["computer", "coordination", "mesh", "hub"]);
-    expect(hops.map((hop) => hop.state)).toEqual(["ok", "ok", "ok", "ok"]);
+    expect(hops.map((hop) => hop.state)).toEqual(["ok", "ok", "unknown", "ok"]);
     expect(hops[3].children?.map((child) => child.id)).toEqual(["service:mikro", "service:rekuest"]);
     expect(hops[3].summary).toContain("last report 20 minutes ago");
     expect(hops[3].summary).toContain("on the mesh as lab-hub.tailnet-cafe.ts.net");
@@ -102,15 +86,6 @@ describe("buildConnectionPath", () => {
     expect(breakingHop(hops)?.id).toBe("coordination");
     expect(hopById(hops, "coordination")?.summary).toContain("TCP: ETIMEDOUT 4000ms");
     expect(hopById(hops, "coordination")?.findings.map((finding) => finding.id)).toContain("upstream.coordination.unreachable");
-  });
-
-  it("signed out of Tailscale: the mesh breaks, and carries the finding", () => {
-    const hops = buildConnectionPath(
-      reportFor({ network: [ok(coord), dead(mikro), dead(rekuest)], mesh: tailscale("NeedsLogin"), facts: hub() }),
-      NOW,
-    );
-    expect(breakingHop(hops)?.id).toBe("mesh");
-    expect(hopById(hops, "mesh")?.findings.map((finding) => finding.id)).toContain("mesh.needs-login");
   });
 
   it("the hub has gone quiet: it breaks at the hub", () => {
@@ -138,7 +113,7 @@ describe("buildConnectionPath", () => {
 
   it("a public deployment with no mesh has no mesh hop", () => {
     const api: ProbeTarget = { host: "mikro.example.org", ssl: true, label: "mikro", serviceKey: "mikro", role: "service" };
-    const hops = buildConnectionPath(reportFor({ targets: [coord, api], network: [ok(coord), ok(api)], mesh: undefined }), NOW);
+    const hops = buildConnectionPath(reportFor({ targets: [coord, api], network: [ok(coord), ok(api)] }), NOW);
     expect(hops.map((hop) => hop.id)).toEqual(["computer", "coordination", "hub"]);
   });
 
@@ -163,7 +138,6 @@ describe("buildConnectionPath", () => {
     const hops = buildConnectionPath(
       reportFor({
         network: [ok(coord), ok(mikro), ok(rekuest)],
-        mesh: undefined,
         sidecar,
         facts: hub(),
         ctx: { ...context, profileMesh: { id: "lab", enabled: true } },

@@ -21,8 +21,6 @@ import {
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
-import { useSystemTailscale } from "@/core/connection/mesh/useSystemTailscale";
-import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
 import { reportError, toast } from "@/core/notify";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
@@ -35,22 +33,16 @@ import { FaktsViewer } from "../components/FaktsViewer";
 import { HubHealthCard } from "../components/HubHealthCard";
 import { ServiceCard } from "../components/ServiceCard";
 import { SettingsPage } from "../components/SettingsPage";
-import { SystemTailscaleSetting } from "../components/SystemTailscaleSetting";
 
 const ServiceGrid = ({ services, hub }: { services: ServiceRuntimeState[]; hub?: HubHealthFacts }) => {
   // Live, so a card says "through the mesh" exactly when requests go through it.
   const { payload: mesh } = useMeshes();
-  // Only once allowed (the diagram above asks); until then the cards say what
-  // the app itself knows.
-  const { status: tailscale } = useSystemTailscale(
-    anyMeshHost(services.flatMap((service) => (service.instance?.aliases ?? []).map((alias) => alias.host))),
-  );
   return services.length > 0 ? (
     <>
       <DeploymentDiagram services={services} hub={hub} mesh={mesh} />
       <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
         {services.map((service) => (
-          <ServiceCard key={service.key} service={service} hub={hub} mesh={mesh} tailscale={tailscale} />
+          <ServiceCard key={service.key} service={service} hub={hub} mesh={mesh} />
         ))}
       </div>
     </>
@@ -187,8 +179,6 @@ export const ServicesPage = () => {
       >
         <ServicesWithHub services={services} />
       </Guard.Lok>
-
-      <SystemTailscaleSetting />
 
       <Card>
         <CardHeader>

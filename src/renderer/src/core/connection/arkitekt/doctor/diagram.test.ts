@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MeshProbeResult, NetworkProbeResult, ProbeTarget } from "../../../../../../main/doctor/protocol";
+import type { NetworkProbeResult, ProbeTarget } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import type { Alias } from "../fakts/faktsSchema";
 import type { ServiceRuntimeState } from "../types";
@@ -48,16 +48,6 @@ const erroring = (target: ProbeTarget): NetworkProbeResult => ({
   http: { attempted: true, ok: false, status: 502 },
 });
 
-const tailscale = (backendState = "Running"): MeshProbeResult => ({
-  vendor: "tailscale",
-  available: true,
-  backendState,
-  magicDnsSuffix: "tailnet-cafe.ts.net",
-  tailnetName: "tailnet-cafe.ts.net",
-  self: { dnsName: "laptop.tailnet-cafe.ts.net.", hostName: "laptop", ips: ["100.64.0.1"], online: true },
-  peers: [{ dnsName: "mikro.tailnet-cafe.ts.net.", hostName: "mikro", ips: ["100.64.0.2"], online: true, expired: false }],
-});
-
 const hub = (overrides: Partial<HubHealthFacts> = {}): HubHealthFacts => ({
   name: "lab-hub",
   online: true,
@@ -74,12 +64,10 @@ const context: DoctorContext = { kind: "service", serviceKey: "mikro", endpointU
 /** A report exactly as the hook builds it: the findings come from `diagnose`. */
 const reportFor = ({
   network,
-  mesh = tailscale(),
   facts,
   probesAvailable,
 }: {
   network: NetworkProbeResult[];
-  mesh?: MeshProbeResult;
   facts?: HubHealthFacts;
   probesAvailable?: boolean;
 }): DoctorReport => {
@@ -90,10 +78,9 @@ const reportFor = ({
     context,
     targets,
     network,
-    mesh,
     hub: facts,
     lok: facts ? { status: "ok", hub: facts } : { status: "not-available" },
-    findings: diagnose({ context, targets, network, mesh, hub: facts, probesAvailable }),
+    findings: diagnose({ context, targets, network, hub: facts, probesAvailable }),
   };
 };
 
@@ -204,13 +191,6 @@ describe("buildConnectionDiagram, sharpened by a report", () => {
     expect(nothingThere.reportLink.state).toBe("unknown");
   });
 
-  it("signed out of the mesh: the line carries the mesh's reason and finding", () => {
-    const diagram = withReport(reportFor({ network: [ok(coord), dead(mikro)], mesh: tailscale("NeedsLogin"), facts: hub() }));
-    expect(diagram.serviceLink.state).toBe("failed");
-    expect(diagram.serviceLink.reason).toContain("Tailscale NeedsLogin");
-    expect(diagram.serviceLink.findings.map((finding) => finding.id)).toContain("mesh.needs-login");
-  });
-
   it("the coordination server does not answer: its line breaks, not the node", () => {
     const diagram = withReport(reportFor({ network: [dead(coord), dead(mikro)] }));
     expect(diagram.signInLink).toMatchObject({ state: "failed", label: "no answer" });
@@ -226,7 +206,7 @@ describe("buildConnectionDiagram, sharpened by a report", () => {
 
 describe("buildConnectionDiagram, the merge rule", () => {
   it("a report with no probes (browser build) leaves what live state knows is fine green", () => {
-    const diagram = withReport(reportFor({ network: [], mesh: undefined, probesAvailable: false }));
+    const diagram = withReport(reportFor({ network: [], probesAvailable: false }));
     expect(diagram.client.state).toBe("ok");
     expect(diagram.signInLink.state).toBe("ok");
     expect(diagram.coordination.state).toBe("ok");
@@ -415,73 +395,17 @@ describe("buildConnectionDiagram, the alias paths", () => {
   });
 });
 
-/** The Tailscale the system runs, with the hub's machine as one of its peers. */
-const systemTailscale = (
-  peer: { relay?: string; curAddr?: string; online?: boolean; active?: boolean } = { relay: "fra", active: true },
-): MeshProbeResult => ({
-  ...(tailscale() as Extract<MeshProbeResult, { available: true }>),
-  peers: [{ dnsName: "mikro.tailnet-cafe.ts.net.", hostName: "mikro", ips: ["100.64.0.2"], online: true, expired: false, ...peer }],
-});
-
-describe("buildConnectionDiagram, a mesh the app does not run", () => {
-  const meshPath = (input: Partial<ConnectionDiagramInput>) =>
-    build({ aliases: [lan, meshName], ...input }).serviceLink.aliases.find((path) => path.lane === "mesh");
-
-  it("a mesh-looking address nobody can vouch for is its own case, and worth one question", () => {
-    const diagram = build({ aliases: [lan, meshName], tailscaleConsent: "ask" });
-    expect(diagram.serviceLink.aliases.map((path) => [path.lane, path.unrouted ?? false])).toEqual([
-      ["direct", false],
-      ["mesh", true],
-    ]);
-    expect(diagram.serviceLink.askTailscale).toBe(true);
+describe("buildConnectionDiagram, a route the app does not run", () => {
+  it("a *.ts.net address is an ordinary road, however the OS carries it", () => {
+    const [path] = build({ aliases: [meshName] }).serviceLink.aliases;
+    expect(path.lane).toBe("direct");
+    expect(path.unrouted).toBeUndefined();
+    expect(path.network).toBeUndefined();
   });
 
-  it("does not ask twice, and does not ask when there is nothing to learn", () => {
-    expect(build({ aliases: [lan, meshName], tailscaleConsent: "denied" }).serviceLink.askTailscale).toBe(false);
-    expect(build({ aliases: [lan, meshName], tailscaleConsent: "allowed" }).serviceLink.askTailscale).toBe(false);
-    // No mesh-looking address at all.
-    expect(build({ aliases: [lan], tailscaleConsent: "ask" }).serviceLink.askTailscale).toBe(false);
-    // The built-in mesh already explains it.
-    expect(
-      build({ aliases: [lan, meshName], mesh: builtInMesh(), tailscaleConsent: "ask" }).serviceLink.askTailscale,
-    ).toBe(false);
-  });
-
-  it("once asked, Tailscale says whether the tunnel is direct or goes through a DERP relay", () => {
-    expect(meshPath({ tailscale: systemTailscale() })).toMatchObject({
-      network: "Tailscale",
-      relay: "fra",
-      travel: "through Tailscale tailnet-cafe.ts.net · relayed via fra",
-    });
-    expect(meshPath({ tailscale: systemTailscale() })?.unrouted).toBeUndefined();
-    // `Relay` names the home region even on a direct tunnel; direct wins.
-    const direct = meshPath({ tailscale: systemTailscale({ relay: "fra", curAddr: "203.0.113.7:41641" }) });
-    expect(direct).toMatchObject({ tunnel: "direct tunnel" });
-    expect(direct?.relay).toBeUndefined();
-    expect(meshPath({ tailscale: systemTailscale({ online: false }) })).toMatchObject({ peerOffline: true });
-    expect(build({ aliases: [lan, meshName], tailscale: systemTailscale({ online: false }) }).hub).toMatchObject({
-      state: "failed",
-      reason: "offline on Tailscale",
-    });
-    // No session open: no path to claim, relay region or not.
-    const idle = meshPath({ tailscale: systemTailscale({ relay: "fra", active: false }) });
-    expect(idle).toMatchObject({ tunnel: "idle" });
-    expect(idle?.relay).toBeUndefined();
-  });
-
-  it("says so when Tailscale is installed but not running", () => {
-    expect(meshPath({ tailscale: tailscale("Stopped") })).toMatchObject({
-      network: "Tailscale",
-      tunnel: "Tailscale off",
-      travel: "through Tailscale tailnet-cafe.ts.net · Tailscale is Stopped",
-    });
-  });
-
-  it("the built-in mesh outranks the system Tailscale for an address it routes", () => {
-    expect(meshPath({ mesh: builtInMesh(), tailscale: systemTailscale({ curAddr: "1.2.3.4:1" }) })).toMatchObject({
-      network: "Lab",
-      relay: "fra",
-    });
+  it("a mesh address no mesh here routes is its own case", () => {
+    const [path] = build({ aliases: [{ ...meshName, host: "100.64.0.9" }] }).serviceLink.aliases;
+    expect(path).toMatchObject({ lane: "mesh", unrouted: true });
   });
 });
 
@@ -561,9 +485,8 @@ describe("buildConnectionDiagram, the firewall check", () => {
       context,
       targets,
       network,
-      mesh: tailscale(),
       lok: { status: "not-available" },
-      findings: diagnose({ context, targets, network, mesh: tailscale() }),
+      findings: diagnose({ context, targets, network }),
     };
     return withReport(report);
   };

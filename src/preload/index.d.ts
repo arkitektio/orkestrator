@@ -24,11 +24,8 @@ import type {
   VoiceStatusPayload,
 } from "../main/voice/protocol";
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeNetworkRequest,
-  RemedyId,
-  RemedyResult,
   VpnInterface,
 } from "../main/doctor/protocol";
 import type {
@@ -101,14 +98,11 @@ export type MeshApi = {
 /**
  * Connection diagnostics. Probing happens in main because the renderer's
  * `fetch` collapses DNS, refusal, TLS and timeout into one opaque error.
- * `runRemedy` only accepts an id from the protocol's closed allowlist.
  */
 export type DoctorApi = {
   probeNetwork: (request: ProbeNetworkRequest) => Promise<NetworkProbeResult[]>;
-  probeMesh: () => Promise<MeshProbeResult>;
   /** Tunnel interfaces (VPN, WireGuard, system Tailscale) that are up. */
   probeInterfaces: () => Promise<VpnInterface[]>;
-  runRemedy: (id: RemedyId) => Promise<RemedyResult>;
 };
 
 export type VoiceApi = {

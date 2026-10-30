@@ -5,16 +5,11 @@ import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/
 import type { DialogRequest as ForwardedDialog } from "../main/modules/QuickPaletteWindow";
 import {
   DOCTOR_INTERFACES_CHANNEL,
-  DOCTOR_MESH_CHANNEL,
   DOCTOR_NETWORK_CHANNEL,
-  DOCTOR_REMEDY_CHANNEL,
 } from "../main/doctor/protocol";
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeNetworkRequest,
-  RemedyId,
-  RemedyResult,
   VpnInterface,
 } from "../main/doctor/protocol";
 import type {
@@ -293,16 +288,12 @@ const api = {
    * Connection diagnostics. The renderer cannot tell a DNS failure from a
    * refused connection from a rejected certificate — `fetch` reports all three
    * as "Failed to fetch" — so the probing happens in main and the renderer
-   * only interprets the results. `runRemedy` takes an id from a closed
-   * allowlist, never a command.
+   * only interprets the results.
    */
   doctor: {
     probeNetwork: (request: ProbeNetworkRequest): Promise<NetworkProbeResult[]> =>
       ipcRenderer.invoke(DOCTOR_NETWORK_CHANNEL, request),
-    probeMesh: (): Promise<MeshProbeResult> => ipcRenderer.invoke(DOCTOR_MESH_CHANNEL),
     probeInterfaces: (): Promise<VpnInterface[]> => ipcRenderer.invoke(DOCTOR_INTERFACES_CHANNEL),
-    runRemedy: (id: RemedyId): Promise<RemedyResult> =>
-      ipcRenderer.invoke(DOCTOR_REMEDY_CHANNEL, { id }),
   },
   /**
    * Organisation meshes: the built-in userspace Tailscale node per mesh. A

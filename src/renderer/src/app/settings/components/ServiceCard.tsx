@@ -9,13 +9,11 @@ import {
 } from "@/core/connection/arkitekt/doctor/hubHealth";
 import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
 import { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
-import { travelOf } from "@/core/connection/arkitekt/doctor/diagram";
 import { serviceRoute, type ServiceRoute } from "@/core/connection/mesh/route";
 import { cn } from "@/core/util/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, Lock, LockOpen, Network, Server } from "lucide-react";
 import React from "react";
-import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { StatusLabel, type Tone } from "./StatusLabel";
 
@@ -27,16 +25,7 @@ const NETWORK_LABEL: Record<Extract<ServiceRoute, { kind: "direct" }>["network"]
 };
 
 /** One line on how requests reach the service: through the mesh, or straight there. */
-const RouteLine = ({ route, ssl, tailscale }: { route: ServiceRoute; ssl: boolean; tailscale?: string }) => {
-  // A Tailscale the system runs carries it: not "direct", and not a mystery.
-  if (route.kind === "direct" && tailscale) {
-    return (
-      <span className="flex min-w-0 items-center gap-1.5">
-        <Network className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <span className="min-w-0 truncate">{tailscale.charAt(0).toUpperCase() + tailscale.slice(1)}</span>
-      </span>
-    );
-  }
+const RouteLine = ({ route, ssl }: { route: ServiceRoute; ssl: boolean }) => {
   if (route.kind === "mesh") {
     const { peer } = route;
     return (
@@ -128,15 +117,12 @@ export const ServiceCard: React.FC<{
   hub?: HubHealthFacts;
   /** The live mesh status, to say whether this service is reached through it. */
   mesh?: MeshStatusPayload;
-  /** The system Tailscale's status, once the user has allowed asking it. */
-  tailscale?: MeshProbeResult;
-}> = ({ service, hub, mesh, tailscale }) => {
+}> = ({ service, hub, mesh }) => {
   const status = statusOf(service);
   const alias = service.alias;
   const aliases = service.instance?.aliases ?? [];
   const aliasIndex = alias ? aliases.findIndex((candidate) => candidate.id === alias.id) : -1;
   const route = alias ? serviceRoute(alias.host, mesh) : undefined;
-  const viaTailscale = alias && tailscale ? travelOf(alias.host, mesh, tailscale) : undefined;
   const description = typeof service.definition.description === "string" ? service.definition.description : undefined;
 
   return (
@@ -174,11 +160,7 @@ export const ServiceCard: React.FC<{
           </Fact>
           {alias && route && (
             <Fact label="Route">
-              <RouteLine
-                route={route}
-                ssl={alias.ssl}
-                tailscale={viaTailscale?.network === "Tailscale" ? viaTailscale.travel : undefined}
-              />
+              <RouteLine route={route} ssl={alias.ssl} />
             </Fact>
           )}
           {service.lastCheckedAt && (

@@ -1,8 +1,6 @@
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeTarget,
-  RemedyId,
 } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import type { HubHealthFacts } from "./hubHealth";
@@ -19,17 +17,14 @@ import type { Alias } from "../fakts/faktsSchema";
 export type FindingSeverity = "blocker" | "warning" | "info" | "ok";
 
 /**
- * The four things a remedy can be, in ascending order of how much we presume:
- * tell them, give them the string, open a page, or actually do it. Only `run`
- * touches the machine, only `run` needs a confirmation, and its `id` comes
- * from the protocol's closed allowlist.
+ * The things a remedy can be: tell them, give them the string, open a page,
+ * or go to a place in the app. None of them touches the machine.
  */
 export type Remedy =
   | { kind: "manual"; instructions: string }
   | { kind: "copy"; label: string; value: string }
   | { kind: "open-url"; label: string; url: string }
-  | { kind: "navigate"; label: string; path: string }
-  | { kind: "run"; label: string; id: RemedyId; confirm: string };
+  | { kind: "navigate"; label: string; path: string };
 
 export type Finding = {
   /** Stable across runs and releases: the tests assert on these. */
@@ -86,7 +81,6 @@ export type DiagnoseInput = {
   context: DoctorContext;
   targets: ProbeTarget[];
   network: NetworkProbeResult[];
-  mesh?: MeshProbeResult;
   /**
    * The built-in mesh sidecar's meshes, if the bridge offered them. A running
    * mesh that covers a target makes the system client and the direct probes
@@ -129,7 +123,6 @@ export type DoctorReport = {
   targets: ProbeTarget[];
   findings: Finding[];
   network: NetworkProbeResult[];
-  mesh?: MeshProbeResult;
   sidecar?: MeshStatusPayload;
   hub?: HubHealthFacts;
   lok?: LokOutcome;

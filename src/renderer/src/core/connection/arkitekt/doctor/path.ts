@@ -144,7 +144,6 @@ const meshHop = (report: DoctorReport, control: NetworkProbeResult[]): PathHop =
     ? deploymentMeshes({ context: report.context, targets: report.targets, network: report.network }, report.sidecar)
     : [];
   const running = ours.find((mesh) => mesh.status.state === "running");
-  const system = report.mesh?.available ? report.mesh : undefined;
 
   let state: HopState = "unknown";
   let status: string | undefined;
@@ -158,9 +157,6 @@ const meshHop = (report: DoctorReport, control: NetworkProbeResult[]): PathHop =
   } else if (ours[0]) {
     state = "failed";
     status = `built-in mesh ${ours[0].status.state}`;
-  } else if (system) {
-    state = system.backendState === "Running" ? "ok" : "failed";
-    status = `Tailscale ${system.backendState}`;
   } else if (report.sidecar) {
     status = "not joined";
   }

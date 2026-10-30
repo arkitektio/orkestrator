@@ -1,15 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import type {
-  MeshProbeResult,
   NetworkProbeResult,
   ProbeTarget,
-  RemedyId,
-  RemedyResult,
 } from "../../../../../../main/doctor/protocol";
 import { DOCTOR_MAX_TARGETS } from "../../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import { meshStatusStore } from "@/core/connection/mesh/meshStatusStore";
-import { anyMeshHost } from "./classify";
 import { diagnose } from "./diagnose";
 import type { DoctorContext, DoctorReport, LokOutcome } from "./findings";
 import type { HubHealthFacts } from "./hubHealth";
@@ -35,12 +31,6 @@ export type RunDoctorInput = {
    * this (see `HubAwareConnectionDoctor`); the signed-out surfaces do not.
    */
   fetchHub?: () => Promise<HubHealthFacts | undefined>;
-  /**
-   * False skips the system Tailscale CLI. A run nobody asked for (the
-   * unreachable page starts one by itself) must not read software the app
-   * does not own until the user has allowed it; see `useSystemTailscale`.
-   */
-  systemMesh?: boolean;
 };
 
 /** Lok is a witness, not a stage: slow or failing, it must not hold up the run. */
@@ -82,8 +72,6 @@ export const probeInBatches = async (
 
 type DoctorBridge = {
   probeNetwork: (request: { targets: ProbeTarget[]; timeoutMs?: number }) => Promise<NetworkProbeResult[]>;
-  probeMesh: () => Promise<MeshProbeResult>;
-  runRemedy: (id: RemedyId) => Promise<RemedyResult>;
 };
 
 /** Mirrors `voice/store.ts`: the bridge is absent in a browser build. */
@@ -99,7 +87,6 @@ export const useConnectionDoctor = () => {
   const [status, setStatus] = useState<DoctorStatus>("idle");
   const [report, setReport] = useState<DoctorReport | undefined>();
   const [error, setError] = useState<string | undefined>();
-  const [remedyResult, setRemedyResult] = useState<RemedyResult | undefined>();
   // A second click while the first run is in flight would interleave two
   // reports; the newest run wins and the older one is dropped on arrival.
   const runIdRef = useRef(0);
@@ -108,7 +95,6 @@ export const useConnectionDoctor = () => {
     const runId = ++runIdRef.current;
     setStatus("running");
     setError(undefined);
-    setRemedyResult(undefined);
 
     const startedAt = Date.now();
     // The hops in front come first, so the cap can never cut them off.
@@ -117,7 +103,6 @@ export const useConnectionDoctor = () => {
 
     const finish = (
       network: NetworkProbeResult[],
-      mesh: MeshProbeResult | undefined,
       probesAvailable: boolean,
       sidecar?: MeshStatusPayload,
       lok: LokOutcome = { status: "not-available" },
@@ -133,7 +118,6 @@ export const useConnectionDoctor = () => {
           context: input.context,
           targets,
           network,
-          mesh,
           sidecar,
           originalError: input.originalError,
           rendererReachable: input.rendererReachable,
@@ -141,7 +125,6 @@ export const useConnectionDoctor = () => {
           hub,
         }),
         network,
-        mesh,
         sidecar,
         hub,
         lok,
@@ -154,48 +137,24 @@ export const useConnectionDoctor = () => {
     const lokOutcome = fetchHubSafely(input.fetchHub);
 
     if (!bridge) {
-      finish([], undefined, false, undefined, await lokOutcome);
+      finish([], false, undefined, await lokOutcome);
       return;
     }
 
     try {
-      const wantsMesh = input.systemMesh !== false && anyMeshHost(targets.map((target) => target.host));
       // The built-in mesh's state is cheap and local; a failure there must
       // not sink the whole run, so it degrades to "unknown".
       const sidecarStatus = meshStatusStore().load().catch(() => undefined);
-      const [network, mesh, sidecar, lok] = await Promise.all([
+      const [network, sidecar, lok] = await Promise.all([
         probeInBatches(bridge.probeNetwork, targets),
-        wantsMesh ? bridge.probeMesh() : Promise.resolve(undefined),
         sidecarStatus,
         lokOutcome,
       ]);
-      finish(network, mesh, true, sidecar, lok);
+      finish(network, true, sidecar, lok);
     } catch (cause) {
       if (runIdRef.current !== runId) return;
       setError(cause instanceof Error ? cause.message : String(cause));
       setStatus("error");
-    }
-  }, []);
-
-  const runRemedy = useCallback(async (id: RemedyId): Promise<RemedyResult> => {
-    const bridge = doctorBridge();
-    if (!bridge) {
-      const unavailable = { ok: false, message: "This build cannot apply fixes." };
-      setRemedyResult(unavailable);
-      return unavailable;
-    }
-
-    try {
-      const result = await bridge.runRemedy(id);
-      setRemedyResult(result);
-      return result;
-    } catch (cause) {
-      const failed = {
-        ok: false,
-        message: cause instanceof Error ? cause.message : String(cause),
-      };
-      setRemedyResult(failed);
-      return failed;
     }
   }, []);
 
@@ -204,18 +163,15 @@ export const useConnectionDoctor = () => {
     setStatus("idle");
     setReport(undefined);
     setError(undefined);
-    setRemedyResult(undefined);
   }, []);
 
   return {
     run,
-    runRemedy,
     reset,
     status,
     running: status === "running",
     report,
     error,
-    remedyResult,
     available: doctorAvailable(),
   };
 };

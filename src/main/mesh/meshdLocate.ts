@@ -8,8 +8,7 @@ import { join } from "node:path";
  * Development: the per-target directory that `scripts/build-meshd.mjs`
  * writes into, under the repository's `resources/meshd/`.
  *
- * Like the doctor's Tailscale lookup, this is a FIXED path, never a PATH
- * search: the binary we spawn is one we shipped.
+ * This is a FIXED path, never a PATH search: the binary we spawn is one we shipped.
  */
 
 export type MeshdLocation = {

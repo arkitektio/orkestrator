@@ -43,8 +43,6 @@ export type ConnectionDoctorProps = {
   centered?: boolean;
   /** The hub's own report — only where a lok client exists; see `HubAwareConnectionDoctor`. */
   fetchHub?: () => Promise<HubHealthFacts | undefined>;
-  /** False keeps the run from asking the system Tailscale CLI; see `RunDoctorInput.systemMesh`. */
-  systemMesh?: boolean;
   /**
    * Draw the run yourself instead of getting the panel. For a page that shows
    * the report as something else too (the unreachable page's diagram) and so
@@ -64,14 +62,13 @@ export const ConnectionDoctor = ({
   autoRun,
   centered,
   fetchHub,
-  systemMesh,
   children,
 }: ConnectionDoctorProps) => {
-  const { run, runRemedy, status, report, error, remedyResult } = useConnectionDoctor();
+  const { run, status, report, error } = useConnectionDoctor();
 
   const handleRun = useCallback(() => {
-    void run({ context, targets: buildTargets(), originalError, rendererReachable, fetchHub, systemMesh });
-  }, [run, context, buildTargets, originalError, rendererReachable, fetchHub, systemMesh]);
+    void run({ context, targets: buildTargets(), originalError, rendererReachable, fetchHub });
+  }, [run, context, buildTargets, originalError, rendererReachable, fetchHub]);
 
   // Once, on mount. `handleRun` changes identity whenever a caller rebuilds
   // `buildTargets` inline, and this must not turn into a probe loop.
@@ -86,9 +83,7 @@ export const ConnectionDoctor = ({
     report,
     status,
     error,
-    remedyResult,
     onRun: handleRun,
-    onRemedy: (id) => void runRemedy(id),
     subject,
     centered,
   };

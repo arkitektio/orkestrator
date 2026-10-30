@@ -6,7 +6,24 @@ import { buildConnectionDiagram } from "@/core/connection/arkitekt/doctor/diagra
 import type { DoctorReport } from "@/core/connection/arkitekt/doctor/findings";
 import { ConnectionDiagram } from "@/core/connection/ui/doctor/ConnectionDiagram";
 import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
+import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { ServiceStatusPanel } from "./ServiceUnavailable";
+
+/** The built-in mesh routing `mikro.tailnet.ts.net` through a DERP relay. */
+const relayedMesh = {
+  sidecar: { state: "ready", version: "t" },
+  meshes: [
+    {
+      config: { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [] },
+      status: {
+        id: "lab",
+        state: "running",
+        magicDnsSuffix: "tailnet.ts.net",
+        peers: [{ dnsName: "mikro.tailnet.ts.net", ips: ["100.64.0.2"], online: true, relay: "fra" }],
+      },
+    },
+  ],
+} as MeshStatusPayload;
 
 const state = (overrides: Partial<ServiceRuntimeState> = {}): ServiceRuntimeState =>
   ({
@@ -317,31 +334,17 @@ describe("ServiceStatusPanel", () => {
     expect(onRetryAll).toHaveBeenCalledOnce();
   });
 
-  it("asks once before reading a Tailscale it does not run, and passes the answer on", async () => {
-    const onTailscaleAnswer = vi.fn();
-    renderPanel({ tailscaleConsent: "ask", onTailscaleAnswer });
-
-    const question = screen.getByRole("group", { name: "Ask Tailscale" });
-    expect(question).toHaveTextContent("tailscale status");
-    await userEvent.click(within(question).getByRole("checkbox"));
-    await userEvent.click(within(question).getByRole("button", { name: "Run it" }));
-    expect(onTailscaleAnswer).toHaveBeenCalledWith(true, true);
-  });
-
-  it("does not ask again once it has an answer, and draws the relay Tailscale reports", () => {
-    renderMap({
-      tailscaleConsent: "allowed",
-      onTailscaleAnswer: vi.fn(),
-      tailscale: {
-        vendor: "tailscale",
-        available: true,
-        backendState: "Running",
-        tailnetName: "tailnet.ts.net",
-        peers: [{ dnsName: "mikro.tailnet.ts.net.", ips: ["100.64.0.2"], online: true, relay: "fra" }],
-      },
-    });
+  it("never brings up Tailscale for a tailnet address, on the page or in its map", () => {
+    renderMap();
 
     expect(screen.queryByRole("group", { name: "Ask Tailscale" })).toBeNull();
+    expect(screen.queryByText(/tailscale/i)).toBeNull();
+    expect(document.querySelector("[data-alias]")).toHaveAttribute("data-lane", "direct");
+  });
+
+  it("draws the relay the built-in mesh reports", () => {
+    renderMap({ mesh: relayedMesh });
+
     // The relay is a stop of its own, between this computer and the hub.
     expect(document.querySelector('[data-relay="fra"]')).toHaveTextContent("DERP fra");
     expect(document.querySelector("[data-alias]")).toHaveAttribute("data-lane", "mesh");
@@ -353,13 +356,7 @@ describe("ServiceStatusPanel", () => {
       state: state({
         instance: { identifier: "m", service: "mikro", aliases: [alias("a", "mikro.tailnet.ts.net"), alias("b", "100.64.0.2")] },
       } as Partial<ServiceRuntimeState>),
-      tailscaleConsent: "allowed",
-      tailscale: {
-        vendor: "tailscale",
-        available: true,
-        backendState: "Running",
-        peers: [{ dnsName: "mikro.tailnet.ts.net.", ips: ["100.64.0.2"], online: true, relay: "fra" }],
-      },
+      mesh: relayedMesh,
     });
 
     expect(document.querySelectorAll("[data-alias]")).toHaveLength(2);
@@ -378,12 +375,7 @@ describe("ServiceStatusPanel", () => {
           status: "ready",
           aliases: [lan, alias("a", "mikro.tailnet.ts.net")],
           chosenAlias: lan,
-          tailscale: {
-            vendor: "tailscale",
-            available: true,
-            backendState: "Running",
-            peers: [{ dnsName: "mikro.tailnet.ts.net.", ips: ["100.64.0.2"], online: true, relay: "fra" }],
-          },
+          mesh: relayedMesh,
         })}
       />,
     );
@@ -394,13 +386,7 @@ describe("ServiceStatusPanel", () => {
 
   it("warns that a relay costs performance to whoever hovers it", async () => {
     renderMap({
-      tailscaleConsent: "allowed",
-      tailscale: {
-        vendor: "tailscale",
-        available: true,
-        backendState: "Running",
-        peers: [{ dnsName: "mikro.tailnet.ts.net.", ips: ["100.64.0.2"], online: true, relay: "fra" }],
-      },
+      mesh: relayedMesh,
     });
 
     await userEvent.hover(document.querySelector('[data-relay="fra"]')!);

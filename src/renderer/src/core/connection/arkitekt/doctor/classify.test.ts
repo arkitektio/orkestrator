@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anyMeshHost, classifyHost, isMeshClass } from "./classify";
+import { classifyHost, isMeshClass } from "./classify";
 
 describe("classifyHost", () => {
   it.each([
@@ -44,10 +44,10 @@ describe("classifyHost", () => {
     expect(classifyHost("100.128.0.1").class).toBe("public-ip");
   });
 
-  it("recognises MagicDNS names", () => {
+  it("takes a MagicDNS name for any other name", () => {
     const result = classifyHost("mikro.tailnet-cafe.ts.net");
-    expect(result.class).toBe("mesh-magicdns");
-    expect(result.meshVendor).toBe("tailscale");
+    expect(result.class).toBe("public-dns");
+    expect(result.meshVendor).toBeUndefined();
   });
 
   it("treats a single label as a bare mesh name", () => {
@@ -67,7 +67,7 @@ describe("classifyHost", () => {
   });
 
   it("normalises case, trailing dots and brackets", () => {
-    expect(classifyHost("MIKRO.Tailnet.TS.NET.").class).toBe("mesh-magicdns");
+    expect(classifyHost("MIKRO.Tailnet.TS.NET.").class).toBe("public-dns");
     expect(classifyHost("[::1]").class).toBe("loopback");
     expect(classifyHost("  localhost  ").class).toBe("loopback");
   });
@@ -77,18 +77,15 @@ describe("classifyHost", () => {
   });
 });
 
-describe("isMeshClass / anyMeshHost", () => {
-  it("only the three mesh classes count", () => {
+describe("isMeshClass", () => {
+  it("only the mesh classes count", () => {
     expect(isMeshClass(classifyHost("100.64.0.1"))).toBe(true);
-    expect(isMeshClass(classifyHost("host.ts.net"))).toBe(true);
+    // A system Tailscale may carry it, but that is the OS's route, not a mesh of ours.
+    expect(isMeshClass(classifyHost("host.ts.net"))).toBe(false);
     expect(isMeshClass(classifyHost("bare"))).toBe(true);
     expect(isMeshClass(classifyHost("10.0.0.1"))).toBe(false);
     expect(isMeshClass(classifyHost("localhost"))).toBe(false);
     expect(isMeshClass(classifyHost("go.arkitekt.live"))).toBe(false);
   });
 
-  it("anyMeshHost finds one mesh address among many", () => {
-    expect(anyMeshHost(["go.arkitekt.live", "10.0.0.1"])).toBe(false);
-    expect(anyMeshHost(["go.arkitekt.live", "mikro.tailnet.ts.net"])).toBe(true);
-  });
 });

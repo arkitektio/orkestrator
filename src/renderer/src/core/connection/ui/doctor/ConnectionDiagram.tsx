@@ -6,8 +6,6 @@ import type {
   PartState,
 } from "@/core/connection/arkitekt/doctor/diagram";
 import type { Finding } from "@/core/connection/arkitekt/doctor/findings";
-import { Button } from "@/core/ui/button";
-import { Checkbox } from "@/core/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { cn } from "@/core/util/utils";
 import {
@@ -88,8 +86,6 @@ const dashed = (state: PartState) => state === "unknown" || state === "absent" |
 const TILE = { width: 190, height: 76 };
 const HUB = TILE;
 const NOTE = { width: 320, height: 76 };
-/** The extra room the question about the system Tailscale takes in the note. */
-const ASK = 74;
 const WIDTH = 760;
 /** The level this computer and the hub face each other on. */
 const LEVEL = 250;
@@ -167,8 +163,6 @@ const HoverLines = ({ lines }: { lines: string[] }) => (
 type Toggle = {
   open: DiagramPartId | undefined;
   onToggle?: (id: DiagramPartId) => void;
-  /** Answers "may `tailscale status` be run?"; absent where nobody can answer. */
-  onTailscaleAnswer?: (allow: boolean, remember: boolean) => void;
 };
 const ToggleContext = createContext<Toggle>({ open: undefined });
 
@@ -309,42 +303,8 @@ const StateChip = ({ part }: { part: DiagramPart }) => (
   </span>
 );
 
-type NoteData = { part: DiagramPart; via?: string; ask?: boolean };
+type NoteData = { part: DiagramPart; via?: string };
 type NoteNode = Node<NoteData, "note">;
-
-/**
- * The one question the diagram asks. An address on a Tailscale network the
- * app does not run can only be explained by that Tailscale, and reading it
- * means running its CLI on the user's machine — so it is asked, once.
- */
-export const TailscaleQuestion = ({ onAnswer }: { onAnswer: (allow: boolean, remember: boolean) => void }) => {
-  const [remember, setRemember] = useState(false);
-  return (
-    <div
-      role="group"
-      aria-label="Ask Tailscale"
-      className="nodrag nopan mt-1.5 w-full rounded-md border border-border/60 bg-background px-2 py-1.5 text-left"
-      style={{ pointerEvents: "all" }}
-    >
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        Some addresses are on a Tailscale network this app does not run. Run{" "}
-        <span className="font-mono">tailscale status</span> to see how they are routed?
-      </p>
-      <div className="mt-1 flex items-center gap-2">
-        <Button size="sm" className="h-6 px-2 text-[11px]" onClick={() => onAnswer(true, remember)}>
-          Run it
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onAnswer(false, remember)}>
-          Not now
-        </Button>
-        <label className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Checkbox className="size-3" checked={remember} onCheckedChange={(checked) => setRemember(checked === true)} />
-          Remember
-        </label>
-      </div>
-    </div>
-  );
-};
 
 /**
  * What the lines to the hub add up to, under them: whether anything gets
@@ -352,7 +312,6 @@ export const TailscaleQuestion = ({ onAnswer }: { onAnswer: (allow: boolean, rem
  */
 const Note = ({ data }: NodeProps<NoteNode>) => {
   const { part, via } = data;
-  const { onTailscaleAnswer } = useContext(ToggleContext);
   return (
     <div className="flex h-full w-full flex-col items-center">
       <Expandable id="serviceLink" part={part} className="flex w-full flex-col items-center rounded-md px-1 text-center">
@@ -370,7 +329,6 @@ const Note = ({ data }: NodeProps<NoteNode>) => {
           </span>
         )}
       </Expandable>
-      {data.ask && onTailscaleAnswer && <TailscaleQuestion onAnswer={onTailscaleAnswer} />}
     </div>
   );
 };
@@ -492,35 +450,15 @@ const Link = ({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<LinkEd
   );
 };
 
-/** Tailscale's mark: a three-by-three grid of dots, the middle row and the one under it lit. */
-const TailscaleLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-    {[4, 12, 20].flatMap((cy, row) =>
-      [4, 12, 20].map((cx, column) => (
-        <circle key={`${row}-${column}`} cx={cx} cy={cy} r={2.6} opacity={row === 1 || (row === 2 && column === 1) ? 1 : 0.3} />
-      )),
-    )}
-  </svg>
-);
-
 /**
- * Which mesh carries an address, as a mark rather than a name: the mesh glyph
- * for the built-in one, Tailscale's own logo for a Tailscale the system runs.
+ * Which mesh carries an address, as a mark rather than a name.
  * The name is on hover; on the line it would only crowd the address out.
  */
 const MeshMark = ({ path }: { path: AliasPath }) => {
-  const name = path.unrouted
-    ? "a mesh nothing here routes"
-    : path.network === "Tailscale"
-      ? "Tailscale"
-      : `mesh ${path.network ?? ""}`.trim();
+  const name = path.unrouted ? "a mesh nothing here routes" : `mesh ${path.network ?? ""}`.trim();
   return (
     <span className="inline-flex shrink-0 items-center text-muted-foreground" data-mesh={path.network ?? "unknown"}>
-      {path.network === "Tailscale" ? (
-        <TailscaleLogo className="size-3" />
-      ) : (
-        <Network className={cn("size-3", path.unrouted && "opacity-50")} aria-hidden />
-      )}
+      <Network className={cn("size-3", path.unrouted && "opacity-50")} aria-hidden />
       <span className="sr-only">{name}</span>
     </span>
   );
@@ -673,8 +611,7 @@ const layout = (diagram: Diagram): { nodes: AnyNode[]; edges: (LinkEdge | AliasE
     return { region, paths, y };
   });
   const noteY = relays.length > 0 ? cursor + 4 : LEVEL + Math.max(lowest, 0) + 22;
-  const ask = !!diagram.serviceLink.askTailscale;
-  const note = { width: NOTE.width, height: NOTE.height + (ask ? ASK : 0) };
+  const note = NOTE;
   const fixed = { draggable: false, selectable: false, connectable: false, focusable: false };
 
   const tile = (id: string, x: number, y: number, size: typeof TILE, data: TileData): TileNode => ({
@@ -723,7 +660,7 @@ const layout = (diagram: Diagram): { nodes: AnyNode[]; edges: (LinkEdge | AliasE
       type: "note",
       position: { x: (WIDTH - note.width) / 2, y: noteY },
       ...note,
-      data: { part: diagram.serviceLink, via: diagram.serviceLink.via, ask },
+      data: { part: diagram.serviceLink, via: diagram.serviceLink.via },
       ...fixed,
     },
   ];
@@ -870,7 +807,6 @@ export const ConnectionDiagram = ({
   diagram,
   pending,
   renderFindings,
-  onTailscaleAnswer,
   className,
 }: {
   diagram: Diagram;
@@ -879,11 +815,6 @@ export const ConnectionDiagram = ({
    * than show a half-checked connection that changes under the reader.
    */
   pending?: boolean;
-  /**
-   * Called with the user's answer to "run `tailscale status`?". Without it the
-   * diagram does not ask, and an unexplained mesh address stays unexplained.
-   */
-  onTailscaleAnswer?: (allow: boolean, remember: boolean) => void;
   /** The doctor panel's own finding rows, so a part's findings read like every other. */
   renderFindings?: (findings: Finding[]) => ReactNode;
   className?: string;
@@ -895,9 +826,8 @@ export const ConnectionDiagram = ({
     () => ({
       open,
       onToggle: expands ? (id) => setOpen((current) => (current === id ? undefined : id)) : undefined,
-      onTailscaleAnswer,
     }),
-    [open, expands, onTailscaleAnswer],
+    [open, expands],
   );
   const { nodes, edges, height } = useMemo(() => layout(diagram), [diagram]);
   const opened = open ? diagram[open] : undefined;
