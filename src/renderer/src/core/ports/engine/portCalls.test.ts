@@ -194,3 +194,57 @@ describe("dependencyScope", () => {
     expect(dependencyScope(null, [])).toEqual({});
   });
 });
+
+describe("the base catalog apps write in", () => {
+  const scope = (value: unknown) => ({ value, dependencies: {} });
+  const self = { key: "a", value_path: "value" };
+  const literal = (key: string, value: unknown) => ({ key, value_literal: value });
+  const run = (operation: string, ...args: object[]) =>
+    runPortCall({ operation, arguments: args }, scope(5));
+
+  // rekuest_core/catalogs/base_v1.json, less fmt.relativeTime: nothing in bsx reads the clock.
+  it.each([
+    "eq", "ne", "gt", "gte", "lt", "lte", "between", "and", "or", "not", "if", "is_null", "is_set",
+    "len", "len_between", "is_empty", "contains", "in", "matches", "starts_with", "ends_with", "get",
+    "coalesce", "add", "sub", "mul", "div", "mod", "neg", "fmt.bytes", "fmt.currency", "fmt.date",
+    "fmt.datetime", "fmt.json", "fmt.number", "fmt.percent", "list.at", "list.compact", "list.first",
+    "list.join", "list.last", "list.pluck", "list.range", "list.reverse", "list.slice", "list.sort",
+    "list.sum", "list.unique", "math.abs", "math.ceil", "math.clamp", "math.floor", "math.round",
+    "obj.entries", "obj.has", "obj.keys", "obj.values", "str.capitalize", "str.default", "str.lower",
+    "str.replace", "str.slice", "str.split", "str.trim", "str.truncate", "str.upper", "type.of",
+    "type.toBoolean", "type.toNumber", "type.toString",
+  ])("%s is a function of the language", (operation) => {
+    const result = run(operation);
+    expect(result.ok ? "" : result.error).not.toContain("is not a function of the blok language");
+  });
+
+  it("answers what `value > 0 and value < 10` asks, however deep", () => {
+    const call = (limit: number) => ({
+      operation: "and",
+      arguments: [
+        { key: "a", util_call: { operation: "gt", arguments: [self, literal("b", 0)] } },
+        { key: "b", util_call: { operation: "lt", arguments: [self, literal("b", limit)] } },
+      ],
+    });
+    expect(runPortCall(call(10), scope(5))).toEqual({ ok: true, value: true });
+    expect(runPortCall(call(3), scope(5))).toEqual({ ok: true, value: false });
+  });
+
+  it("tells lists and strings apart where the base catalog does not", () => {
+    expect(run("len", literal("a", "abc"))).toEqual({ ok: true, value: 3 });
+    expect(run("len", literal("a", [1, 2]))).toEqual({ ok: true, value: 2 });
+    expect(run("contains", literal("haystack", "abc"), literal("needle", "b"))).toEqual({ ok: true, value: true });
+    expect(run("contains", literal("haystack", [1, 2]), literal("needle", 2))).toEqual({ ok: true, value: true });
+    expect(run("in", literal("value", 3), literal("options", [1, 2]))).toEqual({ ok: true, value: false });
+    expect(run("len_between", literal("value", "abc"), literal("min", 1), literal("max", 2))).toEqual({ ok: true, value: false });
+  });
+
+  it("renames what the vocabulary calls differently", () => {
+    expect(run("if", literal("condition", true), literal("then", 1), literal("otherwise", 2))).toEqual({ ok: true, value: 1 });
+    expect(run("is_null", literal("a", null))).toEqual({ ok: true, value: true });
+    expect(run("math.round", literal("value", 1.26), literal("precision", 1))).toEqual({ ok: true, value: 1.3 });
+    expect(run("get", literal("value", { x: 1 }), literal("path", "x"))).toEqual({ ok: true, value: 1 });
+    expect(run("list.range", literal("count", 3), literal("start", 2))).toEqual({ ok: true, value: [2, 3, 4] });
+    expect(run("type.toNumber", literal("value", "nope"), literal("fallback", 7))).toEqual({ ok: true, value: 7 });
+  });
+});

@@ -7,6 +7,7 @@ import {
   type BlokUtilCall,
 } from "@arkitektio/bsx/renderer/runtime/index";
 import type { BlokResolved } from "@arkitektio/bsx/renderer/runtime/resolution";
+import { inVocabulary } from "./baseCatalog";
 
 /**
  * Port calls: how hide effects and validators are expressed.
@@ -51,7 +52,7 @@ const parseUncached = (raw: unknown): ParsedPortCall => {
       .join("; ");
     return { ok: false, error: `Port call is malformed: ${detail}` };
   }
-  return { ok: true, value: parsed.data };
+  return { ok: true, value: inVocabulary(parsed.data) };
 };
 
 /** Parse a port call from a payload object or a JSON string. Memoized. */
