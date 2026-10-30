@@ -6,7 +6,7 @@ import {
   needsImmediateReadout,
 } from "../../platform/probe/probeReadout";
 import { readInfoLayers } from "../../platform/probe/infoReadings";
-import { effectiveInfoLayerIds } from "../../platform/probe/probeTargeting";
+import { readableLayerIds } from "../../platform/probe/probeTargeting";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
@@ -33,10 +33,10 @@ const readoutOf = (probe: ProbeResult | null): ProbeResult | null =>
  * flickers through every voxel on the way somewhere is no more informative
  * than one that shows where you stopped.
  *
- * With the readout it publishes `probeInfo` — what each INFO layer holds at
+ * With the readout it publishes `probeInfo` — what each visible layer holds at
  * the settled hit (`platform/probe/infoReadings.ts`) — and re-reads it when
- * the chosen layers or their visibility change, so toggling a layer in the
- * control bar shows at once rather than on the next cursor move.
+ * their visibility changes, so toggling a layer shows at once rather than on
+ * the next cursor move.
  */
 export function ProbeReadoutSettler() {
   const viewerStore = useViewerStoreApi();
@@ -51,7 +51,7 @@ export function ProbeReadoutSettler() {
       viewer.setProbeInfo(
         readInfoLayers(probe, {
           layers,
-          infoIds: effectiveInfoLayerIds(viewer, layers),
+          layerIds: readableLayerIds(layers),
           sampler: bricks.brickSystem,
           nodePlans: bricks.nodePlans,
         }),
@@ -89,17 +89,12 @@ export function ProbeReadoutSettler() {
     publish(offered);
 
     let last = viewerStore.getState().probedCoordinate;
-    let lastPins = [viewerStore.getState().dataLayerId, viewerStore.getState().infoLayerIds] as const;
     const unsubscribe = viewerStore.subscribe((state) => {
-      if (state.dataLayerId !== lastPins[0] || state.infoLayerIds !== lastPins[1]) {
-        lastPins = [state.dataLayerId, state.infoLayerIds];
-        publishInfo(state.probeReadout);
-      }
       if (state.probedCoordinate === last) return;
       last = state.probedCoordinate;
       offer(last);
     });
-    // Visibility decides which info layers can be read; a scalar key, so a
+    // Visibility decides which layers can be read; a scalar key, so a
     // per-tick layer edit costs one string compare.
     const visibilityKey = () =>
       sceneStore

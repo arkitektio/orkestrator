@@ -35,7 +35,7 @@ const EXPECTED_KEYS = [
   "markProbedInstances", "mergeAttributeRows", "mergeExactProbeValues", "meshSelection",
   "meshSystems", "meshVersion", "nodePlans", "poolsVersion",
   "probeLayerId", "probeMode", "probeReadout", "probeThreshold",
-  "dataLayerId", "setDataLayerId", "infoLayerIds", "setInfoLayerIds",
+  "dataLayerId", "setDataLayerId",
   "pickLayerId", "setPickLayerId", "probeInfo", "setProbeInfo",
   "probeCursorWorld", "setProbeCursorWorld",
   "probePoints", "probePointSerial", "pinProbePoint", "refreshProbePoint",

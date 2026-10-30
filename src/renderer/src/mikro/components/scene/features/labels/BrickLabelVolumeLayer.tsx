@@ -16,7 +16,7 @@ import { intersectLocalVolumeBox, localCropClip } from "../bricks/probeMath";
 import { useCropClipUniforms } from "../bricks/layers/useCropClipUniforms";
 import { marchResidentBricks } from "../bricks/octree/brickSampling";
 import { useBrushSkeletonStoreApi } from "../annotations/enhancers/brushSkeletonStore";
-import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore } from "../../platform/stores/modeStore";
 import {
   clickProbeEnabled,
   hoverProbeEnabled,
@@ -101,7 +101,6 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   const brickStoreApi = useBrickStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
 
-  const modeStoreApi = useModeStoreApi();
   const interactionMode = useModeStore((s) => s.interactionMode);
   const probeFollowsCursor = useModeStore((s) => s.probeFollowsCursor);
   const designTool = useModeStore((s) => s.designTool);
@@ -246,7 +245,6 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
       effectiveHitLayerId(
         viewerStoreApi.getState(),
         sceneStoreApi.getState().layers,
-        modeStoreApi.getState().displayMode === "3D",
       ),
       layerId,
     );

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   effectiveDataLayerId,
   effectiveHitLayerId,
-  effectiveInfoLayerIds,
   layerAnswersProbe,
   probeAfterPinChange,
+  readableLayerIds,
 } from "./probeTargeting";
 
 const layers = [
@@ -54,47 +54,34 @@ describe("effectiveDataLayerId", () => {
   });
 });
 
-describe("effectiveInfoLayerIds", () => {
-  it("defaults to the data layer alone", () => {
-    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: null }, layers)).toEqual(["a"]);
-    expect(effectiveInfoLayerIds({ dataLayerId: "c", infoLayerIds: null }, layers)).toEqual(["c"]);
+describe("readableLayerIds", () => {
+  it("reads every visible layer, in store order", () => {
+    expect(readableLayerIds(layers)).toEqual(["a", "b", "c"]);
+    expect(readableLayerIds([{ id: "a" }])).toEqual(["a"]);
   });
 
-  it("keeps a chosen set in store order", () => {
+  it("drops hidden layers — nothing resident to read", () => {
     expect(
-      effectiveInfoLayerIds({ dataLayerId: "a", infoLayerIds: ["c", "a"] }, layers),
-    ).toEqual(["a", "c"]);
-  });
-
-  it("drops hidden and gone layers — nothing resident to read", () => {
-    const shown = [
-      { id: "a", visible: true },
-      { id: "b", visible: false },
-    ];
-    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: ["b", "gone", "a"] }, shown)).toEqual(["a"]);
-    expect(effectiveInfoLayerIds({ dataLayerId: "b", infoLayerIds: null }, shown)).toEqual([]);
-  });
-
-  it("an empty set reads nothing", () => {
-    expect(effectiveInfoLayerIds({ dataLayerId: null, infoLayerIds: [] }, layers)).toEqual([]);
+      readableLayerIds([
+        { id: "a", visible: true },
+        { id: "b", visible: false },
+      ]),
+    ).toEqual(["a"]);
   });
 });
 
 describe("effectiveHitLayerId", () => {
   it("follows the data layer by default", () => {
-    expect(effectiveHitLayerId(pins(), layers, true)).toBe("a");
-    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), layers, true)).toBe("b");
+    expect(effectiveHitLayerId(pins(), layers)).toBe("a");
+    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), layers)).toBe("b");
   });
 
-  it("lets the probe pin win in 3D only", () => {
-    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c" }), layers, true)).toBe("c");
-    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c" }), layers, false)).toBe("a");
+  it("lets the probe pin win over the data layer", () => {
+    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c" }), layers)).toBe("c");
   });
 
-  it("lets a transient pick win in both views", () => {
-    const p = pins({ dataLayerId: "a", probeLayerId: "c", pickLayerId: "b" });
-    expect(effectiveHitLayerId(p, layers, true)).toBe("b");
-    expect(effectiveHitLayerId(p, layers, false)).toBe("b");
+  it("lets a transient pick win over the probe pin", () => {
+    expect(effectiveHitLayerId(pins({ dataLayerId: "a", probeLayerId: "c", pickLayerId: "b" }), layers)).toBe("b");
   });
 
   // A hidden layer draws no mesh, so it can answer nothing.
@@ -103,13 +90,13 @@ describe("effectiveHitLayerId", () => {
       { id: "a", visible: true },
       { id: "b", visible: false },
     ];
-    expect(effectiveHitLayerId(pins({ probeLayerId: "b" }), shown, true)).toBe("a");
-    expect(effectiveHitLayerId(pins({ pickLayerId: "b" }), shown, true)).toBe("a");
-    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), shown, true)).toBe("a");
+    expect(effectiveHitLayerId(pins({ probeLayerId: "b" }), shown)).toBe("a");
+    expect(effectiveHitLayerId(pins({ pickLayerId: "b" }), shown)).toBe("a");
+    expect(effectiveHitLayerId(pins({ dataLayerId: "b" }), shown)).toBe("a");
   });
 
   it("falls back past gone pins", () => {
-    expect(effectiveHitLayerId(pins({ probeLayerId: "gone", dataLayerId: "gone" }), layers, true)).toBe("a");
+    expect(effectiveHitLayerId(pins({ probeLayerId: "gone", dataLayerId: "gone" }), layers)).toBe("a");
   });
 
   it("is null when every layer is hidden", () => {
@@ -117,9 +104,9 @@ describe("effectiveHitLayerId", () => {
       { id: "a", visible: false },
       { id: "b", visible: false },
     ];
-    expect(effectiveHitLayerId(pins(), hidden, true)).toBeNull();
-    expect(effectiveHitLayerId(pins({ probeLayerId: "a", dataLayerId: "a" }), hidden, true)).toBeNull();
-    expect(effectiveHitLayerId(pins(), [], true)).toBeNull();
+    expect(effectiveHitLayerId(pins(), hidden)).toBeNull();
+    expect(effectiveHitLayerId(pins({ probeLayerId: "a", dataLayerId: "a" }), hidden)).toBeNull();
+    expect(effectiveHitLayerId(pins(), [])).toBeNull();
   });
 });
 

@@ -299,7 +299,7 @@ export const HopBlocks = ({ blocks }: { blocks: readonly HopBlock[] }) => (
 
 export const AttributeRowsSection = ({ probe }: { probe: ProbeResult }) => {
   perfMonitor.countRender("AttributeRowsSection"); // no-op unless a perf recording is armed
-  // This reading's layer's rows only: another info layer settling does not
+  // This reading's layer's rows only: another layer settling does not
   // re-render this one.
   const probedAttributes = useViewerStore((s) => s.probedAttributes[probe.layerId] ?? null);
 

@@ -6,7 +6,7 @@ import { probeAxisCoords } from "../../platform/probe/probeCoords";
 import { createProbePinGate } from "../../platform/probe/probePinGate";
 import { readInfoLayers } from "../../platform/probe/infoReadings";
 import type { ProbePointLookup, ProbePointReading } from "../../platform/probe/probePoints";
-import { effectiveInfoLayerIds, probeSystemIdFor } from "../../platform/probe/probeTargeting";
+import { probeSystemIdFor, readableLayerIds } from "../../platform/probe/probeTargeting";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
@@ -22,7 +22,7 @@ import { useBrickStoreApi } from "../bricks/store/brickSlice";
  * of every right-drag orbit. The emitters stay as they are; this feeds the
  * probes they publish and the window's pointer events to the gate that
  * decides (`platform/probe/probePinGate.ts`), and resolves what the point
- * keeps: the info layers' readings at the click and where each one's
+ * keeps: every visible layer's reading at the click and where each one's
  * attribute plans are asked.
  */
 export function ProbePointPinner() {
@@ -71,7 +71,7 @@ export function ProbePointPinner() {
         : null;
     };
 
-    /** What the readout shows at the click: the info layers' readings
+    /** What the readout shows at the click: the visible layers' readings
      * (`infoReadings.ts`), or a mesh pick itself — a pick measures the mesh. */
     const readingsFor = (probe: ProbeResult): ProbePointReading[] => {
       if (probe.strategy === "mesh") return [{ probe, lookup: lookupFor(probe) }];
@@ -79,7 +79,7 @@ export function ProbePointPinner() {
       const layers = sceneStore.getState().layers;
       return readInfoLayers(probe, {
         layers,
-        infoIds: effectiveInfoLayerIds(viewerStore.getState(), layers),
+        layerIds: readableLayerIds(layers),
         sampler: bricks.brickSystem,
         nodePlans: bricks.nodePlans,
       }).map((reading) => ({ probe: reading, lookup: lookupFor(reading) }));

@@ -71,7 +71,7 @@ describe("worldToLayerVoxel", () => {
 describe("readInfoLayers", () => {
   it("reuses the hit itself for the hit layer, with no resample", () => {
     const s = sampler([1, 2]);
-    const readings = readInfoLayers(hit, { layers, infoIds: ["nuclei"], sampler: s, nodePlans: {} });
+    const readings = readInfoLayers(hit, { layers, layerIds: ["nuclei"], sampler: s, nodePlans: {} });
     expect(readings).toEqual([hit]);
     expect(readings[0]).toBe(hit);
     expect(s.calls).toEqual([]);
@@ -81,7 +81,7 @@ describe("readInfoLayers", () => {
     const s = sampler([7, 8]);
     const [reading] = readInfoLayers(hit, {
       layers,
-      infoIds: ["signal"],
+      layerIds: ["signal"],
       sampler: s,
       nodePlans: plans3D,
     });
@@ -105,7 +105,7 @@ describe("readInfoLayers", () => {
   it("reads pending per channel when nothing is resident", () => {
     const [reading] = readInfoLayers(hit, {
       layers,
-      infoIds: ["signal"],
+      layerIds: ["signal"],
       sampler: sampler(null),
       nodePlans: plans3D,
     });
@@ -120,7 +120,7 @@ describe("readInfoLayers", () => {
     const outside = { ...hit, worldPos: [2, 3, 4] as [number, number, number] };
     const readings = readInfoLayers(outside, {
       layers,
-      infoIds: ["signal", "nuclei"],
+      layerIds: ["signal", "nuclei"],
       sampler: sampler([1, 1]),
       nodePlans: plans3D,
     });
@@ -131,7 +131,7 @@ describe("readInfoLayers", () => {
     const s = sampler([1, 1]);
     readInfoLayers(hit, {
       layers,
-      infoIds: ["signal"],
+      layerIds: ["signal"],
       sampler: s,
       nodePlans: { signal: { mode: "2D", targetLevel: 0, slabZ: 5 } },
     });
@@ -139,7 +139,7 @@ describe("readInfoLayers", () => {
   });
 
   it("measures nothing for a mesh pick, a placement cursor or no probe", () => {
-    const ctx = { layers, infoIds: ["nuclei", "signal"], sampler: sampler([1, 1]), nodePlans: plans3D };
+    const ctx = { layers, layerIds: ["nuclei", "signal"], sampler: sampler([1, 1]), nodePlans: plans3D };
     expect(readInfoLayers({ ...hit, strategy: "mesh" }, ctx)).toEqual([]);
     expect(readInfoLayers({ ...hit, purpose: "placement" }, ctx)).toEqual([]);
     expect(readInfoLayers(null, ctx)).toEqual([]);
@@ -150,7 +150,7 @@ describe("sameReadings", () => {
   const read = (values: number[] | null) =>
     readInfoLayers(hit, {
       layers,
-      infoIds: ["nuclei", "signal"],
+      layerIds: ["nuclei", "signal"],
       sampler: sampler(values),
       nodePlans: plans3D,
     });

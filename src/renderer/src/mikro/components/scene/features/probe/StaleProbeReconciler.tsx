@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { effectiveHitLayerId } from "../../platform/probe/probeTargeting";
-import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
@@ -26,10 +25,9 @@ export function StaleProbeReconciler() {
   const dataLayerId = useViewerStore((s) => s.dataLayerId);
   const probeLayerId = useViewerStore((s) => s.probeLayerId);
   const pickLayerId = useViewerStore((s) => s.pickLayerId);
-  const is3D = useModeStore((s) => s.displayMode === "3D");
   const setProbedCoordinate = useViewerStore((s) => s.setProbedCoordinate);
   const effectiveTargetId = useSceneStore((s) =>
-    effectiveHitLayerId({ dataLayerId, probeLayerId, pickLayerId }, s.layers, is3D),
+    effectiveHitLayerId({ dataLayerId, probeLayerId, pickLayerId }, s.layers),
   );
   const staleProbe =
     probedLayerId !== null && effectiveTargetId !== null && probedLayerId !== effectiveTargetId;

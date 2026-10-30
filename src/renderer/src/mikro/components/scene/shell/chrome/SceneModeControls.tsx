@@ -18,6 +18,7 @@ import { displayModeToPreferredView } from "../../platform/camera/preferredView"
 import { useScenePreferencesEditor } from "../../features/animation/useAnimationEditor";
 import { InteractionMode, useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
+import { BarTooltip } from "./BarTooltip";
 import { LayerTargetPicker } from "./LayerTargetPicker";
 import { SceneSettings } from "./SceneSettings";
 
@@ -34,13 +35,12 @@ const INTERACTION_ICONS: Record<InteractionMode, LucideIcon> = {
  * question these controls change: what kind of view you are in and what a
  * pointer gesture does. Renderer-owned HUD, so every host gets them in the
  * same place. Left to right: interaction modes, the hover-probe toggle (only
- * while in PROBE, since it modifies nothing else), the layer picker (data,
- * under-cursor and ray layers), the 2D/3D display toggle, the pin, and the
- * view-settings gear.
+ * while in PROBE, since it modifies nothing else), the layer picker (data and
+ * probe layers), the 2D/3D display toggle, the pin, and the view-settings gear.
  *
  * The layer picker is shown in every mode, not just PROBE: the data layer
- * decides what tasks and new annotations use, and the hit decides where
- * DESIGN gestures land.
+ * decides what tasks and new annotations use, and the probe layer decides
+ * where DESIGN gestures land.
  *
  * The gear is here rather than in a panel column because it answers the same
  * question as its neighbours — what this view looks like — and a corner is a
@@ -90,18 +90,21 @@ export const SceneModeControls = () => {
           const Icon = INTERACTION_ICONS[mode.value];
           const active = interactionMode === mode.value;
           return (
-            <Button
+            // The buttons are icon-only, so the tooltip carries the whole
+            // explanation — the descriptions used to go unshown entirely.
+            <BarTooltip
               key={mode.value}
-              variant={active ? "default" : "outline"}
-              size={"xs"}
-              className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
-              onClick={() => setInteractionMode(mode.value)}
-              // The buttons are icon-only, so the tooltip carries the whole
-              // explanation — the descriptions used to go unshown entirely.
-              title={mode.description ? `${mode.label} — ${mode.description}` : mode.label}
+              label={mode.description ? `${mode.label} — ${mode.description}` : mode.label}
             >
-              <Icon className="h-3.5 w-3.5" />
-            </Button>
+              <Button
+                variant={active ? "default" : "outline"}
+                size={"xs"}
+                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+                onClick={() => setInteractionMode(mode.value)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            </BarTooltip>
           );
         })}
       </ButtonGroup>
@@ -109,44 +112,49 @@ export const SceneModeControls = () => {
       {/* Hover-to-probe — what used to be the separate AUTO_PROBE mode. Hover
           updates the readout only; the camera pivot still follows clicks. */}
       {interactionMode === "PROBE" && (
-        <Button
-          variant={probeFollowsCursor ? "default" : "outline"}
-          size={"xs"}
-          className={probeFollowsCursor ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
-          onClick={() => setProbeFollowsCursor(!probeFollowsCursor)}
-          title="Update the probe continuously as the cursor moves"
-        >
-          <ScanEye className="h-3.5 w-3.5" />
-        </Button>
+        <BarTooltip label="Update the probe continuously as the cursor moves">
+          <Button
+            variant={probeFollowsCursor ? "default" : "outline"}
+            size={"xs"}
+            className={probeFollowsCursor ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+            onClick={() => setProbeFollowsCursor(!probeFollowsCursor)}
+          >
+            <ScanEye className="h-3.5 w-3.5" />
+          </Button>
+        </BarTooltip>
       )}
 
       {probeable && <LayerTargetPicker />}
 
-      <Button
-        variant={"outline"}
-        size={"xs"}
-        className="h-7 w-11 bg-black tabular-nums"
-        onClick={() => setDisplayMode(nextDisplayMode)}
-        title={`Switch to ${nextDisplayMode} view`}
-      >
-        <span className="text-xs font-bold">{displayMode}</span>
-      </Button>
-      <Button
-        variant={"outline"}
-        size={"xs"}
-        className={
-          isDefaultView ? "h-7 bg-black text-brand" : "h-7 bg-black text-white/60"
-        }
-        onClick={onPinView}
-        disabled={saving}
-        title={
+      <BarTooltip label={`Switch to ${nextDisplayMode} view`}>
+        <Button
+          variant={"outline"}
+          size={"xs"}
+          className="h-7 w-11 bg-black tabular-nums"
+          onClick={() => setDisplayMode(nextDisplayMode)}
+        >
+          <span className="text-xs font-bold">{displayMode}</span>
+        </Button>
+      </BarTooltip>
+      <BarTooltip
+        label={
           isDefaultView
             ? `This scene opens in ${displayMode}`
             : `Open this scene in ${displayMode} by default (and snapshot the current view)`
         }
       >
-        <Pin className="h-3.5 w-3.5" />
-      </Button>
+        <Button
+          variant={"outline"}
+          size={"xs"}
+          className={
+            isDefaultView ? "h-7 bg-black text-brand" : "h-7 bg-black text-white/60"
+          }
+          onClick={onPinView}
+          disabled={saving}
+        >
+          <Pin className="h-3.5 w-3.5" />
+        </Button>
+      </BarTooltip>
 
       <SceneSettings />
     </div>

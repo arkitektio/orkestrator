@@ -39,7 +39,7 @@ import { useProbedLayer } from "./ProbeChannelValues";
  * the cursor reads against what was pinned; it is left out while it rests on
  * a place that is already a point.
  *
- * A point's values and rows are its READINGS — one per info layer at the
+ * A point's values and rows are its READINGS — one per visible layer at the
  * click (`ProbePointReading`) — so the blocks group by layer, not by the
  * layer the click happened to hit. Each reading asks the shared attribute
  * service about ITSELF, at the coordinates frozen when it was pinned
@@ -160,7 +160,7 @@ const LIVE_POINT: ComparedPoint = { id: "live", index: 0, color: LIVE_PROBE_COLO
  * at the live probe. A legend row is the same shape with the HIT as `probe`. */
 type Reading = { point: ComparedPoint; probe: ProbeResult };
 
-/** A reading's lookup slot: a point has one per info layer. */
+/** A reading's lookup slot: a point has one per layer it read. */
 const lookupId = (pointId: string, layerId: string) => `${pointId}|${layerId}`;
 
 /** A point's lookups as the legend says them: loading while any is, else
@@ -323,7 +323,7 @@ export const ProbePointList = () => {
     [points, live],
   );
 
-  /** One per point per info layer: the values. */
+  /** One per point per layer read: the values. */
   const readings = useMemo<readonly Reading[]>(
     () => [
       ...points.flatMap((point) =>

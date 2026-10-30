@@ -27,7 +27,7 @@ import type { ProbeResult } from "../../platform/probe/probeTypes";
 const smallButton =
   "rounded border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/70 hover:bg-foreground/15 hover:text-foreground";
 
-/** One info layer's reading: its name when there are several, its channel
+/** One layer's reading: its name when there are several, its channel
  * values, and the attribute-plan rows for that pixel's object
  * (AttributeProbeTracker fills the store). */
 const ReadingBlock = ({ reading, named }: { reading: ProbeResult; named: boolean }) => {
@@ -57,7 +57,7 @@ export const ProbePanel = () => {
   const setProbedCoordinate = useViewerStore((s) => s.setProbedCoordinate);
   const { createPointAnnotation } = useCreateSceneAnnotation();
   const hasProbePoints = useViewerStore((s) => s.probePoints.length > 0);
-  // What the readout shows: each info layer's reading at the hit, or a mesh
+  // What the readout shows: each visible layer's reading at the hit, or a mesh
   // pick itself (a pick measures the mesh, not the image layers).
   const probeInfo = useViewerStore((s) => s.probeInfo);
   const readings =
@@ -119,8 +119,7 @@ export const ProbePanel = () => {
           ))}
           {readings.length === 0 && (
             <p className="text-[10px] leading-4 text-foreground/50">
-              No layer to show here: choose what the probe shows under "Show under cursor" in
-              the layer picker.
+              No visible layer reaches this point.
             </p>
           )}
         </div>

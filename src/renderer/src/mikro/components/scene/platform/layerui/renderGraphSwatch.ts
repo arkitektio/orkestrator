@@ -26,6 +26,15 @@ export const channelSwatchColor = (channel: ChannelRenderNode): string => {
   return sampleColorMapCSS(colormap, REPRESENTATIVE_T, color);
 };
 
+/** Several colors as one CSS `background`: an equal-wedge `conic-gradient`. */
+export const wedgeBackground = (colors: readonly string[]): string => {
+  const seg = 360 / colors.length;
+  const stops = colors
+    .map((c, i) => `${c} ${i * seg}deg ${(i + 1) * seg}deg`)
+    .join(", ");
+  return `conic-gradient(${stops})`;
+};
+
 /**
  * A CSS `background` value for a layer's swatch dot, derived from its render
  * graph's channels. One visible channel → a solid color; several (a blend) →
@@ -41,10 +50,5 @@ export const layerSwatchBackground = (
 
   if (colors.length === 0) return NEUTRAL;
   if (colors.length === 1) return colors[0];
-
-  const seg = 360 / colors.length;
-  const stops = colors
-    .map((c, i) => `${c} ${i * seg}deg ${(i + 1) * seg}deg`)
-    .join(", ");
-  return `conic-gradient(${stops})`;
+  return wedgeBackground(colors);
 };

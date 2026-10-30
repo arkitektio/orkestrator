@@ -26,7 +26,7 @@ export interface ProbePointLookup {
 }
 
 /**
- * What ONE info layer measured at a point (`infoReadings.ts`): the reading,
+ * What ONE layer measured at a point (`infoReadings.ts`): the reading,
  * and where that layer's attribute plans are asked — frozen at the click like
  * the point's own lookup.
  */
@@ -42,7 +42,7 @@ export interface ProbePoint {
   /** The HIT: where the click landed — what the marker, the dedupe and the
    * metadata read. */
   probe: ProbeResult;
-  /** What the readout showed there, one per info layer at the click (a mesh
+  /** What the readout showed there, one per visible layer at the click (a mesh
    * pick: its own hit). What the comparison's values and rows are made of. */
   readings: readonly ProbePointReading[];
   /** Null when nothing links the probed layer to a coordinate system (or a

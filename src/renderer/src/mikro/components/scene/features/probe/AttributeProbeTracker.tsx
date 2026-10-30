@@ -35,7 +35,7 @@ import { useMeshStoreApi } from "../meshes/store/meshSlice";
 
 /**
  * Headless "what is under this pixel?" executor: whenever the active probe
- * moves, for each INFO reading (`probeInfo`, one per info layer at the hit;
+ * moves, for each reading (`probeInfo`, one per visible layer at the hit;
  * a mesh pick is its own) discover that layer's system's attribute plans and
  * run each one
  * locally through the SHARED attribute service (`acquireAttributeService`) —
@@ -410,7 +410,7 @@ export function AttributeProbeTracker() {
       resolverFor(key.layerId).request(key);
     };
 
-    /** The readings of the settled probe: the info layers', or a mesh pick
+    /** The readings of the settled probe: the visible layers', or a mesh pick
      * (stable per pick, so an unrelated store write is not a new request). */
     const NONE: readonly ProbeResult[] = [];
     let meshReadings: { probe: ProbeResult; readings: readonly ProbeResult[] } | null = null;

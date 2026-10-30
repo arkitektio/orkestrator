@@ -394,16 +394,13 @@ export const SceneProvider = (props: {
       // panel's trash, a server-side delete, a future subscription.
       if (removedLayerIds.length > 0) {
         // A pin naming a departed layer would keep naming it. Unpinning the
-        // ray also clears a probe that no longer resolves (`probeAfterPinChange`).
+        // probe also clears one that no longer resolves (`probeAfterPinChange`).
         const viewer = scope.viewerStore.getState();
         if (viewer.probeLayerId && removedLayerIds.includes(viewer.probeLayerId)) {
           viewer.setProbeLayerId(null);
         }
         if (viewer.dataLayerId && removedLayerIds.includes(viewer.dataLayerId)) {
           viewer.setDataLayerId(null);
-        }
-        if (viewer.infoLayerIds?.some((id) => removedLayerIds.includes(id))) {
-          viewer.setInfoLayerIds(viewer.infoLayerIds.filter((id) => !removedLayerIds.includes(id)));
         }
         // A selection outliving its layer would keep describing a shape that
         // is no longer in the scene.

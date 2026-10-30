@@ -127,7 +127,7 @@ describe("probe point readings", () => {
     origin: "click",
   });
 
-  it("keeps what each info layer read, and each reading's first lookup", () => {
+  it("keeps what each layer read, and each reading's first lookup", () => {
     const store = build();
     const hit = clickOn("nuclei", [1, 2, 3]);
     const lookup = { systemId: "signal-system", coords: { x: 1, t: 0 } };

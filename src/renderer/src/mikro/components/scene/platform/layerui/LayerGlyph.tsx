@@ -3,7 +3,7 @@ import { colormapGradientCSS, resolveBaseColorRgb } from "../gpu/colormaps";
 import type { LayerState } from "../model/layerModel";
 import type { ChannelRenderNode } from "../model/renderGraph";
 import { layerFlavor } from "./layerIdentity";
-import { channelSwatchColor, layerSwatchBackground } from "./renderGraphSwatch";
+import { channelSwatchColor, layerSwatchBackground, wedgeBackground } from "./renderGraphSwatch";
 
 /** Circle centres for two and three overlapping disks in a 20×20 box. */
 const VENN: Record<2 | 3, { r: number; at: [number, number][] }> = {
@@ -23,6 +23,31 @@ const diskBackground = (channel: ChannelRenderNode): string => {
   }
   return colormapGradientCSS(colormap, 12, color).replace("to right", "135deg");
 };
+
+/** What a layer paints as one CSS fill: its one channel's colour or colormap,
+ *  else a wedge per colour. */
+const layerFill = (layer: LayerState): string => {
+  const flavor = layerFlavor(layer);
+  if (flavor === "RGB") return wedgeBackground(RGB);
+  const visible = layer.channels.filter((channel) => channel.visible !== false);
+  const single = flavor !== "FLIM" && visible.length === 1 ? visible[0] : undefined;
+  return single ? diskBackground(single) : layerSwatchBackground(layer.channels);
+};
+
+/** The probe's symbol (lucide `Target`, the PROBE mode's icon) as a CSS mask,
+ *  since a stroke cannot take a colormap ramp or a wedge fill. */
+const PROBE_SYMBOL_MASK = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+)}")`;
+
+/** The probe's symbol painted in what a layer paints: "this layer is probed". */
+export const LayerProbeMark = ({ layer, className }: { layer: LayerState; className: string }) => (
+  <span
+    className={`${className} shrink-0`}
+    style={{ background: layerFill(layer), maskImage: PROBE_SYMBOL_MASK, maskSize: "100% 100%" }}
+    aria-hidden
+  />
+);
 
 /**
  * A layer's leading mark: what it paints, drawn rather than named.
@@ -62,11 +87,10 @@ export const LayerGlyph = ({ layer, className }: { layer: LayerState; className:
     );
   }
 
-  const single = flavor !== "FLIM" && visible.length === 1 ? visible[0] : undefined;
   return (
     <span
       className={`${className} shrink-0 rounded-full ring-1 ring-black/30`}
-      style={{ background: single ? diskBackground(single) : layerSwatchBackground(layer.channels) }}
+      style={{ background: layerFill(layer) }}
       aria-hidden
     />
   );

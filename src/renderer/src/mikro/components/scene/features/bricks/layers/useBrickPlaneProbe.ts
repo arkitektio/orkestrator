@@ -125,7 +125,7 @@ export const useBrickPlaneProbe = ({
   const { createPointAnnotation } = useCreateSceneAnnotation();
   const brushApi = useBrushSkeletonStoreApi();
 
-  // Event-time resolution — fresh pins, layer list AND view, no render
+  // Event-time resolution — fresh pins and layer list, no render
   // subscription: exactly one layer (the effective hit target) answers.
   const modeStoreApi = useModeStoreApi();
   const answersProbe = useCallback(
@@ -134,11 +134,10 @@ export const useBrickPlaneProbe = ({
         effectiveHitLayerId(
           viewerStoreApi.getState(),
           sceneStoreApi.getState().layers,
-          modeStoreApi.getState().displayMode === "3D",
         ),
         layerId,
       ),
-    [viewerStoreApi, sceneStoreApi, modeStoreApi, layerId],
+    [viewerStoreApi, sceneStoreApi, layerId],
   );
 
   useEffect(() => {

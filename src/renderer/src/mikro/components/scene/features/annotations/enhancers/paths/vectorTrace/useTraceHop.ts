@@ -3,7 +3,6 @@ import * as THREE from "three";
 
 import { buildAffineMatrix } from "../../../../../platform/coords/worldTransform";
 import { effectiveHitLayerId } from "../../../../../platform/probe/probeTargeting";
-import { useModeStoreApi } from "../../../../../platform/stores/modeStore";
 import { simplifyPath, type PathPoint } from "../../shared/pathSimplify";
 import { buildTraceCost, type TraceWeights } from "./traceCost";
 import {
@@ -243,7 +242,6 @@ export const useTraceHop = () => {
 export const useTraceWaypoints = () => {
   const sceneStoreApi = useSceneStoreApi();
   const viewerStoreApi = useBrickStoreApi();
-  const modeStoreApi = useModeStoreApi();
 
   const fromProbe = useCallback((): TraceWaypoint | null => {
     const probe = viewerStoreApi.getState().probedCoordinate;
@@ -261,7 +259,6 @@ export const useTraceWaypoints = () => {
       const targetId = effectiveHitLayerId(
         viewerStoreApi.getState(),
         layers,
-        modeStoreApi.getState().displayMode === "3D",
       );
       const layer = layers.find((candidate) => candidate.id === targetId);
       if (!layer) return null;
@@ -275,7 +272,7 @@ export const useTraceWaypoints = () => {
 
       return { layerId: layer.id, voxel, world: [world.x, world.y, world.z] };
     },
-    [sceneStoreApi, viewerStoreApi, modeStoreApi],
+    [sceneStoreApi, viewerStoreApi],
   );
 
   return { fromProbe, fromWorld };

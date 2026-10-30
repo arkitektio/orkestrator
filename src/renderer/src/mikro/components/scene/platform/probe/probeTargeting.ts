@@ -1,20 +1,19 @@
 /**
- * Which layers a probe involves. Three roles, deliberately apart:
+ * Which layers a probe involves. Two roles, deliberately apart:
  *
  *  - The DATA layer (`viewerStore.dataLayerId`): the one a scene is ABOUT —
  *    the lens a new annotation is cut with, an annotation card's "Run with"
  *    default, the host's select payload, the metadata fallback. One layer,
  *    because a task takes one lens.
- *  - The INFO layers (`viewerStore.infoLayerIds`): what the readout shows
- *    under the cursor — channel values and attribute plans, each sampled at
- *    the hit point (`infoReadings.ts`). A set, defaulting to the data layer.
- *  - The HIT layer: whose mesh answers the pointer — where a 3D ray stops,
+ *  - The PROBE layer: whose mesh answers the pointer — where a 3D ray stops,
  *    where design gestures land. Exactly ONE layer reads the pointer at any
  *    time, never "whatever mesh the ray hits first", which made the reading
  *    camera-dependent with stacked layers. The user's probe pin
- *    (`probeLayerId`) chooses it in 3D only; in 2D the layers are coplanar,
- *    the hit point is the same on all of them, and the hit follows the data
- *    layer. A transient pick (`pickLayerId`) overrides both while it runs.
+ *    (`probeLayerId`) chooses it, by default the data layer; a transient pick
+ *    (`pickLayerId`) overrides both while it runs.
+ *
+ * What a probe READS is not a choice: every visible layer is read at the hit
+ * point, values and attribute plans alike (`readableLayerIds`, `infoReadings.ts`).
  *
  * The hit mechanism is a decline, not a filter: a layer that is not the hit
  * target must return from its handler WITHOUT calling `event.stopPropagation()`,
@@ -23,8 +22,8 @@
  * swallow the event and probe nothing. This covers EVERY probe-shaped gesture,
  * not just PROBE-mode readouts: the DESIGN tools' volume clicks and strokes
  * (trace, seed, carve, lift, bridge) go through the same `layerAnswersProbe`
- * guard, so lifting from a mask means making it the data layer (or, in 3D,
- * the layer the ray stops in) in the control bar's `LayerTargetPicker`.
+ * guard, so lifting from a mask means making it the probe layer in the
+ * control bar's `LayerTargetPicker`.
  */
 
 type TargetLayerLike = { id: string; visible?: boolean };
@@ -32,7 +31,6 @@ type TargetLayerLike = { id: string; visible?: boolean };
 /** The pins a resolution reads, as they sit on the viewer store. */
 export type ProbeTargetPins = {
   dataLayerId: string | null;
-  infoLayerIds: readonly string[] | null;
   probeLayerId: string | null;
   pickLayerId: string | null;
 };
@@ -60,36 +58,26 @@ export const effectiveDataLayerId = (
     : firstVisible(layers);
 
 /**
- * The layers the readout samples, in store order: the chosen set, or the
- * data layer alone by default. Hidden layers drop out — only visible layers
- * get node plans, so a hidden one has nothing resident to read.
+ * The layers a probe reads, in store order: every visible one. Only visible
+ * layers get node plans, so a hidden one has nothing resident to read.
  */
-export const effectiveInfoLayerIds = (
-  pins: Pick<ProbeTargetPins, "dataLayerId" | "infoLayerIds">,
-  layers: readonly TargetLayerLike[],
-): string[] => {
-  const chosen = pins.infoLayerIds ?? [effectiveDataLayerId(pins.dataLayerId, layers)];
-  return layers
-    .filter((layer) => layer.visible !== false && chosen.includes(layer.id))
-    .map((layer) => layer.id);
-};
+export const readableLayerIds = (layers: readonly TargetLayerLike[]): string[] =>
+  layers.filter((layer) => layer.visible !== false).map((layer) => layer.id);
 
 /**
  * The layer whose handler answers the pointer: a live transient pick, else
- * (3D only) the visible probe pin, else the data layer while it is visible,
- * else the first visible layer. Null only when no layer can answer at all —
- * a hidden layer draws no mesh.
+ * the visible probe pin, else the data layer while it is visible, else the
+ * first visible layer. Null only when no layer can answer at all — a hidden
+ * layer draws no mesh.
  *
- * A dead or 2D-ignored pin is not erased: it resurrects when its layer is
- * shown again, or when the view goes back to 3D.
+ * A dead pin is not erased: it resurrects when its layer is shown again.
  */
 export const effectiveHitLayerId = (
-  pins: Pick<ProbeTargetPins, "dataLayerId" | "probeLayerId" | "pickLayerId">,
+  pins: ProbeTargetPins,
   layers: readonly TargetLayerLike[],
-  is3D: boolean,
 ): string | null => {
   if (isVisible(layers, pins.pickLayerId)) return pins.pickLayerId;
-  if (is3D && isVisible(layers, pins.probeLayerId)) return pins.probeLayerId;
+  if (isVisible(layers, pins.probeLayerId)) return pins.probeLayerId;
   const data = effectiveDataLayerId(pins.dataLayerId, layers);
   if (isVisible(layers, data)) return data;
   return firstVisible(layers);

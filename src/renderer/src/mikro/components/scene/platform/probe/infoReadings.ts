@@ -3,12 +3,12 @@ import { affineToMatrix4 } from "../coords/worldTransform";
 import type { ProbeResult } from "./probeTypes";
 
 /**
- * "What is under the cursor" on every INFO layer (`effectiveInfoLayerIds`),
- * read at the point the HIT layer found.
+ * "What is under the cursor" on every visible layer (`readableLayerIds`),
+ * read at the point the probe layer found.
  *
- * The hit decides WHERE (in 3D the ray stops in the hit layer's volume); the
- * info layers decide WHAT is shown there. The hit layer's own reading is
- * reused as is; every other info layer is mapped from the hit's world point
+ * The probe layer decides WHERE (in 3D the ray stops in its volume); every
+ * layer it can reach says WHAT is there. The probed layer's own reading is
+ * reused as is; every other layer is mapped from the hit's world point
  * into its own base voxels (the affine maps corner-anchored base voxels to
  * world, COORDINATE_SYSTEMS.md §0) and read from what is resident — the same
  * `sampleResidentEx` the probes themselves read, so no read here ever
@@ -16,7 +16,7 @@ import type { ProbeResult } from "./probeTypes";
  *
  * Each reading is a `ProbeResult` AT the hit, restated in its own layer:
  * `layerId`, `voxelIndex` (that layer's base voxels), `values`, `provenance`,
- * `dtype` and `sliceSignature` are the info layer's; `worldPos`, `localPos`,
+ * `dtype` and `sliceSignature` are that layer's; `worldPos`, `localPos`,
  * `strategy`, `origin` and `purpose` stay the hit's. So everything that
  * already reads a probe — the channel rows, the attribute key, the point
  * coordinates — reads a reading unchanged. A layer the hit point lies outside
@@ -50,8 +50,8 @@ export type InfoSampler = {
 
 export type InfoReadContext = {
   layers: readonly InfoLayerLike[];
-  /** The info layers, in the order to show them (`effectiveInfoLayerIds`). */
-  infoIds: readonly string[];
+  /** The layers to read, in the order to show them (`readableLayerIds`). */
+  layerIds: readonly string[];
   sampler: InfoSampler | null;
   /** Per-layer plans: the level to ask for, and in 2D the drawn slab. */
   nodePlans: Readonly<
@@ -85,13 +85,13 @@ export const worldToLayerVoxel = (
 };
 
 /**
- * Every info layer's reading at the hit. A mesh pick or a placement probe is
- * not a measurement of the image layers, so it yields none.
+ * Every layer's reading at the hit. A mesh pick or a placement probe is not a
+ * measurement of the image layers, so it yields none.
  */
 export const readInfoLayers = (hit: ProbeResult | null, ctx: InfoReadContext): ProbeResult[] => {
   if (!hit || hit.strategy === "mesh" || hit.purpose !== "readout") return [];
   const out: ProbeResult[] = [];
-  for (const layerId of ctx.infoIds) {
+  for (const layerId of ctx.layerIds) {
     if (layerId === hit.layerId) {
       out.push(hit);
       continue;

@@ -14,7 +14,7 @@ import { resolveProbeStrategy } from "../../platform/probe/probeModes";
 import type { ProbeMode } from "../../platform/probe/probeTypes";
 import {
   effectiveHitLayerId,
-  effectiveInfoLayerIds,
+  readableLayerIds,
   probeSystemIdFor,
 } from "../../platform/probe/probeTargeting";
 import { usePlansFor } from "@/mikro/lib/attributes/AttributeServiceProvider";
@@ -43,6 +43,7 @@ import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStor
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { BarTooltip } from "./BarTooltip";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { VIEW_PLANES, viewPlaneOf, type ViewPlane } from "@/core/data/scene/coords/viewAxes";
 import { useSceneViewAxes, useSetSceneViewAxes } from "../../platform/stores/sceneViewAxes";
@@ -456,8 +457,8 @@ const AttributeFetchGroup = ({ systemId, title }: { systemId: string; title: str
 };
 
 /**
- * What a hover FETCHES. Lists every attribute plan of each info layer (the
- * readout's layers, `effectiveInfoLayerIds`) and of each mesh/network
+ * What a hover FETCHES. Lists every attribute plan of each visible layer (the
+ * readout's layers, `readableLayerIds`) and of each mesh/network
  * collection in the scene, which a pick
  * probes), one row per hop of each chain: the landing table or matrix, then
  * the references it can cross. Each hop has a switch; a table hop unfolds to
@@ -465,7 +466,7 @@ const AttributeFetchGroup = ({ systemId, title }: { systemId: string; title: str
  * kept. Choices persist per browser, keyed by the hop — the same data in
  * another scene remembers them.
  */
-const AttributeFetchSection = ({ infoLayers }: { infoLayers: readonly LayerStateLike[] }) => {
+const AttributeFetchSection = ({ readLayers }: { readLayers: readonly LayerStateLike[] }) => {
   const sceneStoreApi = useSceneStoreApi();
   const collectionsKey = useSceneStore((s) =>
     s.sceneLayers
@@ -481,7 +482,7 @@ const AttributeFetchSection = ({ infoLayers }: { infoLayers: readonly LayerState
   const groups = useMemo(() => {
     const out: { systemId: string; title: string }[] = [];
     const seen = new Set<string>();
-    for (const layer of infoLayers) {
+    for (const layer of readLayers) {
       const systemId = probeSystemIdFor(layer);
       if (!systemId || seen.has(systemId)) continue;
       seen.add(systemId);
@@ -497,7 +498,7 @@ const AttributeFetchSection = ({ infoLayers }: { infoLayers: readonly LayerState
     return out;
     // The key STANDS FOR the scene layers read via getState().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionsKey, infoLayers, sceneStoreApi]);
+  }, [collectionsKey, readLayers, sceneStoreApi]);
   const selection = useViewerStore((s) => s.attributeSelection);
   const setSparseLimit = useViewerStore((s) => s.setSparseLimit);
   const plansOfFirst = usePlansFor(groups[0]?.systemId ?? null);
@@ -543,7 +544,6 @@ const ProbeSettingsSection = () => {
   const probeThreshold = useViewerStore((s) => s.probeThreshold);
   const setProbeThreshold = useViewerStore((s) => s.setProbeThreshold);
   const dataLayerId = useViewerStore((s) => s.dataLayerId);
-  const infoLayerIds = useViewerStore((s) => s.infoLayerIds);
   const probeLayerId = useViewerStore((s) => s.probeLayerId);
   const pickLayerId = useViewerStore((s) => s.pickLayerId);
   const sceneStoreApi = useSceneStoreApi();
@@ -565,23 +565,19 @@ const ProbeSettingsSection = () => {
 
   // The strategy resolves against the layer the next ray will STOP in — the
   // effective hit target — since this section configures future probes, not a
-  // reading that already happened. The fetch section lists the info layers'
-  // plans: those are what a hover reads.
-  const { targetLayer, infoLayers } = useMemo(() => {
+  // reading that already happened. The fetch section lists every visible
+  // layer's plans: those are what a hover reads.
+  const { targetLayer, readLayers } = useMemo(() => {
     const { layers } = sceneStoreApi.getState();
-    const targetId = effectiveHitLayerId(
-      { dataLayerId, probeLayerId, pickLayerId },
-      layers,
-      displayMode === "3D",
-    );
-    const infoIds = effectiveInfoLayerIds({ dataLayerId, infoLayerIds }, layers);
+    const targetId = effectiveHitLayerId({ dataLayerId, probeLayerId, pickLayerId }, layers);
+    const readIds = readableLayerIds(layers);
     return {
       targetLayer: layers.find((candidate) => candidate.id === targetId),
-      infoLayers: layers.filter((candidate) => infoIds.includes(candidate.id)),
+      readLayers: layers.filter((candidate) => readIds.includes(candidate.id)),
     };
     // The key STANDS FOR the layers array read via getState().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layersKey, dataLayerId, infoLayerIds, probeLayerId, pickLayerId, displayMode, sceneStoreApi]);
+  }, [layersKey, dataLayerId, probeLayerId, pickLayerId, sceneStoreApi]);
   const resolved = resolveProbeStrategy(
     probeMode,
     targetLayer?.projection,
@@ -642,7 +638,7 @@ const ProbeSettingsSection = () => {
         </div>
       )}
 
-      <AttributeFetchSection infoLayers={infoLayers} />
+      <AttributeFetchSection readLayers={readLayers} />
     </div>
   );
 };
@@ -759,17 +755,23 @@ export const SceneSettings = () => {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={isDebug ? "destructive" : "outline"}
-          size={"xs"}
-          className={isDebug ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
-          title="View settings"
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-56">
+      <BarTooltip label="View settings">
+        <PopoverTrigger asChild>
+          <Button
+            variant={isDebug ? "destructive" : "outline"}
+            size={"xs"}
+            className={isDebug ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        </PopoverTrigger>
+      </BarTooltip>
+      {/* Focus going back to the trigger would reopen the tooltip on close. */}
+      <PopoverContent
+        align="end"
+        className="w-56"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
         <PlaneSection />
 
         {/* An action, not a setting — but it belongs to the same question

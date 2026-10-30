@@ -62,7 +62,7 @@ export interface ProbeSlice {
    * field and lets the settler decide when the HUD sees it. */
   setProbeReadout: (coordinate: ProbedCoordinate | null) => void
   /**
-   * What the readout shows: one reading per INFO layer at the settled hit
+   * What the readout shows: one reading per visible layer at the settled hit
    * (`platform/probe/infoReadings.ts`), each a probe restated in its own
    * layer. UI cadence, like `probeReadout`, which it always describes.
    */
@@ -81,19 +81,13 @@ export interface ProbeSlice {
   dataLayerId: string | null;
   setDataLayerId: (layerId: string | null) => void
   /**
-   * The layers the readout samples at the hit point, or null for the DEFAULT:
-   * the data layer alone (see `effectiveInfoLayerIds`). Session-only.
-   */
-  infoLayerIds: readonly string[] | null;
-  setInfoLayerIds: (layerIds: readonly string[] | null) => void
-  /**
-   * Which layer a 3D ray stops in, or null for the DEFAULT: the data layer
-   * (see `effectiveHitLayerId`; ignored in 2D). Exactly one layer ever
-   * answers — every other layer declines the pointer event (without stopping
-   * propagation) so it falls through to the target layer's mesh.
+   * The layer that is probed — in 3D, the one the ray stops in — or null for
+   * the DEFAULT: the data layer (see `effectiveHitLayerId`). Exactly one layer
+   * ever answers — every other layer declines the pointer event (without
+   * stopping propagation) so it falls through to the target layer's mesh.
    */
   probeLayerId: string | null;
-  /** Pin the ray to one layer, or null for the default. Clears a probe
+  /** Pin the probe to one layer, or null for the default. Clears a probe
    * belonging to a different layer, so the readout never keeps showing a hit
    * the probe no longer makes; `StaleProbeReconciler` covers the default-target
    * cases this setter cannot see. */
@@ -231,8 +225,6 @@ export const createProbeSlice = (
   setProbeMode: (mode) => set({ probeMode: mode }),
   dataLayerId: null,
   setDataLayerId: (layerId) => set({ dataLayerId: layerId }),
-  infoLayerIds: null,
-  setInfoLayerIds: (layerIds) => set({ infoLayerIds: layerIds }),
   pickLayerId: null,
   setPickLayerId: (layerId) => set({ pickLayerId: layerId }),
   probeLayerId: null,

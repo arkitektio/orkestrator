@@ -256,7 +256,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   });
   const clickEnabled = clickProbeEnabled(gate);
 
-  // Event-time resolution — fresh pins, layer list AND view, no render
+  // Event-time resolution — fresh pins and layer list, no render
   // subscription: exactly one layer (the effective hit target) answers.
   const modeStoreApi = useModeStoreApi();
   const answersProbe = useCallback(
@@ -265,11 +265,10 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
         effectiveHitLayerId(
           viewerStoreApi.getState(),
           sceneStoreApi.getState().layers,
-          modeStoreApi.getState().displayMode === "3D",
         ),
         layerId,
       ),
-    [viewerStoreApi, sceneStoreApi, modeStoreApi, layerId],
+    [viewerStoreApi, sceneStoreApi, layerId],
   );
 
   useEffect(() => {
