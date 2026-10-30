@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import * as THREE from "three";
 import { Focus, Trash2, X } from "lucide-react";
 import { Button } from "@/core/ui/button";
@@ -35,15 +35,18 @@ const useMeasureOf = (layer: AnnotationLayerVariant) => {
     [layer, collection, transformContext],
   );
   const unit = unitLabel(spatialUnit);
-  return (annotation: SceneAnnotationFragment): string | null => {
-    const worldPoints = (annotation.vectors ?? []).map((vector) => {
-      const world = new THREE.Vector3(vector[0] ?? 0, vector[1] ?? 0, vector[2] ?? 0).applyMatrix4(
-        affineMatrix,
-      );
-      return { x: world.x, y: world.y, z: world.z };
-    });
-    return formatAnnotationMeasure(measureAnnotation(annotation.kind, worldPoints), unit);
-  };
+  return useCallback(
+    (annotation: SceneAnnotationFragment): string | null => {
+      const worldPoints = (annotation.vectors ?? []).map((vector) => {
+        const world = new THREE.Vector3(vector[0] ?? 0, vector[1] ?? 0, vector[2] ?? 0).applyMatrix4(
+          affineMatrix,
+        );
+        return { x: world.x, y: world.y, z: world.z };
+      });
+      return formatAnnotationMeasure(measureAnnotation(annotation.kind, worldPoints), unit);
+    },
+    [affineMatrix, unit],
+  );
 };
 
 /**
@@ -133,6 +136,104 @@ export const AnnotationSelection = ({
 };
 
 /**
+ * One shape of the list. Memoized with stable handlers: a selection changes one
+ * row's `isSelected`, and walking every vertex of every shape to re-measure the
+ * whole list on each click is what a re-render here would otherwise cost.
+ */
+const AnnotationRow = memo(
+  ({
+    annotation,
+    index,
+    isSelected,
+    isDeleting,
+    measureOf,
+    onToggle,
+    onGoTo,
+    onDelete,
+  }: {
+    annotation: SceneAnnotationFragment;
+    index: number;
+    isSelected: boolean;
+    isDeleting: boolean;
+    measureOf: (annotation: SceneAnnotationFragment) => string | null;
+    onToggle: (annotation: SceneAnnotationFragment) => void;
+    onGoTo: (annotation: SceneAnnotationFragment) => void;
+    onDelete: (id: string) => void;
+  }) => {
+    const measure = useMemo(() => measureOf(annotation), [measureOf, annotation]);
+    // The smart action button shows only under the pointer or focus, so it mounts
+    // on the first of those: a long list holds no menu machinery per row.
+    const [armed, setArmed] = useState(false);
+    const arm = () => setArmed(true);
+
+    return (
+      <div
+        className={`group flex cursor-pointer items-center gap-1.5 rounded-md border px-1.5 py-0.5 transition-colors ${
+          isSelected
+            ? // Amber — the same color the scene highlights the selected shape in.
+              "border-amber-400/40 bg-amber-400/10"
+            : "border-transparent hover:bg-foreground/5"
+        }`}
+        title={isSelected ? "Click to deselect" : "Click to select"}
+        onClick={() => onToggle(annotation)}
+        onMouseEnter={arm}
+        onFocus={arm}
+      >
+        <span className="shrink-0 font-mono text-[10px] text-foreground/80">{indexLabel(index)}</span>
+        <span className="min-w-0 flex-1 truncate text-[10px] text-foreground/45">
+          {formatAnnotationKind(annotation.kind)}
+          {measure && ` · ${measure}`}
+        </span>
+        {/* Hover-revealed: the smart action button (run workflows on this
+            annotation). Wrapped so opening it never toggles the selection. */}
+        <span
+          className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {armed && (
+            <MikroAnnotation.ObjectButton
+              object={annotation}
+              variant="ghost"
+              className="h-5 w-5 p-0 text-foreground/60 hover:text-foreground/90 [&_svg]:size-3"
+            />
+          )}
+        </span>
+        <Button
+          variant="ghost"
+          size="xs"
+          className="h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90"
+          title="Go to annotation"
+          onClick={(event) => {
+            event.stopPropagation();
+            onGoTo(annotation);
+          }}
+        >
+          <Focus className="h-3 w-3" />
+        </Button>
+        {/* Not `disabled` while deleting: a disabled button lets the click
+            through to the row, which would toggle the selection. */}
+        <Button
+          variant="ghost"
+          size="xs"
+          className={`h-5 w-5 shrink-0 p-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300 ${
+            isDeleting ? "opacity-40" : ""
+          }`}
+          title={isDeleting ? "Deleting…" : "Delete annotation"}
+          aria-busy={isDeleting}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!isDeleting) onDelete(annotation.id);
+          }}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  },
+);
+AnnotationRow.displayName = "AnnotationRow";
+
+/**
  * Every shape of the layer, regardless of the current z slice or dim
  * selection. Clicking a row toggles it in the selection (multi-select by
  * default); the camera moves only through the go-to button, so building a
@@ -160,85 +261,42 @@ export const AnnotationList = ({
 
   // The same SelectedRoi the canvas layer builds: raw collection-space vectors
   // plus the collection's own system — attribute plans do any frame conversion.
-  const toRoi = (annotation: SceneAnnotationFragment): SelectedRoi => ({
-    id: annotation.id,
-    layerId: layer.id,
-    name: annotation.name,
-    kind: annotation.kind,
-    systemId,
-    axisNames,
-    vectors: annotation.vectors ?? [],
-    coordinates: annotation.coordinates ?? [],
-  });
+  const onToggle = useCallback(
+    (annotation: SceneAnnotationFragment) =>
+      toggleSelectedRoi({
+        id: annotation.id,
+        layerId: layer.id,
+        name: annotation.name,
+        kind: annotation.kind,
+        systemId,
+        axisNames,
+        vectors: annotation.vectors ?? [],
+        coordinates: annotation.coordinates ?? [],
+      }),
+    [toggleSelectedRoi, layer.id, systemId, axisNames],
+  );
+  const onGoTo = useCallback(
+    (annotation: SceneAnnotationFragment) => navigateToAnnotation(annotation, layer),
+    [navigateToAnnotation, layer],
+  );
+  const onDelete = useCallback((id: string) => void deleteRoi(id), [deleteRoi]);
 
   return (
     // Bounded: a collection can hold hundreds of shapes, the card must not.
     <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto border-t border-foreground/5 px-2 py-1.5">
-      {annotations.map((annotation, index) => {
-        const isSelected = selectedIds.has(annotation.id);
-        const isDeleting = deletingIds.has(annotation.id);
-        const measure = measureOf(annotation);
-        return (
-          <div
-            key={annotation.id}
-            className={`group flex cursor-pointer items-center gap-1.5 rounded-md border px-1.5 py-0.5 transition-colors ${
-              isSelected
-                ? // Amber — the same color the scene highlights the selected shape in.
-                  "border-amber-400/40 bg-amber-400/10"
-                : "border-transparent hover:bg-foreground/5"
-            }`}
-            title={isSelected ? "Click to deselect" : "Click to select"}
-            onClick={() => toggleSelectedRoi(toRoi(annotation))}
-          >
-            <span className="shrink-0 font-mono text-[10px] text-foreground/80">{indexLabel(index)}</span>
-            <span className="min-w-0 flex-1 truncate text-[10px] text-foreground/45">
-              {formatAnnotationKind(annotation.kind)}
-              {measure && ` · ${measure}`}
-            </span>
-            {/* Hover-revealed: the smart action button (run workflows on this
-                annotation). Wrapped so opening it never toggles the selection. */}
-            <span
-              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <MikroAnnotation.ObjectButton
-                object={annotation}
-                variant="ghost"
-                className="h-5 w-5 p-0 text-foreground/60 hover:text-foreground/90 [&_svg]:size-3"
-              />
-            </span>
-            <Button
-              variant="ghost"
-              size="xs"
-              className="h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90"
-              title="Go to annotation"
-              onClick={(event) => {
-                event.stopPropagation();
-                navigateToAnnotation(annotation, layer);
-              }}
-            >
-              <Focus className="h-3 w-3" />
-            </Button>
-            {/* Not `disabled` while deleting: a disabled button lets the click
-                through to the row, which would toggle the selection. */}
-            <Button
-              variant="ghost"
-              size="xs"
-              className={`h-5 w-5 shrink-0 p-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300 ${
-                isDeleting ? "opacity-40" : ""
-              }`}
-              title={isDeleting ? "Deleting…" : "Delete annotation"}
-              aria-busy={isDeleting}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (!isDeleting) void deleteRoi(annotation.id);
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        );
-      })}
+      {annotations.map((annotation, index) => (
+        <AnnotationRow
+          key={annotation.id}
+          annotation={annotation}
+          index={index}
+          isSelected={selectedIds.has(annotation.id)}
+          isDeleting={deletingIds.has(annotation.id)}
+          measureOf={measureOf}
+          onToggle={onToggle}
+          onGoTo={onGoTo}
+          onDelete={onDelete}
+        />
+      ))}
     </div>
   );
 };
