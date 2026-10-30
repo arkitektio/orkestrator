@@ -162,7 +162,9 @@ export const inVocabulary = (call: BlokUtilCall): BlokUtilCall => {
     });
   }
 
-  const composed = COMPOSED[call.operation];
+  // `list.range` is a name both share: only the base catalog's form counts.
+  const inBaseForm = call.operation !== "list.range" || args.some((argument) => argument.key === "count");
+  const composed = inBaseForm ? COMPOSED[call.operation] : undefined;
   if (composed) {
     return composed(
       (key) => args.find((argument) => argument.key === key) ?? { key, value_literal: null },

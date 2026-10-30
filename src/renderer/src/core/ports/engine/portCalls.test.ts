@@ -245,6 +245,7 @@ describe("the base catalog apps write in", () => {
     expect(run("math.round", literal("value", 1.26), literal("precision", 1))).toEqual({ ok: true, value: 1.3 });
     expect(run("get", literal("value", { x: 1 }), literal("path", "x"))).toEqual({ ok: true, value: 1 });
     expect(run("list.range", literal("count", 3), literal("start", 2))).toEqual({ ok: true, value: [2, 3, 4] });
+    expect(run("list.range", literal("start", 2), literal("end", 4))).toEqual({ ok: true, value: [2, 3] });
     expect(run("type.toNumber", literal("value", "nope"), literal("fallback", 7))).toEqual({ ok: true, value: 7 });
   });
 });
