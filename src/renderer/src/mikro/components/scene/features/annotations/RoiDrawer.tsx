@@ -42,6 +42,7 @@ import {
   withinSlop,
   type ScreenPoint,
 } from "./drawGesture";
+import { MUTED_STROKE } from "./annotationStyle";
 import { roiOutline, type OutlinePoint } from "./roiOutline";
 import { formatDrawMeasure, measureDraw } from "./roiMeasure";
 import { unitLabel } from "../../platform/coords/sceneUnits";
@@ -1258,7 +1259,7 @@ export const RoiDrawer = () => {
 
       {/* Committed locally, until the server copy arrives. */}
       {drawnRois.map((roi) => (
-        <RoiShape key={roi.id} roi={roi} />
+        <RoiShape key={roi.id} roi={roi} muted={placedVertices.length > 0} />
       ))}
     </group>
   );
@@ -1269,9 +1270,10 @@ export const RoiDrawer = () => {
  * yet. One `roiOutline` call for every tool — which is what fixes the ellipse
  * that used to be stroked as a rectangle here (and in the live preview).
  */
-const RoiShape = ({ roi }: { roi: DrawnRoi }) => {
+const RoiShape = ({ roi, muted }: { roi: DrawnRoi; muted: boolean }) => {
   const vectors = roi.worldVectors;
   if (vectors.length === 0) return null;
+  const color = muted ? MUTED_STROKE : COMMITTED_COLOR;
 
   // Primitives carry BOUNDING corners; their committed footprint belongs on
   // the equator (the plane the user sized in), not the bottom face.
@@ -1284,7 +1286,7 @@ const RoiShape = ({ roi }: { roi: DrawnRoi }) => {
     return (
       <mesh position={[vectors[0].x, vectors[0].y, z]}>
         <circleGeometry args={[2, 16]} />
-        <meshBasicMaterial color={COMMITTED_COLOR} transparent opacity={0.7} />
+        <meshBasicMaterial color={color} transparent opacity={0.7} />
       </mesh>
     );
   }
@@ -1303,7 +1305,7 @@ const RoiShape = ({ roi }: { roi: DrawnRoi }) => {
         })),
         z,
       )}
-      color={COMMITTED_COLOR}
+      color={color}
       lineWidth={2}
       depthTest={false}
       renderOrder={9}

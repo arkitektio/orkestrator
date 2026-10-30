@@ -14,7 +14,6 @@ import {
   createWebGPURendererFactory,
   type DeviceLostInfo,
 } from "@/core/data/scene/gpu/createWebGPURenderer";
-import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { Button } from "@/core/ui/button";
 import * as THREE from "three";
 import { CameraMatrixSync } from "../platform/camera/CameraMatrixSync";
@@ -228,7 +227,6 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
         frameloop={visible && !deviceLost ? "demand" : "never"}
         events={sceneEvents}
         gl={rendererFactory}>
-        <RendererDisposer />
         {children}
       </Canvas>
       {deviceLost && (

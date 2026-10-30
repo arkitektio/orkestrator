@@ -140,11 +140,12 @@ export function pointGroupsOf(
   points: readonly PlacedEntry[],
   isSelected: (id: string) => boolean,
   flattenToPlane: boolean,
+  muted = false,
 ): [number, PointEntry[]][] {
   const byOpacity = new Map<number, PointEntry[]>();
   for (const entry of points) {
     const { annotation } = entry;
-    const style = resolveStyle(annotation, isSelected(annotation.id));
+    const style = resolveStyle(annotation, isSelected(annotation.id), false, muted);
     const point: PointEntry = {
       id: annotation.id,
       position: getVectorPoint(annotation.vectors![0], flattenToPlane),

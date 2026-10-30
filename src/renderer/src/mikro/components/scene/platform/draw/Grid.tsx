@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { createGridMaterial } from "./gridNodeMaterial";
 
 export interface GridProps {
@@ -48,7 +49,7 @@ export const Grid = ({
   useEffect(() => () => material.dispose(), [material]);
 
   // Push prop-derived values into the material uniforms.
-  useEffect(() => {
+  useDrawEffect(() => {
     uniforms.cellSize.value = cellSize;
     uniforms.sectionSize.value = sectionSize;
     uniforms.cellColor.value.set(cellColor);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   annotationHoverEnabled,
+  annotationSelectEnabled,
   clickProbeEnabled,
   hoverProbeEnabled,
   type ProbeGateInput,
@@ -96,6 +97,21 @@ describe("clickProbeEnabled", () => {
         }),
       ),
     ).toBe(false);
+  });
+});
+
+describe("annotationSelectEnabled", () => {
+  it("picks shapes in NAVIGATE and ANNOTATE, never in PROBE", () => {
+    const shapeInProgress = false;
+    expect(annotationSelectEnabled({ interactionMode: "NAVIGATE", shapeInProgress })).toBe(true);
+    expect(annotationSelectEnabled({ interactionMode: "ANNOTATE", shapeInProgress })).toBe(true);
+    expect(annotationSelectEnabled({ interactionMode: "PROBE", shapeInProgress })).toBe(false);
+  });
+
+  it("picks nothing while a new shape is half-drawn", () => {
+    expect(annotationSelectEnabled({ interactionMode: "ANNOTATE", shapeInProgress: true })).toBe(
+      false,
+    );
   });
 });
 

@@ -7,7 +7,7 @@ import {
   isSectionedEllipse,
   type OutlineRange,
 } from "./annotationBatch";
-import { resolveStyle } from "./annotationStyle";
+import { MUTED_STROKE, resolveStyle } from "./annotationStyle";
 
 /**
  * Merged annotation INTERIORS: one mesh per fill opacity (plus one invisible
@@ -199,12 +199,15 @@ const SCRATCH_COLOR = new THREE.Color();
 export function interiorColors<R>(
   batch: InteriorBatch<R>,
   isActive: (annotationId: string) => boolean,
+  muted = false,
 ): Float32Array {
   const colors = new Float32Array(batch.triangleCount * 9);
   for (let k = 0; k < batch.ranges.length; k++) {
     const range = batch.ranges[k];
     const fill = batch.fills[k];
-    SCRATCH_COLOR.set(isActive(fill.annotationId) ? fill.selectedFill : fill.fill);
+    SCRATCH_COLOR.set(
+      muted ? MUTED_STROKE : isActive(fill.annotationId) ? fill.selectedFill : fill.fill,
+    );
     const r = SCRATCH_COLOR.r;
     const g = SCRATCH_COLOR.g;
     const b = SCRATCH_COLOR.b;

@@ -214,6 +214,22 @@ sideways edges between features are kept to the list above by review.
   subscribe to scalars, never objects. Several components are shaped the way
   they are *because* of this and say so in their docblocks. **Never convert a
   `useFrame` / `getState()` read into a `useStore(selector)` while moving code.**
+- **P33 — a change to what is drawn asks for its own frame.** The canvas is
+  `frameloop="demand"`, so an unasked-for change is not drawn. Every change has
+  exactly one route, and that route makes the request; nobody adds a stray
+  `invalidate()` to make something appear:
+
+  | Change comes from | Route | Who asks for the frame |
+  |---|---|---|
+  | Tree or props | React commit | R3F (removals too, since 9.8.2) |
+  | React state, written in place | `useDrawEffect` | the hook |
+  | Store subscription | `bindField` etc. (P17) | the binder's `apply` |
+  | Manager | `onInvalidate` | the manager |
+
+  A handler prop that happens to be a fresh closure also makes R3F draw, and
+  that is what hid this: with the handlers `undefined` (P20) the same write drew
+  nothing. Asserted by `storeSelectors.test.ts` (no raw `useLayoutEffect`) and
+  `core/data/scene/stores/demandFrames.test.tsx` (R3F's half).
 - **P20** — handler *attachment* is the raycast gate. Pass `undefined`, never a
   no-op handler.
 - **P13** — three.js overlay geometries need an explicit `dispose()` in effect
@@ -236,7 +252,7 @@ sideways edges between features are kept to the list above by review.
   downstream, so check touched files individually during a mass rewrite.
 - **`COORDINATE_SYSTEMS.md` §0 is settled** — corner-anchored frames, half-voxel
   convention, no client-injected flips. Do not re-litigate.
-- **Pitfall numbers P1–P24 are cross-referenced between documents.** Keep the
+- **Pitfall numbers P1–P33 are cross-referenced between documents.** Keep the
   numbering when splitting docs.
 
 ### Four sibling pairs that must stay siblings

@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { finestLayerZStep } from "../../../platform/coords/worldTransform";
 import { layersPlanKey } from "../../../platform/model/layerPlanKey";
-import { annotationHoverEnabled } from "../../../platform/probe/probeGating";
+import { annotationHoverEnabled, annotationSelectEnabled } from "../../../platform/probe/probeGating";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
@@ -76,6 +76,8 @@ import {
  *   value-equal entry lists); the visible-ROI store write is identity-gated.
  * - **selection click**: 3D mesh shapes with changed `isActive` re-render;
  *   batches re-tint (color-only pass, no geometry upload).
+ * - **a new shape starts or ends** (`shapeInProgress`): the same color-only
+ *   pass, gray and back, and every pick handler detaches (P20).
  */
 export const AnnotationLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));
@@ -149,6 +151,9 @@ const AnnotationCollectionGroup = ({
   );
   // A scalar (P17): only the drawing/not-drawing answer gates the hover.
   const drawingToolActive = useRoiDrawingStore((s) => isDrawingTool(s.activeTool));
+  // A scalar too, moving per click: a half-drawn shape grays out and disarms
+  // every other one. The drawer's plane gets every click until it is finished.
+  const shapeInProgress = useRoiDrawingStore((s) => s.shapeInProgress);
 
   const annotations = useSceneAnnotations(collection.id);
 
@@ -309,7 +314,7 @@ const AnnotationCollectionGroup = ({
   );
   const onUnhoverRoi = useCallback((roiId: string) => unhoverRoi(roiId), [unhoverRoi]);
 
-  const selectable = interactionMode !== "PROBE";
+  const selectable = annotationSelectEnabled({ interactionMode, shapeInProgress });
   // Handler ATTACHMENT is the raycast gate (P20, `annotationHoverEnabled`):
   // hovering arms the shapes for R3F's per-move raycast, so only where the
   // attached action button can actually be used.
@@ -324,8 +329,8 @@ const AnnotationCollectionGroup = ({
   // which is what happened when the split and the point styling were one memo.
   const { points, others: otherShapes } = useMemo(() => partitionEntries(shown), [shown]);
   const pointGroups = useMemo(
-    () => pointGroupsOf(points, (id) => selectedRoiIds.has(id), flattenToPlane),
-    [points, selectedRoiIds, flattenToPlane],
+    () => pointGroupsOf(points, (id) => selectedRoiIds.has(id), flattenToPlane, shapeInProgress),
+    [points, selectedRoiIds, flattenToPlane, shapeInProgress],
   );
 
   // Merged outline batches (`orkestrator.annotationBatch`, read once per
@@ -396,6 +401,7 @@ const AnnotationCollectionGroup = ({
         <AnnotationOutlineBatch
           key={batch.lineWidth}
           batch={batch}
+          muted={shapeInProgress}
           selectedIds={selectedRoiIds}
           hoveredId={hoveredId}
           selectable={selectable}
@@ -409,6 +415,7 @@ const AnnotationCollectionGroup = ({
         <AnnotationOutlineBatch
           key={`sectioned:${batch.lineWidth}`}
           batch={batch}
+          muted={shapeInProgress}
           selectedIds={selectedRoiIds}
           hoveredId={hoveredId}
           selectable={selectable}
@@ -422,6 +429,7 @@ const AnnotationCollectionGroup = ({
         <AnnotationInteriorBatch
           key={batch.key}
           batch={batch}
+          muted={shapeInProgress}
           selectedIds={selectedRoiIds}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
@@ -434,6 +442,7 @@ const AnnotationCollectionGroup = ({
         <AnnotationInteriorBatch
           key={`sectioned:${batch.key}`}
           batch={batch}
+          muted={shapeInProgress}
           selectedIds={selectedRoiIds}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
@@ -450,6 +459,7 @@ const AnnotationCollectionGroup = ({
           flattenToPlane={flattenToPlane}
           isActive={selectedRoiIds.has(annotation.id)}
           isHovered={hoveredId === annotation.id}
+          muted={shapeInProgress}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}

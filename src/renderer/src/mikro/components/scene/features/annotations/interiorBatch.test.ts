@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import { ELLIPSE_SEGMENTS, roiForSegment } from "./annotationBatch";
-import { ACTIVE_STROKE, DEFAULT_STROKE } from "./annotationStyle";
+import { ACTIVE_STROKE, DEFAULT_STROKE, MUTED_STROKE } from "./annotationStyle";
 import {
   buildInteriorBatches,
   interiorColors,
@@ -154,6 +154,11 @@ describe("buildInteriorBatches", () => {
     expect(colors[0]).toBeCloseTo(idle.r);
     expect(colors[2 * 9]).toBeCloseTo(active.r);
     expect(colors[2 * 9 + 2]).toBeCloseTo(active.b);
+    // A shape being drawn grays out every other one, selected too.
+    const muted = new THREE.Color(MUTED_STROKE);
+    const grayed = interiorColors(filled, (id) => id === "filled2", true);
+    expect(grayed[0]).toBeCloseTo(muted.r);
+    expect(grayed[2 * 9 + 2]).toBeCloseTo(muted.b);
   });
 
   it("different fill opacities get different batches", () => {

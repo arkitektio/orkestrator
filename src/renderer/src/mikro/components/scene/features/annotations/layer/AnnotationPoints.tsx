@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useLayoutEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 
+import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { computeWorldUnitsPerPixel } from "../../../platform/probe/probeWorld";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
@@ -68,14 +69,13 @@ export const AnnotationPoints = ({
     [entries.length],
   );
 
-  useLayoutEffect(() => {
+  useDrawEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
     if (samePointEntries(writtenRef.current, entries)) return; // scrub no-op
     writtenRef.current = entries;
     syncPointMatrices(mesh, entries, scaleRef.current);
     syncPointColors(mesh, entries);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, capacity]);
 
   useFrame(({ camera, size }) => {

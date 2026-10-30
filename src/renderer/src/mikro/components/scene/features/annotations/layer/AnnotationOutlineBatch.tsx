@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { InterleavedBufferAttribute } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js";
@@ -6,6 +6,7 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { Line2NodeMaterial } from "three/webgpu";
 
 import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
+import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { raycastNearestOnly } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
@@ -30,6 +31,7 @@ export const AnnotationOutlineBatch = ({
   batch,
   selectedIds,
   hoveredId,
+  muted,
   selectable,
   onSelectRoi,
   hoverable,
@@ -40,6 +42,8 @@ export const AnnotationOutlineBatch = ({
   selectedIds: ReadonlySet<string>;
   /** The hovered roi when it belongs to this layer — a color-only pass too. */
   hoveredId: string | null;
+  /** A new shape is being drawn: grayed out, a color-only pass too. */
+  muted: boolean;
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
@@ -87,7 +91,7 @@ export const AnnotationOutlineBatch = ({
   // Layout effect for the same reason as `Line`: the WGSL vertex layout is
   // derived from the geometry's attributes, so positions must exist before
   // the first frame draws.
-  useLayoutEffect(() => {
+  useDrawEffect(() => {
     const geometry = new LineSegmentsGeometry();
     geometry.setPositions(batch.positions);
     swapGeometry(line, geometry);
@@ -98,8 +102,8 @@ export const AnnotationOutlineBatch = ({
   // batch's geometry: the first pass creates the color attributes (nothing has
   // drawn them yet), every later one — a selection change — rewrites them in
   // place, the one kind of update the renderer picks up on a drawn geometry.
-  useLayoutEffect(() => {
-    const colors = batchColors(batch, (id) => selectedIds.has(id), hoveredId);
+  useDrawEffect(() => {
+    const colors = batchColors(batch, (id) => selectedIds.has(id), hoveredId, muted);
     const attribute = line.geometry.attributes.instanceColorStart as
       | InterleavedBufferAttribute
       | undefined;
@@ -109,9 +113,9 @@ export const AnnotationOutlineBatch = ({
       return;
     }
     line.geometry.setColors(colors);
-  }, [batch, selectedIds, hoveredId, line]);
+  }, [batch, selectedIds, hoveredId, muted, line]);
 
-  useEffect(() => {
+  useDrawEffect(() => {
     material.linewidth = batch.lineWidth;
     material.needsUpdate = true;
   }, [material, batch.lineWidth]);

@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
 
+import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import {
   createLabelPlaneNodeMaterial,
   updateLabelNodes,
@@ -78,10 +79,9 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
     (p) => createLabelPlaneNodeMaterial(p, p, labelData),
   );
 
-  useEffect(() => {
+  useDrawEffect(() => {
     if (!bundle || planTargetLevel === undefined) return;
     updateLabelNodes(bundle.nodes, labelData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, labelSignature, planTargetLevel, slabBaseZ]);
 
   useCropClipUniforms(bundle?.nodes, layer?.affineMatrix, pool?.geometry.levels[0].spatialShape);

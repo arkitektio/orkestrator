@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
+import { MUTED_STROKE } from "../annotationStyle";
 import {
   partitionEntries,
   placeAnnotations,
@@ -72,6 +73,9 @@ describe("placeAnnotations", () => {
     const unselected = pointGroupsOf(points, () => false, true);
     const selected = pointGroupsOf(points, (id) => id === "p1", true);
     expect(unselected[0][1][0].color).not.toBe(selected[0][1][0].color);
+    // A shape being drawn grays out every other one, selected too.
+    const muted = pointGroupsOf(points, (id) => id === "p1", true, true);
+    expect(muted[0][1][0].color).toBe(MUTED_STROKE);
   });
 
   it("shownEntries returns the previous array when the filter keeps the same entries", () => {

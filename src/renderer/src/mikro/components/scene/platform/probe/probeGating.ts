@@ -100,6 +100,18 @@ export const clickProbeEnabled = ({
   (annotateProbes && interactionMode === "DESIGN" && brushToolActive && designArmed);
 
 /**
+ * Can a click pick an annotation? Not in PROBE, where a shape must not swallow
+ * the click meant for a probe, and not while a new shape is half-drawn, where
+ * it would swallow the next vertex. The answer gates handler ATTACHMENT (P20),
+ * so an unselectable shape lets the click through to whatever is behind it.
+ */
+export const annotationSelectEnabled = ({
+  interactionMode,
+  shapeInProgress,
+}: Pick<ProbeGateInput, "interactionMode"> & { shapeInProgress: boolean }): boolean =>
+  interactionMode !== "PROBE" && !shapeInProgress;
+
+/**
  * Annotation HOVER affordances (the attached action button): NAVIGATE, or
  * ANNOTATE with no shape tool armed — while drawing, the `RoiDrawer`'s plane
  * owns the pointer. Never PROBE, where a shape must not sit between the

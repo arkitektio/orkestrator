@@ -38,7 +38,9 @@ export type AnnotationShapeProps = {
   isActive: boolean;
   /** The pointer is on this shape (selection wins over it). */
   isHovered: boolean;
-  /** False in PROBE mode, so a shape can't swallow the click meant for a probe. */
+  /** A new shape is being drawn: this one is grayed out. */
+  muted: boolean;
+  /** `annotationSelectEnabled`: false where a click on the shape belongs elsewhere. */
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
@@ -57,6 +59,7 @@ export const shapePropsEqual = (
   prev.flattenToPlane === next.flattenToPlane &&
   prev.isActive === next.isActive &&
   prev.isHovered === next.isHovered &&
+  prev.muted === next.muted &&
   prev.selectable === next.selectable &&
   prev.onSelectRoi === next.onSelectRoi &&
   prev.hoverable === next.hoverable &&
@@ -89,6 +92,7 @@ export const AnnotationShape = memo(function AnnotationShape({
   flattenToPlane,
   isActive,
   isHovered,
+  muted,
   selectable,
   onSelectRoi,
   hoverable,
@@ -111,7 +115,7 @@ export const AnnotationShape = memo(function AnnotationShape({
   const vectors = annotation.vectors; // Array of [x, y, z]
   if (!vectors || vectors.length === 0) return null;
 
-  const style = resolveStyle(annotation, isActive, isHovered);
+  const style = resolveStyle(annotation, isActive, isHovered, muted);
 
   // `undefined` when the shape is not selectable, NOT a handler that returns
   // early (P20): a handler prop is what puts the object in R3F's interaction

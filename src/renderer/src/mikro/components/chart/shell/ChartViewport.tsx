@@ -16,7 +16,6 @@ import {
   type PhaseWording,
 } from "@/core/data/plot/scope/plotScope";
 import { useViewerStore, type InteractionModeOption } from "@/core/data/plot/stores/viewerStore";
-import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { useKeepTabLive } from "@/core/tabs/keepLive";
@@ -107,7 +106,6 @@ const ReadyViewport = () => {
 
       <div className="absolute inset-x-0 top-0 bottom-12">
         <Canvas frameloop={visible ? "demand" : "never"} gl={rendererFactory}>
-          <RendererDisposer />
           <AxisCamera />
           <PlotLayerRenderer renderers={LAYER_RENDERERS} />
         </Canvas>

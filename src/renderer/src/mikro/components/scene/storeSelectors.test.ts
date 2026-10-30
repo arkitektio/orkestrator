@@ -86,3 +86,43 @@ describe("scene store selectors", () => {
     }
   });
 });
+
+/**
+ * P33, asserted: a layout effect under `scene/` exists to write drawn objects,
+ * so it goes through `useDrawEffect`, which asks for the frame that shows the
+ * write. A ceiling, like the list above. Each existing entry, with its reason:
+ *  - InitialCameraFit: moves the camera before the first paint, and asks for
+ *    its own frame only when it actually fitted.
+ *  - TracksLayer: asks for its own frame, past an early return that must not
+ *    draw for an empty geometry.
+ */
+const KNOWN_LAYOUT_EFFECTS = new Set([
+  "platform/camera/InitialCameraFit.tsx",
+  "features/tracks/TracksLayer.tsx",
+]);
+
+describe("scene layout effects", () => {
+  const usesLayoutEffect = (src: string) => /\buseLayoutEffect\(/.test(src);
+
+  it("no component outside the allowlist writes in a raw layout effect", () => {
+    const offenders = walk(SCENE)
+      .map((file) => relative(SCENE, file))
+      .filter((rel) => !/\.(test|spec)\.tsx?$/.test(rel))
+      .filter((rel) => usesLayoutEffect(readFileSync(join(SCENE, rel), "utf8")))
+      .filter((rel) => !KNOWN_LAYOUT_EFFECTS.has(rel));
+    expect(
+      offenders,
+      "these files write in a raw useLayoutEffect, which requests no frame on a demand " +
+        "canvas — use useDrawEffect (core/data/scene/stores), or add an allowlist entry WITH a reason",
+    ).toEqual([]);
+  });
+
+  it("the allowlist is a ceiling — remove entries whose layout effect is gone", () => {
+    for (const rel of KNOWN_LAYOUT_EFFECTS) {
+      expect(
+        usesLayoutEffect(readFileSync(join(SCENE, rel), "utf8")),
+        `${rel} no longer has a useLayoutEffect — remove its allowlist entry`,
+      ).toBe(true);
+    }
+  });
+});

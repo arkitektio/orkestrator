@@ -1655,6 +1655,17 @@ recognise: the debug line's `chunks X / Y MB` with X at Y (the cache is the
 limit; a larger decode cache in Settings → Renderer sharpens the view), as
 opposed to `refine 0.0 MB` (slots, P25).
 
+**P33 — A change to what is drawn asks for its own frame.** Symptom: hide a
+layer or delete a shape and it stays on the canvas until something else draws;
+"sometimes", because something else often does. Two causes. R3F before 9.8.2
+requested no frame on a removal under `frameloop="demand"` (`removeChild`
+unlinked the child, then `invalidateInstance` bailed on the missing parent), and
+hiding a layer IS a removal here. And in-place writes from React effects (a
+geometry swap, a colour pass) asked for nothing, drawing only because a handler
+prop was a fresh closure, so with the handlers `undefined` (P20) they did not
+draw at all. The routes, one per kind of change, are the table in
+`ARCHITECTURE.md`; in-place writes go through `useDrawEffect`.
+
 **P20 — Handler ATTACHMENT is the raycast gate, not the handler body.** R3F
 puts an object in `internal.interaction` as soon as it carries any event
 handler, and the raycast runs BEFORE the handler does — so a handler that

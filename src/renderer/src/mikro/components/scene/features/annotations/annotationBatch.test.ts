@@ -14,7 +14,7 @@ import {
   sectionedOutlinePoints,
 } from "./annotationBatch";
 import { getVectorPoint } from "./annotationBounds";
-import { DEFAULT_STROKE, ACTIVE_STROKE, HOVER_STROKE } from "./annotationStyle";
+import { DEFAULT_STROKE, ACTIVE_STROKE, HOVER_STROKE, MUTED_STROKE } from "./annotationStyle";
 import * as THREE from "three";
 
 /**
@@ -142,6 +142,12 @@ describe("buildOutlineBatches", () => {
     expect(hovered[0]).toBeCloseTo(idle.r);
     const both = batchColors(thin, (id) => id === "selected", "selected");
     expect(both[2 * 6]).toBeCloseTo(active.r);
+    // A shape being drawn grays out every other one, selected and hovered too.
+    const muted = new THREE.Color(MUTED_STROKE);
+    const grayed = batchColors(thin, (id) => id === "selected", "selected", true);
+    expect(grayed[0]).toBeCloseTo(muted.r);
+    expect(grayed[2 * 6]).toBeCloseTo(muted.r);
+    expect(grayed[2 * 6 + 2]).toBeCloseTo(muted.b);
     expect(both[2 * 6 + 1]).toBeCloseTo(active.g);
   });
 

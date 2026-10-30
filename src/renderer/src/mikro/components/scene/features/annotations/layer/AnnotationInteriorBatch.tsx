@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 
+import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { roiForSegment } from "../annotationBatch";
 import { interiorColors, type InteriorBatch } from "../interiorBatch";
@@ -26,6 +27,7 @@ import { DRAG_THRESHOLD_PX } from "../drawGesture";
 export const AnnotationInteriorBatch = ({
   batch,
   selectedIds,
+  muted,
   selectable,
   onSelectRoi,
   hoverable,
@@ -34,6 +36,8 @@ export const AnnotationInteriorBatch = ({
 }: {
   batch: InteriorBatch<SelectedRoi>;
   selectedIds: ReadonlySet<string>;
+  /** A new shape is being drawn: grayed out, a color-only pass too. */
+  muted: boolean;
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
@@ -75,12 +79,14 @@ export const AnnotationInteriorBatch = ({
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
-  useLayoutEffect(() => {
+  useDrawEffect(() => {
     if (!batch.filled) return;
     const attribute = geometry.getAttribute("color") as THREE.BufferAttribute;
-    (attribute.array as Float32Array).set(interiorColors(batch, (id) => selectedIds.has(id)));
+    (attribute.array as Float32Array).set(
+      interiorColors(batch, (id) => selectedIds.has(id), muted),
+    );
     attribute.needsUpdate = true;
-  }, [batch, selectedIds, geometry]);
+  }, [batch, selectedIds, muted, geometry]);
 
   const handleClick = selectable
     ? (event: ThreeEvent<MouseEvent>) => {

@@ -175,7 +175,7 @@ importers:
     dependencies:
       '@arkitektio/bsx':
         specifier: ^2.2.0
-        version: 2.2.0(55f208e6d3964cc4098c6efd26b2243a)
+        version: 2.2.0(1ca88368589d6eebf15af5d3884bca6f)
       '@aws-sdk/client-s3':
         specifier: ^3.1010.0
         version: 3.1048.0
@@ -193,13 +193,13 @@ importers:
         version: 4.0.0(electron@43.8.3(supports-color@7.2.0))
       '@platejs/indent':
         specifier: ~52.3.10
-        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@platejs/link':
         specifier: ~52.3.17
-        version: 52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@platejs/list':
         specifier: ~52.3.10
-        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -332,10 +332,10 @@ importers:
         version: 4.7.0(monaco-editor@0.56.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@platejs/basic-nodes':
         specifier: ^51.1.2
-        version: 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@platejs/mention':
         specifier: ^51.1.2
-        version: 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.16
         version: 2.1.24(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -356,13 +356,13 @@ importers:
         version: 1.1.19(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@react-three/drei':
         specifier: ^10.7.7
-        version: 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+        version: 10.7.7(@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       '@react-three/fiber':
-        specifier: ^9.6.1
-        version: 9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+        specifier: ^9.8.2
+        version: 9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       '@react-three/postprocessing':
         specifier: ^3.0.4
-        version: 3.0.4(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/three@0.184.1)(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+        version: 3.0.4(@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/three@0.184.1)(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       '@remix-run/router':
         specifier: 1.23.3
         version: 1.23.3
@@ -530,7 +530,7 @@ importers:
         version: 1.1.12
       platejs:
         specifier: ^52.0.17
-        version: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+        version: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       prettier:
         specifier: ^3.7.4
         version: 3.8.3
@@ -3589,15 +3589,15 @@ packages:
       react-dom:
         optional: true
 
-  '@react-three/fiber@9.6.1':
-    resolution: {integrity: sha512-zF0rsKcVYpcJwbFEnv2HkHX9cvOEgsfQo/X8lwmR2dn13S4qEQJXir9fxf5js2LQFoXqxOY7MDkOkYx2uZ4gSg==}
+  '@react-three/fiber@9.8.2':
+    resolution: {integrity: sha512-6s0ejw0bT1myQ/aLLugcil8/zBmNnnHw/AISWF1yfDLOxfX3yYaTS+0IkpJITEnm/SSMLtxje6CJDt0i5Wu1Sw==}
     peerDependencies:
       expo: '>=43.0'
       expo-asset: '>=8.4'
       expo-file-system: '>=11.0'
       expo-gl: '>=11.0'
-      react: '>=19 <19.3'
-      react-dom: '>=19 <19.3'
+      react: '>=19 <19.4'
+      react-dom: '>=19 <19.4'
       react-native: '>=0.78'
       three: '>=0.156'
     peerDependenciesMeta:
@@ -6780,8 +6780,8 @@ packages:
     resolution: {integrity: sha512-H0dkQoCa3b2VEeKQBOxFph+JAbcrQdE7KC0UkqwpLmv2EC4P41QXP+rqo9wYodACiG5/WM5s9oDApTU8utwj9g==}
     engines: {node: '>= 0.4'}
 
-  its-fine@2.0.0:
-    resolution: {integrity: sha512-KLViCmWx94zOvpLwSlsx6yOCeMhZYaxrJV87Po5k/FoZzcPSahvK5qJ7fYhS61sZi5ikmh2S3Hz55A2l3U69ng==}
+  its-fine@2.1.1:
+    resolution: {integrity: sha512-C5ZoVkeqSt0Aje0tzESO+iT/EQpNFNL39GkP7mCACtoZUFD6GcyerFCr6kp0ZtiII4W9HoYkY48Soy5xE/uHKw==}
     peerDependencies:
       react: ^19.0.0
 
@@ -8428,6 +8428,9 @@ packages:
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
+
   scroll-into-view-if-needed@3.1.0:
     resolution: {integrity: sha512-49oNpRjWRvnU8NyGVmUaYG4jtTkNonFZI86MmGRDqBphEK2EXT9gdEUoQPZhuBM8yWHxCWbobltqYO5M4XrUvQ==}
 
@@ -9851,7 +9854,7 @@ snapshots:
       immutable: 5.1.5
       invariant: 2.2.4
 
-  '@arkitektio/bsx@2.2.0(55f208e6d3964cc4098c6efd26b2243a)':
+  '@arkitektio/bsx@2.2.0(1ca88368589d6eebf15af5d3884bca6f)':
     dependencies:
       graphql: 16.14.0
       react: 19.2.7
@@ -9859,8 +9862,8 @@ snapshots:
       zustand: 5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
     optionalDependencies:
       '@monaco-editor/react': 4.7.0(monaco-editor@0.56.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@react-three/drei': 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
-      '@react-three/fiber': 9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@react-three/drei': 10.7.7(@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@react-three/fiber': 9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       '@testing-library/react': 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       blurhash: 2.0.5
       class-variance-authority: 0.7.1
@@ -10690,7 +10693,7 @@ snapshots:
       fs-extra: 10.1.0
       isbinaryfile: 4.0.10
       minimist: 1.2.8
-      plist: 3.1.1
+      plist: 3.1.0
     transitivePeerDependencies:
       - supports-color
 
@@ -10713,7 +10716,7 @@ snapshots:
       dir-compare: 4.2.0
       fs-extra: 11.3.5
       minimatch: 9.0.9
-      plist: 3.1.1
+      plist: 3.1.0
     transitivePeerDependencies:
       - supports-color
 
@@ -12035,19 +12038,19 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
-  '@platejs/basic-nodes@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/basic-nodes@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/combobox@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/combobox@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/core@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))':
+  '@platejs/core@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))':
     dependencies:
       '@platejs/slate': 52.3.21
       '@udecode/react-hotkeys': 52.0.11(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -12071,7 +12074,7 @@ snapshots:
       slate-react: 0.124.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(slate-dom@0.124.0(slate@0.124.0))(slate@0.124.0)
       use-deep-compare: 1.3.0(react@19.2.7)
       zustand: 5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
-      zustand-x: 6.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(zustand@5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7)))
+      zustand-x: 6.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(zustand@5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7)))
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -12079,44 +12082,44 @@ snapshots:
       - scheduler
       - use-sync-external-store
 
-  '@platejs/floating@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/floating@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@floating-ui/core': 1.7.5
       '@floating-ui/react': 0.26.28(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-compiler-runtime: 1.0.0(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/indent@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/indent@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-compiler-runtime: 1.0.0(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/link@52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/link@52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@platejs/floating': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@platejs/floating': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-compiler-runtime: 1.0.0(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/list@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/list@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@platejs/indent': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@platejs/indent': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       clsx: 2.1.1
       lodash: 4.18.1
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-compiler-runtime: 1.0.0(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
 
-  '@platejs/mention@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@platejs/mention@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@platejs/combobox': 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@platejs/combobox': 51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
@@ -12129,9 +12132,9 @@ snapshots:
       slate: 0.124.0
       slate-dom: 0.124.0(slate@0.124.0)
 
-  '@platejs/utils@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))':
+  '@platejs/utils@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))':
     dependencies:
-      '@platejs/core': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@platejs/core': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       '@platejs/slate': 52.3.21
       '@udecode/react-utils': 52.3.4(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@udecode/utils': 52.3.4
@@ -13212,12 +13215,12 @@ snapshots:
 
   '@radix-ui/rect@1.1.3': {}
 
-  '@react-three/drei@10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
+  '@react-three/drei@10.7.7(@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/react@19.2.14)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
     dependencies:
       '@babel/runtime': 7.29.2
       '@mediapipe/tasks-vision': 0.10.17
       '@monogrid/gainmap-js': 3.4.0(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
-      '@react-three/fiber': 9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@react-three/fiber': 9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       '@use-gesture/react': 10.3.1(react@19.2.7)
       camera-controls: 3.1.2(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       cross-env: 7.0.3
@@ -13245,16 +13248,16 @@ snapshots:
       - '@types/three'
       - immer
 
-  '@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
+  '@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
     dependencies:
       '@babel/runtime': 7.29.2
       '@types/webxr': 0.5.24
       base64-js: 1.5.1
       buffer: 6.0.3
-      its-fine: 2.0.0(@types/react@19.2.14)(react@19.2.7)
+      its-fine: 2.1.1(@types/react@19.2.14)(react@19.2.7)
       react: 19.2.7
       react-use-measure: 2.1.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      scheduler: 0.27.0
+      scheduler: 0.28.0
       suspend-react: 0.1.3(react@19.2.7)
       three: 0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)
       use-sync-external-store: 1.6.0(react@19.2.7)
@@ -13265,9 +13268,9 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@react-three/postprocessing@3.0.4(@react-three/fiber@9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/three@0.184.1)(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
+  '@react-three/postprocessing@3.0.4(@react-three/fiber@9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(@types/three@0.184.1)(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))':
     dependencies:
-      '@react-three/fiber': 9.6.1(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
+      '@react-three/fiber': 9.8.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       maath: 0.6.0(@types/three@0.184.1)(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       n8ao: 1.10.2(postprocessing@6.39.1(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777)))(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
       postprocessing: 6.39.1(three@0.184.0(patch_hash=8228e62189dddbd7c5b0eb11cda9e7444b5f50c8986266572d1062ef6d471777))
@@ -14129,7 +14132,8 @@ snapshots:
 
   '@xmldom/xmldom@0.8.13': {}
 
-  '@xmldom/xmldom@0.9.10': {}
+  '@xmldom/xmldom@0.9.10':
+    optional: true
 
   '@xyflow/react@12.10.2(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
@@ -16219,7 +16223,7 @@ snapshots:
       es6-error: 4.1.1
       matcher: 3.0.0
       roarr: 2.15.4
-      semver: 7.8.0
+      semver: 7.7.4
       serialize-error: 7.0.1
     optional: true
 
@@ -16795,7 +16799,7 @@ snapshots:
       has-symbols: 1.1.0
       set-function-name: 2.0.2
 
-  its-fine@2.0.0(@types/react@19.2.14)(react@19.2.7):
+  its-fine@2.1.1(@types/react@19.2.14)(react@19.2.7):
     dependencies:
       '@types/react-reconciler': 0.28.9(@types/react@19.2.14)
       react: 19.2.7
@@ -17371,7 +17375,7 @@ snapshots:
 
   node-abi@4.31.0:
     dependencies:
-      semver: 7.8.0
+      semver: 7.7.4
 
   node-addon-api@1.7.2:
     optional: true
@@ -17381,7 +17385,7 @@ snapshots:
 
   node-api-version@0.2.1:
     dependencies:
-      semver: 7.8.0
+      semver: 7.7.4
 
   node-domexception@1.0.0: {}
 
@@ -17416,7 +17420,7 @@ snapshots:
       graceful-fs: 4.2.11
       nopt: 9.0.0
       proc-log: 6.1.0
-      semver: 7.8.0
+      semver: 7.7.4
       tar: 7.5.15
       tinyglobby: 0.2.16
       undici: 6.25.0
@@ -17754,11 +17758,11 @@ snapshots:
       find-up: 2.1.0
       load-json-file: 4.0.0
 
-  platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)):
+  platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7)):
     dependencies:
-      '@platejs/core': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@platejs/core': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       '@platejs/slate': 52.3.21
-      '@platejs/utils': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@platejs/utils': 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(use-sync-external-store@1.6.0(react@19.2.7))
       '@udecode/react-hotkeys': 52.0.11(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@udecode/react-utils': 52.3.4(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@udecode/utils': 52.3.4
@@ -17783,6 +17787,7 @@ snapshots:
       '@xmldom/xmldom': 0.9.10
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
+    optional: true
 
   possible-typed-array-names@1.1.0: {}
 
@@ -18102,12 +18107,12 @@ snapshots:
     dependencies:
       react: 19.2.7
 
-  react-tracked@1.7.14(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0):
+  react-tracked@1.7.14(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0):
     dependencies:
       proxy-compare: 2.6.0
       react: 19.2.7
-      scheduler: 0.27.0
-      use-context-selector: 1.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)
+      scheduler: 0.28.0
+      use-context-selector: 1.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
@@ -18408,6 +18413,8 @@ snapshots:
       xmlchars: 2.2.0
 
   scheduler@0.27.0: {}
+
+  scheduler@0.28.0: {}
 
   scroll-into-view-if-needed@3.1.0:
     dependencies:
@@ -19389,10 +19396,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
-  use-context-selector@1.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0):
+  use-context-selector@1.4.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0):
     dependencies:
       react: 19.2.7
-      scheduler: 0.27.0
+      scheduler: 0.28.0
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
@@ -19789,12 +19796,12 @@ snapshots:
     dependencies:
       zustand: 5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
 
-  zustand-x@6.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(zustand@5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))):
+  zustand-x@6.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)(zustand@5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))):
     dependencies:
       immer: 10.2.0
       lodash.mapvalues: 4.6.0
       mutative: 1.1.0
-      react-tracked: 1.7.14(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)
+      react-tracked: 1.7.14(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.28.0)
       use-sync-external-store: 1.4.0(react@19.2.7)
       zustand: 5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
     transitivePeerDependencies:
