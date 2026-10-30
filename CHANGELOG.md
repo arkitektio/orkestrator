@@ -1,3 +1,16 @@
+# [5.4.0](https://github.com/arkitektio/orkestrator/compare/v5.3.0...v5.4.0) (2026-10-30)
+
+
+### Bug Fixes
+
+* **connection:** never prompt about the system Tailscale ([2799ed6](https://github.com/arkitektio/orkestrator/commit/2799ed613f03b4022d58790571463456094e04fe))
+* **ports:** validators and effects written in Python are evaluated ([520d5f4](https://github.com/arkitektio/orkestrator/commit/520d5f443cd6cd06b33325c5aacc72734cbe63bc))
+
+
+### Features
+
+* **scene:** gray out and disarm shapes while one is drawn, and draw every change ([92cb873](https://github.com/arkitektio/orkestrator/commit/92cb8732815d006755fc81ee72977327bc2ca3f6))
+
 # [5.3.0](https://github.com/arkitektio/orkestrator/compare/v5.2.0...v5.3.0) (2026-10-30)
 
 
