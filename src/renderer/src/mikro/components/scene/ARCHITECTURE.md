@@ -252,7 +252,7 @@ sideways edges between features are kept to the list above by review.
   downstream, so check touched files individually during a mass rewrite.
 - **`COORDINATE_SYSTEMS.md` §0 is settled** — corner-anchored frames, half-voxel
   convention, no client-injected flips. Do not re-litigate.
-- **Pitfall numbers P1–P33 are cross-referenced between documents.** Keep the
+- **Pitfall numbers P1–P34 are cross-referenced between documents.** Keep the
   numbering when splitting docs.
 
 ### Four sibling pairs that must stay siblings

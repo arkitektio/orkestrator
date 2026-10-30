@@ -1666,6 +1666,30 @@ prop was a fresh closure, so with the handlers `undefined` (P20) they did not
 draw at all. The routes, one per kind of change, are the table in
 `ARCHITECTURE.md`; in-place writes go through `useDrawEffect`.
 
+**P34 — Hover arms the annotations for every pointer move, in the default mode.**
+Symptom: the main thread busy under a pointer that is merely moving, worse with
+every traced path, and invisible to the perf recording, which brackets frames.
+`annotationHoverEnabled` attaches `onPointerMove` in NAVIGATE, so P20's gate is
+open, and three's `LineSegments2` and `InstancedMesh` raycasts have no index: one
+screen-space test per segment, one mesh raycast per point. `PointerMoveGate` does
+not help, it only skips moves with a button held while the camera moves. The fix
+is `platform/draw/linePicking.ts`: `PickIndex` cuts each shape into runs of up to
+64 primitives with a box, and a pick tests the runs the ray can reach, building
+one hit object. Measured in Node on 500k segments of paths, 37 ms → 0.25 ms per
+move. The box margin is the band's world half-width at the batch's FARTHEST depth;
+three's own early-out takes the nearest, which under perspective can reject a
+stroke its segment test would accept, so the index answers three's SEGMENT test,
+not its whole raycast (`linePicking.test.ts`).
+
+The same pass took the rest of the annotation path off O(batch): a hover or a
+selection writes and uploads only the ranges that changed (`tintRanges`; outline
+colours are two plain attributes because the backend updates per attribute, and
+over `setColors`' one interleaved buffer the second update found the ranges
+cleared and wrote everything); a point's size is a uniform, not its matrix;
+`visibleRois` is a frozen Map per layer outside Immer, which would otherwise proxy
+and deep-freeze every shape. A store that publishes outside Immer must freeze
+what it publishes, or the next Immer write walks it.
+
 **P20 — Handler ATTACHMENT is the raycast gate, not the handler body.** R3F
 puts an object in `internal.interaction` as soon as it carries any event
 handler, and the raycast runs BEFORE the handler does — so a handler that
