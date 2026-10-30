@@ -7,6 +7,9 @@ import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js"
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import {
   applyLinePickThreshold,
+  buildPickIndex,
+  createPickMeshRaycast,
+  lazyPickIndex,
   linePickThreshold,
   nearestLineHit,
   raycastNearestOnly,
@@ -202,5 +205,228 @@ describe("nearest stroke in a merged batch", () => {
     expect(raycastBatch(batch, 3).map((hit) => hit.faceIndex)).toEqual([0]);
     // Nothing in the band is still nothing.
     expect(raycastBatch(batch, 60)).toHaveLength(0);
+  });
+});
+
+/**
+ * The indexed picks must answer exactly what three answers: same stroke, same
+ * point, over batches, cameras and placements a real scene has. Three's own
+ * raycast is the oracle, run on the same object, so a drift in either shows up.
+ */
+describe("the pick index", () => {
+  const seeded = (seed: number) => () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  /** Rectangles and long meandering paths, as an annotation batch holds them. */
+  const makeShapes = (random: () => number, flat: boolean) => {
+    const positions: number[] = [];
+    const ranges: { start: number; end: number }[] = [];
+    let segments = 0;
+    for (let shape = 0; shape < 60; shape++) {
+      const start = segments;
+      const length = shape % 5 === 0 ? 200 : 4;
+      let x = random() * 400 - 200;
+      let y = random() * 300 - 150;
+      let z = flat ? 0 : random() * 80 - 40;
+      for (let i = 0; i < length; i++) {
+        const nx = x + (random() - 0.5) * 30;
+        const ny = y + (random() - 0.5) * 30;
+        const nz = flat ? 0 : z + (random() - 0.5) * 10;
+        positions.push(x, y, z, nx, ny, nz);
+        x = nx;
+        y = ny;
+        z = nz;
+        segments += 1;
+      }
+      ranges.push({ start, end: segments });
+    }
+    return { positions: new Float32Array(positions), ranges };
+  };
+
+  const CAMERAS: Record<string, () => THREE.Camera> = {
+    "orthographic, straight down": () => {
+      const camera = new THREE.OrthographicCamera(-400, 400, 300, -300, 0.1, 2000);
+      camera.position.set(0, 0, 500);
+      camera.lookAt(0, 0, 0);
+      return camera;
+    },
+    "perspective, tilted": () => {
+      const camera = new THREE.PerspectiveCamera(50, 800 / 600, 0.1, 5000);
+      camera.position.set(180, -260, 420);
+      camera.lookAt(0, 0, 0);
+      return camera;
+    },
+    "perspective, inside the shapes": () => {
+      const camera = new THREE.PerspectiveCamera(70, 800 / 600, 0.1, 5000);
+      camera.position.set(10, 10, 5);
+      camera.lookAt(100, 40, 0);
+      return camera;
+    },
+  };
+
+  const PLACEMENTS: Record<string, THREE.Matrix4> = {
+    identity: new THREE.Matrix4(),
+    "calibrated and rotated": new THREE.Matrix4()
+      .makeRotationZ(0.6)
+      .multiply(new THREE.Matrix4().makeScale(0.5, 0.5, 5))
+      .setPosition(20, -30, 10),
+  };
+
+  const raysThrough = (camera: THREE.Camera, positions: Float32Array, matrix: THREE.Matrix4, random: () => number) => {
+    const rays: THREE.Vector2[] = [];
+    const point = new THREE.Vector3();
+    for (let i = 0; i < 300; i++) {
+      if (i % 3 === 0) {
+        rays.push(new THREE.Vector2(random() * 2 - 1, random() * 2 - 1));
+        continue;
+      }
+      // Beside a real vertex, at or past the band's edge: where a cull would err.
+      const at = Math.floor(random() * (positions.length / 3)) * 3;
+      point.set(positions[at], positions[at + 1], positions[at + 2]).applyMatrix4(matrix).project(camera);
+      rays.push(new THREE.Vector2(point.x + (random() - 0.5) * 0.15, point.y + (random() - 0.5) * 0.15));
+    }
+    return rays;
+  };
+
+  for (const [cameraName, makeCamera] of Object.entries(CAMERAS)) {
+    for (const [placementName, matrix] of Object.entries(PLACEMENTS)) {
+      for (const flat of [true, false]) {
+        const name = `${cameraName}, ${placementName}, ${flat ? "flat" : "3D"}`;
+
+        it(`answers three's fat-line pick: ${name}`, () => {
+          const random = seeded(11);
+          const { positions, ranges } = makeShapes(random, flat);
+          const geometry = new LineSegmentsGeometry();
+          geometry.setPositions(positions);
+          // The oracle is three's SEGMENT test. Its whole-batch early-out grows
+          // the box by the band's width at the box's NEAREST depth, which under
+          // perspective rejects a stroke at the far side that the segment test
+          // would accept; opened up here, because the index does not repeat that.
+          geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
+          geometry.boundingBox = new THREE.Box3(
+            new THREE.Vector3(-1e9, -1e9, -1e9),
+            new THREE.Vector3(1e9, 1e9, 1e9),
+          );
+          const material = new Line2NodeMaterial();
+          material.linewidth = 2;
+          const line = new LineSegments2(geometry, material);
+          (line as unknown as { _resolution: THREE.Vector2 })._resolution.set(800, 600);
+          matrix.decompose(line.position, line.quaternion, line.scale);
+          line.matrixAutoUpdate = false;
+          line.matrix.copy(matrix);
+          line.matrixWorld.copy(matrix);
+
+          const camera = makeCamera();
+          camera.updateMatrixWorld(true);
+          (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+
+          const raycaster = new THREE.Raycaster();
+          applyLinePickThreshold(raycaster, 2);
+
+          const indexed = new LineSegments2(geometry, material);
+          (indexed as unknown as { _resolution: THREE.Vector2 })._resolution.set(800, 600);
+          indexed.matrixAutoUpdate = false;
+          indexed.matrixWorld.copy(matrix);
+          raycastNearestOnly(indexed, lazyPickIndex(positions, ranges, 6));
+
+          let hits = 0;
+          for (const ndc of raysThrough(camera, positions, matrix, random)) {
+            raycaster.setFromCamera(ndc, camera);
+            const oracle: THREE.Intersection[] = [];
+            line.raycast(raycaster, oracle);
+            const expected = nearestLineHit(oracle as never) as THREE.Intersection | null;
+            const actual: THREE.Intersection[] = [];
+            indexed.raycast(raycaster, actual);
+            expect(actual[0]?.faceIndex ?? null).toBe(expected?.faceIndex ?? null);
+            if (expected) {
+              hits += 1;
+              expect(actual[0].point.distanceTo(expected.point)).toBeLessThan(1e-6);
+              expect(actual[0].distance).toBeCloseTo(expected.distance, 6);
+            }
+          }
+          // The fixture has to exercise both answers, or this proves nothing.
+          expect(hits).toBeGreaterThan(20);
+          expect(hits).toBeLessThan(300);
+        });
+
+        it(`answers three's mesh pick: ${name}`, () => {
+          const random = seeded(23);
+          const triangles: number[] = [];
+          const ranges: { start: number; end: number }[] = [];
+          let count = 0;
+          for (let shape = 0; shape < 80; shape++) {
+            const start = count;
+            const length = shape % 7 === 0 ? 150 : 2;
+            const cx = random() * 400 - 200;
+            const cy = random() * 300 - 150;
+            const cz = flat ? 0 : random() * 80 - 40;
+            for (let i = 0; i < length; i++) {
+              const p = () => [
+                cx + (random() - 0.5) * 40,
+                cy + (random() - 0.5) * 40,
+                flat ? 0 : cz + (random() - 0.5) * 10,
+              ];
+              triangles.push(...p(), ...p(), ...p());
+              count += 1;
+            }
+            ranges.push({ start, end: count });
+          }
+          const positions = new Float32Array(triangles);
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+          const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.matrixAutoUpdate = false;
+          mesh.matrixWorld.copy(matrix);
+          const raycast = createPickMeshRaycast(lazyPickIndex(positions, ranges, 9));
+
+          const camera = makeCamera();
+          camera.updateMatrixWorld(true);
+          (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+          const raycaster = new THREE.Raycaster();
+
+          let hits = 0;
+          for (const ndc of raysThrough(camera, positions, matrix, random)) {
+            raycaster.setFromCamera(ndc, camera);
+            const oracle: THREE.Intersection[] = [];
+            mesh.raycast(raycaster, oracle);
+            oracle.sort((a, b) => a.distance - b.distance);
+            const actual: THREE.Intersection[] = [];
+            raycast.call(mesh, raycaster, actual);
+            expect(actual[0]?.faceIndex ?? null).toBe(oracle[0]?.faceIndex ?? null);
+            if (oracle[0]) {
+              hits += 1;
+              expect(actual[0].point.distanceTo(oracle[0].point)).toBeLessThan(1e-6);
+            }
+          }
+          expect(hits).toBeGreaterThan(20);
+        });
+      }
+    }
+  }
+
+  it("cuts a long shape into runs and keeps a small one whole", () => {
+    const positions = new Float32Array(6 * 200);
+    const index = buildPickIndex(
+      positions,
+      [
+        { start: 0, end: 4 },
+        { start: 4, end: 200 },
+      ],
+      6,
+    );
+    expect(Array.from(index.starts)).toEqual([0, 4, 68, 132, 196]);
+    expect(Array.from(index.ends)).toEqual([4, 68, 132, 196, 200]);
+  });
+
+  it("builds nothing until the first pick", () => {
+    const positions = new Float32Array([0, 0, 0, 1, 1, 1]);
+    const index = lazyPickIndex(positions, [{ start: 0, end: 1 }], 6);
+    expect(index()).toBe(index());
+    expect(Array.from(index().bounds)).toEqual([0, 0, 0, 1, 1, 1]);
   });
 });

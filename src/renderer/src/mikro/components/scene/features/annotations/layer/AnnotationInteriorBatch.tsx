@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 
 import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
+import { createPickMeshRaycast, lazyPickIndex } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { roiForSegment } from "../annotationBatch";
 import { interiorColors, type InteriorBatch } from "../interiorBatch";
@@ -79,6 +80,12 @@ export const AnnotationInteriorBatch = ({
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
+  // Hover arms this for every pointer move: only the runs the ray can reach.
+  const raycast = useMemo(
+    () => createPickMeshRaycast(lazyPickIndex(batch.positions, batch.ranges, 9)),
+    [batch],
+  );
+
   useDrawEffect(() => {
     if (!batch.filled) return;
     const attribute = geometry.getAttribute("color") as THREE.BufferAttribute;
@@ -124,6 +131,7 @@ export const AnnotationInteriorBatch = ({
   return (
     <mesh
       geometry={geometry}
+      raycast={raycast}
       onClick={handleClick}
       onPointerMove={handleHoverMove}
       onPointerOut={handleHoverOut}

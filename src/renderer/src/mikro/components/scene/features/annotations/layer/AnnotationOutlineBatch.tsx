@@ -7,7 +7,7 @@ import { Line2NodeMaterial } from "three/webgpu";
 
 import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
 import { useDrawEffect } from "@/core/data/scene/stores/useDrawEffect";
-import { raycastNearestOnly } from "../../../platform/draw/linePicking";
+import { lazyPickIndex, raycastNearestOnly, type PickIndex } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
@@ -71,11 +71,14 @@ export const AnnotationOutlineBatch = ({
     created.vertexColors = true;
     return created;
   }, []);
+  /** The drawn batch's pick index, swapped with its geometry below. */
+  const pickIndexRef = useRef<(() => PickIndex) | null>(null);
   const line = useMemo(() => {
     const created = new LineSegments2(new LineSegmentsGeometry(), material);
     // One object, many shapes, a generous pick band: report the stroke the
-    // pointer is nearest to, not the first one inside the band.
-    raycastNearestOnly(created);
+    // pointer is nearest to, not the first one inside the band. Hover arms this
+    // for every pointer move, so it tests only the runs the ray can reach.
+    raycastNearestOnly(created, () => pickIndexRef.current?.() ?? null);
     return created;
   }, [material]);
 
@@ -95,6 +98,7 @@ export const AnnotationOutlineBatch = ({
     const geometry = new LineSegmentsGeometry();
     geometry.setPositions(batch.positions);
     swapGeometry(line, geometry);
+    pickIndexRef.current = lazyPickIndex(batch.positions, batch.ranges, 6);
   }, [batch, line]);
 
   // Declared AFTER the upload above, so on a new batch it runs against that

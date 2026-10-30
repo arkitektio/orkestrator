@@ -87,12 +87,14 @@ import { CropChip } from "../features/crop/CropChip";
  *
  * NOTE the scope, which is narrower than the wheel case above and was once
  * documented wrongly here. R3F filters the *pointermove* interaction set to
- * objects carrying a pointer-move-family handler (`filterPointerEvents`), so
- * annotations — `onClick` only — were never in it. What this gate actually
- * saves is the picking layers' own raycasts, above all the fabriks
- * `BatchedMesh`, which three walks per mounted instance. Click-class events
- * are NOT filtered that way, which is why the layers gate their `onClick` /
- * `onPointerDown` props too (`platform/probe/probeGating.ts`).
+ * objects carrying a pointer-move-family handler (`filterPointerEvents`). What
+ * this gate saves is those layers' raycasts during a drag: the fabriks
+ * `BatchedMesh`, which three walks per mounted instance, and the annotations
+ * while hover has them armed (`annotationHoverEnabled`). A bare hover is NOT
+ * gated: every move raycasts them, which is why they pick through an index
+ * (`platform/draw/linePicking.ts`). Click-class events are NOT filtered that
+ * way, which is why the layers gate their `onClick` / `onPointerDown` props too
+ * (`platform/probe/probeGating.ts`).
  *
  * The gate reads `viewStore.cameraMoving`, so it lasts exactly as long as the
  * camera actually moves: drag-drawing tools (RoiDrawer/RectangleDrawer hold a
