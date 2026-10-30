@@ -1,3 +1,10 @@
+## [5.4.1](https://github.com/arkitektio/orkestrator/compare/v5.4.0...v5.4.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **ports:** a list.range already written in the vocabulary keeps its end ([338749b](https://github.com/arkitektio/orkestrator/commit/338749b96c998c1ff765b3f97a230909e80f246c))
+
 # [5.4.0](https://github.com/arkitektio/orkestrator/compare/v5.3.0...v5.4.0) (2026-10-30)
 
 
