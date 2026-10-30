@@ -95,7 +95,6 @@ export const AnnotationOutlineBatch = ({
     const geometry = new LineSegmentsGeometry();
     geometry.setPositions(batch.positions);
     swapGeometry(line, geometry);
-    line.computeLineDistances();
   }, [batch, line]);
 
   // Declared AFTER the upload above, so on a new batch it runs against that

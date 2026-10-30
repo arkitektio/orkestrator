@@ -42,6 +42,27 @@ type TimedLayer = {
   rendered: (string | null | undefined)[];
 };
 
+/**
+ * One layer's part of the host's key, cached per layer OBJECT as
+ * `layerPlanSignature` is: the selector below runs on every scene store write,
+ * a contrast drag's sixty a second among them, and only the edited layer is a
+ * new object.
+ */
+const layerTimeKeys = new WeakMap<object, string>();
+const layerTimeKey = (layer: {
+  id: string;
+  visible?: boolean | null;
+  asAffine?: unknown;
+  lens?: { id: string } | null;
+}): string => {
+  let key = layerTimeKeys.get(layer);
+  if (key === undefined) {
+    key = `${layer.id}:${layer.visible === false ? 0 : 1}:${JSON.stringify(layer.asAffine ?? null)}:${layer.lens?.id ?? ""}`;
+    layerTimeKeys.set(layer, key);
+  }
+  return key;
+};
+
 export function WorldTimeHost() {
   const client = useMikro() as MikroClient | undefined;
   const datalayer = useDatalayerEndpoint();
@@ -54,7 +75,7 @@ export function WorldTimeHost() {
   // A scalar key over what the instants depend on: each layer's placement and lens.
   const key = useSceneStore((s) =>
     [...s.layers, ...s.sceneLayers.filter(isVectorLayer)]
-      .map((layer) => `${layer.id}:${layer.visible === false ? 0 : 1}:${JSON.stringify(layer.asAffine ?? null)}:${(layer as { lens?: { id: string } }).lens?.id ?? ""}`)
+      .map(layerTimeKey)
       .join("|"),
   );
 

@@ -85,6 +85,9 @@ export const Line = ({
     // rebuilt its line distances — on any re-render of the subtree, e.g. a
     // selection change. An upload is a new geometry and new GPU buffers, so
     // this is not a cheap no-op.
+    //
+    // Line distances are read only by the dashed shader path, so a solid line
+    // never pays for them; a line turned dashed later gets them here.
     const previous = uploadedRef.current;
     if (previous !== null && previous.length === flat.length) {
       let same = true;
@@ -94,7 +97,12 @@ export const Line = ({
           break;
         }
       }
-      if (same) return;
+      if (same) {
+        if (dashed && !line.geometry.getAttribute("instanceDistanceStart")) {
+          line.computeLineDistances();
+        }
+        return;
+      }
     }
     uploadedRef.current = flat;
     // A NEW geometry per upload, never `setPositions` on the drawn one: the
@@ -103,8 +111,8 @@ export const Line = ({
     const geometry = new LineGeometry();
     geometry.setPositions(flat);
     swapGeometry(line, geometry);
-    line.computeLineDistances(); // required for dashed rendering
-  }, [points, line]);
+    if (dashed) line.computeLineDistances();
+  }, [points, line, dashed]);
 
   // Sync material appearance.
   //
