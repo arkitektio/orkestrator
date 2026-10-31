@@ -1,3 +1,26 @@
+# [5.5.0](https://github.com/arkitektio/orkestrator/compare/v5.4.1...v5.5.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **chrome:** going fullscreen leaves the floating sidebar setting alone ([0559c46](https://github.com/arkitektio/orkestrator/commit/0559c46c8065481f57ac05f01df6603fb0c2176a))
+
+
+### Features
+
+* **scene:** delete a single annotation from the layer card's list ([b92e467](https://github.com/arkitektio/orkestrator/commit/b92e4678302da52bc60cd3b9dc13ead425cd4308))
+* **scene:** one probe layer, read across every visible layer ([6b11e25](https://github.com/arkitektio/orkestrator/commit/6b11e259e85e2ec5eecde47b4a902f40fcba8cfb))
+
+
+### Performance Improvements
+
+* **scene:** annotation hover picks through a run index, not every primitive ([b756d5e](https://github.com/arkitektio/orkestrator/commit/b756d5e132d94fe49437bfb2defd8a76d1affb12))
+* **scene:** annotation list rows are memoized and measure once ([0da224d](https://github.com/arkitektio/orkestrator/commit/0da224d0e17c70357e855767455b3a24f67dc4f9))
+* **scene:** hover and selection write and upload only the shapes that changed ([85995a6](https://github.com/arkitektio/orkestrator/commit/85995a6c473e4b40d5d13ed489a491b6a54e118f))
+* **scene:** point annotations hold their size in a uniform, not every matrix ([aa3913e](https://github.com/arkitektio/orkestrator/commit/aa3913e1fe2fd703bd7176ce61ec45a0f8f1d0cd))
+* **scene:** solid lines skip line distances, world-time key is cached per layer ([ddd5b18](https://github.com/arkitektio/orkestrator/commit/ddd5b181f868e568bf13733c629e7e9356a04185))
+* **scene:** visible annotations are keyed by layer and stay out of Immer ([d6e24b5](https://github.com/arkitektio/orkestrator/commit/d6e24b5f1394e27caa80faa3b77384f612cbe4be))
+
 ## [5.4.1](https://github.com/arkitektio/orkestrator/compare/v5.4.0...v5.4.1) (2026-10-30)
 
 
