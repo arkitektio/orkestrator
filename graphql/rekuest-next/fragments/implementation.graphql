@@ -47,13 +47,6 @@ fragment DetailImplementation on Implementation {
   dependencies {
     ...ListDependency
   }
-  tracks {
-    dependencyKey
-    stateKey
-    valueKey
-    label
-    description
-  }
   manipulates {
     id
     interface

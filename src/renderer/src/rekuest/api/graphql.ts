@@ -2822,8 +2822,6 @@ export type Implementation = {
   resolutions: Array<Resolution>;
   /** Implementations on this agent whose action is a test for this implementation's action. */
   tests: Array<Implementation>;
-  /** List of action demands */
-  tracks: Array<Track>;
 };
 
 
@@ -2964,8 +2962,6 @@ export type ImplementationInput = {
   params?: InputMaybe<Scalars['AnyDefault']['input']>;
   /** The downstream service(s) the provenance token should be scoped to (the token's `aud`). If omitted, Rekuest derives the audience from the structures the assignment acts on. */
   provenanceAudience?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** The tracks of the definition. This is used to track values over time during the runtime of an action. This is the state of a dependency */
-  tracks?: InputMaybe<Array<TrackInput>>;
 };
 
 /** A blok an implementation declared with it (an `@ask` or `@inform` method of an interactions protocol): what its tasks hold on until a person answers (ASK) or show while they go on (INFORM). A task names it by `key`. */
@@ -7058,33 +7054,6 @@ export type ToolboxFilter = {
 export type ToolboxOrder =
   { name: Ordering; };
 
-/** A value that is being tracked over time during the runtime of an action. This is the state of a dependency */
-export type Track = {
-  __typename?: 'Track';
-  dependencyKey?: Maybe<Scalars['String']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  label?: Maybe<Scalars['String']['output']>;
-  stateKey: Scalars['String']['output'];
-  valueKey: Scalars['String']['output'];
-  windows?: Maybe<Array<Window>>;
-};
-
-/** A value that is being tracked over time during the runtime of an action. This is the state of a dependency */
-export type TrackInput = {
-  /** The key of the dependency whose state is being tracked. */
-  dependencyKey?: InputMaybe<Scalars['String']['input']>;
-  /** An optional description for the track. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** An optional human-readable label for the track. */
-  label?: InputMaybe<Scalars['String']['input']>;
-  /** The key of the state to track. */
-  stateKey: Scalars['String']['input'];
-  /** The key of the value within the state to track. */
-  valueKey: Scalars['String']['input'];
-  /** The windows (aggregations) computed over the tracked value. */
-  windows?: InputMaybe<Array<WindowInput>>;
-};
-
 /** A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`. */
 export type Trigger = {
   __typename?: 'Trigger';
@@ -7425,33 +7394,6 @@ export type WidgetDefaultInput = {
   returnWidget?: InputMaybe<ReturnWidgetInput>;
   /** The assign widget to render for matching argument ports that declare no widget of their own. */
   widget?: InputMaybe<AssignWidgetInput>;
-};
-
-/** A window that is calculated */
-export type Window = {
-  __typename?: 'Window';
-  label?: Maybe<Scalars['String']['output']>;
-  windowFunction: WindowFunction;
-};
-
-/** Aggregation computed over a tracked value within a window. */
-export enum WindowFunction {
-  Count = 'COUNT',
-  First = 'FIRST',
-  Last = 'LAST',
-  Max = 'MAX',
-  Mean = 'MEAN',
-  Min = 'MIN',
-  Std = 'STD',
-  Sum = 'SUM'
-}
-
-/** A window that is calculated */
-export type WindowInput = {
-  /** An optional human-readable label for the window. */
-  label?: InputMaybe<Scalars['String']['input']>;
-  /** The aggregation to compute over the tracked value within the window. */
-  windowFunction: WindowFunction;
 };
 
 /** A schedule of a wiregram: run an agent's interface on an interval or a cron line. */
@@ -8104,7 +8046,7 @@ export type DetailImplementationFragment = { __typename?: 'Implementation', id: 
     ) | null, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
     { __typename?: 'Dependency' }
     & ListDependencyFragment
-  )>, tracks: Array<{ __typename?: 'Track', dependencyKey?: string | null, stateKey: string, valueKey: string, label?: string | null, description?: string | null }>, manipulates: Array<{ __typename?: 'State', id: string, interface: string, definition: { __typename?: 'StateDefinition', name: string } }>, resolutions: Array<{ __typename?: 'Resolution', id: string, name: string, resolvedAt: any }>, higherOrderFor?: { __typename?: 'Implementation', id: string, interface: string, name: string } | null, lowerOrderImplementations: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, tests: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, myLatestTask?: (
+  )>, manipulates: Array<{ __typename?: 'State', id: string, interface: string, definition: { __typename?: 'StateDefinition', name: string } }>, resolutions: Array<{ __typename?: 'Resolution', id: string, name: string, resolvedAt: any }>, higherOrderFor?: { __typename?: 'Implementation', id: string, interface: string, name: string } | null, lowerOrderImplementations: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, tests: Array<{ __typename?: 'Implementation', id: string, interface: string, name: string }>, myLatestTask?: (
     { __typename?: 'Task' }
     & PostmanTaskFragment
   ) | null };
@@ -13673,13 +13615,6 @@ export const DetailImplementationFragmentDoc = gql`
   }
   dependencies {
     ...ListDependency
-  }
-  tracks {
-    dependencyKey
-    stateKey
-    valueKey
-    label
-    description
   }
   manipulates {
     id

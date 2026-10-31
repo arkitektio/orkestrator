@@ -3892,9 +3892,6 @@ type Implementation {
   Implementations on this agent whose action is a test for this implementation's action.
   """
   tests: [Implementation!]!
-
-  """List of action demands"""
-  tracks: [Track!]!
 }
 
 input ImplementationActionFilter {
@@ -4106,11 +4103,6 @@ input ImplementationInput {
   The downstream service(s) the provenance token should be scoped to (the token's `aud`). If omitted, Rekuest derives the audience from the structures the assignment acts on.
   """
   provenanceAudience: [String!] = null
-
-  """
-  The tracks of the definition. This is used to track values over time during the runtime of an action. This is the state of a dependency
-  """
-  tracks: [TrackInput!] = null
 }
 
 """
@@ -8281,41 +8273,6 @@ input ToolboxOrder @oneOf {
 }
 
 """
-A value that is being tracked over time during the runtime of an action. This is the state of a dependency
-"""
-type Track {
-  dependencyKey: String
-  description: String
-  label: String
-  stateKey: String!
-  valueKey: String!
-  windows: [Window!]
-}
-
-"""
-A value that is being tracked over time during the runtime of an action. This is the state of a dependency
-"""
-input TrackInput {
-  """The key of the dependency whose state is being tracked."""
-  dependencyKey: String = null
-
-  """An optional description for the track."""
-  description: String = null
-
-  """An optional human-readable label for the track."""
-  label: String = null
-
-  """The key of the state to track."""
-  stateKey: String!
-
-  """The key of the value within the state to track."""
-  valueKey: String!
-
-  """The windows (aggregations) computed over the tracked value."""
-  windows: [WindowInput!] = null
-}
-
-"""
 A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`.
 """
 type Trigger {
@@ -8746,33 +8703,6 @@ input WidgetDefaultInput {
   The assign widget to render for matching argument ports that declare no widget of their own.
   """
   widget: AssignWidgetInput = null
-}
-
-"""A window that is calculated"""
-type Window {
-  label: String
-  windowFunction: WindowFunction!
-}
-
-"""Aggregation computed over a tracked value within a window."""
-enum WindowFunction {
-  COUNT
-  FIRST
-  LAST
-  MAX
-  MEAN
-  MIN
-  STD
-  SUM
-}
-
-"""A window that is calculated"""
-input WindowInput {
-  """An optional human-readable label for the window."""
-  label: String = null
-
-  """The aggregation to compute over the tracked value within the window."""
-  windowFunction: WindowFunction!
 }
 
 """

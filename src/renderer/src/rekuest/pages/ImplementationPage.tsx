@@ -378,34 +378,6 @@ const ImplementationDetailSheet = ({
 
         <Separator />
 
-        <Group title="Tracks" count={i.tracks.length}>
-          {i.tracks.length === 0 ? (
-            <Empty />
-          ) : (
-            <div className="divide-y divide-border/60">
-              {i.tracks.map((t, idx) => (
-                <Row key={idx}>
-                  <div className="font-medium">{t.label || t.valueKey}</div>
-                  {t.description && (
-                    <p className="text-xs text-muted-foreground">
-                      {t.description}
-                    </p>
-                  )}
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    <Badge variant="outline">state: {t.stateKey}</Badge>
-                    <Badge variant="outline">value: {t.valueKey}</Badge>
-                    {t.dependencyKey && (
-                      <Badge variant="outline">dep: {t.dependencyKey}</Badge>
-                    )}
-                  </div>
-                </Row>
-              ))}
-            </div>
-          )}
-        </Group>
-
-        <Separator />
-
         <Group title="Resolutions" count={i.resolutions.length}>
           {i.resolutions.length === 0 ? (
             <Empty />
