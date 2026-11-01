@@ -15,7 +15,7 @@ import { Button } from "@/core/ui/button";
 import { cn, notEmpty } from "@/core/util/utils";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Option, SearchFunction } from "./SearchField";
+import { Option, SearchFunction } from "@arkitektio/bsx/ports/forms/SearchField";
 
 /**
  * `SearchField` without the form context — a plain value/onChange combobox over

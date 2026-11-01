@@ -10,7 +10,7 @@ import {
   useGetStateQuery,
   useWatchStateSubscription,
 } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { useRef, useState } from "react";
 import { applyPatch } from "fast-json-patch";
 import { REKUEST_HELP } from "../help";

@@ -2,7 +2,7 @@ import { MikroGuard } from "@/mikro/api/funcs";
 import { useDialogError } from "@/core/dialogs/DialogError";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { ChoicesField } from "@/core/forms/ChoicesField";
-import { FloatField } from "@/core/forms/FloatField";
+import { FloatField } from "@arkitektio/bsx/ports/forms/FloatField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import {

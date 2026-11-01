@@ -1,4 +1,4 @@
-import { Option } from "@/core/forms/ListSearchField";
+import { Option } from "@arkitektio/bsx/ports/forms/ListSearchField";
 
 export type SearchFunction = (search: string) => Promise<Option[]>;
 

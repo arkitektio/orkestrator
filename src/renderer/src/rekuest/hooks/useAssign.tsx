@@ -1,4 +1,4 @@
-import { FrozenDependency, pinsFromFrozen } from "../lib/dependencyTree";
+import { FrozenDependency, pinsFromFrozen } from "@arkitektio/bsx/ports/dependencies/tree";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";

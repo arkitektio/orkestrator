@@ -1,5 +1,5 @@
 import { AsyncCombobox } from "@/core/forms/AsyncCombobox";
-import { SearchFunction } from "@/core/forms/SearchField";
+import { SearchFunction } from "@arkitektio/bsx/ports/forms/SearchField";
 import {
   ActionLabel,
   PageActionPolicy,

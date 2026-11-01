@@ -3,7 +3,7 @@ import {shadcnExtras, shadcnHtml, shadcnLogo, shadcnUi} from '@arkitektio/bsx/sh
 import {blokModuleSpec, declareBlokUi, type BlokCatalog, type BlokComponentDefinition} from '@arkitektio/bsx/runtime';
 import {addBlokComponents as addToCatalog} from '@arkitektio/bsx/web';
 import {parseSpecCatalog, registerBlokModules} from '@arkitektio/bsx/spec/catalogs';
-import {orkestratorStructure} from './structure';
+import {hostedStructure} from '@arkitektio/bsx/ports/structure/index';
 
 /**
  * The name this client registers its module under on the rekuest server
@@ -15,14 +15,14 @@ export const UI_CATALOG_DESCRIPTION = 'Components rendered by the Orkestrator de
 
 /**
  * Orkestrator's UI: the global catalogs it implements, drawn with the package's
- * shadcn and three implementations, and structure@1 with its own smart system.
+ * shadcn and three implementations, and structure@1 through its port host (`portHost.tsx`).
  * Its modules add their bloks to the catalog at install (`addBlokComponents`):
  * those, the `orkestrator` module, are what it registers as its own.
  */
 export const orkestratorUi = declareBlokUi({
   name: UI_CATALOG_NAME,
   description: UI_CATALOG_DESCRIPTION,
-  implements: [shadcnUi, shadcnHtml, shadcnLogo, shadcnExtras, threeScene, orkestratorStructure],
+  implements: [shadcnUi, shadcnHtml, shadcnLogo, shadcnExtras, threeScene, hostedStructure],
 });
 
 export const defaultBlokCatalog: BlokCatalog = orkestratorUi.catalog;

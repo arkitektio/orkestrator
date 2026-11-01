@@ -118,7 +118,7 @@
  * library that used to animate these grids kept every page it touched alive).
  * A card added later (a new row from a subscription) enters the same way; a
  * refetch that keeps its keys replays nothing. Sliding and leaving are
- * `core/layout/useGridMotion.ts`, which needs positions CSS cannot know. */
+ * `useGridMotion` in `@arkitektio/bsx/ports/layout`, which needs positions CSS cannot know. */
 @keyframes grid-item-enter {
   from { opacity: 0; transform: translateY(6px) scale(0.985); }
 }

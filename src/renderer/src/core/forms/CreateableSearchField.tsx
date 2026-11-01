@@ -28,7 +28,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FieldProps } from "./types";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 
 export type Option = {
   label: string;

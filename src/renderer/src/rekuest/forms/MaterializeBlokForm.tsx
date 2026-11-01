@@ -10,7 +10,7 @@ import {
   useMaterializeBlokMutation
 } from "../api/graphql";
 import { useForm } from "react-hook-form";
-import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
+import { DependenciesContainer } from "@arkitektio/bsx/ports/dependencies/DependenciesContainer";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { BlokMapping } from "../components/blokRematerialize";

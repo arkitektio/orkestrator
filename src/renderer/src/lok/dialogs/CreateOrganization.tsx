@@ -1,7 +1,7 @@
 
 
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useCreateOrganizationMutation } from "@/lok/api/graphql";

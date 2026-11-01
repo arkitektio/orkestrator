@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/core/ui/sheet";
-import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
-import { ActionDescription, useActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
+import { ActionDescription, useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RunEventKind } from "@/fluss/api/graphql";
 import { Args } from "@/fluss/base/Args";
 import { Constants } from "@/fluss/base/Constants";
@@ -10,7 +10,7 @@ import { OutStream } from "@/fluss/base/Outstream";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { RekuestMapNodeProps } from "@/fluss/types";
 import { ReturnPortFragment } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { GearIcon } from "@radix-ui/react-icons";
 import React, { useMemo } from "react";
 import { EditActions, useFlowAdapter } from "./adapter";

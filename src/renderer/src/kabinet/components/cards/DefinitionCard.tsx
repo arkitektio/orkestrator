@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/ui/card";
-import { ActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { KabinetDefinition } from "@/core/linkers";
 import { ListDefinitionFragment } from "../../api/graphql";
 

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { findOptionSource } from "@/core/modules/registries";
-import type { SearchOptions } from "@/core/forms/SearchField";
+import type { SearchOptions } from "@arkitektio/bsx/ports/forms/SearchField";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { resolveServiceClient } from "@/core/modules/host/operations";
 import type { StructureOption } from "@/core/modules/host/options";
-import type { DescriptorConstraint } from "@/core/ports/engine/constraints";
+import type { DescriptorConstraint } from "@arkitektio/bsx/ports/engine/constraints";
 
 /** A search, plus the constraints of the action input it fills (for a source that honours them). */
 export type StructureSearch = SearchOptions & { requires?: readonly DescriptorConstraint[] };

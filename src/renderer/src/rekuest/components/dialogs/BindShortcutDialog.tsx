@@ -1,6 +1,6 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { ListSearchField } from "@/core/forms/ListSearchField";
-import { SearchField, type SearchFunction } from "@/core/forms/SearchField";
+import { ListSearchField } from "@arkitektio/bsx/ports/forms/ListSearchField";
+import { SearchField, type SearchFunction } from "@arkitektio/bsx/ports/forms/SearchField";
 import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";

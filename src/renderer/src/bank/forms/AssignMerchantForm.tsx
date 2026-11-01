@@ -1,7 +1,7 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";

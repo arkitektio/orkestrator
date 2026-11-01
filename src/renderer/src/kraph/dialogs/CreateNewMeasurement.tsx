@@ -1,6 +1,6 @@
 import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { AutoDerivedStringField, StringField } from "@/core/forms/StringField";
+import { AutoDerivedStringField, StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { Form } from "@/core/ui/form";

@@ -1,4 +1,4 @@
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -10,9 +10,9 @@ import {
 } from "@/core/ui/dialog";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Form } from "@/core/ui/form";
-import { ActionDescription, FormActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ActionDescription, FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestShortcut } from "@/core/linkers";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
@@ -20,8 +20,8 @@ import {
   useCreateShortcutMutation,
   useDetailActionQuery
 } from "../api/graphql";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 
 const NO_PORTS: never[] = [];
 

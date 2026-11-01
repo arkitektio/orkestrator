@@ -21,7 +21,7 @@ import { PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Badge } from "../ui/badge";
-import { FieldProps } from "./types";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 
 export type Option = {
   label: string;

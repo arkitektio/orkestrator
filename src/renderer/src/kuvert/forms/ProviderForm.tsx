@@ -1,5 +1,5 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { ParagraphField } from "@/core/forms/ParagraphField";
+import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";

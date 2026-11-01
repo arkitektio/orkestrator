@@ -25,7 +25,7 @@ import { SmartProvider } from "@/core/smart/provider";
 import { SmartPrefetchProvider } from "@/core/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/core/smart/SmartSurface";
 import { ExportHost } from "@/core/modules/export/ExportHost";
-import { WidgetRegistryProvider } from "@/core/ports/engine/WidgetsProvider";
+import { WidgetRegistryProvider } from "@arkitektio/bsx/ports/engine/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";

@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { ResponsiveContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
 import { Card } from "@/core/ui/card";
 import { KabinetResource } from "@/core/linkers";
 import { useGetResourceQuery } from "../api/graphql";

@@ -1,8 +1,8 @@
 import { ActionKind, ArgPortFragment, DetailActionFragment } from "@/rekuest/api/graphql";
 import PortConstraintBadges, {
   PortConstraint,
-} from "@/core/ports/widgets/PortConstraintBadges";
-import { portToLabel } from "@/core/ports/engine/utils";
+} from "@arkitektio/bsx/ports/widgets/PortConstraintBadges";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
 
 type ArgPort = ArgPortFragment;
 type ReturnPort = DetailActionFragment["returns"][number];

@@ -1,5 +1,5 @@
-import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
-import { SearchField, SearchOptions } from "@/core/forms/SearchField";
+import { portDescription, portLabel } from "@arkitektio/bsx/ports/engine/portPresentation";
+import { SearchField, SearchOptions } from "@arkitektio/bsx/ports/forms/SearchField";
 import { FormLabel } from "@/core/ui/form";
 import {
   PortKind,
@@ -10,9 +10,9 @@ import { useAgentLiveState } from "@/rekuest/hooks/useLiveState";
 import {
   resolveDependencyDefinition,
   useDependencyDefinitions,
-} from "@/core/ports/engine/DependencyContext";
-import { InputWidgetProps } from "@/core/ports/engine/types";
-import { pathToName } from "@/core/ports/engine/utils";
+} from "@arkitektio/bsx/ports/engine/DependencyContext";
+import { InputWidgetProps } from "@arkitektio/bsx/ports/engine/types";
+import { pathToName } from "@arkitektio/bsx/ports/engine/utils";
 import { useCallback, useMemo } from "react";
 import { useWatch } from "react-hook-form";
 

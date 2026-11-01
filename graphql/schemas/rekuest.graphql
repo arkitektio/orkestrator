@@ -2820,6 +2820,7 @@ input CreateTriggerInput {
 
 """A catalog component rendered as the port's widget."""
 type CustomAssignWidget implements AssignWidget {
+  children: AnyDefault
   component: String!
   dependencies: [String!]
   fallback: AssignWidget
@@ -2830,6 +2831,11 @@ type CustomAssignWidget implements AssignWidget {
 
 """A catalog component rendered as the port's widget."""
 input CustomAssignWidgetInput {
+  """
+  The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has.
+  """
+  children: [ComponentNodeInput!] = null
+
   """
   The catalog component to render. The port value is in scope as the reserved root `value`.
   """

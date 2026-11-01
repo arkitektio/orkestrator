@@ -16,6 +16,5 @@ export const EDGE_ALLOWLIST: Record<string, string> = {
   "host:app -> rekuest": "kept: the port widget registry speaks rekuest",
   "host:connection -> lok": "kept: hub health and the connection doctor ask lok (session service)",
   "host:modules -> rekuest": "kept: task hooks run on rekuest task events",
-  "host:ports -> rekuest": "kept: ports speak the rekuest port schema (generated types + PortKind), never its client",
   "kabinet -> rekuest": "kept: kabinet declares requires.services [\"rekuest\"] (its smart section installs definitions through rekuest)",
 };

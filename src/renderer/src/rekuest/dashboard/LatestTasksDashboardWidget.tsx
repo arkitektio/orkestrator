@@ -5,7 +5,7 @@ import { statusTextColor, formatEventKind } from "@/rekuest/lib/taskStatus";
 import { RekuestTask } from "@/core/linkers";
 import Timestamp from "@/core/ui/timestamp";
 import { Card } from "@/core/ui/card";
-import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { ResponsiveContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
 
 const LatestTasksWidget = () => {
   const { data, loading } = useListTasksQuery({

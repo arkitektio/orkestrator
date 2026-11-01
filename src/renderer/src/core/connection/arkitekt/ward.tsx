@@ -1,5 +1,5 @@
 import { ApolloClient, NormalizedCacheObject, gql } from "@apollo/client";
-import type { Ward } from "@/core/ports/engine/types";
+import type { Ward } from "@arkitektio/bsx/ports/engine/types";
 
 const describeDocument = gql(`
   query Describe($identifier: String!, $id: ID!) {

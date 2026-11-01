@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { useConnection } from "./hooks";
 import { Service, ServiceBuilderMap } from "./types";
 

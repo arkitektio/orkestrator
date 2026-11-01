@@ -41,7 +41,7 @@ const ROOTS = Object.entries(MODULE_ROOTS)
 /**
  * The owner of a source-relative path: a module namespace, `host:app` for the
  * app (the composition root, `app/`), or `host:<package>` for a package under
- * `core/` (`host:dialogs`, `host:ports`). Entry files at the source root
+ * `core/` (`host:dialogs`). Entry files at the source root
  * (`main.tsx`, `App.tsx`) and core's own root files are `host:root`.
  */
 export const ownerOf = (path: string): string => {

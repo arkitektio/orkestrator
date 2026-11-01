@@ -1,6 +1,8 @@
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/rekuest/api/hooks';
+import { AssignWidgetKind, DescriptorOperator, EffectKind, OptionKey, PortKind, ReturnWidgetKind } from '@arkitektio/bsx/ports/rekuest';
+export { AssignWidgetKind, DescriptorOperator, EffectKind, OptionKey, PortKind, ReturnWidgetKind };
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -1096,17 +1098,6 @@ export type AssignWidgetInput = {
   /** (SEARCH) The ward (service) that executes the query. */
   ward?: InputMaybe<Scalars['String']['input']>;
 };
-
-/** The kind of assign widget. */
-export enum AssignWidgetKind {
-  Choice = 'CHOICE',
-  Custom = 'CUSTOM',
-  Proxy = 'PROXY',
-  Search = 'SEARCH',
-  Slider = 'SLIDER',
-  StateChoice = 'STATE_CHOICE',
-  String = 'STRING'
-}
 
 export type AutoResolveInput = {
   implementation: Scalars['ID']['input'];
@@ -2373,19 +2364,6 @@ export type DescriptorInput = {
   value: Scalars['Arg']['input'];
 };
 
-/** The operator of a requires/provides descriptor: how a port's constraint compares the object's value at `key` with `value`. */
-export enum DescriptorOperator {
-  Contains = 'CONTAINS',
-  Equals = 'EQUALS',
-  Exists = 'EXISTS',
-  Gte = 'GTE',
-  In = 'IN',
-  Lte = 'LTE',
-  Matches = 'MATCHES',
-  NotEquals = 'NOT_EQUALS',
-  NotIn = 'NOT_IN'
-}
-
 /** Represents a device assigned to users within an organization. */
 export type Device = {
   __typename?: 'Device';
@@ -2500,13 +2478,6 @@ export type EffectInput = {
   /** The authoring expression the call was compiled from (informational; never parsed or validated by the server). */
   source?: InputMaybe<Scalars['String']['input']>;
 };
-
-/** The kind of effect. */
-export enum EffectKind {
-  Custom = 'CUSTOM',
-  Hide = 'HIDE',
-  Message = 'MESSAGE'
-}
 
 /** What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task. */
 export enum Effects {
@@ -4128,13 +4099,6 @@ export type OptimisticInput = {
   state: Scalars['String']['input'];
 };
 
-export enum OptionKey {
-  Description = 'DESCRIPTION',
-  Label = 'LABEL',
-  Logo = 'LOGO',
-  Value = 'VALUE'
-}
-
 export enum Ordering {
   Asc = 'ASC',
   AscNullsFirst = 'ASC_NULLS_FIRST',
@@ -4288,38 +4252,6 @@ export type PortGroupInput = {
   /** The title of the port group, displayed in the UI */
   title?: InputMaybe<Scalars['String']['input']>;
 };
-
-/** The kind of a port: its structural type. Decides which of children, identifier and choices the port must, may or must not carry (see docs/design/ports.md). */
-export enum PortKind {
-  /** A boolean. No children. */
-  Bool = 'BOOL',
-  /** An ISO-8601 date or datetime string. No children. */
-  Date = 'DATE',
-  /** A string-keyed map. One child keyed '...' describes a homogeneous value type; several named children describe the known keys. */
-  Dict = 'DICT',
-  /** One of a fixed set of values; `choices` required. */
-  Enum = 'ENUM',
-  /** A floating point number. No children; choices optional. */
-  Float = 'FLOAT',
-  /** An integer. No children; choices optional. */
-  Int = 'INT',
-  /** A reference to any object implementing an interface, typed by `identifier` (required). No children. */
-  Interface = 'INTERFACE',
-  /** A list; exactly one child describes the item type (conventionally keyed '...'). */
-  List = 'LIST',
-  /** A reference to an object that lives in the agent's memory, typed by `identifier` (required). Makes the action LOCAL-scoped. No children. */
-  MemoryStructure = 'MEMORY_STRUCTURE',
-  /** An object with named fields; at least one child per field, `identifier` optional. */
-  Model = 'MODEL',
-  /** A physical quantity with a unit; `reference_unit` required, `dimension` derived. No children. */
-  Quantity = 'QUANTITY',
-  /** A string. No children; choices optional. */
-  String = 'STRING',
-  /** A reference to an object held by a service, typed by `identifier` (@package/key, required). Values are ids. No children. */
-  Structure = 'STRUCTURE',
-  /** One of several variants; at least two children, each a variant. */
-  Union = 'UNION'
-}
 
 export type PortMatch = {
   __typename?: 'PortMatch';
@@ -5483,12 +5415,6 @@ export type ReturnWidgetInput = {
   /** (CUSTOM) Props of the component; value_paths may only reference `value`, agent calls are not allowed. */
   props?: InputMaybe<Array<ComponentPropInput>>;
 };
-
-/** The kind of return widget. */
-export enum ReturnWidgetKind {
-  Choice = 'CHOICE',
-  Custom = 'CUSTOM'
-}
 
 /** Make an earlier revision's content a blok's head again. */
 export type RevertBlokInput = {
@@ -8128,7 +8054,7 @@ export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kin
     & FilterPortFragment
   )> | null };
 
-export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kind: AssignWidgetKind, followValue?: string | null, component: string, dependencies?: Array<string> | null, props?: Array<(
+export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kind: AssignWidgetKind, followValue?: string | null, component: string, children?: any | null, dependencies?: Array<string> | null, props?: Array<(
     { __typename?: 'ComponentProp' }
     & BlokComponentPropFragment
   )> | null, fallback?: (
@@ -11697,6 +11623,7 @@ export const CustomAssignWidgetFragmentDoc = gql`
   props {
     ...BlokComponentProp
   }
+  children
   dependencies
   fallback {
     __typename

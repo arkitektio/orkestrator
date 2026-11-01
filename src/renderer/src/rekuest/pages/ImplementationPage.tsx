@@ -41,10 +41,10 @@ import {
 import { DeclaredFits } from "../components/implementation/DeclaredFits";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
-import { ReturnsContainer } from "@/core/ports/engine/tailwind";
-import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
-import { portToLabel } from "@/core/ports/engine/utils";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/engine/tailwind";
+import PortConstraintBadges from "@arkitektio/bsx/ports/widgets/PortConstraintBadges";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
 import { AssignForm } from "../forms/assign/AssignForm";
 

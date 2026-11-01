@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/core/ui/tooltip";
-import { portToLabel } from "@/core/ports/engine/utils";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
 import { PortKind } from "../api/graphql";
 import { StreamPort } from "@/fluss/types";
 

@@ -1,9 +1,10 @@
+import type { Control, FieldValues } from "react-hook-form";
 import { useDialog } from "@/core/dialogs/registry";
-import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
-import { DependencyDefinitionsProvider } from "@/core/ports/engine/DependencyContext";
-import { PortFitsContext } from "@/core/ports/engine/PortFitsContext";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
+import { DependencyDefinitionsProvider } from "@arkitektio/bsx/ports/engine/DependencyContext";
+import { PortFitsContext } from "@arkitektio/bsx/ports/engine/PortFitsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { Button } from "@/core/ui/button";
 import {
@@ -19,18 +20,18 @@ import {
   PostmanTaskFragment,
   ResolvedDependencyInput,
 } from "@/rekuest/api/graphql";
-import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
+import { DependenciesContainer } from "@arkitektio/bsx/ports/dependencies/DependenciesContainer";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { ReactNode, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { AssignErrorNote } from "../../components/AssignErrorNote";
 import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/AutoModeToggle";
-import { DependencyTreeNotice } from "../../components/dependencies/DependencyTreeNotice";
+import { DependencyTreeNotice } from "@arkitektio/bsx/ports/dependencies/DependencyTreeNotice";
 import { ActionLogo } from "../../components/logo/ActionLogo";
-import { useDependencyTree } from "../../hooks/useDependencyTree";
+import { useDependencyTree } from "@arkitektio/bsx/ports/dependencies/useDependencyTree";
 import { EstimatedRuntimeHint } from "./EstimatedRuntimeHint";
 import { FitsGuard, portFitsOf, type FitDecision } from "./FitsGuard";
-import { useAssignForm } from "./useAssignForm";
+import { useAssignForm } from "@arkitektio/bsx/ports/engine/useAssignForm";
 import type { AssignTarget, AssignTrack } from "./target";
 import { useAssignTarget } from "./useAssignTarget";
 
@@ -108,6 +109,8 @@ export const AssignForm = ({
     [hidden],
   );
 
+  // What reads the form by field name takes it untyped: its names are the ports', known at run time.
+  const fieldsControl = form.control as unknown as Control<FieldValues>;
   const tree = useDependencyTree(pinning, form.control);
   const { closeDialog } = useDialog();
   const { registry } = useWidgetRegistry();
@@ -195,7 +198,7 @@ export const AssignForm = ({
                 {action?.description && (
                   <FormActionDescription
                     description={action.description}
-                    control={form.control}
+                    control={fieldsControl}
                     name="args"
                   />
                 )}
@@ -230,7 +233,7 @@ export const AssignForm = ({
         <DependencyTreeNotice tree={tree} />
 
         <FitsGuard
-          control={form.control}
+          control={fieldsControl}
           ports={formPorts}
           implementations={candidates}
           onDecision={setFit}
@@ -250,7 +253,7 @@ export const AssignForm = ({
             className="animate-refuse-reason sm:mr-auto"
           />
           <EstimatedRuntimeHint
-            control={form.control}
+            control={fieldsControl}
             ports={formPorts}
             implementations={candidates}
             className="shrink-0"

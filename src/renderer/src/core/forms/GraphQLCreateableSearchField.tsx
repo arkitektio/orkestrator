@@ -3,7 +3,7 @@ import {
   CreatableSearchFieldProps,
   CreateableSearchField,
 } from "./CreateableSearchField";
-import { Option } from "./SearchField";
+import { Option } from "@arkitektio/bsx/ports/forms/SearchField";
 
 export type GraphQLSearchFieldProps = Omit<
   CreatableSearchFieldProps,

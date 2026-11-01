@@ -1,8 +1,8 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
-import { ParagraphField } from "@/core/forms/ParagraphField";
-import { StringField } from "@/core/forms/StringField";
+import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";

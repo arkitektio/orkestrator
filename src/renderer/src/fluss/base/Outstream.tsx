@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/core/ui/tooltip";
-import { portToLabel } from "@/core/ports/engine/utils";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
 import { Handle, Position } from "@xyflow/react";
 import { useState } from "react";
 import { StreamPort } from "@/fluss/types";

@@ -1,5 +1,5 @@
 import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";

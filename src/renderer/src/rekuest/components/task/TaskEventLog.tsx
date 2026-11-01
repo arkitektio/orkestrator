@@ -1,7 +1,7 @@
 import { cn } from "@/core/util/utils";
 import { Badge } from "@/core/ui/badge";
 import { Progress } from "@/core/ui/progress";
-import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
 import { RekuestTask, RekuestImplementation, RekuestAgent } from "@/core/linkers";
 import {
   TaskEventFragment,
@@ -11,11 +11,11 @@ import {
   PortKind,
   ReturnPortFragment,
 } from "@/rekuest/api/graphql";
-import { UnknownReturnWidget } from "@/core/ports/engine/WidgetsProvider";
+import { UnknownReturnWidget } from "@arkitektio/bsx/ports/engine/WidgetsProvider";
 import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
 import Timestamp from "@/core/ui/timestamp";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { isTerminalEvent } from "../../lib/taskTracker";
 import {

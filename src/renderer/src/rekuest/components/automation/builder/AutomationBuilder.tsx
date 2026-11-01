@@ -2,9 +2,9 @@ import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { describeError } from "@/core/notify";
 import { RekuestSchedule, RekuestTrigger } from "@/core/linkers";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import { Button } from "@/core/ui/button";
 import {
   DialogDescription,

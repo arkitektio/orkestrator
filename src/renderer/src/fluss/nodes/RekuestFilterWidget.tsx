@@ -1,5 +1,5 @@
 import { Card } from "@/core/ui/card";
-import { useActionDescription } from "@/core/ports/engine/ActionDescription";
+import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { Args } from "@/fluss/base/Args";
 import { Constants } from "@/fluss/base/Constants";
 import { InStream } from "@/fluss/base/Instream";

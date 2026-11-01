@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Option, SearchField, SearchFieldProps } from "./SearchField";
+import { Option, SearchField, SearchFieldProps } from "@arkitektio/bsx/ports/forms/SearchField";
 
 export type GraphQLSearchFieldProps = Omit<SearchFieldProps, "search"> & {
   searchQuery: (x: {

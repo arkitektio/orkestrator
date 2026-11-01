@@ -1,9 +1,9 @@
 import { CreatableListSearchField } from "@/core/forms/CreatableListSearchField";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
-import { ParagraphField } from "@/core/forms/ParagraphField";
-import { SearchOptions } from "@/core/forms/SearchField";
-import { StringField } from "@/core/forms/StringField";
+import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
+import { SearchOptions } from "@arkitektio/bsx/ports/forms/SearchField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import {
   Collapsible,

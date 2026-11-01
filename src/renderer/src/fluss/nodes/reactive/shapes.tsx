@@ -1,11 +1,11 @@
 import { Button } from "@/core/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import { ActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { cn } from "@/core/util/utils";
 import { ReactiveImplementation, ReactiveNodeFragment } from "@/fluss/api/graphql";
 import { FlowNodeData, ReactiveNodeData } from "@/fluss/types";
-import { portToLabel } from "@/core/ports/engine/utils";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import React from "react";
 import { useFlowAdapter } from "../adapter";

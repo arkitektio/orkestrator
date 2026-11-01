@@ -1,6 +1,6 @@
 import { cn } from "@/core/util/utils";
 import React from "react";
-import { ContainerGrid } from "../layout/ContainerGrid";
+import { ContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
 
 /**
  * The main container for the list view.

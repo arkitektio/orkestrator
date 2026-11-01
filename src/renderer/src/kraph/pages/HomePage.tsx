@@ -1,4 +1,4 @@
-import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { ResponsiveContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { HelpSidebar } from "@/core/layout/help";

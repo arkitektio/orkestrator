@@ -1,5 +1,5 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Alert, AlertDescription } from "@/core/ui/alert";
 import { Button } from "@/core/ui/button";
 import { Form } from "@/core/ui/form";

@@ -4,6 +4,7 @@ import {useTheme} from '@/core/settings/theme/ThemeProvider';
 import {useKeepTabLive} from '@/core/tabs/keepLive';
 import appTheme from '@/theme.css?raw';
 import {defaultBlokCatalog} from './catalog';
+import './portHost';
 
 /**
  * What the bloks get from this app (`@arkitektio/bsx` asks once, before the first

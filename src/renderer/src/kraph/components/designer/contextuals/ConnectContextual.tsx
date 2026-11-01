@@ -3,9 +3,9 @@ import { ChoicesField } from "@/core/forms/ChoicesField";
 import {
   ListSearchField,
   SearchOptions,
-} from "@/core/forms/ListSearchField";
-import { ParagraphField } from "@/core/forms/ParagraphField";
-import { StringField } from "@/core/forms/StringField";
+} from "@arkitektio/bsx/ports/forms/ListSearchField";
+import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";

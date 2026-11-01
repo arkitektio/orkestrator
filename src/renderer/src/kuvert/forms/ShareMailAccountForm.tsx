@@ -1,6 +1,6 @@
 import { Spinner } from "@/core/ui/spinner";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { ListSearchField } from "@/core/forms/ListSearchField";
+import { ListSearchField } from "@arkitektio/bsx/ports/forms/ListSearchField";
 import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";

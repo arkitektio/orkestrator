@@ -1,5 +1,5 @@
 import type { ApolloClient } from "@apollo/client";
-import type { DescriptorConstraint } from "@/core/ports/engine/constraints";
+import type { DescriptorConstraint } from "@arkitektio/bsx/ports/engine/constraints";
 
 export type StructureOption = { value: string; label: string };
 

@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
-import { useActionDescription } from "@/core/ports/engine/ActionDescription";
+import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestShortcut } from "@/core/linkers";
 import {
   TaskEventKind,
@@ -10,9 +10,9 @@ import {
 } from "@/rekuest/api/graphql";
 import { useCallback } from "react";
 import { useAction } from "../hooks/useAction";
-import { ReturnsContainer } from "@/core/ports/engine/tailwind";
-import { portToLabel } from "@/core/ports/engine/utils";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/engine/tailwind";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
 import { AssignForm } from "../forms/assign/AssignForm";
 import { ShortcutBindings } from "../components/ShortcutBindings";

@@ -1,7 +1,7 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { FloatField } from "@/core/forms/FloatField";
+import { FloatField } from "@arkitektio/bsx/ports/forms/FloatField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";

@@ -2,7 +2,7 @@ import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import { Card } from "@/core/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import { ActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { ActionScope, ListActionFragment } from "@/rekuest/api/graphql";
 import clsx from "clsx";
 import { TemplateSelector } from "./TemplateSelector";

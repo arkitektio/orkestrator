@@ -11,7 +11,7 @@ import {
   useCheckoutQuery,
 } from "@/rekuest/api/graphql";
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { useMemo, useState } from "react";
 import { REKUEST_HELP } from "../../help";
 

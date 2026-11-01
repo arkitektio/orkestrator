@@ -21,6 +21,15 @@ generates:
       # Reference fragment types by name instead of inlining them: the deep port
       # fragments otherwise blow graphql.ts up to tens of MB and stall tsc.
       inlineFragmentTypes: combine
+      # One type on both sides: the port engine in @arkitektio/bsx owns these, and an enum
+      # declared twice is two types.
+      enumValues:
+        AssignWidgetKind: "@arkitektio/bsx/ports/rekuest#AssignWidgetKind"
+        DescriptorOperator: "@arkitektio/bsx/ports/rekuest#DescriptorOperator"
+        EffectKind: "@arkitektio/bsx/ports/rekuest#EffectKind"
+        OptionKey: "@arkitektio/bsx/ports/rekuest#OptionKey"
+        PortKind: "@arkitektio/bsx/ports/rekuest#PortKind"
+        ReturnWidgetKind: "@arkitektio/bsx/ports/rekuest#ReturnWidgetKind"
       scalars:
         # 64-bit byte counts (store sizes, upload limits): a JSON number.
         ByteCount: "number"

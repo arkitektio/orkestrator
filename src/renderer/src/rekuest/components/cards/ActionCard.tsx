@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
-import { ActionDescription } from "@/core/ports/engine/ActionDescription";
+import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestAction } from "@/core/linkers";
 import { useDialog } from "@/core/dialogs/registry";
 import { Play } from "lucide-react";

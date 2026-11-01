@@ -1,7 +1,7 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import {
   Accordion,

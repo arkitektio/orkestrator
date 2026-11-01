@@ -2,27 +2,27 @@ import { AppContext } from '@/core/connection/arkitekt/provider'
 import { DefinitionInput, ArgPortInput, PortKind } from '@/rekuest/api/graphql'
 import { Assign, FromAgentMessage } from './message'
 
-export type ScalarType<T extends PortKind> = T extends PortKind.String
+export type ScalarType<T extends PortKind> = T extends typeof PortKind.String
   ? string
-  : T extends PortKind.Int
+  : T extends typeof PortKind.Int
     ? number
-    : T extends PortKind.Float
+    : T extends typeof PortKind.Float
       ? number
-      : T extends PortKind.Bool
+      : T extends typeof PortKind.Bool
         ? boolean
-        : T extends PortKind.Date
+        : T extends typeof PortKind.Date
           ? string
-          : T extends PortKind.Enum
+          : T extends typeof PortKind.Enum
             ? string
-            : T extends PortKind.Model
+            : T extends typeof PortKind.Model
               ? string
               : string
 
-export type InferPortType<P extends ArgPortInput> = P['kind'] extends PortKind.Structure
+export type InferPortType<P extends ArgPortInput> = P['kind'] extends typeof PortKind.Structure
   ? P['children'] extends ReadonlyArray<ArgPortInput>
     ? InferArgs<P['children']>
     : unknown
-  : P['kind'] extends PortKind.List
+  : P['kind'] extends typeof PortKind.List
     ? P['children'] extends ReadonlyArray<ArgPortInput>
       ? Array<InferPortType<P['children'][0]>>
       : unknown[]

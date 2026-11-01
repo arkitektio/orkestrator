@@ -1,4 +1,4 @@
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { useEffect, useState } from "react";
 
 export type PickablePort = { key: string; identifier?: string | null };

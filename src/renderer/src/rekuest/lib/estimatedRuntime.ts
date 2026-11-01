@@ -1,4 +1,4 @@
-import { evaluateCallAt, parsePortCall } from "@/core/ports/engine/portCalls";
+import { evaluateCallAt, parsePortCall } from "@arkitektio/bsx/ports/engine/portCalls";
 import type { BlokActionArgument } from "@arkitektio/bsx/renderer/runtime/index";
 
 /**

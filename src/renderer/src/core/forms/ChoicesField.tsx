@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import { SearchField } from "./SearchField";
-import { FieldProps } from "./types";
+import { SearchField } from "@arkitektio/bsx/ports/forms/SearchField";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 
 export type Option = {
   label: string;

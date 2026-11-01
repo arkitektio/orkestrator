@@ -1,7 +1,7 @@
 import { cn } from "@/core/util/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
-import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
 import { eventKindColor, formatEventKind } from "@/rekuest/lib/taskStatus";
 import { describeEffect, readLostDetails } from "@/rekuest/lib/taskHistory";

@@ -15,7 +15,7 @@ import {
   EditableNetStimulator,
   EditableNetSynapse,
 } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/core/forms/QuantityInput";
+import { QuantityInput } from "@arkitektio/bsx/ports/forms/QuantityInput";
 
 export type NetworkEditorProps = {
   synapses: EditableNetSynapse[];

@@ -1,7 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { IntField } from "@/core/forms/IntField";
-import { StringField } from "@/core/forms/StringField";
+import { IntField } from "@arkitektio/bsx/ports/forms/IntField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -14,16 +14,16 @@ import {
 import { Form } from "@/core/ui/form";
 import { ScrollArea } from "@/core/ui/scroll-area";
 import { Skeleton } from "@/core/ui/skeleton";
-import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
 import * as z from "zod";
 import {
   useCreateShortcutMutation,
   useDetailActionQuery,
 } from "../../api/graphql";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { RoleGuard } from "@/core/connection/roles";
 import { REKUEST_ADMIN } from "../../roles";
 import { ShortcutBindingFields } from "./BindShortcutDialog";

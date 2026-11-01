@@ -1,7 +1,7 @@
 import { usePickedDescriptors, type PickablePort } from "@/rekuest/hooks/usePickedDescriptors";
 import { fitsImplementation, type FitFormula, type FitVerdict } from "@/rekuest/lib/fits";
 import type { AgentHardwareValues } from "@/rekuest/lib/estimatedRuntime";
-import type { PortFit } from "@/core/ports/engine/PortFitsContext";
+import type { PortFit } from "@arkitektio/bsx/ports/engine/PortFitsContext";
 import { readHardware } from "@/rekuest/lib/estimatedRuntime";
 import { useEffect, useMemo, useState } from "react";
 import { useWatch, type Control, type FieldValues } from "react-hook-form";

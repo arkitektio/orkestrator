@@ -81,6 +81,7 @@ fragment CustomAssignWidget on CustomAssignWidget {
   props {
     ...BlokComponentProp
   }
+  children
   dependencies
   fallback {
     __typename

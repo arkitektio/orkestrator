@@ -26,10 +26,10 @@ import { ChatList } from "./chat-list";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Form } from "@/core/ui/form";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { submittedDataToRekuestFormat } from "@arkitektio/bsx/ports/engine/utils";
 import { Button } from "@/core/ui/button";
 import {
   Popover,

@@ -2,8 +2,8 @@ import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { PortKind, PostmanTaskFragment, useDetailTaskQuery } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { WidgetRegistryType } from "@/core/ports/engine/types";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { WidgetRegistryType } from "@arkitektio/bsx/ports/engine/types";
 import { useEffect } from "react";
 
 export interface ReportBugDialogProps {

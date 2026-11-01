@@ -1,7 +1,7 @@
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import Timestamp from "@/core/ui/timestamp";
-import { useActionDescription } from "@/core/ports/engine/ActionDescription";
+import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import {
   ActionOverviewFragment,
   DetailActionFragment,

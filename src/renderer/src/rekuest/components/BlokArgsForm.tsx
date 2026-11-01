@@ -1,9 +1,9 @@
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import { ArgPortFragment } from "@/rekuest/api/graphql";
 import { useMemo } from "react";
 import type { BlokArgs } from "./blokArgs";

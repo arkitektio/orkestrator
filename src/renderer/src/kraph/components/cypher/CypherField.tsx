@@ -1,4 +1,4 @@
-import { FieldProps } from "@/core/forms/types";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 import {
   FormDescription,
   FormField,

@@ -9,7 +9,7 @@ import {
 import { cn } from "@/core/util/utils";
 import { useFormContext } from "react-hook-form";
 import { Switch } from "../ui/switch";
-import { FieldProps } from "./types";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 
 export const SwitchField = (
   props: FieldProps & { placeholder?: string; className?: string },

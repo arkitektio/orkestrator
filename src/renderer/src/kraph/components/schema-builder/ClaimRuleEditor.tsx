@@ -1,6 +1,6 @@
 import { Guard } from "@/core/connection/arkitekt/host";
 import { AsyncCombobox } from "@/core/forms/AsyncCombobox";
-import { Option, SearchFunction } from "@/core/forms/SearchField";
+import { Option, SearchFunction } from "@arkitektio/bsx/ports/forms/SearchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { Input } from "@/core/ui/input";

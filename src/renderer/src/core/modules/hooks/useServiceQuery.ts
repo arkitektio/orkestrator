@@ -3,7 +3,7 @@ import { useCallback } from "react";
 
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { resolveServiceClient } from "@/core/modules/host/operations";
-import { readOnlyQueryProblem } from "@/core/ports/engine/constraints";
+import { readOnlyQueryProblem } from "@arkitektio/bsx/ports/engine/constraints";
 
 /**
  * Runs a GraphQL query, given as text, against one service with the session's

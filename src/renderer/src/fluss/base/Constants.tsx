@@ -3,11 +3,11 @@ import { Form } from "@/core/ui/form";
 import { notEmpty } from "@/core/util/utils";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { AssignWidgetFragment } from "@/rekuest/api/graphql";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
-import { ArgPort as RekuestArgPort } from "@/core/ports/engine/types";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
-import { portHash, submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
+import { usePortForm } from "@arkitektio/bsx/ports/engine/usePortForm";
+import { EffectWrapper } from "@arkitektio/bsx/ports/engine/EffectWrapper";
+import { ArgPort as RekuestArgPort } from "@arkitektio/bsx/ports/engine/types";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
+import { portHash, submittedDataToRekuestFormat } from "@arkitektio/bsx/ports/engine/utils";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 
 import { ChevronUpIcon, DoubleArrowUpIcon } from "@radix-ui/react-icons";
@@ -42,10 +42,10 @@ export const ArgsContainer = ({
   path,
 }: {
   ports: FlussArgPortFragment[];
-  options?: import("@/core/ports/engine/types").PortOptions;
+  options?: import("@arkitektio/bsx/ports/engine/types").PortOptions;
   bound?: string;
   path: string[];
-  registry: import("@/core/ports/engine/types").WidgetRegistryType;
+  registry: import("@arkitektio/bsx/ports/engine/types").WidgetRegistryType;
   onToArg?: (port: FlussArgPortFragment) => void;
   onToGlobal?: (port: FlussArgPortFragment, key?: string | undefined) => void;
 }) => {

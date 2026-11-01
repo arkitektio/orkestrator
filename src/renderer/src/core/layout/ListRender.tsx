@@ -2,7 +2,7 @@ import type { OffsetPaginationInput } from "@/core/layout/pagination";
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { ListOffsetter, ListTitle } from "../ui/list";
 import { Refetcher } from "../ui/refetcher";
-import { ContainerGrid } from "./ContainerGrid";
+import { ContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
 
 export type ListRenderProps<T> = {
   title?: React.ReactNode;

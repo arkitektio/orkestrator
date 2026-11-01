@@ -13,7 +13,7 @@ import {
   StoredProfileBook,
 } from "./fakts/profileStorageSchema";
 import { TokenResponse } from "./fakts/tokenSchema";
-import type { Ward } from "@/core/ports/engine/types";
+import type { Ward } from "@arkitektio/bsx/ports/engine/types";
 import type { MeshKeyOutcome } from "@/core/connection/mesh/meshKey";
 
 export type AvailableService = {

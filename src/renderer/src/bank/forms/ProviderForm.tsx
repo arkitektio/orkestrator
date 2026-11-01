@@ -1,8 +1,8 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { ChoicesField } from "@/core/forms/ChoicesField";
-import { IntField } from "@/core/forms/IntField";
-import { ParagraphField } from "@/core/forms/ParagraphField";
-import { StringField } from "@/core/forms/StringField";
+import { IntField } from "@arkitektio/bsx/ports/forms/IntField";
+import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";

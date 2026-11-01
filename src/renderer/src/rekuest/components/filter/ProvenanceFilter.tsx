@@ -1,5 +1,5 @@
 import { SwitchField } from "@/core/forms/SwitchField";
-import { Option, SearchField } from "@/core/forms/SearchField";
+import { Option, SearchField } from "@arkitektio/bsx/ports/forms/SearchField";
 import { AutoSubmitter } from "@/core/forms/AutoSubmitter";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";

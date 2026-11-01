@@ -3,7 +3,7 @@ import {
   ListSearchField,
   ListSearchFieldProps,
   Option,
-} from "./ListSearchField";
+} from "@arkitektio/bsx/ports/forms/ListSearchField";
 
 export type GraphQLListSearchFieldProps = Omit<
   ListSearchFieldProps,

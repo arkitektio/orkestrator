@@ -1,7 +1,7 @@
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { EditableModelWide } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/core/forms/QuantityInput";
+import { QuantityInput } from "@arkitektio/bsx/ports/forms/QuantityInput";
 import { IonListEditor } from "./IonListEditor";
 import { MechanismGlobalsEditor } from "./MechanismGlobalsEditor";
 

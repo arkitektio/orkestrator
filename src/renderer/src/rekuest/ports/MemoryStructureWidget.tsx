@@ -1,8 +1,8 @@
-import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
-import { SearchField, SearchOptions } from "@/core/forms/SearchField";
+import { portDescription, portLabel } from "@arkitektio/bsx/ports/engine/portPresentation";
+import { SearchField, SearchOptions } from "@arkitektio/bsx/ports/forms/SearchField";
 import { useSearchMemoryDrawerLazyQuery } from "@/rekuest/api/graphql";
-import { InputWidgetProps } from "@/core/ports/engine/types";
-import { pathToName } from "@/core/ports/engine/utils";
+import { InputWidgetProps } from "@arkitektio/bsx/ports/engine/types";
+import { pathToName } from "@arkitektio/bsx/ports/engine/utils";
 import { useCallback } from "react";
 
 const structureKey = (value: unknown): string | undefined =>

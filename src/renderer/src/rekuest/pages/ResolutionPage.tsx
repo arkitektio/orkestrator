@@ -6,10 +6,10 @@ import {
   useGetResolutionQuery
 } from "@/rekuest/api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
-import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
-import { portToLabel } from "@/core/ports/engine/utils";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
+import { portToLabel } from "@arkitektio/bsx/ports/engine/utils";
 import { ResolutionGraph } from "../components/global/ResolutionGraph";
 import { REKUEST_HELP } from "../help";
 import { AssignForm } from "../forms/assign/AssignForm";

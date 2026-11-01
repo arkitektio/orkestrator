@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { StringField } from "@/core/forms/StringField";
+import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Form } from "@/core/ui/form";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";

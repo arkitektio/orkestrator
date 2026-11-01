@@ -11,7 +11,7 @@ import { Input } from "@/core/ui/input";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FieldProps } from "./types";
+import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
 
 /**
  * A list of free-typed strings where the *order* is the meaning.

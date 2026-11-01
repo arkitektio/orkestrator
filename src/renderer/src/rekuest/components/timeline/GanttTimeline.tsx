@@ -3,7 +3,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/core/ui/popover";
-import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
+import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
 import {
   TaskEventKind,
   DetailTaskFragment,
@@ -12,7 +12,7 @@ import {
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Timestamp from "@/core/ui/timestamp";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { statusBarColor } from "../../lib/taskStatus";
 import {
   TimelineDependencyGroup,
