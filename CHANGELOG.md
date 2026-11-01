@@ -1,3 +1,11 @@
+# [5.6.0](https://github.com/arkitektio/orkestrator/compare/v5.5.0...v5.6.0) (2026-11-01)
+
+
+### Features
+
+* **rekuest:** the implementation page has no tracks ([db5581c](https://github.com/arkitektio/orkestrator/commit/db5581c235a31a7f608836172ccee9df498cbece))
+* the port engine comes from @arkitektio/bsx ([3194497](https://github.com/arkitektio/orkestrator/commit/319449739abfb28244e360944d8314e352a46682))
+
 # [5.5.0](https://github.com/arkitektio/orkestrator/compare/v5.4.1...v5.5.0) (2026-10-31)
 
 
