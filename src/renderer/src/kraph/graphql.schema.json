@@ -542,154 +542,6 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "AssertMetricValueForStructureInput",
-        "description": "Input for creating a new metric",
-        "isOneOf": false,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "confidence",
-            "description": "How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "confidenceType",
-            "description": "What kind of number `confidence` is — a method's own score, a p-value. Measurement-only",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "derivedFrom",
-            "description": "The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because \"this, because of that\" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "String",
-                    "kind": "SCALAR",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "defaultValue": "[]",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "key",
-            "description": null,
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "observedAt",
-            "description": "When the world was observed. Defaults to when it was claimed.",
-            "type": {
-              "kind": "SCALAR",
-              "name": "DateTime",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "structure",
-            "description": "The unique ID of the structure this metric is associated with",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "unit",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "value",
-            "description": null,
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "AnyScalar",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "valueKind",
-            "description": "What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded.",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "PropertyType",
-                "kind": "ENUM",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
         "name": "AssertMetricValueInput",
         "description": "Input for creating a new metric",
         "isOneOf": false,
@@ -841,6 +693,42 @@
                 "name": "PropertyType",
                 "kind": "ENUM",
                 "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "AssertMetricValuesInput",
+        "description": "Input for recording many metrics, about any number of data, as one act",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "metrics",
+            "description": "The values to record, at most 5000 in one act",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "MetricValueInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
               }
             },
             "defaultValue": null,
@@ -2529,6 +2417,86 @@
             "ofType": null
           }
         ],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "AssertedMetricValues",
+        "description": "A batch of metrics as one act. A metric that names a uuid already on the record is reported, not recorded again",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "assertion",
+            "description": "The act that recorded this batch's new metrics. Null when every one of them was already recorded",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Assertion",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "metrics",
+            "description": "Every metric of the batch, in the order given: new ones and those an earlier attempt recorded",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Metric",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "pending",
+            "description": "True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "recorded",
+            "description": "How many of the batch's metrics this call recorded",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -18588,6 +18556,194 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "MetricValueInput",
+        "description": "One value about one external datum, inside a batch",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "confidence",
+            "description": "How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "confidenceType",
+            "description": "What kind of number `confidence` is — a method's own score, a p-value. Measurement-only",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedFrom",
+            "description": "The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because \"this, because of that\" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": "The structure identifier of the datum this value is about, e.g. '@mikro/annotation'",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "object",
+            "description": "The id of the datum this value is about",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "observedAt",
+            "description": "When the world was observed. Defaults to when it was claimed.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "supersedes",
+            "description": "The uuid of an earlier metric of this API that this value corrects: that one is retracted and cited, under this act",
+            "type": {
+              "kind": "SCALAR",
+              "name": "UUID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "unit",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "uuid",
+            "description": "Optional: a uuid for this metric that stays the same across retries, so a retried batch records nothing twice. Left out, one is minted, and rerunning records the value again",
+            "type": {
+              "kind": "SCALAR",
+              "name": "UUID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "value",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "AnyScalar",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "valueKind",
+            "description": "What type of value this is. Required: it decides the storage column and the measurement term",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ValueKind",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "Mutation",
         "description": "Graph Engine Mutations",
@@ -18825,8 +18981,8 @@
             "deprecationReason": null
           },
           {
-            "name": "assertMetricValueForStructure",
-            "description": "Record a measurement against a structure that already exists, named by its evidence id",
+            "name": "assertMetricValues",
+            "description": "Record many measurements, about any number of data, as one act, creating the structures they describe. A metric that names its own uuid is recorded once however often the batch is retried",
             "args": [
               {
                 "name": "input",
@@ -18835,7 +18991,7 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "name": "AssertMetricValueForStructureInput",
+                    "name": "AssertMetricValuesInput",
                     "kind": "INPUT_OBJECT",
                     "ofType": null
                   }
@@ -18849,7 +19005,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "AssertedMetric",
+                "name": "AssertedMetricValues",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -20170,39 +20326,6 @@
               "name": null,
               "ofType": {
                 "name": "MediaStore",
-                "kind": "OBJECT",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "recordMetrics",
-            "description": "Record measurements against a datum already on the record, as one act (was `updateStructure`)",
-            "args": [
-              {
-                "name": "input",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": "RecordMetricsInput",
-                    "kind": "INPUT_OBJECT",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "AssertedStructure",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -29989,98 +30112,6 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "RecordMetricsInput",
-        "description": "Input for recording measurements against a datum already on the record",
-        "isOneOf": false,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "derivedFrom",
-            "description": "The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because \"this, because of that\" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "String",
-                    "kind": "SCALAR",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "defaultValue": "[]",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "id",
-            "description": "The ID of the structure the measurements describe",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "metrics",
-            "description": "List of measurements associated with this structure",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "MetricInput",
-                    "kind": "INPUT_OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "defaultValue": "[]",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "object",
-            "description": "The unique ID of the object this structure references",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
         "name": "RefreshUploadInput",
         "description": null,
         "isOneOf": false,
@@ -36760,6 +36791,17 @@
             "deprecationReason": null
           }
         ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "SCALAR",
+        "name": "UUID",
+        "description": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
         "interfaces": null,
         "enumValues": null,
         "possibleTypes": null

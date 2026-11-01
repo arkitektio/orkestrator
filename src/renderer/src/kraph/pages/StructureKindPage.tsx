@@ -1,14 +1,11 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { reportError } from "@/core/notify";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { Image } from "@/core/ui/image";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
-import {
-  KraphStructureKind
-} from "@/core/linkers";
+import { KraphStructureKind } from "@/core/linkers";
 import {
   useGetStructureKindQuery,
   useUpdateStructureKindMutation,
@@ -48,15 +45,6 @@ const Page =  asDetailQueryRoute(
         help={KRAPH_HELP.structureKind}
         object={{ id: data.structureKind.id }}
         title={data?.structureKind.identifier}
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphStructureKind.Knowledge
-                object={{ id: data.structureKind.id }}
-              />
-            </Sidebars.Tab>
-          </Sidebars>
-        }
         pageActions={
           <>
             <KraphStructureKind.ObjectButton

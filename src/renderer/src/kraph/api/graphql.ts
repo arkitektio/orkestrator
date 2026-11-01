@@ -28,6 +28,7 @@ export type Scalars = {
   StructureIdentifier: { input: any; output: any; }
   /** The `StructureObject` scalar type represents a structure object (e.g 1) on a specific identifier) */
   StructureObject: { input: any; output: any; }
+  UUID: { input: any; output: any; }
   _Any: { input: any; output: any; }
 };
 
@@ -111,25 +112,6 @@ export type AssertMeasurementExistsInput = {
 };
 
 /** Input for creating a new metric */
-export type AssertMetricValueForStructureInput = {
-  /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
-  confidence?: InputMaybe<Scalars['Float']['input']>;
-  /** What kind of number `confidence` is — a method's own score, a p-value. Measurement-only */
-  confidenceType?: InputMaybe<Scalars['String']['input']>;
-  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
-  derivedFrom?: Array<Scalars['String']['input']>;
-  key: Scalars['String']['input'];
-  /** When the world was observed. Defaults to when it was claimed. */
-  observedAt?: InputMaybe<Scalars['DateTime']['input']>;
-  /** The unique ID of the structure this metric is associated with */
-  structure: Scalars['ID']['input'];
-  unit?: InputMaybe<Scalars['String']['input']>;
-  value: Scalars['AnyScalar']['input'];
-  /** What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded. */
-  valueKind: PropertyType;
-};
-
-/** Input for creating a new metric */
 export type AssertMetricValueInput = {
   /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
   confidence?: InputMaybe<Scalars['Float']['input']>;
@@ -148,6 +130,12 @@ export type AssertMetricValueInput = {
   value: Scalars['AnyScalar']['input'];
   /** What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded. */
   valueKind: PropertyType;
+};
+
+/** Input for recording many metrics, about any number of data, as one act */
+export type AssertMetricValuesInput = {
+  /** The values to record, at most 5000 in one act */
+  metrics: Array<MetricValueInput>;
 };
 
 /** Input for creating a new natural event instance */
@@ -376,6 +364,19 @@ export type AssertedMetric = Asserted & {
   metric: Metric;
   /** True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request. */
   pending: Scalars['Boolean']['output'];
+};
+
+/** A batch of metrics as one act. A metric that names a uuid already on the record is reported, not recorded again */
+export type AssertedMetricValues = {
+  __typename?: 'AssertedMetricValues';
+  /** The act that recorded this batch's new metrics. Null when every one of them was already recorded */
+  assertion?: Maybe<Assertion>;
+  /** Every metric of the batch, in the order given: new ones and those an earlier attempt recorded */
+  metrics: Array<Metric>;
+  /** True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request. */
+  pending: Scalars['Boolean']['output'];
+  /** How many of the batch's metrics this call recorded */
+  recorded: Scalars['Int']['output'];
 };
 
 /** An assertion about a natural event, and everywhere it is now drawn */
@@ -2713,6 +2714,31 @@ export type MetricKindStatsSumArgs = {
   field: MetricKindField;
 };
 
+/** One value about one external datum, inside a batch */
+export type MetricValueInput = {
+  /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
+  confidence?: InputMaybe<Scalars['Float']['input']>;
+  /** What kind of number `confidence` is — a method's own score, a p-value. Measurement-only */
+  confidenceType?: InputMaybe<Scalars['String']['input']>;
+  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
+  derivedFrom?: Array<Scalars['String']['input']>;
+  /** The structure identifier of the datum this value is about, e.g. '@mikro/annotation' */
+  identifier: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  /** The id of the datum this value is about */
+  object: Scalars['String']['input'];
+  /** When the world was observed. Defaults to when it was claimed. */
+  observedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The uuid of an earlier metric of this API that this value corrects: that one is retracted and cited, under this act */
+  supersedes?: InputMaybe<Scalars['UUID']['input']>;
+  unit?: InputMaybe<Scalars['String']['input']>;
+  /** Optional: a uuid for this metric that stays the same across retries, so a retried batch records nothing twice. Left out, one is minted, and rerunning records the value again */
+  uuid?: InputMaybe<Scalars['UUID']['input']>;
+  value: Scalars['AnyScalar']['input'];
+  /** What type of value this is. Required: it decides the storage column and the measurement term */
+  valueKind: ValueKind;
+};
+
 /** Graph Engine Mutations */
 export type Mutation = {
   __typename?: 'Mutation';
@@ -2730,8 +2756,8 @@ export type Mutation = {
   assertMeasurementExists: AssertedMeasurement;
   /** Record a measurement, creating the structure it describes if this is its first sight. One assertion covers both */
   assertMetricValue: AssertedMetric;
-  /** Record a measurement against a structure that already exists, named by its evidence id */
-  assertMetricValueForStructure: AssertedMetric;
+  /** Record many measurements, about any number of data, as one act, creating the structures they describe. A metric that names its own uuid is recorded once however often the batch is retried */
+  assertMetricValues: AssertedMetricValues;
   /** Claim that a natural event happened, under one of the organization's words */
   assertNaturalEventExists: AssertedNaturalEvent;
   /** Claim that an entity took part in an event, without displacing anyone else's claim */
@@ -2812,8 +2838,6 @@ export type Mutation = {
   deleteStructureRelationCategory: Scalars['ID']['output'];
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
-  /** Record measurements against a datum already on the record, as one act (was `updateStructure`) */
-  recordMetrics: AssertedStructure;
   /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
   refreshMediaUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for media files in the organization */
@@ -2926,8 +2950,8 @@ export type MutationAssertMetricValueArgs = {
 
 
 /** Graph Engine Mutations */
-export type MutationAssertMetricValueForStructureArgs = {
-  input: AssertMetricValueForStructureInput;
+export type MutationAssertMetricValuesArgs = {
+  input: AssertMetricValuesInput;
 };
 
 
@@ -3168,12 +3192,6 @@ export type MutationDeleteStructureRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationFinishMediaUploadArgs = {
   input: FinishMediaUploadInput;
-};
-
-
-/** Graph Engine Mutations */
-export type MutationRecordMetricsArgs = {
-  input: RecordMetricsInput;
 };
 
 
@@ -4679,18 +4697,6 @@ export type QueryTermsArgs = {
   pagination?: InputMaybe<VocabularyPaginationInput>;
 };
 
-/** Input for recording measurements against a datum already on the record */
-export type RecordMetricsInput = {
-  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
-  derivedFrom?: Array<Scalars['String']['input']>;
-  /** The ID of the structure the measurements describe */
-  id: Scalars['String']['input'];
-  /** List of measurements associated with this structure */
-  metrics?: Array<MetricInput>;
-  /** The unique ID of the object this structure references */
-  object: Scalars['String']['input'];
-};
-
 export type RefreshUploadInput = {
   storeId: Scalars['String']['input'];
 };
@@ -6172,6 +6178,17 @@ export type EdgeDrawingFragment = { __typename?: 'EdgeDrawing', graph: { __typen
     & BaseEdge_StructureRelation_Fragment
   ) };
 
+export type ClaimActFragment = (
+  { __typename?: 'Assertion', instances: Array<{ __typename?: 'Instance', id: string, term: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) }>, links: Array<{ __typename?: 'Link', id: string, kind: LinkKind, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null }>, metrics: Array<{ __typename?: 'Metric', id: string, key?: string | null, value: any, unit?: string | null }>, comments: Array<{ __typename?: 'Comment', id: string, text: string }>, standings: Array<{ __typename?: 'Standing', id: string, stands: boolean }>, structures: Array<{ __typename?: 'Structure', id: string, identifier: any, object: string }> }
+  & AssertionFragment
+);
+
 export type InstanceFragment = { __typename?: 'Instance', id: string, kind: InstanceKind, createdAt: any, term: (
     { __typename?: 'Term' }
     & ListTermFragment
@@ -7479,18 +7496,18 @@ export type RetractMeasurementMutation = { __typename?: 'Mutation', retractMeasu
       & LinkFragment
     ) } };
 
-export type AssertMetricValueForStructureMutationVariables = Exact<{
-  input: AssertMetricValueForStructureInput;
+export type AssertMetricValuesMutationVariables = Exact<{
+  input: AssertMetricValuesInput;
 }>;
 
 
-export type AssertMetricValueForStructureMutation = { __typename?: 'Mutation', assertMetricValueForStructure: { __typename?: 'AssertedMetric', assertion: (
+export type AssertMetricValuesMutation = { __typename?: 'Mutation', assertMetricValues: { __typename?: 'AssertedMetricValues', pending: boolean, recorded: number, assertion?: (
       { __typename?: 'Assertion' }
       & AssertionFragment
-    ), metric: (
+    ) | null, metrics: Array<(
       { __typename?: 'Metric' }
       & MetricFragment
-    ) } };
+    )> } };
 
 export type RetractMetricMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -7942,19 +7959,6 @@ export type RetractStructureMutation = { __typename?: 'Mutation', retractStructu
       & StructureFragment
     ) } };
 
-export type RecordMetricsMutationVariables = Exact<{
-  input: RecordMetricsInput;
-}>;
-
-
-export type RecordMetricsMutation = { __typename?: 'Mutation', recordMetrics: { __typename?: 'AssertedStructure', pending: boolean, assertion: (
-      { __typename?: 'Assertion' }
-      & AssertionFragment
-    ), structure: (
-      { __typename?: 'Structure' }
-      & StructureFragment
-    ) } };
-
 export type AssertInformsMutationVariables = Exact<{
   input: AssertInformsInput;
 }>;
@@ -8089,26 +8093,6 @@ export type ListApplicableMeasurementCategoriesQuery = { __typename?: 'Query', m
     & ListMeasurementCategoryWithGraphFragment
   )> };
 
-export type ListCandidateRelationCategoriesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type ListCandidateRelationCategoriesQuery = { __typename?: 'Query', relationCategories: Array<(
-    { __typename?: 'RelationCategory', graph: { __typename?: 'Graph', id: string, name: string } }
-    & ListRelationCategoryFragment
-  )> };
-
-export type ListCandidateStructureRelationCategoriesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type ListCandidateStructureRelationCategoriesQuery = { __typename?: 'Query', structureRelationCategories: Array<(
-    { __typename?: 'StructureRelationCategory' }
-    & ListStructureRelationCategoryWithGraphFragment
-  )> };
-
 export type EntityCategoriesMatchingDescriptorQueryVariables = Exact<{
   ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
   descriptor?: InputMaybe<EntityDescriptorInput>;
@@ -8119,14 +8103,6 @@ export type EntityCategoriesMatchingDescriptorQuery = { __typename?: 'Query', en
     { __typename?: 'EntityCategory', graph: { __typename?: 'Graph', id: string, name: string } }
     & ListEntityCategoryFragment
   )> };
-
-export type StructureKindsMatchingDescriptorQueryVariables = Exact<{
-  identifiers?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  descriptor?: InputMaybe<StructureDescriptorInput>;
-}>;
-
-
-export type StructureKindsMatchingDescriptorQuery = { __typename?: 'Query', structureKinds: Array<{ __typename?: 'StructureKind', id: string, identifier: string }> };
 
 export type GetInstanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8176,6 +8152,17 @@ export type GetStandingsQueryVariables = Exact<{
 export type GetStandingsQuery = { __typename?: 'Query', standings: Array<(
     { __typename?: 'Standing' }
     & StandingFragment
+  )> };
+
+export type ListClaimActsQueryVariables = Exact<{
+  filters?: InputMaybe<AssertionFilter>;
+  pagination?: InputMaybe<LogPaginationInput>;
+}>;
+
+
+export type ListClaimActsQuery = { __typename?: 'Query', assertions: Array<(
+    { __typename?: 'Assertion' }
+    & ClaimActFragment
   )> };
 
 export type CommentsForQueryVariables = Exact<{
@@ -8316,6 +8303,31 @@ export type ListGraphsQuery = { __typename?: 'Query', graphs: Array<(
     { __typename?: 'Graph' }
     & ListGraphFragment
   )> };
+
+export type ViewWordsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ViewWordsQuery = { __typename?: 'Query', graph: { __typename?: 'Graph', id: string, nodeCategories: Array<{ __typename?: 'EntityCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null } | { __typename?: 'NaturalEventCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null } | { __typename?: 'ProtocolEventCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null }>, edgeCategories: Array<{ __typename?: 'MeasurementCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null } | { __typename?: 'RelationCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null } | { __typename?: 'StructureRelationCategory', id: string, label: string, term?: (
+        { __typename?: 'Term' }
+        & ListTermFragment
+      ) | null }> } };
 
 export type GetGraphTableQueryQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8581,6 +8593,9 @@ export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 export type HomePageQuery = { __typename?: 'Query', graphs: Array<(
     { __typename?: 'Graph' }
     & ListGraphFragment
+  )>, acts: Array<(
+    { __typename?: 'Assertion' }
+    & ClaimActFragment
   )> };
 
 export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
@@ -9206,16 +9221,6 @@ export const EdgeDrawingFragmentDoc = gql`
   }
 }
     ${BaseEdgeFragmentDoc}`;
-export const ListTermFragmentDoc = gql`
-    fragment ListTerm on Term {
-  id
-  kind
-  key
-  label
-  color
-  hidden
-}
-    `;
 export const AssertionFragmentDoc = gql`
     fragment Assertion on Assertion {
   id
@@ -9228,6 +9233,54 @@ export const AssertionFragmentDoc = gql`
   seq
 }
     `;
+export const ListTermFragmentDoc = gql`
+    fragment ListTerm on Term {
+  id
+  kind
+  key
+  label
+  color
+  hidden
+}
+    `;
+export const ClaimActFragmentDoc = gql`
+    fragment ClaimAct on Assertion {
+  ...Assertion
+  instances {
+    id
+    term {
+      ...ListTerm
+    }
+  }
+  links {
+    id
+    kind
+    term {
+      ...ListTerm
+    }
+  }
+  metrics {
+    id
+    key
+    value
+    unit
+  }
+  comments {
+    id
+    text
+  }
+  standings {
+    id
+    stands
+  }
+  structures {
+    id
+    identifier
+    object
+  }
+}
+    ${AssertionFragmentDoc}
+${ListTermFragmentDoc}`;
 export const InstanceFragmentDoc = gql`
     fragment Instance on Instance {
   id
@@ -11215,45 +11268,47 @@ export function useRetractMeasurementMutation(baseOptions?: ApolloReactHooks.Mut
 export type RetractMeasurementMutationHookResult = ReturnType<typeof useRetractMeasurementMutation>;
 export type RetractMeasurementMutationResult = Apollo.MutationResult<RetractMeasurementMutation>;
 export type RetractMeasurementMutationOptions = Apollo.BaseMutationOptions<RetractMeasurementMutation, RetractMeasurementMutationVariables>;
-export const AssertMetricValueForStructureDocument = gql`
-    mutation AssertMetricValueForStructure($input: AssertMetricValueForStructureInput!) {
-  assertMetricValueForStructure(input: $input) {
+export const AssertMetricValuesDocument = gql`
+    mutation AssertMetricValues($input: AssertMetricValuesInput!) {
+  assertMetricValues(input: $input) {
+    pending
+    recorded
     assertion {
       ...Assertion
     }
-    metric {
+    metrics {
       ...Metric
     }
   }
 }
     ${AssertionFragmentDoc}
 ${MetricFragmentDoc}`;
-export type AssertMetricValueForStructureMutationFn = Apollo.MutationFunction<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>;
+export type AssertMetricValuesMutationFn = Apollo.MutationFunction<AssertMetricValuesMutation, AssertMetricValuesMutationVariables>;
 
 /**
- * __useAssertMetricValueForStructureMutation__
+ * __useAssertMetricValuesMutation__
  *
- * To run a mutation, you first call `useAssertMetricValueForStructureMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAssertMetricValueForStructureMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useAssertMetricValuesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssertMetricValuesMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [assertMetricValueForStructureMutation, { data, loading, error }] = useAssertMetricValueForStructureMutation({
+ * const [assertMetricValuesMutation, { data, loading, error }] = useAssertMetricValuesMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useAssertMetricValueForStructureMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>) {
+export function useAssertMetricValuesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssertMetricValuesMutation, AssertMetricValuesMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>(AssertMetricValueForStructureDocument, options);
+        return ApolloReactHooks.useMutation<AssertMetricValuesMutation, AssertMetricValuesMutationVariables>(AssertMetricValuesDocument, options);
       }
-export type AssertMetricValueForStructureMutationHookResult = ReturnType<typeof useAssertMetricValueForStructureMutation>;
-export type AssertMetricValueForStructureMutationResult = Apollo.MutationResult<AssertMetricValueForStructureMutation>;
-export type AssertMetricValueForStructureMutationOptions = Apollo.BaseMutationOptions<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>;
+export type AssertMetricValuesMutationHookResult = ReturnType<typeof useAssertMetricValuesMutation>;
+export type AssertMetricValuesMutationResult = Apollo.MutationResult<AssertMetricValuesMutation>;
+export type AssertMetricValuesMutationOptions = Apollo.BaseMutationOptions<AssertMetricValuesMutation, AssertMetricValuesMutationVariables>;
 export const RetractMetricDocument = gql`
     mutation RetractMetric($id: String!) {
   retractMetric(input: {id: $id}) {
@@ -12736,46 +12791,6 @@ export function useRetractStructureMutation(baseOptions?: ApolloReactHooks.Mutat
 export type RetractStructureMutationHookResult = ReturnType<typeof useRetractStructureMutation>;
 export type RetractStructureMutationResult = Apollo.MutationResult<RetractStructureMutation>;
 export type RetractStructureMutationOptions = Apollo.BaseMutationOptions<RetractStructureMutation, RetractStructureMutationVariables>;
-export const RecordMetricsDocument = gql`
-    mutation RecordMetrics($input: RecordMetricsInput!) {
-  recordMetrics(input: $input) {
-    pending
-    assertion {
-      ...Assertion
-    }
-    structure {
-      ...Structure
-    }
-  }
-}
-    ${AssertionFragmentDoc}
-${StructureFragmentDoc}`;
-export type RecordMetricsMutationFn = Apollo.MutationFunction<RecordMetricsMutation, RecordMetricsMutationVariables>;
-
-/**
- * __useRecordMetricsMutation__
- *
- * To run a mutation, you first call `useRecordMetricsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRecordMetricsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [recordMetricsMutation, { data, loading, error }] = useRecordMetricsMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useRecordMetricsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RecordMetricsMutation, RecordMetricsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<RecordMetricsMutation, RecordMetricsMutationVariables>(RecordMetricsDocument, options);
-      }
-export type RecordMetricsMutationHookResult = ReturnType<typeof useRecordMetricsMutation>;
-export type RecordMetricsMutationResult = Apollo.MutationResult<RecordMetricsMutation>;
-export type RecordMetricsMutationOptions = Apollo.BaseMutationOptions<RecordMetricsMutation, RecordMetricsMutationVariables>;
 export const AssertInformsDocument = gql`
     mutation AssertInforms($input: AssertInformsInput!) {
   assertInforms(input: $input) {
@@ -13270,80 +13285,6 @@ export function useListApplicableMeasurementCategoriesLazyQuery(baseOptions?: Ap
 export type ListApplicableMeasurementCategoriesQueryHookResult = ReturnType<typeof useListApplicableMeasurementCategoriesQuery>;
 export type ListApplicableMeasurementCategoriesLazyQueryHookResult = ReturnType<typeof useListApplicableMeasurementCategoriesLazyQuery>;
 export type ListApplicableMeasurementCategoriesQueryResult = Apollo.QueryResult<ListApplicableMeasurementCategoriesQuery, ListApplicableMeasurementCategoriesQueryVariables>;
-export const ListCandidateRelationCategoriesDocument = gql`
-    query ListCandidateRelationCategories($search: String) {
-  relationCategories(filters: {search: $search}) {
-    ...ListRelationCategory
-    graph {
-      id
-      name
-    }
-  }
-}
-    ${ListRelationCategoryFragmentDoc}`;
-
-/**
- * __useListCandidateRelationCategoriesQuery__
- *
- * To run a query within a React component, call `useListCandidateRelationCategoriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListCandidateRelationCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListCandidateRelationCategoriesQuery({
- *   variables: {
- *      search: // value for 'search'
- *   },
- * });
- */
-export function useListCandidateRelationCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>(ListCandidateRelationCategoriesDocument, options);
-      }
-export function useListCandidateRelationCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>(ListCandidateRelationCategoriesDocument, options);
-        }
-export type ListCandidateRelationCategoriesQueryHookResult = ReturnType<typeof useListCandidateRelationCategoriesQuery>;
-export type ListCandidateRelationCategoriesLazyQueryHookResult = ReturnType<typeof useListCandidateRelationCategoriesLazyQuery>;
-export type ListCandidateRelationCategoriesQueryResult = Apollo.QueryResult<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>;
-export const ListCandidateStructureRelationCategoriesDocument = gql`
-    query ListCandidateStructureRelationCategories($search: String) {
-  structureRelationCategories(filters: {search: $search}) {
-    ...ListStructureRelationCategoryWithGraph
-  }
-}
-    ${ListStructureRelationCategoryWithGraphFragmentDoc}`;
-
-/**
- * __useListCandidateStructureRelationCategoriesQuery__
- *
- * To run a query within a React component, call `useListCandidateStructureRelationCategoriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListCandidateStructureRelationCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListCandidateStructureRelationCategoriesQuery({
- *   variables: {
- *      search: // value for 'search'
- *   },
- * });
- */
-export function useListCandidateStructureRelationCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>(ListCandidateStructureRelationCategoriesDocument, options);
-      }
-export function useListCandidateStructureRelationCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>(ListCandidateStructureRelationCategoriesDocument, options);
-        }
-export type ListCandidateStructureRelationCategoriesQueryHookResult = ReturnType<typeof useListCandidateStructureRelationCategoriesQuery>;
-export type ListCandidateStructureRelationCategoriesLazyQueryHookResult = ReturnType<typeof useListCandidateStructureRelationCategoriesLazyQuery>;
-export type ListCandidateStructureRelationCategoriesQueryResult = Apollo.QueryResult<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>;
 export const EntityCategoriesMatchingDescriptorDocument = gql`
     query EntityCategoriesMatchingDescriptor($ids: [ID!], $descriptor: EntityDescriptorInput) {
   entityCategories(filters: {ids: $ids, matchesDescriptor: $descriptor}) {
@@ -13384,45 +13325,6 @@ export function useEntityCategoriesMatchingDescriptorLazyQuery(baseOptions?: Apo
 export type EntityCategoriesMatchingDescriptorQueryHookResult = ReturnType<typeof useEntityCategoriesMatchingDescriptorQuery>;
 export type EntityCategoriesMatchingDescriptorLazyQueryHookResult = ReturnType<typeof useEntityCategoriesMatchingDescriptorLazyQuery>;
 export type EntityCategoriesMatchingDescriptorQueryResult = Apollo.QueryResult<EntityCategoriesMatchingDescriptorQuery, EntityCategoriesMatchingDescriptorQueryVariables>;
-export const StructureKindsMatchingDescriptorDocument = gql`
-    query StructureKindsMatchingDescriptor($identifiers: [String!], $descriptor: StructureDescriptorInput) {
-  structureKinds(
-    filters: {identifiers: $identifiers, matchesDescriptor: $descriptor}
-  ) {
-    id
-    identifier
-  }
-}
-    `;
-
-/**
- * __useStructureKindsMatchingDescriptorQuery__
- *
- * To run a query within a React component, call `useStructureKindsMatchingDescriptorQuery` and pass it any options that fit your needs.
- * When your component renders, `useStructureKindsMatchingDescriptorQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useStructureKindsMatchingDescriptorQuery({
- *   variables: {
- *      identifiers: // value for 'identifiers'
- *      descriptor: // value for 'descriptor'
- *   },
- * });
- */
-export function useStructureKindsMatchingDescriptorQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>(StructureKindsMatchingDescriptorDocument, options);
-      }
-export function useStructureKindsMatchingDescriptorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>(StructureKindsMatchingDescriptorDocument, options);
-        }
-export type StructureKindsMatchingDescriptorQueryHookResult = ReturnType<typeof useStructureKindsMatchingDescriptorQuery>;
-export type StructureKindsMatchingDescriptorLazyQueryHookResult = ReturnType<typeof useStructureKindsMatchingDescriptorLazyQuery>;
-export type StructureKindsMatchingDescriptorQueryResult = Apollo.QueryResult<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>;
 export const GetInstanceDocument = gql`
     query GetInstance($id: ID!) {
   instance(id: $id) {
@@ -13598,6 +13500,42 @@ export function useGetStandingsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GetStandingsQueryHookResult = ReturnType<typeof useGetStandingsQuery>;
 export type GetStandingsLazyQueryHookResult = ReturnType<typeof useGetStandingsLazyQuery>;
 export type GetStandingsQueryResult = Apollo.QueryResult<GetStandingsQuery, GetStandingsQueryVariables>;
+export const ListClaimActsDocument = gql`
+    query ListClaimActs($filters: AssertionFilter, $pagination: LogPaginationInput) {
+  assertions(filters: $filters, pagination: $pagination) {
+    ...ClaimAct
+  }
+}
+    ${ClaimActFragmentDoc}`;
+
+/**
+ * __useListClaimActsQuery__
+ *
+ * To run a query within a React component, call `useListClaimActsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListClaimActsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListClaimActsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListClaimActsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListClaimActsQuery, ListClaimActsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListClaimActsQuery, ListClaimActsQueryVariables>(ListClaimActsDocument, options);
+      }
+export function useListClaimActsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListClaimActsQuery, ListClaimActsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListClaimActsQuery, ListClaimActsQueryVariables>(ListClaimActsDocument, options);
+        }
+export type ListClaimActsQueryHookResult = ReturnType<typeof useListClaimActsQuery>;
+export type ListClaimActsLazyQueryHookResult = ReturnType<typeof useListClaimActsLazyQuery>;
+export type ListClaimActsQueryResult = Apollo.QueryResult<ListClaimActsQuery, ListClaimActsQueryVariables>;
 export const CommentsForDocument = gql`
     query CommentsFor($identifier: String!, $object: ID!) {
   commentsFor(identifier: $identifier, object: $object) {
@@ -14100,6 +14038,59 @@ export function useListGraphsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type ListGraphsQueryHookResult = ReturnType<typeof useListGraphsQuery>;
 export type ListGraphsLazyQueryHookResult = ReturnType<typeof useListGraphsLazyQuery>;
 export type ListGraphsQueryResult = Apollo.QueryResult<ListGraphsQuery, ListGraphsQueryVariables>;
+export const ViewWordsDocument = gql`
+    query ViewWords($id: ID!) {
+  graph(id: $id) {
+    id
+    nodeCategories {
+      ... on Category {
+        id
+        label
+        term {
+          ...ListTerm
+        }
+      }
+    }
+    edgeCategories {
+      ... on Category {
+        id
+        label
+        term {
+          ...ListTerm
+        }
+      }
+    }
+  }
+}
+    ${ListTermFragmentDoc}`;
+
+/**
+ * __useViewWordsQuery__
+ *
+ * To run a query within a React component, call `useViewWordsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useViewWordsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useViewWordsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useViewWordsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ViewWordsQuery, ViewWordsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ViewWordsQuery, ViewWordsQueryVariables>(ViewWordsDocument, options);
+      }
+export function useViewWordsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ViewWordsQuery, ViewWordsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ViewWordsQuery, ViewWordsQueryVariables>(ViewWordsDocument, options);
+        }
+export type ViewWordsQueryHookResult = ReturnType<typeof useViewWordsQuery>;
+export type ViewWordsLazyQueryHookResult = ReturnType<typeof useViewWordsLazyQuery>;
+export type ViewWordsQueryResult = Apollo.QueryResult<ViewWordsQuery, ViewWordsQueryVariables>;
 export const GetGraphTableQueryDocument = gql`
     query GetGraphTableQuery($id: ID!) {
   graphTableQuery(id: $id) {
@@ -15056,8 +15047,12 @@ export const HomePageDocument = gql`
   graphs: graphs {
     ...ListGraph
   }
+  acts: assertions(pagination: {limit: 8}) {
+    ...ClaimAct
+  }
 }
-    ${ListGraphFragmentDoc}`;
+    ${ListGraphFragmentDoc}
+${ClaimActFragmentDoc}`;
 
 /**
  * __useHomePageQuery__

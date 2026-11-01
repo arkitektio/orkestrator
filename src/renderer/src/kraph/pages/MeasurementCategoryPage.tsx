@@ -1,15 +1,11 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { reportError } from "@/core/notify";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { Image } from "@/core/ui/image";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
-import {
-  KraphMeasurementCategory,
-  KraphMetricKind
-} from "@/core/linkers";
+import { KraphMeasurementCategory } from "@/core/linkers";
 import {
   useGetMeasurmentCategoryQuery,
   useUpdateMeasurementCategoryMutation
@@ -48,15 +44,6 @@ const Page = asDetailQueryRoute(
         help={KRAPH_HELP.measurementCategory}
         object={{ id: data.measurementCategory.id }}
         title={data?.measurementCategory.label}
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphMetricKind.Knowledge
-                object={{ id: data.measurementCategory.id }}
-              />
-            </Sidebars.Tab>
-          </Sidebars>
-        }
         pageActions={
           <>
 

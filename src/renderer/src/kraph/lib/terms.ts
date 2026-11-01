@@ -33,6 +33,18 @@ export const termTint = (color?: readonly number[] | null) => {
   return `rgba(${r}, ${g}, ${b}, ${a === undefined ? 1 : a / 255})`;
 };
 
+/**
+ * Whether two spellings are one word, so typing "mitochondrion" finds
+ * "Mitochondrion" rather than coining a near-duplicate. For comparing only:
+ * what goes on the wire is the word as it stands, and non-Latin letters stay
+ * ("α-tubulin" and "β-tubulin" are two words).
+ */
+export const normalizeWord = (text: string) =>
+  text.normalize("NFKC").trim().toLowerCase().replace(/[\s_-]+/g, " ");
+
+export const sameWord = (a: string | null | undefined, b: string | null | undefined) =>
+  !!a && !!b && normalizeWord(a) === normalizeWord(b);
+
 /** Every kind, in the order the explorer and the create dialog list them. */
 export const TERM_KINDS: readonly TermKind[] = [
   TermKind.Entity,

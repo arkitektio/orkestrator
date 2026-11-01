@@ -42,7 +42,7 @@ const TheCard = ({ item }: Props) => {
         <div className="mt-auto flex items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
           <span>{termKindLabel(item.kind)}</span>
           <span className={cn(graphs === 0 && "italic")}>
-            {graphs === 0 ? "No graph yet" : `${graphs} ${graphs === 1 ? "graph" : "graphs"}`}
+            {graphs === 0 ? "No view yet" : `${graphs} ${graphs === 1 ? "view" : "views"}`}
           </span>
         </div>
       </Card>

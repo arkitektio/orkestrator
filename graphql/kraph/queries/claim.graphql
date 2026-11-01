@@ -37,3 +37,11 @@ query GetStandings($id: ID!) {
     ...Standing
   }
 }
+
+# The log itself, newest first. Organization grain: what was said, whether or not
+# any view draws it.
+query ListClaimActs($filters: AssertionFilter, $pagination: LogPaginationInput) {
+  assertions(filters: $filters, pagination: $pagination) {
+    ...ClaimAct
+  }
+}

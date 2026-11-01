@@ -8,6 +8,7 @@ import { FakeDataTransfer, fireDrag } from "@/core/dnd/testing";
 import { SelectionContext } from "../dnd/selection/SelectionContext";
 import { createSelectionStore, SelectionStore } from "../dnd/selection/store";
 import { STRUCTURES_MIME } from "./dragPayload";
+import { smartNodeAt } from "./nodeRegistry";
 import { useSmartModel } from "./useSmartModel";
 
 const Card = ({ id }: { id: string }) => {
@@ -128,5 +129,50 @@ describe("dropping on a card", () => {
     await drop("a", "b");
 
     expect(screen.getByTestId("b").getAttribute("data-right")).toBe("");
+  });
+});
+
+describe("a card whose structure changes", () => {
+  const LabelledCard = ({ label }: { label: string }) => {
+    const { ref } = useSmartModel({
+      identifier: "@test/thing",
+      object: { id: "a", label },
+    });
+    return <div ref={ref} data-testid="a" />;
+  };
+
+  const tree = (label: string) => (
+    <SelectionContext.Provider value={store}>
+      <LabelledCard label={label} />
+    </SelectionContext.Provider>
+  );
+
+  it("stays registered under what it now says", async () => {
+    const { rerender } = render(tree("before"));
+
+    await act(async () => {
+      rerender(tree("after"));
+    });
+    store.getState().flushSelectables();
+
+    const node = screen.getByTestId("a");
+    expect(smartNodeAt(node)?.structure.label).toBe("after");
+    expect(
+      store.getState().selectables.map((s) => [s.item, s.structure.label]),
+    ).toEqual([[node, "after"]]);
+  });
+
+  it("leaves the registry once it unmounts", async () => {
+    const { rerender, unmount } = render(tree("before"));
+    await act(async () => {
+      rerender(tree("after"));
+    });
+    const node = screen.getByTestId("a");
+
+    unmount();
+    store.getState().flushSelectables();
+
+    expect(smartNodeAt(node)).toBeNull();
+    expect(store.getState().selectables).toEqual([]);
   });
 });

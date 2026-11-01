@@ -1,12 +1,13 @@
-# `assertMetricValueForStructure` names an existing structure by its graph id;
-# `assertMetricValue` names the structure by identifier/object and lets the
-# backend reach it, creating it on demand.
-mutation AssertMetricValueForStructure($input: AssertMetricValueForStructureInput!) {
-  assertMetricValueForStructure(input: $input) {
+# Many measurements, about any number of data, as one act: each names its datum
+# by identifier/object, and the backend creates the structures they describe.
+mutation AssertMetricValues($input: AssertMetricValuesInput!) {
+  assertMetricValues(input: $input) {
+    pending
+    recorded
     assertion {
       ...Assertion
     }
-    metric {
+    metrics {
       ...Metric
     }
   }

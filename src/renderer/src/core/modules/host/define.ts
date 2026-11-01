@@ -17,6 +17,7 @@ import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/core/connection/profile/section";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
 import type { SmartContextSection, SmartMenuWrapperProps } from "@/core/smart/extensions/section";
+import type { StructureLayerProps } from "@/core/smart/layers/structureLayers";
 import type { PassDownProps } from "@/core/smart/extensions/types";
 import type { Object } from "@/core/types";
 
@@ -142,6 +143,8 @@ export type ModuleBuiltins = {
   sections?: readonly SmartContextSection<any>[];
   /** EXTENSION: sections of a member's profile page. */
   profileSections?: readonly ProfileSection[];
+  /** EXTENSION: drawn over every datum card in view, while the layer toggle is on. */
+  structureLayers?: readonly ComponentType<StructureLayerProps>[];
   /** EXTENSION: always-mounted components, inside the module's guard (updaters, widget registrars). */
   background?: readonly ComponentType[];
   /** EXTENSION: the palette's entity search (spec: `search`, by operation). */

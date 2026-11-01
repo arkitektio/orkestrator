@@ -1,5 +1,4 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { KraphGraphQuery } from "@/core/linkers";
 import {
   useGetGraphQuery,
@@ -32,13 +31,6 @@ const Page = asDetailQueryRoute(useGetGraphTableQueryQuery, ({ data }) => {
         <>
           <KraphGraphQuery.ObjectButton alwaysShow object={{ id: data.graphTableQuery.id }} />
         </>
-      }
-      sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Knowledge">
-            <KraphGraphQuery.Knowledge object={{ id: data.graphTableQuery.id }} />
-          </Sidebars.Tab>
-        </Sidebars>
       }
     >
       <div className="grid grid-cols-12 gap-4 mb-4 h-full w-full">

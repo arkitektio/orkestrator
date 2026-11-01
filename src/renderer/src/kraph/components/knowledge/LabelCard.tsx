@@ -12,7 +12,6 @@ import type { Structure } from "@/core/types";
 import { ChevronRight } from "lucide-react";
 import { DrawnInList } from "./DrawnInList";
 import { EvidenceForEntity } from "./EvidenceForEntity";
-import { RecentInstancesPicker } from "./RecentInstancesPicker";
 import { SameAsDropTarget } from "./SameAsDropTarget";
 import { SameAsList } from "./SameAsList";
 
@@ -58,7 +57,6 @@ export const LabelCard = ({ instance, self, meId, onChanged }: LabelCardProps) =
         <Heading>Same as</Heading>
         <SameAsList instance={instance} self={self} />
         <SameAsDropTarget self={self} term={term} onDone={onChanged} />
-        <RecentInstancesPicker term={term} onPick={() => onChanged?.()} />
       </section>
 
       <Collapsible>

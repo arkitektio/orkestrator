@@ -19,3 +19,29 @@ query ListGraphs($filters: GraphFilter, $pagination: OffsetPaginationInput, $ord
     ...ListGraph
   }
 }
+
+# The words a view speaks, for its sidebar. Read when the tab opens: the page
+# itself draws the schema and does not need the vocabulary.
+query ViewWords($id: ID!) {
+  graph(id: $id) {
+    id
+    nodeCategories {
+      ... on Category {
+        id
+        label
+        term {
+          ...ListTerm
+        }
+      }
+    }
+    edgeCategories {
+      ... on Category {
+        id
+        label
+        term {
+          ...ListTerm
+        }
+      }
+    }
+  }
+}

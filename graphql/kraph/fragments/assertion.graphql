@@ -42,3 +42,41 @@ fragment EdgeDrawing on EdgeDrawing {
     ...BaseEdge
   }
 }
+
+# One act as a line in the log: everything it said, in as much detail as a row
+# needs. An act can make several claims at once, so these are all lists.
+fragment ClaimAct on Assertion {
+  ...Assertion
+  instances {
+    id
+    term {
+      ...ListTerm
+    }
+  }
+  links {
+    id
+    kind
+    term {
+      ...ListTerm
+    }
+  }
+  metrics {
+    id
+    key
+    value
+    unit
+  }
+  comments {
+    id
+    text
+  }
+  standings {
+    id
+    stands
+  }
+  structures {
+    id
+    identifier
+    object
+  }
+}

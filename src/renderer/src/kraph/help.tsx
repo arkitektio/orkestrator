@@ -8,45 +8,56 @@ import { PageHelp } from "@/core/layout/help";
 export const KRAPH_HELP = {
   home: (
     <PageHelp
-      intro="The starting page of the knowledge graph module. A graph collects what you know about your samples: the things you track (entities), what was measured on them, and how they relate. This page links every Kraph page and shows every graph you have."
+      intro="Where knowledge starts. What your organization has claimed about its data is listed here, newest first, with the views that draw it below."
       steps={[
-        <>Use the tiles at the top (<b>Terms</b>, <b>Graphs</b>, the categories, <b>Scatter Plots</b>, …) to open those pages.</>,
-        <>If you have no graph yet, press <b>Create your first graph</b>, give it a name and a description, and confirm. You land on the new graph.</>,
-        <>Click a graph card to open it and see its schema as a diagram.</>,
-        <>Right-click a graph card for its actions, for example <b>Create Protocol Event Category</b> or <b>Delete Graph</b>.</>,
-        <>Open the <b>Statistics</b> tab of the sidebar to see how many graphs exist.</>,
+        <>Use the tiles at the top (<b>Words</b>, <b>Claims</b>, <b>Views</b>, …) to open those pages.</>,
+        <>To say something new, right-click a datum anywhere in the app, for example an annotation, and choose <b>Measures…</b>, or drag two things together and choose <b>Relate…</b>.</>,
+        <>Click a claim to see who said it, and how it stands.</>,
+        <>Click a view card to open it and see which words it draws.</>,
       ]}
       tips={[
-        <>Once at least one graph exists the create button is gone from this page. Further graphs are created on the <b>Graphs</b> page.</>,
+        <>A claim names a word, not a view. Claiming needs no view at all; a view draws the claim once it declares that word.</>,
+      ]}
+    />
+  ),
+  claims: (
+    <PageHelp
+      intro="Everything your organization has said about its data, newest first: who said it, and when. This is the log itself, so a claim is listed here whether or not any view draws it."
+      steps={[
+        <>Click a word on a row to open that claim and see who holds it, and who has disputed it.</>,
+        <>To say something new, right-click a datum anywhere in the app and choose <b>Measures…</b>.</>,
+      ]}
+      tips={[
+        <>Nothing here is ever deleted. A retraction is a claim too, and shows as its own row.</>,
       ]}
     />
   ),
   graphs: (
     <PageHelp
-      intro="All knowledge graphs. A graph is one way of organizing the knowledge extracted from your data: it declares which categories of things, events and relations it shows."
+      intro="A view is one way of reading what was claimed: it declares which words it draws and whose claims count. Deleting a view removes no claim, because the claims stay in the log."
       steps={[
-        <>Press <b>Create</b> to make a new graph. Fill in <b>Name</b> and <b>Description</b> and confirm; you are taken to the new graph.</>,
-        <>Click a graph to open its schema diagram.</>,
-        <>Right-click a graph and choose <b>Create Protocol Event Category</b> to add a kind of experimental step to it, or <b>Delete Graph</b> to remove it.</>,
+        <>Press <b>Create</b> to make a new view. Fill in <b>Name</b> and <b>Description</b> and confirm; you are taken to the new view.</>,
+        <>Click a view to open its schema diagram.</>,
+        <>Right-click a view and choose <b>Create Protocol Event Category</b> to add a kind of experimental step to it, or <b>Delete View</b> to remove it.</>,
       ]}
       tips={[
-        <>In the create dialog, <b>Draw existing evidence</b> fills the new graph with everything already recorded under the words it declares. This can take a while on a large evidence base; left off, the content appears at the next rebuild.</>,
+        <>In the create dialog, <b>Draw existing evidence</b> fills the new view with everything already recorded under the words it declares. This can take a while on a large evidence base; left off, the content appears at the next rebuild.</>,
       ]}
     />
   ),
   graph: (
     <PageHelp
-      intro="One graph, shown as a diagram of its schema: each box is a category (a kind of entity or event) and each arrow a kind of relation between them. This is where you shape what the graph can hold."
+      intro="One view, shown as a diagram of its schema: each box is a category, which says how this view draws a word, and each arrow a kind of relation between them. This is where you shape what the view draws."
       steps={[
-        <>Click an empty spot of the diagram and press <b>Entity</b> to add a new entity category to this graph.</>,
+        <>Click an empty spot of the diagram and press <b>Entity</b> to add a new entity category to this view.</>,
         <>Click the name on a box or on an arrow to open that category.</>,
         <>Tidy the diagram with <b>Stress</b>, <b>Force</b>, <b>Disco</b>, <b>Tree</b>, <b>Layered</b> or <b>Circle</b>, or drag the boxes yourself, then press <b>Save</b> to keep the positions.</>,
-        <>Press <b>Queries</b> to see the saved table queries over this graph.</>,
-        <>Press the knife icon in the header to change the graph{"’"}s name and description, and <b>Pin</b> to pin it.</>,
-        <>Open the menu button at the right end of the header for <b>Create Protocol Event Category</b> and <b>Delete Graph</b>.</>,
+        <>Press <b>Queries</b> to see the saved table queries over this view. Open the <b>Words</b> tab of the sidebar to see every word it draws.</>,
+        <>Press the knife icon in the header to change the view{"’"}s name and description, and <b>Pin</b> to pin it.</>,
+        <>Open the menu button at the right end of the header for <b>Create Protocol Event Category</b> and <b>Delete View</b>.</>,
       ]}
       tips={[
-        <>The badge in the header tells whether the graph has caught up with what was recorded: <b>up to date</b>, a number <b>behind</b>, <b>rebuilding</b> or <b>needs backfill</b>. <b>schema stale</b> means it was drawn under an older schema; hover the badge for details.</>,
+        <>The badge beside the name tells whether the view has caught up with what was recorded: <b>up to date</b>, a number <b>behind</b>, <b>rebuilding</b> or <b>needs backfill</b>. <b>schema stale</b> means it was drawn under an older schema; hover the badge for details.</>,
         <><b>Save</b> stores the positions of the boxes only.</>,
         <>The <b>Plots</b> tab of the sidebar lists scatter plots.</>,
       ]}
@@ -115,13 +126,13 @@ export const KRAPH_HELP = {
   ),
   terms: (
     <PageHelp
-      intro="Your organization’s vocabulary. A term is a word such as “cell” or “treated with”; graphs declare the words they use, and every graph declaring the same word sees the same records."
+      intro="Your organization’s vocabulary. A word such as “cell” or “treated with” is what a claim names; views declare the words they draw, and every view declaring the same word sees the same claims."
       steps={[
         <>Pick a kind above the list to see only those words; with <b>All kinds</b> the list is grouped by kind.</>,
         <>Use the search to find a word by its word, label or description.</>,
-        <>Use <b>Graphs</b> to see only words a graph speaks, or only words no graph declares yet.</>,
-        <>Press <b>New term</b> to declare a word before any graph uses it.</>,
-        <>Click a term to see what it means and which graphs declare it.</>,
+        <>Use <b>Views</b> to see only words a view speaks, or only words no view declares yet.</>,
+        <>Press <b>New word</b> to declare a word before anyone uses it.</>,
+        <>Click a term to see what it means and which views declare it.</>,
       ]}
       tips={[
         <>A term is never deleted. Hide it from its page or its menu: pickers stop offering it, and its records stay. Set <b>Show</b> to <b>Hidden</b> to find hidden words again.</>,

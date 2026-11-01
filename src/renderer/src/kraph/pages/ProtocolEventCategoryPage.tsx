@@ -2,14 +2,10 @@ import { PageSections } from "@/core/layout/PageSections";
 import { reportError } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
-import {
-  KraphProtocolEventCategory,
-  KraphProtocolStepTemplate,
-} from "@/core/linkers";
+import { KraphProtocolEventCategory } from "@/core/linkers";
 import {
   useGetProtocolEventCategoryQuery,
   useUpdateProtocolEventCategoryMutation,
@@ -72,15 +68,6 @@ const Page =  asDetailQueryRoute(
               object={{ id: data.protocolEventCategory.id }}
             />
           </>
-        }
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphProtocolStepTemplate.Knowledge
-                object={{ id: data.protocolEventCategory.id }}
-              />
-            </Sidebars.Tab>
-          </Sidebars>
         }
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">

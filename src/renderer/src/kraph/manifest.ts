@@ -40,7 +40,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@kraph/metric", name: "Metric", datum: false, path: "metrics/:id" },
     { identifier: "@kraph/instance", name: "Instance", datum: false, path: "instances/:id" },
     { identifier: "@kraph/link", name: "Link", datum: false, path: "links/:id" },
-    { identifier: "@kraph/graph", name: "Graph", datum: false, path: "graphs/:id" },
+    { identifier: "@kraph/graph", name: "View", datum: false, path: "graphs/:id" },
     { identifier: "@kraph/graphview", name: "Graph View", datum: false, path: "graphviews/:id" },
     { identifier: "@kraph/plotview", name: "Plot View", datum: false, path: "plotviews/:id" },
     { identifier: "@kraph/nodeview", name: "Node View", datum: false, path: "nodeviews/:id" },

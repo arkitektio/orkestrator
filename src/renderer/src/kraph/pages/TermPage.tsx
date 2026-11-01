@@ -1,22 +1,12 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { Image } from "@/core/ui/image";
 import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
 import { reportErrorAs } from "@/core/notify";
-import {
-  KraphEntityCategory,
-  KraphGraph,
-  KraphMeasurementCategory,
-  KraphNaturalEventCategory,
-  KraphProtocolEventCategory,
-  KraphRelationCategory,
-  KraphStructureRelationCategory,
-  KraphTerm,
-} from "@/core/linkers";
+import { KraphEntityCategory, KraphGraph, KraphMeasurementCategory, KraphNaturalEventCategory, KraphProtocolEventCategory, KraphRelationCategory, KraphStructureRelationCategory, KraphTerm } from "@/core/linkers";
 import { Eye, EyeOff, ExternalLink } from "lucide-react";
 import {
   DetailTermFragment,
@@ -135,13 +125,6 @@ const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
       help={KRAPH_HELP.term}
       object={{ id: term.id }}
       title={term.key}
-      sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Knowledge">
-            <KraphTerm.Knowledge object={{ id: term.id }} />
-          </Sidebars.Tab>
-        </Sidebars>
-      }
       pageActions={
         <>
           <KraphTerm.ObjectButton alwaysShow object={{ id: term.id }} />

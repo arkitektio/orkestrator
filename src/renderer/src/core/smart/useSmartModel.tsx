@@ -345,23 +345,6 @@ export const useSmartModel = ({
     [drag, drop, identifier, refs, selectionStore, self, syncSelectionState],
   );
 
-  useEffect(() => {
-    return () => {
-      const node = registeredNodeRef.current;
-      if (!node) {
-        return;
-      }
-
-      unregisterSmartNode(node);
-      selectionStore.getState().unregisterSelectables([
-        {
-          structure: self,
-          item: node,
-        },
-      ]);
-    };
-  }, [selectionStore, self]);
-
   const clearPartners = React.useCallback(() => {
     setSmartDrop(null);
   }, []);

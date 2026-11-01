@@ -6,6 +6,7 @@ import { Identifier, Object } from "@/core/types";
 import { Komments } from "../komments/Komments";
 import { LabelsBlock } from "../knowledge/LabelsBlock";
 import { MeasurementsBlock } from "../knowledge/MeasurementsBlock";
+import { MeasuresBlock } from "../knowledge/MeasuresBlock";
 import { useKnowledge } from "../knowledge/useKnowledge";
 
 export type KnowledgeSidebarProps = {
@@ -41,6 +42,10 @@ const Measurements = (props: KnowledgeSidebarProps) => {
  *   claimed to be the same thing, and the ways to say "so is that one" — drop
  *   a datum on the card, or on the whole panel to get the "Same thing as…"
  *   action, which is also in the context menu and the `ObjectButton`.
+ * - **This measures …** — "the intensity profile of a sample": two words, or a
+ *   label from above instead of a new thing. Drop an entity on the panel to
+ *   name one that exists. Only its thing shows afterwards, as a label, until the
+ *   backend can read the sentence back (`kraph/docs/SENTENCES.md`).
  * - **Measurements** — the metrics recorded on the datum, and "Measure".
  * - **Discussion** — a comment is the same act as the claims above, recorded
  *   in the same log, so it lives in the same column.
@@ -57,6 +62,10 @@ export const KnowledgeSidebar = ({ identifier, object }: KnowledgeSidebarProps) 
     <Guard.Lok notConnectedFallback={<LabelsBlock identifier={identifier} object={object} />}>
       <LabelsWithMe identifier={identifier} object={object} />
     </Guard.Lok>
+
+    <Separator />
+
+    <MeasuresBlock identifier={identifier} object={object} />
 
     <Separator />
 

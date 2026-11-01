@@ -2,7 +2,7 @@ import { Guard } from "@/core/connection/arkitekt/host";
 import { Arkitekt } from "@/app/Arkitekt";
 // Installs every module's builtins; must precede anything that reads a registry.
 import "@/app/modules/install";
-import { ModuleBackground } from "@/core/modules/registries";
+import { ModuleBackground, ModuleStructureLayers } from "@/core/modules/registries";
 import "@/app/configureSmartBuilder";
 // Hands the menu its sections (providers/smart/hostRegistries).
 import "@/core/smart/smartcontext";
@@ -202,6 +202,7 @@ export const AppProvider = ({
                                     {/* Every module's always-on builtins (updaters,
                                         dashboard widgets), each behind its guard. */}
                                     {!quick && <ModuleBackground />}
+                                    {!quick && <ModuleStructureLayers />}
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>

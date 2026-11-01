@@ -1,20 +1,17 @@
-import { Boxes, Cat, ChartScatter, Divide, GitFork, Home, Notebook, Ruler, Shapes, Sigma, Sparkles, SpellCheck, Waypoints } from "lucide-react";
+import { Boxes, ChartScatter, Home, MessageSquareQuote, Sparkles, SpellCheck } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
-/** kraph's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
+/**
+ * kraph's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin).
+ * Words and claims first: they are what a person says. A category is how one
+ * view draws a word, so its page is reached from that view, not listed here.
+ */
 export const KRAPH_NAV_LINKS: NavLinkDecl[] = [
   { label: "Dashboard", route: "/kraph/home", keywords: ["knowledge", "graph"], group: "Explore", icon: Home, home: true },
-  { label: "Terms", route: "/kraph/terms", group: "Explore", icon: SpellCheck, description: "Ontology terms" },
-  { label: "Graphs", route: "/kraph/graphs", group: "Explore", icon: Sparkles, description: "Knowledge graphs" },
-  { label: "Structures", route: "/kraph/structurekinds", group: "Categories", icon: Shapes, description: "Linked data objects" },
-  { label: "Entities", route: "/kraph/entitycategories", group: "Categories", icon: Cat, description: "Things you track" },
-  { label: "Protocol Events", route: "/kraph/protocoleventcategories", group: "Categories", icon: Notebook, description: "Steps you performed" },
-  { label: "Natural Events", route: "/kraph/naturaleventcategories", group: "Categories", icon: Divide, description: "Things that happened" },
-  { label: "Relations", route: "/kraph/relationcategories", group: "Categories", icon: Waypoints, description: "Entity to entity" },
-  { label: "Structure Relations", route: "/kraph/structurerelationcategories", group: "Categories", icon: GitFork, description: "Structure to structure" },
-  { label: "Metrics", route: "/kraph/metrickinds", group: "Categories", icon: Sigma, description: "Measured values" },
-  { label: "Measurements", route: "/kraph/measurementcategories", keywords: ["measurements"], group: "Categories", icon: Ruler, description: "Structure to entity" },
-  { label: "All Structures", route: "/kraph/structures", keywords: ["linked", "objects"], group: "Explore", icon: Boxes, description: "Every linked data object" },
-  { label: "Scatter Plots", route: "/kraph/scatterplots", keywords: ["plots", "charts"], group: "Explore", icon: ChartScatter, description: "Plots over graph queries" },
+  { label: "Words", route: "/kraph/terms", keywords: ["terms", "ontology", "vocabulary"], group: "Explore", icon: SpellCheck, description: "Your organization's vocabulary" },
+  { label: "Claims", route: "/kraph/claims", keywords: ["assertions", "log", "provenance"], group: "Explore", icon: MessageSquareQuote, description: "What was said, and by whom" },
+  { label: "All Structures", route: "/kraph/structures", keywords: ["linked", "objects", "data"], group: "Explore", icon: Boxes, description: "Every datum that has been claimed about" },
+  { label: "Views", route: "/kraph/graphs", keywords: ["graphs", "projection", "schema"], group: "Views", icon: Sparkles, description: "Ways of reading what was claimed" },
+  { label: "Scatter Plots", route: "/kraph/scatterplots", keywords: ["plots", "charts"], group: "Views", icon: ChartScatter, description: "Plots over a view's queries" },
 ];

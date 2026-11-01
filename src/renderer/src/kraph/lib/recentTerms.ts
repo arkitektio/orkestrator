@@ -3,9 +3,9 @@ import React from "react";
 import { z } from "zod";
 
 /**
- * The words you last measured something as, so the next "Measures" is one
- * click: the smart menu's Measures section offers them as rows, the term
- * lookup lists them first.
+ * The sentences you last said, so the next "Measures" is one click: the smart
+ * menu's Measures section offers them as rows, the pickers list their words
+ * first. An entry saved before sentences had a measurement word has no `measure`.
  *
  * Scoped per profile, like the palette's recents (`core/command/recents.ts`)
  * and the menu's pins (`core/smart/extensions/pins.ts`): a word is the
@@ -17,6 +17,14 @@ export const RecentTermSchema = z.object({
   key: z.string().min(1),
   label: z.string().nullish(),
   color: z.array(z.number()).nullish(),
+  /** What it was said to measure of this word: the first half of the sentence. */
+  measure: z
+    .object({
+      key: z.string().min(1),
+      label: z.string().nullish(),
+      color: z.array(z.number()).nullish(),
+    })
+    .nullish(),
   at: z.number(),
 });
 
@@ -58,12 +66,17 @@ export const saveRecentTerms = (
   }
 };
 
-/** Most recent first, one row per word, capped. Pure — the caller persists. */
+/** Most recent first, one row per sentence, capped. Pure — the caller persists. */
 export const addRecentTerm = (
   current: readonly RecentTerm[],
   term: RecentTerm,
 ): RecentTerm[] =>
-  [term, ...current.filter((recent) => recent.key !== term.key)].slice(0, MAX_RECENT_TERMS);
+  [
+    term,
+    ...current.filter(
+      (recent) => recent.key !== term.key || recent.measure?.key !== term.measure?.key,
+    ),
+  ].slice(0, MAX_RECENT_TERMS);
 
 // One snapshot per storage key, so every open menu and dialog sees a new
 // recent and `useSyncExternalStore` gets a stable reference between changes.

@@ -12,6 +12,7 @@ import {
 import { PageAction } from "@/core/ui/page-action";
 import OntologyGraph from "../components/designer/OntologyGraph";
 import { ProjectionBadge } from "../components/ProjectionBadge";
+import { ViewWords } from "../components/knowledge/ViewWords";
 import ScatterPlotList from "../components/lists/ScatterPlotList";
 import { UpdateGraphForm } from "../forms/UpdateGraphForm";
 import { KRAPH_HELP } from "../help";
@@ -44,15 +45,9 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
       title={data.graph.name}
       pageActions={
         <>
-          {/* A readout, not an action: it goes rather than taking a row in
-              the burger. */}
-          <PageAction.Slot collapse="hide" priority={-20}>
-            <ProjectionBadge projection={data.graph.projection} />
-          </PageAction.Slot>
-
           <FormSheet
             trigger={
-              <PageAction aria-label="Edit graph">
+              <PageAction aria-label="Edit view">
                 <HobbyKnifeIcon />
               </PageAction>
             }
@@ -66,7 +61,7 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
           <PageAction
             priority={-10}
             onClick={() => {
-              pin().catch(reportErrorAs(data.graph.pinned ? "Couldn't unpin the graph" : "Couldn't pin the graph"));
+              pin().catch(reportErrorAs(data.graph.pinned ? "Couldn't unpin the view" : "Couldn't pin the view"));
             }}
           >
             {data.graph.pinned ? "Unpin" : "Pin"}
@@ -76,8 +71,8 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
       }
       sidebars={
         <Sidebars>
-          <Sidebars.Tab label="Knowledge">
-            <KraphGraph.Knowledge object={data.graph} />
+          <Sidebars.Tab label="Words">
+            <ViewWords graph={data.graph.id} />
           </Sidebars.Tab>
           <Sidebars.Tab label="Plots">
             {(
@@ -95,11 +90,13 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
             {data.graph.name}
           </h1>
           <p className="mt-3 text-xl text-muted-foreground">
-            {data.graph.description}{" "}
-            {data.graph.ageName && `· ${data.graph.ageName}`}
+            {data.graph.description}
           </p>
         </div>
-        <div className="col-span-7 flex justify-end"></div>
+        {/* Whether what you just claimed has reached this view yet. */}
+        <div className="col-span-7 flex justify-end">
+          <ProjectionBadge projection={data.graph.projection} />
+        </div>
       </div>
       <OntologyGraph graph={data.graph} />
     </KraphGraph.ModelPage>

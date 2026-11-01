@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
-import { KraphGraph, KraphGraphQuery, KraphGraphView } from "@/core/linkers";
+import { KraphGraph, KraphGraphQuery } from "@/core/linkers";
 import {
   useGetGraphTableQueryQuery,
 } from "../api/graphql";
@@ -51,9 +51,6 @@ const Page = asDetailQueryRoute(
         }
         sidebars={
           <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphGraphView.Knowledge object={{ id: data.graphTableQuery.id }} />
-            </Sidebars.Tab>
             <Sidebars.Tab label="Plots">
               <div className="px-6 py-4">
                 <div className="flex items-center justify-between mb-4">

@@ -1,18 +1,3 @@
-# Which categories may connect the two things a user is pairing up.
-#
-# This replaced `materializedRelationEdges` and friends — precomputed
-# cross-products of (source category × edge category × target category) that were
-# removed as an unmaintained cache. They were never refreshed when a category was
-# added, and `createRelationCategory` never populated them at all, so a relation
-# category made through the API had zero rows *permanently*: the Relate menu was
-# silently empty for it.
-#
-# The question is still cheap, because it is asked of the graph's *schema* rather
-# than of its evidence. These list the candidates; `kraph/lib/applicableCategories`
-# then asks the server, per candidate, whether the concrete ends match the
-# category's descriptors — the same predicate the writer applies, so the menu can
-# no longer offer a pairing the write would reject.
-
 # Measurements need no probe: `MeasurementCategoryFilter.sourceIdentifier` still
 # answers "which measurements accept this structure kind" directly.
 query ListApplicableMeasurementCategories(
@@ -31,27 +16,9 @@ query ListApplicableMeasurementCategories(
   }
 }
 
-query ListCandidateRelationCategories($search: String) {
-  relationCategories(filters: { search: $search }) {
-    ...ListRelationCategory
-    graph {
-      id
-      name
-    }
-  }
-}
-
-query ListCandidateStructureRelationCategories($search: String) {
-  structureRelationCategories(filters: { search: $search }) {
-    ...ListStructureRelationCategoryWithGraph
-  }
-}
-
-# The probes. Non-empty means the named category (or structure kind) satisfies
-# the descriptor, so the edge category admits that end.
-# Doubles as the *resolver*: with no `ids`, it answers which entity categories a
-# descriptor admits — which is what an edge category's `targetDescriptor` used to
-# have precomputed for it as `MaterializedEdge.target`.
+# With no `ids`, answers which entity categories a descriptor admits: what an
+# edge category's `targetDescriptor` used to have precomputed as
+# `MaterializedEdge.target`.
 query EntityCategoriesMatchingDescriptor(
   $ids: [ID!]
   $descriptor: EntityDescriptorInput
@@ -62,17 +29,5 @@ query EntityCategoriesMatchingDescriptor(
       id
       name
     }
-  }
-}
-
-query StructureKindsMatchingDescriptor(
-  $identifiers: [String!]
-  $descriptor: StructureDescriptorInput
-) {
-  structureKinds(
-    filters: { identifiers: $identifiers, matchesDescriptor: $descriptor }
-  ) {
-    id
-    identifier
   }
 }

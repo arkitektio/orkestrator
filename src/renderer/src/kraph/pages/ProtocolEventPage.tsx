@@ -1,11 +1,6 @@
 import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
-import {
-  KraphEntity,
-  KraphProtocolEvent,
-  KraphProtocolEventCategory
-} from "@/core/linkers";
+import { KraphEntity, KraphProtocolEvent, KraphProtocolEventCategory } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetProtocolEventQuery } from "../api/graphql";
 import { KRAPH_HELP } from "../help";
@@ -23,13 +18,6 @@ const Page = asGraphDetailQueryRoute(
         help={KRAPH_HELP.protocolEvent}
         object={{ id: data.protocolEvent.id }}
         title={data?.protocolEvent.label}
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphProtocolEvent.Knowledge object={{ id: data.protocolEvent.id }} />
-            </Sidebars.Tab>
-          </Sidebars>
-        }
         pageActions={
           <>
             <FormSheet trigger={<HobbyKnifeIcon />}>

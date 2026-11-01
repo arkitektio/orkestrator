@@ -1,37 +1,16 @@
 import { Card } from "@/core/ui/card";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { KraphEntityCategory, KraphStructureKind } from "@/core/linkers";
-import { PlusIcon } from "lucide-react";
+import { KraphStructureKind } from "@/core/linkers";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import StructureKindList from "../components/lists/StructureKindList";
 import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const Page: React.FC<IRepresentationScreenProps> = () => {
-  const navigate = useNavigate();
-
   return (
     <KraphStructureKind.ListPage
       help={KRAPH_HELP.structureKinds}
       title="Structure Categories"
-      pageActions={
-        <>
-          <DialogButton
-            alwaysShow
-            name="createentitycategory"
-            variant={"outline"}
-            size={"sm"}
-            dialogProps={{
-              onSuccess: (data) => navigate(KraphEntityCategory.linkBuilder(data.createEntityCategory.id)),
-            }}
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Create
-          </DialogButton>
-        </>
-      }
     >
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-4">

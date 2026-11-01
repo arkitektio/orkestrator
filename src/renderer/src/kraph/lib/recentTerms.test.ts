@@ -31,6 +31,17 @@ describe("recent terms", () => {
     ]);
   });
 
+  it("keeps one row per sentence, so a word can be recent under two measurement words", () => {
+    const profile = { key: "intensity profile" };
+    const first = addRecentTerm([], { key: "sample", measure: profile, at: 1 });
+    const second = addRecentTerm(first, { key: "sample", measure: { key: "area" }, at: 2 });
+    expect(second.map((t) => t.measure?.key)).toEqual(["area", "intensity profile"]);
+    expect(addRecentTerm(second, { key: "sample", measure: profile, at: 3 }).map((t) => t.measure?.key)).toEqual([
+      "intensity profile",
+      "area",
+    ]);
+  });
+
   it("caps the list", () => {
     let terms = addRecentTerm([], { key: "t0", at: 0 });
     for (let i = 1; i < MAX_RECENT_TERMS + 5; i++) {

@@ -1,11 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
-import {
-  KraphEntity,
-  KraphMetric
-} from "@/core/linkers";
+import { KraphEntity, KraphMetric } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetMetricQuery } from "../api/graphql";
 import { KRAPH_HELP } from "../help";
@@ -16,13 +12,6 @@ export default asDetailQueryRoute(useGetMetricQuery, ({ data }) => {
       help={KRAPH_HELP.metric}
       object={{ id: data.metric.id }}
       title={data?.metric.kind?.label || data?.metric.kind?.key || data?.metric.key || "Metric"}
-      sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Knowledge">
-            <KraphMetric.Knowledge object={{ id: data.metric.id }} />
-          </Sidebars.Tab>
-        </Sidebars>
-      }
       pageActions={
         <>
           <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>

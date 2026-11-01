@@ -1,37 +1,16 @@
 import { Card } from "@/core/ui/card";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { KraphGraph, KraphMetricKind } from "@/core/linkers";
-import { PlusIcon } from "lucide-react";
+import { KraphMetricKind } from "@/core/linkers";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import MetricKindList from "../components/lists/MetricKindList";
 import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const Page: React.FC<IRepresentationScreenProps> = () => {
-  const navigate = useNavigate();
-
   return (
     <KraphMetricKind.ListPage
       help={KRAPH_HELP.metricKinds}
       title="Metric Categories"
-      pageActions={
-        <>
-          <DialogButton
-            alwaysShow
-            name="creategraph"
-            variant={"outline"}
-            size={"sm"}
-            dialogProps={{
-              onSuccess: (data) => navigate(KraphGraph.linkBuilder(data.createGraph.id)),
-            }}
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Create
-          </DialogButton>
-        </>
-      }
     >
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-4">

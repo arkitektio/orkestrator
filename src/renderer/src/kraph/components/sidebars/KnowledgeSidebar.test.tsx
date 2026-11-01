@@ -25,6 +25,7 @@ vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => 
 // Surfaces with their own plumbing: the discussion, the drop zone, the drag
 // target, the measurement button and the evidence popover.
 vi.mock("../komments/Komments", () => ({ Komments: () => <div data-testid="komments" /> }));
+vi.mock("../knowledge/MeasuresBlock", () => ({ MeasuresBlock: () => <div data-testid="measures-block" /> }));
 vi.mock("@/core/smart/Drop", () => ({
   SmartDropZone: ({ children }: { children: React.ReactNode }) => <div data-testid="dropzone">{children}</div>,
 }));

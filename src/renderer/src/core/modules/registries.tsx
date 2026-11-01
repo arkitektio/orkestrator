@@ -21,6 +21,7 @@ import type { ProfileSection } from "@/core/connection/profile/section";
 import type { AuthFlowHandler } from "@/core/authflow/types";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
 import type { SmartContextSection } from "@/core/smart/extensions/section";
+import { StructureLayerHost, useStructureLayersEnabled } from "@/core/smart/layers/structureLayers";
 import type { DialogRegistry } from "./types";
 
 /**
@@ -461,5 +462,35 @@ export const ModuleBackground = () => {
         );
       })}
     </>
+  );
+};
+
+/**
+ * Every module's structure layers, each behind its module's guard. Nothing is
+ * mounted while the toggle is off, and nothing is observed while no module has a
+ * layer to draw.
+ */
+export const ModuleStructureLayers = () => {
+  useModuleHostVersion();
+  const enabled = useStructureLayersEnabled();
+  const owners = (moduleDefinitions() as readonly ModuleDefinition[]).filter(
+    (definition) => definition.builtins.structureLayers?.length,
+  );
+  if (!enabled || owners.length === 0) return null;
+  return (
+    <StructureLayerHost>
+      {(props) =>
+        owners.map((definition) => {
+          const Guard = moduleGuard(namespaceOf(definition));
+          return (
+            <Guard key={namespaceOf(definition)}>
+              {definition.builtins.structureLayers?.map((Layer, index) => (
+                <Layer key={index} {...props} />
+              ))}
+            </Guard>
+          );
+        })
+      }
+    </StructureLayerHost>
   );
 };

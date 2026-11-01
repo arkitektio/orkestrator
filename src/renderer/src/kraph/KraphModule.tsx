@@ -42,6 +42,7 @@ import GraphGraphQueriesPage from "./pages/graph/GraphGraphQueriesPage";
 import { GraphScopeLayout } from "./providers/GraphScopeProvider";
 
 import { EntityCategorySchemaBuilderPage } from "./pages/EntityCategorySchemaBuilderPage";
+import ClaimsPage from "./pages/ClaimsPage";
 import ScatterPlotsPage from "./pages/ScatterPlotsPage";
 import StructuresPage from "./pages/StructuresPage";
 interface Props { }
@@ -57,6 +58,7 @@ export const KraphModule: React.FC<Props> = () => {
           Claim grain: a bare uuid, no graph. Where a dropped id lands when
           nothing supplies a view — the page then offers `drawnIn`.
         */}
+        <Route path="claims" element={<ClaimsPage />} />
         <Route path="instances/:id" element={<InstancePage />} />
         <Route path="links/:id" element={<LinkPage />} />
         <Route path="relations/:id" element={<RelationPage />} />

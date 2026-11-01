@@ -1,6 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { reportError } from "@/core/notify";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { Card } from "@/core/ui/card";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
@@ -91,15 +90,6 @@ export default asDetailQueryRoute(
           <KraphNaturalEventCategory.Actions
             object={data.naturalEventCategory.id}
           />
-        }
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphNaturalEventCategory.Knowledge
-                object={{ id: data.naturalEventCategory.id }}
-              />
-            </Sidebars.Tab>
-          </Sidebars>
         }
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">

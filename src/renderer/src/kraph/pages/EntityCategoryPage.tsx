@@ -81,9 +81,6 @@ export const Page = asDetailQueryRoute(
             <Sidebars.Tab label="Stats">
               <EntityCategorySidebar category={data.entityCategory.id} />
             </Sidebars.Tab>
-            <Sidebars.Tab label="Knowledge">
-              <KraphEntityCategory.Knowledge object={data.entityCategory} />
-            </Sidebars.Tab>
           </Sidebars>
         }
         pageActions={

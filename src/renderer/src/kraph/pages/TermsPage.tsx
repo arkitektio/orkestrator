@@ -38,8 +38,8 @@ const DECLARED = ["any", "declared", "undeclared"] as const;
 type Declared = (typeof DECLARED)[number];
 const DECLARED_LABELS: Record<Declared, string> = {
   any: "Any",
-  declared: "Spoken by a graph",
-  undeclared: "No graph yet",
+  declared: "Spoken by a view",
+  undeclared: "No view yet",
 };
 
 const ALL_KINDS = "all";
@@ -93,7 +93,7 @@ const Page = () => {
   return (
     <KraphTerm.ListPage
       help={KRAPH_HELP.terms}
-      title="Terms"
+      title="Words"
       pageActions={
         <>
           <CollapsibleSearch
@@ -105,16 +105,16 @@ const Page = () => {
           <PageAction.Slot collapse="icon" priority={-10}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <ActionTrigger aria-label="Graphs">
+                <ActionTrigger aria-label="Views">
                   <Waypoints className="h-4 w-4" />
                   <ActionLabel>
-                    Graphs
+                    Views
                     {declared !== "any" && <Badge variant="secondary">{DECLARED_LABELS[declared]}</Badge>}
                   </ActionLabel>
                 </ActionTrigger>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Spoken by a graph</DropdownMenuLabel>
+                <DropdownMenuLabel>Spoken by a view</DropdownMenuLabel>
                 <DropdownMenuRadioGroup
                   value={declared}
                   onValueChange={(value) => setDeclared(value === "any" ? null : (value as Declared))}
@@ -160,16 +160,16 @@ const Page = () => {
             icon={<Plus className="h-4 w-4" />}
             onClick={() => openDialog("createterm", { kind: kind ?? undefined }, { size: "medium" })}
           >
-            New term
+            New word
           </PageAction>
         </>
       }
     >
       <div className="p-6">
         <div className="mb-4 max-w-3xl">
-          <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">Terms</h1>
+          <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">Words</h1>
           <p className="mt-2 text-muted-foreground">
-            The words your organization uses. Graphs declare the words they speak, and every graph
+            The words your organization uses. Views declare the words they speak, and every view
             declaring the same word sees the same claims.
           </p>
         </div>

@@ -1,7 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { reportError } from "@/core/notify";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
@@ -44,13 +43,6 @@ const Page = asDetailQueryRoute(
         help={KRAPH_HELP.metricKind}
         object={{ id: data.metricKind.id }}
         title={data?.metricKind.label}
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphMetricKind.Knowledge object={{ id: data.metricKind.id }} />
-            </Sidebars.Tab>
-          </Sidebars>
-        }
         pageActions={
           <>
 

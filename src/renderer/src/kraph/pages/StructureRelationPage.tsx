@@ -13,7 +13,6 @@ const Page = asDetailQueryRoute(useGetStructureRelationQuery, ({ data }) => {
       help={KRAPH_HELP.structureRelation}
       object={{ id: data?.structureRelation.id }}
       title={data?.structureRelation.category?.label ?? data?.structureRelation.label}
-      sidebars={<KraphStructureRelation.Knowledge object={{ id: data.structureRelation.id }} />}
       pageActions={
         <>
           <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>

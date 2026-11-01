@@ -1,8 +1,7 @@
 import { CreateEntityWithPropertiesDialog } from "./dialogs/CreateEntityWithProperties";
 import { CreateNewMeasurement } from "./dialogs/CreateNewMeasurement";
-import { CreateNewRelation } from "./dialogs/CreateNewRelation";
 import { MeasureTermDialog } from "./dialogs/MeasureTerm";
-import { RelateStructures } from "./dialogs/RelateStructures";
+import { RelateSentenceDialog } from "./dialogs/RelateSentence";
 import { SetAsMeasurement } from "./dialogs/SetAsMeasurement";
 import CreateEntityCategoryForm from "./forms/CreateEntityCategoryForm";
 import CreateEntityForm from "./forms/CreateEntityForm";
@@ -20,8 +19,7 @@ import UpdateEntityCategoryForm from "./forms/UpdateEntityCategoryForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const KRAPH_DIALOGS = {
-  relatestructure: RelateStructures,
-  createnewrelation: CreateNewRelation,
+  relatesentence: RelateSentenceDialog,
   createnewmeasurement: CreateNewMeasurement,
   setasmeasurement: SetAsMeasurement,
   measureterm: MeasureTermDialog,

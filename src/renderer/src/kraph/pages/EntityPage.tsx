@@ -1,5 +1,5 @@
-import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
 import { Sidebars } from "@/core/layout/Sidebars";
+import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
 import { Badge } from "@/core/ui/badge";
 import { Separator } from "@/core/ui/separator";
 import { KraphEntity, KraphEntityCategory } from "@/core/linkers";
@@ -79,9 +79,6 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
       title={data.entity.label || categoryTitle}
       sidebars={
         <Sidebars>
-          <Sidebars.Tab label="Knowledge">
-            <KraphEntity.Knowledge object={{ id: data.entity.id }} />
-          </Sidebars.Tab>
           <Sidebars.Tab label="Evidence">
             {/*
               Two halves. Structures are what the claim is evidence *from*;

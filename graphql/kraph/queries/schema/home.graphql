@@ -2,6 +2,9 @@ query HomePage {
   graphs: graphs {
     ...ListGraph
   }
+  acts: assertions(pagination: { limit: 8 }) {
+    ...ClaimAct
+  }
 }
 
 

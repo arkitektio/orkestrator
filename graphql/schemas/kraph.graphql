@@ -127,38 +127,6 @@ input AssertMeasurementExistsInput {
 }
 
 """Input for creating a new metric"""
-input AssertMetricValueForStructureInput {
-  """
-  How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
-  """
-  confidence: Float = null
-
-  """
-  What kind of number `confidence` is — a method's own score, a p-value. Measurement-only
-  """
-  confidenceType: String = null
-
-  """
-  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
-  """
-  derivedFrom: [String!]! = []
-  key: String!
-
-  """When the world was observed. Defaults to when it was claimed."""
-  observedAt: DateTime = null
-
-  """The unique ID of the structure this metric is associated with"""
-  structure: ID!
-  unit: String = null
-  value: AnyScalar!
-
-  """
-  What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded.
-  """
-  valueKind: PropertyType!
-}
-
-"""Input for creating a new metric"""
 input AssertMetricValueInput {
   """
   How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
@@ -191,6 +159,12 @@ input AssertMetricValueInput {
   What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded.
   """
   valueKind: PropertyType!
+}
+
+"""Input for recording many metrics, about any number of data, as one act"""
+input AssertMetricValuesInput {
+  """The values to record, at most 5000 in one act"""
+  metrics: [MetricValueInput!]!
 }
 
 """Input for creating a new natural event instance"""
@@ -588,6 +562,29 @@ type AssertedMetric implements Asserted {
   True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request.
   """
   pending: Boolean!
+}
+
+"""
+A batch of metrics as one act. A metric that names a uuid already on the record is reported, not recorded again
+"""
+type AssertedMetricValues {
+  """
+  The act that recorded this batch's new metrics. Null when every one of them was already recorded
+  """
+  assertion: Assertion
+
+  """
+  Every metric of the batch, in the order given: new ones and those an earlier attempt recorded
+  """
+  metrics: [Metric!]!
+
+  """
+  True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request.
+  """
+  pending: Boolean!
+
+  """How many of the batch's metrics this call recorded"""
+  recorded: Int!
 }
 
 """An assertion about a natural event, and everywhere it is now drawn"""
@@ -3855,6 +3852,53 @@ type MetricKindStats {
   sum(field: MetricKindField!): Float
 }
 
+"""One value about one external datum, inside a batch"""
+input MetricValueInput {
+  """
+  How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
+  """
+  confidence: Float = null
+
+  """
+  What kind of number `confidence` is — a method's own score, a p-value. Measurement-only
+  """
+  confidenceType: String = null
+
+  """
+  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
+  """
+  derivedFrom: [String!]! = []
+
+  """
+  The structure identifier of the datum this value is about, e.g. '@mikro/annotation'
+  """
+  identifier: String!
+  key: String!
+
+  """The id of the datum this value is about"""
+  object: String!
+
+  """When the world was observed. Defaults to when it was claimed."""
+  observedAt: DateTime = null
+
+  """
+  The uuid of an earlier metric of this API that this value corrects: that one is retracted and cited, under this act
+  """
+  supersedes: UUID = null
+  unit: String = null
+
+  """
+  Optional: a uuid for this metric that stays the same across retries, so a retried batch records nothing twice. Left out, one is minted, and rerunning records the value again
+  """
+  uuid: UUID = null
+  value: AnyScalar!
+
+  """
+  What type of value this is. Required: it decides the storage column and the measurement term
+  """
+  valueKind: ValueKind!
+}
+
 """Graph Engine Mutations"""
 type Mutation {
   """Archive a graph in the graph engine (soft delete)"""
@@ -3887,9 +3931,9 @@ type Mutation {
   assertMetricValue(input: AssertMetricValueInput!): AssertedMetric!
 
   """
-  Record a measurement against a structure that already exists, named by its evidence id
+  Record many measurements, about any number of data, as one act, creating the structures they describe. A metric that names its own uuid is recorded once however often the batch is retried
   """
-  assertMetricValueForStructure(input: AssertMetricValueForStructureInput!): AssertedMetric!
+  assertMetricValues(input: AssertMetricValuesInput!): AssertedMetricValues!
 
   """
   Claim that a natural event happened, under one of the organization's words
@@ -4046,11 +4090,6 @@ type Mutation {
 
   """Finalize a media upload after the client has written the object"""
   finishMediaUpload(input: FinishMediaUploadInput!): MediaStore!
-
-  """
-  Record measurements against a datum already on the record, as one act (was `updateStructure`)
-  """
-  recordMetrics(input: RecordMetricsInput!): AssertedStructure!
 
   """
   Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
@@ -5406,23 +5445,6 @@ type Query {
   List the organization's words — its vocabulary, independent of any graph
   """
   terms(filters: TermFilter = null, pagination: VocabularyPaginationInput = null): [Term!]!
-}
-
-"""Input for recording measurements against a datum already on the record"""
-input RecordMetricsInput {
-  """
-  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
-  """
-  derivedFrom: [String!]! = []
-
-  """The ID of the structure the measurements describe"""
-  id: String!
-
-  """List of measurements associated with this structure"""
-  metrics: [MetricInput!]! = []
-
-  """The unique ID of the object this structure references"""
-  object: String!
 }
 
 input RefreshUploadInput {
@@ -6856,6 +6878,8 @@ input TraversalPaginationInput {
   """Number of items to skip"""
   offset: Int = 0
 }
+
+scalar UUID
 
 """Input for updating an existing entity definition in the graph schema"""
 input UpdateEntityCategoryInput {

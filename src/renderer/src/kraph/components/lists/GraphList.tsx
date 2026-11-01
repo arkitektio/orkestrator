@@ -21,7 +21,7 @@ const List = ({ filters, pagination }: Props) => {
     <ListRender
       array={data?.graphs}
       title={
-        <KraphGraph.ListLink className="flex-0">Graphs</KraphGraph.ListLink>
+        <KraphGraph.ListLink className="flex-0">Views</KraphGraph.ListLink>
       }
       refetch={refetch}
     >

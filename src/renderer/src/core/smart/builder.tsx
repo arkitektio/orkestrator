@@ -164,18 +164,6 @@ const buildKnowledge = <T extends Object>(model: Identifier) => {
   };
 };
 
-const buildTinyKnowledge = <T extends Object>(model: Identifier) => {
-  return ({ ...props }: ObjectProps<T>) => {
-    if (!smartRegistry.isDatum(model)) {
-      return null;
-    }
-    return getSmartBuilderAdapters().renderTinyKnowledge({
-      identifier: model,
-      object: props.object,
-    });
-  };
-};
-
 const buildModelPage = <T extends Object>(model: Identifier) => {
   return ({ ...props }: SmartModelPage<T>) => {
     return getSmartBuilderAdapters().renderModelPage({
@@ -257,7 +245,6 @@ export const buildSmart = <T extends Object>(config: SmartConfig) => {
     Drop: buildDropModel<T>(identifier),
     Actions: buildSelfActions(identifier),
     Knowledge: buildKnowledge<T>(identifier),
-    TinyKnowledge: buildTinyKnowledge<T>(identifier),
     identifier,
     ModelPage: buildModelPage<T>(identifier),
     ListPage: buildListPage(identifier),

@@ -1,14 +1,11 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { reportError } from "@/core/notify";
 import { FormSheet } from "@/core/dialogs/FormDialog";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
 import { Image } from "@/core/ui/image";
 import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
-import {
-  KraphStructureRelationCategory
-} from "@/core/linkers";
+import { KraphStructureRelationCategory } from "@/core/linkers";
 import {
   useGetStructureRelationCategoryQuery,
   useUpdateStructureRelationCategoryMutation
@@ -47,15 +44,6 @@ const Page = asDetailQueryRoute(
         help={KRAPH_HELP.structureRelationCategory}
         object={{ id: data.structureRelationCategory.id }}
         title={data?.structureRelationCategory.label}
-        sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <KraphStructureRelationCategory.Knowledge
-                object={{ id: data.structureRelationCategory.id }}
-              />
-            </Sidebars.Tab>
-          </Sidebars>
-        }
         pageActions={
           <>
 

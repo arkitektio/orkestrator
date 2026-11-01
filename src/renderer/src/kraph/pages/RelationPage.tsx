@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
 import { Badge } from "@/core/ui/badge";
-import { KraphReagent, KraphRelation } from "@/core/linkers";
+import { KraphRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetRelationQuery } from "../api/graphql";
 import { KRAPH_HELP } from "../help";
@@ -12,7 +12,6 @@ export default asDetailQueryRoute(useGetRelationQuery, ({ data }) => {
       help={KRAPH_HELP.relation}
       object={{ id: data.relation.id }}
       title={data?.relation.category?.label ?? data?.relation.label}
-      sidebars={<KraphReagent.Knowledge object={{ id: data.relation.id }} />}
       pageActions={
         <>
           <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>

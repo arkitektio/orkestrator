@@ -26,7 +26,7 @@ import {
 } from "./api/graphql";
 import { smartRegistry } from "@/core/smart/registry";
 import type { Structure } from "@/core/types";
-import { Equal, Eye, EyeOff, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { Equal, Eye, EyeOff, Link2, Network, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
 import { toast } from "@/core/notify";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
@@ -59,9 +59,9 @@ export const NewEntityAction: Action = {
 };
 
 /**
- * "This datum measures a <word>" — the lookup (recent words first, or a new
- * one) is the `measureterm` dialog; the recent words also come back as rows
- * of the menu's Measures section (`smart/sections.tsx`).
+ * "This datum measures the <word> of a <thing>" — the `measureterm` dialog. A
+ * sentence said before comes back as a row of the menu's Measures section
+ * (`smart/sections.tsx`).
  */
 export const MeasureTermAction: Action = {
   title: "Measures…",
@@ -74,6 +74,67 @@ export const MeasureTermAction: Action = {
     }
     dialog.openDialog("measureterm", { structures: state.left }, { size: "medium" });
   },
+};
+
+/**
+ * "This datum measures the <word> of that entity": the entity was dropped on the
+ * datum, or on its Knowledge panel, so only the word is left to choose. The way
+ * to name an individual that already exists, until there is a search for them.
+ */
+export const MeasureEntityAction: Action = {
+  title: "Measures…",
+  description: "Say what this datum measures of the partner entity",
+  icon: Ruler,
+  conditions: [{ type: "datum" }, { type: "pmixture", identifiers: ["@kraph/entity", "@kraph/instance"] }],
+  execute: async ({ state, dialog }) => {
+    const entities = (state.right ?? []).filter(
+      ({ identifier }) => identifier === "@kraph/entity" || identifier === "@kraph/instance",
+    );
+    const target = entities[0];
+    if (!target || entities.length !== 1) {
+      throw new Error("Pick exactly one entity to measure");
+    }
+    dialog.openDialog("measureterm", { structures: state.left, target }, { size: "medium" });
+  },
+  collections: ["io"],
+};
+
+/**
+ * "[AIS 1] [is part of] [neuron 4]": the word is chosen in the `relatesentence`
+ * dialog. Two entities relate through a RELATION word, two data through a
+ * STRUCTURE_RELATION word; neither needs a graph to draw both ends.
+ */
+export const RelateEntitiesAction: Action = {
+  title: "Relate…",
+  description: "Say how this entity relates to the partner entity",
+  icon: Network,
+  conditions: [
+    { type: "identifier", identifier: "@kraph/entity" },
+    { type: "pidentifier", identifier: "@kraph/entity" },
+  ],
+  execute: async ({ state, dialog }) => {
+    dialog.openDialog(
+      "relatesentence",
+      { kind: "entities", left: state.left, right: state.right ?? [] },
+      { size: "medium" },
+    );
+  },
+  collections: ["io"],
+};
+
+export const RelateDataAction: Action = {
+  title: "Relate…",
+  description: "Say how this datum relates to the partner datum",
+  icon: Network,
+  conditions: [{ type: "datum" }, { type: "pdatum" }],
+  execute: async ({ state, dialog }) => {
+    dialog.openDialog(
+      "relatesentence",
+      { kind: "data", left: state.left, right: state.right ?? [] },
+      { size: "medium" },
+    );
+  },
+  collections: ["io"],
 };
 
 export const LinkStructureToEntityAction: Action = {
@@ -312,13 +373,16 @@ export const KRAPH_ACTIONS = {
   "create-new-entity": NewEntityAction,
   "link-structure-to-entity": LinkStructureToEntityAction,
   "measure-term": MeasureTermAction,
+  "measure-entity": MeasureEntityAction,
   "same-datum": SameAsDatumAction,
+  "relate-entities": RelateEntitiesAction,
+  "relate-data": RelateDataAction,
   "attest-node": AttestNodeAction,
   "retract-links": RetractLinksAction,
   "hide-term": buildSetTermHiddenAction(true),
   "show-term": buildSetTermHiddenAction(false),
   "delete-kraph-graph": buildDeleteAction({
-    title: "Delete Graph",
+    title: "Delete View",
     identifier: "@kraph/graph",
     description: "Delete the Graph",
     service: "kraph",

@@ -53,7 +53,6 @@ export type SmartNewButtonProps = {
 
 export interface SmartBuilderAdapters {
   renderKnowledge: (context: SmartObjectContext) => React.ReactNode;
-  renderTinyKnowledge: (context: SmartObjectContext) => React.ReactNode;
   renderHover: (context: SmartObjectContext) => React.ReactNode;
   renderModelPage: (
     props: SmartModelPage<any> & { identifier: Identifier },
@@ -71,7 +70,6 @@ export interface SmartBuilderAdapters {
 
 let smartBuilderAdapters: SmartBuilderAdapters = {
   renderKnowledge: () => null,
-  renderTinyKnowledge: () => <>Not implemented right now</>,
   renderHover: () => null,
   renderModelPage: ({ children }) => <>{children}</>,
   renderListPage: ({ children }) => <>{children}</>,

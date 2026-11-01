@@ -67,7 +67,7 @@ describe("LabelInput", () => {
     render(<LabelInput onClaim={vi.fn()} />);
     type("AIS");
     expect(screen.queryByText(/Claim as/)).not.toBeInTheDocument();
-    expect(screen.getByText("no graph draws this word yet")).toBeInTheDocument();
+    expect(screen.getByText("no view draws this word yet")).toBeInTheDocument();
   });
 
   it("leaves out words already on the datum", () => {
@@ -79,5 +79,21 @@ describe("LabelInput", () => {
     type("AIS");
     expect(screen.getByText(/Already claimed as AIS/)).toBeInTheDocument();
     expect(screen.queryByText(/Claim as/)).not.toBeInTheDocument();
+  });
+});
+
+describe("spelling", () => {
+  it("finds a word however it is capitalized, rather than coining a near-duplicate", () => {
+    search.mockReturnValue({ data: { terms: [term("Mitochondrion")] }, loading: false });
+    render(<LabelInput onClaim={vi.fn()} />);
+    type("mitochondrion");
+    expect(screen.queryByText(/Claim as/)).not.toBeInTheDocument();
+  });
+
+  it("keeps two words that differ only in a non-Latin letter apart", () => {
+    search.mockReturnValue({ data: { terms: [term("α-tubulin")] }, loading: false });
+    render(<LabelInput onClaim={vi.fn()} />);
+    type("β-tubulin");
+    expect(screen.getByText(/Claim as “β-tubulin”/)).toBeInTheDocument();
   });
 });
