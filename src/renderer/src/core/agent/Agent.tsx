@@ -7,6 +7,7 @@ import { selectAlias, selectApolloClient } from "@/core/connection/arkitekt/util
 import { BlokImplementationInput, ComponentContext, DefinitionInput, EnsureAgentDocument, EnsureAgentMutation, EnsureAgentMutationVariables, ImplementAgentDocument, ImplementAgentMutation, ImplementAgentMutationVariables, ImplementationInput} from "@/rekuest/api/graphql";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
+  AGENT_SPEC_VERSION,
   AgentMode,
   Assign,
   CancelledEvent,
@@ -515,6 +516,8 @@ export class OrkestratorAgent {
           token: this.token,
           mode: AgentMode.enum.EXECUTOR,
           session_id: this.sessionId,
+          // takt refuses a REGISTER that names no spec (4006).
+          spec_version: AGENT_SPEC_VERSION,
           // Don't displace another live Orkestrator connection (avoids two
           // windows kicking each other into a reconnect loop).
           force: false,

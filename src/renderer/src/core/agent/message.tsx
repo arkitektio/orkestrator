@@ -8,6 +8,14 @@ import { z } from "zod";
  * backend sends an EVENT_ACK (persist-then-ack) and resent on reconnect.
  */
 
+/**
+ * The arkitekt-spec this agent's protocol is written against, sent on every
+ * REGISTER as `spec_version` (what the Python agents send from
+ * `arkitekt_spec.current_spec_version()`). takt refuses a REGISTER without one
+ * (close 4006). Bump it when the agent is brought up to a newer spec.
+ */
+export const AGENT_SPEC_VERSION = "8.0.0";
+
 export const LogLevel = z.enum(["DEBUG", "INFO", "ERROR", "WARN", "CRITICAL"]);
 
 /** How a participant intends to use the protocol (granted per token scopes). */
@@ -185,6 +193,7 @@ export const Register = FromAgentFrame.extend({
   force: z.boolean().default(false),
   mode: AgentMode.default(AgentMode.enum.EXECUTOR),
   session_id: z.string().optional().nullable(),
+  spec_version: z.string().min(1).default(AGENT_SPEC_VERSION),
 });
 
 export const SessionInit = FromAgentFrame.extend({
