@@ -1,3 +1,10 @@
+## [5.7.1](https://github.com/arkitektio/orkestrator/compare/v5.7.0...v5.7.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* a lens is named by naming what it pins ([88d3dff](https://github.com/arkitektio/orkestrator/commit/88d3dff427d18301cbef0bc26f6acca1ef61e60d))
+
 # [5.7.0](https://github.com/arkitektio/orkestrator/compare/v5.6.1...v5.7.0) (2026-11-02)
 
 
