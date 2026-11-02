@@ -3,6 +3,7 @@ import { useModeStore } from "../../platform/stores/modeStore";
 import { useRoiDrawingStore } from "../../features/annotations/roiDrawingStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { coerceModeState, hasProbeableLayer } from "../../features/annotations/modeCompat";
+import { isRemapActive } from "../../platform/model/displayRemap";
 
 /**
  * Keeps the active mode and tool valid for the current view.
@@ -26,11 +27,12 @@ export const ModeCompatGuard = () => {
   // A SCALAR subscription (P9c/P17): only the boolean matters here, and the
   // `layers` array changes identity on every per-tick layer edit.
   const probeable = useSceneStore((s) => hasProbeableLayer(s.layers));
+  const remapped = useSceneStore((s) => isRemapActive(s.displayRemap));
 
   useEffect(() => {
     const next = coerceModeState(
       { interactionMode, activeTool },
-      { displayMode, hasProbeableLayer: probeable },
+      { displayMode, hasProbeableLayer: probeable, remapped },
     );
     if (next.interactionMode !== interactionMode) {
       setInteractionMode(next.interactionMode);
@@ -41,6 +43,7 @@ export const ModeCompatGuard = () => {
     interactionMode,
     activeTool,
     probeable,
+    remapped,
     setInteractionMode,
     setActiveTool,
   ]);

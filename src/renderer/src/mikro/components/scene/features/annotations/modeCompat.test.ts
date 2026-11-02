@@ -208,4 +208,13 @@ describe("coerceModeState in DESIGN", () => {
     );
     expect(next).toEqual({ interactionMode: "NAVIGATE", activeTool: "RECTANGLE" });
   });
+
+  it("drops DESIGN under an axis remap, and coerces a session out of it", () => {
+    const remapped = { displayMode: "3D" as const, hasProbeableLayer: true, remapped: true };
+    expect(isInteractionModeAvailable("DESIGN", remapped)).toBe(false);
+    expect(isInteractionModeAvailable("PROBE", remapped)).toBe(true);
+    expect(
+      coerceModeState({ interactionMode: "DESIGN", activeTool: null }, remapped).interactionMode,
+    ).toBe("NAVIGATE");
+  });
 });

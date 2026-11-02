@@ -20,6 +20,7 @@ import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useSceneViewAxes } from "../../platform/stores/sceneViewAxes";
 import { isIdentityView } from "@/core/data/scene/coords/viewAxes";
+import { useDisplayRemapActive } from "../../platform/stores/sceneDisplayRemap";
 import { useAnimationEditor } from "./useAnimationEditor";
 
 const EASING_LABELS: Record<Easing, string> = {
@@ -196,12 +197,14 @@ const panelClass = (variant: AnimationPanelProps["variant"]) =>
  * A tour's poses are camera positions in the XY view's space. Turned to
  * another plane the camera lives in a permuted space (`viewAxes.ts`), so a
  * tour would play from the wrong side and a stop taken there would be stored
- * wrong: the panel waits for the view to turn back.
+ * wrong: the panel waits for the view to turn back. The same holds for an
+ * axis remap (`displayRemap.ts`): the camera then lives in a stretched space.
  */
 export const AnimationPanel = ({ variant = "floating" }: AnimationPanelProps = {}) => {
   const sceneId = useSceneStore((s) => s.id);
   const view = useSceneViewAxes(sceneId);
-  if (isIdentityView(view)) return <AnimationPanelBody variant={variant} />;
+  const remapped = useDisplayRemapActive(sceneId);
+  if (isIdentityView(view) && !remapped) return <AnimationPanelBody variant={variant} />;
   return (
     <div className={panelClass(variant)}>
       <div className="flex items-center gap-1 text-[10px] font-medium text-foreground/60">
@@ -209,7 +212,9 @@ export const AnimationPanel = ({ variant = "floating" }: AnimationPanelProps = {
         <span>Animations</span>
       </div>
       <p className="text-[10px] text-foreground/50">
-        Tours are recorded and played in the XY view. Switch the plane back to XY to play or edit them.
+        {remapped
+          ? "Tours are recorded and played in physical proportions. Set the axis remap back to 1× (Scene settings) to play or edit them."
+          : "Tours are recorded and played in the XY view. Switch the plane back to XY to play or edit them."}
       </p>
     </div>
   );

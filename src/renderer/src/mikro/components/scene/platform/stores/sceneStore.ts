@@ -22,6 +22,7 @@ import { planDefaultVolumeLods } from "../quality/lodPlanning";
 import { hydrateLayerEntries } from "../attributes/sparseEntry";
 import type { LensLookup } from "@/mikro/lib/lenses/lensSelection";
 import { composeLatticeAffine } from "@/core/data/scene/coords/transformGraph";
+import { composeDeltas, remapDelta, type DisplayRemap } from "../model/displayRemap";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).
@@ -235,6 +236,23 @@ export interface SceneState {
     layerIds: readonly string[],
     worldDelta: readonly (readonly number[])[] | null,
   ) => { failures: { layerId: string; reason: string }[] };
+  /**
+   * What the registration host last asked `setPlacementPreview` for; null
+   * when nothing is previewed. Kept so the display remap can be composed on
+   * top of it (`R · D · asAffine`) without either clobbering the other.
+   */
+  placementPreviewRequest: {
+    layerIds: readonly string[];
+    worldDelta: readonly (readonly number[])[];
+  } | null;
+  /**
+   * The display remap (`platform/model/displayRemap.ts`, COORDINATE_SYSTEMS.md
+   * §1 R1b): one world axis drawn stretched for EVERY layer. Session-only; the
+   * source of truth lives outside the scope (`sceneDisplayRemap.ts`) and is
+   * pushed in by `DisplayRemapSync`, since a view change rebuilds this store.
+   */
+  displayRemap: DisplayRemap | null;
+  setDisplayRemap: (remap: DisplayRemap | null) => void;
 }
 
 export const createSceneStore = ({
@@ -281,7 +299,64 @@ export const createSceneStore = ({
   const spaceAxis = scene.worldCoordinateSystem?.axes.find((axis) => axis.type === AxisType.Space);
 
   return createStore<SceneState>()(
-    immer((set, get) => ({
+    immer((set, get) => {
+    /**
+     * Draw every layer with its preview delta on top of its server placement:
+     * the display remap `R` on all of them, the registration delta `D` on the
+     * ones the host asked for, composed `R · D` (COORDINATE_SYSTEMS.md §1
+     * R1a/R1b). Always from the stored bases, so neither drifts the other,
+     * and every member is written in ONE `set` (merge buckets stay whole).
+     */
+    const applyPreviews = (): { layerId: string; reason: string }[] => {
+      const {
+        sceneLayers,
+        layers,
+        placementPreviewBases,
+        placementPreviewRequest,
+        displayRemap,
+        transformContext,
+      } = get();
+      const worldSpatial = worldViewTriple(transformContext);
+      const remap = remapDelta(displayRemap, transformContext.viewAxes as ViewAxes | null);
+      const asked = new Set(placementPreviewRequest?.layerIds ?? []);
+      const result = applyPlacementPreview<SceneLayer, LayerState>({
+        sceneLayers,
+        layers,
+        bases: placementPreviewBases,
+        deltaOf: (layer) =>
+          composeDeltas(remap, asked.has(layer.id) ? placementPreviewRequest!.worldDelta : null),
+        worldSpatial,
+        // Exact for lens-backed layers (the triple `composeLayerAffine`
+        // reduces with). Every other kind assumes its data names its
+        // spatial axes like the world does — only consulted when the delta
+        // leaves the axes a PARTIAL placement constrains, where a
+        // differently-named 3D collection would preview flattened.
+        dataSpatialOf: (layer) =>
+          isBrickLayer(layer)
+            ? [layer.renderAxes.x, layer.renderAxes.y, layer.renderAxes.z]
+            : worldSpatial,
+        placeImage: (state, placement) => {
+          const asAffine = placement as unknown as LayerState["asAffine"];
+          return {
+            ...state,
+            asAffine,
+            affineMatrix: composeLatticeAffine(transformContext, { ...state, asAffine }),
+          };
+        },
+      });
+      // The PLAIN-OBJECT form, as in `syncSceneLayers`: untouched layers
+      // keep their identity, which the immer finalizer would not preserve.
+      if (result.changed) {
+        set({
+          sceneLayers: result.sceneLayers,
+          layers: result.layers,
+          placementPreviewBases: result.bases,
+        });
+      }
+      return result.failures;
+    };
+
+    return ({
       id: scene.id,
       preferredView: scene.preferredView,
       setPreferredView: (view) =>
@@ -302,44 +377,21 @@ export const createSceneStore = ({
       trackTailWindows: {},
       layerDimExtents: {},
       placementPreviewBases: {},
+      placementPreviewRequest: null,
+      displayRemap: null,
       setPlacementPreview: (layerIds, worldDelta) => {
-        const { sceneLayers, layers, placementPreviewBases, transformContext } = get();
-        const worldSpatial = worldViewTriple(transformContext);
-        const result = applyPlacementPreview<SceneLayer, LayerState>({
-          sceneLayers,
-          layers,
-          bases: placementPreviewBases,
-          layerIds,
-          worldDelta,
-          worldSpatial,
-          // Exact for lens-backed layers (the triple `composeLayerAffine`
-          // reduces with). Every other kind assumes its data names its
-          // spatial axes like the world does — only consulted when the delta
-          // leaves the axes a PARTIAL placement constrains, where a
-          // differently-named 3D collection would preview flattened.
-          dataSpatialOf: (layer) =>
-            isBrickLayer(layer)
-              ? [layer.renderAxes.x, layer.renderAxes.y, layer.renderAxes.z]
-              : worldSpatial,
-          placeImage: (state, placement) => {
-            const asAffine = placement as unknown as LayerState["asAffine"];
-            return {
-              ...state,
-              asAffine,
-              affineMatrix: composeLatticeAffine(transformContext, { ...state, asAffine }),
-            };
-          },
-        });
-        // The PLAIN-OBJECT form, as in `syncSceneLayers`: untouched layers
-        // keep their identity, which the immer finalizer would not preserve.
-        if (result.changed) {
-          set({
-            sceneLayers: result.sceneLayers,
-            layers: result.layers,
-            placementPreviewBases: result.bases,
-          });
-        }
-        return { failures: result.failures };
+        const request =
+          worldDelta && layerIds.length ? { layerIds: [...layerIds], worldDelta } : null;
+        set({ placementPreviewRequest: request });
+        const failures = applyPreviews();
+        // Only the registration host's own layers: a layer the remap alone
+        // could not move is not its business.
+        const asked = new Set(request?.layerIds ?? []);
+        return { failures: failures.filter((failure) => asked.has(failure.layerId)) };
+      },
+      setDisplayRemap: (remap) => {
+        set({ displayRemap: remap });
+        applyPreviews();
       },
       sceneLayers,
       layers: brickLayers.map((layer) =>
@@ -465,10 +517,17 @@ export const createSceneStore = ({
         // placement again, so its placement-preview base is stale: forget it.
         // Kept layers are exactly the ones whose stored object survived.
         const previousRaw = new Set<SceneLayer>(sceneLayers);
-        const prunedBases = prunePreviewBases(
-          get().placementPreviewBases,
-          new Set(result.sceneLayers.filter((layer) => previousRaw.has(layer)).map((layer) => layer.id)),
+        const keptIds = new Set(
+          result.sceneLayers.filter((layer) => previousRaw.has(layer)).map((layer) => layer.id),
         );
+        const prunedBases = prunePreviewBases(get().placementPreviewBases, keptIds);
+        // A re-derived layer leaves the registration request too: its new
+        // placement is (typically) the saved registration, and previewing the
+        // same delta on top of it would apply it twice (R1a).
+        const request = get().placementPreviewRequest;
+        const keptRequest = request
+          ? request.layerIds.filter((id) => keptIds.has(id))
+          : null;
 
         // The PLAIN-OBJECT form on purpose: the immer middleware only runs
         // `produce` for function updaters, so this bypasses the finalizer.
@@ -478,11 +537,23 @@ export const createSceneStore = ({
           sceneLayers: result.sceneLayers,
           layers: result.layers,
           ...(prunedBases ? { placementPreviewBases: prunedBases } : {}),
+          ...(request && keptRequest && keptRequest.length !== request.layerIds.length
+            ? {
+                placementPreviewRequest: keptRequest.length
+                  ? { ...request, layerIds: keptRequest }
+                  : null,
+              }
+            : {}),
         });
+        // New and re-derived layers carry the server's placement: draw them
+        // remapped like the rest. (Kept layers already are; their delta is
+        // recomputed from the same base, so this is idempotent.)
+        if (get().displayRemap) applyPreviews();
         return summary;
       },
       touchImageLayers: () => set({ layers: [...get().layers] }),
-    })),
+    });
+    }),
   );
 };
 

@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { computeSceneWorldBox } from "./platform/camera/sceneFit";
 import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { REMAP_BLOCK_REASON, useDisplayRemapActive } from "./platform/stores/sceneDisplayRemap";
 import { hostLayersKey, toHostLayers, type HostLayer } from "./platform/model/hostLayers";
 import { useModeStore, useModeStoreApi, type DisplayMode, type InteractionMode } from "./platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi, type SceneLayer } from "./platform/stores/sceneStore";
@@ -92,6 +93,17 @@ export const useSceneWorld = () => {
     }),
     [world, transformContext, unit],
   );
+};
+
+/**
+ * True while the scene is drawn with an axis remap (`displayRemap.ts`): every
+ * length along one axis is drawn non-physically, so a host must not save a
+ * position authored on it. `reason` is the sentence to show for the refusal.
+ */
+export const useSceneDisplayRemapBlock = (): { blocked: boolean; reason: string } => {
+  const sceneId = useSceneStore((state) => state.id);
+  const blocked = useDisplayRemapActive(sceneId);
+  return { blocked, reason: REMAP_BLOCK_REASON };
 };
 
 export type PlacementPreviewFailure = { layerId: string; reason: string };

@@ -3,6 +3,9 @@ import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { computeWorldUnitsPerPixel, readControlsTarget } from "../../platform/probe/probeWorld";
+import { useSceneStore } from "../../platform/stores/sceneStore";
+import { isRemapActive, remapViewSlot } from "../../platform/model/displayRemap";
+import type { ViewAxes } from "@/core/data/scene/coords/viewAxes";
 
 function getNiceNumber(value: number): number {
   if (value <= 0) return 1;
@@ -17,7 +20,15 @@ function getNiceNumber(value: number): number {
 }
 
 export const ScaleGrid = () => {
-  const show = useViewerStore((s) => s.showScaleGrid);
+  // The grid's square cells lie in the screen x/y plane. With the remapped
+  // axis in that plane they would be rectangles in physical units, read as
+  // squares: no grid beats a wrong one (the scale bar does the same).
+  const planeRemapped = useSceneStore(
+    (s) =>
+      isRemapActive(s.displayRemap) &&
+      remapViewSlot(s.displayRemap, s.transformContext.viewAxes as ViewAxes | null) < 2,
+  );
+  const show = useViewerStore((s) => s.showScaleGrid) && !planeRemapped;
   const [cellSize, setCellSize] = useState(10);
   const lastCellRef = useRef(10);
 

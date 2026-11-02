@@ -45,6 +45,8 @@ import {
 import { MUTED_STROKE } from "./annotationStyle";
 import { roiOutline, type OutlinePoint } from "./roiOutline";
 import { formatDrawMeasure, measureDraw } from "./roiMeasure";
+import { unremapViewPoint } from "../../platform/model/displayRemap";
+import type { ViewAxes } from "@/core/data/scene/coords/viewAxes";
 import { unitLabel } from "../../platform/coords/sceneUnits";
 import type { DrawnRoi } from "./roiDrawingStore";
 
@@ -208,6 +210,10 @@ export const RoiDrawer = () => {
   // Slider cadence, not pointer cadence: only the live-wire regrow reads it.
   const traceWeights = useRoiDrawingStore((s) => s.traceWeights);
   const spatialUnit = useSceneStore((s) => s.spatialUnit);
+  // Under an axis remap the shape is drawn stretched; its readout measures
+  // what it physically spans.
+  const displayRemap = useSceneStore((s) => s.displayRemap);
+  const viewAxes = useSceneStore((s) => s.transformContext.viewAxes) as ViewAxes | null | undefined;
   const currentZ = useViewerStore((s) => s.currentZ);
   const viewerStoreApi = useViewerStoreApi();
   const modeStoreApi = useModeStoreApi();
@@ -387,7 +393,11 @@ export const RoiDrawer = () => {
         : [],
     );
 
-    const label = formatDrawMeasure(measureDraw(outlineTool, points), unit);
+    const physical = points.map((point) => {
+      const [x, y, z] = unremapViewPoint([point.x, point.y, point.z ?? 0], displayRemap, viewAxes);
+      return point.z === undefined ? { ...point, x, y } : { ...point, x, y, z };
+    });
+    const label = formatDrawMeasure(measureDraw(outlineTool, physical), unit);
     readoutApi.getState().setReadout(
       label
         ? { label, x: cursorPxRef.current.x, y: cursorPxRef.current.y }
@@ -395,7 +405,7 @@ export const RoiDrawer = () => {
     );
 
     invalidate(); // the Canvas is frameloop="demand"
-  }, [tool, unit, readoutApi, invalidate, sizingRadius, liveBandTo]);
+  }, [tool, unit, readoutApi, invalidate, sizingRadius, liveBandTo, displayRemap, viewAxes]);
 
   // Pointer-move storms coalesce to ≤1 repaint per frame, leading (same idiom
   // as the brick layers): the first paint of a frame runs inside the event — in

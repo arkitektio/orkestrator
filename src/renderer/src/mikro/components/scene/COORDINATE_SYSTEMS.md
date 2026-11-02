@@ -130,6 +130,33 @@ annotations follow with no per-feature code. The rules:
   the gizmo's and the solver's business and is composed down to an
   origin-anchored affine before anything is stored (§0).
 
+**R1b — The display REMAP is `R · D · asAffine`, and is never written.**
+For very anisotropic samples the scene can draw ONE world axis stretched or
+squashed by a factor `k` about a pivot (Scene settings → Remap axis;
+`platform/model/displayRemap.ts`). It is a placement preview like R1a, on
+EVERY layer, composed outside the registration delta: `sceneStore.applyPreviews`
+writes `R · D · base` from the same stored bases, so neither drifts the other,
+and `syncSceneLayers` re-applies `R` to a re-placed layer (dropping it from the
+registration request, so a saved edge is not previewed twice). The rules:
+
+- Session-only and stated in WORLD order (slot, pivot), kept outside the scope
+  (`platform/stores/sceneDisplayRemap.ts`, like the view plane) and pushed in
+  by `shell/DisplayRemapSync.tsx`. The pivot is the scene's physical centre on
+  that axis when it leaves 1×. "Force isotropy" (`isotropicRemap`) picks the
+  axis whose PHYSICAL voxel size stands out and scales it to the geometric mean
+  of the other two (median over the volumetric layers), so voxels draw cubic.
+- Exact only for layers aligned to the world on that axis; one rotated out of
+  it is drawn sheared, and the settings warning names it (`isAlignedTo`).
+- Nothing drawn under a remap reaches the server as a position: a new
+  annotation goes back through `unremapViewPoint` before `viewToWorldPoint`;
+  tour stops, scene tiles, mesh-design commits and registration saves are
+  refused until 1× (`REMAP_BLOCK_REASON`), and DESIGN is not offered
+  (`modeCompat.ts`; a design's meshes live in raw three-space, so the slider is
+  also locked while one holds meshes). The flat view's `currentZ` is carried
+  through each change so it stays on the same physical slice. Scale bar and
+  grid hide while they would measure the remapped axis, draw readouts measure
+  physically, and a chip says the view is not physical.
+
 **R2 — Store what was authored or measured; derive everything else.**
 Server-derived (we consume, never re-implement): `Lens.toParent` (crop translation from slice
 starts), `DataArray.toParent` (per-level pixel scale from actual shapes),

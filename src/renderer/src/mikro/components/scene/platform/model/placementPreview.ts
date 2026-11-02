@@ -48,9 +48,16 @@ export type PlacementPreviewArgs<Raw extends Placed, S extends Placed> = {
   /** Server placements of the layers currently previewed, by layer id. */
   bases: Readonly<Record<string, PreviewPlacement>>;
   /** The layers to preview. Anything previewed before and absent here is restored. */
-  layerIds: readonly string[];
+  layerIds?: readonly string[];
   /** Row-major 4×4 in world [x, y, z] slots. Null or identity = clear. */
-  worldDelta: readonly (readonly number[])[] | null;
+  worldDelta?: readonly (readonly number[])[] | null;
+  /**
+   * The delta per layer, when layers get different ones (a registration
+   * preview on some, the display remap on all: `sceneStore.applyPreviews`).
+   * Overrides `layerIds` / `worldDelta`. Null or identity = that layer is
+   * restored to its base.
+   */
+  deltaOf?: (layer: Raw) => readonly (readonly number[])[] | null;
   worldSpatial: SpatialTriple;
   /**
    * The [x, y, z] names on a layer's DATA side — only consulted when the delta
@@ -74,16 +81,22 @@ export type PlacementPreviewResult<Raw, S> = {
 export function applyPlacementPreview<Raw extends Placed, S extends Placed>(
   args: PlacementPreviewArgs<Raw, S>,
 ): PlacementPreviewResult<Raw, S> {
-  const clearing = args.worldDelta === null || isIdentityDelta(args.worldDelta);
-  const targets = clearing ? new Set<string>() : new Set(args.layerIds);
+  const deltaOf =
+    args.deltaOf ??
+    (() => {
+      const targets = new Set(args.layerIds ?? []);
+      const delta = args.worldDelta ?? null;
+      return (layer: Raw) => (delta && targets.has(layer.id) ? delta : null);
+    })();
   const bases: Record<string, PreviewPlacement> = { ...args.bases };
   const failures: { layerId: string; reason: string }[] = [];
   const placements = new Map<string, PreviewPlacement>();
 
   const sceneLayers = args.sceneLayers.map((layer) => {
     const base = bases[layer.id] ?? null;
+    const delta = deltaOf(layer);
 
-    if (!targets.has(layer.id)) {
+    if (!delta || isIdentityDelta(delta)) {
       if (!base) return layer;
       // Previewed before, not any more: back to the server's placement.
       delete bases[layer.id];
@@ -101,7 +114,7 @@ export function applyPlacementPreview<Raw extends Placed, S extends Placed>(
 
     const result = leftMultiplyWorldDelta(
       { inputAxes: truth.inputAxes, outputAxes: truth.outputAxes, matrix: truth.matrix.map((row) => [...row]) },
-      args.worldDelta!,
+      delta,
       { worldSpatial: args.worldSpatial, dataSpatial: args.dataSpatialOf(layer) },
     );
     if (!result.ok) {

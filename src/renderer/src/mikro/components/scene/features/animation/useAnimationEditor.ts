@@ -15,7 +15,8 @@ import { captureCameraState } from "../../platform/camera/cameraState";
 import { uploadMediaBlob } from "../../platform/sources/mediaUpload";
 import { useAnimationStoreApi } from "../../platform/stores/animationStore";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
-import { useSceneStore } from "../../platform/stores/sceneStore";
+import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
+import { isRemapActive } from "../../platform/model/displayRemap";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 
 /**
@@ -111,9 +112,13 @@ export const useSceneSnapshot = (): (() => Promise<string | null>) => {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const viewerApi = useViewerStoreApi();
+  const sceneApi = useSceneStoreApi();
   const [createSceneSnapshot] = useCreateSceneSnapshotMutation();
 
   return useCallback(async () => {
+    // A tile drawn with an axis remap would show the scene distorted to
+    // everyone who browses it. Skipped, like every other best-effort miss.
+    if (isRemapActive(sceneApi.getState().displayRemap)) return null;
     const capture = viewerApi.getState().captureScreenshot;
     // Null until SceneScreenshot registers it from inside the Canvas — i.e. the
     // scene has not painted yet, so there is no picture to take.
@@ -129,7 +134,7 @@ export const useSceneSnapshot = (): (() => Promise<string | null>) => {
       console.error("[scene] snapshot failed", error);
       return null;
     }
-  }, [sceneId, client, datalayer, viewerApi, createSceneSnapshot]);
+  }, [sceneId, client, datalayer, viewerApi, sceneApi, createSceneSnapshot]);
 };
 
 export interface ScenePreferencesEditor {

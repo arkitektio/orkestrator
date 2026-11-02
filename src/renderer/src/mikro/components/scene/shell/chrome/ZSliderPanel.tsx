@@ -6,7 +6,8 @@ import { useModeStore } from '../../platform/stores/modeStore'
 import { layersPlanKey } from '../../platform/model/layerPlanKey'
 import { useSceneStore, useSceneStoreApi } from '../../platform/stores/sceneStore'
 import { useViewerStore } from '../../platform/stores/viewerStore'
-import { worldViewTriple } from '@/core/data/scene/coords/viewAxes'
+import { worldViewTriple, type ViewAxes } from '@/core/data/scene/coords/viewAxes'
+import { unremapViewPoint } from '../../platform/model/displayRemap'
 import {
   buildAffineMatrix,
   getLayerZSize,
@@ -41,6 +42,11 @@ export const ZSliderPanel = ({
   // The world axis screen depth is under the view: "z" in XY, "y" in XZ.
   const depthAxis = useSceneStore((s) => worldViewTriple(s.transformContext)[2])
   const currentZ = useViewerStore((s) => s.currentZ)
+  // The readout says where the slice physically is: under an axis remap on
+  // the depth axis, `currentZ` is the stretched three-space depth.
+  const physicalZ = useSceneStore((s) =>
+    unremapViewPoint([0, 0, currentZ], s.displayRemap, s.transformContext.viewAxes as ViewAxes | null)[2],
+  )
   const setCurrentZ = useViewerStore((s) => s.setCurrentZ)
 
   // Compute the physical Z range across all layers that have a Z dimension
@@ -112,7 +118,7 @@ export const ZSliderPanel = ({
         />
       </div>
       <span className="text-[10px] tabular-nums text-muted-foreground select-none">
-        {currentZ.toFixed(1)}
+        {physicalZ.toFixed(1)}
       </span>
       {layerSlices.length > 0 && (
         // The per-layer readouts divide off along the tray's long axis, so the

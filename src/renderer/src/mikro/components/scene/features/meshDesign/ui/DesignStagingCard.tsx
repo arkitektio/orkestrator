@@ -6,6 +6,7 @@ import { Slider } from "@/core/ui/slider";
 import { useDialog } from "@/core/dialogs/registry";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore } from "../../../platform/stores/sceneStore";
+import { REMAP_BLOCK_REASON, useDisplayRemapActive } from "../../../platform/stores/sceneDisplayRemap";
 import { useBrushSkeletonStoreApi } from "../brush";
 import { simplifyGeometry } from "../ops/simplify";
 import {
@@ -131,6 +132,7 @@ export const DesignStagingCard = () => {
   const sceneId = useSceneStore((s) => s.id);
   const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
   const world = useSceneStore((s) => s.transformContext.worldCoordinateSystem);
+  const remapped = useDisplayRemapActive(sceneId);
   const { openDialog } = useDialog();
 
   // The staging entry exists while there is a session to manage — in any
@@ -172,9 +174,12 @@ export const DesignStagingCard = () => {
         <Button
           size="xs"
           variant="default"
-          disabled={committing || !world || meshes.length === 0}
+          // A design drawn under an axis remap is shaped in the stretched
+          // space; committed, its vertices would be stored distorted.
+          disabled={committing || !world || meshes.length === 0 || remapped}
+          title={remapped ? REMAP_BLOCK_REASON : undefined}
           onClick={() => {
-            if (!world) return;
+            if (!world || remapped) return;
             brushApi.getState().clear();
             // Dialogs render outside the scene scope: hand the session over
             // as props, take the outcome back through callbacks.

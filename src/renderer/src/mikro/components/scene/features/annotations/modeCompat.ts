@@ -14,6 +14,12 @@ export type ModeContext = {
   displayMode: DisplayMode;
   /** At least one layer can answer a probe. See `hasProbeableLayer`. */
   hasProbeableLayer: boolean;
+  /**
+   * The scene is drawn with an axis remap (`platform/model/displayRemap.ts`).
+   * A design is shaped in three-space, which is then stretched, so DESIGN is
+   * not offered until it is back at 1×.
+   */
+  remapped?: boolean;
 };
 
 /** Canonical order — the pickers render exactly this, filtered. */
@@ -99,7 +105,7 @@ export function isInteractionModeAvailable(
     // lofting traces 2D slices — the mode itself only needs something
     // probeable.
     case "DESIGN":
-      return ctx.hasProbeableLayer;
+      return ctx.hasProbeableLayer && !ctx.remapped;
     default:
       return true;
   }

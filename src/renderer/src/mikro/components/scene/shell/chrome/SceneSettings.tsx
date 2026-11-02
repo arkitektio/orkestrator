@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { useMemo, useState } from "react";
 import { Button } from "@/core/ui/button";
 import {
@@ -47,6 +48,24 @@ import { BarTooltip } from "./BarTooltip";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { VIEW_PLANES, viewPlaneOf, type ViewPlane } from "@/core/data/scene/coords/viewAxes";
 import { useSceneViewAxes, useSetSceneViewAxes } from "../../platform/stores/sceneViewAxes";
+import { useSceneDisplayRemap, useSetSceneDisplayRemap } from "../../platform/stores/sceneDisplayRemap";
+import {
+  REMAP_RANGE,
+  defaultRemapSlot,
+  isAlignedTo,
+  isRemapActive,
+  isotropicRemap,
+  remapViewSlot,
+  unremapViewPoint,
+  type DisplayRemap,
+} from "../../platform/model/displayRemap";
+import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
+import { placementToSpatialAffine } from "@/core/data/scene/coords/transformGraph";
+import { worldViewTriple, type ViewAxes, type WorldSlot } from "@/core/data/scene/coords/viewAxes";
+import { isBrickLayer } from "../../platform/model/layerGuards";
+import { Alert, AlertDescription } from "@/core/ui/alert";
+import { TriangleAlert } from "lucide-react";
+import { useMeshDesignStore } from "../../features/meshDesign/store/meshDesignStore";
 
 const SettingRow = ({
   label,
@@ -697,6 +716,227 @@ const PlaneSection = () => {
   );
 };
 
+
+/** Slider position (log10 of the factor) ↔ factor. */
+const toFactor = (position: number) => 10 ** position;
+const toPosition = (factor: number) => Math.log10(factor);
+/** Snap to exactly 1× near the middle, so "physical" is easy to hit. */
+const snapUnit = (factor: number) => (Math.abs(Math.log10(factor)) < 0.02 ? 1 : factor);
+
+/**
+ * The display REMAP: one world axis drawn stretched or squashed for every
+ * layer, so a very anisotropic sample can be read (`displayRemap.ts`,
+ * COORDINATE_SYSTEMS.md §1 R1b). Session-only, display-only; while it is on,
+ * new annotations are stored physically and every other save of a position is
+ * refused, and the warning says so.
+ */
+const RemapSection = () => {
+  const sceneId = useSceneStore((s) => s.id);
+  const transformContext = useSceneStore((s) => s.transformContext);
+  const api = useSceneStoreApi();
+  const view = useSceneViewAxes(sceneId);
+  const remap = useSceneDisplayRemap(sceneId);
+  const setRemap = useSetSceneDisplayRemap();
+  const triple = spatialAxisTriple(transformContext.worldCoordinateSystem);
+  const available = ([0, 1, 2] as WorldSlot[]).filter((slot) => triple[slot]);
+  const active = isRemapActive(remap);
+  // A design session's meshes live in raw three-space, not behind a layer
+  // placement, so the remap would leave them behind: no remap while one holds
+  // meshes (and no DESIGN while remapped, `modeCompat.ts`).
+  const designing = useMeshDesignStore((state) => state.meshes.length > 0);
+
+  const slot: WorldSlot = useMemo(() => {
+    if (remap) return remap.slot;
+    const { layers } = api.getState();
+    return defaultRemapSlot(
+      layers.filter((layer) => layer.zAxis).map((layer) => layer.affineMatrix),
+      view,
+      available,
+      available.at(-1) ?? 2,
+    );
+    // The default is read once per scene/view, not on every layer edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remap, api, view, available.join(",")]);
+
+  // Layers the stretch shears: rotated relative to the world. A SCALAR-ish
+  // selector over the placements only, recomputed while the remap is on.
+  const sheared = useSceneStore((state) => {
+    if (!active) return "";
+    const worldSpatial = worldViewTriple(state.transformContext);
+    const viewSlot = remapViewSlot({ slot, factor: 1, pivot: 0 }, view);
+    return state.sceneLayers
+      .filter((layer) => layer.asAffine)
+      .filter((layer) => {
+        const dataSpatial = isBrickLayer(layer)
+          ? [layer.renderAxes.x, layer.renderAxes.y, layer.renderAxes.z]
+          : worldSpatial;
+        const spatial = placementToSpatialAffine(layer.asAffine, dataSpatial, worldSpatial);
+        return !isAlignedTo(spatial, viewSlot);
+      })
+      .map((layer) => layer.name?.trim() || layer.id)
+      .join("\u0000");
+  });
+  const shearedNames = sheared ? sheared.split("\u0000") : [];
+
+  const axisName = (candidate: WorldSlot) => (triple[candidate] ?? "?").toUpperCase();
+
+  /** The world coordinate along `nextSlot` at the scene's (physical) centre. */
+  const physicalCentre = (nextSlot: WorldSlot): number => {
+    const box = computeSceneWorldBox(api.getState().layers);
+    if (!box) return 0;
+    const centre = box.getCenter(new THREE.Vector3());
+    const physical = unremapViewPoint([centre.x, centre.y, centre.z], remap, view);
+    return physical[remapViewSlot({ slot: nextSlot, factor: 1, pivot: 0 }, view)];
+  };
+
+  const write = (next: DisplayRemap) =>
+    setRemap(sceneId, isRemapActive(next) ? next : null);
+
+  const onFactor = (factor: number) => {
+    const snapped = snapUnit(factor);
+    // The pivot is fixed when leaving 1×, at the scene's centre, so the data
+    // stays in view while dragging and does not creep as layers arrive.
+    const pivot = active ? remap.pivot : physicalCentre(slot);
+    write({ slot, factor: snapped, pivot });
+  };
+
+  const onSlot = (next: WorldSlot) => {
+    if (!active) {
+      // Nothing drawn yet: remember the choice at 1× by stating it inactive.
+      setRemap(sceneId, { slot: next, factor: 1, pivot: 0 });
+      return;
+    }
+    write({ slot: next, factor: remap.factor, pivot: physicalCentre(next) });
+  };
+
+  const factor = remap?.factor ?? 1;
+
+  // What "Force isotropy" would set, as a scalar key so the selector stays
+  // stable across layer edits that do not move a lattice.
+  const isotropicKey = useSceneStore((state) => {
+    const target = isotropicRemap(
+      state.layers.filter((layer) => layer.zAxis).map((layer) => layer.affineMatrix),
+      state.transformContext.viewAxes as ViewAxes | null,
+      state.displayRemap,
+      available,
+    );
+    return target ? `${target.slot}:${target.factor}` : "";
+  });
+  const isotropic = isotropicKey
+    ? { slot: Number(isotropicKey.split(":")[0]) as WorldSlot, factor: Number(isotropicKey.split(":")[1]) }
+    : null;
+  const alreadyIsotropic =
+    !!isotropic && active && remap.slot === isotropic.slot && Math.abs(remap.factor - isotropic.factor) < 1e-3;
+
+  /** Draw the voxels cubic: the odd axis scaled to the others' voxel size. */
+  const onForceIsotropy = () => {
+    if (!isotropic) return;
+    const pivot = active && remap.slot === isotropic.slot ? remap.pivot : physicalCentre(isotropic.slot);
+    write({ slot: isotropic.slot, factor: isotropic.factor, pivot });
+  };
+
+  // After every hook: a world without space axes has nothing to remap.
+  if (!available.length) return null;
+
+  return (
+    <div className="mb-1 border-b pb-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">Remap axis</span>
+        <ToggleGroup
+          type="single"
+          size="sm"
+          variant="outline"
+          value={String(slot)}
+          disabled={designing}
+          onValueChange={(value) => value && onSlot(Number(value) as WorldSlot)}
+        >
+          {available.map((candidate) => (
+            <ToggleGroupItem
+              key={candidate}
+              value={String(candidate)}
+              className="h-6 px-2 font-mono text-[10px]"
+              title={`Stretch or squash the world's ${axisName(candidate)} axis`}
+            >
+              {axisName(candidate)}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
+      <div className="mt-1">
+        <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+          <span>{axisName(slot)} scale</span>
+          <span className="flex items-center gap-1">
+            <span className="rounded bg-muted px-1 font-mono">{factor.toFixed(2)}×</span>
+            {active && (
+              <button
+                onClick={() => setRemap(sceneId, { slot, factor: 1, pivot: 0 })}
+                className="rounded px-1 text-[10px] text-muted-foreground hover:text-foreground"
+                title="Back to physical proportions"
+              >
+                Reset
+              </button>
+            )}
+          </span>
+        </div>
+        <Slider
+          min={toPosition(REMAP_RANGE.min)}
+          max={toPosition(REMAP_RANGE.max)}
+          step={0.01}
+          value={[toPosition(factor)]}
+          onValueChange={([position]) => onFactor(toFactor(position))}
+          disabled={designing}
+          className="py-2"
+        />
+        {designing && (
+          <p className="text-[10px] leading-4 text-muted-foreground">
+            Commit or discard the mesh design first: its meshes would not follow the remap.
+          </p>
+        )}
+        <Button
+          variant="outline"
+          size="xs"
+          className="mt-1 h-6 w-full text-[10px]"
+          disabled={designing || !isotropic || alreadyIsotropic}
+          onClick={onForceIsotropy}
+          title={
+            !isotropic
+              ? "The voxels are already (close to) cubic, or no layer has depth."
+              : alreadyIsotropic
+                ? "The voxels are already drawn cubic."
+                : `Draw the voxels cubic: ${axisName(isotropic.slot)} ×${isotropic.factor.toFixed(2)}`
+          }
+        >
+          Force isotropy
+          {isotropic && !alreadyIsotropic && (
+            <span className="ml-1 font-mono text-muted-foreground">
+              {axisName(isotropic.slot)} ×{isotropic.factor.toFixed(2)}
+            </span>
+          )}
+        </Button>
+      </div>
+      {active && (
+        <Alert className="mt-1">
+          <TriangleAlert className="text-amber-500" />
+          <AlertDescription className="text-[10px] leading-4">
+            Display only: lengths along {axisName(slot)} are drawn {factor.toFixed(2)}× and are
+            not physical, so the scale bar and grid hide while they would measure it (draw
+            readouts and the Z readout show physical values). New annotations are stored at
+            their true position; tours, scene tiles, mesh design and registration saves are off
+            until 1×.
+            {shearedNames.length > 0 && (
+              <>
+                {" "}
+                {shearedNames.length === 1 ? "One layer is" : `${shearedNames.length} layers are`}{" "}
+                rotated relative to the world and will look sheared: {shearedNames.join(", ")}.
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+};
+
 const SCROLL_GESTURES = [
   {
     value: "auto",
@@ -773,6 +1013,7 @@ export const SceneSettings = () => {
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <PlaneSection />
+        <RemapSection />
 
         {/* An action, not a setting — but it belongs to the same question
             ("what does this view look like?"), and it is one click too rare to

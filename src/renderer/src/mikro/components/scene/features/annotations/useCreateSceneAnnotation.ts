@@ -7,7 +7,8 @@ import {
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
-import { viewToWorldPoint } from "@/core/data/scene/coords/viewAxes";
+import { viewToWorldPoint, type ViewAxes } from "@/core/data/scene/coords/viewAxes";
+import { unremapViewPoint } from "../../platform/model/displayRemap";
 import { upsertSceneAnnotation } from "../../../../lib/annotations/annotationCache";
 import { inSceneOrder, toStoredVector } from "./sceneVectors";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
@@ -55,15 +56,21 @@ export const useCreateSceneAnnotation = () => {
       worldVectors: [number, number, number][],
     ): Promise<CreatedSceneAnnotation | null> => {
       try {
-        const { id: sceneId, transformContext } = sceneStoreApi.getState();
+        const { id: sceneId, transformContext, displayRemap } = sceneStoreApi.getState();
         // The drawing space copies the world's axes, so the world says how
         // many components a vertex has: two on a plane, three in a volume.
         const spaceRank = spatialAxisTriple(transformContext.worldCoordinateSystem).filter(
           (axis) => axis !== null,
         ).length;
-        // Drawn on screen, stored in the world: back from the view's order.
+        // Drawn on screen, stored in the world: back through the display
+        // remap (drawn stretched, stored where it physically is), then from
+        // the view's order.
+        const view = transformContext.viewAxes as ViewAxes | null | undefined;
         const vectors = worldVectors.map((vector) =>
-          toStoredVector(viewToWorldPoint(vector, transformContext.viewAxes), spaceRank || 3),
+          toStoredVector(
+            viewToWorldPoint(unremapViewPoint(vector, displayRemap, view), view),
+            spaceRank || 3,
+          ),
         );
         const drawsCollection = (collectionId: string | undefined) =>
           sceneStoreApi

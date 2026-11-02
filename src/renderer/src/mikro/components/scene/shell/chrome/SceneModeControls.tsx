@@ -21,6 +21,7 @@ import { useSceneStore } from "../../platform/stores/sceneStore";
 import { BarTooltip } from "./BarTooltip";
 import { LayerTargetPicker } from "./LayerTargetPicker";
 import { SceneSettings } from "./SceneSettings";
+import { isRemapActive } from "../../platform/model/displayRemap";
 
 /** Icon per interaction mode for the compact mode control. */
 const INTERACTION_ICONS: Record<InteractionMode, LucideIcon> = {
@@ -62,6 +63,8 @@ export const SceneModeControls = () => {
   // A SCALAR subscription (P9c/P17): only the boolean gates the mode options,
   // and the `layers` array changes identity on every per-tick layer edit.
   const probeable = useSceneStore((state) => hasProbeableLayer(state.layers));
+  // DESIGN is not offered under an axis remap (`modeCompat.ts`).
+  const remapped = useSceneStore((state) => isRemapActive(state.displayRemap));
 
   const preferredView = useSceneStore((state) => state.preferredView);
   const { savePreferredView, saving } = useScenePreferencesEditor();
@@ -77,6 +80,7 @@ export const SceneModeControls = () => {
   const modeContext = {
     displayMode,
     hasProbeableLayer: probeable,
+    remapped,
   };
   const availableModes = interactionModeOptions.filter((mode) =>
     isInteractionModeAvailable(mode.value, modeContext),

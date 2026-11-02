@@ -169,4 +169,48 @@ describe("setPlacementPreview", () => {
     api.getState().setPlacementPreview([], null);
     expect(api.getState().sceneLayers).toBe(before);
   });
+  describe("display remap (R · D · asAffine)", () => {
+    const xScale = (api: ReturnType<typeof sceneWith>) =>
+      (api.getState().sceneLayers[0] as unknown as { asAffine: { matrix: number[][] } }).asAffine.matrix[1][1];
+    // World x drawn 2×, about x = 0.
+    const DOUBLE_X = { slot: 0 as const, factor: 2, pivot: 0 };
+
+    it("stretches every layer along the axis, and clearing restores the server placement", () => {
+      const api = sceneWith(pointLayer(1, 5));
+      api.getState().setDisplayRemap(DOUBLE_X);
+      expect(tx(api)).toBe(10);
+      expect(xScale(api)).toBe(2);
+      api.getState().setDisplayRemap(null);
+      expect(tx(api)).toBe(5);
+      expect(xScale(api)).toBe(1);
+      expect(api.getState().placementPreviewBases).toEqual({});
+    });
+
+    it("composes on top of a registration preview, and outlives its clear", () => {
+      const api = sceneWith(pointLayer(1, 5));
+      api.getState().setDisplayRemap(DOUBLE_X);
+      expect(api.getState().setPlacementPreview(["p"], SHIFT_X).failures).toEqual([]);
+      expect(tx(api)).toBe(30); // 2 · (5 + 10)
+      api.getState().setPlacementPreview([], null);
+      expect(tx(api)).toBe(10);
+    });
+
+    it("re-applies to a re-placed layer, without re-applying the saved registration", () => {
+      const api = sceneWith(pointLayer(1, 5));
+      api.getState().setDisplayRemap(DOUBLE_X);
+      api.getState().setPlacementPreview(["p"], SHIFT_X);
+      api.getState().syncSceneLayers([pointLayer(2, 15)] as never);
+      expect(tx(api)).toBe(30); // 2 · 15, not 2 · (15 + 10)
+      expect(api.getState().placementPreviewRequest).toBeNull();
+      api.getState().setDisplayRemap(null);
+      expect(tx(api)).toBe(15);
+    });
+
+    it("is a no-op at 1×", () => {
+      const api = sceneWith(pointLayer(1, 5));
+      const before = api.getState().sceneLayers;
+      api.getState().setDisplayRemap({ ...DOUBLE_X, factor: 1 });
+      expect(api.getState().sceneLayers).toBe(before);
+    });
+  });
 });

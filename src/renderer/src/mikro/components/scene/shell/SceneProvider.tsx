@@ -46,6 +46,7 @@ import {
   createRoiSelectionStore,
 } from "../features/annotations/roiSelectionStore";
 import { SceneStoreContext, createSceneStore } from "../platform/stores/sceneStore";
+import { DisplayRemapSync } from "./DisplayRemapSync";
 import { useSceneViewAxes } from "../platform/stores/sceneViewAxes";
 import {
   SelectionStoreContext,
@@ -513,6 +514,7 @@ export const SceneProvider = (props: {
                             goes is exactly what eases the app back to the
                             user's own brand color. */}
                         {scope && props.brandTheme !== false && <SceneBrandTheme />}
+                        {scope && <DisplayRemapSync />}
                         {/* Shared (client, datalayer) attribute service: the
                             probe tracker holds the same refcounted instance, so
                             ROI lookups reuse its plan cache and DuckDB engine.

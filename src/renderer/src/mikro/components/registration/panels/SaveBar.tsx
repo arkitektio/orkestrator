@@ -3,6 +3,7 @@ import { Button } from "@/core/ui/button";
 import { useRegistrationSave } from "../hooks/useRegistrationSave";
 import { useRegistration, useRegistrationApi } from "../store/context";
 import { isDirty } from "../store/registrationStore";
+import { useSceneDisplayRemapBlock } from "../../scene/sceneHost";
 
 /** What pressing Save will do, in a sentence — before it is pressed. */
 const planSummary = (plan: ReturnType<typeof useRegistrationSave>["plan"]): string | null => {
@@ -27,6 +28,9 @@ export const SaveBar = () => {
   const previewIssue = useRegistration((state) => state.previewIssue);
   const dirty = useRegistration((state) => isDirty(state));
   const { plan, loading, error, verdict, save } = useRegistrationSave();
+  // Under an axis remap the gizmo moves layers through a stretched space; the
+  // edge it would save is not the one on screen.
+  const remap = useSceneDisplayRemapBlock();
 
   const saving = phase === "saving";
   const blocked = !plan || plan.kind === "noop" || plan.kind === "refuse";
@@ -48,6 +52,12 @@ export const SaveBar = () => {
         </div>
       )}
       {confirm && plan?.kind !== "noop" && <div className="text-xs text-amber-500">{confirm}</div>}
+      {remap.blocked && (
+        <div className="flex gap-1.5 text-xs text-amber-500">
+          <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+          <span>{remap.reason}</span>
+        </div>
+      )}
 
       <div className="flex items-center gap-1">
         <Button type="button" variant="ghost" size="icon-sm" disabled={!canUndo || saving} onClick={() => api.getState().undo()} title="Undo (⌘Z)">
@@ -64,7 +74,7 @@ export const SaveBar = () => {
           {/* Says what it does: leaving with a draft throws the draft away. */}
           <X /> {dirty ? "Discard" : "Close"}
         </Button>
-        <Button type="button" size="sm" disabled={blocked || saving} onClick={() => void save()}>
+        <Button type="button" size="sm" disabled={blocked || saving || remap.blocked} onClick={() => void save()}>
           {saving ? <Loader2 className="animate-spin" /> : <Save />} Save
         </Button>
       </div>
