@@ -1,3 +1,10 @@
+# [5.7.0](https://github.com/arkitektio/orkestrator/compare/v5.6.1...v5.7.0) (2026-11-02)
+
+
+### Features
+
+* **scene:** an axis remap draws anisotropic samples readable ([027e0b2](https://github.com/arkitektio/orkestrator/commit/027e0b23158c76a31e3de8f424f1bf6e6167c267))
+
 ## [5.6.1](https://github.com/arkitektio/orkestrator/compare/v5.6.0...v5.6.1) (2026-11-02)
 
 
