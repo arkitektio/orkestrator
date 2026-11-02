@@ -11,19 +11,24 @@ mutation DeleteLens($id: ID!) {
   deleteLens(input: { id: $id })
 }
 
-# The one editable thing about a lens. `name: null` (or blank) clears it, and
-# the lens reads as its slices again.
-mutation UpdateLens($id: ID!, $name: String) {
-  updateLens(input: { id: $id, name: $name }) {
+# A lens has no name of its own to edit: this names the positions it pins (a
+# channel, a frame), and every lens pinning them -- its crops, the sub-lens a
+# scene draws the channel through -- is called by it. The others arrive through
+# `WatchLenses`. `label: null` (or blank) removes the name, and what ingest
+# recorded there (a channel label) names them again. Refused for a lens that pins
+# nothing: a crop is named by the annotation it was cut to.
+mutation SetPositionLabel($lens: ID!, $label: String) {
+  setPositionLabel(input: { lens: $lens, label: $label }) {
     id
     name
+    label
   }
 }
 
 # The same call for the five window-selected kinds. Each takes its container and
 # the windows; the server hands back the existing lens when the container
 # already has one with these windows, and the WHOLE lens for no windows at all.
-# None of these inputs takes a name: naming is a follow-up `UpdateLens`.
+# None of these inputs takes a name: a lens is named by the positions it pins.
 mutation CreateTableLens($input: CreateTableLensInput!) {
   createTableLens(input: $input) {
     ...ListLens

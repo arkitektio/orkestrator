@@ -9,16 +9,19 @@ import {
 } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useState } from "react";
-import { DetailLensFragment, useGetLensQuery, useUpdateLensMutation } from "../api/graphql";
-import { describeLens } from "../lenses";
+import { DetailLensFragment, useGetLensQuery, useSetPositionLabelMutation } from "../api/graphql";
+import { describeLens, lensPins, pinSummary } from "../lenses";
 
 /**
- * Name a lens, or take its name away.
+ * Name what a lens pins, or take the name away.
  *
- * The name is the one thing about a lens that can be edited: what it selects is
- * fixed, and a different selection is a different lens. A blank name clears it,
- * and the lens reads as "Whole array" (or "Whole table", …) or its selection
- * again.
+ * A lens has no name of its own: it is one row per selection, and a name
+ * belongs to what is selected. So this names the positions the lens holds to
+ * one value — a channel, a frame — and every lens through them is called by it:
+ * the crops of the channel, the layer a scene draws it with. Cleared, the
+ * positions read as what ingest recorded for them (a channel label), if
+ * anything. A lens that pins nothing has nothing to name: a crop is named by the
+ * shape it was cut to, the container by its own name.
  */
 export const RenameLensForm = (props: { lens: string }) => {
   const { data, error, refetch } = useGetLensQuery({ variables: { id: props.lens } });
@@ -26,38 +29,58 @@ export const RenameLensForm = (props: { lens: string }) => {
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
 
-  return <RenameLensFields lens={data.lens} />;
+  return <NamePositionsFields lens={data.lens} />;
 };
 
-const RenameLensFields = ({ lens }: { lens: DetailLensFragment }) => {
+const NamePositionsFields = ({ lens }: { lens: DetailLensFragment }) => {
   const [name, setName] = useState(lens.name ?? "");
   const { label, container } = describeLens(lens);
+  const pins = lensPins(lens);
 
-  // `UpdateLens` selects `id` and `name`, so Apollo writes the new name into the
-  // normalized lens and every tile, row and title showing it follows.
-  const [updateLens, { loading }] = useUpdateLensMutation();
-  const submit = useGraphQLDialog(updateLens, { errorTitle: "Couldn't rename the lens" });
+  // `SetPositionLabel` selects `id`, `name` and `label`, so Apollo writes the new
+  // name into this lens; the other lenses through the same positions arrive
+  // renamed through `WatchLenses`.
+  const [setPositionLabel, { loading }] = useSetPositionLabelMutation();
+  const submit = useGraphQLDialog(setPositionLabel, { errorTitle: "Couldn't name the lens" });
+
+  if (pins.length === 0) {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Nothing to name</DialogTitle>
+          <DialogDescription>
+            This lens holds no axis of {container.name} to a single position, so
+            there is nothing for a name to stand on. A crop is named by the
+            annotation it was cut to, and the whole {container.name} by its own
+            name. Cut a lens that pins a channel or a frame to name that.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 font-mono text-xs text-muted-foreground">{label}</div>
+      </>
+    );
+  }
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        submit({ variables: { id: lens.id, name: name.trim() || null } });
+        submit({ variables: { lens: lens.id, label: name.trim() || null } });
       }}
     >
       <DialogHeader>
-        <DialogTitle>Rename lens</DialogTitle>
+        <DialogTitle>Name {pinSummary(pins)}</DialogTitle>
         <DialogDescription>
-          A name for this selection of {container.name}. Leave it empty to go
-          back to showing what it selects.
+          What to call {pinSummary(pins)} of {container.name}. Every lens through
+          it is called by this name, its crops and the layers drawing it too.
+          Leave it empty to go back to what was recorded for it.
         </DialogDescription>
       </DialogHeader>
 
       <div className="flex flex-col gap-2 py-4">
         <Input
           autoFocus
-          aria-label="Lens name"
-          placeholder="e.g. nucleus 3"
+          aria-label="Name"
+          placeholder="e.g. GFP"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />

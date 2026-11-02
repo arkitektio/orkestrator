@@ -173,6 +173,7 @@
       "PhasorHistogram",
       "PhasorLayer",
       "PointLayer",
+      "PositionLabel",
       "RgbLayer",
       "RotationTransformation",
       "ScaleTransformation",

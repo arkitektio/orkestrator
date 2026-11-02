@@ -8,6 +8,8 @@ import {
   LENS_KINDS,
   lensHeadline,
   lensKindInfo,
+  lensPins,
+  pinSummary,
   windowSummary,
 } from "./lenses";
 
@@ -133,5 +135,23 @@ describe("lensHeadline", () => {
       title: "All spots",
       subline: "spots",
     });
+  });
+});
+
+describe("lensPins", () => {
+  it("pins an axis a slice keeps one index of, and nothing a range keeps", () => {
+    const pins = lensPins(arrayLens([{ axis: "t", start: 4, stop: 5 }, { axis: "y", start: 0, stop: 32 }]));
+    expect(pins).toEqual([{ axis: "t", value: 4 }]);
+    expect(pinSummary(pins)).toBe("t = 4");
+  });
+
+  it("pins a window held to one value, and not one that only bounds", () => {
+    expect(lensPins(tableLens([{ axis: "t", min: 4.5, max: 4.5 }, { axis: "x", min: 0, max: 10 }]))).toEqual([{ axis: "t", value: 4.5 }]);
+    expect(lensPins(tableLens([{ axis: "t", min: 4.5 }]))).toEqual([]);
+  });
+
+  it("has nothing to name on a whole lens or a container without anchors", () => {
+    expect(lensPins(arrayLens())).toEqual([]);
+    expect(lensPins(meshLens([{ axis: "z", min: 1, max: 1 }]))).toEqual([]);
   });
 });

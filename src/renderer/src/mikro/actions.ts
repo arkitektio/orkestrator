@@ -468,9 +468,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     ]),
   ),
   'rename-lens': {
-    title: 'Rename Lens…',
+    title: 'Name Lens…',
     description:
-      'Give this lens a name to find it by, or clear the one it has. What it selects does not change',
+      'Name the positions this lens pins (a channel, a frame), or clear the name: every lens through them is called by it',
     icon: Pencil,
     conditions: [
       { type: 'mixture', identifiers: [...LENS_IDENTIFIERS] },
@@ -482,7 +482,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => isLensIdentifier(item.identifier),
       );
       if (!selected?.id) {
-        throw new Error('No lens selected for Rename Lens action');
+        throw new Error('No lens selected for Name Lens action');
       }
       dialog.openDialog('renamelens', { lens: selected.id }, { size: 'small' });
     },

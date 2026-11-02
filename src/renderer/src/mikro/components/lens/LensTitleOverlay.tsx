@@ -83,8 +83,8 @@ export const LensTitleOverlay = ({
         </LensContainerLink>
 
         {/* The lens leads, at heading weight — this is the page's title, and the
-            page has no other. Its name if someone gave it one, else "Whole
-            array" or its slices. */}
+            page has no other. What its pinned positions are called, else
+            "Whole array" or its slices. */}
         <div className="flex items-center gap-1.5">
           <h1 className="min-w-0 text-3xl font-semibold leading-tight">
             <InvertedText>{title}</InvertedText>
@@ -93,8 +93,8 @@ export const LensTitleOverlay = ({
             size="icon"
             variant="ghost"
             className={`h-7 w-7 shrink-0 ${INVERTED}`}
-            aria-label="Rename lens"
-            title="Rename lens"
+            aria-label="Name lens"
+            title="Name what this lens pins"
             onClick={() => openDialog('renamelens', { lens: lens.id }, { size: 'small' })}
           >
             <Pencil className="h-3.5 w-3.5" />

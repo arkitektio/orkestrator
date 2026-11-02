@@ -23,7 +23,6 @@ import {
   CreateSparseLensDocument,
   CreateTableLensDocument,
   ListLensesDocument,
-  UpdateLensDocument,
   useCreateListLensMutation,
   useGetListArrayDatasetQuery,
   useGetWholeLensQuery,
@@ -185,7 +184,6 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
   const axes = (lens.coordinateSystem?.axes ?? []).map((axis) => axis.name);
   const fixedAxes = axes.length > 0;
   const [drafts, setDrafts] = useState<WindowDraft[]>(() => draftsFor(axes, lens.windows));
-  const [name, setName] = useState("");
 
   const windows = windowsFromDrafts(drafts);
   const whole = windows.length === 0;
@@ -193,23 +191,13 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
   const { submit, submitting: busy } = useDialogSubmit(
     async () => {
       const { document, field } = CREATE_WINDOW_LENS[lens.__typename];
-      const result = await client.mutate<Record<string, { id: string; name?: string | null }>>({
+      const result = await client.mutate<Record<string, { id: string }>>({
         mutation: document,
         variables: { input: { [info.filterKey]: container.id, windows } },
       });
       const created = result.data?.[field];
       if (!created) throw new Error("The server answered with no lens");
 
-      // None of these inputs takes a name, so naming is a second call — and
-      // only for a lens that has none: asking for a selection that already
-      // exists hands back that lens, and its name is somebody's choice.
-      const label = name.trim();
-      if (label && !whole && !created.name) {
-        await client.mutate({
-          mutation: UpdateLensDocument,
-          variables: { id: created.id, name: label },
-        });
-      }
       // The lists showing this container's lenses hold one more now.
       client.refetchQueries({ include: [ListLensesDocument] });
       return created.id;
@@ -237,12 +225,6 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
       </DialogHeader>
 
       <div className="flex flex-col gap-3 py-4">
-        <Input
-          aria-label="Lens name"
-          placeholder="Name (optional), e.g. first ten minutes"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
         <WindowEditor drafts={drafts} onChange={setDrafts} fixedAxes={fixedAxes} />
       </div>
 
@@ -266,7 +248,6 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
 const CreateLensFields = ({ subject }: { subject: Subject }) => {
   const navigate = useNavigate();
   const [ranges, setRanges] = useState<readonly Range[]>(subject.initial);
-  const [name, setName] = useState("");
 
   const [createLens, { loading }] = useCreateListLensMutation({
     // The dataset's page lists its lenses; the new one belongs in that rail.
@@ -296,15 +277,12 @@ const CreateLensFields = ({ subject }: { subject: Subject }) => {
         event.preventDefault();
         submit({
           variables: {
-            // The name labels a lens this creates. If the dataset already has
-            // one with these slices the server hands that one back as it is —
-            // which is also what happens when nothing is cut: no slices is the
-            // whole array, and the answer is the dataset's full lens to open.
-            input: {
-              dataset: subject.datasetId,
-              slices,
-              name: slices.length ? name.trim() || undefined : undefined,
-            },
+            // If the dataset already has a lens with these slices the server
+            // hands that one back — which is also what happens when nothing is
+            // cut: no slices is the whole array, its full lens to open. A lens
+            // takes no name: it is called by the positions it pins (named from
+            // its page), or by the shape it was cut to.
+            input: { dataset: subject.datasetId, slices },
           },
         });
       }}
@@ -319,12 +297,6 @@ const CreateLensFields = ({ subject }: { subject: Subject }) => {
       </DialogHeader>
 
       <div className="flex flex-col gap-3 py-4">
-        <Input
-          aria-label="Lens name"
-          placeholder="Name (optional), e.g. nucleus 3"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
         {subject.axisNames.map((axis, index) => {
           const size = subject.shape[index] ?? 0;
           const [start, stop] = ranges[index];

@@ -75,8 +75,8 @@ export const sliceSummary = (slices: LensTitleInput["slices"]) =>
 /**
  * What to CALL a lens — the headline of its page, its tile and its row.
  *
- * The name someone gave it; failing that, "Whole array" for a lens that cuts
- * nothing; failing that, its slices. `lensLabel` is the technical line that
+ * What its pinned positions are called (the server derives `name`); failing
+ * that, "Whole array" for a lens that cuts nothing; failing that, its slices. `lensLabel` is the technical line that
  * goes underneath: it always spells out the slices, axes and shape, whatever
  * the lens is called.
  */
@@ -301,6 +301,37 @@ export const describeLens = (lens: Describable): LensDescription => {
 /** Whether the lens cuts nothing: its container, looked at whole. */
 export const isWholeLens = (lens: LensSubjectFragment) =>
   lens.__typename === "ArrayLens" ? lens.slices.length === 0 : lens.windows.length === 0;
+
+/** One axis a lens holds to a single position: `c = 1`, `t = 4.5`. */
+export type LensPin = { axis: string; value: number };
+
+/** The kinds whose container carries coordinate anchors, so whose pinned positions can be named. */
+const NAMEABLE: ReadonlySet<LensTypename> = new Set(["ArrayLens", "TableLens", "SparseLens"]);
+
+/**
+ * The positions a lens pins, in its selection's order: a slice keeping one index
+ * (`stop - start === 1`), a window with `min === max`. The server's rule
+ * (`coords.pins`): these are what a lens is named by — `setPositionLabel` names
+ * them, and every lens pinning them is called by it. Empty for a kind whose
+ * container carries no anchors, which has nothing to name.
+ */
+export const lensPins = (lens: LensSubjectFragment): LensPin[] => {
+  if (!lens.__typename || !NAMEABLE.has(lens.__typename)) return [];
+  if (lens.__typename === "ArrayLens") {
+    return lens.slices.flatMap((slice) =>
+      slice.start != null && slice.stop != null && slice.stop - slice.start === 1
+        ? [{ axis: slice.axis, value: slice.start }]
+        : [],
+    );
+  }
+  return lens.windows.flatMap((window) =>
+    window.min != null && window.min === window.max ? [{ axis: window.axis, value: window.min }] : [],
+  );
+};
+
+/** Pins as one line: `c = 1, t = 4`. */
+export const pinSummary = (pins: readonly LensPin[]) =>
+  pins.map((pin) => `${pin.axis} = ${pin.value}`).join(", ");
 
 /**
  * A container's whole lens as the context its page also stands for in the
