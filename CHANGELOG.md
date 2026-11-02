@@ -1,3 +1,10 @@
+## [5.6.1](https://github.com/arkitektio/orkestrator/compare/v5.6.0...v5.6.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **agent:** the agent names the spec it runs ([7ed13ee](https://github.com/arkitektio/orkestrator/commit/7ed13ee58b9b544fe8f3875e5fb23a990d40bc1a))
+
 # [5.6.0](https://github.com/arkitektio/orkestrator/compare/v5.5.0...v5.6.0) (2026-11-01)
 
 
