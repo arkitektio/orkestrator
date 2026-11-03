@@ -1,3 +1,10 @@
+# [5.8.0](https://github.com/arkitektio/orkestrator/compare/v5.7.1...v5.8.0) (2026-11-03)
+
+
+### Features
+
+* **mikro:** derived shapes, lineage-safe deletes, depth view and scene tooling ([8c4514c](https://github.com/arkitektio/orkestrator/commit/8c4514ca4dd479b83f54a8674349a0bf74665d51))
+
 ## [5.7.1](https://github.com/arkitektio/orkestrator/compare/v5.7.0...v5.7.1) (2026-11-02)
 
 
