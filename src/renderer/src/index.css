@@ -123,6 +123,35 @@
   from { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
 
+/* The update island's label: a new Orkestrator arrived, so it says so in
+ * colour. A gradient clipped to the glyphs that drifts slowly sideways;
+ * background-position only, and it holds still under reduced motion. Mid
+ * lightness so it reads on the light and the dark rail alike. */
+@keyframes rainbow-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+
+@layer components {
+  .rainbow-text {
+    background-image: linear-gradient(
+      90deg,
+      oklch(0.64 0.21 25),
+      oklch(0.72 0.18 70),
+      oklch(0.7 0.17 140),
+      oklch(0.66 0.15 220),
+      oklch(0.6 0.2 290),
+      oklch(0.64 0.21 345),
+      oklch(0.64 0.21 25)
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbow-drift 6s linear infinite;
+  }
+}
+
 /* In the components layer, so a card that carries its own `animate-*` utility
  * (a pulsing skeleton, say) keeps it. */
 @layer components {
@@ -160,6 +189,9 @@
   }
   @keyframes grid-item-enter {
     from, to { opacity: 1; transform: none; }
+  }
+  @keyframes rainbow-drift {
+    from, to { background-position: 0% 50%; }
   }
 }
 

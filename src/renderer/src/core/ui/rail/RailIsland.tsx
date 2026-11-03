@@ -123,14 +123,18 @@ export const RailIslandRow = ({
 export const RailIslandName = ({
   name,
   working,
+  className,
 }: {
   name: string;
   working: boolean;
+  /** Replaces the muted colour, e.g. `rainbow-text` on the update island. */
+  className?: string;
 }) => (
   <span
     className={cn(
       "min-w-0 flex-1 truncate text-xs font-medium",
-      !working && "text-foreground/70",
+      !working && !className && "text-foreground/70",
+      className,
     )}
     title={name}
   >

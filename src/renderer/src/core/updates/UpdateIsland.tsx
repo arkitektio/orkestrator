@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { AlertCircle, Download, RefreshCw } from "lucide-react";
+import { AlertCircle, PartyPopper, RefreshCw } from "lucide-react";
 import {
   RailIsland,
   RailIslandName,
@@ -16,6 +16,10 @@ import { dismissUpdate, useUpdateState } from "./updateStore";
  * noise nobody asked for, and with `autoDownload` on, "available" becomes
  * "downloading" within a tick. What the user needs to know is that something is
  * being fetched, and that a restart is now worth it.
+ *
+ * A new release is good news, and the row looks it: a party popper and a
+ * rainbow label (`.rainbow-text` in index.css) while it downloads and once it
+ * is ready, so it reads as an invitation rather than one more status line.
  *
  * This row replaces the native "Restart now / Later" modal the main process used
  * to open on completion. Ignoring it is safe: `autoInstallOnAppQuit` installs on
@@ -47,7 +51,7 @@ export const UpdateIsland = () => {
           {phase === "error" ? (
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
           ) : (
-            <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <PartyPopper className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
           )}
 
           <RailIslandName
@@ -59,6 +63,7 @@ export const UpdateIsland = () => {
                   : label
             }
             working={phase === "downloading"}
+            className={phase === "error" ? undefined : "rainbow-text"}
           />
 
           {phase === "downloading" && percent != null && (
