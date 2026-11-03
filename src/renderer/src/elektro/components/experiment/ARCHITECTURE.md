@@ -99,7 +99,7 @@ band imperatively.
 
 ## Annotating — the scene's tools on a timeline
 
-`features/annotations/` mirrors mikro's `RoiToolbar` / `roiDrawingStore` /
+`features/annotations/` mirrors mikro's `AnnotationToolbar` / `roiDrawingStore` /
 `roiSelectionStore`:
 
 - `annotationTools.ts` — the tools (SELECT; time: EVENT, EVENTS, EPOCH; row:

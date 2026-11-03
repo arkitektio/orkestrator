@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LineageEdgeKind, LineageNodeKind, TransformKind } from "@/mikro/api/graphql";
+import { AnnotationRelation, LineageEdgeKind, LineageNodeKind, TransformKind } from "@/mikro/api/graphql";
 import { layoutLineage, DATA_NODE_SIZE, dataNodeHeight, LENS_ROW_HEIGHT, LENS_ROWS_PADDING, lensRowCentre, SCHEMATIC_HEIGHT, TASK_NODE_SIZE } from "./layout";
 import {
   LineageAnswer,
@@ -160,7 +160,29 @@ describe("toFlow", () => {
 describe("routes", () => {
   it("reads a kind back from its segment", () => {
     expect(kindFromSegment("arraydataset")).toBe(LineageNodeKind.Dataset);
+    expect(kindFromSegment("annotation")).toBe(LineageNodeKind.Annotation);
     expect(kindFromSegment("nope")).toBeUndefined();
+  });
+});
+
+describe("shape lineage", () => {
+  it("labels a shape made from a shape by how it was made", () => {
+    const rough = node("annotation:a", 0, { kind: LineageNodeKind.Annotation });
+    const smooth = node("annotation:b", 1, { kind: LineageNodeKind.Annotation });
+    const state = mergeLineage(
+      null,
+      answer("annotation:a", [rough, smooth], [
+        edge("annotation:a", "annotation:b", null, {
+          key: "A:1",
+          kind: LineageEdgeKind.ShapeDerivation,
+          transformationKind: null,
+          primary: false,
+          annotationRelation: AnnotationRelation.Refined,
+        }),
+      ]),
+    );
+    const flow = toFlow(state);
+    expect(flow.edges).toEqual([expect.objectContaining({ id: "A:1", source: "annotation:a", target: "annotation:b", label: "refined", unmappable: false })]);
   });
 });
 

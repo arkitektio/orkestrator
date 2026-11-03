@@ -3,6 +3,7 @@ import { useViewStore } from "../stores/viewStore";
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
 import { cameraInteraction, isCameraMoving, matrixRelativeDelta } from "./cameraMotion";
+import { perfMonitor } from "../perf/perfMonitor";
 
 interface CameraMatrixSyncProps {
   /** Max cadence (ms) at which camera data is pushed DURING continuous motion. */
@@ -39,6 +40,8 @@ export const CameraMatrixSync = ({
   const pendingFovY = useRef(0);
   const pendingCoordinateSystem = useRef<number>(THREE.WebGLCoordinateSystem);
   const lastChangeAtRef = useRef(0);
+  /** The `moving` flag of the last emission — its flips go on the perf timeline. */
+  const lastEmittedMovingRef = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -147,6 +150,10 @@ export const CameraMatrixSync = ({
     // Fresh objects per EMISSION: viewStore consumers key on identity, so the
     // matrix/size/pose must be new objects each time they are published.
     const emit = (moving: boolean) => {
+      if (moving !== lastEmittedMovingRef.current) {
+        lastEmittedMovingRef.current = moving;
+        perfMonitor.markEvent(moving ? "camera:moving" : "camera:settled"); // no-op unless recording
+      }
       const position = pendingPosition.current;
       updateCameraData(
         matrixRef.current.clone(),

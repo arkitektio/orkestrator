@@ -6,6 +6,7 @@ import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { LayerGlyph } from "../../platform/layerui/LayerGlyph";
 import { LayerTile } from "@/core/data/scene/layerui/cardControls";
 import { LensButton } from "../../platform/layerui/LensButton";
+import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
 
 /**
  * A single compact layer row for the right-hand Layers panel. Displays a
@@ -88,13 +89,13 @@ export const LayerRow = ({
       <LayerTile tint="bg-foreground/10">
         <LayerGlyph layer={layer} className="h-3.5 w-3.5" />
       </LayerTile>
-      <span
-        className={`min-w-0 flex-1 truncate font-medium text-foreground/90 ${
-          compact ? "text-[11px]" : "text-xs"
-        }`}
-      >
-        {label}
-      </span>
+      {/* The name is the rename: a click names what the layer shows (the
+          channel it pins, or the layer itself) instead of folding the card. */}
+      <LayerNamePopover
+        layer={layer}
+        label={label}
+        className={`font-medium text-foreground/90 ${compact ? "text-[11px]" : "text-xs"}`}
+      />
       {graphDirty && onSaveGraph && (
         <button
           className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"

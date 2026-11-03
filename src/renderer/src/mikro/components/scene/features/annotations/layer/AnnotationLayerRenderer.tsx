@@ -7,7 +7,8 @@ import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { finestLayerZStep } from "../../../platform/coords/worldTransform";
 import { layersPlanKey } from "../../../platform/model/layerPlanKey";
 import { annotationHoverEnabled, annotationSelectEnabled } from "../../../platform/probe/probeGating";
-import { useModeStore } from "../../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
+import { DOUBLE_PRESS_MS } from "../../../platform/input/navigationBindings";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
 import {
@@ -34,7 +35,12 @@ import {
 import { useSceneAnnotations } from "../sceneVectors";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
 import { useLiveSceneAnnotations } from "../../../../../lib/annotations/useLiveSceneAnnotations";
-import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
+import {
+  isDrawingTool,
+  PERSISTED_PREVIEW_TIMEOUT_MS,
+  useRoiDrawingStore,
+  useRoiDrawingStoreApi,
+} from "../roiDrawingStore";
 import {
   useRoiSelectionStore,
   useRoiSelectionStoreApi,
@@ -45,6 +51,8 @@ import { AnnotationInteriorBatch } from "./AnnotationInteriorBatch";
 import { AnnotationOutlineBatch } from "./AnnotationOutlineBatch";
 import { AnnotationPoints } from "./AnnotationPoints";
 import { AnnotationShape } from "./AnnotationShape";
+import { DERIVED_HALO, SelectionHalo, concatSegments } from "./SelectionHalo";
+import { descendantsOf, partitionDerived } from "../../../../../lib/annotations/derivedShapes";
 import {
   partitionEntries,
   placeAnnotations,
@@ -90,7 +98,12 @@ export const AnnotationLayerRenderer = ({ layerId }: { layerId: string }) => {
           with it the card's counts and the panel) current. */}
       {layer.liveAnnotations && <LiveAnnotations collectionId={collection.id} />}
       {layer.visible !== false && (
-        <AnnotationCollectionGroup layer={layer} collection={collection} layerId={layerId} />
+        <AnnotationCollectionGroup
+          layer={layer}
+          collection={collection}
+          layerId={layerId}
+          showDerived={layer.showDerivedAnnotations === true}
+        />
       )}
     </>
   );
@@ -106,10 +119,13 @@ const AnnotationCollectionGroup = ({
   layer,
   collection,
   layerId,
+  showDerived,
 }: {
   layer: AnnotationLayerVariant;
   collection: AnnotationCollectionRef;
   layerId: string;
+  /** The layer's session flag (`SceneLayer.showDerivedAnnotations`). */
+  showDerived: boolean;
 }) => {
   perfMonitor.countRender("AnnotationCollectionGroup"); // no-op unless a recording is armed
   const transformContext = useSceneStore((s) => s.transformContext);
@@ -156,6 +172,22 @@ const AnnotationCollectionGroup = ({
   const shapeInProgress = useRoiDrawingStore((s) => s.shapeInProgress);
 
   const annotations = useSceneAnnotations(collection.id);
+
+  // Shapes made from other shapes of this collection are hidden unless the
+  // layer shows them, and drawn as an overlay over the shape whose card is
+  // open (`lib/annotations/derivedShapes`). `placed` keeps every shape: the
+  // selection repair and the overlay both read it.
+  const derivedPartition = useMemo(() => partitionDerived(annotations ?? []), [annotations]);
+  const hiddenIds = useMemo(
+    () => (showDerived || derivedPartition.derived.length === 0 ? null : new Set(derivedPartition.derived.map((annotation) => annotation.id))),
+    [showDerived, derivedPartition],
+  );
+  // A primitive: a card opening on another layer re-renders nothing here.
+  const cardId = useRoiSelectionStore((s) => (s.cardRoi?.layerId === layerId ? s.cardRoi.id : null));
+  const overlayIds = useMemo(
+    () => (hiddenIds && cardId ? new Set(descendantsOf(cardId, derivedPartition.childrenOf).map((annotation) => annotation.id)) : null),
+    [hiddenIds, cardId, derivedPartition],
+  );
 
   const affineMatrix = useMemo(
     () => resolveCollectionMatrix(layer, collection, transformContext),
@@ -225,6 +257,7 @@ const AnnotationCollectionGroup = ({
   const shown = useMemo(
     () =>
       shownEntries(placed, (entry) =>
+        !hiddenIds?.has(entry.annotation.id) &&
         isAnnotationInView(
           {
             coordinates: entry.annotation.coordinates,
@@ -234,21 +267,60 @@ const AnnotationCollectionGroup = ({
           { coverages, plane, cropBox },
         ),
       ),
-    [placed, coverages, plane, cropBox],
+    [placed, coverages, plane, cropBox, hiddenIds],
   );
+
+  /** What was made from the shape whose card is open, where it is in view. Drawn, never picked. */
+  const overlayPositions = useMemo(() => {
+    if (!overlayIds || overlayIds.size === 0) return null;
+    const entries = placed.filter(
+      (entry) =>
+        overlayIds.has(entry.annotation.id) &&
+        isAnnotationInView({ coordinates: entry.annotation.coordinates, zSpan: entry.zSpan, bounds: entry.bounds }, { coverages, plane, cropBox }),
+    );
+    if (entries.length === 0) return null;
+    const batches = [
+      ...buildOutlineBatches(entries, flattenToPlane),
+      ...buildSectionedOutlineBatches(
+        entries.filter((entry) => isSectionedEllipse(entry.annotation, flattenToPlane)),
+        flattenToPlane,
+        planeZLocal,
+      ),
+    ];
+    return batches.length > 0 ? concatSegments(batches) : null;
+  }, [overlayIds, placed, coverages, plane, cropBox, flattenToPlane, planeZLocal]);
 
   // Hand over from the local preview once the persisted copy is actually
   // BEING DRAWN — `shown`, not the raw query result: a copy filtered out by
   // z/pins must keep its preview (dropping on fetch made saved shapes blink
   // out of existence). The store's timeout stays as the backstop.
   const resolvePersistedRois = useRoiDrawingStore((s) => s.resolvePersistedRois);
+  // The handover must also run when a confirmation LANDS, not only when the
+  // list moves: the create writes its shape into this list (the mutation's
+  // `update`) BEFORE `markDrawnRoiPersisted` stamps the preview, so a pass
+  // keyed on the list alone saw an unstamped preview, kept it, and never
+  // looked again — the preview then sat on the real shape and outlived even
+  // its delete. A scalar (P17): the stamped previews this layer must resolve.
+  const awaitingHandover = useRoiDrawingStore((s) =>
+    s.drawnRois
+      .filter((roi) => roi.persistedCollectionId === collection.id)
+      .map((roi) => roi.persistedId)
+      .join(","),
+  );
   useEffect(() => {
     if (!annotations) return;
-    resolvePersistedRois(
-      collection.id,
-      shown.map((entry) => entry.annotation.id),
+    const shownIds = shown.map((entry) => entry.annotation.id);
+    resolvePersistedRois(collection.id, shownIds);
+    if (!awaitingHandover) return;
+    // The timeout is a backstop only if something checks it: a preview whose
+    // copy is not shown expires on a timer, not on the next list change. Every
+    // new stamp re-runs this, so the last one is the youngest.
+    const timer = setTimeout(
+      () => resolvePersistedRois(collection.id, shownIds),
+      PERSISTED_PREVIEW_TIMEOUT_MS + 50,
     );
-  }, [annotations, shown, collection.id, resolvePersistedRois]);
+    return () => clearTimeout(timer);
+  }, [annotations, shown, collection.id, resolvePersistedRois, awaitingHandover]);
 
   // This layer holds the authoritative entry for what it draws: REPAIR stale
   // selections (layer/name/kind/geometry changed elsewhere) and PRUNE ids
@@ -290,20 +362,42 @@ const AnnotationCollectionGroup = ({
     [clearVisibleLayerRois, layerId],
   );
 
-  // Identity-stable so the memoized shapes actually skip.
+  const modeStoreApi = useModeStoreApi();
+  const roiDrawingApi = useRoiDrawingStoreApi();
+  // Identity-stable so the memoized shapes actually skip. Answers whether the
+  // click was taken; the pick surfaces stop propagation only when it was, so a
+  // declined click reaches the drawer behind the shape.
   const onSelectRoi = useCallback(
-    (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => {
-      if (appendSelection) {
-        toggleSelectedRoi(roi);
-        return;
-      }
-      selectOnlyRoi(roi);
-      // A plain click also opens the shape's card where it landed. Not
-      // a shift-click (building a selection), not a drag that ended here (no
-      // point), and not under a drawing tool, where a click places a vertex.
-      if (point && !drawingToolActive) openRoiMenu(roi, point);
+    (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint): boolean => {
+      // Under a shape tool (or the brush) a single click is the camera's
+      // (`navigationBindings.leftPressOwner`) and picks the shape it lands
+      // on, as in NAVIGATE; a press that is the TOOL's — the second of the
+      // double-click that starts a shape — is the drawer's, never a pick.
+      const tool = roiDrawingApi.getState().activeTool;
+      const underShapeTool =
+        modeStoreApi.getState().interactionMode === "ANNOTATE" &&
+        tool !== null &&
+        tool !== "SELECT";
+      if (underShapeTool && modeStoreApi.getState().leftPress === "tool") return false;
+      const pick = () => {
+        if (appendSelection) {
+          toggleSelectedRoi(roi);
+          return;
+        }
+        selectOnlyRoi(roi);
+        // A plain click also opens the shape's card where it landed. Not a
+        // shift-click (building a selection), and not a drag that ended here
+        // (no point).
+        if (point) openRoiMenu(roi, point);
+      };
+      // Under a shape tool this click may be the double-click's first half,
+      // so the pick waits out the window; the arbiter cancels it when a shape
+      // starts (`cancelPendingPick`).
+      if (underShapeTool) roiSelectionApi.getState().deferPick(pick, DOUBLE_PRESS_MS);
+      else pick();
+      return true;
     },
-    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, drawingToolActive],
+    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, modeStoreApi, roiDrawingApi, roiSelectionApi],
   );
 
   // Called per pointer move over a shape; the store dedupes by id, so the
@@ -374,6 +468,24 @@ const AnnotationCollectionGroup = ({
           ),
     [sectionedShapes, flattenToPlane, planeZLocal],
   );
+
+  // The selection's weight (`SelectionHalo`): the selected outlines rebuilt
+  // alone, so a click never touches the batches' geometry. Not while a shape
+  // is under way — everything else is muted then.
+  const haloPositions = useMemo(() => {
+    if (shapeInProgress || selectedRoiIds.size === 0) return null;
+    const selected = otherShapes.filter((entry) => selectedRoiIds.has(entry.annotation.id));
+    if (selected.length === 0) return null;
+    const batches = [
+      ...buildOutlineBatches(selected, flattenToPlane),
+      ...buildSectionedOutlineBatches(
+        selected.filter((entry) => isSectionedEllipse(entry.annotation, flattenToPlane)),
+        flattenToPlane,
+        planeZLocal,
+      ),
+    ];
+    return batches.length > 0 ? concatSegments(batches) : null;
+  }, [otherShapes, selectedRoiIds, shapeInProgress, flattenToPlane, planeZLocal]);
 
   // Only the extruded 3D boxes/ellipsoids still mount a component each.
   const meshShapes = useMemo(
@@ -451,6 +563,8 @@ const AnnotationCollectionGroup = ({
           onUnhoverRoi={onUnhoverRoi}
         />
       ))}
+      {haloPositions && <SelectionHalo positions={haloPositions} />}
+      {overlayPositions && <SelectionHalo positions={overlayPositions} colors={DERIVED_HALO} />}
       {meshShapes.map(({ annotation, roi }) => (
         <AnnotationShape
           key={annotation.id}

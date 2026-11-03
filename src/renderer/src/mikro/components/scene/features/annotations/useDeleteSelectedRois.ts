@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { reportError, toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
 import { removeSceneAnnotation } from "../../../../lib/annotations/annotationCache";
+import { useLineageSafeAnnotationDelete } from "../../../../lib/deletion/useLineageSafeAnnotationDelete";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
 
 /**
@@ -33,26 +34,35 @@ export const useDeleteRoi = (): {
   deletingIds: ReadonlySet<string>;
 } => {
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
-  const [deleteAnnotationMutation] = useDeleteAnnotation();
+  const [deleteAnnotationMutation, { client }] = useDeleteAnnotation();
+  // Asks first what the delete would take along, and cascades only once agreed.
+  const safeDelete = useLineageSafeAnnotationDelete();
   const [deletingIds, setDeletingIds] = useState<ReadonlySet<string>>(new Set());
 
   const deleteRoi = useCallback(
-    async (id: string) => {
-      setDeletingIds((ids) => new Set(ids).add(id));
-      try {
-        await deleteAnnotationMutation({ variables: { input: { id } } });
-        removeSelectedRoi(id);
-      } catch (error) {
-        reportError(error, "Couldn't delete the annotation");
-      } finally {
-        setDeletingIds((ids) => {
-          const next = new Set(ids);
-          next.delete(id);
-          return next;
-        });
-      }
-    },
-    [deleteAnnotationMutation, removeSelectedRoi],
+    (id: string) =>
+      safeDelete([id], async (ids, cascade, alsoGone) => {
+        setDeletingIds((current) => new Set(current).add(id));
+        try {
+          for (const target of ids) {
+            await deleteAnnotationMutation({ variables: { input: { id: target, cascade } } });
+            removeSelectedRoi(target);
+          }
+          for (const gone of alsoGone) {
+            removeSceneAnnotation(client.cache, gone);
+            removeSelectedRoi(gone);
+          }
+        } catch (error) {
+          reportError(error, "Couldn't delete the annotation");
+        } finally {
+          setDeletingIds((current) => {
+            const next = new Set(current);
+            next.delete(id);
+            return next;
+          });
+        }
+      }),
+    [client, deleteAnnotationMutation, removeSelectedRoi, safeDelete],
   );
 
   return { deleteRoi, deletingIds };
@@ -70,7 +80,8 @@ export const useDeleteSelectedRois = (): {
 } => {
   const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
-  const [deleteAnnotationMutation, { loading: isDeleting }] = useDeleteAnnotation();
+  const [deleteAnnotationMutation, { loading: isDeleting, client }] = useDeleteAnnotation();
+  const safeDelete = useLineageSafeAnnotationDelete();
 
   const deleteSelectedRois = useCallback(async () => {
     if (selectedRois.length === 0 || isDeleting) return;
@@ -83,36 +94,43 @@ export const useDeleteSelectedRois = (): {
       return;
     }
 
-    const roisToDelete = [...selectedRois];
+    await safeDelete(
+      selectedRois.map((roi) => roi.id),
+      async (ids, cascade, alsoGone) => {
+        const results = await Promise.allSettled(
+          ids.map(async (id) => {
+            await deleteAnnotationMutation({
+              variables: { input: { id, cascade } },
+            });
 
-    const results = await Promise.allSettled(
-      roisToDelete.map(async (roi) => {
-        await deleteAnnotationMutation({
-          variables: { input: { id: roi.id } },
+            return id;
+          }),
+        );
+        for (const gone of alsoGone) {
+          removeSceneAnnotation(client.cache, gone);
+          removeSelectedRoi(gone);
+        }
+
+        const failures: unknown[] = [];
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            removeSelectedRoi(result.value);
+          } else {
+            failures.push(result.reason);
+          }
         });
-
-        return roi.id;
-      }),
+        // One toast for the batch, the first refusal as its reason.
+        if (failures.length > 0) {
+          reportError(
+            failures[0],
+            failures.length === results.length
+              ? `Couldn't delete the ${results.length === 1 ? "annotation" : "annotations"}`
+              : `Couldn't delete ${failures.length} of ${results.length} annotations`,
+          );
+        }
+      },
     );
-
-    const failures: unknown[] = [];
-    results.forEach((result) => {
-      if (result.status === "fulfilled") {
-        removeSelectedRoi(result.value);
-      } else {
-        failures.push(result.reason);
-      }
-    });
-    // One toast for the batch, the first refusal as its reason.
-    if (failures.length > 0) {
-      reportError(
-        failures[0],
-        failures.length === results.length
-          ? `Couldn't delete the ${results.length === 1 ? "annotation" : "annotations"}`
-          : `Couldn't delete ${failures.length} of ${results.length} annotations`,
-      );
-    }
-  }, [deleteAnnotationMutation, isDeleting, removeSelectedRoi, selectedRois]);
+  }, [client, deleteAnnotationMutation, isDeleting, removeSelectedRoi, safeDelete, selectedRois]);
 
   return { deleteSelectedRois, isDeleting };
 };

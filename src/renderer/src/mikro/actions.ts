@@ -1,4 +1,5 @@
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
+import { preflightDeletes } from "./lib/deletion/preflight";
 import type { ModuleServices } from "@/core/connection/arkitekt/host";
 import {
   AutoVisualizeDocument,
@@ -1005,6 +1006,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     service: 'mikro',
     typename: 'Fixture',
     mutation: DeleteFixtureDocument,
+    preflight: (client, ids) => preflightDeletes(client, "Fixture", ids),
   }),
   'delete-mikro-file': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete File',
@@ -1012,7 +1014,8 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     description: 'Delete the file',
     service: 'mikro',
     typename: 'File',
-    mutation: DeleteFileDocument
+    mutation: DeleteFileDocument,
+    preflight: (client, ids) => preflightDeletes(client, "File", ids),
   }),
   // The move seen from the thing being moved, rather than from the container it
   // is dropped on: `move_files_to_dataset` below needs a folder page to drag
@@ -1463,7 +1466,8 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       'Delete the array dataset, its pyramid levels and the store behind them',
     service: 'mikro',
     typename: 'ArrayDataset',
-    mutation: DeleteArrayDatasetDocument
+    mutation: DeleteArrayDatasetDocument,
+    preflight: (client, ids) => preflightDeletes(client, "ArrayDataset", ids),
   }),
   'delete-mikro-lens': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Lens',

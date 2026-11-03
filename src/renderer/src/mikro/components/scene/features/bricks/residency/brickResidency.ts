@@ -1798,6 +1798,7 @@ export class BrickResidencyManager {
       // a cost. The max and the flush count are the numbers worth reading.
       const flushStartedAt = performance.now();
       this.stats.gpuRepackFlushes += 1;
+      perfMonitor.markEvent("gpuRepack:flush"); // no-op unless a perf recording is armed
       void gpuFlush.then((outcome) => {
         const latency = performance.now() - flushStartedAt;
         this.stats.gpuRepackLatencyMsSum += latency;

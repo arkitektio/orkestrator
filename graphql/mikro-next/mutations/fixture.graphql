@@ -7,8 +7,10 @@ mutation CreateFixture($input: CreateFixtureInput!) {
   }
 }
 
-mutation DeleteFixture($id: ID!) {
-  deleteFixture(input: { id: $id })
+# `cascade` takes along everything made from it (see PreflightDeleteFixture);
+# without it a delete of something anything was made from is refused.
+mutation DeleteFixture($id: ID!, $cascade: Boolean = false) {
+  deleteFixture(input: { id: $id, cascade: $cascade })
 }
 
 mutation CreateFixtureLayer($input: CreateFixtureLayerInput!) {

@@ -14,6 +14,17 @@ describe("enhancer registry", () => {
     }
   });
 
+  it("gives lines and paths the vector trace, polygons the outline trace", () => {
+    for (const displayMode of ["2D", "3D"] as const) {
+      expect(
+        applicableEnhancers({ tool: "LINE", displayMode }).map((e) => e.id),
+      ).toEqual(["vector-trace"]);
+      expect(
+        applicableEnhancers({ tool: "POLYGON", displayMode }).map((e) => e.id),
+      ).toEqual(["outline-trace"]);
+    }
+  });
+
   it("offers the skeleton brush only for BRUSH in 3D", () => {
     expect(
       applicableEnhancers({ tool: "BRUSH", displayMode: "3D" }).map((e) => e.id),

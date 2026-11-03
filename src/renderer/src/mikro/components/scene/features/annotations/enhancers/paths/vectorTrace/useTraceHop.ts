@@ -25,7 +25,10 @@ import {
   traceLevelSteps,
   type TraceHopFailure,
 } from "../../shared/traceLayer";
-import { useRoiDrawingStoreApi } from "../../../roiDrawingStore";
+import {
+  activeTraceWeights,
+  useRoiDrawingStoreApi,
+} from "../../../roiDrawingStore";
 import { useSceneStoreApi } from "../../../../../platform/stores/sceneStore";
 
 import { useBrickStoreApi } from "../../../../bricks/store/brickSlice";
@@ -202,7 +205,7 @@ export const useTraceHop = () => {
       const values = context.extract(box);
       const start = traceNodeOf(box, from.voxel);
       const goal = traceNodeOf(box, to.voxel);
-      const weights: TraceWeights = roiDrawingApi.getState().traceWeights;
+      const weights: TraceWeights = activeTraceWeights(roiDrawingApi.getState());
       const cost = buildTraceCost({
         values,
         size: box.size,

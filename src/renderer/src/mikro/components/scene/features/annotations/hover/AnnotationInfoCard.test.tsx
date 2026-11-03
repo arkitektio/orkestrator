@@ -14,6 +14,7 @@ vi.mock("@/core/linkers", () => {
     ),
   });
   return {
+    MikroAnnotation: link("annotation"),
     MikroArrayLens: link("lens"),
     MikroArrayDataset: link("arraydataset"),
     MikroTableDataset: link("tabledataset"),
@@ -37,6 +38,8 @@ const annotation = {
   coordinates: [{ name: "c", value: 1 }],
   derivedLenses: [],
   derivedResidents: [],
+  derivedFrom: [],
+  derivedAnnotations: [],
 };
 
 afterEach(cleanup);
@@ -91,6 +94,26 @@ describe("AnnotationInfoCard", () => {
     // No page of its own: named, not linked.
     expect(screen.getByText("Skeleton").tagName).toBe("SPAN");
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByText("Nothing has been cut or computed from this shape yet.")).toBeNull();
+  });
+
+  it("lists the shapes made from it and the shapes it was made from", () => {
+    infoQuery.mockReturnValue({
+      data: {
+        annotation: {
+          ...annotation,
+          derivedAnnotations: [{ id: "ann:3", name: "Smoothed", kind: "PATH" }],
+          derivedFrom: [
+            { id: "1", relation: "REFINED", reason: null, source: { id: "ann:0", name: "Rough", kind: "PATH" } },
+          ],
+        },
+      },
+    });
+    render(<AnnotationInfoCard id="ann:1" />);
+
+    expect(screen.getByText("Smoothed").getAttribute("href")).toBe("/annotation/ann:3");
+    expect(screen.getByText("Rough").getAttribute("href")).toBe("/annotation/ann:0");
+    expect(screen.getByText("refined")).toBeTruthy();
     expect(screen.queryByText("Nothing has been cut or computed from this shape yet.")).toBeNull();
   });
 

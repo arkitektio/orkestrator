@@ -91,6 +91,7 @@ import {
   type ChannelWindowData,
 } from "./channelUniforms";
 import { fixedMemberUniforms, type FixedMemberUniforms } from "./mergedChannelUniforms";
+import { emitDepthPacked, makeDepthCodeUniforms, type DepthCodeUniforms } from "./depthCodeNodes";
 
 /**
  * TSL (Three Shading Language) node materials for the brick-pool renderer —
@@ -1592,7 +1593,8 @@ export function createPlaneNodeMaterial(
 export type VolumeMaterialNodes = TraversalNodesPublic &
   ChannelNodesPublic &
   ClipUniformNodes &
-  CinematicUniforms & {
+  CinematicUniforms &
+  DepthCodeUniforms & {
     uDesiredLevel: UniformNodeLike<number>;
     uLodBias: UniformNodeLike<number>;
     uPxPerVoxelAtUnitDist: UniformNodeLike<number>;
@@ -1904,6 +1906,12 @@ export function createVolumeNodeMaterial(
     uMipShading: uniform(CINEMATIC_DEFAULTS.mipShading, "float"),
   };
 
+  // Depth view (hold Q, `depthCodeNodes.ts`): a runtime flag like
+  // `uCinematic` — never a rebuild. The COMPOSITOR flips it per pass (a
+  // normal pass and a packed-depth pass can run back to back in one frame),
+  // which is why it is reachable from the material itself.
+  const depth: any = makeDepthCodeUniforms();
+
   // Back-compat aliases: the single-layer call site writes `projectionMode` /
   // `isoThreshold` directly, which is member 0.
   const projectionMode = memberNodes[0].projectionMode;
@@ -1938,8 +1946,17 @@ export function createVolumeNodeMaterial(
     makeVolumeRayNodes(t, rayUniforms);
   // The proxy box is drawn at the crop box, not at the whole volume.
   material.positionNode = clippedPosition;
+  material.userData.depthCodeUniform = depth.uDepthCode;
+  // The scene box the depth pass normalises against — the compositor needs
+  // the same range to turn depth-per-texel back into a world slope.
+  material.userData.depthBox = { min: depth.uDepthBoxMin, max: depth.uDepthBoxMax };
 
   material.fragmentNode = Fn(() => {
+    // A fresh scope per BUILD: three builds this material once per render
+    // context, and the compositor draws it into two targets (the depth view's
+    // packed-depth pass), which runs this body again. Every claim below
+    // happens inside this body, so per-build uniqueness is the whole check.
+    nameScope.reset();
     // Ray ∩ [0, baseShape]; discards the fragment when the ray misses.
     const { originB, dirB, invD, boundsX, boundsY, rayLen, fullRayLen } = emitVolumeRayBounds(
       { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel },
@@ -2008,6 +2025,11 @@ export function createVolumeNodeMaterial(
       volAlpha: float(0.0).toVar(),
       isoHit: bool(false).toVar(), // ISOSURFACE
       isoColor: vec3(0.0).toVar(),
+      // Depth coding: the ray position of the sample that WON (MIP / AMIP /
+      // ISO), and VOLUME's alpha-weighted position sum. Recorded where the
+      // winner is already chosen, so selection and early-outs are untouched.
+      hitT: float(0.0).toVar(),
+      volDepth: float(0.0).toVar(),
       // Replaces the single-pass `Break()`: this member has all it can get, but
       // the ray continues for the others.
       done: bool(false).toVar(),
@@ -2602,6 +2624,7 @@ export function createVolumeNodeMaterial(
             const av = sampleNorm.mul(atten);
             If(av.greaterThan(a.attenuatedMax), () => {
               a.attenuatedMax.assign(av);
+              a.hitT.assign(rayT);
               a.attenuatedColor.assign(shadeColor(`amipFastGrad${m}`, null, cine.uMipShading));
             });
             // Early ray termination (CPU mirror: attenuatedMipDone). atten
@@ -2622,6 +2645,8 @@ export function createVolumeNodeMaterial(
               // actually reaches the accumulator, none for the rest.
               const volShaded = shadeColor(`volGrad${m}`, av.greaterThan(0.01));
               a.volColor.addAssign(oneMinus(a.volAlpha).mul(av).mul(volShaded));
+              // Same weight as the colour: Σ w·t / volAlpha is the mean depth.
+              a.volDepth.addAssign(oneMinus(a.volAlpha).mul(av).mul(rayT));
               // `av` and `volAlpha` are UNTOUCHED by shading (C1).
               a.volAlpha.addAssign(oneMinus(a.volAlpha).mul(av));
               If(a.volAlpha.greaterThanEqual(0.98), () => {
@@ -2634,6 +2659,7 @@ export function createVolumeNodeMaterial(
               // here — which is why the iso path costs ~2-5% and not 1.5×.
               If(sampleNorm.greaterThanEqual(mem.isoThreshold), () => {
                 a.isoHit.assign(true);
+                a.hitT.assign(rayT);
                 a.isoColor.assign(shadeColor(`isoGrad${m}`));
                 a.done.assign(true);
               });
@@ -2648,6 +2674,7 @@ export function createVolumeNodeMaterial(
               // iso path's ~2-5%. That is why it rides the governor gate.
               If(sampleNorm.greaterThan(a.bestNorm), () => {
                 a.bestNorm.assign(sampleNorm);
+                a.hitT.assign(rayT);
                 a.bestColor.assign(shadeColor(`mipGrad${m}`, null, cine.uMipShading));
               });
               // Early ray termination: the normalize clamps to [0, 0.999] before
@@ -2669,39 +2696,74 @@ export function createVolumeNodeMaterial(
     const outColor = vec3(0.0).toVar("finalColor");
     const keep = bool(false).toVar("keepFragment");
 
-    // SUM the members. Across layers the compositing was always additive (the
-    // material is AdditiveBlending and a layer's own blend applies only within
-    // its own slots), and addition is associative — so summing here is exactly
-    // what the framebuffer did across the separate passes. For one member the
-    // addAssign onto a zeroed var is the old plain assign.
-    memberNodes.forEach((mem, m) => {
-      const a = acc[m];
-      If(int(mem.projectionMode).equal(2), () => {
-        If(a.volAlpha.greaterThanEqual(0.01), () => {
-          outColor.addAssign(a.volColor);
-          keep.assign(true);
+    // DEPTH PASS (hold Q / Shift+Q): write `(frac·s, s, 0)` — the view depth
+    // of the sample the pixel shows, weighted by its strength — instead of a
+    // colour. The compositor decodes it, colours it and finds depth JUMPS
+    // between neighbouring rays (`depthCodeNodes.emitDepthComposite`). ONE
+    // member — the strongest — speaks for the pixel: summing members would
+    // read as an in-between depth. CPU mirror: shaderspec/depthCode.ts.
+    If(float(depth.uDepthCode).greaterThan(0.5), () => {
+      const bestStrength = float(0.0).toVar("depthStrength");
+      const bestT = float(0.0).toVar("depthHitT");
+      memberNodes.forEach((mem, m) => {
+        const a = acc[m];
+        const mode = int(mem.projectionMode);
+        const strength = select(
+          mode.equal(2),
+          a.volAlpha,
+          select(
+            mode.equal(3),
+            select(a.isoHit, float(1.0), float(0.0)),
+            select(mode.equal(1), a.attenuatedMax, a.bestNorm),
+          ),
+        );
+        const tHit = select(mode.equal(2), a.volDepth.div(max(a.volAlpha, 1e-5)), a.hitT);
+        If(strength.greaterThan(bestStrength), () => {
+          bestStrength.assign(strength);
+          bestT.assign(tHit);
         });
-      })
-        .ElseIf(int(mem.projectionMode).equal(3), () => {
-          If(a.isoHit, () => {
-            outColor.addAssign(a.isoColor);
+      });
+      If(bestStrength.greaterThanEqual(0.01), () => {
+        // Inverse of `toBaseVoxel`: base voxel → the box's [-0.5, 0.5] local.
+        const pLocal = originB.add(dirB.mul(bestT)).div(vec3(uBaseShape)).sub(0.5);
+        outColor.assign(emitDepthPacked(depth, pLocal, bestStrength));
+        keep.assign(true);
+      });
+    }).Else(() => {
+      // SUM the members. Across layers the compositing was always additive (the
+      // material is AdditiveBlending and a layer's own blend applies only within
+      // its own slots), and addition is associative — so summing here is exactly
+      // what the framebuffer did across the separate passes. For one member the
+      // addAssign onto a zeroed var is the old plain assign.
+      memberNodes.forEach((mem, m) => {
+        const a = acc[m];
+        If(int(mem.projectionMode).equal(2), () => {
+          If(a.volAlpha.greaterThanEqual(0.01), () => {
+            outColor.addAssign(a.volColor);
             keep.assign(true);
           });
         })
-        .Else(() => {
-          // MIP / ATTENUATED_MIP: premultiplied additive output.
-          const outNorm = select(
-            int(mem.projectionMode).equal(1),
-            a.attenuatedMax,
-            a.bestNorm,
-          );
-          If(outNorm.greaterThanEqual(0.01), () => {
-            outColor.addAssign(
-              select(int(mem.projectionMode).equal(1), a.attenuatedColor, a.bestColor),
+          .ElseIf(int(mem.projectionMode).equal(3), () => {
+            If(a.isoHit, () => {
+              outColor.addAssign(a.isoColor);
+              keep.assign(true);
+            });
+          })
+          .Else(() => {
+            // MIP / ATTENUATED_MIP: premultiplied additive output.
+            const outNorm = select(
+              int(mem.projectionMode).equal(1),
+              a.attenuatedMax,
+              a.bestNorm,
             );
-            keep.assign(true);
+            If(outNorm.greaterThanEqual(0.01), () => {
+              outColor.addAssign(
+                select(int(mem.projectionMode).equal(1), a.attenuatedColor, a.bestColor),
+              );
+              keep.assign(true);
+            });
           });
-        });
+      });
     });
 
     Discard(keep.not());
@@ -2724,6 +2786,7 @@ export function createVolumeNodeMaterial(
       uSmoothThreshold,
       uBaseShape,
       ...cine,
+      ...depth,
       projectionMode,
       isoThreshold,
       members: memberNodes,

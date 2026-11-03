@@ -94,4 +94,50 @@ describe("volume raymarcher WGSL", () => {
     const { material } = createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, merged, 2);
     expect(fragmentWgsl(material)).toContain("fn main");
   });
+
+  it("builds the SAME material twice (a second render target is a second node build)", () => {
+    // The compositor renders volumes into its colour target AND, for the depth
+    // view, into `depthTarget`: three builds the node graph once per render
+    // context, so the fragment Fn runs again. Its NameScope must start clean
+    // each build, or the second build throws "duplicate name".
+    const pool = makePool(2);
+    const two = layer([channel(), channel({ intensityIndex: 1 })]);
+    const merged = buildMergedChannelUniformData(
+      [
+        { layerId: "a", layer: two, slotOffset: 0 },
+        { layerId: "b", layer: two, slotOffset: 2 },
+      ],
+      2,
+      0,
+      255,
+      undefined,
+      () => 0,
+    );
+    const { material } = createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, merged, 2);
+    const first = fragmentWgsl(material);
+    expect(() => fragmentWgsl(material)).not.toThrow();
+    expect(fragmentWgsl(material)).toBe(first);
+  });
+
+  it("compiles the depth-coding branch (hold Q) into every variant", () => {
+    const pool = makePool(1);
+    const only = layer([channel()]);
+    const data = buildMergedChannelUniformData(
+      [{ layerId: "a", layer: only, slotOffset: 0 }],
+      1,
+      0,
+      255,
+      undefined,
+      () => 0,
+    );
+    const { material, nodes } = createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, data, 1);
+    // A runtime flag, not a rebuild: the handles exist on every material.
+    expect(nodes.uDepthCode.value).toBe(0);
+    expect(nodes.uDepthBoxMin.value.isVector3).toBe(true);
+    // The compositor flips the flag per pass through the material itself.
+    expect(material.userData.depthCodeUniform).toBe(nodes.uDepthCode);
+    const wgsl = fragmentWgsl(material);
+    expect(wgsl).toContain("depthHitT");
+    expect(wgsl).toContain("depthStrength");
+  });
 });

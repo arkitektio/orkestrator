@@ -19,6 +19,7 @@ import * as THREE from "three";
 import { CameraMatrixSync } from "../platform/camera/CameraMatrixSync";
 import { PerfFrameProbe } from "../platform/perf/PerfFrameProbe";
 import { ScaleBar } from "./chrome/ScaleBar";
+import { DepthCodeLegend } from "./chrome/DepthCodeLegend";
 import { ScaleGrid } from "./chrome/ScaleGrid";
 import { SceneDock } from "./SceneDock";
 import { SceneGuard, useSceneScopeStatus } from "./SceneProvider";
@@ -49,7 +50,7 @@ import { SceneModeControls } from "./chrome/SceneModeControls";
 import { SceneShortcuts } from "./keyboard/SceneShortcuts";
 import { CenterLodReadout } from "../features/bricks/CenterLodReadout";
 import { DrawSizeReadout } from "../features/annotations/DrawSizeReadout";
-import { RoiToolbar } from "../features/annotations/RoiToolbar";
+import { AnnotationToolbar } from "../features/annotations/AnnotationToolbar";
 import { MeshDesignToolbar } from "../features/meshDesign/ui/MeshDesignToolbar";
 import { SceneScreenshot } from "./chrome/SceneScreenshot";
 import { SceneAutoSnapshot } from "../features/animation/useAutoSnapshot";
@@ -476,6 +477,8 @@ export const SceneViewport = (props: {
           <StaleProbeReconciler />
           <ProbeReadoutSettler />
           <ScaleBar />
+          {/* While Q is held: what the depth hues mean. */}
+          <DepthCodeLegend />
           {/* Bottom-left, under the scale bar: both answer "what am I
               actually looking at" — one in world units, one in pixels. */}
           <CenterLodReadout />
@@ -484,10 +487,14 @@ export const SceneViewport = (props: {
               they are the page sidebar's "Probe" tab
               (`features/probe/ProbePanel.tsx`,
               `features/annotations/ProbeMetadata.tsx`). */}
-          <SceneModeControls />
+          {/* The bottom HUD row: the annotate palette (ANNOTATE only) sits
+              beside the mode switch that armed it, on the same baseline. */}
+          <div className="pointer-events-none absolute bottom-2 right-2 z-30 flex items-end gap-2">
+            <AnnotationToolbar />
+            <SceneModeControls />
+          </div>
 
           <CropChip />
-          <RoiToolbar />
           <MeshDesignToolbar />
           {/* Last, and the only overlay that covers the canvas: on top of
               everything it documents. */}

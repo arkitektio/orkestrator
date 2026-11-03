@@ -25,7 +25,6 @@ type StepLike = {
 export type HostLayerSource = {
   id: string;
   __typename?: string;
-  name?: string | null;
   visible?: boolean | null;
   asAffine?: unknown | null;
   pathToWorld?: readonly StepLike[] | null;
@@ -33,7 +32,13 @@ export type HostLayerSource = {
   // layer kind carries exactly one of them. Every layer has a `lens`; only an
   // array lens carries a `dataset`, and the other kinds are named by the
   // container fields below.
-  lens?: { id?: string | null; dataset?: { id?: string | null } | null } | null;
+  // `name` and `dataset.name`: what a layer is called (it has no name of its
+  // own — the metadata beneath it names it, see `layerDisplayLabel`).
+  lens?: {
+    id?: string | null;
+    name?: string | null;
+    dataset?: { id?: string | null; name?: string | null } | null;
+  } | null;
   tableDataset?: { id?: string | null } | null;
   /** `store.axes` is read by `isPlaceable`: a collection naming no vertex slots is not drawn. */
   collection?: {
@@ -97,7 +102,9 @@ export const toHostLayers = <L extends HostLayerSource>(
 ): HostLayer<L["pathToWorld"]>[] =>
   layers.map((layer) => ({
     id: layer.id,
-    name: layer.name?.trim() || layer.__typename || "Layer",
+    // Never `layer.name`: a layer has no name of its own, the metadata beneath
+    // it names it — the lens' anchor labels, else its dataset.
+    name: layer.lens?.name?.trim() || layer.lens?.dataset?.name?.trim() || layer.__typename || "Layer",
     typename: layer.__typename ?? "Layer",
     visible: (visibleOverrides?.get(layer.id) ?? layer.visible) !== false,
     placeable: isPlaceable(layer),

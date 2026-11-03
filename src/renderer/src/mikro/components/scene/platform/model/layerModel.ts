@@ -553,7 +553,8 @@ export const normalizeIntensityLayer = (
   const channel: ChannelRenderNode = {
     type: "channel",
     kind: CHANNEL_KIND,
-    label: layer.name ?? null,
+    // The channel is called what its lens is: the label on its anchor.
+    label: layer.lens.name ?? null,
     intensityAxis: common.intensityAxis,
     // Which channel is drawn is the lens' selection: the position it pins the
     // channel axis to. A lens with no channel axis, or one channel, draws 0.
@@ -712,7 +713,7 @@ export const normalizePhasorLayer = (
     ? {
         type: "phasor",
         kind: PHASOR_KIND,
-        label: layer.name ?? null,
+        label: layer.lens.name ?? null,
         phasorAxis: render.phasorAxis,
         harmonic: render.harmonic,
         intensityAxis: common.intensityAxis,

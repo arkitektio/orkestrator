@@ -8,6 +8,7 @@ import {
 } from "../../platform/input/navigationBindings";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useRoiDrawingStoreApi } from "../../features/annotations/roiDrawingStore";
+import { useRoiSelectionStoreApi } from "../../features/annotations/roiSelectionStore";
 
 /**
  * Decides, at every left press on the canvas, whether it moves the view or
@@ -26,6 +27,7 @@ export const LeftPressArbiter = () => {
   const gl = useThree((s) => s.gl);
   const modeApi = useModeStoreApi();
   const roiDrawingApi = useRoiDrawingStoreApi();
+  const roiSelectionApi = useRoiSelectionStoreApi();
   const countPress = useMemo(() => createPressCounter(), []);
 
   useEffect(() => {
@@ -37,18 +39,32 @@ export const LeftPressArbiter = () => {
       const detail = countPress({ at: event.timeStamp, x: event.clientX, y: event.clientY });
       const mode = modeApi.getState();
       const drawing = roiDrawingApi.getState();
+      const annotate = {
+        armed: drawing.activeTool !== null,
+        marquee: drawing.activeTool === "SELECT",
+        inProgress: drawing.shapeInProgress || drawing.primitiveSessionActive,
+      };
       const owner = leftPressOwner({
         interactionMode: mode.interactionMode,
         designArmed: mode.designTool !== null,
         handHeld: mode.handHeld,
-        annotate: {
-          armed: drawing.activeTool !== null,
-          marquee: drawing.activeTool === "SELECT",
-          inProgress: drawing.shapeInProgress || drawing.primitiveSessionActive,
-        },
+        annotate,
         detail,
       });
       mode.setLeftPress(owner);
+      // The press that STARTS a shape (a double-click's second, under a shape
+      // tool). Its first click was the camera's and landed on whatever shape
+      // was under it, whose pick is still waiting out the double-click window;
+      // a double-click means "draw here", so that pick never happens.
+      if (
+        owner === "tool" &&
+        mode.interactionMode === "ANNOTATE" &&
+        annotate.armed &&
+        !annotate.marquee &&
+        !annotate.inProgress
+      ) {
+        roiSelectionApi.getState().cancelPendingPick();
+      }
       if (controls && typeof controls === "object" && "mouseButtons" in controls) {
         (controls as { mouseButtons: unknown }).mouseButtons = cameraButtonsFor({
           displayMode: mode.displayMode,
@@ -58,7 +74,7 @@ export const LeftPressArbiter = () => {
     };
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [controls, gl, modeApi, roiDrawingApi, countPress]);
+  }, [controls, gl, modeApi, roiDrawingApi, roiSelectionApi, countPress]);
 
   return null;
 };

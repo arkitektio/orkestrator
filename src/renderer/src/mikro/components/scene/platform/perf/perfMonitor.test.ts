@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { perfMonitor } from "./perfMonitor";
 
 afterEach(() => {
@@ -143,5 +143,102 @@ describe("perfMonitor aggregation", () => {
     perfMonitor.recordFrame(frame({ gpuMs: null }));
     perfMonitor.recordFrame(frame({ gpuMs: null }));
     expect(perfMonitor.buildSessionReport()!.gpuMs).toBeNull();
+  });
+});
+
+describe("perfMonitor long-frame attribution", () => {
+  /** A controllable clock: `at(ms)` moves performance.now() to session ms. */
+  const clock = () => {
+    let t = 1000;
+    const spy = vi.spyOn(performance, "now").mockImplementation(() => t);
+    return {
+      at: (sessionMs: number) => {
+        t = 1000 + sessionMs;
+      },
+      restore: () => spy.mockRestore(),
+    };
+  };
+
+  it("reports a missed frame with the events and LoAF entries inside its window", () => {
+    const c = clock();
+    try {
+      c.at(0);
+      perfMonitor.startRecording();
+      c.at(16);
+      perfMonitor.recordFrame(frame({ framePeriodMs: 16, frameMainThreadMs: 1 }));
+      // Inside the long frame's window (it ends at 216, started at 216-1-180=35).
+      c.at(40);
+      perfMonitor.markEvent("camera:settled");
+      c.at(41);
+      perfMonitor.markEvent("replan", { ms: 3 });
+      // A long animation frame that started before the window and runs into it.
+      perfMonitor.setLongAnimationFrameSupported(true);
+      perfMonitor.addLongAnimationFrame({
+        startTime: 1000 + 20,
+        durationMs: 120,
+        blockingMs: 70,
+        scripts: [{ invoker: "TimerHandler:setTimeout", sourceFunctionName: "emit", sourceURL: "/x.ts", durationMs: 110 }],
+      });
+      // One outside it (after the frame ended).
+      c.at(300);
+      perfMonitor.markEvent("gesture:begin");
+      c.at(216);
+      perfMonitor.recordFrame(frame({ framePeriodMs: 180, frameMainThreadMs: 1 }));
+
+      const report = perfMonitor.buildSessionReport()!;
+      expect(report.longFrames).toHaveLength(1);
+      const [long] = report.longFrames;
+      expect(long.periodMs).toBe(180);
+      expect(long.events.map((e) => e.name)).toEqual(["camera:settled", "replan"]);
+      expect(long.loaf).toHaveLength(1);
+      expect(long.loaf[0].scripts[0].sourceFunctionName).toBe("emit");
+      expect(report.longAnimationFrames).toEqual({ count: 1, totalMs: 120, maxMs: 120 });
+      expect(report.events.replan).toEqual({ count: 1, totalMs: 3, maxMs: 3 });
+    } finally {
+      c.restore();
+    }
+  });
+
+  it("a missed frame with no long animation frame reads as GPU-side (empty loaf)", () => {
+    perfMonitor.startRecording();
+    perfMonitor.setLongAnimationFrameSupported(true);
+    perfMonitor.recordFrame(frame({ framePeriodMs: 120 }));
+    const report = perfMonitor.buildSessionReport()!;
+    expect(report.longFrames).toHaveLength(1);
+    expect(report.longFrames[0].loaf).toEqual([]);
+  });
+
+  it("totals React commits per profiler id and timelines only the >= 1 ms ones", () => {
+    perfMonitor.startRecording();
+    perfMonitor.markCommit("scene-canvas", "update", 0.4);
+    perfMonitor.markCommit("scene-canvas", "update", 6);
+    perfMonitor.recordFrame(frame());
+    const report = perfMonitor.buildSessionReport()!;
+    expect(report.reactCommits["scene-canvas"]).toEqual({ count: 2, totalMs: 6.4, maxMs: 6 });
+    expect(report.events["react:scene-canvas"]).toEqual({ count: 1, totalMs: 6, maxMs: 6 });
+  });
+
+  it("spans are free and silent while not recording", () => {
+    const started = perfMonitor.spanStart();
+    expect(Number.isNaN(started)).toBe(true);
+    perfMonitor.markSpan("replan", started);
+    perfMonitor.startRecording();
+    perfMonitor.recordFrame(frame());
+    expect(perfMonitor.buildSessionReport()!.events).toEqual({});
+  });
+
+  it("startRecording resets the probe, pointer and volume-frame accumulators", () => {
+    perfMonitor.startRecording();
+    perfMonitor.markProbe();
+    perfMonitor.addProbeMs(5);
+    perfMonitor.addPointerMoveMs(2);
+    perfMonitor.markVolumeFrame("cached");
+    perfMonitor.startRecording();
+    perfMonitor.recordFrame(frame());
+    const report = perfMonitor.buildSessionReport()!;
+    expect(report.probeMs).toBeNull();
+    expect(report.pointerMoveMs).toBeNull();
+    expect(report.volumeFrames).toEqual({});
+    expect(report.longAnimationFrames).toBeNull();
   });
 });

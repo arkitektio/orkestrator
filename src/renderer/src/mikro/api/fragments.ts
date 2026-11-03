@@ -125,6 +125,7 @@
       "Annotation",
       "AnnotationChartLayer",
       "AnnotationCollection",
+      "AnnotationDerivation",
       "AnnotationLayer",
       "AnnotationLens",
       "ArrayDataset",

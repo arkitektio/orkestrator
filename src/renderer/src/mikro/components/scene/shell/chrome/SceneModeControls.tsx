@@ -18,7 +18,7 @@ import { displayModeToPreferredView } from "../../platform/camera/preferredView"
 import { useScenePreferencesEditor } from "../../features/animation/useAnimationEditor";
 import { InteractionMode, useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
-import { BarTooltip } from "./BarTooltip";
+import { BarTooltip } from "../../platform/layerui/BarTooltip";
 import { LayerTargetPicker } from "./LayerTargetPicker";
 import { SceneSettings } from "./SceneSettings";
 import { isRemapActive } from "../../platform/model/displayRemap";
@@ -87,7 +87,7 @@ export const SceneModeControls = () => {
   );
 
   return (
-    <div className="pointer-events-auto absolute bottom-2 right-2 z-30 flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
       {/* Interaction modes — iconified switches. */}
       <ButtonGroup>
         {availableModes.map((mode) => {

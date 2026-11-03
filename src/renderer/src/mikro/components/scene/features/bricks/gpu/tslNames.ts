@@ -47,6 +47,18 @@ export class NameScope {
     return (name: string) => this.claim(prefix ? `${prefix}_${name}` : name);
   }
 
+  /**
+   * Forget every claim — call at the START of the Fn body that does the
+   * claiming. Names are claimed while the node graph is BUILT, and three
+   * builds a material once per render context: the same material drawn into
+   * a second render target (the volume compositor's depth pass) runs the
+   * fragment Fn again. Each build is its own WGSL module, so its names only
+   * have to be unique within that build.
+   */
+  reset(): void {
+    this.taken.clear();
+  }
+
   /** Names reserved so far, in claim order (diagnostics and tests). */
   claimed(): string[] {
     return [...this.taken];

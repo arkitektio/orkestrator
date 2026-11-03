@@ -27,6 +27,8 @@ import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
+import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
+import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 
 /**
  * The card for a `LabelLayer` — an array whose values are discrete object ids
@@ -348,7 +350,16 @@ export const LabelLayerCard = memo(
       <LayerCardShell
         icon={<Puzzle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
         tile="bg-emerald-400/15"
-        title={lens.dataset?.name?.trim() || `Labels ${layerId}`}
+        // The same name rule as the image rows: its own name, then the lens',
+        // then the dataset — and the name is the rename, as it is there.
+        title={layerDisplayLabel(layer)}
+        titleNode={
+          <LayerNamePopover
+            layer={layer}
+            label={layerDisplayLabel(layer)}
+            className="text-[11px] font-medium text-foreground/90"
+          />
+        }
         hidden={hidden}
         expanded={expanded}
         onToggle={() => onSelect(layerId, expanded)}

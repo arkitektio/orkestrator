@@ -296,6 +296,7 @@ export const MIKRO_HELP = {
         <>Press <b>+ Add derived</b> under the layers to add what was computed from what the scene shows (a mask, a projection, a measurement table, meshes): pick one and the <b>Add layer</b> form opens on it.</>,
         <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
         <>Hold <b>P</b> to probe the value under the cursor, and click to pin a probe point; the <b>Probe</b> tab of the sidebar shows the readings and compares the pinned points.</>,
+        <>In 3D, hold <b>Q</b> to colour the volumes by their distance from the camera (warm is near, cool is far), shaded as relief so their shape shows, to tell structures that only overlap on screen from ones that really touch. Hold <b>Shift+Q</b> for the relief shading over the normal colours.</>,
         <>Press <b>S</b> to crop the scene to a box: click one corner, move to the opposite corner and click, move the mouse up or down to set its depth, and click again. Only what is inside is loaded and shown; <b>Show all</b> brings the rest back.</>,
         <>Open the menu button at the right end of the page header and choose <b>Add Layer</b> to bring more data in, or <b>Align Layers…</b> to line layers up.</>,
         <>Open the <b>Animations</b> tab to build a camera tour: a sequence of stops the camera travels between.</>,

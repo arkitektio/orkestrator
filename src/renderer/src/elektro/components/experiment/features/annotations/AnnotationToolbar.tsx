@@ -16,7 +16,7 @@ import { ANNOTATE_TOOLS, toolSpec, type AnnotateTool } from "./annotationTools";
 import { useAnnotationStore, useAnnotationStoreApi } from "./store/annotationSlice";
 
 /**
- * The annotate tool palette — mikro's `RoiToolbar`, on a timeline: Select first,
+ * The annotate tool palette — mikro's `AnnotationToolbar`, on a timeline: Select first,
  * then the time tools, then the row tools. Shown in ANNOTATE mode only, centred
  * above the time axis, with the active tool's hint above it.
  *

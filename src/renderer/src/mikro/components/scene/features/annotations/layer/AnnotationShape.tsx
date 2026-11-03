@@ -42,7 +42,8 @@ export type AnnotationShapeProps = {
   muted: boolean;
   /** `annotationSelectEnabled`: false where a click on the shape belongs elsewhere. */
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
+  /** Whether the click was taken — a declined one propagates to the drawer. */
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => boolean;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over the shape; the store dedupes by id (state changes on enter/leave). */
@@ -125,8 +126,9 @@ export const AnnotationShape = memo(function AnnotationShape({
         // A drag's release is not a pick: a pan (Space-, middle- or right-drag)
         // ending over a shape would otherwise toggle it.
         if (event.delta > DRAG_THRESHOLD_PX) return;
-        event.stopPropagation();
-        onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
+        if (onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event))) {
+          event.stopPropagation();
+        }
       }
     : undefined;
 

@@ -22,6 +22,11 @@ mutation SetPositionLabel($lens: ID!, $label: String) {
     id
     name
     label
+    # The anchor the label now sits on (made if there was none), so a scene
+    # can show it without refetching the lens.
+    nameAnchors {
+      ...AnchorLabels
+    }
   }
 }
 

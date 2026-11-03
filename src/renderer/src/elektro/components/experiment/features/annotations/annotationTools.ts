@@ -1,7 +1,7 @@
 /**
  * The annotate tools, and the one gesture machine that drives all of them.
  *
- * Mirrors mikro's `RoiToolbar` / `roiDrawingStore`: SELECT first (the
+ * Mirrors mikro's `AnnotationToolbar` / `roiDrawingStore`: SELECT first (the
  * non-destructive tool), then one tool per annotation kind. Two scopes:
  *
  *  - **time** — EVENT, EVENTS, EPOCH. Instants and spans across every row, drawn

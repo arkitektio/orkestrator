@@ -55,6 +55,7 @@ const KEY_PREFIX: Record<`${LineageNodeKind}`, string> = {
   ANNOTATION_COLLECTION: "annotationcollection",
   FIXTURE: "fixture",
   FILE: "file",
+  ANNOTATION: "annotation",
 };
 
 export const nodeKey = (kind: `${LineageNodeKind}`, id: string) => `${KEY_PREFIX[kind]}:${id}`;

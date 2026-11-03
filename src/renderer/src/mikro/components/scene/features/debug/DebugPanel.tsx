@@ -363,6 +363,25 @@ const PerfSessionSummary = ({ report }: { report: PerfSessionReport }) => {
           probes {report.probes}
         </span>
       </div>
+      {/* Missed frames: a long PERIOD, whatever the frame's own CPU time. The
+          split says where to look — with a long animation frame inside, the
+          main thread was busy (see `longFrames[].loaf` in the copied report);
+          without one, the GPU process held the frame up. */}
+      {report.longFrames.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          <span className="rounded border border-amber-500/50 px-1 text-amber-300">
+            {report.longFrames.length} missed · max {report.periodMs.max.toFixed(0)}ms
+          </span>
+          {report.longAnimationFrames ? (
+            <span className="rounded border border-border/50 px-1">
+              {report.longFrames.filter((f) => f.loaf.length > 0).length} main-thread ·{" "}
+              {report.longFrames.filter((f) => f.loaf.length === 0).length} GPU-side
+            </span>
+          ) : (
+            <span className="rounded border border-border/50 px-1">no LoAF support</span>
+          )}
+        </div>
+      )}
       {topRenders.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {topRenders.map(([name, count]) => (

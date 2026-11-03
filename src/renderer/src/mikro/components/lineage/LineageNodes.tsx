@@ -1,5 +1,6 @@
 import {
   lensSmart,
+  MikroAnnotation,
   MikroArrayDataset,
   MikroFile,
   MikroMeshCollection,
@@ -34,6 +35,7 @@ import {
   PenTool,
   Plus,
   Shapes,
+  Spline,
   Table2,
 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
@@ -61,6 +63,7 @@ export const KIND_ICON: Record<LineageNodeKind, LucideIcon> = {
   [LineageNodeKind.NetworkCollection]: Network,
   [LineageNodeKind.AnnotationCollection]: PenTool,
   [LineageNodeKind.Fixture]: Box,
+  [LineageNodeKind.Annotation]: Spline,
 };
 
 /**
@@ -73,6 +76,7 @@ export const SMART_BY_KIND: Partial<Record<LineageNodeKind, typeof MikroArrayDat
   [LineageNodeKind.TableDataset]: MikroTableDataset,
   [LineageNodeKind.SparseDataset]: MikroSparseDataset,
   [LineageNodeKind.MeshCollection]: MikroMeshCollection,
+  [LineageNodeKind.Annotation]: MikroAnnotation,
 };
 
 export type DataNodeType = Node<

@@ -26,6 +26,7 @@ const shape = (id: string, name = `shape ${id}`): SceneAnnotationFragment => ({
   strokeWidth: 1,
   filled: false,
   coordinates: [],
+  sourceIds: [],
 });
 
 const seeded = (collectionId: string, shapes: SceneAnnotationFragment[]) => {

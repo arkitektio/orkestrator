@@ -42,6 +42,20 @@ fragment PhasorContext on PhasorContext {
 # this: a table, mesh, network or annotation layer draws its container, narrowed
 # by its lens' windows (`LensSubject`). Which axis is x, y, z is derived on the
 # client from the layer's placement and the view (`viewAxes.ts`).
+# A coordinate anchor as far as naming goes: where it sits, what ingest recorded
+# there and the label a person anchored on it (`setPositionLabel`). The layer
+# name popover reads it to show the anchor underneath a layer.
+fragment AnchorLabels on CoordinateAnchor {
+  id
+  coordinates
+  channelLabel {
+    label
+  }
+  positionLabel {
+    label
+  }
+}
+
 fragment SceneLens on ArrayLens {
   __typename
   descriptors
@@ -49,6 +63,11 @@ fragment SceneLens on ArrayLens {
   # What someone called the selection, if anyone did — `lensTitle` falls back to
   # "Whole array" or the slices.
   name
+  # The anchors `name` is read from: the one at the positions this lens pins,
+  # carrying the position label a layer's name popover edits.
+  nameAnchors {
+    ...AnchorLabels
+  }
   shape
   axisNames
   # The phasor context at the server's default harmonic (1). A node on another

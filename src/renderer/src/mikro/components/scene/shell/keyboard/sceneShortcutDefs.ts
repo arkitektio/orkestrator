@@ -73,6 +73,8 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
       { keys: ["P"], description: "Hold to probe" },
       { keys: ["M"], description: "Hold to design meshes" },
       { keys: ["D"], description: "Draw a path from the probe" },
+      { keys: ["Q"], description: "Hold to colour 3D volumes by depth (warm = near, cool = far), shaded as relief" },
+      { keys: ["Shift", "Q"], description: "Hold to shade 3D volumes as relief, keeping their colours" },
       { keys: ["Right-click"], description: "Actions and workflows for the shape or mesh under the pointer" },
     ],
   },

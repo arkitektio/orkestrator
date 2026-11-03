@@ -48,6 +48,7 @@ export function startVisibilityTracking({
     if (!viewProjectionMatrix) return;
 
     perfMonitor.markVisibilityRecompute(); // no-op unless a perf recording is armed
+    const spanStartedAt = perfMonitor.spanStart();
     const viewerState = viewerStore.getState();
     const { visibleIds, ranges } = computeSceneVisibility({
       projScreenMatrix: viewProjectionMatrix,
@@ -84,6 +85,7 @@ export function startVisibilityTracking({
         { viewProjectionMatrix, viewportSize, cameraPose },
       );
     }
+    perfMonitor.markSpan("visibility", spanStartedAt, rangesChanged ? "ranges" : undefined);
   };
 
   const schedule = () => {

@@ -41,19 +41,21 @@ export const layerFlavor = (layer: LayerState): LayerFlavor => {
 };
 
 /**
- * The name a layer row shows: the layer's own `name` when someone gave it one,
- * then the channel-label anchor when the acquisition recorded one, else the
- * DATASET the lens looks at — the name the user gave
- * their data, which is almost always the answer to "which layer is this?" —
- * and only then a flavor-based fallback. Never the old constant
- * "Untitled Layer", which made every row read identically.
+ * The name a layer row shows. A layer has no name of its own: it is called by
+ * the metadata beneath it. First its LENS's name — the labels on the
+ * coordinate anchors at the positions it pins, a person's `PositionLabel` over
+ * the channel label ingest recorded (composed by the server), so setting the
+ * anchor at channel 1 renames every layer drawing it — then a recorded channel
+ * label among its anchors, then the DATASET the lens looks at, and only then a
+ * flavor-based fallback. Never the old constant "Untitled Layer", which made
+ * every row read identically.
+ *
+ * `layer.name` is deliberately NOT read: renaming a layer is setting its anchor
+ * (`LayerNamePopover`), never a label stored on the layer row.
  */
 export const layerDisplayLabel = (layer: LayerState): string => {
-  // The name someone gave THIS layer wins over anything derived: it is the only
-  // one of these that was chosen rather than inferred. (`name` is on the `Layer`
-  // interface, so every kind can carry one; most do not.)
-  const givenName = layer.name?.trim();
-  if (givenName) return givenName;
+  const lensName = layer.lens.name?.trim();
+  if (lensName) return lensName;
 
   const anchorLabel = layer.lens.activeAnchors
     .find((anchor) => anchor.channelLabel)
@@ -65,3 +67,13 @@ export const layerDisplayLabel = (layer: LayerState): string => {
 
   return `${layerFlavor(layer)} layer`;
 };
+
+/**
+ * The same rule for a POLYMORPHIC scene layer (any kind, normalized or not):
+ * its lens' name, else its dataset's, else its id. For the lists that walk
+ * `sceneLayers` rather than the image layers.
+ */
+export const sceneLayerLabel = (layer: {
+  id: string;
+  lens?: { name?: string | null; dataset?: { name?: string | null } | null } | null;
+}): string => layer.lens?.name?.trim() || layer.lens?.dataset?.name?.trim() || layer.id;

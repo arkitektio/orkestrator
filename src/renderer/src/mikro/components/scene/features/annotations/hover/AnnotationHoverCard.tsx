@@ -130,6 +130,13 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
   useEffect(() => {
     wasOpenRef.current = expanded;
   }, [expanded]);
+  // While unfolded, the shape's layer draws what was made from it over it
+  // (refinements are hidden otherwise; `lib/annotations/derivedShapes`).
+  useEffect(() => {
+    if (!expanded) return;
+    selectionApi.getState().setCardRoi({ id: roi.id, layerId: roi.layerId });
+    return () => selectionApi.getState().setCardRoi(null, roi.id);
+  }, [expanded, roi.id, roi.layerId, selectionApi]);
   const pointerInsideRef = useRef(false);
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Native events that passed through this card in React's tree — which

@@ -31,6 +31,9 @@ fragment Annotation on Annotation {
     min
     max
   }
+  # Also the create mutations' answer, upserted into the scene's list: a shape
+  # made from another arrives already knowing to hide (`derivedShapes`).
+  sourceIds
 }
 
 # The renderer's selection: geometry + style, no coordinate system. The layer
@@ -57,6 +60,10 @@ fragment SceneAnnotation on Annotation {
     name
     value
   }
+  # The shapes it was made from (refined, converted, split, merged). A shape
+  # whose source is in the same list is hidden by default and drawn as an
+  # overlay while its source's card is open (`lib/annotations/derivedShapes`).
+  sourceIds
 }
 
 # The browse card's selection. Deliberately NO `vectors`: a card says what kind
@@ -111,6 +118,28 @@ fragment DetailAnnotation on Annotation {
   # minted the collection.
   creator {
     sub
+  }
+  ...AnnotationShapeLineage
+}
+
+# A shape's own lineage, one hop each way: the shapes it was made from (and
+# how: refined, converted, split, merged) and the shapes made from it. Link
+# rows, not edges -- `source` is null once that shape was deleted.
+fragment AnnotationShapeLineage on Annotation {
+  derivedFrom {
+    id
+    relation
+    reason
+    source {
+      id
+      name
+      kind
+    }
+  }
+  derivedAnnotations {
+    id
+    name
+    kind
   }
 }
 

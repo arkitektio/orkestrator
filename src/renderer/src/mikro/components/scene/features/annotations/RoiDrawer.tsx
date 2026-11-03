@@ -10,6 +10,9 @@ import {
   useRoiDrawingStore,
   DRAWING_TOOL_TO_ROI_KIND,
   isDrawingTool,
+  activeTraceDepth,
+  activeTraceOn,
+  activeTraceWeights,
   isEnhanceableTool,
   isPrimitiveTool,
   type DrawingTool,
@@ -201,14 +204,14 @@ export const RoiDrawer = () => {
   const pendingPrimitiveAnchor = useRoiDrawingStore((s) => s.pendingPrimitiveAnchor);
   const setPendingPrimitiveAnchor = useRoiDrawingStore((s) => s.setPendingPrimitiveAnchor);
   const setPrimitiveSessionActive = useRoiDrawingStore((s) => s.setPrimitiveSessionActive);
-  const vectorEnhance = useRoiDrawingStore(
-    (s) => s.enhancersOn["vector-trace"] ?? false,
-  );
+  // The armed tool's trace enhancer: line/path tracing or the polygon
+  // outline (`traceEnhancerFor`), each with its own switch and weights.
+  const traceOn = useRoiDrawingStore(activeTraceOn);
   const setTraceMessage = useRoiDrawingStore((s) => s.setEnhancerMessage);
   const setShapeInProgress = useRoiDrawingStore((s) => s.setShapeInProgress);
-  const traceDepth = useRoiDrawingStore((s) => s.traceDepth[displayMode]);
+  const traceDepth = useRoiDrawingStore((s) => activeTraceDepth(s, displayMode));
   // Slider cadence, not pointer cadence: only the live-wire regrow reads it.
-  const traceWeights = useRoiDrawingStore((s) => s.traceWeights);
+  const traceWeights = useRoiDrawingStore(activeTraceWeights);
   const spatialUnit = useSceneStore((s) => s.spatialUnit);
   // Under an axis remap the shape is drawn stretched; its readout measures
   // what it physically spans.
@@ -257,7 +260,7 @@ export const RoiDrawer = () => {
    * the data (`features/annotations/enhancers/paths/vectorTrace/`) instead of drawn straight. The toggle moves at
    * click cadence at worst, so a plain subscription costs nothing (P17).
    */
-  const enhanceOn = vectorEnhance && isEnhanceableTool(tool);
+  const enhanceOn = traceOn && isEnhanceableTool(tool);
   const unit = unitLabel(spatialUnit);
   /**
    * In 3D there is no slice to draw on, so every vertex comes from the volume

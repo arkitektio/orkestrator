@@ -12,6 +12,7 @@ import { identityOf } from "../../../platform/model/objectIdentity";
 import { layerIndexOf, layerPlanSignature } from "../../../platform/model/layerPlanKey";
 import { intersectLocalVolumeBox, localCropClip } from "../probeMath";
 import { useCropClipUniforms } from "./useCropClipUniforms";
+import { useDepthCodeUniforms } from "./useDepthCodeUniforms";
 import { resolveProbeStrategy } from "../../../platform/probe/probeModes";
 import {
   clickProbeEnabled,
@@ -651,6 +652,8 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   }, [bundle, lightRig, affineMatrix, invalidate, viewerStoreApi]);
 
   useStepScaleUniform(bundle?.nodes, /* settleRefine — image material */ true);
+  // Hold Q: hue = view depth (`useDepthCodeUniforms`). A uniform flip, no rebuild.
+  useDepthCodeUniforms(bundle?.nodes);
   useVolumePassRegistration(!!bundle);
 
   // --- Probing: CPU march over the resident bricks (shader lockstep) -------

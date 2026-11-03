@@ -1,0 +1,82 @@
+# What a delete would cost, asked before every delete (`lib/deletion`): what
+# was made from it (a plain delete is refused over it; `cascade: true` takes
+# it along), what stops it, and what else goes with it. One query per model,
+# one answer shape.
+fragment DeletePreflight on DeletePreflight {
+  target
+  casualties {
+    key
+    kind
+    id
+    name
+    depth
+    parent
+  }
+  blockers {
+    key
+    kind
+    id
+    reason
+  }
+  cascadeCounts {
+    label
+    count
+  }
+  truncated
+  needsCascade
+  deletable
+}
+
+query PreflightDeleteArrayDataset($id: ID!) {
+  preflightDeleteArrayDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteTableDataset($id: ID!) {
+  preflightDeleteTableDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteSparseDataset($id: ID!) {
+  preflightDeleteSparseDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteMeshCollection($id: ID!) {
+  preflightDeleteMeshCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteNetworkCollection($id: ID!) {
+  preflightDeleteNetworkCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteAnnotationCollection($id: ID!) {
+  preflightDeleteAnnotationCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteFixture($id: ID!) {
+  preflightDeleteFixture(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteFile($id: ID!) {
+  preflightDeleteFile(id: $id) {
+    ...DeletePreflight
+  }
+}
+
+query PreflightDeleteAnnotation($id: ID!) {
+  preflightDeleteAnnotation(id: $id) {
+    ...DeletePreflight
+  }
+}

@@ -266,6 +266,10 @@ export type Annotation = {
   createdWithTransforms: Scalars['Int']['output'];
   /** The user that drew this annotation, or null when that user is gone or a client created it without one */
   creator?: Maybe<User>;
+  /** The shapes made from this one -- refined, converted, split out of it or merged from it -- oldest first, in any collection. How each was made is on its own `derivedFrom`. Shapes, never containers: data computed from this shape is `derivedResidents` */
+  derivedAnnotations: Array<Annotation>;
+  /** The shapes this one was made from, and how, in the order its creator named them: the other end of `derivedAnnotations`. Empty for a shape drawn from nothing. Shape to shape only -- what *data* a shape was computed from is its collection's `derivedFrom`, and what was computed from it is `derivedResidents` */
+  derivedFrom: Array<AnnotationDerivation>;
   /** The lenses cut to this annotation with `createLens(annotation:)`, oldest cut first. A record of the act, not a relation in space: a lens is immutable and a shape is not, so moving the shape afterwards leaves these where they were cut -- `lenses(filters: {overlapsAnnotation})` is the question about where things are now. One lens may be listed by several shapes, since a lens is one row per selection. What was *computed* from the shape is `derivedResidents` */
   derivedLenses: Array<ArrayLens>;
   /** Everything computed from this annotation, whatever kind of container it is: the data whose `derivedFrom` named this shape as an ANNOTATION source -- a crop written out as a dataset, an image straightened along a path, a table measured inside an ROI. The other end of those edges, exactly as `ArrayDataset.derivedResidents` is, and as kind-blind: the shape is usually named with no transform. A record of the act: editing the shape afterwards changes none of it. The edge itself, with the lens the pixels came from beside it, is on each child's own `derivedFrom` */
@@ -286,6 +290,8 @@ export type Annotation = {
   name: Scalars['String']['output'];
   /** Provenance entries for this annotation */
   provenanceEntries: Array<ProvenanceEntry>;
+  /** The ids of the shapes this one was made from, in declared order: `derivedFrom` without the links, cheap enough for every shape of a scene's list. Empty for a shape drawn from nothing. What a viewer reads to tell a refinement from the shape it refines */
+  sourceIds: Array<Scalars['ID']['output']>;
   /** The stroke (outline) color of the geometry, as RGBA */
   strokeColor?: Maybe<Array<Scalars['Int']['output']>>;
   /** The stroke width of the geometry, in the drawing space's units. One number for every direction, so it is a well-defined length only where that space's axes share a scale */
@@ -489,6 +495,24 @@ export type AnnotationCollectionOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
+/** That a shape was made from another shape, and how: a path refined, a rectangle converted to a polygon, a shape split or merged. A record of the act, never an edge in space -- both shapes are placed by their collections, and editing either afterwards changes nothing here */
+export type AnnotationDerivation = {
+  __typename?: 'AnnotationDerivation';
+  /** The shape that was made */
+  child: Annotation;
+  /** When the child was made from the source */
+  createdAt: Scalars['DateTime']['output'];
+  /** Who made the child, or null when that user is gone */
+  creator?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  /** A free-form note on why or how, if one was given */
+  reason?: Maybe<Scalars['String']['output']>;
+  /** How the child came from the source */
+  relation: AnnotationRelation;
+  /** The shape it was made from. It cannot be deleted while this shape stands, unless the delete cascades to it */
+  source: Annotation;
+};
+
 /** The fields an ANNOTATION derivation reads. Published for codegen; the wire type is the flat DerivedFromInput */
 export type AnnotationDerivedFromInput = {
   annotation: Scalars['ID']['input'];
@@ -683,9 +707,29 @@ export type AnnotationOrder =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
+/** How a shape came from the shape it names in `derivedFrom`: the act, not the algorithm (that is the creating task's). A record of where a new shape came from -- editing a shape in place is its history, never a derivation */
+export enum AnnotationRelation {
+  /** The same thing drawn as another kind: a rectangle as a polygon, a polygon's outline as a path, a path closed into a polygon. The source must be of a different kind */
+  Converted = 'CONVERTED',
+  /** One shape joined from several sources. Every source is named, each as MERGED, and there are at least two */
+  Merged = 'MERGED',
+  /** The same kind of shape, its geometry improved: a path smoothed or snapped to an edge, a polygon re-traced. The source must be of the same kind */
+  Refined = 'REFINED',
+  /** One of several shapes cut out of the source. Its siblings name the same source */
+  Split = 'SPLIT'
+}
+
+/** One shape a new shape was made from, and how */
+export type AnnotationSourceInput = {
+  annotation: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+  relation: AnnotationRelation;
+};
+
 /** One shape of a bulk draw: the per-annotation subset of CreateAnnotationInput, without the collection/scene target */
 export type AnnotationSpecInput = {
   coordinates?: InputMaybe<Array<CoordinateInput>>;
+  derivedFrom?: InputMaybe<Array<AnnotationSourceInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
   fillColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   filled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1095,6 +1139,10 @@ export type ArrayLens = Lens & {
   suggestedRenderAxes: RenderAxes;
   /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
   toParent?: Maybe<Transformation>;
+  /** This lens' voxel size: how far one step along each of its axes reaches, read along the edges to the first space with units. The `canonical` one of `voxelSizes` -- decided by the edges' validity, so a person's calibration outranks the pixel size a converter read from the file. Empty when the lens reaches no physical space, or none by a sane route. Every axis the route scales is listed (a time step too); a voxel's spatial size is the SPACE entries. Never raises, so it is the form to put in a fragment */
+  voxelSize: Array<AxisVoxelSize>;
+  /** Every physical space this lens reaches with the edges, each by its best route and with the voxel size that route gives, canonical first. Read when `voxelSize` is not what you expected: a rival calibration, its validity, its route, or why it was passed over (`problem`) */
+  voxelSizes: Array<VoxelSize>;
 };
 
 
@@ -1243,6 +1291,21 @@ export enum AxisTypeChoices {
   Time = 'TIME',
   Value = 'VALUE'
 }
+
+/** How far one step along a lens axis reaches in a physical space: the voxel size along that axis */
+export type AxisVoxelSize = {
+  __typename?: 'AxisVoxelSize';
+  /** The lens axis */
+  axis: Scalars['String']['output'];
+  /** The physical axis it mostly lands on */
+  physicalAxis: Scalars['String']['output'];
+  /** How far one step along it reaches, in `unit`. A stepped lens' step is its own: `step: 2` reaches twice its dataset's voxel */
+  size: Scalars['Float']['output'];
+  /** That physical axis' kind. A calibration scales a time step or a spectral bin as well; a voxel's spatial size is the SPACE entries */
+  type: AxisType;
+  /** The unit of `size`: the unit of the physical axis it mostly lands on */
+  unit: Scalars['String']['output'];
+};
 
 /** Beam splitter */
 export type BeamSplitterElement = OpticalElement & {
@@ -1509,6 +1572,15 @@ export type CameraStateInput = {
   projectionOrientation?: InputMaybe<Array<Scalars['Float']['input']>>;
   /** The volumetric view's zoom, in world units per screen pixel. Null to leave it to the viewer. */
   projectionScale?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** Rows of one kind that go with a delete without being lineage: layers, lenses, axes */
+export type CascadeCount = {
+  __typename?: 'CascadeCount';
+  /** How many */
+  count: Scalars['Int']['output'];
+  /** What they are, singular -- e.g. 'layer', 'annotation lens' */
+  label: Scalars['String']['output'];
 };
 
 /** Input for changing an existing folder's name or parent */
@@ -2337,6 +2409,7 @@ export type CreateAnnotationCollectionInput = {
 export type CreateAnnotationInput = {
   collection?: InputMaybe<Scalars['ID']['input']>;
   coordinates?: InputMaybe<Array<CoordinateInput>>;
+  derivedFrom?: InputMaybe<Array<AnnotationSourceInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
   fillColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   filled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2913,19 +2986,55 @@ export type DeleteAnimationInput = {
 
 /** Input for deleting an annotation collection by ID */
 export type DeleteAnnotationCollectionInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the annotation collection to delete */
   id: Scalars['ID']['input'];
 };
 
 /** Input for deleting an annotation by ID */
 export type DeleteAnnotationInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   id: Scalars['ID']['input'];
 };
 
 /** Input for deleting an array dataset by ID */
 export type DeleteArrayDatasetInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the array dataset to delete */
   id: Scalars['ID']['input'];
+};
+
+/** Why a delete cannot go ahead: one row it would delete that may not be deleted */
+export type DeleteBlocker = {
+  __typename?: 'DeleteBlocker';
+  /** Its ID */
+  id: Scalars['ID']['output'];
+  /** `<kind>:<id>` of the row that blocks */
+  key: Scalars['ID']['output'];
+  /** What it is */
+  kind: LineageNodeKind;
+  /** Why: not yours to delete, a guard (a layer draws through it, a picker names it) or a reference that must not be deleted with it */
+  reason: Scalars['String']['output'];
+};
+
+/** One thing a delete would take along: something made from what is deleted, directly or further down */
+export type DeleteCasualty = {
+  __typename?: 'DeleteCasualty';
+  /** Hops from what is deleted: 1 for something made from it directly */
+  depth: Scalars['Int']['output'];
+  /** Its ID, as its own query takes it */
+  id: Scalars['ID']['output'];
+  /** `<kind>:<id>`, as the lineage walk keys it */
+  key: Scalars['ID']['output'];
+  /** What it is */
+  kind: LineageNodeKind;
+  /** Its name */
+  name: Scalars['String']['output'];
+  /** The key of what it was made from on its nearest path */
+  parent: Scalars['ID']['output'];
 };
 
 /** Input for deleting a chart by ID. Deletes its layers and nothing they drew: the data, and the chart's world, are untouched */
@@ -2948,12 +3057,16 @@ export type DeleteCoordinateSystemInput = {
 
 /** Input for deleting a file by ID */
 export type DeleteFileInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the file to delete */
   id: Scalars['ID']['input'];
 };
 
 /** Input for deleting a fixture by ID */
 export type DeleteFixtureInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the fixture to delete */
   id: Scalars['ID']['input'];
 };
@@ -2978,6 +3091,8 @@ export type DeleteLensInput = {
 
 /** Input for deleting a mesh collection by ID */
 export type DeleteMeshCollectionInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the mesh collection to delete */
   id: Scalars['ID']['input'];
 };
@@ -2989,8 +3104,29 @@ export type DeleteMetricInput = {
 
 /** Input for deleting a network collection by ID */
 export type DeleteNetworkCollectionInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the network collection to delete */
   id: Scalars['ID']['input'];
+};
+
+/** What deleting one object would cost, without deleting it: everything made from it (which a plain delete refuses over, and `cascade: true` takes along), what would stop the delete, and what else cascades with it */
+export type DeletePreflight = {
+  __typename?: 'DeletePreflight';
+  /** What stops the delete, with or without `cascade`. Empty when it may go ahead */
+  blockers: Array<DeleteBlocker>;
+  /** Other rows that would go with it, by kind, e.g. the layers drawing it and its lenses */
+  cascadeCounts: Array<CascadeCount>;
+  /** Everything made from it, transitively, nearest first. Non-empty means the delete needs `cascade: true` */
+  casualties: Array<DeleteCasualty>;
+  /** Whether the delete can go ahead -- with `cascade: true` when `needsCascade` */
+  deletable: Scalars['Boolean']['output'];
+  /** Whether a plain delete would be refused because something was made from it */
+  needsCascade: Scalars['Boolean']['output'];
+  /** `<kind>:<id>` of what would be deleted */
+  target: Scalars['ID']['output'];
+  /** Whether more was made from it than one delete may take along: refused even with `cascade`; delete from the leaves */
+  truncated: Scalars['Boolean']['output'];
 };
 
 /** Input for un-registering a source from a shared space by naming the source and the space, not the edge. Provide exactly one source -- the same selector registering it took */
@@ -3018,12 +3154,16 @@ export type DeleteSceneSnapshotInput = {
 
 /** Input for deleting a sparse dataset by ID */
 export type DeleteSparseDatasetInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the sparse dataset to delete */
   id: Scalars['ID']['input'];
 };
 
 /** Input for deleting a table dataset by ID */
 export type DeleteTableDatasetInput = {
+  /** Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what */
+  cascade?: Scalars['Boolean']['input'];
   /** The ID of the table dataset to delete */
   id: Scalars['ID']['input'];
 };
@@ -5480,11 +5620,13 @@ export type LineageAxis = {
 /** That one node was made from another. Always parent to child, the way provenance reads */
 export type LineageEdge = {
   __typename?: 'LineageEdge';
-  /** (DERIVATION) The shape the child was computed along or within, if the derivation named one */
+  /** (DERIVATION) The shape the child was computed along or within, if the derivation named one. Root a walk at it (`kind: ANNOTATION`) for the shape's own lineage */
   annotationId?: Maybe<Scalars['ID']['output']>;
+  /** (SHAPE_DERIVATION) How the child shape was made from the parent shape */
+  annotationRelation?: Maybe<AnnotationRelation>;
   /** Unique within the lineage and stable across walks */
   key: Scalars['ID']['output'];
-  /** A derivation between containers, an ingest from a file, or an export to one */
+  /** A derivation between containers or out of a shape, an ingest from a file, an export to one, or a shape made from a shape */
   kind: LineageEdgeKind;
   /** (DERIVATION) Whether this is the child's primary parent: the first edge its creator declared, the one that places it */
   primary: Scalars['Boolean']['output'];
@@ -5502,11 +5644,12 @@ export type LineageEdge = {
   valueRelation?: Maybe<ValueRelation>;
 };
 
-/** What a lineage edge records */
+/** What a lineage edge records: a derivation (between containers, or from a shape to data computed along or within it), an ingest, an export, or a shape made from a shape */
 export enum LineageEdgeKind {
   Derivation = 'DERIVATION',
   Export = 'EXPORT',
-  Ingest = 'INGEST'
+  Ingest = 'INGEST',
+  ShapeDerivation = 'SHAPE_DERIVATION'
 }
 
 /** The provenance component around one piece of data: every container it was computed from or that was computed from it, transitively, and the derivation edges between them. The lineage counterpart of `coordinateGraph`, and the difference is which edges are *walked*: that one crosses every edge touching a space, so a registration pulls in everything else registered into the same world -- the neighbourhood, not the provenance. This crosses derivation edges only, in both directions, because asking a source what came out of it and asking a product what went into it are the same graph read from two ends */
@@ -5568,8 +5711,9 @@ export type LineageNode = {
   taskId?: Maybe<Scalars['ID']['output']>;
 };
 
-/** What a lineage node is: one of the containers, or a file */
+/** What a lineage node is: one of the containers, a file, or a shape. A shape is reached only by walking from one -- rooted at it, or from a shape made from it -- never fanned out to from its collection */
 export enum LineageNodeKind {
+  Annotation = 'ANNOTATION',
   AnnotationCollection = 'ANNOTATION_COLLECTION',
   Dataset = 'DATASET',
   File = 'FILE',
@@ -8693,6 +8837,24 @@ export type Query = {
   networkFilterByOptions: Array<FilterByOption>;
   /** Get permissions for a specific object */
   permissions: Array<UserObjectPermission>;
+  /** What deleting this annotation (the shapes refined, converted, split or merged from it count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteAnnotation: DeletePreflight;
+  /** What deleting this annotation collection (its shapes, and whatever was made from them elsewhere, count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteAnnotationCollection: DeletePreflight;
+  /** What deleting this array dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteArrayDataset: DeletePreflight;
+  /** What deleting this file (the series converted out of it count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteFile: DeletePreflight;
+  /** What deleting this fixture would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteFixture: DeletePreflight;
+  /** What deleting this mesh collection would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteMeshCollection: DeletePreflight;
+  /** What deleting this network collection would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteNetworkCollection: DeletePreflight;
+  /** What deleting this sparse dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteSparseDataset: DeletePreflight;
+  /** What deleting this table dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it */
+  preflightDeleteTableDataset: DeletePreflight;
   /** The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time */
   roots: Array<RootNode>;
   /** Get a single scene by ID */
@@ -9097,6 +9259,51 @@ export type QueryNetworkFilterByOptionsArgs = {
 export type QueryPermissionsArgs = {
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteAnnotationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteAnnotationCollectionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteArrayDatasetArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteFileArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteFixtureArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteMeshCollectionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteNetworkCollectionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteSparseDatasetArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPreflightDeleteTableDatasetArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -11743,6 +11950,25 @@ export type Visualization = {
   worldCoordinateSystem: CoordinateSystem;
 };
 
+/** A lens' voxel size in one physical space it reaches with the edges: one of the first spaces on its way whose axes all carry units, by the best route there. Several can be reached and they can disagree -- an imported pixel size and a later calibration -- so each is listed, and exactly one is `canonical`: the best by the ranking placements use (the weakest `validity` on the route, highest first; then fewest hops; then the oldest edges). So a MANUAL calibration outranks the INFERRED one a converter read from the file, and a VALIDATED one outranks both. Nothing about it is stored: the edges decide */
+export type VoxelSize = {
+  __typename?: 'VoxelSize';
+  /** One entry per lens axis the route scales, in the lens' axis order. An axis in `a.u.` is not listed: it measures nothing */
+  axes: Array<AxisVoxelSize>;
+  /** Whether this is the lens' one voxel size, the one `ArrayLens.voxelSize` answers */
+  canonical: Scalars['Boolean']['output'];
+  /** How many edges the route takes, from the lens' own space */
+  hops: Scalars['Int']['output'];
+  /** Why this route cannot be a calibration -- it relates a SPACE axis to another kind of axis, measures space in arbitrary units, or does not compose -- or null. A route with a problem is never canonical */
+  problem?: Maybe<Scalars['String']['output']>;
+  /** The edges of the route, from the lens' own space to this one */
+  route: Array<Transformation>;
+  /** The physical space */
+  system: CoordinateSystem;
+  /** The weakest validity on the route: the first thing the ranking compares */
+  validity: PlacementValidity;
+};
+
 /** A retarder: a fraction of a wave, at an angle */
 export type WaveplateElement = OpticalElement & {
   __typename?: 'WaveplateElement';
@@ -11857,7 +12083,7 @@ export type ZarrUploadGrant = {
   uploadFileName: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -12283,12 +12509,12 @@ export type AnimationFragment = { __typename?: 'Animation', id: string, name: st
     & AnimationWaypointFragment
   )> };
 
-export type AnnotationFragment = { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinateSystem?: (
+export type AnnotationFragment = { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinateSystem?: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ) | null, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null };
 
-export type SceneAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> };
+export type SceneAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> };
 
 export type ListAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, collection: { __typename?: 'AnnotationCollection', id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string } | null } };
 
@@ -12298,7 +12524,10 @@ export type DetailAnnotationFragment = (
       & ListSceneFragment
     ) | null }, creator?: { __typename?: 'User', sub: string } | null }
   & AnnotationFragment
+  & AnnotationShapeLineageFragment
 );
+
+export type AnnotationShapeLineageFragment = { __typename?: 'Annotation', derivedFrom: Array<{ __typename?: 'AnnotationDerivation', id: string, relation: AnnotationRelation, reason?: string | null, source: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind } }>, derivedAnnotations: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> };
 
 export type AnnotationCollectionFragment = { __typename?: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
@@ -13218,7 +13447,12 @@ export type DimSliceFragment = { __typename?: 'Slice', axis: string, start?: num
 
 export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string, axisType: AxisType, bins: number, binWidth?: GenericQuantity | null, harmonic: number, laserFrequency?: Frequency | null, window?: GenericQuantity | null, calibration?: { __typename?: 'PhasorCalibration', id: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null } | null, phasorHistogram?: { __typename?: 'PhasorHistogram', id: string, bins: number, counts: Array<number>, gMin: number, gMax: number, sMin: number, sMax: number, profile: Array<number>, total?: number | null, calibrated: boolean } | null };
 
-export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, phasor?: (
+export type AnchorLabelsFragment = { __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null, positionLabel?: { __typename?: 'PositionLabel', label: string } | null };
+
+export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, nameAnchors: Array<(
+    { __typename?: 'CoordinateAnchor' }
+    & AnchorLabelsFragment
+  )>, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
   ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType }> } | null, toParent?: (
@@ -14099,6 +14333,7 @@ export type CreateAnnotationLayerMutation = { __typename?: 'Mutation', createAnn
 
 export type DeleteArrayDatasetMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  cascade?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -14487,6 +14722,7 @@ export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: (
 
 export type DeleteFileMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  cascade?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -14504,6 +14740,7 @@ export type CreateFixtureMutation = { __typename?: 'Mutation', createFixture: (
 
 export type DeleteFixtureMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  cascade?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -14882,7 +15119,28 @@ export type SetPositionLabelMutationVariables = Exact<{
 }>;
 
 
-export type SetPositionLabelMutation = { __typename?: 'Mutation', setPositionLabel: { __typename?: 'AnnotationLens', id: string, name?: string | null, label: string } | { __typename?: 'ArrayLens', id: string, name?: string | null, label: string } | { __typename?: 'FixtureLens', id: string, name?: string | null, label: string } | { __typename?: 'MeshLens', id: string, name?: string | null, label: string } | { __typename?: 'NetworkLens', id: string, name?: string | null, label: string } | { __typename?: 'SparseLens', id: string, name?: string | null, label: string } | { __typename?: 'TableLens', id: string, name?: string | null, label: string } };
+export type SetPositionLabelMutation = { __typename?: 'Mutation', setPositionLabel: { __typename?: 'AnnotationLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'ArrayLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'FixtureLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'MeshLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'NetworkLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'SparseLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } | { __typename?: 'TableLens', id: string, name?: string | null, label: string, nameAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & AnchorLabelsFragment
+    )> } };
 
 export type CreateTableLensMutationVariables = Exact<{
   input: CreateTableLensInput;
@@ -16356,7 +16614,10 @@ export type GetAnnotationInfoQueryVariables = Exact<{
 }>;
 
 
-export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, kind: AnnotationKind, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens' }> } };
+export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: (
+    { __typename?: 'Annotation', id: any, kind: AnnotationKind, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens' }> }
+    & AnnotationShapeLineageFragment
+  ) };
 
 export type AnnotationActionDescriptorsFragment = { __typename?: 'Annotation', id: any, descriptors: any, descriptorsUnder?: any | null };
 
@@ -17024,6 +17285,98 @@ export type GetRegistrationEdgeQuery = { __typename?: 'Query', transformation: (
     & Transformation_UnmappableTransformation_Fragment
   ) };
 
+export type DeletePreflightFragment = { __typename?: 'DeletePreflight', target: string, truncated: boolean, needsCascade: boolean, deletable: boolean, casualties: Array<{ __typename?: 'DeleteCasualty', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, parent: string }>, blockers: Array<{ __typename?: 'DeleteBlocker', key: string, kind: LineageNodeKind, id: string, reason: string }>, cascadeCounts: Array<{ __typename?: 'CascadeCount', label: string, count: number }> };
+
+export type PreflightDeleteArrayDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteArrayDatasetQuery = { __typename?: 'Query', preflightDeleteArrayDataset: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteTableDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteTableDatasetQuery = { __typename?: 'Query', preflightDeleteTableDataset: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteSparseDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteSparseDatasetQuery = { __typename?: 'Query', preflightDeleteSparseDataset: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteMeshCollectionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteMeshCollectionQuery = { __typename?: 'Query', preflightDeleteMeshCollection: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteNetworkCollectionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteNetworkCollectionQuery = { __typename?: 'Query', preflightDeleteNetworkCollection: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteAnnotationCollectionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteAnnotationCollectionQuery = { __typename?: 'Query', preflightDeleteAnnotationCollection: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteFixtureQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteFixtureQuery = { __typename?: 'Query', preflightDeleteFixture: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteFileQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteFileQuery = { __typename?: 'Query', preflightDeleteFile: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
+export type PreflightDeleteAnnotationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PreflightDeleteAnnotationQuery = { __typename?: 'Query', preflightDeleteAnnotation: (
+    { __typename?: 'DeletePreflight' }
+    & DeletePreflightFragment
+  ) };
+
 export type GetFileQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -17528,7 +17881,7 @@ export type GetLineageQueryVariables = Exact<{
 }>;
 
 
-export type GetLineageQuery = { __typename?: 'Query', lineage: { __typename?: 'Lineage', root: string, truncated: boolean, nodes: Array<{ __typename?: 'LineageNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, createdAt?: any | null, taskId?: string | null, hasMoreUp: boolean, hasMoreDown: boolean, lensCount: number, dtype?: string | null, levels: number, lenses: Array<{ __typename?: 'LineageLens', id: string, label: string, whole: boolean, shape?: Array<number> | null, slices: Array<{ __typename?: 'LineageSlice', axis: string, start: number, stop: number, step: number }> }>, axes: Array<{ __typename?: 'LineageAxis', name: string, type: AxisType, size?: number | null, chunk?: number | null }> }>, edges: Array<{ __typename?: 'LineageEdge', key: string, kind: LineageEdgeKind, source: string, target: string, taskId?: string | null, transformationKind?: TransformKind | null, valueRelation?: ValueRelation | null, annotationId?: string | null, primary: boolean, sourceLens?: string | null }> } };
+export type GetLineageQuery = { __typename?: 'Query', lineage: { __typename?: 'Lineage', root: string, truncated: boolean, nodes: Array<{ __typename?: 'LineageNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, createdAt?: any | null, taskId?: string | null, hasMoreUp: boolean, hasMoreDown: boolean, lensCount: number, dtype?: string | null, levels: number, lenses: Array<{ __typename?: 'LineageLens', id: string, label: string, whole: boolean, shape?: Array<number> | null, slices: Array<{ __typename?: 'LineageSlice', axis: string, start: number, stop: number, step: number }> }>, axes: Array<{ __typename?: 'LineageAxis', name: string, type: AxisType, size?: number | null, chunk?: number | null }> }>, edges: Array<{ __typename?: 'LineageEdge', key: string, kind: LineageEdgeKind, source: string, target: string, taskId?: string | null, transformationKind?: TransformKind | null, valueRelation?: ValueRelation | null, annotationId?: string | null, annotationRelation?: AnnotationRelation | null, primary: boolean, sourceLens?: string | null }> } };
 
 export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -18480,6 +18833,7 @@ export const SceneAnnotationFragmentDoc = gql`
     name
     value
   }
+  sourceIds
 }
     `;
 export const ListAnnotationFragmentDoc = gql`
@@ -18673,6 +19027,7 @@ export const AnnotationFragmentDoc = gql`
     min
     max
   }
+  sourceIds
 }
     ${CoordinateSystemFragmentDoc}`;
 export const MediaStoreFragmentDoc = gql`
@@ -18702,6 +19057,25 @@ export const ListSceneFragmentDoc = gql`
   }
 }
     ${SceneSnapshotFragmentDoc}`;
+export const AnnotationShapeLineageFragmentDoc = gql`
+    fragment AnnotationShapeLineage on Annotation {
+  derivedFrom {
+    id
+    relation
+    reason
+    source {
+      id
+      name
+      kind
+    }
+  }
+  derivedAnnotations {
+    id
+    name
+    kind
+  }
+}
+    `;
 export const DetailAnnotationFragmentDoc = gql`
     fragment DetailAnnotation on Annotation {
   ...Annotation
@@ -18717,9 +19091,11 @@ export const DetailAnnotationFragmentDoc = gql`
   creator {
     sub
   }
+  ...AnnotationShapeLineage
 }
     ${AnnotationFragmentDoc}
-${ListSceneFragmentDoc}`;
+${ListSceneFragmentDoc}
+${AnnotationShapeLineageFragmentDoc}`;
 export const ListCoordinateSystemFragmentDoc = gql`
     fragment ListCoordinateSystem on CoordinateSystem {
   id
@@ -20006,6 +20382,18 @@ export const PlacementStepFragmentDoc = gql`
   inverted
 }
     ${TransformationFragmentDoc}`;
+export const AnchorLabelsFragmentDoc = gql`
+    fragment AnchorLabels on CoordinateAnchor {
+  id
+  coordinates
+  channelLabel {
+    label
+  }
+  positionLabel {
+    label
+  }
+}
+    `;
 export const PhasorContextFragmentDoc = gql`
     fragment PhasorContext on PhasorContext {
   axis
@@ -20042,6 +20430,9 @@ export const SceneLensFragmentDoc = gql`
   descriptors
   id
   name
+  nameAnchors {
+    ...AnchorLabels
+  }
   shape
   axisNames
   phasor {
@@ -20121,7 +20512,8 @@ export const SceneLensFragmentDoc = gql`
     }
   }
 }
-    ${PhasorContextFragmentDoc}
+    ${AnchorLabelsFragmentDoc}
+${PhasorContextFragmentDoc}
 ${TransformationFragmentDoc}
 ${DimSliceFragmentDoc}
 ${ZarrStoreFragmentDoc}
@@ -20858,6 +21250,32 @@ ${ListTableDatasetFragmentDoc}
 ${ParquetStoreFragmentDoc}
 ${TableDatasetColumnFragmentDoc}
 ${ColumnOptionJoinStepFragmentDoc}`;
+export const DeletePreflightFragmentDoc = gql`
+    fragment DeletePreflight on DeletePreflight {
+  target
+  casualties {
+    key
+    kind
+    id
+    name
+    depth
+    parent
+  }
+  blockers {
+    key
+    kind
+    id
+    reason
+  }
+  cascadeCounts {
+    label
+    count
+  }
+  truncated
+  needsCascade
+  deletable
+}
+    `;
 export const WindowLensSubjectFragmentDoc = gql`
     fragment WindowLensSubject on Lens {
   id
@@ -21246,8 +21664,8 @@ export type CreateAnnotationLayerMutationHookResult = ReturnType<typeof useCreat
 export type CreateAnnotationLayerMutationResult = Apollo.MutationResult<CreateAnnotationLayerMutation>;
 export type CreateAnnotationLayerMutationOptions = Apollo.BaseMutationOptions<CreateAnnotationLayerMutation, CreateAnnotationLayerMutationVariables>;
 export const DeleteArrayDatasetDocument = gql`
-    mutation DeleteArrayDataset($id: ID!) {
-  deleteArrayDataset(input: {id: $id})
+    mutation DeleteArrayDataset($id: ID!, $cascade: Boolean = false) {
+  deleteArrayDataset(input: {id: $id, cascade: $cascade})
 }
     `;
 export type DeleteArrayDatasetMutationFn = Apollo.MutationFunction<DeleteArrayDatasetMutation, DeleteArrayDatasetMutationVariables>;
@@ -21266,6 +21684,7 @@ export type DeleteArrayDatasetMutationFn = Apollo.MutationFunction<DeleteArrayDa
  * const [deleteArrayDatasetMutation, { data, loading, error }] = useDeleteArrayDatasetMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      cascade: // value for 'cascade'
  *   },
  * });
  */
@@ -22574,8 +22993,8 @@ export type From_File_LikeMutationHookResult = ReturnType<typeof useFrom_File_Li
 export type From_File_LikeMutationResult = Apollo.MutationResult<From_File_LikeMutation>;
 export type From_File_LikeMutationOptions = Apollo.BaseMutationOptions<From_File_LikeMutation, From_File_LikeMutationVariables>;
 export const DeleteFileDocument = gql`
-    mutation DeleteFile($id: ID!) {
-  deleteFile(input: {id: $id})
+    mutation DeleteFile($id: ID!, $cascade: Boolean = false) {
+  deleteFile(input: {id: $id, cascade: $cascade})
 }
     `;
 export type DeleteFileMutationFn = Apollo.MutationFunction<DeleteFileMutation, DeleteFileMutationVariables>;
@@ -22594,6 +23013,7 @@ export type DeleteFileMutationFn = Apollo.MutationFunction<DeleteFileMutation, D
  * const [deleteFileMutation, { data, loading, error }] = useDeleteFileMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      cascade: // value for 'cascade'
  *   },
  * });
  */
@@ -22638,8 +23058,8 @@ export type CreateFixtureMutationHookResult = ReturnType<typeof useCreateFixture
 export type CreateFixtureMutationResult = Apollo.MutationResult<CreateFixtureMutation>;
 export type CreateFixtureMutationOptions = Apollo.BaseMutationOptions<CreateFixtureMutation, CreateFixtureMutationVariables>;
 export const DeleteFixtureDocument = gql`
-    mutation DeleteFixture($id: ID!) {
-  deleteFixture(input: {id: $id})
+    mutation DeleteFixture($id: ID!, $cascade: Boolean = false) {
+  deleteFixture(input: {id: $id, cascade: $cascade})
 }
     `;
 export type DeleteFixtureMutationFn = Apollo.MutationFunction<DeleteFixtureMutation, DeleteFixtureMutationVariables>;
@@ -22658,6 +23078,7 @@ export type DeleteFixtureMutationFn = Apollo.MutationFunction<DeleteFixtureMutat
  * const [deleteFixtureMutation, { data, loading, error }] = useDeleteFixtureMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      cascade: // value for 'cascade'
  *   },
  * });
  */
@@ -23941,9 +24362,12 @@ export const SetPositionLabelDocument = gql`
     id
     name
     label
+    nameAnchors {
+      ...AnchorLabels
+    }
   }
 }
-    `;
+    ${AnchorLabelsFragmentDoc}`;
 export type SetPositionLabelMutationFn = Apollo.MutationFunction<SetPositionLabelMutation, SetPositionLabelMutationVariables>;
 
 /**
@@ -25287,6 +25711,7 @@ export const GetAnnotationInfoDocument = gql`
       label
       shape
     }
+    ...AnnotationShapeLineage
     derivedResidents {
       __typename
       ... on ArrayDataset {
@@ -25316,7 +25741,7 @@ export const GetAnnotationInfoDocument = gql`
     }
   }
 }
-    `;
+    ${AnnotationShapeLineageFragmentDoc}`;
 
 /**
  * __useGetAnnotationInfoQuery__
@@ -26889,6 +27314,321 @@ export function useGetRegistrationEdgeLazyQuery(baseOptions?: ApolloReactHooks.L
 export type GetRegistrationEdgeQueryHookResult = ReturnType<typeof useGetRegistrationEdgeQuery>;
 export type GetRegistrationEdgeLazyQueryHookResult = ReturnType<typeof useGetRegistrationEdgeLazyQuery>;
 export type GetRegistrationEdgeQueryResult = Apollo.QueryResult<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>;
+export const PreflightDeleteArrayDatasetDocument = gql`
+    query PreflightDeleteArrayDataset($id: ID!) {
+  preflightDeleteArrayDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteArrayDatasetQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteArrayDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteArrayDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteArrayDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteArrayDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteArrayDatasetQuery, PreflightDeleteArrayDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteArrayDatasetQuery, PreflightDeleteArrayDatasetQueryVariables>(PreflightDeleteArrayDatasetDocument, options);
+      }
+export function usePreflightDeleteArrayDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteArrayDatasetQuery, PreflightDeleteArrayDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteArrayDatasetQuery, PreflightDeleteArrayDatasetQueryVariables>(PreflightDeleteArrayDatasetDocument, options);
+        }
+export type PreflightDeleteArrayDatasetQueryHookResult = ReturnType<typeof usePreflightDeleteArrayDatasetQuery>;
+export type PreflightDeleteArrayDatasetLazyQueryHookResult = ReturnType<typeof usePreflightDeleteArrayDatasetLazyQuery>;
+export type PreflightDeleteArrayDatasetQueryResult = Apollo.QueryResult<PreflightDeleteArrayDatasetQuery, PreflightDeleteArrayDatasetQueryVariables>;
+export const PreflightDeleteTableDatasetDocument = gql`
+    query PreflightDeleteTableDataset($id: ID!) {
+  preflightDeleteTableDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteTableDatasetQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteTableDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteTableDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteTableDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteTableDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteTableDatasetQuery, PreflightDeleteTableDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteTableDatasetQuery, PreflightDeleteTableDatasetQueryVariables>(PreflightDeleteTableDatasetDocument, options);
+      }
+export function usePreflightDeleteTableDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteTableDatasetQuery, PreflightDeleteTableDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteTableDatasetQuery, PreflightDeleteTableDatasetQueryVariables>(PreflightDeleteTableDatasetDocument, options);
+        }
+export type PreflightDeleteTableDatasetQueryHookResult = ReturnType<typeof usePreflightDeleteTableDatasetQuery>;
+export type PreflightDeleteTableDatasetLazyQueryHookResult = ReturnType<typeof usePreflightDeleteTableDatasetLazyQuery>;
+export type PreflightDeleteTableDatasetQueryResult = Apollo.QueryResult<PreflightDeleteTableDatasetQuery, PreflightDeleteTableDatasetQueryVariables>;
+export const PreflightDeleteSparseDatasetDocument = gql`
+    query PreflightDeleteSparseDataset($id: ID!) {
+  preflightDeleteSparseDataset(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteSparseDatasetQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteSparseDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteSparseDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteSparseDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteSparseDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteSparseDatasetQuery, PreflightDeleteSparseDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteSparseDatasetQuery, PreflightDeleteSparseDatasetQueryVariables>(PreflightDeleteSparseDatasetDocument, options);
+      }
+export function usePreflightDeleteSparseDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteSparseDatasetQuery, PreflightDeleteSparseDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteSparseDatasetQuery, PreflightDeleteSparseDatasetQueryVariables>(PreflightDeleteSparseDatasetDocument, options);
+        }
+export type PreflightDeleteSparseDatasetQueryHookResult = ReturnType<typeof usePreflightDeleteSparseDatasetQuery>;
+export type PreflightDeleteSparseDatasetLazyQueryHookResult = ReturnType<typeof usePreflightDeleteSparseDatasetLazyQuery>;
+export type PreflightDeleteSparseDatasetQueryResult = Apollo.QueryResult<PreflightDeleteSparseDatasetQuery, PreflightDeleteSparseDatasetQueryVariables>;
+export const PreflightDeleteMeshCollectionDocument = gql`
+    query PreflightDeleteMeshCollection($id: ID!) {
+  preflightDeleteMeshCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteMeshCollectionQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteMeshCollectionQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteMeshCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteMeshCollectionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteMeshCollectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteMeshCollectionQuery, PreflightDeleteMeshCollectionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteMeshCollectionQuery, PreflightDeleteMeshCollectionQueryVariables>(PreflightDeleteMeshCollectionDocument, options);
+      }
+export function usePreflightDeleteMeshCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteMeshCollectionQuery, PreflightDeleteMeshCollectionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteMeshCollectionQuery, PreflightDeleteMeshCollectionQueryVariables>(PreflightDeleteMeshCollectionDocument, options);
+        }
+export type PreflightDeleteMeshCollectionQueryHookResult = ReturnType<typeof usePreflightDeleteMeshCollectionQuery>;
+export type PreflightDeleteMeshCollectionLazyQueryHookResult = ReturnType<typeof usePreflightDeleteMeshCollectionLazyQuery>;
+export type PreflightDeleteMeshCollectionQueryResult = Apollo.QueryResult<PreflightDeleteMeshCollectionQuery, PreflightDeleteMeshCollectionQueryVariables>;
+export const PreflightDeleteNetworkCollectionDocument = gql`
+    query PreflightDeleteNetworkCollection($id: ID!) {
+  preflightDeleteNetworkCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteNetworkCollectionQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteNetworkCollectionQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteNetworkCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteNetworkCollectionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteNetworkCollectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteNetworkCollectionQuery, PreflightDeleteNetworkCollectionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteNetworkCollectionQuery, PreflightDeleteNetworkCollectionQueryVariables>(PreflightDeleteNetworkCollectionDocument, options);
+      }
+export function usePreflightDeleteNetworkCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteNetworkCollectionQuery, PreflightDeleteNetworkCollectionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteNetworkCollectionQuery, PreflightDeleteNetworkCollectionQueryVariables>(PreflightDeleteNetworkCollectionDocument, options);
+        }
+export type PreflightDeleteNetworkCollectionQueryHookResult = ReturnType<typeof usePreflightDeleteNetworkCollectionQuery>;
+export type PreflightDeleteNetworkCollectionLazyQueryHookResult = ReturnType<typeof usePreflightDeleteNetworkCollectionLazyQuery>;
+export type PreflightDeleteNetworkCollectionQueryResult = Apollo.QueryResult<PreflightDeleteNetworkCollectionQuery, PreflightDeleteNetworkCollectionQueryVariables>;
+export const PreflightDeleteAnnotationCollectionDocument = gql`
+    query PreflightDeleteAnnotationCollection($id: ID!) {
+  preflightDeleteAnnotationCollection(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteAnnotationCollectionQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteAnnotationCollectionQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteAnnotationCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteAnnotationCollectionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteAnnotationCollectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteAnnotationCollectionQuery, PreflightDeleteAnnotationCollectionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteAnnotationCollectionQuery, PreflightDeleteAnnotationCollectionQueryVariables>(PreflightDeleteAnnotationCollectionDocument, options);
+      }
+export function usePreflightDeleteAnnotationCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteAnnotationCollectionQuery, PreflightDeleteAnnotationCollectionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteAnnotationCollectionQuery, PreflightDeleteAnnotationCollectionQueryVariables>(PreflightDeleteAnnotationCollectionDocument, options);
+        }
+export type PreflightDeleteAnnotationCollectionQueryHookResult = ReturnType<typeof usePreflightDeleteAnnotationCollectionQuery>;
+export type PreflightDeleteAnnotationCollectionLazyQueryHookResult = ReturnType<typeof usePreflightDeleteAnnotationCollectionLazyQuery>;
+export type PreflightDeleteAnnotationCollectionQueryResult = Apollo.QueryResult<PreflightDeleteAnnotationCollectionQuery, PreflightDeleteAnnotationCollectionQueryVariables>;
+export const PreflightDeleteFixtureDocument = gql`
+    query PreflightDeleteFixture($id: ID!) {
+  preflightDeleteFixture(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteFixtureQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteFixtureQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteFixtureQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteFixtureQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteFixtureQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteFixtureQuery, PreflightDeleteFixtureQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteFixtureQuery, PreflightDeleteFixtureQueryVariables>(PreflightDeleteFixtureDocument, options);
+      }
+export function usePreflightDeleteFixtureLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteFixtureQuery, PreflightDeleteFixtureQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteFixtureQuery, PreflightDeleteFixtureQueryVariables>(PreflightDeleteFixtureDocument, options);
+        }
+export type PreflightDeleteFixtureQueryHookResult = ReturnType<typeof usePreflightDeleteFixtureQuery>;
+export type PreflightDeleteFixtureLazyQueryHookResult = ReturnType<typeof usePreflightDeleteFixtureLazyQuery>;
+export type PreflightDeleteFixtureQueryResult = Apollo.QueryResult<PreflightDeleteFixtureQuery, PreflightDeleteFixtureQueryVariables>;
+export const PreflightDeleteFileDocument = gql`
+    query PreflightDeleteFile($id: ID!) {
+  preflightDeleteFile(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteFileQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteFileQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteFileQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteFileQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteFileQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteFileQuery, PreflightDeleteFileQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteFileQuery, PreflightDeleteFileQueryVariables>(PreflightDeleteFileDocument, options);
+      }
+export function usePreflightDeleteFileLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteFileQuery, PreflightDeleteFileQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteFileQuery, PreflightDeleteFileQueryVariables>(PreflightDeleteFileDocument, options);
+        }
+export type PreflightDeleteFileQueryHookResult = ReturnType<typeof usePreflightDeleteFileQuery>;
+export type PreflightDeleteFileLazyQueryHookResult = ReturnType<typeof usePreflightDeleteFileLazyQuery>;
+export type PreflightDeleteFileQueryResult = Apollo.QueryResult<PreflightDeleteFileQuery, PreflightDeleteFileQueryVariables>;
+export const PreflightDeleteAnnotationDocument = gql`
+    query PreflightDeleteAnnotation($id: ID!) {
+  preflightDeleteAnnotation(id: $id) {
+    ...DeletePreflight
+  }
+}
+    ${DeletePreflightFragmentDoc}`;
+
+/**
+ * __usePreflightDeleteAnnotationQuery__
+ *
+ * To run a query within a React component, call `usePreflightDeleteAnnotationQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreflightDeleteAnnotationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreflightDeleteAnnotationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePreflightDeleteAnnotationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreflightDeleteAnnotationQuery, PreflightDeleteAnnotationQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreflightDeleteAnnotationQuery, PreflightDeleteAnnotationQueryVariables>(PreflightDeleteAnnotationDocument, options);
+      }
+export function usePreflightDeleteAnnotationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreflightDeleteAnnotationQuery, PreflightDeleteAnnotationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreflightDeleteAnnotationQuery, PreflightDeleteAnnotationQueryVariables>(PreflightDeleteAnnotationDocument, options);
+        }
+export type PreflightDeleteAnnotationQueryHookResult = ReturnType<typeof usePreflightDeleteAnnotationQuery>;
+export type PreflightDeleteAnnotationLazyQueryHookResult = ReturnType<typeof usePreflightDeleteAnnotationLazyQuery>;
+export type PreflightDeleteAnnotationQueryResult = Apollo.QueryResult<PreflightDeleteAnnotationQuery, PreflightDeleteAnnotationQueryVariables>;
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {
@@ -28078,6 +28818,7 @@ export const GetLineageDocument = gql`
       transformationKind
       valueRelation
       annotationId
+      annotationRelation
       primary
       sourceLens
     }

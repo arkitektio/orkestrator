@@ -3,7 +3,13 @@
 // module pulls in the Apollo hooks barrel, which touches `window` on load)
 import { describe, expect, it } from "vitest";
 
-import { createRoiDrawingStore } from "./roiDrawingStore";
+import {
+  activeTraceDepth,
+  activeTraceOn,
+  activeTraceWeights,
+  createRoiDrawingStore,
+  traceEnhancerFor,
+} from "./roiDrawingStore";
 
 // The volumetric anchor: a probe click seeds it, RoiDrawer consumes+clears it and raises `primitiveSessionActive` while sizing — the
 // flag is what stops the commit click (which may also hit the volume mesh)
@@ -105,5 +111,47 @@ describe("persisted preview handover", () => {
 
     store.getState().resolvePersistedRois("col:1", ["ann:unrelated"], 1_000);
     expect(store.getState().drawnRois).toBe(before);
+  });
+});
+
+// Lines/paths and polygons share one tracer but are separate enhancers: the
+// armed tool picks which switch, weights and depth the drawer reads.
+describe("trace enhancers per tool", () => {
+  it("maps each tool to its trace enhancer", () => {
+    expect(traceEnhancerFor("LINE")).toBe("vector-trace");
+    expect(traceEnhancerFor("PATH")).toBe("vector-trace");
+    expect(traceEnhancerFor("POLYGON")).toBe("outline-trace");
+    expect(traceEnhancerFor("RECTANGLE")).toBeNull();
+    expect(traceEnhancerFor(null)).toBeNull();
+  });
+
+  it("reads the armed tool's switch and weights, never the other's", () => {
+    const store = createRoiDrawingStore();
+    store.getState().setEnhancerOn("vector-trace", true);
+    store.getState().setActiveTool("POLYGON");
+    expect(activeTraceOn(store.getState())).toBe(false);
+
+    store.getState().setTraceWeights("outline-trace", { gradient: 2 });
+    expect(activeTraceWeights(store.getState()).gradient).toBe(2);
+    store.getState().setActiveTool("LINE");
+    expect(activeTraceOn(store.getState())).toBe(true);
+    expect(activeTraceWeights(store.getState()).gradient).toBe(0);
+  });
+
+  it("returns the stored weights object, so subscriptions stay quiet", () => {
+    const store = createRoiDrawingStore();
+    store.getState().setActiveTool("POLYGON");
+    expect(activeTraceWeights(store.getState())).toBe(
+      activeTraceWeights(store.getState()),
+    );
+  });
+
+  it("traces a polygon in its view's own depth", () => {
+    const store = createRoiDrawingStore();
+    store.getState().setTraceDepth("2D", "3D");
+    store.getState().setActiveTool("POLYGON");
+    expect(activeTraceDepth(store.getState(), "2D")).toBe("2D");
+    store.getState().setActiveTool("PATH");
+    expect(activeTraceDepth(store.getState(), "2D")).toBe("3D");
   });
 });

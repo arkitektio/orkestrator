@@ -9,6 +9,7 @@ import {
   removeSceneAnnotation,
   sceneAnnotationsVariables,
 } from "@/mikro/lib/annotations/annotationCache";
+import { useLineageSafeAnnotationDelete } from "@/mikro/lib/deletion/useLineageSafeAnnotationDelete";
 import { useChartLayer } from "../../platform/stores/chartStore";
 import { useAnnotationLayerIds } from "./useAnnotationLayers";
 
@@ -43,7 +44,9 @@ const LayerMarkList = ({ layerId }: { layerId: string }) => {
     skip: !collectionId,
     fetchPolicy: "cache-and-network",
   });
-  const [remove] = useDeleteAnnotationMutation();
+  const [remove, { client }] = useDeleteAnnotationMutation();
+  // Asks first what the delete would take along, and cascades only once agreed.
+  const safeDelete = useLineageSafeAnnotationDelete();
   const annotations = data?.annotations ?? [];
   if (!layer || annotations.length === 0) return null;
 
@@ -67,11 +70,16 @@ const LayerMarkList = ({ layerId }: { layerId: string }) => {
             className="ml-auto opacity-0 group-hover/mark:opacity-100"
             title="Delete this mark"
             onClick={() =>
-              void remove({
-                variables: { input: { id: annotation.id } },
-                // The answer is the id that went: drop it from the list here.
-                update: (cache) => removeSceneAnnotation(cache, annotation.id),
-              }).catch(reportErrorAs("Couldn't delete the mark"))
+              void safeDelete([annotation.id], async (ids, cascade, alsoGone) => {
+                for (const id of ids) {
+                  await remove({
+                    variables: { input: { id, cascade } },
+                    // The answer is the id that went: drop it from the list here.
+                    update: (cache) => removeSceneAnnotation(cache, id),
+                  }).catch(reportErrorAs("Couldn't delete the mark"));
+                }
+                for (const gone of alsoGone) removeSceneAnnotation(client.cache, gone);
+              })
             }
           >
             <Trash2 />

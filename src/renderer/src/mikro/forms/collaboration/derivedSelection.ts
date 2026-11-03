@@ -29,6 +29,7 @@ export const LINEAGE_IDENTIFIER: Record<`${LineageNodeKind}`, string> = {
   ANNOTATION_COLLECTION: "@mikro/annotationcollection",
   FIXTURE: "@mikro/fixture",
   FILE: "@mikro/file",
+  ANNOTATION: "@mikro/annotation",
 };
 
 const KIND_OF_IDENTIFIER = Object.fromEntries(

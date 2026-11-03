@@ -10,7 +10,7 @@ import { Slider } from "@/core/ui/slider";
 import { Switch } from "@/core/ui/switch";
 import { Camera, Settings2 } from "lucide-react";
 import { MikroCoordinateSystem } from "@/core/linkers";
-import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
+import { layerDisplayLabel, sceneLayerLabel } from "../../platform/layerui/layerIdentity";
 import { resolveProbeStrategy } from "../../platform/probe/probeModes";
 import type { ProbeMode } from "../../platform/probe/probeTypes";
 import {
@@ -44,7 +44,7 @@ import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStor
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
-import { BarTooltip } from "./BarTooltip";
+import { BarTooltip } from "../../platform/layerui/BarTooltip";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { VIEW_PLANES, viewPlaneOf, type ViewPlane } from "@/core/data/scene/coords/viewAxes";
 import { useSceneViewAxes, useSetSceneViewAxes } from "../../platform/stores/sceneViewAxes";
@@ -576,7 +576,7 @@ const ProbeSettingsSection = () => {
       .map(
         (l) =>
           `${l.id}:${l.visible === false ? 0 : 1}:${l.projection ?? ""}:${
-            l.name ?? ""
+            l.lens.name ?? ""
           }:${l.__typename}:${identityOf(l.lens)}:${l.phasors.length}:${l.channels.length}`,
       )
       .join("|"),
@@ -773,7 +773,8 @@ const RemapSection = () => {
         const spatial = placementToSpatialAffine(layer.asAffine, dataSpatial, worldSpatial);
         return !isAlignedTo(spatial, viewSlot);
       })
-      .map((layer) => layer.name?.trim() || layer.id)
+      // Called by the metadata beneath it, like every layer (`layerDisplayLabel`).
+      .map((layer) => sceneLayerLabel(layer))
       .join("\u0000");
   });
   const shearedNames = sheared ? sheared.split("\u0000") : [];

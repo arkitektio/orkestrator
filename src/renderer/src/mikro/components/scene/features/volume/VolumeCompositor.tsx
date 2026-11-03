@@ -8,12 +8,20 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { NodeMaterial } from "three/webgpu";
+import * as TSLTyped from "three/tsl";
+import {
+  DEPTH_VIEW_CODE,
+  emitDepthComposite,
+  makeDepthCompositeUniforms,
+  type DepthCompositeUniforms,
+} from "../bricks/gpu/depthCodeNodes";
+import { boxViewDepthRange } from "../bricks/shaderspec/depthCode";
 import {
   buildVolumeCompositeNode,
   isPostInert,
   updateVolumePostUniforms,
 } from "../../platform/gpu/volumePost";
-import { useModeStore } from "../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
 import {
   COMPOSITOR_INTERNAL,
@@ -43,6 +51,7 @@ import {
   type VolumeFrameKey,
 } from "../../platform/gpu/volumeCompositor";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
+import { perfMonitor } from "../../platform/perf/perfMonitor";
 
 import { useBrickStoreApi } from "../bricks/store/brickSlice";
 
@@ -82,6 +91,60 @@ const scratchView = new THREE.Matrix4();
 const scratchVP = new THREE.Matrix4();
 const scratchClearColor = new THREE.Color();
 const scratchQuadLocal = new THREE.Matrix4();
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- TSL node graph, see brickNodeMaterials. */
+const TSL = TSLTyped as any;
+
+/**
+ * Latch the relief frame for what the depth pass just wrote: the scene box's
+ * view-depth range (the same box the volume shader normalised against, read
+ * off a volume material) and the world size of one depth-target texel. With
+ * these the composite turns depth-per-texel back into a world slope.
+ */
+const latchReliefFrame = (
+  u: DepthCompositeUniforms,
+  meshes: readonly THREE.Object3D[],
+  camera: THREE.Camera,
+  targetHeight: number,
+): void => {
+  let box: { min: { value: THREE.Vector3 }; max: { value: THREE.Vector3 } } | undefined;
+  for (const mesh of meshes) {
+    const material = (mesh as THREE.Mesh).material as THREE.Material | undefined;
+    box = (material as THREE.Material | undefined)?.userData?.depthBox;
+    if (box) break;
+  }
+  if (box) {
+    const { near, far } = boxViewDepthRange(
+      box.min.value.toArray() as [number, number, number],
+      box.max.value.toArray() as [number, number, number],
+      camera.matrixWorldInverse.elements,
+    );
+    u.uDepthNear.value = near;
+    u.uDepthRange.value = Math.max(far - near, 1e-6);
+  }
+  const perspective = camera as THREE.PerspectiveCamera;
+  const height = Math.max(targetHeight, 1);
+  if (perspective.isPerspectiveCamera) {
+    u.uPerspective.value = 1;
+    u.uPxScale.value = (2 * Math.tan(THREE.MathUtils.degToRad(perspective.fov) / 2)) / height;
+  } else {
+    const ortho = camera as THREE.OrthographicCamera;
+    u.uPerspective.value = 0;
+    u.uPxScale.value = (ortho.top - ortho.bottom) / (ortho.zoom || 1) / height;
+  }
+};
+
+/** The flag a volume material exposes for the depth pass (`brickNodeMaterials`). */
+const setDepthEncoding = (meshes: readonly THREE.Object3D[], on: boolean): void => {
+  for (const mesh of meshes) {
+    const material = (mesh as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    const list = Array.isArray(material) ? material : material ? [material] : [];
+    for (const m of list) {
+      const flag = m.userData?.depthCodeUniform as { value: number } | undefined;
+      if (flag) flag.value = on ? 1 : 0;
+    }
+  }
+};
 
 /**
  * Fit the composite quad's WORLD matrix to exactly fill the camera frustum
@@ -134,6 +197,31 @@ export const VolumeCompositor = () => {
     [],
   );
 
+  // The DEPTH view's target (hold Q / Shift+Q): the same volume passes with
+  // `uDepthCode` on write `(frac·s, s)` here, and the composite reads a 3×3
+  // neighbourhood of it to find depth JUMPS between rays. Held at 2×2 until
+  // a depth view first renders — it costs nothing while unused.
+  const depthTarget = useMemo(
+    () =>
+      new THREE.RenderTarget(2, 2, {
+        depthBuffer: true,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        generateMipmaps: false,
+      }),
+    [],
+  );
+  // Stable across quad rebuilds: the frame loop writes these every frame.
+  const depthUniforms = useMemo(
+    () => makeDepthCompositeUniforms() as DepthCompositeUniforms & Record<string, any>,
+    [],
+  );
+  const modeStoreApi = useModeStoreApi();
+  /** What `depthTarget` currently holds — latched when a pass renders, so
+   * the composite never decodes a frame the target does not contain. */
+  const depthInTargetRef = useRef<number>(DEPTH_VIEW_CODE.off);
+
   // Fullscreen composite quad: a camera-fitted plane (see fitQuadToCamera)
   // sampling the target at screenUV — resolution-independent, so the low-res
   // target upsamples bilinearly. The target is an ADDITIVE-DELTA buffer:
@@ -153,7 +241,10 @@ export const VolumeCompositor = () => {
   // changes ride the live uniforms in the effect below.
   const cinematic = useModeStore((s) => s.cinematic);
   const post = useModeStore((s) => s.post);
-  const postActive = cinematic && !isPostInert(post);
+  // Depth coding (hold Q) suspends the post: bloom and grading would shift
+  // the depth hues off the legend. Rebuilds only this small composite quad.
+  const depthViewOn = useModeStore((s) => s.depthView !== null);
+  const postActive = cinematic && !depthViewOn && !isPostInert(post);
   // Read by the material builder without making it a dep: the SHAPE of the
   // chain depends on `postActive`, its VALUES ride live uniforms.
   const postRef = useRef(post);
@@ -174,7 +265,21 @@ export const VolumeCompositor = () => {
         sizeOf: () => ({ width: target.width, height: target.height }),
       },
     );
-    material.colorNode = chain.colorNode;
+    // The depth view composes over the SCIENTIFIC passthrough only (a depth
+    // view turns the cinematic post off, see `postActive`). A runtime branch
+    // on a uniform: pressing Q never rebuilds this material, and the 9 depth
+    // taps (relief normal) run only while a depth view is on.
+    material.colorNode = postActive
+      ? chain.colorNode
+      : TSL.Fn(() => {
+          const out = TSL.vec4(chain.colorNode).toVar("compositeOut");
+          TSL.If(TSL.float(depthUniforms.uDepthView).greaterThan(0.5), () => {
+            out.assign(
+              emitDepthComposite(depthUniforms, chain.colorNode, depthTarget.texture, TSL.screenUV),
+            );
+          });
+          return out;
+        })();
     material.userData.postChain = chain;
     material.transparent = true;
     material.blending = THREE.CustomBlending;
@@ -207,18 +312,19 @@ export const VolumeCompositor = () => {
     // `postActive` only — the SHAPE of the chain. Rebuilding on every slider
     // tick would thrash the bloom node's mip targets.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target, postActive]);
+  }, [target, depthTarget, depthUniforms, postActive]);
 
   useEffect(
     () => () => {
       target.dispose();
+      depthTarget.dispose();
       quad.geometry.dispose();
       const material = quad.material as THREE.Material;
       // Release the bloom node's mip render targets before the material.
       (material.userData.postChain as { dispose: () => void } | undefined)?.dispose();
       material.dispose();
     },
-    [target, quad],
+    [target, depthTarget, quad],
   );
 
   // Slider drags: push into the live uniforms and request a frame. The target
@@ -300,6 +406,7 @@ export const VolumeCompositor = () => {
       // The emit runs the whole chain: useStepScaleUniform recomputes the
       // boosted uMaxSteps (image material only), bumps volumeInputs and
       // invalidates; the next frame re-renders the target exactly once.
+      perfMonitor.markEvent("volume:refineStage", { info: String(nextStage) }); // no-op unless recording
       qualityGovernor.setSettleRefineStage(nextStage);
     }, SETTLE_REFINE_DELAY_MS);
   };
@@ -404,6 +511,9 @@ export const VolumeCompositor = () => {
     if (
       needsTargetResize({ width: target.width, height: target.height }, nextSize)
     ) {
+      perfMonitor.markEvent("volume:targetResize", {
+        info: `${nextSize.width}x${nextSize.height}`,
+      }); // no-op unless recording
       target.setSize(nextSize.width, nextSize.height);
       hasContentRef.current = false;
     }
@@ -438,13 +548,20 @@ export const VolumeCompositor = () => {
       previous: previousKeyRef.current,
     });
     stats.onFrame(decision);
+    perfMonitor.markVolumeFrame(decision.render ? decision.reason : "cached"); // no-op unless recording
     // The RESOLVED key, not the thunk-bearing input: it carries structureKey
     // only when the decision actually needed it (null otherwise, which the next
     // frame reads as "changed").
     previousKeyRef.current = decision.resolved;
 
-    // --- Volume pass into the target ---------------------------------------
-    if (decision.render) {
+    // --- Volume pass(es) into the target(s) ---------------------------------
+    // The depth view (hold Q / Shift+Q) re-marches the same meshes with
+    // `uDepthCode` on into `depthTarget`; hues need only that pass, the
+    // relief view (normal colours, relief-shaded) both — 2× the march, but
+    // only on re-render frames while the key is held.
+    const depthView = modeStoreApi.getState().depthView;
+    const renderVolumePass = (into: THREE.RenderTarget, depthEncoded: boolean) => {
+      setDepthEncoding(sets.volumeMeshes, depthEncoded);
       const prevTarget = gl.getRenderTarget();
       const prevAutoClear = gl.autoClear;
       gl.getClearColor(scratchClearColor);
@@ -462,7 +579,7 @@ export const VolumeCompositor = () => {
       try {
         sceneWithBackground.background = null;
         gl.setClearColor(0x000000, 0);
-        gl.setRenderTarget(target);
+        gl.setRenderTarget(into);
         if (sets.occluders.length > 0) {
           // Depth-only prepass: occluders alone with their OWN materials and
           // colorWrite off (never scene.overrideMaterial — a plain override
@@ -496,7 +613,26 @@ export const VolumeCompositor = () => {
         gl.setClearColor(scratchClearColor, prevClearAlpha);
         gl.setRenderTarget(prevTarget);
       }
+    };
+    if (decision.render) {
+      try {
+        if (depthView !== "hues") renderVolumePass(target, false);
+        if (depthView) {
+          if (needsTargetResize({ width: depthTarget.width, height: depthTarget.height }, nextSize)) {
+            depthTarget.setSize(nextSize.width, nextSize.height);
+          }
+          renderVolumePass(depthTarget, true);
+          latchReliefFrame(depthUniforms, sets.volumeMeshes, camera, depthTarget.height);
+        }
+        depthInTargetRef.current = depthView ? DEPTH_VIEW_CODE[depthView] : DEPTH_VIEW_CODE.off;
+      } finally {
+        // The canvas pass (and any capture) must never see a material left
+        // writing packed depth.
+        setDepthEncoding(sets.volumeMeshes, false);
+      }
     }
+    depthUniforms.uDepthView.value = depthInTargetRef.current;
+    depthUniforms.uDepthTexel.value.set(1 / depthTarget.width, 1 / depthTarget.height);
 
     // --- Settled-render cost ---------------------------------------------------
     // The meter needs the frames AFTER a settled render to see what it cost

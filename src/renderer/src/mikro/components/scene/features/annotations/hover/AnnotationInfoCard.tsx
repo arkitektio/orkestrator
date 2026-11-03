@@ -5,6 +5,7 @@ import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { classifyError } from "@/core/layout/fallbacks/classifyError";
 import { RetryButton } from "@/core/layout/fallbacks/statusActions";
 import {
+  MikroAnnotation,
   MikroArrayDataset,
   MikroArrayLens,
   MikroMeshCollection,
@@ -64,6 +65,8 @@ export const AnnotationInfoCard = ({ id }: { id: string }) => {
 const Loaded = ({ info }: { info: Info }) => {
   const lenses = info.derivedLenses;
   const residents = info.derivedResidents.filter(isNamed);
+  const sources = info.derivedFrom;
+  const shapes = info.derivedAnnotations;
 
   return (
     <div className="flex flex-col gap-2 px-2.5 pb-2.5 pt-1 text-xs">
@@ -98,8 +101,31 @@ const Loaded = ({ info }: { info: Info }) => {
           ))}
         </Made>
       )}
-      {lenses.length === 0 && residents.length === 0 && (
+      {shapes.length > 0 && (
+        <Made heading="Shapes made from this one">
+          {shapes.map((shape) => (
+            <li key={shape.id} className="flex min-w-0 items-baseline gap-2">
+              <MikroAnnotation.DetailLink object={shape} className="min-w-0 truncate">
+                {shape.name}
+              </MikroAnnotation.DetailLink>
+            </li>
+          ))}
+        </Made>
+      )}
+      {lenses.length === 0 && residents.length === 0 && shapes.length === 0 && (
         <p className="text-muted-foreground">Nothing has been cut or computed from this shape yet.</p>
+      )}
+      {sources.length > 0 && (
+        <Made heading="Made from">
+          {sources.map((link) => (
+            <li key={link.id} className="flex min-w-0 items-baseline gap-2">
+              <MikroAnnotation.DetailLink object={link.source} className="min-w-0 truncate">
+                {link.source.name}
+              </MikroAnnotation.DetailLink>
+              <span className="shrink-0 text-muted-foreground">{link.relation.toLowerCase()}</span>
+            </li>
+          ))}
+        </Made>
       )}
     </div>
   );

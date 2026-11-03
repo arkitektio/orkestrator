@@ -1,9 +1,15 @@
+import { Bone } from "lucide-react";
 import { Button } from "@/core/ui/button";
-import { Slider } from "@/core/ui/slider";
 import { Toggle } from "@/core/ui/toggle";
 import { useBrushSkeleton } from "./useBrushSkeleton";
 import { useBrushSkeletonStore } from "../../brushSkeletonStore";
 import { SurfaceQualityControls } from "../../shared/SurfaceQualityControls";
+import {
+  EnhancerLayout,
+  EnhancerOption,
+  SkeletonBrushIllustration,
+} from "../../shared/EnhancerOption";
+import { SliderRow } from "../../shared/ParamRow";
 
 /**
  * The skeleton brush's params/status/confirm panel — the `intensity-skeleton`
@@ -29,81 +35,85 @@ export const BrushSkeletonPanel = () => {
   const { extract, save } = useBrushSkeleton();
 
   return (
-    <div className="pointer-events-auto flex flex-col gap-1 rounded-md bg-background/80 px-2 py-1.5 shadow-md backdrop-blur-sm">
-      {radiusWorld !== null && radiusBounds !== null && (
-        <div
-          className="flex items-center gap-2"
-          title="How far around the stroke the centerline may search"
-        >
-          <span className="w-12 select-none text-right text-[10px] font-medium uppercase text-muted-foreground">
-            Radius
-          </span>
-          <div className="w-32">
-            <Slider
-              min={radiusBounds[0]}
-              max={radiusBounds[1]}
-              step={radiusBounds[0] / 4}
-              value={[radiusWorld]}
-              onValueChange={([value]) => setRadiusWorld(value)}
+    <EnhancerLayout
+      id="intensity-skeleton"
+      title="Skeleton brush"
+      icon={Bone}
+      advanced={{
+        explain: (
+          <>
+            <p>
+              The stroke marks a tube of the volume. Inside it, a brightness
+              field is built and its centerline — the ridge the bright voxels
+              run along — is extracted, then simplified into a path.
+            </p>
+            <p className="mt-1">
+              Radius is how far around the stroke it may search; Bright how
+              strongly the line is pulled onto bright voxels.
+              {tubeEnabled &&
+                " The tube is the isosurface of the same field: Wrap is the brightness it wraps, lower takes in dimmer voxels."}
+            </p>
+          </>
+        ),
+        tunes: (
+          <>
+            {radiusWorld !== null && radiusBounds !== null && (
+              <SliderRow
+                label="Radius"
+                title="How far around the stroke the centerline may search"
+                min={radiusBounds[0]}
+                max={radiusBounds[1]}
+                step={radiusBounds[0] / 4}
+                value={radiusWorld}
+                readout={radiusWorld.toPrecision(2)}
+                onChange={setRadiusWorld}
+              />
+            )}
+            <SliderRow
+              label="Bright"
+              title="How strongly the centerline is pulled toward bright voxels"
+              min={0}
+              max={4}
+              step={0.05}
+              value={weights.intensity}
+              readout={weights.intensity.toFixed(2)}
+              onChange={(intensity) => setWeights({ intensity })}
             />
-          </div>
-          <span className="w-8 select-none text-[10px] tabular-nums text-muted-foreground">
-            {radiusWorld.toPrecision(2)}
-          </span>
-        </div>
-      )}
-      <div
-        className="flex items-center gap-2"
-        title="How strongly the centerline is pulled toward bright voxels"
-      >
-        <span className="w-12 select-none text-right text-[10px] font-medium uppercase text-muted-foreground">
-          Bright
-        </span>
-        <div className="w-32">
-          <Slider
-            min={0}
-            max={4}
-            step={0.05}
-            value={[weights.intensity]}
-            onValueChange={([value]) => setWeights({ intensity: value })}
-          />
-        </div>
-        <span className="w-8 select-none text-[10px] tabular-nums text-muted-foreground">
-          {weights.intensity.toFixed(2)}
-        </span>
-      </div>
+            {tubeEnabled && (
+              <>
+                <SliderRow
+                  label="Wrap"
+                  title="Brightness threshold the tube surface wraps — lower includes dimmer voxels"
+                  min={0.05}
+                  max={0.95}
+                  step={0.01}
+                  value={tubeThreshold}
+                  readout={tubeThreshold.toFixed(2)}
+                  onChange={setTubeThreshold}
+                />
+                <SurfaceQualityControls />
+              </>
+            )}
+          </>
+        ),
+      }}
+    >
+      <EnhancerOption
+        selected
+        illustration={<SkeletonBrushIllustration />}
+        title="Skeleton brush"
+        description="Paint over a bright structure — its centerline becomes a path"
+      />
+      {/* What comes out, not how: a choice, so it stays in the main column. */}
       <Toggle
         size="sm"
         pressed={tubeEnabled}
         onPressedChange={setTubeEnabled}
-        className="h-6 text-[10px]"
+        className="h-6 self-start text-[10px]"
         title="Also extract the structure's surface around the centerline as a tube mesh (isosurface of the same brightness field)"
       >
-        Tube
+        Also extract a tube surface
       </Toggle>
-      {tubeEnabled && (
-        <div
-          className="flex items-center gap-2"
-          title="Brightness threshold the tube surface wraps — lower includes dimmer voxels"
-        >
-          <span className="w-12 select-none text-right text-[10px] font-medium uppercase text-muted-foreground">
-            Wrap
-          </span>
-          <div className="w-32">
-            <Slider
-              min={0.05}
-              max={0.95}
-              step={0.01}
-              value={[tubeThreshold]}
-              onValueChange={([value]) => setTubeThreshold(value)}
-            />
-          </div>
-          <span className="w-8 select-none text-[10px] tabular-nums text-muted-foreground">
-            {tubeThreshold.toFixed(2)}
-          </span>
-        </div>
-      )}
-      {tubeEnabled && <SurfaceQualityControls />}
       {(status === "preview" || status === "saving") && candidate && (
         <div className="flex items-center gap-1">
           <Button
@@ -138,7 +148,7 @@ export const BrushSkeletonPanel = () => {
           Dismiss
         </Button>
       )}
-      <span className="text-[10px] text-white/50">
+      <span className="text-[10px] text-muted-foreground">
         {message ? (
           <span className="text-amber-300/90">{message}</span>
         ) : status === "painting" ? (
@@ -152,6 +162,6 @@ export const BrushSkeletonPanel = () => {
           "Drag along a bright structure to trace its centerline"
         )}
       </span>
-    </div>
+    </EnhancerLayout>
   );
 };

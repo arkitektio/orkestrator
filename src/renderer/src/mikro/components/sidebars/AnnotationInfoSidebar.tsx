@@ -2,9 +2,10 @@ import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Badge } from "@/core/ui/badge";
 import { MikroAnnotation, MikroCoordinateSystem, MikroScene } from "@/core/linkers";
 
-import { GetAnnotationQuery } from "../../api/graphql";
+import { GetAnnotationQuery, LineageNodeKind } from "../../api/graphql";
 import { AnnotationGlyph } from "../annotations/AnnotationGlyph";
 import { residentLabel } from "../coordinates/residents";
+import { LineageLink } from "../lineage/LineageLink";
 
 type PageAnnotation = GetAnnotationQuery["annotation"];
 
@@ -166,6 +167,52 @@ export const AnnotationInfoSidebar = ({
           </span>
         )}
       </div>
+
+      <ShapeLineage annotation={annotation} />
+    </div>
+  );
+};
+
+/**
+ * The shapes this one was made from, and the shapes made from it: one hop each
+ * way, with the graph a click away. A record of the act (`AnnotationDerivation`),
+ * not of geometry: both shapes are placed by their own collections.
+ */
+const ShapeLineage = ({ annotation }: { annotation: PageAnnotation }) => {
+  const sources = annotation.derivedFrom;
+  const made = annotation.derivedAnnotations;
+  if (sources.length === 0 && made.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="text-xs font-semibold">Lineage</div>
+      {sources.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Made from</span>
+          {sources.map((link) => (
+            <div key={link.id} className="flex min-w-0 flex-row items-baseline gap-2 text-sm">
+              <Badge variant="outline" className="shrink-0 text-[0.625rem]">
+                {link.relation.toLowerCase()}
+              </Badge>
+              <MikroAnnotation.DetailLink object={link.source} className="min-w-0 truncate">
+                {link.source.name}
+              </MikroAnnotation.DetailLink>
+              {link.reason && <span className="min-w-0 truncate text-xs text-muted-foreground">{link.reason}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {made.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Made into</span>
+          {made.map((child) => (
+            <MikroAnnotation.DetailLink key={child.id} object={child} className="min-w-0 truncate text-sm">
+              {child.name}
+            </MikroAnnotation.DetailLink>
+          ))}
+        </div>
+      )}
+      <LineageLink kind={LineageNodeKind.Annotation} id={annotation.id} />
     </div>
   );
 };

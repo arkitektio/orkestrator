@@ -41,7 +41,8 @@ export const AnnotationPoints = ({
   entries: PointEntry[];
   opacity: number;
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
+  /** Whether the click was taken — a declined one propagates to the drawer. */
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => boolean;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
@@ -102,8 +103,9 @@ export const AnnotationPoints = ({
         if (event.delta > DRAG_THRESHOLD_PX) return;
         const entry = event.instanceId !== undefined ? entries[event.instanceId] : undefined;
         if (!entry) return;
-        event.stopPropagation();
-        onSelectRoi(entry.roi, event.nativeEvent.shiftKey, clickPointOf(event));
+        if (onSelectRoi(entry.roi, event.nativeEvent.shiftKey, clickPointOf(event))) {
+          event.stopPropagation();
+        }
       }
     : undefined;
 

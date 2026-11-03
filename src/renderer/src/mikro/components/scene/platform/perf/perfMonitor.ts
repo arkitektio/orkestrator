@@ -34,6 +34,16 @@
  * tone-map/colour output pass is itself a counted render and runs after every
  * scene render AND every clear. See PerfFrameProbe for the decomposition.
  *
+ * MISSED FRAMES. A low `cpuMs` does not mean smooth: a report with cpuMs max
+ * 3.7 ms still had a 182 ms period at every drag start/release. The work was
+ * either between frames or in the GPU process, where the frame bracket cannot
+ * see it. So the recording also keeps a TIMELINE (`markEvent` / `markSpan`:
+ * gesture edges, camera settle, replan, visibility, plan writes, volume target
+ * resizes, material compiles, repack flushes, DPR, React commits) and the
+ * browser's `long-animation-frame` entries. `longFrames` pairs each missed
+ * frame with both. An entry inside a missed frame means the main thread was
+ * busy and names the script; none means the GPU process held the frame up.
+ *
  * Kept free of the renderer and React so it is unit-testable; the rAF timing
  * loop lives in `PerfFrameProbe`.
  */
@@ -49,6 +59,63 @@ const MAX_FRAMES = 4000;
  * on `frameMainThreadMs`, NOT the period: a long period on a demand frameloop is
  * an idle gap, and counting those as jank was pure noise. */
 const JANK_MS = 50;
+
+/** A frame PERIOD above this is a long frame: its window gets reported with
+ * every timeline event and long-animation-frame entry that fell inside it. On a
+ * recording the frameloop is "always", so a long period is a missed frame,
+ * never an idle gap. */
+const LONG_FRAME_MS = 50;
+
+/** Bounded buffers, so a forgotten recording cannot grow without limit. */
+const MAX_EVENTS = 8000;
+const MAX_LOAF_ENTRIES = 500;
+/** The worst long frames kept in the report (by period). */
+const MAX_LONG_FRAMES = 40;
+
+/** One point on the recording's timeline: something that happened at `tMs`
+ * (ms since the session started), optionally with its own main-thread `ms`. */
+export type PerfEvent = {
+  tMs: number;
+  name: string;
+  ms?: number;
+  info?: string;
+};
+
+/** One script inside a long animation frame (`PerformanceScriptTiming`). */
+export type PerfLoafScript = {
+  invoker: string;
+  sourceFunctionName: string;
+  sourceURL: string;
+  durationMs: number;
+};
+
+/** A `long-animation-frame` entry, rebased onto the session clock. */
+export type PerfLoafEntry = {
+  tMs: number;
+  durationMs: number;
+  blockingMs: number;
+  scripts: PerfLoafScript[];
+};
+
+/**
+ * A missed frame and what was going on during it: the timeline events and the
+ * main-thread long animation frames inside its window (from the previous
+ * frame's start to this frame's end).
+ *
+ * `loaf` is the deciding signal. A long period WITH an overlapping long
+ * animation frame means the main thread was busy; one WITHOUT means it was
+ * free, so the frame was held up in the GPU process (a pipeline compile, a
+ * reallocation, a queue full of GPU work) and no JS profile will show it.
+ */
+export type PerfLongFrame = {
+  tMs: number;
+  periodMs: number;
+  mainThreadMs: number;
+  gpuMs: number | null;
+  cameraMoving: boolean;
+  events: PerfEvent[];
+  loaf: PerfLoafEntry[];
+};
 
 export type FrameSample = {
   /** ms since the session started. */
@@ -118,6 +185,19 @@ export type PerfSessionReport = {
    * longest one — the stutter the frame numbers alone miss. */
   drainMs: { total: number; offFrame: number; offFrameSlices: number; offFrameMaxMs: number };
   pageFlushBytes: number;
+  /** Timeline totals by event name: how often, and the main-thread ms of the
+   * timed ones (replan, visibility, React commits, …). */
+  events: Record<string, { count: number; totalMs: number; maxMs: number }>;
+  /** React commits per `<Profiler>` id (dev builds report durations). */
+  reactCommits: Record<string, { count: number; totalMs: number; maxMs: number }>;
+  /** Main-thread long animation frames over the session; null when the
+   * browser does not support the `long-animation-frame` entry type. */
+  longAnimationFrames: { count: number; totalMs: number; maxMs: number } | null;
+  /** The worst missed frames, in time order, each with what happened inside it. */
+  longFrames: PerfLongFrame[];
+  /** How the GPU timing was set up for this session — why `gpuMs` is or is
+   * not filled. Written by `PerfFrameProbe`. */
+  gpuTiming: Record<string, unknown> | null;
 };
 
 class PerfMonitor {
@@ -142,6 +222,11 @@ class PerfMonitor {
   private pendingOffFrameDrains = 0;
   private pendingPageFlushBytes = 0;
   private offFrameDrainMaxMs = 0;
+  private events: PerfEvent[] = [];
+  private loafEntries: PerfLoafEntry[] = [];
+  private loafSupported = false;
+  private reactCommits = new Map<string, { count: number; totalMs: number; maxMs: number }>();
+  private gpuTiming: Record<string, unknown> | null = null;
   private readonly listeners = new Set<() => void>();
 
   isRecording(): boolean {
@@ -168,6 +253,17 @@ class PerfMonitor {
     this.replans = 0;
     this.visibilityRecomputes = 0;
     this.probes = 0;
+    this.probeMsTotal = 0;
+    this.probeMsMax = 0;
+    this.pointerMoves = 0;
+    this.pointerMoveMsTotal = 0;
+    this.pointerMoveMsMax = 0;
+    this.volumeFrames = new Map();
+    this.events = [];
+    this.loafEntries = [];
+    this.loafSupported = false;
+    this.reactCommits = new Map();
+    this.gpuTiming = null;
     this.pendingBricks = 0;
     this.pendingBytes = 0;
     this.pendingDrainMs = 0;
@@ -183,6 +279,69 @@ class PerfMonitor {
     if (!this.recording) return;
     this.recording = false;
     this.emit();
+  }
+
+  /** A timeline event (see `PerfEvent`). Pass `ms` when the event is a
+   * measured span of main-thread work. */
+  markEvent(name: string, detail?: { ms?: number; info?: string }): void {
+    if (!this.recording) return;
+    if (this.events.length >= MAX_EVENTS) return;
+    this.events.push({ tMs: now() - this.startedAt, name, ...detail });
+  }
+
+  /** Start of a timed span: `performance.now()` while recording, NaN otherwise
+   * (so an idle call site pays one boolean check and no clock read). */
+  spanStart(): number {
+    return this.recording ? now() : Number.NaN;
+  }
+
+  /** Close a span opened with `spanStart` as a timed timeline event. */
+  markSpan(name: string, startedAt: number, info?: string): void {
+    if (!this.recording || Number.isNaN(startedAt)) return;
+    this.markEvent(name, { ms: now() - startedAt, info });
+  }
+
+  /**
+   * A React commit of a `<Profiler id>` subtree (`onRender`). Totals per id;
+   * commits of 1 ms or more also go on the timeline, so a long frame shows
+   * which subtree committed inside it without flooding the buffer.
+   */
+  markCommit(id: string, phase: string, actualMs: number): void {
+    if (!this.recording) return;
+    const entry = this.reactCommits.get(id) ?? { count: 0, totalMs: 0, maxMs: 0 };
+    entry.count += 1;
+    entry.totalMs += actualMs;
+    if (actualMs > entry.maxMs) entry.maxMs = actualMs;
+    this.reactCommits.set(id, entry);
+    if (actualMs >= 1) this.markEvent(`react:${id}`, { ms: actualMs, info: phase });
+  }
+
+  /** The probe arms a `long-animation-frame` observer; report LoAF stats. */
+  setLongAnimationFrameSupported(supported: boolean): void {
+    if (!this.recording) return;
+    this.loafSupported = supported;
+  }
+
+  /** One long animation frame, `startTime` on the `performance.now()` clock. */
+  addLongAnimationFrame(entry: {
+    startTime: number;
+    durationMs: number;
+    blockingMs: number;
+    scripts: PerfLoafScript[];
+  }): void {
+    if (!this.recording || this.loafEntries.length >= MAX_LOAF_ENTRIES) return;
+    this.loafEntries.push({
+      tMs: entry.startTime - this.startedAt,
+      durationMs: entry.durationMs,
+      blockingMs: entry.blockingMs,
+      scripts: entry.scripts,
+    });
+  }
+
+  /** How GPU timing was configured for this session (see the report field). */
+  setGpuTiming(info: Record<string, unknown>): void {
+    if (!this.recording) return;
+    this.gpuTiming = info;
   }
 
   countRender(name: string): void {
@@ -241,6 +400,7 @@ class PerfMonitor {
     if (!this.recording) return;
     this.pendingDrainMs += ms;
     this.pendingPageFlushBytes += detail.pageFlushBytes;
+    if (ms >= 1) this.markEvent(detail.offFrame ? "drain:offFrame" : "drain", { ms });
     if (detail.offFrame) {
       this.pendingOffFrameDrainMs += ms;
       this.pendingOffFrameDrains += 1;
@@ -370,8 +530,71 @@ class PerfMonitor {
         offFrameMaxMs: this.offFrameDrainMaxMs,
       },
       pageFlushBytes: frames.reduce((a, f) => a + f.pageFlushBytes, 0),
+      events: totalsByName(this.events),
+      reactCommits: Object.fromEntries(
+        [...this.reactCommits.entries()].sort((a, b) => b[1].totalMs - a[1].totalMs),
+      ),
+      longAnimationFrames: this.loafSupported
+        ? {
+            count: this.loafEntries.length,
+            totalMs: this.loafEntries.reduce((a, e) => a + e.durationMs, 0),
+            maxMs: this.loafEntries.reduce((a, e) => Math.max(a, e.durationMs), 0),
+          }
+        : null,
+      longFrames: collectLongFrames(frames, this.events, this.loafEntries),
+      gpuTiming: this.gpuTiming,
     };
   }
+}
+
+function totalsByName(
+  events: readonly PerfEvent[],
+): Record<string, { count: number; totalMs: number; maxMs: number }> {
+  const totals = new Map<string, { count: number; totalMs: number; maxMs: number }>();
+  for (const event of events) {
+    const entry = totals.get(event.name) ?? { count: 0, totalMs: 0, maxMs: 0 };
+    entry.count += 1;
+    if (event.ms !== undefined) {
+      entry.totalMs += event.ms;
+      if (event.ms > entry.maxMs) entry.maxMs = event.ms;
+    }
+    totals.set(event.name, entry);
+  }
+  return Object.fromEntries([...totals.entries()].sort((a, b) => b[1].count - a[1].count));
+}
+
+/**
+ * The worst `MAX_LONG_FRAMES` frames whose period exceeded `LONG_FRAME_MS`,
+ * back in time order, each with the events and long animation frames inside
+ * its window. A sample's `tMs` is stamped at the frame's END (the after-effect),
+ * so its window runs from the previous frame's start
+ * (`tMs - mainThreadMs - periodMs`) to `tMs`.
+ */
+export function collectLongFrames(
+  frames: readonly FrameSample[],
+  events: readonly PerfEvent[],
+  loaf: readonly PerfLoafEntry[],
+): PerfLongFrame[] {
+  const long = frames
+    .filter((f) => f.framePeriodMs > LONG_FRAME_MS)
+    .sort((a, b) => b.framePeriodMs - a.framePeriodMs)
+    .slice(0, MAX_LONG_FRAMES)
+    .sort((a, b) => a.tMs - b.tMs);
+  return long.map((f) => {
+    const end = f.tMs;
+    const start = end - f.frameMainThreadMs - f.framePeriodMs;
+    return {
+      tMs: f.tMs,
+      periodMs: f.framePeriodMs,
+      mainThreadMs: f.frameMainThreadMs,
+      gpuMs: f.gpuMs,
+      cameraMoving: f.cameraMoving,
+      events: events.filter((e) => e.tMs >= start && e.tMs <= end),
+      // Overlap, not containment: a long animation frame can start before
+      // the window and run into it.
+      loaf: loaf.filter((e) => e.tMs <= end && e.tMs + e.durationMs >= start),
+    };
+  });
 }
 
 /** Process-wide singleton — one recording at a time. */

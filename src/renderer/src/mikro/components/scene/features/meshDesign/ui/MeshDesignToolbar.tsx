@@ -26,7 +26,7 @@ import { ReconstructPanel } from "./ReconstructPanel";
 import { RadiusRow } from "./reconstructPanels";
 
 /**
- * The designer's in-viewport toolbar — ANNOTATE's `RoiToolbar` idiom: a row
+ * The designer's in-viewport toolbar — ANNOTATE's `AnnotationToolbar` idiom: a row
  * of tool buttons, the selected tool's panel stacked above it, a one-line
  * hint between. Everything a gesture needs sits next to where the pointer is.
  *

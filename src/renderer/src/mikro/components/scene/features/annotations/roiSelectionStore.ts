@@ -91,6 +91,14 @@ interface RoiSelectionState {
    * card falls back to the shape's box corner.
    */
   menuRoi: { roi: SelectedRoi; point: HoverPoint | null } | null;
+  /**
+   * The shape whose card is unfolded right now, peeking or pinned
+   * (`hover/AnnotationHoverCard`). Its layer draws what was made from it over
+   * it (`lib/annotations/derivedShapes`) while this holds.
+   */
+  cardRoi: { id: string; layerId: string } | null;
+  /** Set by the card as it unfolds; cleared (only if still this shape) as it folds. */
+  setCardRoi: (roi: { id: string; layerId: string } | null, previousId?: string) => void;
   openRoiMenu: (roi: SelectedRoi, point?: HoverPoint) => void;
   closeRoiMenu: () => void;
   selectOnlyRoi: (roi: SelectedRoi) => void;
@@ -99,6 +107,18 @@ interface RoiSelectionState {
   toggleSelectedRoi: (roi: SelectedRoi) => void;
   removeSelectedRoi: (roiId: string) => void;
   clearSelectedRois: () => void;
+  /**
+   * Run a pick after `delayMs` unless a shape starts first. Under a shape tool
+   * a single click picks the shape under it, but that click may be the first
+   * half of the double-click that starts a NEW shape — which must not pick
+   * anything. Nothing at that press can tell the two apart, so the pick waits
+   * out the double-click window; the double-click's second press cancels it
+   * (`cancelPendingPick`, from `shell/pointer/LeftPressArbiter`). A newer
+   * deferred pick replaces an older one.
+   */
+  deferPick: (pick: () => void, delayMs: number) => void;
+  /** A shape started: the click it began with picks nothing. */
+  cancelPendingPick: () => void;
   /**
    * Drop every selection belonging to layers that have left the scene.
    *
@@ -129,6 +149,14 @@ export const createRoiSelectionStore = () => {
   let graceTimer: ReturnType<typeof setTimeout> | null = null;
   let held = false;
   let enteredAt: HoverPoint | null = null;
+  // A pick waiting out the double-click window (`deferPick`); a timer, so
+  // closure, not state, like the hover grace.
+  let pickTimer: ReturnType<typeof setTimeout> | null = null;
+  const cancelPick = () => {
+    if (pickTimer === null) return;
+    clearTimeout(pickTimer);
+    pickTimer = null;
+  };
   const cancelGrace = () => {
     if (graceTimer === null) return;
     clearTimeout(graceTimer);
@@ -152,6 +180,14 @@ export const createRoiSelectionStore = () => {
         selectedRois: [],
         visibleRois: {},
         hoveredRoi: null,
+        cardRoi: null,
+        setCardRoi: (roi, previousId) =>
+          set((state) => {
+            // A fold clears only its own shape: a card that unfolded on another
+            // shape in the meantime keeps its overlay.
+            if (roi === null && previousId !== undefined && state.cardRoi?.id !== previousId) return;
+            state.cardRoi = roi;
+          }),
         hoverRoi: (roi, point) => {
           const current = get().hoveredRoi;
           // A held hover is the overlay's: its card or its menu is open on
@@ -224,6 +260,14 @@ export const createRoiSelectionStore = () => {
           set((state) => {
             state.selectedRois = [];
           }),
+        deferPick: (pick, delayMs) => {
+          cancelPick();
+          pickTimer = setTimeout(() => {
+            pickTimer = null;
+            pick();
+          }, delayMs);
+        },
+        cancelPendingPick: cancelPick,
         dropLayerSelections: (layerIds) =>
           set((state) => {
             const gone = new Set(layerIds);

@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, Radio, SquareDashed, Trash2 } from "lucide-react";
+import { Eye, EyeOff, GitBranch, Radio, SquareDashed, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 import { type SceneLayerFragment } from "@/mikro/api/graphql";
 import { useSceneAnnotations } from "./sceneVectors";
@@ -17,6 +17,7 @@ import {
 import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 import { AnnotationList, AnnotationSelection } from "./AnnotationList";
+import { partitionDerived } from "../../../../lib/annotations/derivedShapes";
 
 /**
  * A compact card for an `AnnotationLayer` in the Layers panel.
@@ -72,6 +73,7 @@ export const AnnotationLayerCard = memo(
     const hidden = layer.visible === false;
     const collection = layer.annotationCollection;
     const live = layer.liveAnnotations === true;
+    const showDerived = layer.showDerivedAnnotations === true;
 
     // The renderer runs this exact query for the same collection, so this is
     // a read of the one cache entry every draw, delete and live event is
@@ -79,6 +81,12 @@ export const AnnotationLayerCard = memo(
     // It does run on its own when the layer is HIDDEN (the renderer unmounts
     // then) — which is the point: the card still has to say what is in there.
     const annotations = useSceneAnnotations(collection?.id);
+
+    // Shapes made from other shapes of this collection: hidden unless the layer
+    // shows them, drawn as an overlay while their source's card is open.
+    const partition = useMemo(() => partitionDerived(annotations ?? []), [annotations]);
+    const derivedCount = partition.derived.length;
+    const listed = showDerived ? annotations : partition.roots;
 
     const byKind = useMemo(() => {
       const counts = new Map<string, number>();
@@ -167,6 +175,24 @@ export const AnnotationLayerCard = memo(
                 <Radio className="h-3 w-3" />
               </Button>
             )}
+            {derivedCount > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-5 w-5 shrink-0 ${
+                  showDerived ? "text-brand-light hover:text-brand-light" : "text-foreground/45 hover:text-foreground/90"
+                }`}
+                title={
+                  showDerived
+                    ? `Showing the ${derivedCount} shape(s) made from other shapes (refined, converted, split, merged). Click to show them only over their source's card (session)`
+                    : `${derivedCount} shape(s) made from other shapes are hidden; open a shape's card to see what was made from it. Click to draw them all (session)`
+                }
+                aria-pressed={showDerived}
+                onClick={() => patchSceneLayer(layer.id, { showDerivedAnnotations: !showDerived })}
+              >
+                <GitBranch className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -221,7 +247,7 @@ export const AnnotationLayerCard = memo(
         </div>
 
         {collection && annotations && annotations.length > 0 && (
-          <AnnotationList layer={layer} annotations={annotations} selectedIds={selectedIds} />
+          <AnnotationList layer={layer} annotations={listed ?? []} selectedIds={selectedIds} />
         )}
 
         {/* What the layer actually is: the collection it draws and the frame

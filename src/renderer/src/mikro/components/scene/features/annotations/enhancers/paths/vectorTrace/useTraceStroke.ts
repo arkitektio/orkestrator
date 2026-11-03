@@ -11,7 +11,10 @@ import {
   useTraceWaypoints,
   type TraceHopResult,
 } from "./useTraceHop";
-import { useRoiDrawingStoreApi } from "../../../roiDrawingStore";
+import {
+  activeTraceWeights,
+  useRoiDrawingStoreApi,
+} from "../../../roiDrawingStore";
 
 /**
  * The freehand half of the vector enhancer: a stroke dragged roughly along a
@@ -101,7 +104,7 @@ export const useTraceStroke = () => {
         values: context.extract(box),
         size: box.size,
         spacing: box.spacing,
-        weights: roiDrawingApi.getState().traceWeights,
+        weights: activeTraceWeights(roiDrawingApi.getState()),
         guide: {
           points: voxels.map(({ exact }) => [
             (exact[0] - box.origin[0]) / box.step[0],

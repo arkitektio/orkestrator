@@ -94,7 +94,7 @@ export const FixtureLayerCard = memo(
       <LayerCardShell
         icon={<Box className="h-3 w-3 text-brand-soft" />}
         tile="bg-brand/15"
-        title={layer.name?.trim() || model?.label || `fixture ${layerId}`}
+        title={model?.label || `fixture ${layerId}`}
         badges={unit ? <Badge>{unit}</Badge> : undefined}
         hidden={hidden}
         expanded={expanded}

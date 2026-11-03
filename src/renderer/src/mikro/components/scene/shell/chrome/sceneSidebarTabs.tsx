@@ -6,6 +6,7 @@ import { ProbeMetadata } from "../../features/annotations/ProbeMetadata";
 import { LayerControlPanel } from "../layerPanel/LayerControlPanel";
 import { MeshesPanel } from "../../features/meshes/MeshesPanel";
 import { ProbePanel } from "../../features/probe/ProbePanel";
+import { LongCommitProfiler } from "../../platform/perf/commitProfiler";
 
 /**
  * Scene panels as ModelPage sidebar tabs
@@ -100,10 +101,12 @@ export const SceneMeshesSidebar = () => (
 export const SceneProbeSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
     <SceneResultSink>
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-2">
-      <ProbePanel />
-      <ProbeMetadata />
-    </div>
+    <LongCommitProfiler id="probe-panel">
+      <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-2">
+        <ProbePanel />
+        <ProbeMetadata />
+      </div>
+    </LongCommitProfiler>
     </SceneResultSink>
   </SceneGuard>
 );

@@ -10,6 +10,7 @@ import {
   lensKindInfo,
   lensPins,
   pinSummary,
+  slicePins,
   windowSummary,
 } from "./lenses";
 
@@ -153,5 +154,12 @@ describe("lensPins", () => {
   it("has nothing to name on a whole lens or a container without anchors", () => {
     expect(lensPins(arrayLens())).toEqual([]);
     expect(lensPins(meshLens([{ axis: "z", min: 1, max: 1 }]))).toEqual([]);
+  });
+});
+
+describe("slicePins", () => {
+  it("reads a scene layer's slices by the same rule, without a LensSubject", () => {
+    expect(slicePins([{ axis: "c", start: 1, stop: 2 }, { axis: "z", start: 0, stop: 12 }])).toEqual([{ axis: "c", value: 1 }]);
+    expect(slicePins([{ axis: "c", start: null, stop: null }])).toEqual([]);
   });
 });

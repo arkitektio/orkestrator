@@ -101,6 +101,8 @@ export function isCameraMoving(
  * `CameraMatrixSync`, and has no React consumers — routing it through a store
  * would publish a render-hot write for something nothing renders from (P17).
  */
+import { perfMonitor } from "../perf/perfMonitor";
+
 let pointerInteracting = false;
 let wheelHoldUntil = Number.NEGATIVE_INFINITY;
 /**
@@ -124,14 +126,18 @@ export const WHEEL_INTERACTION_HOLD_MS = 250;
 
 export const cameraInteraction = {
   begin(): void {
+    perfMonitor.markEvent("gesture:begin"); // no-op unless a perf recording is armed
     pointerInteracting = true;
     interactionCount += 1;
   },
   end(): void {
+    perfMonitor.markEvent("gesture:end"); // no-op unless a perf recording is armed
     pointerInteracting = false;
   },
   /** A wheel event landed at `nowMs`: (re)arm the hold. */
   wheel(nowMs: number): void {
+    // Only the hold's START is an edge; every notch inside it just extends it.
+    if (nowMs >= wheelHoldUntil) perfMonitor.markEvent("gesture:wheel");
     wheelHoldUntil = nowMs + WHEEL_INTERACTION_HOLD_MS;
     interactionCount += 1;
   },

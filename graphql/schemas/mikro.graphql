@@ -287,6 +287,16 @@ type Annotation {
   creator: User
 
   """
+  The shapes made from this one -- refined, converted, split out of it or merged from it -- oldest first, in any collection. How each was made is on its own `derivedFrom`. Shapes, never containers: data computed from this shape is `derivedResidents`
+  """
+  derivedAnnotations: [Annotation!]!
+
+  """
+  The shapes this one was made from, and how, in the order its creator named them: the other end of `derivedAnnotations`. Empty for a shape drawn from nothing. Shape to shape only -- what *data* a shape was computed from is its collection's `derivedFrom`, and what was computed from it is `derivedResidents`
+  """
+  derivedFrom: [AnnotationDerivation!]!
+
+  """
   The lenses cut to this annotation with `createLens(annotation:)`, oldest cut first. A record of the act, not a relation in space: a lens is immutable and a shape is not, so moving the shape afterwards leaves these where they were cut -- `lenses(filters: {overlapsAnnotation})` is the question about where things are now. One lens may be listed by several shapes, since a lens is one row per selection. What was *computed* from the shape is `derivedResidents`
   """
   derivedLenses: [ArrayLens!]!
@@ -323,6 +333,11 @@ type Annotation {
 
   """Provenance entries for this annotation"""
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
+
+  """
+  The ids of the shapes this one was made from, in declared order: `derivedFrom` without the links, cheap enough for every shape of a scene's list. Empty for a shape drawn from nothing. What a viewer reads to tell a refinement from the shape it refines
+  """
+  sourceIds: [ID!]!
 
   """The stroke (outline) color of the geometry, as RGBA"""
   strokeColor: [Int!]
@@ -527,6 +542,32 @@ input AnnotationCollectionOrder @oneOf {
   createdAt: Ordering
   id: Ordering
   name: Ordering
+}
+
+"""
+That a shape was made from another shape, and how: a path refined, a rectangle converted to a polygon, a shape split or merged. A record of the act, never an edge in space -- both shapes are placed by their collections, and editing either afterwards changes nothing here
+"""
+type AnnotationDerivation {
+  """The shape that was made"""
+  child: Annotation!
+
+  """When the child was made from the source"""
+  createdAt: DateTime!
+
+  """Who made the child, or null when that user is gone"""
+  creator: User
+  id: ID!
+
+  """A free-form note on why or how, if one was given"""
+  reason: String
+
+  """How the child came from the source"""
+  relation: AnnotationRelation!
+
+  """
+  The shape it was made from. It cannot be deleted while this shape stands, unless the delete cascades to it
+  """
+  source: Annotation!
 }
 
 """
@@ -809,10 +850,43 @@ input AnnotationOrder @oneOf {
 }
 
 """
+How a shape came from the shape it names in `derivedFrom`: the act, not the algorithm (that is the creating task's). A record of where a new shape came from -- editing a shape in place is its history, never a derivation
+"""
+enum AnnotationRelation {
+  """
+  The same thing drawn as another kind: a rectangle as a polygon, a polygon's outline as a path, a path closed into a polygon. The source must be of a different kind
+  """
+  CONVERTED
+
+  """
+  One shape joined from several sources. Every source is named, each as MERGED, and there are at least two
+  """
+  MERGED
+
+  """
+  The same kind of shape, its geometry improved: a path smoothed or snapped to an edge, a polygon re-traced. The source must be of the same kind
+  """
+  REFINED
+
+  """
+  One of several shapes cut out of the source. Its siblings name the same source
+  """
+  SPLIT
+}
+
+"""One shape a new shape was made from, and how"""
+input AnnotationSourceInput {
+  annotation: ID!
+  reason: String = null
+  relation: AnnotationRelation!
+}
+
+"""
 One shape of a bulk draw: the per-annotation subset of CreateAnnotationInput, without the collection/scene target
 """
 input AnnotationSpecInput {
   coordinates: [CoordinateInput!] = null
+  derivedFrom: [AnnotationSourceInput!] = null
   description: String = null
   fillColor: [Int!] = null
   filled: Boolean = null
@@ -1392,6 +1466,16 @@ type ArrayLens implements Lens {
   The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record
   """
   toParent: Transformation
+
+  """
+  This lens' voxel size: how far one step along each of its axes reaches, read along the edges to the first space with units. The `canonical` one of `voxelSizes` -- decided by the edges' validity, so a person's calibration outranks the pixel size a converter read from the file. Empty when the lens reaches no physical space, or none by a sane route. Every axis the route scales is listed (a time step too); a voxel's spatial size is the SPACE entries. Never raises, so it is the form to put in a fragment
+  """
+  voxelSize: [AxisVoxelSize!]!
+
+  """
+  Every physical space this lens reaches with the edges, each by its best route and with the voxel size that route gives, canonical first. Read when `voxelSize` is not what you expected: a rival calibration, its validity, its route, or why it was passed over (`problem`)
+  """
+  voxelSizes: [VoxelSize!]!
 }
 
 """
@@ -1595,6 +1679,30 @@ enum AxisTypeChoices {
   SPECTRUM
   TIME
   VALUE
+}
+
+"""
+How far one step along a lens axis reaches in a physical space: the voxel size along that axis
+"""
+type AxisVoxelSize {
+  """The lens axis"""
+  axis: String!
+
+  """The physical axis it mostly lands on"""
+  physicalAxis: String!
+
+  """
+  How far one step along it reaches, in `unit`. A stepped lens' step is its own: `step: 2` reaches twice its dataset's voxel
+  """
+  size: Float!
+
+  """
+  That physical axis' kind. A calibration scales a time step or a spectral bin as well; a voxel's spatial size is the SPACE entries
+  """
+  type: AxisType!
+
+  """The unit of `size`: the unit of the physical axis it mostly lands on"""
+  unit: String!
 }
 
 """Beam splitter"""
@@ -1966,6 +2074,17 @@ input CameraStateInput {
   The volumetric view's zoom, in world units per screen pixel. Null to leave it to the viewer.
   """
   projectionScale: Float = null
+}
+
+"""
+Rows of one kind that go with a delete without being lineage: layers, lenses, axes
+"""
+type CascadeCount {
+  """How many"""
+  count: Int!
+
+  """What they are, singular -- e.g. 'layer', 'annotation lens'"""
+  label: String!
 }
 
 """Input for changing an existing folder's name or parent"""
@@ -2973,6 +3092,7 @@ Input for drawing an annotation. Provide exactly one of `collection` (append to 
 input CreateAnnotationInput {
   collection: ID = null
   coordinates: [CoordinateInput!] = null
+  derivedFrom: [AnnotationSourceInput!] = null
   description: String = null
   fillColor: [Int!] = null
   filled: Boolean = null
@@ -3709,19 +3829,75 @@ input DeleteAnimationInput {
 
 """Input for deleting an annotation collection by ID"""
 input DeleteAnnotationCollectionInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the annotation collection to delete"""
   id: ID!
 }
 
 """Input for deleting an annotation by ID"""
 input DeleteAnnotationInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
   id: ID!
 }
 
 """Input for deleting an array dataset by ID"""
 input DeleteArrayDatasetInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the array dataset to delete"""
   id: ID!
+}
+
+"""
+Why a delete cannot go ahead: one row it would delete that may not be deleted
+"""
+type DeleteBlocker {
+  """Its ID"""
+  id: ID!
+
+  """`<kind>:<id>` of the row that blocks"""
+  key: ID!
+
+  """What it is"""
+  kind: LineageNodeKind!
+
+  """
+  Why: not yours to delete, a guard (a layer draws through it, a picker names it) or a reference that must not be deleted with it
+  """
+  reason: String!
+}
+
+"""
+One thing a delete would take along: something made from what is deleted, directly or further down
+"""
+type DeleteCasualty {
+  """Hops from what is deleted: 1 for something made from it directly"""
+  depth: Int!
+
+  """Its ID, as its own query takes it"""
+  id: ID!
+
+  """`<kind>:<id>`, as the lineage walk keys it"""
+  key: ID!
+
+  """What it is"""
+  kind: LineageNodeKind!
+
+  """Its name"""
+  name: String!
+
+  """The key of what it was made from on its nearest path"""
+  parent: ID!
 }
 
 """
@@ -3748,12 +3924,22 @@ input DeleteCoordinateSystemInput {
 
 """Input for deleting a file by ID"""
 input DeleteFileInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the file to delete"""
   id: ID!
 }
 
 """Input for deleting a fixture by ID"""
 input DeleteFixtureInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the fixture to delete"""
   id: ID!
 }
@@ -3778,6 +3964,11 @@ input DeleteLensInput {
 
 """Input for deleting a mesh collection by ID"""
 input DeleteMeshCollectionInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the mesh collection to delete"""
   id: ID!
 }
@@ -3789,8 +3980,51 @@ input DeleteMetricInput {
 
 """Input for deleting a network collection by ID"""
 input DeleteNetworkCollectionInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the network collection to delete"""
   id: ID!
+}
+
+"""
+What deleting one object would cost, without deleting it: everything made from it (which a plain delete refuses over, and `cascade: true` takes along), what would stop the delete, and what else cascades with it
+"""
+type DeletePreflight {
+  """
+  What stops the delete, with or without `cascade`. Empty when it may go ahead
+  """
+  blockers: [DeleteBlocker!]!
+
+  """
+  Other rows that would go with it, by kind, e.g. the layers drawing it and its lenses
+  """
+  cascadeCounts: [CascadeCount!]!
+
+  """
+  Everything made from it, transitively, nearest first. Non-empty means the delete needs `cascade: true`
+  """
+  casualties: [DeleteCasualty!]!
+
+  """
+  Whether the delete can go ahead -- with `cascade: true` when `needsCascade`
+  """
+  deletable: Boolean!
+
+  """
+  Whether a plain delete would be refused because something was made from it
+  """
+  needsCascade: Boolean!
+
+  """`<kind>:<id>` of what would be deleted"""
+  target: ID!
+
+  """
+  Whether more was made from it than one delete may take along: refused even with `cascade`; delete from the leaves
+  """
+  truncated: Boolean!
 }
 
 """
@@ -3821,12 +4055,22 @@ input DeleteSceneSnapshotInput {
 
 """Input for deleting a sparse dataset by ID"""
 input DeleteSparseDatasetInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the sparse dataset to delete"""
   id: ID!
 }
 
 """Input for deleting a table dataset by ID"""
 input DeleteTableDatasetInput {
+  """
+  Also delete everything made from it -- the closure `preflightDelete<Model>` lists: derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset. Without it, a delete of something anything was made from is refused, naming what
+  """
+  cascade: Boolean! = false
+
   """The ID of the table dataset to delete"""
   id: ID!
 }
@@ -6954,15 +7198,18 @@ That one node was made from another. Always parent to child, the way provenance 
 """
 type LineageEdge {
   """
-  (DERIVATION) The shape the child was computed along or within, if the derivation named one
+  (DERIVATION) The shape the child was computed along or within, if the derivation named one. Root a walk at it (`kind: ANNOTATION`) for the shape's own lineage
   """
   annotationId: ID
+
+  """(SHAPE_DERIVATION) How the child shape was made from the parent shape"""
+  annotationRelation: AnnotationRelation
 
   """Unique within the lineage and stable across walks"""
   key: ID!
 
   """
-  A derivation between containers, an ingest from a file, or an export to one
+  A derivation between containers or out of a shape, an ingest from a file, an export to one, or a shape made from a shape
   """
   kind: LineageEdgeKind!
 
@@ -6996,11 +7243,14 @@ type LineageEdge {
   valueRelation: ValueRelation
 }
 
-"""What a lineage edge records"""
+"""
+What a lineage edge records: a derivation (between containers, or from a shape to data computed along or within it), an ingest, an export, or a shape made from a shape
+"""
 enum LineageEdgeKind {
   DERIVATION
   EXPORT
   INGEST
+  SHAPE_DERIVATION
 }
 
 """
@@ -7110,8 +7360,11 @@ type LineageNode {
   taskId: ID
 }
 
-"""What a lineage node is: one of the containers, or a file"""
+"""
+What a lineage node is: one of the containers, a file, or a shape. A shape is reached only by walking from one -- rooted at it, or from a shape made from it -- never fanned out to from its collection
+"""
 enum LineageNodeKind {
+  ANNOTATION
   ANNOTATION_COLLECTION
   DATASET
   FILE
@@ -10555,6 +10808,51 @@ type Query {
   permissions(identifier: String!, object: ID!): [UserObjectPermission!]!
 
   """
+  What deleting this annotation (the shapes refined, converted, split or merged from it count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteAnnotation(id: ID!): DeletePreflight!
+
+  """
+  What deleting this annotation collection (its shapes, and whatever was made from them elsewhere, count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteAnnotationCollection(id: ID!): DeletePreflight!
+
+  """
+  What deleting this array dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteArrayDataset(id: ID!): DeletePreflight!
+
+  """
+  What deleting this file (the series converted out of it count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteFile(id: ID!): DeletePreflight!
+
+  """
+  What deleting this fixture would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteFixture(id: ID!): DeletePreflight!
+
+  """
+  What deleting this mesh collection would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteMeshCollection(id: ID!): DeletePreflight!
+
+  """
+  What deleting this network collection would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteNetworkCollection(id: ID!): DeletePreflight!
+
+  """
+  What deleting this sparse dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteSparseDataset(id: ID!): DeletePreflight!
+
+  """
+  What deleting this table dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
+  """
+  preflightDeleteTableDataset(id: ID!): DeletePreflight!
+
+  """
   The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time
   """
   roots(filters: RootFilter = null, kinds: [LineageNodeKind!] = null, pagination: OffsetPaginationInput = null): [RootNode!]!
@@ -13954,6 +14252,40 @@ interface Visualization {
   worldCoordinateSystem: CoordinateSystem!
 }
 
+"""
+A lens' voxel size in one physical space it reaches with the edges: one of the first spaces on its way whose axes all carry units, by the best route there. Several can be reached and they can disagree -- an imported pixel size and a later calibration -- so each is listed, and exactly one is `canonical`: the best by the ranking placements use (the weakest `validity` on the route, highest first; then fewest hops; then the oldest edges). So a MANUAL calibration outranks the INFERRED one a converter read from the file, and a VALIDATED one outranks both. Nothing about it is stored: the edges decide
+"""
+type VoxelSize {
+  """
+  One entry per lens axis the route scales, in the lens' axis order. An axis in `a.u.` is not listed: it measures nothing
+  """
+  axes: [AxisVoxelSize!]!
+
+  """
+  Whether this is the lens' one voxel size, the one `ArrayLens.voxelSize` answers
+  """
+  canonical: Boolean!
+
+  """How many edges the route takes, from the lens' own space"""
+  hops: Int!
+
+  """
+  Why this route cannot be a calibration -- it relates a SPACE axis to another kind of axis, measures space in arbitrary units, or does not compose -- or null. A route with a problem is never canonical
+  """
+  problem: String
+
+  """The edges of the route, from the lens' own space to this one"""
+  route: [Transformation!]!
+
+  """The physical space"""
+  system: CoordinateSystem!
+
+  """
+  The weakest validity on the route: the first thing the ranking compares
+  """
+  validity: PlacementValidity!
+}
+
 """A retarder: a fraction of a wave, at an angle"""
 type WaveplateElement implements OpticalElement {
   angleDeg: Float
@@ -14091,7 +14423,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

@@ -92,6 +92,7 @@ export const IDENTIFIER_BY_KIND: Partial<Record<LineageNodeKind, string>> = {
   [LineageNodeKind.TableDataset]: "@mikro/tabledataset",
   [LineageNodeKind.SparseDataset]: "@mikro/sparsedataset",
   [LineageNodeKind.MeshCollection]: "@mikro/meshcollection",
+  [LineageNodeKind.Annotation]: "@mikro/annotation",
 };
 
 /** The lens kind each container kind is cut with: the `__typename` its lens structures carry. */
@@ -122,6 +123,7 @@ export const KIND_SEGMENT: Record<LineageNodeKind, string> = {
   [LineageNodeKind.NetworkCollection]: "networkcollection",
   [LineageNodeKind.AnnotationCollection]: "annotationcollection",
   [LineageNodeKind.Fixture]: "fixture",
+  [LineageNodeKind.Annotation]: "annotation",
 };
 
 export const kindFromSegment = (segment: string | undefined): LineageNodeKind | undefined =>
@@ -141,6 +143,7 @@ export const KIND_LABEL: Record<LineageNodeKind, string> = {
   [LineageNodeKind.NetworkCollection]: "Network collection",
   [LineageNodeKind.AnnotationCollection]: "Annotation collection",
   [LineageNodeKind.Fixture]: "Fixture",
+  [LineageNodeKind.Annotation]: "Annotation",
 };
 
 export type FlowDataNode = {
@@ -177,6 +180,8 @@ export const taskNodeId = (taskId: string) => `task:${taskId}`;
 const edgeLabel = (edge: LineageEdgeData): string => {
   if (edge.kind === LineageEdgeKind.Ingest) return "ingest";
   if (edge.kind === LineageEdgeKind.Export) return "export";
+  // A shape made from a shape says how: refined, converted, split, merged.
+  if (edge.kind === LineageEdgeKind.ShapeDerivation) return edge.annotationRelation?.toLowerCase() ?? "derived";
   return "derived";
 };
 

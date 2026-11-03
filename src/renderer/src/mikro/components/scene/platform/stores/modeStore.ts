@@ -67,6 +67,8 @@ export const DESIGN_TOOL_GESTURES: Record<
   trim: "screen",
 };
 export type DisplayMode = "2D" | "3D";
+/** See `ModeState.depthView`. */
+export type DepthView = "hues" | "relief";
 
 export type DisplayModeOption = {
   label: string;
@@ -163,6 +165,19 @@ export interface ModeState {
   handHeld: boolean;
   setHandHeld: (held: boolean) => void;
   /**
+   * The depth view, while its key is held (`KeyboardModeController`):
+   *  - `"hues"` (Q): 3D intensity volumes recoloured by view depth (warm near,
+   *    cool far, brightness = intensity), relief-shaded;
+   *  - `"relief"` (Shift+Q): the normal colours, relief-shaded.
+   * Relief = lit by a surface normal taken from the depth of neighbouring
+   * rays: the compositor runs a packed-depth pass into its own target and
+   * shades from it (`depthCodeNodes.ts`); runtime uniforms, never a material
+   * rebuild. Display-space only (like `cinematic`, C1): winner selection, clim
+   * and the probe are untouched. Session-only.
+   */
+  depthView: DepthView | null;
+  setDepthView: (view: DepthView | null) => void;
+  /**
    * Who the left press in flight belongs to, decided at press time by
    * `shell/pointer/LeftPressArbiter` (`navigationBindings.leftPressOwner`).
    * Tools skip a press — and the click it ends in — that is the camera's.
@@ -258,6 +273,11 @@ export const createModeStore = ({
     setHandHeld: (held) =>
       set((state) => {
         if (state.handHeld !== held) state.handHeld = held;
+      }),
+    depthView: null,
+    setDepthView: (view) =>
+      set((state) => {
+        if (state.depthView !== view) state.depthView = view;
       }),
     cinematic: false,
     isoThreshold: 0.5,

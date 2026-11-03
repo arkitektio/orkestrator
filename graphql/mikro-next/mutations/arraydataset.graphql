@@ -1,3 +1,5 @@
-mutation DeleteArrayDataset($id: ID!) {
-  deleteArrayDataset(input: { id: $id })
+# `cascade` takes along everything made from it (see PreflightDeleteArrayDataset);
+# without it a delete of something anything was made from is refused.
+mutation DeleteArrayDataset($id: ID!, $cascade: Boolean = false) {
+  deleteArrayDataset(input: { id: $id, cascade: $cascade })
 }

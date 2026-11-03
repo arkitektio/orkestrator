@@ -85,6 +85,12 @@ export type AnnotationLayerSessionState = {
    * and then only our own draws and deletes change it (never polled).
    */
   liveAnnotations?: boolean;
+  /**
+   * Draw the shapes made from other shapes of the collection too (refinements,
+   * conversions, split pieces). Off by default: a derived shape is drawn only
+   * as an overlay while its source's card is open (`lib/annotations/derivedShapes`).
+   */
+  showDerivedAnnotations?: boolean;
 };
 
 /** A polymorphic scene layer plus its session-local render state. */
@@ -504,6 +510,7 @@ export const createSceneStore = ({
             showNodesOverride: previous.showNodesOverride,
             directedOverride: previous.directedOverride,
             liveAnnotations: previous.liveAnnotations,
+            showDerivedAnnotations: previous.showDerivedAnnotations,
           }),
         });
 

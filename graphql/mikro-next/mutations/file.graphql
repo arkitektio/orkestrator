@@ -10,6 +10,8 @@ mutation from_file_like(
 
 
 
-mutation DeleteFile($id: ID!) {
-  deleteFile(input: { id: $id })
+# `cascade` takes along everything made from it (see PreflightDeleteFile);
+# without it a delete of something anything was made from is refused.
+mutation DeleteFile($id: ID!, $cascade: Boolean = false) {
+  deleteFile(input: { id: $id, cascade: $cascade })
 }

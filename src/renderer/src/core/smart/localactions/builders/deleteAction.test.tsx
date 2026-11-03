@@ -112,3 +112,72 @@ describe("buildDeleteAction — multi selection", () => {
     expect(service.evicted).toEqual(["Scene:1", "Scene:2"]);
   });
 });
+
+describe("buildDeleteAction — preflight", () => {
+  const summary = (over: Partial<import("./deleteAction").DeletePreflightSummary> = {}) => ({
+    blockers: [],
+    casualtyCount: 0,
+    description: "",
+    truncated: false,
+    skipIds: [],
+    casualtyKeys: [],
+    ...over,
+  });
+  const withPreflight = (result: ReturnType<typeof summary>) =>
+    buildDeleteAction({
+      title: "Delete Dataset",
+      identifier: "@mikro/arraydataset",
+      service: "mikro" as never,
+      typename: "ArrayDataset",
+      mutation: {} as never,
+      preflight: async () => result,
+    });
+  const runWith = (action: ReturnType<typeof buildDeleteAction>, service: { client: unknown }, confirm: () => Promise<boolean>, ids: string[]) =>
+    action.execute({
+      state: { left: ids.map((id) => structure("@mikro/arraydataset", id)), isCommand: false },
+      services: { mikro: service },
+      onProgress: () => {},
+      abortSignal: new AbortController().signal,
+      modifiers: { ctrlKey: true, shiftKey: false, altKey: false, metaKey: false },
+      confirm,
+      dialog: {},
+      navigate: () => {},
+      location: window.location,
+    } as never);
+
+  it("asks even with Ctrl when something goes along, and cascades", async () => {
+    const service = makeClient(async () => ({ data: {} }));
+    const confirm = vi.fn(async () => true);
+    await runWith(withPreflight(summary({ casualtyCount: 2, description: "This also deletes 2 things" })), service, confirm, ["1"]);
+
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ description: expect.stringContaining("This also deletes 2 things"), confirmLabel: "Delete all 3" }));
+    expect(service.client.mutate).toHaveBeenCalledWith(expect.objectContaining({ variables: { id: "1", cascade: true } }));
+  });
+
+  it("deletes nothing when the user keeps it", async () => {
+    const service = makeClient(async () => ({ data: {} }));
+    await runWith(withPreflight(summary({ casualtyCount: 1, description: "x" })), service, async () => false, ["1"]);
+    expect(service.client.mutate).not.toHaveBeenCalled();
+  });
+
+  it("refuses before any dialog when something blocks", async () => {
+    const service = makeClient(async () => ({ data: {} }));
+    const confirm = vi.fn(async () => true);
+    await expect(runWith(withPreflight(summary({ blockers: ["Only the creator can delete this"] })), service, confirm, ["1"])).rejects.toThrow("Only the creator");
+    expect(confirm).not.toHaveBeenCalled();
+    expect(service.client.mutate).not.toHaveBeenCalled();
+  });
+
+  it("skips a target another target's cascade takes along", async () => {
+    const service = makeClient(async () => ({ data: {} }));
+    await runWith(withPreflight(summary({ casualtyCount: 1, description: "x", skipIds: ["2"] })), service, async () => true, ["1", "2"]);
+    expect(service.client.mutate).toHaveBeenCalledTimes(1);
+    expect(service.client.mutate).toHaveBeenCalledWith(expect.objectContaining({ variables: { id: "1", cascade: true } }));
+  });
+
+  it("is the plain delete when nothing was made from it", async () => {
+    const service = makeClient(async () => ({ data: {} }));
+    await runWith(withPreflight(summary()), service, async () => true, ["1"]);
+    expect(service.client.mutate).toHaveBeenCalledWith(expect.objectContaining({ variables: { id: "1" } }));
+  });
+});

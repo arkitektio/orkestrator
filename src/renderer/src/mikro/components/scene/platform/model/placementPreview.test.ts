@@ -151,7 +151,8 @@ describe("prunePreviewBases", () => {
 
 describe("hostLayersKey", () => {
   const path = [{ inverted: false, transformation: { id: "e1", version: 2 } }];
-  const layer = { id: "a", __typename: "ImageLayer", name: "DAPI", visible: true, asAffine: placement(1), pathToWorld: path };
+  // Named by its lens (the anchor label at the channel it pins), never by itself.
+  const layer = { id: "a", __typename: "ImageLayer", lens: { name: "DAPI" }, visible: true, asAffine: placement(1), pathToWorld: path };
 
   it("summarizes placement and the final edge", () => {
     const [host] = toHostLayers([layer]);

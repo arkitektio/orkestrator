@@ -40,7 +40,8 @@ export const AnnotationInteriorBatch = ({
   /** A new shape is being drawn: grayed out, a color-only pass too. */
   muted: boolean;
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
+  /** Whether the click was taken — a declined one propagates to the drawer. */
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => boolean;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
@@ -104,8 +105,9 @@ export const AnnotationInteriorBatch = ({
         if (event.delta > DRAG_THRESHOLD_PX) return;
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
-        event.stopPropagation();
-        onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
+        if (onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event))) {
+          event.stopPropagation();
+        }
       }
     : undefined;
 

@@ -503,6 +503,16 @@ export function startNodePlanTracking({
     }
 
     if (changed) {
+      if (perfMonitor.isRecording()) {
+        // A target-level flip re-renders the layer components (their one
+        // React subscription to the plan); a node-list change does not.
+        const flips = Object.keys(nextPlans).filter(
+          (layerId) => prevPlans[layerId]?.targetLevel !== nextPlans[layerId]?.targetLevel,
+        );
+        perfMonitor.markEvent("plans:write", {
+          info: flips.length > 0 ? `targetLevel ${flips.map((id) => `${id}→L${nextPlans[id]?.targetLevel}`).join(",")}` : undefined,
+        });
+      }
       viewerState.setNodePlans(nextPlans);
     }
 
@@ -542,7 +552,9 @@ export function startNodePlanTracking({
       if (!stopped) {
         lastRecomputeAt = performance.now();
         perfMonitor.markReplan(); // no-op unless a perf recording is armed
+        const spanStartedAt = perfMonitor.spanStart();
         recompute();
+        perfMonitor.markSpan("replan", spanStartedAt);
         coldOpenTimeline.stamp("firstPlan");
       }
     });

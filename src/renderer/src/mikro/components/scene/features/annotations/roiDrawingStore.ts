@@ -47,6 +47,35 @@ export const isEnhanceableTool = (
 ): tool is "LINE" | "POLYGON" | "PATH" =>
   tool === "LINE" || tool === "POLYGON" || tool === "PATH";
 
+/**
+ * The two enhancers that drive the same edge tracer: "vector-trace" for open
+ * strokes (LINE / PATH), "outline-trace" for the closed POLYGON. One tracer,
+ * two enhancers, because an outline wants its own tuning — a boundary is
+ * where the brightness changes, a filament is where it is high — and its own
+ * on/off: tracing lines does not mean wanting traced polygons.
+ */
+export type TraceEnhancerId = "vector-trace" | "outline-trace";
+
+export const traceEnhancerFor = (
+  tool: AnnotateTool | null | undefined,
+): TraceEnhancerId | null =>
+  tool === "POLYGON"
+    ? "outline-trace"
+    : tool === "LINE" || tool === "PATH"
+      ? "vector-trace"
+      : null;
+
+/**
+ * Outlines start on the boundary term: an edge should run where the image
+ * changes, not along its brightest voxels.
+ */
+export const DEFAULT_OUTLINE_WEIGHTS: TraceWeights = {
+  intensity: 0.25,
+  gradient: 1,
+  straightness: 0.25,
+  invert: false,
+};
+
 export const DRAWING_TOOL_TO_ROI_KIND: Record<DrawingTool, AnnotationKind> = {
   RECTANGLE: AnnotationKind.Rectangle,
   ELLIPSE: AnnotationKind.Ellipse,
@@ -84,7 +113,7 @@ export const isDrawingTool = (
  * the state keeps the import graph acyclic.
  */
 export type AnnotationEnhancerId =
-  | "vector-trace"
+  | TraceEnhancerId
   | "intensity-skeleton";
 
 /**
@@ -153,8 +182,8 @@ export interface RoiDrawingState {
    */
   primitiveSessionActive: boolean;
   /**
-   * Which enhancers are on. For "vector-trace": each clicked edge of an
-   * enhanceable tool (LINE/POLYGON/PATH) is traced through the data instead of
+   * Which enhancers are on. For the trace enhancers: each clicked edge of the
+   * tool they serve (`traceEnhancerFor`) is traced through the data instead of
    * drawn straight. All off by default — plain clicking must stay plain.
    */
   enhancersOn: Partial<Record<AnnotationEnhancerId, boolean>>;
@@ -163,16 +192,19 @@ export interface RoiDrawingState {
    * What the vector enhancer's A* considers cheap to travel through. Held here
    * (not in a component) because the panel edits them while a chain is
    * half-drawn, and the drawer reads them at click time — the next hop should
-   * answer to the slider the user just moved.
+   * answer to the slider the user just moved. One set per trace enhancer;
+   * read the armed tool's with `activeTraceWeights`.
    */
-  traceWeights: TraceWeights;
-  setTraceWeights: (weights: Partial<TraceWeights>) => void;
+  traceWeights: Record<TraceEnhancerId, TraceWeights>;
+  setTraceWeights: (id: TraceEnhancerId, weights: Partial<TraceWeights>) => void;
   /**
    * How far an enhanced trace may leave the slices its waypoints sit on
    * (`traceBox.TraceDepth`), remembered PER VIEW: the flat view starts on
    * "2D" — stay on the drawn slice, or on the slices a scrubbed chain spans —
    * and the volume on "3D". Both defaults trace exactly as each view did
    * before the choice existed (`traceDepthPlan` keeps the volume's box).
+   * Line/path tracing only: an outline always traces in its view's own
+   * depth (`activeTraceDepth`).
    */
   traceDepth: Record<DisplayMode, TraceDepth>;
   setTraceDepth: (displayMode: DisplayMode, depth: TraceDepth) => void;
@@ -235,10 +267,13 @@ export const createRoiDrawingStore = () =>
         set((state) => {
           state.enhancersOn[id] = on;
         }),
-      traceWeights: DEFAULT_TRACE_WEIGHTS,
-      setTraceWeights: (weights) =>
+      traceWeights: {
+        "vector-trace": DEFAULT_TRACE_WEIGHTS,
+        "outline-trace": DEFAULT_OUTLINE_WEIGHTS,
+      },
+      setTraceWeights: (id, weights) =>
         set((state) => {
-          state.traceWeights = { ...state.traceWeights, ...weights };
+          state.traceWeights[id] = { ...state.traceWeights[id], ...weights };
         }),
       traceDepth: { "2D": "2D", "3D": "3D" },
       setTraceDepth: (displayMode, depth) =>
@@ -314,3 +349,29 @@ export {
   useRoiDrawingStore,
   useRoiDrawingStoreApi,
 };
+
+/** Whether the armed tool's trace enhancer is on. */
+export const activeTraceOn = (state: RoiDrawingState): boolean => {
+  const id = traceEnhancerFor(state.activeTool);
+  return id !== null && (state.enhancersOn[id] ?? false);
+};
+
+/**
+ * The armed tool's trace weights — the stored object itself, so a
+ * subscription only fires when that set is edited.
+ */
+export const activeTraceWeights = (state: RoiDrawingState): TraceWeights =>
+  state.traceWeights[traceEnhancerFor(state.activeTool) ?? "vector-trace"];
+
+/**
+ * How far the armed tool's trace may leave its slices. A polygon is a flat
+ * outline in the flat view and a probed one in the volume, so it traces in
+ * its view's own depth; lines and paths use the per-view choice.
+ */
+export const activeTraceDepth = (
+  state: RoiDrawingState,
+  displayMode: DisplayMode,
+): TraceDepth =>
+  traceEnhancerFor(state.activeTool) === "outline-trace"
+    ? displayMode
+    : state.traceDepth[displayMode];

@@ -68,6 +68,14 @@ export const KeyboardModeController = () => {
     // down (`platform/input/navigationBindings`).
     const releaseHand = () => modeApi.getState().setHandHeld(false);
 
+    // Q is the depth view, held: depth hues, relief-shaded — or with Shift
+    // the normal colours, relief-shaded (`modeStore.depthView`). Not a mode —
+    // tools keep working.
+    const releaseDepth = () => {
+      const mode = modeApi.getState();
+      if (mode.depthView) mode.setDepthView(null);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         e.code === "Space" &&
@@ -119,6 +127,15 @@ export const KeyboardModeController = () => {
           modeApi.getState().selectDesignTool(designKey.id, true);
           return;
         }
+      }
+
+      // `q`: hold for the depth view (Shift: keep the normal colours). 3D
+      // only — a 2D slab has one depth. Before Shift+S's crop handling cannot
+      // matter: the key is lowercased, so Shift+Q arrives here as "q".
+      if (key === "q") {
+        const mode = modeApi.getState();
+        if (mode.displayMode === "3D") mode.setDepthView(e.shiftKey ? "relief" : "hues");
+        return;
       }
 
       // `s`: enter the crop mode. Nothing is drawn yet — the box starts with a
@@ -193,6 +210,7 @@ export const KeyboardModeController = () => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") releaseHand();
       const key = e.key.toLowerCase();
+      if (key === "q") releaseDepth();
       if (heldToolKey === key) releaseTool();
       if (heldKeyRef.current !== key) return;
       releaseHold();
@@ -204,6 +222,7 @@ export const KeyboardModeController = () => {
       releaseHold();
       releaseTool();
       releaseHand();
+      releaseDepth();
     };
 
     const handleWheel = (e: WheelEvent) => {

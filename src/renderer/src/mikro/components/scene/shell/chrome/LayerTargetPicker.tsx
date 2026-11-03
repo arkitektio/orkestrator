@@ -12,7 +12,7 @@ import { identityOf } from "../../platform/model/objectIdentity";
 import type { LayerState } from "../../platform/model/layerModel";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
-import { BarTooltip } from "./BarTooltip";
+import { BarTooltip } from "../../platform/layerui/BarTooltip";
 
 /**
  * Which layers the scene's pointer work involves, as one control-bar button
@@ -140,7 +140,7 @@ const LayerTargetList = () => {
     s.layers
       .map(
         (l) =>
-          `${l.id}:${l.visible === false ? 0 : 1}:${l.name ?? ""}:${l.__typename}:${identityOf(
+          `${l.id}:${l.visible === false ? 0 : 1}:${l.lens.name ?? ""}:${l.__typename}:${identityOf(
             l.lens,
           )}:${l.phasors.length}:${l.channels.length}`,
       )

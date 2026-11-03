@@ -309,6 +309,20 @@ export type LensPin = { axis: string; value: number };
 const NAMEABLE: ReadonlySet<LensTypename> = new Set(["ArrayLens", "TableLens", "SparseLens"]);
 
 /**
+ * The positions an ARRAY lens pins, from its slices alone: each slice keeping one
+ * index. Structural, so a lens fragment that carries no `LensSubject` (a scene
+ * layer's) reads the same rule `lensPins` applies.
+ */
+export const slicePins = (
+  slices: readonly { axis: string; start?: number | null; stop?: number | null }[],
+): LensPin[] =>
+  slices.flatMap((slice) =>
+    slice.start != null && slice.stop != null && slice.stop - slice.start === 1
+      ? [{ axis: slice.axis, value: slice.start }]
+      : [],
+  );
+
+/**
  * The positions a lens pins, in its selection's order: a slice keeping one index
  * (`stop - start === 1`), a window with `min === max`. The server's rule
  * (`coords.pins`): these are what a lens is named by — `setPositionLabel` names
@@ -317,13 +331,7 @@ const NAMEABLE: ReadonlySet<LensTypename> = new Set(["ArrayLens", "TableLens", "
  */
 export const lensPins = (lens: LensSubjectFragment): LensPin[] => {
   if (!lens.__typename || !NAMEABLE.has(lens.__typename)) return [];
-  if (lens.__typename === "ArrayLens") {
-    return lens.slices.flatMap((slice) =>
-      slice.start != null && slice.stop != null && slice.stop - slice.start === 1
-        ? [{ axis: slice.axis, value: slice.start }]
-        : [],
-    );
-  }
+  if (lens.__typename === "ArrayLens") return slicePins(lens.slices);
   return lens.windows.flatMap((window) =>
     window.min != null && window.min === window.max ? [{ axis: window.axis, value: window.min }] : [],
   );

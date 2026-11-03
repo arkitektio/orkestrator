@@ -58,3 +58,14 @@ describe("NameScope", () => {
     expect(() => outer("ch")).toThrow(/flat WGSL scope/);
   });
 });
+
+describe("NameScope.reset", () => {
+  it("lets a rebuild claim the same names again, and still catches repeats within it", () => {
+    const scope = new NameScope();
+    const names = scope.prefixed("m0");
+    names("agS");
+    scope.reset();
+    expect(() => names("agS")).not.toThrow();
+    expect(() => names("agS")).toThrow(/duplicate name/);
+  });
+});

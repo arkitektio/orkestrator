@@ -18,7 +18,10 @@ import {
   type TraceLayerContext,
   type TraceWaypoint,
 } from "./useTraceHop";
-import { useRoiDrawingStoreApi } from "../../../roiDrawingStore";
+import {
+  activeTraceWeights,
+  useRoiDrawingStoreApi,
+} from "../../../roiDrawingStore";
 
 /**
  * The live-wire: once an anchor is placed in the flat view, the rubber band
@@ -99,7 +102,7 @@ export const useLiveWire = () => {
           values: context.extract(box),
           size: box.size,
           spacing: box.spacing,
-          weights: roiDrawingApi.getState().traceWeights,
+          weights: activeTraceWeights(roiDrawingApi.getState()),
           seed: traceNodeOf(box, seed.voxel),
         })
         .then(

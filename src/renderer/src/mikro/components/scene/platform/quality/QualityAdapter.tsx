@@ -10,6 +10,7 @@ import {
 import { getGpuKey, type SceneRenderer } from "../gpu/sceneRenderer";
 import { ladderFeedforwardPassCount } from "../gpu/volumeCompositor";
 import { useViewStoreApi } from "../stores/viewStore";
+import { perfMonitor } from "../perf/perfMonitor";
 
 /**
  * React binding for the quality governor (P19): feeds frame times in, applies
@@ -93,6 +94,7 @@ export const QualityAdapter = () => {
    * learning: that frame measures the render-target realloc, not the tier —
    * and feeding it back is what made the ladder self-amplify. */
   const applyDpr = (dpr: number) => {
+    perfMonitor.markEvent("dpr", { info: String(dpr) }); // no-op unless a perf recording is armed
     appliedDprRef.current = dpr;
     setDpr(dpr);
     lastFrameAtRef.current = null;
@@ -212,6 +214,7 @@ export const QualityAdapter = () => {
         if (viewApi.getState().cameraMoving || qualityGovernor.isStreaming()) return;
         const dpr = resolveDpr(qualityGovernor.getProfile(), initialDpr, false);
         if (dpr !== appliedDprRef.current) {
+          perfMonitor.markEvent("dpr", { info: String(dpr) }); // no-op unless recording
           appliedDprRef.current = dpr;
           setDpr(dpr);
           // Never learn from the realloc frame this setDpr causes.

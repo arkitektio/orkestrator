@@ -20,6 +20,26 @@ type DeleteActionServiceKey<TAppOrServices> = Extract<
   string
 >;
 
+/**
+ * What a delete would cost, as the service that owns the structures answers it
+ * (mikro: `preflightDelete<Model>`). Neutral on purpose: the builder knows no
+ * service's documents, only what to say and whether to send `cascade`.
+ */
+export type DeletePreflightSummary = {
+  /** Why the delete cannot go ahead at all, one sentence each. */
+  blockers: string[];
+  /** How many things made from the targets would go with them. */
+  casualtyCount: number;
+  /** One sentence naming them, for the confirm dialog. Empty when nothing goes along. */
+  description: string;
+  /** More would go along than one delete may take: refused. */
+  truncated: boolean;
+  /** Targets another target's cascade takes along: not deleted on their own. */
+  skipIds: string[];
+  /** The service's keys of what would go along (mikro: `<kind>:<id>`), for cache upkeep. */
+  casualtyKeys: string[];
+};
+
 /** One structure, or several that the action deletes alike (the kinds of one model). */
 type DeleteTarget = Smart | string | readonly (Smart | string)[];
 
@@ -32,7 +52,13 @@ export type DeleteActionParams<
 > = {
   identifier: DeleteTarget;
   title: string;
-  mutation: TypedDocumentNode<unknown, { id: string }>;
+  mutation: TypedDocumentNode<unknown, { id: string; cascade?: boolean }>;
+  /**
+   * Ask first what the delete would take along. When anything would, the confirm
+   * names it -- always, Ctrl or not -- and the mutation is sent with
+   * `cascade: true`; a blocker refuses before any dialog.
+   */
+  preflight?: (client: ApolloClient<NormalizedCache>, ids: string[]) => Promise<DeletePreflightSummary>;
   typename: string | string[];
   service: TServiceKey;
   description?: string;
@@ -94,7 +120,28 @@ export const buildDeleteAction = <
       ? ""
       : " This action cannot be undone.";
 
-    if (!modifiers.ctrlKey) {
+    const summary = params.preflight ? await params.preflight(service, targets.map((structure) => structure.id)) : null;
+    if (summary && (summary.blockers.length > 0 || summary.truncated)) {
+      throw new Error(
+        summary.truncated
+          ? "More was made from this than one delete may take along. Delete what was made from it first."
+          : `Cannot ${verb.present.toLowerCase()}: ${summary.blockers.join(" ")}`,
+      );
+    }
+    const cascade = (summary?.casualtyCount ?? 0) > 0;
+
+    if (cascade && summary) {
+      const confirmed = await confirm({
+        title: targets.length > 1 ? `${verb.present} ${targets.length} items and what was made from them?` : `${params.title} and what was made from it?`,
+        description: `${summary.description}${permanence}`,
+        confirmLabel: `${verb.present} all ${targets.length + summary.casualtyCount}`,
+        cancelLabel: "Keep",
+        destructive: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+    } else if (!modifiers.ctrlKey) {
       const itemCount = targets.length;
       const confirmed = await confirm({
         title:
@@ -119,13 +166,16 @@ export const buildDeleteAction = <
     // the rest of the batch.
     const failures: { id: string; error: unknown }[] = [];
     let done = 0;
+    const skipped = new Set(summary?.skipIds ?? []);
     for (const structure of targets) {
       const id = structure.id;
       try {
-        await service.mutate({
-          mutation: params.mutation,
-          variables: { id },
-        });
+        if (!skipped.has(id)) {
+          await service.mutate({
+            mutation: params.mutation,
+            variables: cascade ? { id, cascade: true } : { id },
+          });
+        }
 
         for (const typename of typenames) {
           service.cache.evict({

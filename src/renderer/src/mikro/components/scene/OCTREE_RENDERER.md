@@ -756,6 +756,64 @@ to coarser levels (bounded by `MAX_BRICK_LEVELS = 10`).
   compositor with its texture tap replaced by `sampleBrick(vec3(uv, slabZ),
   uDesiredLevel, ch)`.
 
+### 2.10a Depth view — hold Q / Shift+Q (`gpu/depthCodeNodes.ts`, `shaderspec/depthCode.ts`)
+
+Holding Q in 3D recolours intensity volumes by **depth** (hue = view-space
+distance of the sample a pixel shows, warm near / cool far; brightness = its
+strength) and **relief-shades** them: lit by a surface normal taken from the
+depth of neighbouring rays, so shape — and where a front structure ends over
+a back one — reads without the colormap. Shift+Q relief-shades the normal
+colours instead. (An edge-line pass was tried first and dropped: the user
+wanted shape, not lines.)
+
+- **Two stages, because a ray cannot see its neighbours.** The volume shader,
+  with `uDepthCode` on, writes `(frac·s, s, 0)` — the winner's normalised
+  view depth weighted by its strength — instead of a colour. Additive
+  blending sums both across passes, so the composite decodes a
+  strength-weighted mean depth however many layers drew the pixel. The
+  compositor's quad then decodes, colours and relief-shades
+  (`emitDepthComposite`) from a 3×3 neighbourhood of that target.
+- **The compositor owns the encoding per pass.** `VolumeCompositor` flips
+  `material.userData.depthCodeUniform` around each pass and marches into a
+  second target (`depthTarget`, 2×2 until first used): hues = the depth pass
+  only (same cost as normal); relief = normal pass + depth pass, **2× the
+  march on re-render frames** while held (cached frames re-composite free).
+  What `depthTarget` holds — and the frame it was taken in (scene depth
+  range, texel world size: `latchReliefFrame`) — is latched at render time,
+  so the composite never decodes a frame the target does not contain. Every material keeps
+  compiling once — the flag and the composite branch are runtime uniforms.
+- **Winner-only bookkeeping.** The march records `hitT` where a winner is
+  ALREADY chosen (MIP/AMIP improvement, ISO hit) and VOLUME's alpha-weighted
+  depth sum. Selection, early-outs, occupancy skips and the raymarchStep
+  mirrors are untouched (C1). Within one material the strongest member
+  speaks for the pixel.
+- **View-space depth, scene-global range.** The winner's point goes local →
+  `modelWorldMatrix` → `cameraViewMatrix` (`-z`); the range is the 8 corners
+  of `uDepthBoxMin/Max` (union of visible layers' rendered boxes ∩ crop box,
+  `layers/useDepthCodeUniforms.ts`) projected IN-SHADER, so it follows the
+  camera with no per-frame JS. Not `rayT` (base-voxel units differ per
+  layer) and not a per-ray fraction — either gives each entity its own 0..1.
+- **Relief normal** (mirror `reliefNormal` / `reliefShade`): Sobel
+  derivatives of decoded depth over the 3×3 block (they average the ray
+  jitter a single difference keeps), scaled from depth-fraction-per-texel to
+  a WORLD slope (range ÷ texel world size, the texel widening with depth
+  under perspective), n ∝ (∂d/∂x, ∂d/∂y, 1), Lambert under an upper-left
+  headlight with a 0.3 ambient floor. A neighbour without depth (strength <
+  0.1) stands in with the centre's, so a rim against empty space reads flat;
+  where depth jumps between structures the normal tips over and the rim
+  darkens by itself. Colour only — alpha (coverage) is untouched. Computed at
+  the reduced-resolution target, so it is softer while moving; MIP's winner
+  depth is noisy in diffuse signal, which shows as grain there.
+- **The composite taps are `textureSampleLevel`.** TSL lowers `select` to
+  `if` blocks; an implicit-derivative `textureSample` inside them fails WGSL
+  uniformity and the quad's pipeline is dropped (volumes vanish). Pinned by
+  `gpu/depthCodeNodes.test.ts`.
+- Cinematic post is suspended while a depth view is held (bloom/grading
+  would shift the hues); ACES tone mapping stays. Labels, meshes,
+  annotations and 2D are unchanged; the broken-compositor fallback simply
+  has no depth view. Legend: `shell/chrome/DepthCodeLegend.tsx`, drawn from
+  the CPU mirror's ramp.
+
 ### 2.11a Sharded arrays (`lib/zarr/runner/sharding.ts`, `shardIndexCache.ts`)
 
 Zarr v3 `sharding_indexed` is handled **dynamically per array** — no flag. At

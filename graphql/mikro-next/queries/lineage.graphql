@@ -60,6 +60,8 @@ query GetLineage(
       transformationKind
       valueRelation
       annotationId
+      # SHAPE_DERIVATION: how a shape was made from the shape above it.
+      annotationRelation
       primary
       sourceLens
     }

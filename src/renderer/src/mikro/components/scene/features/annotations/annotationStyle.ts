@@ -13,6 +13,9 @@ export const HOVER_STROKE = "#f8fafc";
 /** Every existing shape while a new one is half-drawn: out of the way, and it
  * says they are not clickable right now. */
 export const MUTED_STROKE = "#6b7280";
+/** The shapes made from the one whose card is open, drawn over it: apart from
+ * the selection's amber and any stroke a shape may carry. */
+export const DERIVED_STROKE = "#a78bfa";
 /** Fill alpha for a shape that asks to be filled but names no fill color. */
 export const IMPLIED_FILL_OPACITY = 0.08;
 

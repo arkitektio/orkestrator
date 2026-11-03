@@ -77,6 +77,7 @@ export const LayerCardShell = ({
   icon,
   tile,
   title,
+  titleNode,
   badges,
   actions,
   pinned,
@@ -90,6 +91,12 @@ export const LayerCardShell = ({
   /** The icon tile's tint, e.g. `bg-emerald-400/15`. */
   tile: string;
   title: string;
+  /**
+   * Drawn in the name's place when given — a rename control, say. It owns its
+   * clicks: the header toggles the fold on any click that reaches it. `title`
+   * stays the plain-text name.
+   */
+  titleNode?: React.ReactNode;
   /** Facts beside the name — `Badge`s, a dirty-save button's spot is `actions`. */
   badges?: React.ReactNode;
   /** Trailing header buttons. Clicks here never toggle the fold. */
@@ -111,12 +118,14 @@ export const LayerCardShell = ({
       onClick={onToggle}
     >
       <LayerTile tint={tile}>{icon}</LayerTile>
-      <span
-        className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90"
-        title={title}
-      >
-        {title}
-      </span>
+      {titleNode ?? (
+        <span
+          className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90"
+          title={title}
+        >
+          {title}
+        </span>
+      )}
       {badges}
       <div
         className="flex shrink-0 items-center"

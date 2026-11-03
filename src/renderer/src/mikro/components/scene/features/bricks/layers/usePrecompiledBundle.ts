@@ -2,6 +2,7 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import * as THREE from "three";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
+import { perfMonitor } from "../../../platform/perf/perfMonitor";
 
 /**
  * Show a freshly built brick material only once its pipeline is compiled.
@@ -53,6 +54,7 @@ export const usePrecompiledBundle = <T extends { material: THREE.Material }>(
     let cancelled = false;
     const show = () => {
       if (cancelled) return;
+      perfMonitor.markEvent("material:shown"); // no-op unless a perf recording is armed
       setShown({ bundle, structureKey });
       invalidate();
     };
@@ -64,6 +66,7 @@ export const usePrecompiledBundle = <T extends { material: THREE.Material }>(
     if (typeof compileAsync !== "function") {
       show();
     } else {
+      perfMonitor.markEvent("material:compileAsync"); // no-op unless a perf recording is armed
       const probe = new THREE.Mesh(PROBE_GEOMETRY, bundle.material);
       compileAsync.call(gl, probe, camera, scene).then(show, (error: unknown) => {
         // Never leave a layer blank over a compile hiccup: draw it, and let
