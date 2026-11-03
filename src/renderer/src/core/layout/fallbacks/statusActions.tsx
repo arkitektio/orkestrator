@@ -1,9 +1,9 @@
-import { useActiveProfile } from "@/core/connection/arkitekt/hooks";
+import { useActiveProfile, useArkitektActions } from "@/core/connection/arkitekt/hooks";
 import { openRailSwitcher } from "@/core/connection/profile/ui/railSwitcher";
 import { useSelf } from "@/core/connection/useSelf";
 import { moduleDefinitions } from "@/core/modules/registries";
 import { Button } from "@/core/ui/button";
-import { ArrowLeft, Bug, House, LayoutGrid, Network, RefreshCw, UserRound } from "lucide-react";
+import { ArrowLeft, Bug, House, KeyRound, LayoutGrid, Network, RefreshCw, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { StatusDetail } from "./StatusPage";
@@ -117,6 +117,38 @@ export const RetryButton = ({
     >
       <RefreshCw className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
       {label}
+    </Button>
+  );
+};
+
+/**
+ * A fresh sign-in of the profile we are on. The way out of an ended session,
+ * and of a scope or role granted after signing in: both ride on the token
+ * (and the cached `mycontext`), so only a new one carries them.
+ */
+export const SignInAgainButton = ({ variant }: { variant?: "default" | "outline" }) => {
+  const { reconnect } = useArkitektActions();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      type="button"
+      size="lg"
+      variant={variant}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await reconnect();
+        } catch (error) {
+          // The connection layer shows how the sign-in ended.
+          console.error("Sign in again failed", error);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <KeyRound />
+      Sign in again
     </Button>
   );
 };

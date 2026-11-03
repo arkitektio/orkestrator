@@ -1,4 +1,9 @@
-import { classifyError, type QueryErrorKind } from "@/core/layout/fallbacks/classifyError";
+import {
+  classifyError,
+  describeNeeded,
+  type Denial,
+  type QueryErrorKind,
+} from "@/core/layout/fallbacks/classifyError";
 
 /**
  * Any failure (an Apollo error, a thrown `Error`, a string, a rejection with
@@ -23,6 +28,25 @@ const SENTENCES: Record<Exclude<QueryErrorKind, "unknown">, string> = {
   denied: "You're not allowed to do this.",
 };
 
+/**
+ * A denial that names what is missing says so, and says the way out: scopes
+ * and roles ride on the token, so one granted after signing in only arrives
+ * with a new sign-in.
+ */
+export const denialSentence = (denial: Denial): string => {
+  if (denial.reason === "SCOPED_READ_ONLY") {
+    return "As a guest you can look at this, but not change it.";
+  }
+  if (denial.kind === "guest") {
+    return "This needs full membership of the organization; a guest invitation doesn't cover it.";
+  }
+  const needed = describeNeeded(denial);
+  const them = denial.needed.length > 1 && !denial.any ? "them" : "it";
+  return denial.kind === "scope"
+    ? `Your sign-in doesn't include ${needed}. If you're sure you should have ${them}, sign in again.`
+    : `This needs ${needed}. If you're sure you have ${them}, sign in again.`;
+};
+
 /** `fetch` failing outright (offline, DNS, refused) is a `TypeError`, not an Apollo network error. */
 const isFetchFailure = (error: unknown) =>
   error instanceof TypeError && /failed to fetch|network ?error|load failed/i.test(error.message);
@@ -42,6 +66,9 @@ export const describeError = (error: unknown): DescribedError => {
 
   const classified = classifyError(error);
   const kind = isFetchFailure(error) ? "network" : classified.kind;
+  if (kind === "denied" && classified.denial) {
+    return { kind, message: denialSentence(classified.denial), technical: classified.technical };
+  }
   if (kind !== "unknown") return { kind, message: SENTENCES[kind], technical: classified.technical };
 
   // The server's own words: the first message, without the client's wrapping.

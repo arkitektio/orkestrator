@@ -2,7 +2,7 @@ import { describeRoles, RoleGuard, useRoles, type RoleRequirement } from "@/core
 import { ShieldOff } from "lucide-react";
 import type { ReactNode } from "react";
 import { StatusPage, type StatusDetail } from "./StatusPage";
-import { BackButton, HomeButton, SwitchAccountButton, useStatusContext } from "./statusActions";
+import { BackButton, HomeButton, SignInAgainButton, SwitchAccountButton, useStatusContext } from "./statusActions";
 
 /**
  * What a role-gated route shows to someone without the role: a deep link or a
@@ -31,6 +31,14 @@ export const NotPermitted = ({ roles }: { roles: RoleRequirement }) => {
       }
       description="You are signed in, but your membership in this organization doesn't include the role this page is limited to."
       hints={[
+        ...(overridden
+          ? []
+          : [
+              <>
+                <strong>If you&apos;re sure you have the {needed} role, sign in again.</strong> Your roles are read
+                when you sign in, so one given to you since only shows up with a new sign-in.
+              </>,
+            ]),
         <>
           Ask an administrator of {organization ?? "the organization"} to give your membership the{" "}
           <strong>{needed}</strong> role.
@@ -42,6 +50,7 @@ export const NotPermitted = ({ roles }: { roles: RoleRequirement }) => {
       ]}
       actions={
         <>
+          {overridden ? null : <SignInAgainButton />}
           <BackButton />
           <HomeButton />
           <SwitchAccountButton />

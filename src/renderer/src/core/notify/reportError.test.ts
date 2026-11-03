@@ -22,6 +22,17 @@ describe("describeError", () => {
 
   it("names the kinds a person can act on", () => {
     expect(describeError(gql("nope", "FORBIDDEN")).message).toBe("You're not allowed to do this.");
+    expect(
+      describeError({
+        message: "wrapped",
+        graphQLErrors: [
+          {
+            message: "User does not have the required roles: admin",
+            extensions: { code: "PERMISSION_DENIED", reason: "INSUFFICIENT_ROLE", requiredRoles: ["admin"] },
+          },
+        ],
+      }).message,
+    ).toBe("This needs the admin role. If you're sure you have it, sign in again.");
     expect(describeError(gql("x", "UNAUTHENTICATED")).message).toBe("Your session ran out. Sign in again.");
     expect(
       describeError(new ApolloError({ networkError: Object.assign(new Error("boom"), { statusCode: 502 }) })).message,
