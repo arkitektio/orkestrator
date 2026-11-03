@@ -1,3 +1,11 @@
+# [5.9.0](https://github.com/arkitektio/orkestrator/compare/v5.8.0...v5.9.0) (2026-11-03)
+
+
+### Features
+
+* **errors:** permission errors name the missing scope or role and offer a fresh sign-in ([8538bc4](https://github.com/arkitektio/orkestrator/commit/8538bc42e7ede686c4744976dc1a580a606525b8))
+* **updates:** the update island celebrates a new release ([d0f7aa3](https://github.com/arkitektio/orkestrator/commit/d0f7aa38f4f0a819cdfea7da5a395c77ed27563f))
+
 # [5.8.0](https://github.com/arkitektio/orkestrator/compare/v5.7.1...v5.8.0) (2026-11-03)
 
 
