@@ -1,3 +1,4 @@
+import { askPartnerForm } from "./askPartner";
 import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
@@ -197,6 +198,8 @@ export const DirectImplementationAssignment = (
       return;
     }
 
+    const asked = askPartnerForm(action, { ...run, askPartner: props.askPartner }, keys);
+
     // The tracker lives in the "Run on" picker, which closes the instant the
     // run starts: on the rail too (`runTracker`), or it runs with no indicator.
     const track = runTracker(
@@ -205,8 +208,14 @@ export const DirectImplementationAssignment = (
       (event) => {
         props.onDone?.({ event, kind: "action" });
       },
-      { action: action.id, on: keys },
+      // Keyed by what is fixed: a rerun with another channel replaces the last result.
+      { action: action.id, on: asked?.args ?? keys },
     );
+
+    if (asked) {
+      openDialog("assign", { target: { implementation: implementation.id }, ...asked, track });
+      return;
+    }
 
     const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
     if (unknownKeys.length >= 1) {
@@ -443,6 +452,17 @@ export const AssignButton = (
       keys = buildActionArgs(action, run);
     } catch (error) {
       triggerErrorFeedback(getErrorMessage(error));
+      return;
+    }
+
+    const asked = askPartnerForm(action, { ...run, askPartner: props.askPartner }, keys);
+    if (asked) {
+      openDialog("assign", {
+        target: { action: action.id },
+        ...asked,
+        // Keyed by what is fixed: a rerun with another channel replaces the last result.
+        track: runTracker(sink, action.returns, onEvent, { action: action.id, on: asked.args }),
+      });
       return;
     }
 

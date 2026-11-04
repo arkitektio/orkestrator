@@ -180,12 +180,12 @@ describe("returned structures and the result sink", () => {
     expect(onEvent).toHaveBeenCalledTimes(3);
   });
 
-  it("without a sink is the callback as it was, and a run that returns nothing tells the sink nothing", () => {
+  it("without a sink is the callback as it was, and a run that returns nothing still tells the sink it is done", () => {
     const onEvent = vi.fn();
     expect(deliverResults(null, [image], onEvent)).toBe(onEvent);
 
     const sink = vi.fn();
     deliverResults(sink, [image], onEvent)(event(TaskEventKind.Completed));
-    expect(sink).not.toHaveBeenCalled();
+    expect(sink).toHaveBeenCalledWith([], undefined);
   });
 });

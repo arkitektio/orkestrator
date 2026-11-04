@@ -124,8 +124,10 @@ export const deliverResults = (
     if (event.returns != null) returns = event.returns;
     onEvent(event);
     if (event.kind !== TaskEventKind.Completed) return;
-    const results = returnedStructures(ports, returns);
-    if (results.length > 0) sink(results, origin);
+    // Every completed run, even one that returned nothing: a run that wrote
+    // what it made without returning it still changed what a surface lists
+    // (the scene's float refetches what was made from its object).
+    sink(returnedStructures(ports, returns), origin);
   };
 };
 

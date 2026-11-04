@@ -7,8 +7,9 @@ import type { Structure } from "@/core/types";
  * its menus in `<SmartResultSink>` (the scene adds a returned lens as a
  * layer); a module whose rows know their results (rekuest: a task's last
  * yield) reads `useResultSink()` when the row renders and calls it once, when
- * the run completes, with every structure it returned. The innermost sink
- * wins; outside one, nothing is collected.
+ * the run completes, with every structure it returned — an empty list for a
+ * run that returned none, so a sink can refresh what the run may have
+ * changed. The innermost sink wins; outside one, nothing is collected.
  *
  * The sink is read at render and kept by the run, not looked up when it ends:
  * the menu that started it is usually gone by then.

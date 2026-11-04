@@ -34,11 +34,18 @@ import { FitsGuard, portFitsOf, type FitDecision } from "./FitsGuard";
 import { useAssignForm } from "@arkitektio/bsx/ports/engine/useAssignForm";
 import type { AssignTarget, AssignTrack } from "./target";
 import { useAssignTarget } from "./useAssignTarget";
+import { withDefaults } from "./withDefaults";
 
 export type AssignFormProps = {
   target: AssignTarget;
   /** Prefilled values, by port key. They win over the latest task's. */
   args?: { [key: string]: unknown };
+  /**
+   * Suggested values, by port key: used only where neither `args` nor the
+   * latest task say anything (the scene's data lens, for an action that never
+   * ran).
+   */
+  defaults?: { [key: string]: unknown };
   /** Ports not shown (key → truthy); their values come from `args`. */
   hidden?: { [key: string]: unknown };
   /** The ports to ask for, when not all of the action's (a shortcut's). */
@@ -71,6 +78,7 @@ export type AssignFormProps = {
 export const AssignForm = ({
   target,
   args,
+  defaults,
   hidden,
   ports,
   prefillLatest = true,
@@ -91,8 +99,8 @@ export const AssignForm = ({
   const pinning = target.resolution ? undefined : implementation;
 
   const overwrites = useMemo(
-    () => ({ ...(prefillLatest ? latestTask?.args : undefined), ...args }),
-    [prefillLatest, latestTask?.args, args],
+    () => withDefaults({ ...(prefillLatest ? latestTask?.args : undefined), ...args }, defaults),
+    [defaults, prefillLatest, latestTask?.args, args],
   );
 
   const form = useAssignForm({

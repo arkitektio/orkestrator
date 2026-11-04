@@ -67,7 +67,7 @@ export const useSmartMenu = ({
   registry = smartSections(),
   ...props
 }: SmartContextProps & { registry?: SmartSectionRegistry }): SmartMenuState => {
-  const { objects, partners, returns, collection, sections, onDone, onError, materialize } = props;
+  const { objects, partners, returns, collection, sections, onDone, onError, materialize, askPartner } = props;
   const [filter, setFilter] = React.useState<string | undefined>(undefined);
   // The raw value narrows the rows on screen at once; the queries run on the
   // debounced copy, so typing does not cost a request per key.
@@ -100,11 +100,12 @@ export const useSmartMenu = ({
       onDone,
       onError,
       materialize,
+      askPartner,
       filter: debouncedFilter,
       liveFilter: filter,
       hasSearchBar: true,
     }),
-    [objects, partners, returns, collection, sections, onDone, onError, materialize, debouncedFilter, filter],
+    [objects, partners, returns, collection, sections, onDone, onError, materialize, askPartner, debouncedFilter, filter],
   );
 
   return {

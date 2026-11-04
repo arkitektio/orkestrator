@@ -54,6 +54,14 @@ export type SmartContextProps = {
    */
   materialize?: () => Promise<Pick<SmartContextProps, "objects" | "partners">>;
   /**
+   * The partners are a SUGGESTION, not the answer: a run always opens the
+   * assign form, with the objects filled in (and their ports hidden) and the
+   * partner's port shown, its value the action's latest run's, else the
+   * partner. The scene's float passes it: the image under a shape is a guess
+   * about which channel to run with. Honoured by rekuest's single-run rows.
+   */
+  askPartner?: boolean;
+  /**
    * Focus the search field on open. Default true; off where the menu opens
    * while a key is still held, whose auto-repeat would type into it.
    */
