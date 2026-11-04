@@ -1,0 +1,36 @@
+# What was computed from a shape or a mesh object, as the scene's floats list
+# it (`features/staging/DerivedResidentList`): a link per container, and the
+# whole lens the float stages it through (residents never list a whole lens).
+fragment DerivedResident on Resident {
+  __typename
+  ... on ArrayDataset {
+    id
+    name
+    fullLens {
+      id
+    }
+  }
+  ... on TableDataset {
+    id
+    name
+  }
+  ... on SparseDataset {
+    id
+    name
+  }
+  ... on AnnotationCollection {
+    id
+    name
+  }
+  ... on MeshCollection {
+    id
+    label
+    fullLens {
+      id
+    }
+  }
+  ... on NetworkCollection {
+    id
+    label
+  }
+}

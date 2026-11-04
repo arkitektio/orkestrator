@@ -1,3 +1,5 @@
+import { isStagedLayerId } from "../../platform/float/stagedLayerStore";
+import { StagedLayersCard } from "../../features/staging/StagedLayersCard";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation } from "@/mikro/api/graphql";
 import type { SceneLayerFragment } from "../../platform/model/layerGuards";
@@ -126,14 +128,16 @@ export const LayerControlPanel = ({
     // entry decides which list it is taken from, so the two passes cannot both
     // claim it.
     const wanted = (typename: string) => !kinds || kinds.includes(typename);
+    // Staged layers (a float's, saved nowhere) get no editable card: every
+    // card edit is a write to a layer row. They are the "Staged" group.
     for (const layer of layers) {
-      if (!wanted(layer.__typename)) continue;
+      if (!wanted(layer.__typename) || isStagedLayerId(layer.id)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "layerState") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
     }
     for (const layer of sceneLayers) {
-      if (!wanted(layer.__typename)) continue;
+      if (!wanted(layer.__typename) || isStagedLayerId(layer.id)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "fragment") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
@@ -175,6 +179,8 @@ export const LayerControlPanel = ({
             renders in the scene like a layer, so it is managed like one.
             Session-local — renders null outside a design session. */}
         <DesignStagingCard />
+        {/* What the scene's floats staged: drawn, saved nowhere. */}
+        {!kinds && <StagedLayersCard />}
         {/* One column while narrow; a wide rail unfolds into two and then three
             so the cards stay readable instead of stretching to a full page
             width. `items-start` keeps an unfolded card from dragging its row

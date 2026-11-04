@@ -6,12 +6,13 @@ import {
   AddLayerReachableDocument,
   AddLayerWorldGraphDocument,
   type AddLayerLensCapabilitiesQuery,
+  type AddLayerStagedLayerFragment,
 } from "@/mikro/api/graphql";
 import type { LensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 
 import { buildSections, lensCandidateOf, type Capabilities } from "./candidates";
 import { stagedFromLayers, suggestLensKinds, type LayerKind } from "./engine";
-import { lensLayerRequest, resolveLensLayerLenses } from "./lensLayer";
+import { lensLayerRequest, resolveLensLayerLenses, type LensLayerRequest } from "./lensLayer";
 import { graphFromComponent, graphFromLineage, mergeGraphs } from "./spaceGraph";
 
 /**
@@ -87,11 +88,23 @@ export const drawsLens = (
   );
 };
 
-export const stageLens = async (
+/** What the engine would add for a lens, before anything is sent: the request, or why not. */
+export type LensLayerPlan =
+  | { status: "ready"; kind: LayerKind; label: string; request: LensLayerRequest }
+  | { status: "present"; label: string }
+  | { status: "unplaceable" };
+
+/**
+ * The Add Layer engine's pick for a lens, as the create request it would send.
+ * `extraLayers` are layers the scene draws that the server does not know of
+ * (a float's staged previews): they take a channel colour and count as
+ * "already drawn" exactly like saved ones.
+ */
+export const planLensLayer = async (
   client: ApolloClient<unknown>,
   registry: Pick<LensRegistry, "ensureChannelLens">,
-  input: { scene: string; lens: string },
-): Promise<StageOutcome> => {
+  input: { scene: string; lens: string; extraLayers?: readonly AddLayerStagedLayerFragment[] },
+): Promise<LensLayerPlan> => {
   const { data } = await client.query({
     query: AddLayerReachableDocument,
     variables: { scene: input.scene },
@@ -106,7 +119,8 @@ export const stageLens = async (
   ]);
   const graph = graphFromComponent(component.coordinateGraph);
   const capabilities = capabilitiesFrom(capabilityData);
-  const staged = stagedFromLayers(data.scene.layers);
+  const sceneLayers = [...data.scene.layers, ...(input.extraLayers ?? [])];
+  const staged = stagedFromLayers(sceneLayers);
   const option = buildSections({
     world: { id: world.id, name: world.name },
     graph,
@@ -122,7 +136,7 @@ export const stageLens = async (
 
   // The lens' whole provenance, as the form reads it once a row is chosen.
   const lens = lensCandidateOf(option.lens, capabilities);
-  const layerLenses = data.scene.layers.map((layer) => ({ lens: "lens" in layer ? layer.lens : null }));
+  const layerLenses = sceneLayers.map((layer) => ({ lens: "lens" in layer ? layer.lens : null }));
   if (drawsLens(layerLenses, lens, lens.renderAxes?.intensity ?? null)) {
     return { status: "present", label: option.label };
   }
@@ -139,7 +153,14 @@ export const stageLens = async (
   const lenses = await resolveLensLayerLenses(registry, kind, lens, suggestion.defaults);
   const request = lensLayerRequest({ kind, scene: input.scene, lens: lens.id, lenses, defaults: suggestion.defaults });
   if (!request) return { status: "unplaceable" };
+  return { status: "ready", kind, label, request };
+};
 
+/** Send a planned request: the layer is made, and the scene refetched to show it. */
+export const createPlannedLayer = async (
+  client: ApolloClient<unknown>,
+  request: LensLayerRequest,
+): Promise<string | undefined> => {
   const created = await client.mutate({
     mutation: request.document,
     variables: request.variables,
@@ -149,5 +170,16 @@ export const stageLens = async (
   } as Parameters<typeof client.mutate>[0]);
   // Every create mutation answers with the one layer it made, under its own field name.
   const answered = Object.values((created.data ?? {}) as Record<string, { id?: string } | null>)[0];
-  return { status: "added", kind, label, layer: answered?.id };
+  return answered?.id;
+};
+
+export const stageLens = async (
+  client: ApolloClient<unknown>,
+  registry: Pick<LensRegistry, "ensureChannelLens">,
+  input: { scene: string; lens: string },
+): Promise<StageOutcome> => {
+  const plan = await planLensLayer(client, registry, input);
+  if (plan.status !== "ready") return plan;
+  const layer = await createPlannedLayer(client, plan.request);
+  return { status: "added", kind: plan.kind, label: plan.label, layer };
 };

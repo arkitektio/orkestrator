@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
-import { Box, Eye, Focus, PencilRuler, X } from "lucide-react";
+import { Eye, Focus, PencilRuler, X } from "lucide-react";
 import { Button } from "@/core/ui/button";
 import { Card, CardTitle } from "@/core/ui/card";
 import {
@@ -19,6 +19,7 @@ import { formatCount, hueStyle, objectLabel } from "../../platform/model/selecti
 import { useMeshStore } from "./store/meshSlice";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { useMeshDesignStoreApi } from "../meshDesign/store/meshDesignStore";
+import { MeshObjectActions, meshObjectSize, type MeshLayerRef } from "./MeshObjectSummary";
 import { loadObjectsFromCollection } from "../meshDesign/commit/loadCollection";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
@@ -44,8 +45,6 @@ const DESIGN_EDIT_MAX_INDICES = 6_000_000;
  * the canvas does.
  */
 
-/** A mesh layer paired with its (non-null) collection. */
-type MeshLayerRef = { layer: MeshLayerVariant; collection: MeshCollectionRef };
 
 /** Objects rendered at once. A collection can hold hundreds of thousands of
  * them and there is no virtualizer in the tree; the header says what was cut. */
@@ -83,9 +82,6 @@ export const MeshesPanel = ({
           <SelectedMeshCard
             selection={meshSelection}
             layerRef={meshLayers.find((ref) => ref.layer.id === meshSelection.layerId)}
-            onIsolate={() =>
-              setMeshSelection({ ...meshSelection, isolate: !meshSelection.isolate })
-            }
             onClear={() => setMeshSelection(null)}
           />
           <div className="h-px shrink-0 bg-foreground/10" />
@@ -122,35 +118,13 @@ export const MeshesPanel = ({
 const SelectedMeshCard = ({
   selection,
   layerRef,
-  onIsolate,
   onClear,
 }: {
   selection: MeshSelectionState;
   layerRef: MeshLayerRef | undefined;
-  onIsolate: () => void;
   onClear: () => void;
 }) => {
-  const manager = useMeshStore((s) => s.meshSystems[selection.layerId]);
-  const transformContext = useSceneStore((s) => s.transformContext);
-  const navigateToBox = useNavigateToMeshBox();
-
-  const goTo = () => {
-    if (!manager || !layerRef) return;
-    const matrix = resolveCollectionMatrix(
-      layerRef.layer,
-      layerRef.collection,
-      transformContext,
-    );
-    void manager
-      .identifyOrdinal(selection.ordinal)
-      .then((entry) => {
-        if (entry) navigateToBox(meshObjectBox(entry, matrix));
-      })
-      .catch((reason: unknown) =>
-        console.warn("[fabriks] cannot locate the selected instance:", reason),
-      );
-  };
-
+  const size = meshObjectSize(selection.stats);
   return (
     <Card className="flex flex-col gap-1.5 px-2 py-2">
       <div className="flex items-center gap-2">
@@ -161,25 +135,7 @@ const SelectedMeshCard = ({
         <CardTitle className="min-w-0 flex-1 truncate text-sm">
           {objectLabel(selection.objectId, selection.ordinal)}
         </CardTitle>
-        <Button
-          variant="outline"
-          size="xs"
-          title="Go to mesh"
-          disabled={!manager || !layerRef}
-          onClick={goTo}
-        >
-          <Focus className="mr-1 h-3 w-3" />
-          Go to
-        </Button>
-        <Button
-          variant={selection.isolate ? "default" : "outline"}
-          size="xs"
-          title="Show ONLY this instance"
-          onClick={onIsolate}
-        >
-          <Box className="mr-1 h-3 w-3" />
-          Isolate
-        </Button>
+        <MeshObjectActions selection={selection} layerRef={layerRef} />
         <Button
           variant="ghost"
           size="xs"
@@ -192,10 +148,7 @@ const SelectedMeshCard = ({
       </div>
       <div className="text-xs text-muted-foreground">
         {layerRef ? `Mesh ${layerRef.collection.id}` : "Mesh layer"}
-        {selection.stats &&
-          ` · ${formatCount(selection.stats.vertices)}v · ${formatCount(
-            Math.round(selection.stats.indices / 3),
-          )}t`}
+        {size && ` · ${size}`}
       </div>
     </Card>
   );

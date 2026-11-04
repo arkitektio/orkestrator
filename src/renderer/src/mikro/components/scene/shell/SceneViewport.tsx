@@ -61,6 +61,7 @@ import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { StaleProbeReconciler } from "../features/probe/StaleProbeReconciler";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
 import { AnnotationHoverCard } from "../features/annotations/hover/AnnotationHoverCard";
+import { MeshFloat } from "../features/meshes/MeshFloat";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
@@ -471,6 +472,7 @@ export const SceneViewport = (props: {
               the image; a click on a shape opens the same card. The one
               overlay that follows a shape rather than a corner. */}
           {props.annotationCards !== false && <AnnotationHoverCard />}
+          {props.annotationCards !== false && <MeshFloat />}
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbePointPinner />

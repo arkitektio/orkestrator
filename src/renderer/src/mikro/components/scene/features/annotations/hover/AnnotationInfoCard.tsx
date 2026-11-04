@@ -4,24 +4,20 @@ import { TriangleAlert } from "lucide-react";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { classifyError } from "@/core/layout/fallbacks/classifyError";
 import { RetryButton } from "@/core/layout/fallbacks/statusActions";
-import {
-  MikroAnnotation,
-  MikroArrayDataset,
-  MikroArrayLens,
-  MikroMeshCollection,
-  MikroSparseDataset,
-  MikroTableDataset,
-} from "@/core/linkers";
+import { MikroAnnotation, MikroArrayLens } from "@/core/linkers";
 import { Skeleton } from "@/core/ui/skeleton";
 import { useGetAnnotationInfoQuery, type GetAnnotationInfoQuery } from "@/mikro/api/graphql";
 
+import { ResidentLink, ResidentStageToggle, RESIDENT_NOUN, isNamedResident } from "../../staging/DerivedResidents";
+import { StageToggle } from "../../staging/StageToggle";
+
 type Info = GetAnnotationInfoQuery["annotation"];
-type Resident = Info["derivedResidents"][number];
 
 /**
  * What the annotation card (`AnnotationHoverCard`) says about one shape below
  * its header (which names the author): where it sits, and what was MADE from it — the lenses cut to it and the data
- * computed from it (a crop written out, an image straightened along it).
+ * computed from it (a crop written out, an image straightened along it). In
+ * the scene's float each can be staged as a layer for now (`StageToggle`).
  *
  * Mounted only while the card is open, so the query (`GetAnnotationInfo`)
  * runs when it unfolds and not on every shape the pointer crosses;
@@ -64,7 +60,7 @@ export const AnnotationInfoCard = ({ id }: { id: string }) => {
 
 const Loaded = ({ info }: { info: Info }) => {
   const lenses = info.derivedLenses;
-  const residents = info.derivedResidents.filter(isNamed);
+  const residents = info.derivedResidents.filter(isNamedResident);
   const sources = info.derivedFrom;
   const shapes = info.derivedAnnotations;
 
@@ -87,6 +83,7 @@ const Loaded = ({ info }: { info: Info }) => {
                 {lens.label}
               </MikroArrayLens.DetailLink>
               <span className="shrink-0 tabular-nums text-muted-foreground">{lens.shape.join(" × ")}</span>
+              <StageToggle source={{ kind: "array", lens: lens.id, label: lens.label }} />
             </li>
           ))}
         </Made>
@@ -97,6 +94,7 @@ const Loaded = ({ info }: { info: Info }) => {
             <li key={`${resident.__typename}:${resident.id}`} className="flex min-w-0 items-baseline gap-2">
               <ResidentLink resident={resident} />
               <span className="shrink-0 text-muted-foreground">{RESIDENT_NOUN[resident.__typename]}</span>
+              <ResidentStageToggle resident={resident} />
             </li>
           ))}
         </Made>
@@ -145,52 +143,3 @@ const Made = ({ heading, children }: { heading: string; children: ReactNode }) =
     <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto">{children}</ul>
   </section>
 );
-
-/** The containers a derivation can leave from; a lens or a level is a part of one and is never listed. */
-type NamedResident = Extract<Resident, { id: string }>;
-
-const isNamed = (resident: Resident): resident is NamedResident => "id" in resident;
-
-const RESIDENT_NOUN: Record<NamedResident["__typename"], string> = {
-  ArrayDataset: "Dataset",
-  TableDataset: "Table",
-  SparseDataset: "Sparse dataset",
-  MeshCollection: "Meshes",
-  NetworkCollection: "Network",
-  AnnotationCollection: "Annotations",
-};
-
-const ResidentLink = ({ resident }: { resident: NamedResident }) => {
-  const className = "min-w-0 truncate";
-  switch (resident.__typename) {
-    case "ArrayDataset":
-      return (
-        <MikroArrayDataset.DetailLink object={resident} className={className}>
-          {resident.name}
-        </MikroArrayDataset.DetailLink>
-      );
-    case "TableDataset":
-      return (
-        <MikroTableDataset.DetailLink object={resident} className={className}>
-          {resident.name}
-        </MikroTableDataset.DetailLink>
-      );
-    case "SparseDataset":
-      return (
-        <MikroSparseDataset.DetailLink object={resident} className={className}>
-          {resident.name}
-        </MikroSparseDataset.DetailLink>
-      );
-    case "MeshCollection":
-      return (
-        <MikroMeshCollection.DetailLink object={resident} className={className}>
-          {resident.label}
-        </MikroMeshCollection.DetailLink>
-      );
-    // No page of their own to open.
-    case "NetworkCollection":
-      return <span className={className}>{resident.label}</span>;
-    case "AnnotationCollection":
-      return <span className={className}>{resident.name}</span>;
-  }
-};

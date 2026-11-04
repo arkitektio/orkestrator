@@ -33,6 +33,15 @@ vi.mock("./AnnotationPairActions", () => ({
     </div>
   ),
 }));
+// Staging needs the scene's stores and the mikro client; the card's own
+// behaviour here is the frame and its closes, with nothing staged.
+vi.mock("../../staging/FloatStaging", () => ({
+  useFloatStaging: (_owner: string, onClose: () => void) => ({ entries: [], holding: false, requestClose: onClose }),
+  FloatStagingFooter: () => null,
+}));
+vi.mock("../../staging/StageToggle", () => ({
+  FloatStagingScope: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
 vi.mock("../../../platform/stores/viewStore", () => ({
   useViewStoreApi: () => ({
     getState: () => ({ viewProjectionMatrix: null, viewportSize: { width: 800, height: 600 }, cameraMoving: false }),

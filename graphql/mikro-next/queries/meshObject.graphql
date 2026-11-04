@@ -1,0 +1,11 @@
+# One object of a mesh collection, as the scene's mesh float lists it: what
+# was computed from that one surface (a MESH_OBJECT derivation).
+query GetMeshObjectInfo($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    derivedResidents {
+      ...DerivedResident
+    }
+  }
+}

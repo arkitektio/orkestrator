@@ -4,6 +4,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const infoQuery = vi.fn();
+// Staging a row is the float's (see `features/staging`); outside one it renders nothing.
+vi.mock("../../staging/StageToggle", () => ({ StageToggle: () => null }));
 vi.mock("@/mikro/api/graphql", () => ({
   useGetAnnotationInfoQuery: (options: unknown) => infoQuery(options),
 }));

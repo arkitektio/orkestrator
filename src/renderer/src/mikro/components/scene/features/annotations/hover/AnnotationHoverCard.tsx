@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { EllipsisIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/core/ui/button";
@@ -8,7 +7,11 @@ import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { useGetAnnotationCreatorQuery } from "@/mikro/api/graphql";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 
-import { useViewStoreApi } from "../../../platform/stores/viewStore";
+import { projectScreenRect } from "../../../platform/float/projectScreenRect";
+import { SceneFloat, type FloatView } from "../../../platform/float/SceneFloat";
+import { annotationFloatOwner, useOptionalSceneFloatStoreApi } from "../../../platform/float/floatStore";
+import { FloatStagingFooter, useFloatStaging } from "../../staging/FloatStaging";
+import { FloatStagingScope } from "../../staging/StageToggle";
 import {
   findVisibleRoi,
   useRoiSelectionStore,
@@ -18,25 +21,14 @@ import {
 import { formatAnnotationKind } from "../../../platform/model/selectionFormat";
 import { AnnotationInfoCard } from "./AnnotationInfoCard";
 import { AnnotationPairActions } from "./AnnotationPairActions";
-import {
-  BUTTON_POINTER_OFFSET_PX,
-  cardOriginFor,
-  projectTopRightCorner,
-  projectWorldPoint,
-} from "./projectRoiBox";
+import { BUTTON_POINTER_OFFSET_PX, projectTopRightCorner, projectWorldPoint } from "./projectRoiBox";
 
-/** The bare button, and the card it grows into (CSS px). */
-const BUTTON_SIZE = 24;
-const CARD_WIDTH = 288;
-const BUTTON_BOX = { width: BUTTON_SIZE, height: BUTTON_SIZE };
 /** How long the pointer rests on the avatar before the card unfolds: a
  * pointer that only crosses it on the way somewhere opens nothing. */
 export const PEEK_DELAY_MS = 150;
 /** How long an unfolded (not pinned) card survives the pointer leaving it. */
 export const PEEK_GRACE_MS = 250;
-/** A press on the scene that travels further than this is a camera drag,
- * not a click on nothing: the card it follows stays open. */
-const CLICK_SLOP_PX = 4;
+const NOTHING = () => {};
 
 /**
  * The one overlay of an annotation in the scene: a small button wearing the
@@ -57,19 +49,19 @@ const CLICK_SLOP_PX = 4;
  *   leaves it); a click on it pins the card open.
  * - A CLICK on the shape (`roiSelectionStore.openRoiMenu`), or a shape just
  *   drawn, opens it pinned, whatever the experiment says — with the
- *   experiment off, this is the only way the card appears. It opens where
- *   the click landed; a card already open stays where it is.
- * A pinned card closes on Escape, its close button, a finished action, and a
- * press outside it — but not a click on the shape (it stays, or moves to the
- * shape clicked) and not a drag that moved the camera.
+ *   experiment off, this is the only way the card appears. It opens BESIDE
+ *   the shape (right of its visible right edge, else left: never over it),
+ *   and stays there while it is open. Pinning a peek (a click on its avatar)
+ *   leaves the card where it is, under the pointer.
+ * A pinned card closes on Escape, its close button and a press outside it —
+ * but not a click on the shape (it stays, or moves to the shape clicked), not
+ * a drag that moved the camera, and not a finished action: what that returns
+ * is STAGED under the card (`features/staging`), shown in the scene and saved
+ * nowhere, and while the card holds staged layers every close (and a click on
+ * another object) asks to keep or discard them first.
  *
- * Plain DOM over the canvas, in the viewport's overlay block. PLACEMENT never
- * touches React: a view-store subscription projects the anchor on every
- * camera emission and writes the transform straight onto the node (P17), and
- * again whenever the card changes size. The bare button hides while the
- * camera moves; an open card follows it. The growing is an inner element's (a
- * width/height spring) so it unfolds right and down from the avatar and stays
- * inside the frame (`cardOriginFor`).
+ * The frame — placement, the spring, closing like a popover — is the scene's
+ * one float (`platform/float/SceneFloat`), which the mesh float shares.
  *
  * The hover is HELD (`holdHover`) while the pointer is on the button or the
  * card is open, so travelling from the shape to the button or picking an
@@ -101,9 +93,8 @@ export const AnnotationHoverCard = () => {
 };
 
 const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
-  const nodeRef = useRef<HTMLDivElement>(null);
-  const viewApi = useViewStoreApi();
   const selectionApi = useRoiSelectionStoreApi();
+  const floatApi = useOptionalSceneFloatStoreApi();
   // The store's menu entry IS the pin: a click on the shape, a draw and a
   // click on the avatar all set it, and every close clears it.
   const menu = useRoiSelectionStore((s) => (s.menuRoi?.roi.id === roi.id ? s.menuRoi : null));
@@ -111,25 +102,31 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
   const [peeking, setPeeking] = useState(false);
   const [fullMenuOpen, setFullMenuOpen] = useState(false);
   const expanded = pinned || peeking;
-  const expandedRef = useRef(expanded);
-  expandedRef.current = expanded;
-  // Where the card is attached. A click (or a draw: no point, the box
-  // corner) wins over where the pointer entered.
+  // Where the hover button is attached: where the pointer entered, or where a
+  // click landed (a draw: no point, the box corner).
   const [entry, setEntry] = useState(() => {
     const state = selectionApi.getState();
     if (state.menuRoi?.roi.id === roi.id) return state.menuRoi.point;
     return state.hoveredRoi?.id === roi.id ? state.hoverPoint() : null;
   });
-  // A click on the shape of a FOLDED button opens the card where it landed —
-  // on a long path that can be far from where the pointer entered. An open
-  // card stays where it is.
+  // Opened by a click on the shape (or a draw) while folded: the card sits
+  // BESIDE the shape. Pinning a peek keeps it where it already is, so it never
+  // jumps from under the pointer.
+  const [beside, setBeside] = useState(() => selectionApi.getState().menuRoi?.roi.id === roi.id);
   const wasOpenRef = useRef(expanded);
   useEffect(() => {
-    if (menu?.point && !wasOpenRef.current) setEntry(menu.point);
+    if (!menu || wasOpenRef.current) return;
+    if (menu.point) setEntry(menu.point);
+    setBeside(true);
   }, [menu]);
   useEffect(() => {
     wasOpenRef.current = expanded;
+    if (!expanded) setBeside(false);
   }, [expanded]);
+  // One float at a time: a shape's card replaces a mesh object's.
+  useEffect(() => {
+    if (pinned) floatApi?.getState().close();
+  }, [pinned, floatApi]);
   // While unfolded, the shape's layer draws what was made from it over it
   // (refinements are hidden otherwise; `lib/annotations/derivedShapes`).
   useEffect(() => {
@@ -139,10 +136,6 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
   }, [expanded, roi.id, roi.layerId, selectionApi]);
   const pointerInsideRef = useRef(false);
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Native events that passed through this card in React's tree — which
-  // includes what it portals (the "Run on" picker, the full menu), unlike the
-  // DOM's `contains`.
-  const [insideEvents] = useState(() => new WeakSet<Event>());
   // The smart object is the SELECTION shape (what the sidebar card and the
   // local actions expect), not the placement box: strip the world extent,
   // and spell out `name` — the store's may be `undefined`, which JSON has no
@@ -176,50 +169,32 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
     const state = selectionApi.getState();
     if (state.menuRoi?.roi.id === roi.id) state.closeRoiMenu();
   }, [cancelPeek, selectionApi, roi.id]);
+  // What this card staged: every close asks first while it holds any.
+  const owner = annotationFloatOwner(roi.id);
+  const staging = useFloatStaging(owner, close);
+  const requestClose = staging.requestClose;
 
-  // Placement: imperative, off the published view matrix — and again whenever
-  // the node changes size, which it does on every frame of the card's spring.
-  useEffect(() => {
-    const node = nodeRef.current;
-    if (!node) return;
-    const place = () => {
-      const view = viewApi.getState();
-      const matrix = view.viewProjectionMatrix;
-      const entryOnScreen =
-        entry && matrix ? projectWorldPoint(entry, matrix, view.viewportSize) : null;
-      const anchor =
-        !matrix || (view.cameraMoving && !expandedRef.current)
-          ? null
-          : entryOnScreen
-            ? {
-                x: entryOnScreen.x + BUTTON_POINTER_OFFSET_PX,
-                y: entryOnScreen.y - BUTTON_POINTER_OFFSET_PX,
-              }
-            : projectTopRightCorner(roi.bounds, roi.zSpan, matrix, view.viewportSize);
-      if (!anchor) {
-        node.style.opacity = "0";
-        node.style.pointerEvents = "none";
-        return;
+  const anchor = useCallback(
+    ({ viewProjection, viewport }: FloatView) => {
+      if (beside) {
+        const rect = projectScreenRect(
+          {
+            min: { x: roi.bounds.minX, y: roi.bounds.minY, z: roi.zSpan.min },
+            max: { x: roi.bounds.maxX, y: roi.bounds.maxY, z: roi.zSpan.max },
+          },
+          viewProjection,
+          viewport,
+        );
+        if (rect) return { kind: "beside" as const, rect };
       }
-      const { left, top } = cardOriginFor(
-        anchor,
-        BUTTON_BOX,
-        { width: node.offsetWidth, height: node.offsetHeight },
-        view.viewportSize,
-      );
-      node.style.transform = `translate(${left}px, ${top}px)`;
-      node.style.opacity = "1";
-      node.style.pointerEvents = "auto";
-    };
-    place();
-    const unsubscribe = viewApi.subscribe(place);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
-    observer?.observe(node);
-    return () => {
-      unsubscribe();
-      observer?.disconnect();
-    };
-  }, [roi, entry, viewApi]);
+      const entryOnScreen = entry ? projectWorldPoint(entry, viewProjection, viewport) : null;
+      const point = entryOnScreen
+        ? { x: entryOnScreen.x + BUTTON_POINTER_OFFSET_PX, y: entryOnScreen.y - BUTTON_POINTER_OFFSET_PX }
+        : projectTopRightCorner(roi.bounds, roi.zSpan, viewProjection, viewport);
+      return point ? { kind: "point" as const, point } : null;
+    },
+    [beside, entry, roi],
+  );
 
   // The grip: held for as long as anything of this card is in use.
   const syncHold = useCallback(
@@ -236,55 +211,17 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
     [selectionApi],
   );
 
-  // An open card closes like a popover does. Not while the full menu is up:
-  // Escape and the next press are that menu's first.
+  // Holding staged layers pins the card where it is: a peek folds when the
+  // pointer leaves it, and a folded card could not ask about them.
   useEffect(() => {
-    if (!expanded || fullMenuOpen) return;
-    const onScene = (target: EventTarget | null) =>
-      target instanceof Element && target.closest("canvas") !== null;
-    let menuAtPress = selectionApi.getState().menuRoi;
-    let pressedAt: { x: number; y: number } | null = null;
-    const onPointerDown = (event: PointerEvent) => {
-      if (insideEvents.has(event)) return;
-      menuAtPress = selectionApi.getState().menuRoi;
-      pressedAt = { x: event.clientX, y: event.clientY };
-      // A primary press on the scene waits for its click: one landing on a
-      // shape opens the card there, and closing first would fold this card
-      // only to unfold it again. Any other button never clicks.
-      if (event.button === 0 && onScene(event.target)) return;
-      close();
-    };
-    const onClick = (event: MouseEvent) => {
-      if (insideEvents.has(event) || !onScene(event.target)) return;
-      // A drag that orbited the camera, which the card followed.
-      if (
-        pressedAt &&
-        Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > CLICK_SLOP_PX
-      ) {
-        return;
-      }
-      // The scene handled the click first (its listener sits below the
-      // document): a click on a shape re-opened the menu, on this shape or
-      // another, and that card is the answer.
-      if (selectionApi.getState().menuRoi !== menuAtPress) return;
-      close();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.defaultPrevented) close();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("click", onClick);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [expanded, fullMenuOpen, close, selectionApi, insideEvents]);
+    if (!staging.holding || selectionApi.getState().menuRoi?.roi.id === roi.id) return;
+    cancelPeek();
+    selectionApi.getState().openRoiMenu(object, entry ?? undefined);
+  }, [staging.holding, selectionApi, roi.id, object, entry, cancelPeek]);
 
   const onAvatarClick = () => {
     if (pinned) {
-      close();
+      requestClose();
       return;
     }
     cancelPeek();
@@ -292,17 +229,20 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
   };
 
   return (
-    <div
-      ref={nodeRef}
-      // `data-nonbreaker`: SelectionBox's global mousedown must not clear the
-      // scene selection because the user clicked this card.
-      data-nonbreaker
-      className="absolute left-0 top-0 z-30 will-change-transform"
-      style={{ opacity: 0, pointerEvents: "none" }}
-      onPointerDown={(event) => insideEvents.add(event.nativeEvent)}
-      onClick={(event) => insideEvents.add(event.nativeEvent)}
-      // React's enter/leave follow its tree, portals included: moving into
-      // the "Run on" picker or the full menu is not leaving the card.
+    // Around the whole float, header menu included: whatever an action run
+    // from here returns is staged under this card, and a derivation it lists
+    // can be shown in the scene for now.
+    <FloatStagingScope owner={owner}>
+    <SceneFloat
+      anchor={anchor}
+      expanded={expanded}
+      // Not while the full menu is up: Escape and the next press are that
+      // menu's first.
+      dismissable={!fullMenuOpen}
+      onDismiss={requestClose}
+      // A click on a shape re-opens the menu, on this shape or another, and
+      // that card is the answer.
+      sceneClaim={() => selectionApi.getState().menuRoi}
       onPointerEnter={() => {
         pointerInsideRef.current = true;
         selectionApi.getState().holdHover(true);
@@ -313,101 +253,80 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
         syncHold(expanded || fullMenuOpen);
         if (peeking || peekTimerRef.current !== null) schedulePeek(false, PEEK_GRACE_MS);
       }}
-    >
-      <motion.div
-        initial={{ width: BUTTON_SIZE, height: BUTTON_SIZE, borderRadius: BUTTON_SIZE / 2 }}
-        animate={{
-          width: expanded ? CARD_WIDTH : BUTTON_SIZE,
-          height: expanded ? "auto" : BUTTON_SIZE,
-          borderRadius: expanded ? 12 : BUTTON_SIZE / 2,
-        }}
-        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-        className="overflow-hidden border border-border bg-background/90 text-foreground shadow-md backdrop-blur"
-      >
-        {/* Laid out at the card's width from the first frame: the spring
-            reveals the content, it does not reflow it. */}
-        <div style={{ width: CARD_WIDTH - 2 }}>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              // -1px: the surface's border is inside the 24px the avatar fills.
-              className="-m-px flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Annotation details"
-              aria-expanded={expanded}
-              aria-pressed={pinned}
-              onPointerEnter={() => {
-                if (!expanded) schedulePeek(true, PEEK_DELAY_MS);
-              }}
-              onClick={onAvatarClick}
-            >
-              {creator ? (
-                <StructureDisplay
-                  identifier="@lok/user"
-                  id={creator}
-                  variant="avatar"
-                  className="h-6 w-6"
-                  fallback={<EllipsisIcon className="h-3.5 w-3.5" />}
-                />
-              ) : (
-                <EllipsisIcon className="h-3.5 w-3.5" />
-              )}
-            </button>
-            {expanded && (
-              <>
-                {/* The avatar is the author; the header names them. */}
-                <span className="min-w-0 flex-1 truncate text-xs">
-                  <span className="font-medium">{formatAnnotationKind(roi.kind)}</span>
-                  {creator && (
-                    <span className="text-muted-foreground">
-                      {" by "}
-                      <StructureDisplay identifier="@lok/user" id={creator} variant="inline" />
-                    </span>
-                  )}
-                </span>
-                <MikroAnnotation.ObjectButton
-                  object={object}
-                  open={fullMenuOpen}
-                  onOpenChange={setFullMenuOpen}
-                  onDone={() => {
-                    setFullMenuOpen(false);
-                    close();
-                  }}
-                >
-                  <Button variant="ghost" size="icon-xs" aria-label="Annotation actions">
-                    <EllipsisIcon />
-                  </Button>
-                </MikroAnnotation.ObjectButton>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="mr-0.5"
-                  aria-label="Close"
-                  onClick={close}
-                >
-                  <XIcon />
-                </Button>
-              </>
-            )}
-          </div>
-          {expanded && (
-            // Capped, so `cardOriginFor` can keep the whole card in a small
-            // viewport; the action list scrolls on its own inside it.
-            <div className="max-h-[min(34rem,75vh)] overflow-y-auto">
-              <AnnotationInfoCard id={roi.id} />
-              <div className="border-t border-border/60 px-1 pb-1 pt-1.5">
-                <AnnotationPairActions
-                  roi={object}
-                  // A click: nothing is held, type-to-search. A draw (no
-                  // point) still holds its key; a peek leaves typing to the
-                  // scene.
-                  autoFocus={menu?.point != null}
-                  onDone={close}
-                />
-              </div>
-            </div>
+      button={
+        <button
+          type="button"
+          // -1px: the surface's border is inside the 24px the avatar fills.
+          className="-m-px flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Annotation details"
+          aria-expanded={expanded}
+          aria-pressed={pinned}
+          onPointerEnter={() => {
+            if (!expanded) schedulePeek(true, PEEK_DELAY_MS);
+          }}
+          onClick={onAvatarClick}
+        >
+          {creator ? (
+            <StructureDisplay
+              identifier="@lok/user"
+              id={creator}
+              variant="avatar"
+              className="h-6 w-6"
+              fallback={<EllipsisIcon className="h-3.5 w-3.5" />}
+            />
+          ) : (
+            <EllipsisIcon className="h-3.5 w-3.5" />
           )}
+        </button>
+      }
+      header={
+        <>
+          {/* The avatar is the author; the header names them. */}
+          <span className="min-w-0 flex-1 truncate text-xs">
+            <span className="font-medium">{formatAnnotationKind(roi.kind)}</span>
+            {creator && (
+              <span className="text-muted-foreground">
+                {" by "}
+                <StructureDisplay identifier="@lok/user" id={creator} variant="inline" />
+              </span>
+            )}
+          </span>
+          <MikroAnnotation.ObjectButton
+            object={object}
+            open={fullMenuOpen}
+            onOpenChange={setFullMenuOpen}
+            // A finished action leaves the card open: what it returns is
+            // staged here, under this card.
+            onDone={() => setFullMenuOpen(false)}
+          >
+            <Button variant="ghost" size="icon-xs" aria-label="Annotation actions">
+              <EllipsisIcon />
+            </Button>
+          </MikroAnnotation.ObjectButton>
+          <Button variant="ghost" size="icon-xs" className="mr-0.5" aria-label="Close" onClick={requestClose}>
+            <XIcon />
+          </Button>
+        </>
+      }
+    >
+      {/* Capped, so the float can keep the whole card in a small viewport;
+          the action list scrolls on its own inside it. */}
+      <div className="max-h-[min(34rem,75vh)] overflow-y-auto">
+        <AnnotationInfoCard id={roi.id} />
+        <div className="border-t border-border/60 px-1 pb-1 pt-1.5">
+          <AnnotationPairActions
+            roi={object}
+            // A click: nothing is held, type-to-search. A draw (no point)
+            // still holds its key; a peek leaves typing to the scene.
+            autoFocus={menu?.point != null}
+            // A finished action leaves the card open: its result is staged
+            // here, to keep or discard.
+            onDone={NOTHING}
+          />
         </div>
-      </motion.div>
-    </div>
+      </div>
+      <FloatStagingFooter staging={staging} />
+    </SceneFloat>
+    </FloatStagingScope>
   );
 };

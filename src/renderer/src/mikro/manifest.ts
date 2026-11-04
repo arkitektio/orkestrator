@@ -39,6 +39,9 @@ export const manifest: ModuleManifest = {
     { identifier: "@mikro/tabledataset", name: "Table Dataset", datum: true, path: "tabledatasets/:id" },
     { identifier: "@mikro/sparsedataset", name: "Sparse Dataset", datum: true, path: "sparsedatasets/:id" },
     { identifier: "@mikro/meshcollection", name: "Mesh Collection", datum: false, path: "meshcollections/:id" },
+    // One object of a mesh collection (a catalog row, id `<collection>:<object>`):
+    // what an action takes when it works on one surface. No page of its own.
+    { identifier: "@mikro/meshobject", name: "Mesh Object", datum: false, path: "meshobjects/:id" },
     // Hardware around the sample (a coverslip, a dish), one glTF in a space of its own.
     { identifier: "@mikro/fixture", name: "Fixture", datum: true, path: "fixtures/:id" },
     { identifier: "@mikro/annotation", name: "Annotation", datum: true, path: "annotations/:id" },

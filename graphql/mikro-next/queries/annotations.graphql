@@ -46,31 +46,7 @@ query GetAnnotationInfo($id: ID!) {
     }
     ...AnnotationShapeLineage
     derivedResidents {
-      __typename
-      ... on ArrayDataset {
-        id
-        name
-      }
-      ... on TableDataset {
-        id
-        name
-      }
-      ... on SparseDataset {
-        id
-        name
-      }
-      ... on AnnotationCollection {
-        id
-        name
-      }
-      ... on MeshCollection {
-        id
-        label
-      }
-      ... on NetworkCollection {
-        id
-        label
-      }
+      ...DerivedResident
     }
   }
 }

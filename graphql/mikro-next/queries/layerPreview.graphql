@@ -1,0 +1,17 @@
+# The layer a create mutation would make, resolved and never written: what a
+# scene float stages (`scene/platform/float/stagedLayerStore.ts`). The input
+# is one of the create mutations' own inputs; keeping the layer is that same
+# input sent to the create.
+#
+# Asked twice in one request: the two fragments disagree on a field's
+# nullability across kinds, so they cannot share one selection. `engine` is
+# the Add Layer engine's view of it — a staged layer counts toward the next
+# channel colour and the "already in the scene" check like a saved one.
+query PreviewLayer($input: PreviewLayerInput!) {
+  previewLayer(input: $input) {
+    ...SceneLayer
+  }
+  engine: previewLayer(input: $input) {
+    ...AddLayerStagedLayer
+  }
+}

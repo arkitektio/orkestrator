@@ -1,3 +1,4 @@
+import { meshFloatOwner, useOptionalSceneFloatStoreApi } from "../../platform/float/floatStore";
 import { effectiveFlatNormals } from "./meshLayerDefaults";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -111,6 +112,7 @@ const FabriksCollectionGroup = ({
   const transformContext = useSceneStore((s) => s.transformContext);
   const viewApi = useViewStoreApi();
   const viewerApi = useMeshStoreApi();
+  const floatApi = useOptionalSceneFloatStoreApi();
   /**
    * Every manager-driven change goes through here — a landed LOD cell, a
    * material flip, the slab clip, visibility.
@@ -589,13 +591,27 @@ const FabriksCollectionGroup = ({
   };
 
   /** Click semantics, whichever path found the hit: re-clicking the selected
-   *  object deselects (and retracts its probe); anything else selects. */
+   *  object deselects (and retracts its probe); anything else selects.
+   *  Deferred while another float holds staged layers: it asks to keep or
+   *  discard them first (`floatStore.guard`). */
   const applyClick = (hit: MeshHit) => {
+    if (!manager) return;
+    const previous = viewerApi.getState().meshSelection;
+    const reclick = !!previous && previous.layerId === layer.id && previous.ordinal === hit.ordinal;
+    const run = () => applyClickNow(hit);
+    if (floatApi) {
+      floatApi.getState().guard(meshFloatOwner({ layerId: layer.id, ordinal: hit.ordinal }), run, { closesHolder: reclick });
+    } else run();
+  };
+
+  const applyClickNow = (hit: MeshHit) => {
     if (!manager) return;
     const state = viewerApi.getState();
     const previous = state.meshSelection;
+    const floatTarget = { kind: "mesh" as const, layerId: layer.id, ordinal: hit.ordinal };
     if (previous && previous.layerId === layer.id && previous.ordinal === hit.ordinal) {
       state.setMeshSelection(null); // clicking the selected object deselects
+      floatApi?.getState().close(floatTarget); // and closes its float
       if (
         state.probedCoordinate?.strategy === "mesh" &&
         state.probedCoordinate.layerId === layer.id
@@ -613,6 +629,8 @@ const FabriksCollectionGroup = ({
       stats: null,
       isolate,
     });
+    // A click (never a list row) opens the object's float.
+    floatApi?.getState().open(floatTarget);
     publishMeshProbe(hit, "click");
   };
 

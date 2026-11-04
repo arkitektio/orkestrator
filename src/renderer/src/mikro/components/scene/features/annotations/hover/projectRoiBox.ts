@@ -1,15 +1,10 @@
-import * as THREE from "three";
+import type * as THREE from "three";
 
+import { projectToScreen, type ScreenPoint } from "../../../platform/float/projectScreenRect";
 import type { ZSpan } from "../annotationVisibility";
 import type { RoiBounds } from "../roiSelectionStore";
 
-/** A point on the viewport, in CSS pixels from the top-left. */
-export interface ScreenPoint {
-  x: number;
-  y: number;
-}
-
-const CORNER = new THREE.Vector3();
+export type { ScreenPoint };
 
 /**
  * The screen position of a world box's MOST TOP-RIGHT corner: every corner
@@ -39,15 +34,11 @@ export function projectTopRightCorner(
   for (const x of xs) {
     for (const y of ys) {
       for (const z of zs) {
-        CORNER.set(x, y, z).applyMatrix4(viewProjection);
-        // A corner behind the eye divides by a negative w and lands mirrored
-        // with NDC z past 1 — under both conventions (WebGPU [0, 1], WebGL
-        // [-1, 1]); past the far plane reads the same. Skip it.
-        if (!Number.isFinite(CORNER.x) || !Number.isFinite(CORNER.y) || CORNER.z > 1) {
-          continue;
-        }
-        const px = (CORNER.x * 0.5 + 0.5) * viewport.width;
-        const py = (-CORNER.y * 0.5 + 0.5) * viewport.height;
+        // A corner behind the eye (or past the far plane) is skipped.
+        const corner = projectToScreen(x, y, z, viewProjection, viewport);
+        if (!corner) continue;
+        const px = corner.x;
+        const py = corner.y;
         // Screen top-right: large x, small y.
         const score = px - py;
         if (score > bestScore) {
@@ -60,8 +51,6 @@ export function projectTopRightCorner(
   return best;
 }
 
-const POINT = new THREE.Vector3();
-
 /**
  * The screen position of one world point, or null when it is behind the
  * camera or past the far plane (the same rule the corners above follow).
@@ -71,12 +60,7 @@ export function projectWorldPoint(
   viewProjection: THREE.Matrix4,
   viewport: { width: number; height: number },
 ): ScreenPoint | null {
-  POINT.set(point[0], point[1], point[2]).applyMatrix4(viewProjection);
-  if (!Number.isFinite(POINT.x) || !Number.isFinite(POINT.y) || POINT.z > 1) return null;
-  return {
-    x: (POINT.x * 0.5 + 0.5) * viewport.width,
-    y: (-POINT.y * 0.5 + 0.5) * viewport.height,
-  };
+  return projectToScreen(point[0], point[1], point[2], viewProjection, viewport);
 }
 
 /**
@@ -86,42 +70,4 @@ export function projectWorldPoint(
  */
 export const BUTTON_POINTER_OFFSET_PX = 12;
 
-/** Margin the button keeps to the frame edge when the corner is off-screen. */
-export const BUTTON_MARGIN = 8;
-
-/**
- * Where the button's top-left goes so that its BOTTOM-LEFT sits exactly on
- * the anchor corner, slid inward only when that would leave the frame.
- */
-export function buttonOriginFor(
-  anchor: ScreenPoint,
-  button: { width: number; height: number },
-  viewport: { width: number; height: number },
-): { left: number; top: number } {
-  let left = anchor.x;
-  let top = anchor.y - button.height;
-  const maxLeft = Math.max(BUTTON_MARGIN, viewport.width - button.width - BUTTON_MARGIN);
-  const maxTop = Math.max(BUTTON_MARGIN, viewport.height - button.height - BUTTON_MARGIN);
-  left = Math.min(Math.max(left, BUTTON_MARGIN), maxLeft);
-  top = Math.min(Math.max(top, BUTTON_MARGIN), maxTop);
-  return { left, top };
-}
-
-/**
- * Where the button's node goes once it has grown into its card: the top-left
- * the bare button had (`buttonOriginFor`), so the avatar stays under the
- * pointer and the card unfolds right and down from it — slid inward only as
- * far as the grown size needs to stay in the frame. At the button's own size
- * this IS `buttonOriginFor`.
- */
-export function cardOriginFor(
-  anchor: ScreenPoint,
-  button: { width: number; height: number },
-  card: { width: number; height: number },
-  viewport: { width: number; height: number },
-): { left: number; top: number } {
-  const origin = buttonOriginFor(anchor, button, viewport);
-  const maxLeft = Math.max(BUTTON_MARGIN, viewport.width - card.width - BUTTON_MARGIN);
-  const maxTop = Math.max(BUTTON_MARGIN, viewport.height - card.height - BUTTON_MARGIN);
-  return { left: Math.min(origin.left, maxLeft), top: Math.min(origin.top, maxTop) };
-}
+export { BUTTON_MARGIN, buttonOriginFor, cardOriginFor } from "../../../platform/float/pointAnchor";

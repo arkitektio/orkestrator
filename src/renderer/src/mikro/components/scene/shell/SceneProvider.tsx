@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useStore } from "zustand";
 import { resolveSceneCameraFrame } from "../platform/camera/cameraState";
 import { resolvePreferredDisplayMode } from "../platform/camera/preferredView";
 import { sceneLayerSignature, sceneScopeSignature } from "../platform/model/sceneStructure";
@@ -64,6 +65,8 @@ import {
   SceneScopeStatusContext,
   type SceneScopeStatus,
 } from "../platform/stores/sceneScope";
+import { SceneFloatStoreContext, createSceneFloatStore } from "../platform/float/floatStore";
+import { StagedLayersStoreContext, createStagedLayersStore } from "../platform/float/stagedLayerStore";
 
 // The scope-readiness contract lives in platform/ so features can gate on it
 // without importing the shell; re-exported here because this is the module
@@ -203,10 +206,29 @@ export const SceneProvider = (props: {
 }) => {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
-  const scene = props.scene ?? null;
+  const serverScene = props.scene ?? null;
   // One per mounted provider, for its whole life: what happens here is told to
   // whoever listens here (`platform/events/sceneEvents.ts`).
   const [events] = useState(createSceneEvents);
+  // The open float and what it staged, for the SCENE's life rather than the
+  // scope's: a view switch rebuilds the scope, and neither may vanish with it.
+  const sceneId = serverScene?.id ?? null;
+  const { floatStore, stagedStore } = useMemo(() => {
+    void sceneId;
+    return { floatStore: createSceneFloatStore(), stagedStore: createStagedLayersStore() };
+  }, [sceneId]);
+  const staged = useStore(stagedStore, (state) => state.entries);
+  // The scene as drawn: the server's layers, then the staged ones. Everything
+  // below — the scope build, the layer signature, the fold — reads THIS, so a
+  // staged layer opens its arrays, plans and draws like a saved one, and
+  // staging or discarding one is an ordinary incremental fold.
+  const scene = useMemo(
+    () =>
+      serverScene && staged.length > 0
+        ? ({ ...serverScene, layers: [...serverScene.layers, ...staged.map((entry) => entry.layer)] } as SceneFragment)
+        : serverScene,
+    [serverScene, staged],
+  );
 
   // The rebuild key. Content-only cache re-emissions (a saved render graph, a
   // pinned view, a new animation) and layer-set changes alike leave this
@@ -497,6 +519,8 @@ export const SceneProvider = (props: {
 
   return (
     <SceneEventsContext.Provider value={events}>
+    <SceneFloatStoreContext.Provider value={floatStore}>
+    <StagedLayersStoreContext.Provider value={stagedStore}>
     <SceneScopeStatusContext.Provider value={status}>
       <ModeStoreContext.Provider value={scope?.modeStore ?? null}>
         <ViewStoreContext.Provider value={scope?.viewStore ?? null}>
@@ -534,6 +558,8 @@ export const SceneProvider = (props: {
         </ViewStoreContext.Provider>
       </ModeStoreContext.Provider>
     </SceneScopeStatusContext.Provider>
+    </StagedLayersStoreContext.Provider>
+    </SceneFloatStoreContext.Provider>
     </SceneEventsContext.Provider>
   );
 };

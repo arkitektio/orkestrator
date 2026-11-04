@@ -3922,6 +3922,17 @@ input DeleteCoordinateSystemInput {
   id: ID!
 }
 
+"""
+What to delete the derived data of: one object the lineage walk can stand on, by kind and id
+"""
+input DeleteDerivedInput {
+  """Its ID, as its own query takes it"""
+  id: ID!
+
+  """What it is"""
+  kind: LineageNodeKind!
+}
+
 """Input for deleting a file by ID"""
 input DeleteFileInput {
   """
@@ -4127,6 +4138,11 @@ enum DerivationSourceKind {
   MESH_COLLECTION
 
   """
+  One object of a mesh collection: the data was computed from that one surface -- a crop to a cell's mesh, measurements over one organelle. The MESH_COLLECTION arm on the collection, and which object: the edge lands in the collection's vertex space and carries the object's id (the catalog's `object_id`), so two objects of one collection are two sources. What `meshObject(...).derivedResidents` reads back.
+  """
+  MESH_OBJECT
+
+  """
   A table dataset, through the space its coordinate columns declare -- the direction an image reconstructed from a table of SMLM localizations is derived. A table with no coordinate columns enumerates objects rather than places them, and its only honest edge is UNMAPPABLE.
   """
   TABLE_DATASET
@@ -4166,8 +4182,15 @@ input DerivedFromInput {
   """
   lens: ID = null
 
-  """(MESH_COLLECTION) The mesh collection this data was computed from"""
+  """
+  (MESH_COLLECTION, MESH_OBJECT) The mesh collection this data was computed from, or whose object it was
+  """
   meshCollection: ID = null
+
+  """
+  (MESH_OBJECT) Which object of `meshCollection` this data was computed from: its id in the collection's object catalog. The edge lands in the collection's vertex space and names the object
+  """
+  meshObject: Int = null
 
   """
   (TABLE_DATASET) The table this data was computed from -- an SMLM localization table a reconstruction was rendered from, say
@@ -7990,6 +8013,38 @@ type MeshLens implements Lens {
 }
 
 """
+One object of a mesh collection: a row of its object catalog, not a row here -- the meshes live in the collection's Parquet store. What the data computed from that one surface hangs off (a MESH_OBJECT derivation). Asked for with `meshObject(collection:, object:)`
+"""
+type MeshObject {
+  """The mesh collection the object belongs to"""
+  collection: MeshCollection!
+
+  """
+  Everything computed from this one object: the data whose `derivedFrom` named it as a MESH_OBJECT source. The object-level twin of `Annotation.derivedResidents`, kind-blind like it. These are listed on the collection's own lineage too: an object is part of its collection
+  """
+  derivedResidents: [Resident!]!
+
+  """`<collection>:<object>`: a stable handle, unique across collections"""
+  id: ID!
+
+  """
+  The object's id in the collection's object catalog: what a picked mesh reports
+  """
+  objectId: Int!
+}
+
+"""
+The fields a MESH_OBJECT derivation reads. Published for codegen; the wire type is the flat DerivedFromInput
+"""
+input MeshObjectDerivedFromInput {
+  kind: DerivationSourceKind! = MESH_OBJECT
+  meshCollection: ID!
+  meshObject: Int!
+  transform: TransformInput = null
+  valueRelation: ValueRelation = null
+}
+
+"""
 A mesh collection whose geometry carries the ids. **Nothing is sampled at a coordinate here**: an id rides on the geometry row, so a client that picked a surface is already holding one and goes straight to the lookup -- the mesh case of the rule that makes a plan worth caching, that it never costs a round-trip. `consumes` names the axes that pick resolved rather than axes to index anything with. The store is named for a headless worker that did not do the picking and must read the object catalog itself
 """
 type MeshSample implements SampleStep {
@@ -8532,6 +8587,11 @@ type Mutation {
   Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly
   """
   deleteCoordinateSystem(input: DeleteCoordinateSystemInput!): ID!
+
+  """
+  Delete everything made from one object -- derived data, data computed within a shape, shapes refined or converted from it, series converted out of a file, files exported from a dataset, transitively -- and keep the object. Every row is held to its own owner and delete guards before anything goes; one refusal deletes nothing. Answers the `<kind>:<id>` keys deleted; nothing made from it deletes nothing (`preflightDeleteDerived` lists what it takes)
+  """
+  deleteDerived(input: DeleteDerivedInput!): [ID!]!
 
   """Delete an existing file"""
   deleteFile(input: DeleteFileInput!): ID!
@@ -10481,6 +10541,20 @@ enum PreferredView {
 }
 
 """
+Which layer to preview, as the input of the create mutation that would make it: exactly one member. Keeping the preview is that same input sent to that mutation (`intensity` to `createIntensityLayer`, `mesh` to `createMeshLayer`, ...), which makes the identical layer
+"""
+input PreviewLayerInput @oneOf {
+  image: CreateLayerInput
+  intensity: CreateIntensityLayerInput
+  label: CreateLabelLayerInput
+  mesh: CreateMeshLayerInput
+  phasor: CreatePhasorLayerInput
+  rgb: CreateRgbLayerInput
+  vector: CreateVectorLayerInput
+  volume: CreateVolumeLayerInput
+}
+
+"""
 The 3D projection / rendering mode applied to a volumetric (z-stacked) render, whether that is an IMAGE layer's projection node or an INTENSITY layer's `projectionMode`.
 """
 enum ProjectionMode {
@@ -10767,6 +10841,11 @@ type Query {
   """
   meshCollections(filters: MeshCollectionFilter, pagination: OffsetPaginationInput): [MeshCollection!]!
 
+  """
+  One object of a mesh collection, by its id in the collection's object catalog: what was computed from that one surface (`derivedResidents`)
+  """
+  meshObject(collection: ID!, object: Int!): MeshObject!
+
   """Get a single metric by ID"""
   metric(id: ID!): Metric!
 
@@ -10823,6 +10902,11 @@ type Query {
   preflightDeleteArrayDataset(id: ID!): DeletePreflight!
 
   """
+  What `deleteDerived` would delete: everything made from this object, transitively, nearest first, with what would stop it and what else cascades. The object itself stays, so it is neither listed nor checked; `needsCascade` says whether anything was made from it at all
+  """
+  preflightDeleteDerived(id: ID!, kind: LineageNodeKind!): DeletePreflight!
+
+  """
   What deleting this file (the series converted out of it count) would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
   """
   preflightDeleteFile(id: ID!): DeletePreflight!
@@ -10851,6 +10935,11 @@ type Query {
   What deleting this table dataset would cost, without deleting it: everything made from it (a plain delete is refused over it; `cascade: true` takes it along), what stops the delete, and what else goes with it
   """
   preflightDeleteTableDataset(id: ID!): DeletePreflight!
+
+  """
+  The layer a create mutation would make, built and not saved: every field resolves as it would on the saved layer -- `asAffine`, `pathToWorld`, the kind's render columns -- and nothing is written. Refused for exactly the reasons the create would refuse it. Its `id` is negative and names no row; keep it by sending the same input to the create. What a viewer draws while it stages a layer it has not decided to keep
+  """
+  previewLayer(input: PreviewLayerInput!): Layer!
 
   """
   The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time
