@@ -1,10 +1,12 @@
 import { Slider } from "@/core/ui/slider";
 import { Circle, MoveRight, Share2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   useUpdateNetworkLayerMutation,
   type SceneLayerFragment,
   type UpdateNetworkLayerInput,
+  UpdateNetworkLayerDocument,
 } from "@/mikro/api/graphql";
 import {
   DEFAULT_INSTANCE_COLORMAP,
@@ -117,7 +119,7 @@ export const NetworkLayerCard = memo(
     onRemove?: (id: string) => void;
   }) => {
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updateNetworkLayer] = useUpdateNetworkLayerMutation();
+    const [updateNetworkLayer] = useStagedLayerMutation(useUpdateNetworkLayerMutation(), UpdateNetworkLayerDocument);
 
     const hidden = layer.visible === false;
     const collection = layer.collection;

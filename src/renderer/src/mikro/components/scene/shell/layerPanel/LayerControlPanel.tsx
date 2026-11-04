@@ -1,5 +1,4 @@
-import { isStagedLayerId } from "../../platform/float/stagedLayerStore";
-import { StagedLayersCard } from "../../features/staging/StagedLayersCard";
+import { isStagedLayerId, useStagedLayersStoreApi } from "../../platform/float/stagedLayerStore";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation } from "@/mikro/api/graphql";
 import type { SceneLayerFragment } from "../../platform/model/layerGuards";
@@ -71,6 +70,7 @@ export const LayerControlPanel = ({
   // pan/orbit. The zustand actions (setSelectedLayerId, updateLayer,
   // fitToLayer) are already stable refs; these wrap
   // them without capturing per-render values (selection is read via a ref).
+  const stagedApi = useStagedLayersStoreApi();
   const selectedRef = useRef(selectedLayerId);
   selectedRef.current = selectedLayerId;
 
@@ -93,11 +93,16 @@ export const LayerControlPanel = ({
       // Drop the selection first if it points at the layer being removed, so
       // the panel doesn't try to keep an unfolded editor for a gone layer.
       if (selectedRef.current === id) setSelectedLayerId(null);
+      // A staged layer has no row to delete: removing it discards it.
+      if (isStagedLayerId(id)) {
+        stagedApi.getState().discard([id]);
+        return;
+      }
       void deleteLayer({ variables: { input: { id } } }).catch(
         reportErrorAs("Couldn't remove the layer"),
       );
     },
-    [deleteLayer, setSelectedLayerId],
+    [deleteLayer, setSelectedLayerId, stagedApi],
   );
 
   // EVERY layer is listed, in scene order — the order NEVER changes while you
@@ -128,23 +133,23 @@ export const LayerControlPanel = ({
     // entry decides which list it is taken from, so the two passes cannot both
     // claim it.
     const wanted = (typename: string) => !kinds || kinds.includes(typename);
-    // Staged layers (a float's, saved nowhere) get no editable card: every
-    // card edit is a write to a layer row. They are the "Staged" group.
     for (const layer of layers) {
-      if (!wanted(layer.__typename) || isStagedLayerId(layer.id)) continue;
+      if (!wanted(layer.__typename)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "layerState") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
     }
     for (const layer of sceneLayers) {
-      if (!wanted(layer.__typename) || isStagedLayerId(layer.id)) continue;
+      if (!wanted(layer.__typename)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "fragment") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
     }
     // Stable within a rank: `sort` preserves the order each list was walked in,
-    // which is scene order.
-    return entries.sort((a, b) => a.rank - b.rank);
+    // which is scene order. Staged layers (a float's, saved nowhere) are not
+    // listed: their cards are drawn inline in the float that staged them.
+    const sorted = entries.sort((a, b) => a.rank - b.rank);
+    return { saved: sorted.filter((card) => !isStagedLayerId(card.key)) };
   }, [layers, sceneLayers, kinds]);
 
   // NO auto-expand: unfolding used to be space-derived (`fitsExpanded`), which
@@ -153,6 +158,34 @@ export const LayerControlPanel = ({
   // every subsequent layers-store write walk all of them. Cards open only on
   // an explicit click (or the selection), one at a time.
   const isExpanded = (id: string) => expandOverrides[id] ?? id === selectedLayerId;
+
+  type Card = (typeof cards.saved)[number];
+  const renderCard = ({ key, entry, layer }: Card) => {
+    // The row IS the button: selecting it unfolds the editor inline within
+    // the same card (one border around header + body), rather than popping a
+    // separate flyout window.
+    const common = {
+      expanded: isExpanded(key),
+      unplannable: unplannableLayers[key],
+      onSelect: handleSelect,
+      onUpdate: updateLayer,
+      onFocus: fitToLayer,
+      onRemove: handleRemove,
+      onClose: handleClose,
+    };
+    // A layer without a server placement (`asAffine` null) is not on the
+    // canvas at all — say so under its card, for every kind, in the one place
+    // that sees every kind.
+    const unplaceable = unplaceableReason(layer);
+    return unplaceable ? (
+      <div className="flex flex-col">
+        {renderLayerCard(entry, layer, common)}
+        <UnplaceableNotice reason={unplaceable} />
+      </div>
+    ) : (
+      renderLayerCard(entry, layer, common)
+    );
+  };
 
   return (
     // `@container/layers`: the panel sizes itself to whatever hosts it — the
@@ -179,43 +212,14 @@ export const LayerControlPanel = ({
             renders in the scene like a layer, so it is managed like one.
             Session-local — renders null outside a design session. */}
         <DesignStagingCard />
-        {/* What the scene's floats staged: drawn, saved nowhere. */}
-        {!kinds && <StagedLayersCard />}
         {/* One column while narrow; a wide rail unfolds into two and then three
             so the cards stay readable instead of stretching to a full page
             width. `items-start` keeps an unfolded card from dragging its row
             mates taller. */}
         <div className="grid grid-cols-1 items-start gap-1 @2xl/layers:grid-cols-2 @5xl/layers:grid-cols-3">
-          {cards.map(({ key, entry, layer }) => {
-            // The row IS the button: selecting it unfolds the editor inline
-            // within the same card (one border around header + body), rather
-            // than popping a separate flyout window.
-            const common = {
-              expanded: isExpanded(key),
-              unplannable: unplannableLayers[key],
-              onSelect: handleSelect,
-              onUpdate: updateLayer,
-              onFocus: fitToLayer,
-              onRemove: handleRemove,
-              onClose: handleClose,
-            };
-            // A layer without a server placement (`asAffine` null) is not on
-            // the canvas at all — say so under its card, for every kind, in
-            // the one place that sees every kind.
-            const unplaceable = unplaceableReason(layer);
-            return (
-              <Fragment key={key}>
-                {unplaceable ? (
-                  <div className="flex flex-col">
-                    {renderLayerCard(entry, layer, common)}
-                    <UnplaceableNotice reason={unplaceable} />
-                  </div>
-                ) : (
-                  renderLayerCard(entry, layer, common)
-                )}
-              </Fragment>
-            );
-          })}
+          {cards.saved.map((card) => (
+            <Fragment key={card.key}>{renderCard(card)}</Fragment>
+          ))}
         </div>
 
         {!kinds && (

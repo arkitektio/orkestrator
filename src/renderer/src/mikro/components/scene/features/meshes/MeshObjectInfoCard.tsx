@@ -6,7 +6,7 @@ import { RetryButton } from "@/core/layout/fallbacks/statusActions";
 import { Skeleton } from "@/core/ui/skeleton";
 import { useGetMeshObjectInfoQuery } from "@/mikro/api/graphql";
 
-import { ResidentLink, ResidentStageToggle, RESIDENT_NOUN, isNamedResident } from "../staging/DerivedResidents";
+import { ResidentItem, isNamedResident } from "../staging/DerivedResidents";
 
 /**
  * What the mesh float says about one object below its header: what was
@@ -45,20 +45,13 @@ export const MeshObjectInfoCard = ({ collection, objectId }: { collection: strin
     );
   }
   if (residents.length === 0) {
-    return <p className="text-muted-foreground">Nothing has been computed from this object yet.</p>;
+    return <p className="px-1.5 py-1.5 text-muted-foreground">Nothing made from this object yet.</p>;
   }
   return (
-    <section className="flex flex-col gap-1">
-      <h4 className="font-medium">Computed from this object</h4>
-      <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto">
-        {residents.map((resident) => (
-          <li key={`${resident.__typename}:${resident.id}`} className="flex min-w-0 items-baseline gap-2">
-            <ResidentLink resident={resident} />
-            <span className="shrink-0 text-muted-foreground">{RESIDENT_NOUN[resident.__typename]}</span>
-            <ResidentStageToggle resident={resident} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <ul className="flex max-h-48 flex-col gap-0.5 overflow-y-auto">
+      {residents.map((resident) => (
+        <ResidentItem key={`${resident.__typename}:${resident.id}`} resident={resident} />
+      ))}
+    </ul>
   );
 };

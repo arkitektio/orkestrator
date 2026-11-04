@@ -10,7 +10,7 @@ import { useSettings } from "@/core/settings/store/SettingsContext";
 import { projectScreenRect } from "../../../platform/float/projectScreenRect";
 import { SceneFloat, type FloatView } from "../../../platform/float/SceneFloat";
 import { annotationFloatOwner, useOptionalSceneFloatStoreApi } from "../../../platform/float/floatStore";
-import { FloatStagingFooter, useFloatStaging } from "../../staging/FloatStaging";
+import { useFloatStaging } from "../../staging/FloatStaging";
 import { FloatStagingScope } from "../../staging/StageToggle";
 import {
   findVisibleRoi,
@@ -19,8 +19,7 @@ import {
   type VisibleRoi,
 } from "../roiSelectionStore";
 import { formatAnnotationKind } from "../../../platform/model/selectionFormat";
-import { AnnotationInfoCard } from "./AnnotationInfoCard";
-import { AnnotationPairActions } from "./AnnotationPairActions";
+import { AnnotationFloatMenu } from "./AnnotationFloatMenu";
 import { BUTTON_POINTER_OFFSET_PX, projectTopRightCorner, projectWorldPoint } from "./projectRoiBox";
 
 /** How long the pointer rests on the avatar before the card unfolds: a
@@ -28,7 +27,6 @@ import { BUTTON_POINTER_OFFSET_PX, projectTopRightCorner, projectWorldPoint } fr
 export const PEEK_DELAY_MS = 150;
 /** How long an unfolded (not pinned) card survives the pointer leaving it. */
 export const PEEK_GRACE_MS = 250;
-const NOTHING = () => {};
 
 /**
  * The one overlay of an annotation in the scene: a small button wearing the
@@ -57,8 +55,11 @@ const NOTHING = () => {};
  * but not a click on the shape (it stays, or moves to the shape clicked), not
  * a drag that moved the camera, and not a finished action: what that returns
  * is STAGED under the card (`features/staging`), shown in the scene and saved
- * nowhere, and while the card holds staged layers every close (and a click on
- * another object) asks to keep or discard them first.
+ * nowhere until kept. Closing the card discards what it staged and nobody
+ * kept.
+ *
+ * Its body is a short menu (`AnnotationFloatMenu`): Run, Derived, Details and,
+ * while something is staged, In the scene, each sliding in its own pane.
  *
  * The frame — placement, the spring, closing like a popover — is the scene's
  * one float (`platform/float/SceneFloat`), which the mesh float shares.
@@ -169,10 +170,14 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
     const state = selectionApi.getState();
     if (state.menuRoi?.roi.id === roi.id) state.closeRoiMenu();
   }, [cancelPeek, selectionApi, roi.id]);
-  // What this card staged: every close asks first while it holds any.
+  // What this card staged: closing it discards whatever was not kept.
   const owner = annotationFloatOwner(roi.id);
-  const staging = useFloatStaging(owner, close);
-  const requestClose = staging.requestClose;
+  const staging = useFloatStaging(owner);
+  // Which pane of the card's menu is open; a folded card starts at its root.
+  const [pane, setPane] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expanded) setPane(null);
+  }, [expanded]);
 
   const anchor = useCallback(
     ({ viewProjection, viewport }: FloatView) => {
@@ -221,7 +226,7 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
 
   const onAvatarClick = () => {
     if (pinned) {
-      requestClose();
+      close();
       return;
     }
     cancelPeek();
@@ -239,7 +244,7 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
       // Not while the full menu is up: Escape and the next press are that
       // menu's first.
       dismissable={!fullMenuOpen}
-      onDismiss={requestClose}
+      onDismiss={close}
       // A click on a shape re-opens the menu, on this shape or another, and
       // that card is the answer.
       sceneClaim={() => selectionApi.getState().menuRoi}
@@ -303,29 +308,22 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
               <EllipsisIcon />
             </Button>
           </MikroAnnotation.ObjectButton>
-          <Button variant="ghost" size="icon-xs" className="mr-0.5" aria-label="Close" onClick={requestClose}>
+          <Button variant="ghost" size="icon-xs" className="mr-0.5" aria-label="Close" onClick={close}>
             <XIcon />
           </Button>
         </>
       }
     >
-      {/* Capped, so the float can keep the whole card in a small viewport;
-          the action list scrolls on its own inside it. */}
-      <div className="max-h-[min(34rem,75vh)] overflow-y-auto">
-        <AnnotationInfoCard id={roi.id} />
-        <div className="border-t border-border/60 px-1 pb-1 pt-1.5">
-          <AnnotationPairActions
-            roi={object}
-            // A click: nothing is held, type-to-search. A draw (no point)
-            // still holds its key; a peek leaves typing to the scene.
-            autoFocus={menu?.point != null}
-            // A finished action leaves the card open: its result is staged
-            // here, to keep or discard.
-            onDone={NOTHING}
-          />
-        </div>
-      </div>
-      <FloatStagingFooter staging={staging} />
+      <AnnotationFloatMenu
+        roi={object}
+        staging={staging}
+        pane={pane}
+        onPaneChange={setPane}
+        // A click: nothing is held, the keyboard is the card's (type-to-search
+        // lands in Run). A draw (no point) still holds its key; a peek leaves
+        // typing to the scene.
+        autoFocus={menu?.point != null}
+      />
     </SceneFloat>
     </FloatStagingScope>
   );

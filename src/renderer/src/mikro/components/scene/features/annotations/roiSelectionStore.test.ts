@@ -272,3 +272,23 @@ describe("visibleRois", () => {
     expect(state.menuRoi).toBeNull();
   });
 });
+
+describe("refined shapes shown by the card", () => {
+  it("shows none until one is turned on, and forgets them when the card moves to another shape", () => {
+    const store = createRoiSelectionStore();
+    store.getState().setCardRoi({ id: "a1", layerId: "l" });
+    expect(store.getState().cardShown).toEqual([]);
+
+    store.getState().toggleCardShown("r1");
+    store.getState().toggleCardShown("r2");
+    store.getState().toggleCardShown("r1");
+    expect(store.getState().cardShown).toEqual(["r2"]);
+
+    // The same shape again (a peek turning into a pin) keeps them.
+    store.getState().setCardRoi({ id: "a1", layerId: "l" });
+    expect(store.getState().cardShown).toEqual(["r2"]);
+
+    store.getState().setCardRoi({ id: "a2", layerId: "l" });
+    expect(store.getState().cardShown).toEqual([]);
+  });
+});

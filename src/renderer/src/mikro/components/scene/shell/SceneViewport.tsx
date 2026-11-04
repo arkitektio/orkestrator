@@ -62,6 +62,8 @@ import { StaleProbeReconciler } from "../features/probe/StaleProbeReconciler";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
 import { AnnotationHoverCard } from "../features/annotations/hover/AnnotationHoverCard";
 import { MeshFloat } from "../features/meshes/MeshFloat";
+import { LayerCardSlotContext } from "../platform/layerui/layerCardSlot";
+import { SingleLayerCard } from "./layerPanel/SingleLayerCard";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
@@ -471,8 +473,12 @@ export const SceneViewport = (props: {
               into — what is known about the shape and what runs on it with
               the image; a click on a shape opens the same card. The one
               overlay that follows a shape rather than a corner. */}
-          {props.annotationCards !== false && <AnnotationHoverCard />}
-          {props.annotationCards !== false && <MeshFloat />}
+          {/* The floats draw a staged layer with its ordinary card; the
+              cards are the shell's, so they are handed in here. */}
+          <LayerCardSlotContext.Provider value={SingleLayerCard}>
+            {props.annotationCards !== false && <AnnotationHoverCard />}
+            {props.annotationCards !== false && <MeshFloat />}
+          </LayerCardSlotContext.Provider>
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbePointPinner />

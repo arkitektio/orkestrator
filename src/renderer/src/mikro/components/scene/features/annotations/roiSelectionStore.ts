@@ -93,12 +93,17 @@ interface RoiSelectionState {
   menuRoi: { roi: SelectedRoi; point: HoverPoint | null } | null;
   /**
    * The shape whose card is unfolded right now, peeking or pinned
-   * (`hover/AnnotationHoverCard`). Its layer draws what was made from it over
-   * it (`lib/annotations/derivedShapes`) while this holds.
+   * (`hover/AnnotationHoverCard`). Its layer draws, over it, the shapes made
+   * from it that the card's Derived menu turned on (`cardShown`,
+   * `lib/annotations/derivedShapes`) — none until one is.
    */
   cardRoi: { id: string; layerId: string } | null;
   /** Set by the card as it unfolds; cleared (only if still this shape) as it folds. */
   setCardRoi: (roi: { id: string; layerId: string } | null, previousId?: string) => void;
+  /** The shapes made from `cardRoi` its card shows in the scene, by id. Reset when the card moves on. */
+  cardShown: string[];
+  /** Show or hide one shape made from the card's shape. */
+  toggleCardShown: (id: string) => void;
   openRoiMenu: (roi: SelectedRoi, point?: HoverPoint) => void;
   closeRoiMenu: () => void;
   selectOnlyRoi: (roi: SelectedRoi) => void;
@@ -186,7 +191,15 @@ export const createRoiSelectionStore = () => {
             // A fold clears only its own shape: a card that unfolded on another
             // shape in the meantime keeps its overlay.
             if (roi === null && previousId !== undefined && state.cardRoi?.id !== previousId) return;
+            if (roi?.id !== state.cardRoi?.id) state.cardShown = [];
             state.cardRoi = roi;
+          }),
+        cardShown: [],
+        toggleCardShown: (id) =>
+          set((state) => {
+            state.cardShown = state.cardShown.includes(id)
+              ? state.cardShown.filter((shown) => shown !== id)
+              : [...state.cardShown, id];
           }),
         hoverRoi: (roi, point) => {
           const current = get().hoveredRoi;

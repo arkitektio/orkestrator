@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EllipsisIcon, XIcon } from "lucide-react";
+import { EyeIcon, LayersIcon, PlayIcon, XIcon } from "lucide-react";
 
-import { MikroMeshCollection, MikroMeshObject } from "@/core/linkers";
+import { MikroMeshCollection } from "@/core/linkers";
+import { SmartContext } from "@/core/smart/extensions/context";
 import { Button } from "@/core/ui/button";
+import { cn } from "@/core/util/utils";
+import { useGetMeshObjectInfoQuery } from "@/mikro/api/graphql";
 
 import { projectScreenRect } from "../../platform/float/projectScreenRect";
 import { SceneFloat, type FloatView } from "../../platform/float/SceneFloat";
@@ -12,7 +15,9 @@ import {
   useSceneFloatStoreApi,
   type FloatTarget,
 } from "../../platform/float/floatStore";
-import { FloatStagingFooter, useFloatStaging } from "../staging/FloatStaging";
+import { FloatMenu, type FloatMenuEntry } from "../../platform/float/FloatMenu";
+import { StagedPane, useFloatStaging } from "../staging/FloatStaging";
+import { isNamedResident } from "../staging/DerivedResidents";
 import { FloatStagingScope } from "../staging/StageToggle";
 import { resolveCollectionMatrix } from "../../platform/model/collectionPlacement";
 import { hueStyle, objectLabel } from "../../platform/model/selectionFormat";
@@ -32,8 +37,12 @@ import { useRoiSelectionStoreApi } from "../annotations/roiSelectionStore";
  * never from `meshSelection`: the meshes panel's rows write that same field,
  * and browsing the list opens nothing. It stays open while the object stays
  * selected; a click on it again (which deselects), Escape, × or a press
- * outside close it — each asking first while it holds staged layers
+ * outside close it, discarding whatever it staged and nobody kept
  * (`features/staging`), as the annotation float does.
+ *
+ * Its body is the same short menu: Run (on this object, or its collection),
+ * Derived (what was computed from this one surface) and, while something is
+ * staged, In the scene. Go to and Isolate sit in the line above it.
  *
  * Nothing shows until the object's catalog entry is known: its box is what the
  * float sits beside.
@@ -51,6 +60,9 @@ const AttachedMeshFloat = ({ target }: { target: FloatTarget }) => {
   return <Placed target={target} layerRef={layerRef} entry={entry} />;
 };
 
+const MESH_OBJECT = "@mikro/meshobject";
+const MESH_COLLECTION = "@mikro/meshcollection";
+
 const Placed = ({
   target,
   layerRef,
@@ -67,21 +79,16 @@ const Placed = ({
       ? s.meshSelection
       : null,
   );
-  const [fullMenuOpen, setFullMenuOpen] = useState(false);
-  const [collectionMenuOpen, setCollectionMenuOpen] = useState(false);
   const close = useCallback(() => floatApi.getState().close(target), [floatApi, target]);
   const owner = meshFloatOwner(target);
-  const staging = useFloatStaging(owner, close);
+  const staging = useFloatStaging(owner);
+  const [pane, setPane] = useState<string | null>(null);
 
   // The selection is what the float is about: once it moves on (a list row,
-  // a clear), the float goes with it — asking first while it holds staged
-  // layers, and staying up (without the object's own buttons) until answered.
-  const { holding, requestClose } = staging;
+  // a clear), the float goes with it.
   useEffect(() => {
-    if (selection) return;
-    if (holding) requestClose();
-    else close();
-  }, [selection, holding, requestClose, close]);
+    if (!selection) close();
+  }, [selection, close]);
 
   const box = useMemo(
     () => meshObjectBox(entry, resolveCollectionMatrix(layerRef.layer, layerRef.collection, transformContext)),
@@ -98,32 +105,62 @@ const Placed = ({
     () => ({ id: layerRef.collection.id, label: layerRef.collection.label }),
     [layerRef.collection],
   );
-  // The `@mikro/meshobject` structure: what an action on one surface takes.
-  const meshObject = useMemo(
-    () => ({
-      id: `${layerRef.collection.id}:${entry.objectId}`,
-      label: `${objectLabel(entry.objectId, target.ordinal)} of ${layerRef.collection.label}`,
-    }),
-    [layerRef.collection, entry.objectId, target.ordinal],
-  );
   // One float at a time: a mesh object's replaces a shape's card.
   const selectionApi = useRoiSelectionStoreApi();
   useEffect(() => {
     if (selectionApi.getState().menuRoi) selectionApi.getState().closeRoiMenu();
   }, [selectionApi]);
 
-  if (!selection && !holding) return null;
-  const size = meshObjectSize(selection?.stats ?? null);
+  // Asked here too, for the Derived row's count; the pane's own query shares it.
+  const { data: info } = useGetMeshObjectInfoQuery({
+    variables: { collection: layerRef.collection.id, object: entry.objectId },
+    fetchPolicy: "cache-and-network",
+  });
+  const derived = info?.meshObject.derivedResidents.filter(isNamedResident).length;
+
+  if (!selection) return null;
+  const size = meshObjectSize(selection.stats);
+  const staged = staging.entries.length;
+
+  const entries: FloatMenuEntry[] = [
+    {
+      id: "staged",
+      label: "In the scene",
+      icon: EyeIcon,
+      accent: true,
+      hidden: staged === 0,
+      hint: `${staged} not saved`,
+      content: () => <StagedPane staging={staging} />,
+    },
+    {
+      id: "run",
+      label: "Run",
+      icon: PlayIcon,
+      hint: "on this object",
+      content: () => <RunPane objectId={`${layerRef.collection.id}:${entry.objectId}`} objectLabel={objectLabel(entry.objectId, target.ordinal)} collection={collection} />,
+    },
+    {
+      id: "derived",
+      label: "Derived",
+      icon: LayersIcon,
+      hint: derived ?? "…",
+      content: () => (
+        <div className="px-1.5 pb-2 pt-1 text-xs">
+          <MeshObjectInfoCard collection={layerRef.collection.id} objectId={entry.objectId} />
+        </div>
+      ),
+    },
+  ];
 
   return (
-    // Around the whole float, header menu included: whatever an action run
-    // from here returns is staged under it.
+    // Around the whole float: whatever an action run from here returns is
+    // staged under it, and closing it discards what nobody kept.
     <FloatStagingScope owner={owner}>
     <SceneFloat
       anchor={anchor}
       expanded
-      dismissable={!fullMenuOpen && !collectionMenuOpen}
-      onDismiss={requestClose}
+      dismissable
+      onDismiss={close}
       // A click on a mesh opens its float (this object again, or another).
       sceneClaim={() => floatApi.getState().target}
       button={
@@ -140,54 +177,73 @@ const Placed = ({
             <span className="font-medium">{objectLabel(entry.objectId, target.ordinal)}</span>
             {size && <span className="text-muted-foreground">{` · ${size}`}</span>}
           </span>
-          <MikroMeshObject.ObjectButton
-            object={meshObject}
-            open={fullMenuOpen}
-            onOpenChange={setFullMenuOpen}
-            // A finished action leaves the float open: what it returns is
-            // staged here.
-            onDone={() => setFullMenuOpen(false)}
-          >
-            <Button variant="ghost" size="icon-xs" aria-label="Mesh object actions">
-              <EllipsisIcon />
-            </Button>
-          </MikroMeshObject.ObjectButton>
-          <Button variant="ghost" size="icon-xs" className="mr-0.5" aria-label="Close" onClick={requestClose}>
+          <Button variant="ghost" size="icon-xs" className="mr-0.5" aria-label="Close" onClick={close}>
             <XIcon />
           </Button>
         </>
       }
     >
-      <div className="flex flex-col gap-2 px-2.5 pb-2.5 pt-1 text-xs">
-        {selection && (
+      <FloatMenu
+        entries={entries}
+        pane={pane}
+        onPaneChange={setPane}
+        autoFocus
+        summary={
           <div className="flex items-center gap-1.5">
-            <MeshObjectActions selection={selection} layerRef={layerRef} />
+            <span className="shrink-0">in</span>
+            <MikroMeshCollection.DetailLink object={collection} className="min-w-0 flex-1 truncate text-foreground">
+              {layerRef.collection.label}
+            </MikroMeshCollection.DetailLink>
+            <MeshObjectActions selection={selection} layerRef={layerRef} compact />
           </div>
-        )}
-        <div className="flex min-w-0 items-center gap-2 border-t border-border/60 pt-2">
-          <span className="shrink-0 text-muted-foreground">In</span>
-          <MikroMeshCollection.DetailLink object={collection} className="min-w-0 flex-1 truncate">
-            {layerRef.collection.label}
-          </MikroMeshCollection.DetailLink>
-          {/* The collection's own actions: until producers take
-              `@mikro/meshobject`, these are what can run from here. */}
-          <MikroMeshCollection.ObjectButton
-            object={collection}
-            open={collectionMenuOpen}
-            onOpenChange={setCollectionMenuOpen}
-            onDone={() => setCollectionMenuOpen(false)}
-          >
-            <Button variant="ghost" size="icon-xs" aria-label="Collection actions">
-              <EllipsisIcon />
-            </Button>
-          </MikroMeshCollection.ObjectButton>
-        </div>
-        <div className="border-t border-border/60 pt-2">
-          <MeshObjectInfoCard collection={layerRef.collection.id} objectId={entry.objectId} />
-        </div>
-      </div>
-      <FloatStagingFooter staging={staging} />
+        }
+      />
     </SceneFloat>
     </FloatStagingScope>
+  );
+};
+
+/**
+ * What runs from the mesh float: on this one object (`@mikro/meshobject`),
+ * or on the collection it belongs to — one switch, one list, never both.
+ */
+const RunPane = ({
+  objectId,
+  objectLabel: label,
+  collection,
+}: {
+  objectId: string;
+  objectLabel: string;
+  collection: { id: string; label: string };
+}) => {
+  const [on, setOn] = useState<"object" | "collection">("object");
+  const objects = useMemo(
+    () =>
+      on === "object"
+        ? [{ identifier: MESH_OBJECT, id: objectId, label: `${label} of ${collection.label}` }]
+        : [{ identifier: MESH_COLLECTION, id: collection.id, label: collection.label }],
+    [on, objectId, label, collection],
+  );
+  return (
+    <div className="flex flex-col gap-1.5 px-1.5 pb-2 pt-1.5">
+      <div className="flex gap-0.5 rounded-md bg-muted/60 p-0.5 text-xs" role="tablist" aria-label="Run on">
+        {(["object", "collection"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={on === value}
+            className={cn(
+              "h-6 flex-1 rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              on === value ? "bg-background font-medium shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => setOn(value)}
+          >
+            {value === "object" ? "This object" : "Its collection"}
+          </button>
+        ))}
+      </div>
+      <SmartContext key={on} objects={objects} className="max-h-64 bg-transparent" />
+    </div>
   );
 };

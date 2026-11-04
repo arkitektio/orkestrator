@@ -51,7 +51,6 @@ import { AnnotationInteriorBatch } from "./AnnotationInteriorBatch";
 import { AnnotationOutlineBatch } from "./AnnotationOutlineBatch";
 import { AnnotationPoints } from "./AnnotationPoints";
 import { AnnotationShape } from "./AnnotationShape";
-import { annotationFloatOwner, useOptionalSceneFloatStoreApi } from "../../../platform/float/floatStore";
 import { DERIVED_HALO, SelectionHalo, concatSegments } from "./SelectionHalo";
 import { descendantsOf, partitionDerived } from "../../../../../lib/annotations/derivedShapes";
 import {
@@ -183,12 +182,20 @@ const AnnotationCollectionGroup = ({
     () => (showDerived || derivedPartition.derived.length === 0 ? null : new Set(derivedPartition.derived.map((annotation) => annotation.id))),
     [showDerived, derivedPartition],
   );
-  // A primitive: a card opening on another layer re-renders nothing here.
+  // Primitives: a card opening on another layer re-renders nothing here. Of
+  // what was made from the card's shape, only what its Derived menu turned on
+  // is drawn — nothing until one is.
   const cardId = useRoiSelectionStore((s) => (s.cardRoi?.layerId === layerId ? s.cardRoi.id : null));
-  const overlayIds = useMemo(
-    () => (hiddenIds && cardId ? new Set(descendantsOf(cardId, derivedPartition.childrenOf).map((annotation) => annotation.id)) : null),
-    [hiddenIds, cardId, derivedPartition],
-  );
+  const cardShownKey = useRoiSelectionStore((s) => (s.cardRoi?.layerId === layerId ? s.cardShown.join("|") : ""));
+  const overlayIds = useMemo(() => {
+    if (!hiddenIds || !cardId || !cardShownKey) return null;
+    const shown = new Set(cardShownKey.split("|"));
+    return new Set(
+      descendantsOf(cardId, derivedPartition.childrenOf)
+        .map((annotation) => annotation.id)
+        .filter((id) => shown.has(id)),
+    );
+  }, [hiddenIds, cardId, cardShownKey, derivedPartition]);
 
   const affineMatrix = useMemo(
     () => resolveCollectionMatrix(layer, collection, transformContext),
@@ -333,7 +340,6 @@ const AnnotationCollectionGroup = ({
   // repair; one made against stale data is caught when the data changes.
   const mergeSelectedRois = useRoiSelectionStore((s) => s.mergeSelectedRois);
   const roiSelectionApi = useRoiSelectionStoreApi();
-  const floatApi = useOptionalSceneFloatStoreApi();
   useEffect(() => {
     if (!annotations) return; // never prune against an unloaded query
     const currentSelection = roiSelectionApi.getState().selectedRois;
@@ -390,13 +396,7 @@ const AnnotationCollectionGroup = ({
         // A plain click also opens the shape's card where it landed. Not a
         // shift-click (building a selection), and not a drag that ended here
         // (no point).
-        // While another float holds staged layers it asks first
-        // (`floatStore.guard`), and the card opens once it is answered.
-        if (point) {
-          const open = () => openRoiMenu(roi, point);
-          if (floatApi) floatApi.getState().guard(annotationFloatOwner(roi.id), open);
-          else open();
-        }
+        if (point) openRoiMenu(roi, point);
       };
       // Under a shape tool this click may be the double-click's first half,
       // so the pick waits out the window; the arbiter cancels it when a shape
@@ -405,7 +405,7 @@ const AnnotationCollectionGroup = ({
       else pick();
       return true;
     },
-    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, modeStoreApi, roiDrawingApi, roiSelectionApi, floatApi],
+    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, modeStoreApi, roiDrawingApi, roiSelectionApi],
   );
 
   // Called per pointer move over a shape; the store dedupes by id, so the

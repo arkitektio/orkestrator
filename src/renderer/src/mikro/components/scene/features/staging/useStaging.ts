@@ -111,7 +111,8 @@ export const useStaging = () => {
         stagedApi.getState().setKeeping(key, true);
         try {
           // What the viewer changed while it was staged, in the create's own terms.
-          await keepPreviewLayer(client, entry.input, { visible: visibleNow(key) });
+          // …and every write its card held while it was staged.
+          await keepPreviewLayer(client, entry.input, { visible: visibleNow(key) }, entry.edits);
         } catch (error) {
           stagedApi.getState().setKeeping(key, false);
           throw error;

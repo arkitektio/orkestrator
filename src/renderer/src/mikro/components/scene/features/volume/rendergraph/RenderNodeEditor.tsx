@@ -24,12 +24,14 @@ import {
   PopoverTrigger,
 } from "@/core/ui/popover";
 import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
+import { useStagedLayerMutation } from "../../../platform/float/stagedMutation";
 import {
   Blending,
   ColorMap,
   PhasorColorMode,
   ProjectionMode,
   useUpdateLaterMutation,
+  UpdateLaterDocument,
 } from "@/mikro/api/graphql";
 import {
   Blend,
@@ -1191,7 +1193,7 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
   const [root, setRoot] = useState<BlendRenderNode>(initial);
   const [dirty, setDirty] = useState(false);
   const [resolving, setResolving] = useState(false);
-  const [updateLater, { loading: writing }] = useUpdateLaterMutation();
+  const [updateLater, { loading: writing }] = useStagedLayerMutation(useUpdateLaterMutation(), UpdateLaterDocument);
   const loading = writing || resolving;
   const updateStoreLayer = useSceneStore((s) => s.updateLayer);
   const viewApi = useViewStoreApi();

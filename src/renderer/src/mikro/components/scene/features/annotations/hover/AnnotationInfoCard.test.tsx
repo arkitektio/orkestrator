@@ -4,15 +4,18 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const infoQuery = vi.fn();
-// Staging a row is the float's (see `features/staging`); outside one it renders nothing.
-vi.mock("../../staging/StageToggle", () => ({ StageToggle: () => null }));
+// Outside a float nothing is staged: every row opens its page.
+vi.mock("../../staging/StageToggle", () => ({ useStagingOwner: () => null }));
+vi.mock("../../staging/useStaging", () => ({ useStaging: () => ({}) }));
 vi.mock("@/mikro/api/graphql", () => ({
   useGetAnnotationInfoQuery: (options: unknown) => infoQuery(options),
 }));
 vi.mock("@/core/linkers", () => {
   const link = (kind: string) => ({
-    DetailLink: ({ object, children }: { object: { id: string }; children: ReactNode }) => (
-      <a href={`/${kind}/${object.id}`}>{children}</a>
+    DetailLink: ({ object, children, className }: { object: { id: string }; children: ReactNode; className?: string }) => (
+      <a href={`/${kind}/${object.id}`} className={className}>
+        {children}
+      </a>
     ),
   });
   return {
@@ -64,9 +67,9 @@ describe("AnnotationInfoCard", () => {
     // The collection says nothing the scene does not already show.
     expect(screen.queryByText("Somata")).toBeNull();
     expect(screen.getByText("c 1")).toBeTruthy();
-    expect(screen.getByText("Nothing has been cut or computed from this shape yet.")).toBeTruthy();
-    expect(screen.queryByText("Cut to this shape")).toBeNull();
-    expect(screen.queryByText("Computed from this shape")).toBeNull();
+    expect(screen.getByText("Nothing made from this shape yet.")).toBeTruthy();
+    expect(screen.queryByText("Cut")).toBeNull();
+    expect(screen.queryByText("Computed")).toBeNull();
   });
 
   it("lists the lenses cut to it and the data computed from it, each linked to its page", () => {
@@ -89,14 +92,18 @@ describe("AnnotationInfoCard", () => {
     });
     render(<AnnotationInfoCard id="ann:1" />);
 
-    expect(screen.getByText("cells.zarr · y[1:5], x[2:7]").getAttribute("href")).toBe("/lens/12");
-    expect(screen.getByText("4 × 5")).toBeTruthy();
-    expect(screen.getByText("Straightened").getAttribute("href")).toBe("/arraydataset/40");
-    expect(screen.getByText("Measurements").getAttribute("href")).toBe("/tabledataset/41");
+    // One button-row each, under a one-word caption: little text beyond the names.
+    expect(screen.getByText("Cut")).toBeTruthy();
+    expect(screen.getByText("Computed")).toBeTruthy();
+    const href = (text: string) => screen.getByText(text).closest("a")?.getAttribute("href");
+    expect(href("cells.zarr · y[1:5], x[2:7]")).toBe("/lens/12");
+    expect(screen.queryByText("4 × 5")).toBeNull();
+    expect(href("Straightened")).toBe("/arraydataset/40");
+    expect(href("Measurements")).toBe("/tabledataset/41");
     // No page of its own: named, not linked.
-    expect(screen.getByText("Skeleton").tagName).toBe("SPAN");
+    expect(screen.getByText("Skeleton").closest("a")).toBeNull();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
-    expect(screen.queryByText("Nothing has been cut or computed from this shape yet.")).toBeNull();
+    expect(screen.queryByText("Nothing made from this shape yet.")).toBeNull();
   });
 
   it("lists the shapes made from it and the shapes it was made from", () => {
@@ -113,10 +120,11 @@ describe("AnnotationInfoCard", () => {
     });
     render(<AnnotationInfoCard id="ann:1" />);
 
-    expect(screen.getByText("Smoothed").getAttribute("href")).toBe("/annotation/ann:3");
+    expect(screen.getByText("Smoothed").closest("a")?.getAttribute("href")).toBe("/annotation/ann:3");
+    expect(screen.getByText("Refined")).toBeTruthy();
     expect(screen.getByText("Rough").getAttribute("href")).toBe("/annotation/ann:0");
     expect(screen.getByText("refined")).toBeTruthy();
-    expect(screen.queryByText("Nothing has been cut or computed from this shape yet.")).toBeNull();
+    expect(screen.queryByText("Nothing made from this shape yet.")).toBeNull();
   });
 
   it("a failed read says so; a failed refresh keeps what it had", () => {

@@ -25,7 +25,12 @@ import {
 } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
 import { ErrorNote } from "@/core/ui/error-note";
-import { useUpdateFixtureLayerMutation, type UpdateFixtureLayerInput } from "@/mikro/api/graphql";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
+import {
+  useUpdateFixtureLayerMutation,
+  type UpdateFixtureLayerInput,
+  UpdateFixtureLayerDocument,
+} from "@/mikro/api/graphql";
 
 import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
@@ -73,7 +78,7 @@ export const FixtureLayerCard = memo(
     onRemove?: (id: string) => void;
   }) => {
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updateFixtureLayer] = useUpdateFixtureLayerMutation();
+    const [updateFixtureLayer] = useStagedLayerMutation(useUpdateFixtureLayerMutation(), UpdateFixtureLayerDocument);
     const persist = useOptimisticLayerPatch<FixturePatch>(layer.id, updateFixtureLayer, "[fixture]");
     const layerId = layer.id;
     const hidden = layer.visible === false;

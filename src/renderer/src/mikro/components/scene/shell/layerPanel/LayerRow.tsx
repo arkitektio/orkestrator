@@ -6,6 +6,7 @@ import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { LayerGlyph } from "../../platform/layerui/LayerGlyph";
 import { LayerTile } from "@/core/data/scene/layerui/cardControls";
 import { LensButton } from "../../platform/layerui/LensButton";
+import { useLayerCardHeaderActions } from "../../platform/layerui/layerCardSlot";
 import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
 
 /**
@@ -64,6 +65,8 @@ export const LayerRow = ({
 }) => {
   const label = layerDisplayLabel(layer);
   const hidden = layer.visible === false;
+  // What the host puts first in the title bar (a staged layer's Keep).
+  const headerActions = useLayerCardHeaderActions();
   // One size vocabulary per variant, so the row cannot end up half-compact.
   const buttonSize = compact
     ? "h-5 w-5 p-0"
@@ -113,6 +116,7 @@ export const LayerRow = ({
           is worse than a cramped one. Only the hit area grows with the card. */}
       <div className="flex shrink-0 items-center opacity-60 transition-opacity group-hover:opacity-100 @md/card:opacity-100">
         {/* What the layer reads, to act on: the lens' smart menu. */}
+        {headerActions}
         <LensButton lens={layer.lens} className={`${buttonSize} ${iconMuted}`} />
         <Button
           variant="ghost"

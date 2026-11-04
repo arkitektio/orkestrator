@@ -26,28 +26,6 @@ export interface SceneFloatState {
   open: (target: FloatTarget) => void;
   /** Close; with `target`, only if that is still the one open. */
   close: (target?: FloatTarget) => void;
-  /**
-   * The owner of the open float that holds STAGED layers, or null. While one
-   * holds, a click that would replace or close it is deferred (`guard`) and
-   * the float asks to keep or discard them first.
-   */
-  hold: string | null;
-  setHold: (owner: string | null) => void;
-  /** Release the hold only if `owner` still has it (a float unmounting). */
-  releaseHold: (owner: string) => void;
-  /** A deferred click, waiting for the holding float's answer. */
-  pendingSwitch: (() => void) | null;
-  /**
-   * Run a click that opens `owner`'s float now, or defer it while another
-   * float holds staged layers. `closesHolder`: the click closes the holding
-   * float itself (a re-click that deselects its object).
-   */
-  guard: (owner: string, run: () => void, options?: { closesHolder?: boolean }) => void;
-  /**
-   * Take the deferred click (clearing it): the holding float runs it once its
-   * staged layers are kept or discarded, or drops it on Cancel.
-   */
-  takePending: () => (() => void) | null;
 }
 
 /** The owner key of an annotation's float. */
@@ -68,27 +46,6 @@ export const createSceneFloatStore = () =>
     close: (target) => {
       if (target && !sameFloatTarget(get().target, target)) return;
       if (get().target !== null) set({ target: null });
-    },
-    hold: null,
-    setHold: (owner) => {
-      if (get().hold !== owner) set({ hold: owner, pendingSwitch: null });
-    },
-    releaseHold: (owner) => {
-      if (get().hold === owner) set({ hold: null, pendingSwitch: null });
-    },
-    pendingSwitch: null,
-    guard: (owner, run, options) => {
-      const hold = get().hold;
-      if (hold && (hold !== owner || options?.closesHolder)) {
-        set({ pendingSwitch: run });
-        return;
-      }
-      run();
-    },
-    takePending: () => {
-      const pending = get().pendingSwitch;
-      if (pending) set({ pendingSwitch: null });
-      return pending;
     },
   }));
 

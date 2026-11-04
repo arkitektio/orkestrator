@@ -1,4 +1,5 @@
 import type { ApolloClient } from "@apollo/client";
+import type { DocumentNode } from "graphql";
 
 import {
   CreateIntensityLayerDocument,
@@ -84,22 +85,35 @@ export const fetchPreviewLayer = async (
 
 /**
  * Keep a preview: the same input sent to its create, with what the viewer
- * changed in the meantime folded in (`overrides`: only fields the create
- * takes). Resolves once the scene's refetch has the saved layer, so the
- * staged one can be dropped without the layer blinking out.
+ * changed in the meantime folded in — `overrides` (only fields the create
+ * takes) and `edits`, the writes its layer card made while it was staged,
+ * replayed in order against the saved layer. The scene is refetched only
+ * after the edits, so the saved layer arrives as tuned: a later content-only
+ * write would not be folded into the scene's stores. Resolves once the
+ * refetch has the saved layer, so the staged one can be dropped without the
+ * layer blinking out.
  */
 export const keepPreviewLayer = async (
   client: ApolloClient<unknown>,
   input: PreviewLayerInput,
   overrides: { visible?: boolean } = {},
+  edits: readonly { document: DocumentNode; variables: { input: { id: string } } & Record<string, unknown> }[] = [],
 ): Promise<string | undefined> => {
   const { arm, value } = previewArmOf(input);
   const created = await client.mutate({
     mutation: CREATE_OF_ARM[arm],
     variables: { input: { ...value, ...overrides } },
-    refetchQueries: ["GetScene"],
-    awaitRefetchQueries: true,
   } as Parameters<typeof client.mutate>[0]);
   const answered = Object.values((created.data ?? {}) as Record<string, { id?: string } | null>)[0];
-  return answered?.id;
+  const saved = answered?.id;
+  if (saved) {
+    for (const edit of edits) {
+      await client.mutate({
+        mutation: edit.document,
+        variables: { ...edit.variables, input: { ...edit.variables.input, id: saved } },
+      });
+    }
+  }
+  await client.refetchQueries({ include: ["GetScene"] });
+  return saved;
 };

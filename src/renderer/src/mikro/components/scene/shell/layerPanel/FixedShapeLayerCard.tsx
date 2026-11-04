@@ -1,10 +1,14 @@
 import { memo, useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/core/ui/collapsible";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   ProjectionMode,
   useUpdateIntensityLayerMutation,
   useUpdatePhasorLayerMutation,
   useUpdateRgbLayerMutation,
+  UpdateIntensityLayerDocument,
+  UpdateRgbLayerDocument,
+  UpdatePhasorLayerDocument,
 } from "@/mikro/api/graphql";
 
 import { perfMonitor } from "../../platform/perf/perfMonitor";
@@ -117,9 +121,9 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
   // or white-balance nudge must not pay it.
   const [planesEdited, setPlanesEdited] = useState(false);
   const registry = useLensRegistry();
-  const [saveIntensity, { loading: savingIntensity }] = useUpdateIntensityLayerMutation();
-  const [saveRgb, { loading: savingRgb }] = useUpdateRgbLayerMutation();
-  const [savePhasor, { loading: savingPhasor }] = useUpdatePhasorLayerMutation();
+  const [saveIntensity, { loading: savingIntensity }] = useStagedLayerMutation(useUpdateIntensityLayerMutation(), UpdateIntensityLayerDocument);
+  const [saveRgb, { loading: savingRgb }] = useStagedLayerMutation(useUpdateRgbLayerMutation(), UpdateRgbLayerDocument);
+  const [savePhasor, { loading: savingPhasor }] = useStagedLayerMutation(useUpdatePhasorLayerMutation(), UpdatePhasorLayerDocument);
 
   const handleSelect = () => onSelect(layer.id, expanded);
   const handleRemove = () => onRemove(layer.id);

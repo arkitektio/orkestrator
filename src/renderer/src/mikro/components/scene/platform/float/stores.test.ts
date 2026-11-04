@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { annotationFloatOwner, createSceneFloatStore, meshFloatOwner } from "./floatStore";
+import { createSceneFloatStore } from "./floatStore";
 import { createStagedLayersStore, isStagedLayerId, stagedKeyOf, type StagedLayer } from "./stagedLayerStore";
 
 const entry = (key: string, owner: string, extra: Partial<StagedLayer> = {}): StagedLayer =>
@@ -56,49 +56,13 @@ describe("staged layers", () => {
   });
 });
 
-describe("float hold", () => {
-  it("runs a click at once while nothing holds", () => {
+describe("float target", () => {
+  it("closes only the target it is told to, when given one", () => {
     const store = createSceneFloatStore();
-    const run = vi.fn();
-    store.getState().guard(annotationFloatOwner("1"), run);
-    expect(run).toHaveBeenCalledOnce();
-  });
-
-  it("defers a click on another object while a float holds staged layers, until it is taken", () => {
-    const store = createSceneFloatStore();
-    store.getState().setHold(annotationFloatOwner("1"));
-    const run = vi.fn();
-    store.getState().guard(meshFloatOwner({ layerId: "m", ordinal: 3 }), run);
-    expect(run).not.toHaveBeenCalled();
-
-    const pending = store.getState().takePending();
-    expect(store.getState().pendingSwitch).toBeNull();
-    pending?.();
-    expect(run).toHaveBeenCalledOnce();
-  });
-
-  it("lets a click on the holding object through, unless it closes it", () => {
-    const store = createSceneFloatStore();
-    const owner = meshFloatOwner({ layerId: "m", ordinal: 3 });
-    store.getState().setHold(owner);
-    const select = vi.fn();
-    store.getState().guard(owner, select);
-    expect(select).toHaveBeenCalledOnce();
-
-    const deselect = vi.fn();
-    store.getState().guard(owner, deselect, { closesHolder: true });
-    expect(deselect).not.toHaveBeenCalled();
-    expect(store.getState().pendingSwitch).toBe(deselect);
-  });
-
-  it("releases the hold only for its owner, and drops what was deferred with it", () => {
-    const store = createSceneFloatStore();
-    store.getState().setHold("a");
-    store.getState().guard("b", () => {});
-    store.getState().releaseHold("b");
-    expect(store.getState().hold).toBe("a");
-    store.getState().releaseHold("a");
-    expect(store.getState().hold).toBeNull();
-    expect(store.getState().pendingSwitch).toBeNull();
+    store.getState().open({ kind: "mesh", layerId: "m", ordinal: 3 });
+    store.getState().close({ kind: "mesh", layerId: "m", ordinal: 4 });
+    expect(store.getState().target).not.toBeNull();
+    store.getState().close({ kind: "mesh", layerId: "m", ordinal: 3 });
+    expect(store.getState().target).toBeNull();
   });
 });

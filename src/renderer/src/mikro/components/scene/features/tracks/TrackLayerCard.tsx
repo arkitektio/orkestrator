@@ -1,10 +1,12 @@
 import { Slider } from "@/core/ui/slider";
 import { Spline } from "lucide-react";
 import { memo, useMemo } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   ColorMap,
   useUpdateTrackLayerMutation,
   type UpdateTrackLayerInput,
+  UpdateTrackLayerDocument,
 } from "@/mikro/api/graphql";
 import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { publishedMaxIndex, TIME_DIM } from "../../platform/model/dimExtents";
@@ -91,7 +93,7 @@ export const TrackLayerCard = memo(
       publishedMaxIndex(s.layerDimExtents[layer.id], TIME_DIM),
     );
 
-    const [updateTrackLayer] = useUpdateTrackLayerMutation();
+    const [updateTrackLayer] = useStagedLayerMutation(useUpdateTrackLayerMutation(), UpdateTrackLayerDocument);
     const hidden = layer.visible === false;
     const hasTime = timepoints !== undefined && timepoints > 0;
 

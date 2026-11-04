@@ -23,21 +23,22 @@ vi.mock("@/core/linkers", () => ({
 vi.mock("@/core/smart/display/StructureDisplay", () => ({
   StructureDisplay: ({ id, variant }: { id: string; variant: string }) => <span>{`${variant}:${id}`}</span>,
 }));
-vi.mock("./AnnotationInfoCard", () => ({
-  AnnotationInfoCard: ({ id }: { id: string }) => <div data-testid="info">{id}</div>,
-}));
-vi.mock("./AnnotationPairActions", () => ({
-  AnnotationPairActions: ({ roi, autoFocus }: { roi: { id: string }; autoFocus: boolean }) => (
-    <div data-testid="pair" data-autofocus={String(autoFocus)}>
-      {roi.id}
-    </div>
+// The card's body is its menu (`AnnotationFloatMenu`, tested on its own);
+// here it stands for "the card is open", with what the card hands it.
+vi.mock("./AnnotationFloatMenu", () => ({
+  AnnotationFloatMenu: ({ roi, autoFocus }: { roi: { id: string }; autoFocus: boolean }) => (
+    <>
+      <div data-testid="info">{roi.id}</div>
+      <div data-testid="pair" data-autofocus={String(autoFocus)}>
+        {roi.id}
+      </div>
+    </>
   ),
 }));
 // Staging needs the scene's stores and the mikro client; the card's own
 // behaviour here is the frame and its closes, with nothing staged.
 vi.mock("../../staging/FloatStaging", () => ({
-  useFloatStaging: (_owner: string, onClose: () => void) => ({ entries: [], holding: false, requestClose: onClose }),
-  FloatStagingFooter: () => null,
+  useFloatStaging: () => ({ entries: [], holding: false }),
 }));
 vi.mock("../../staging/StageToggle", () => ({
   FloatStagingScope: ({ children }: { children: ReactNode }) => <>{children}</>,

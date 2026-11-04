@@ -1,7 +1,11 @@
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 
 import { Button } from "@/core/ui/button";
+import { useLayerCardHeaderActions } from "./layerCardSlot";
 import { LensButton } from "./LensButton";
+
+/** What the host put in the title bar (`LayerCardHeaderActionsContext`). */
+const HeaderActions = () => <>{useLayerCardHeaderActions()}</>;
 
 /**
  * The show/hide and remove buttons every layer card puts in
@@ -33,6 +37,7 @@ export const LayerCardActions = ({
   onRemove?: () => void;
 }) => (
   <>
+    <HeaderActions />
     <LensButton lens={lens} className={LENS_BUTTON} />
     <Button
       variant="ghost"

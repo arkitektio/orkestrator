@@ -76,9 +76,12 @@ export const useMeshObjectEntry = (layerId: string, ordinal: number): FabriksObj
 export const MeshObjectActions = ({
   selection,
   layerRef,
+  compact = false,
 }: {
   selection: MeshSelectionState;
   layerRef: MeshLayerRef | undefined;
+  /** Icons only, for a line that also says other things (the mesh float). */
+  compact?: boolean;
 }) => {
   const manager = useMeshStore((s) => s.meshSystems[selection.layerId]);
   const transformContext = useSceneStore((s) => s.transformContext);
@@ -96,6 +99,26 @@ export const MeshObjectActions = ({
       .catch((reason: unknown) => console.warn("[fabriks] cannot locate the selected instance:", reason));
   };
 
+  const isolate = () => setMeshSelection({ ...selection, isolate: !selection.isolate });
+  if (compact) {
+    return (
+      <>
+        <Button variant="ghost" size="icon-xs" title="Go to mesh" aria-label="Go to mesh" disabled={!manager || !layerRef} onClick={goTo}>
+          <Focus />
+        </Button>
+        <Button
+          variant={selection.isolate ? "secondary" : "ghost"}
+          size="icon-xs"
+          title="Show ONLY this instance"
+          aria-label="Isolate"
+          aria-pressed={selection.isolate}
+          onClick={isolate}
+        >
+          <Box />
+        </Button>
+      </>
+    );
+  }
   return (
     <>
       <Button variant="outline" size="xs" title="Go to mesh" disabled={!manager || !layerRef} onClick={goTo}>
@@ -106,7 +129,7 @@ export const MeshObjectActions = ({
         variant={selection.isolate ? "default" : "outline"}
         size="xs"
         title="Show ONLY this instance"
-        onClick={() => setMeshSelection({ ...selection, isolate: !selection.isolate })}
+        onClick={isolate}
       >
         <Box className="mr-1 h-3 w-3" />
         Isolate

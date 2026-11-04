@@ -21,11 +21,13 @@ import { Button } from "@/core/ui/button";
 import { Slider } from "@/core/ui/slider";
 import { Eye, EyeOff, Trash2, Wind } from "lucide-react";
 import { memo } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   ColorMap,
   VectorGlyph,
   useUpdateVectorLayerMutation,
   type UpdateVectorLayerInput,
+  UpdateVectorLayerDocument,
 } from "@/mikro/api/graphql";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import {
@@ -62,7 +64,7 @@ export const VectorLayerCard = memo(
     onRemove?: (id: string) => void;
   }) => {
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updateVectorLayer] = useUpdateVectorLayerMutation();
+    const [updateVectorLayer] = useStagedLayerMutation(useUpdateVectorLayerMutation(), UpdateVectorLayerDocument);
     const hidden = layer.visible === false;
 
     const persist = useOptimisticLayerPatch<VectorPatch>(layer.id, updateVectorLayer, "[vectors]");

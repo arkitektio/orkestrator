@@ -14,9 +14,11 @@ import {
   X,
 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   useUpdateMeshLayerMutation,
   type SceneLayerFragment,
+  UpdateMeshLayerDocument,
 } from "@/mikro/api/graphql";
 import {
   DEFAULT_INSTANCE_COLORMAP,
@@ -324,7 +326,7 @@ export const MeshLayerCard = memo(
   }) => {
     perfMonitor.countRender("MeshLayerCard"); // no-op unless a perf recording is armed
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updateMeshLayer, { loading: saving }] = useUpdateMeshLayerMutation();
+    const [updateMeshLayer, { loading: saving }] = useStagedLayerMutation(useUpdateMeshLayerMutation(), UpdateMeshLayerDocument);
     const layerId = layer.id;
     const hidden = layer.visible === false;
     const collection = layer.collection;

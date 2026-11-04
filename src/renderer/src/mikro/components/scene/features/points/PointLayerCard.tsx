@@ -1,10 +1,12 @@
 import { Slider } from "@/core/ui/slider";
 import { CircleDot } from "lucide-react";
 import { memo } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   ColorMap,
   useUpdatePointLayerMutation,
   type UpdatePointLayerInput,
+  UpdatePointLayerDocument,
 } from "@/mikro/api/graphql";
 import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { useSceneStore } from "../../platform/stores/sceneStore";
@@ -71,7 +73,7 @@ export const PointLayerCard = memo(
     onRemove?: (id: string) => void;
   }) => {
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
-    const [updatePointLayer] = useUpdatePointLayerMutation();
+    const [updatePointLayer] = useStagedLayerMutation(useUpdatePointLayerMutation(), UpdatePointLayerDocument);
     const hidden = layer.visible === false;
 
     /**

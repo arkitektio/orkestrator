@@ -60,7 +60,9 @@ const PAIR_SECTIONS: SmartSectionSelection = {
  * "The image under it" starts as the data layer's lens — the one picked in
  * the control bar, else the first visible layer. The "Run with" picker swaps
  * it for any other layer's lens, hidden ones too, for this card only: it does
- * not move the data layer.
+ * not move the data layer. Either way it is a SUGGESTION (`askPartner`): a run
+ * opens the assign form with the shape filled in and the channel's selector
+ * shown, set to what the action last ran with, else to this lens.
  *
  * Drawn for the card, not as the right-click menu: the actions are tiles
  * (`TILE_SKIN`), the image they run with is the picker's one muted line, and the
@@ -77,12 +79,15 @@ const PAIR_SECTIONS: SmartSectionSelection = {
 export const AnnotationPairActions = ({
   roi,
   autoFocus,
+  initialSearch,
   onDone,
 }: {
   roi: SelectedRoi;
   /** Whether the search takes focus: not while a key may still be held (a
    * draw), and not on a hover, where typing belongs to the scene. */
   autoFocus: boolean;
+  /** What was already typed (the float's root hands on its first key). */
+  initialSearch?: string;
   onDone: () => void;
 }) => {
   const dataLayerId = useViewerStore((s) => s.dataLayerId);
@@ -153,7 +158,8 @@ export const AnnotationPairActions = ({
             onPick={setPickedLayerId}
           />
         }
-        autoFocus={autoFocus}
+        autoFocus={autoFocus || !!initialSearch}
+        initialSearch={initialSearch}
         onFilterChange={setFilter}
         onDone={onDone}
       />
@@ -168,6 +174,7 @@ const PairMenu = ({
   imageLabel,
   picker,
   autoFocus,
+  initialSearch,
   onFilterChange,
   onDone,
 }: {
@@ -176,10 +183,20 @@ const PairMenu = ({
   imageLabel: string;
   picker: ReactNode;
   autoFocus: boolean;
+  initialSearch?: string;
   onFilterChange: (filter: string | undefined) => void;
   onDone: () => void;
 }) => {
-  const menu = useSmartMenu({ objects, partners, sections: PAIR_SECTIONS, autoFocus, onDone });
+  // `askPartner`: the image under the shape is a guess, so a run opens the
+  // form with its channel shown — defaulting to what the action last ran
+  // with, else this one.
+  const menu = useSmartMenu({ objects, partners, sections: PAIR_SECTIONS, autoFocus, onDone, askPartner: true });
+  // Once, on mount: what was typed before this menu existed.
+  const { setFilter } = menu;
+  useEffect(() => {
+    if (initialSearch) setFilter(initialSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => onFilterChange(menu.filter), [menu.filter, onFilterChange]);
   const [searching, setSearching] = useState(autoFocus);
   const stopSearching = () => {

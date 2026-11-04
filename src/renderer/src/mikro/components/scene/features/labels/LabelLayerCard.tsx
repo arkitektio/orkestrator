@@ -2,9 +2,11 @@ import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Eye, EyeOff, Puzzle, Save, Spline, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
   useUpdateLabelLayerMutation,
   type LabelRenderFragment,
+  UpdateLabelLayerDocument,
 } from "@/mikro/api/graphql";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { useSceneStore, type LayerState } from "../../platform/stores/sceneStore";
@@ -184,7 +186,7 @@ export const LabelLayerCard = memo(
   }) => {
     perfMonitor.countRender("LabelLayerCard"); // no-op unless a perf recording is armed
     const updateLayer = useSceneStore((s) => s.updateLayer);
-    const [updateLabelLayer, { loading: saving }] = useUpdateLabelLayerMutation();
+    const [updateLabelLayer, { loading: saving }] = useStagedLayerMutation(useUpdateLabelLayerMutation(), UpdateLabelLayerDocument);
     const layerId = layer.id;
     const hidden = layer.visible === false;
     const lens = layer.lens;

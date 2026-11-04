@@ -1,3 +1,4 @@
+import type { DocumentNode } from "graphql";
 import { useContext } from "react";
 import { createStore } from "zustand/vanilla";
 
@@ -20,6 +21,15 @@ import type { PreviewedEngineLayer, PreviewedLayer } from "@/mikro/forms/addLaye
  * and a staged layer must not vanish with it. Leaving the scene drops them all,
  * with nothing to clean up.
  */
+/**
+ * A card's write to a staged layer, held instead of sent: the layer has no
+ * row yet. Keeping it replays these, in order, against the saved layer.
+ */
+export interface StagedEdit {
+  document: DocumentNode;
+  variables: { input: { id: string } & Record<string, unknown> } & Record<string, unknown>;
+}
+
 export interface StagedLayer {
   /** `staged:…`: the layer's id in the scene, and the entry's identity. */
   key: string;
@@ -37,6 +47,8 @@ export interface StagedLayer {
   origin?: string;
   /** A Keep is in flight: the saved layer arrives with the scene's refetch. */
   keeping?: boolean;
+  /** What its layer card changed, in order (`useStagedLayerMutation`). */
+  edits?: StagedEdit[];
 }
 
 export interface StagedLayersState {
@@ -46,6 +58,8 @@ export interface StagedLayersState {
   discard: (keys: readonly string[]) => void;
   discardOwner: (owner: string) => void;
   setKeeping: (key: string, keeping: boolean) => void;
+  /** Hold a card's write to a staged layer, for its Keep to replay. */
+  recordEdit: (key: string, edit: StagedEdit) => void;
 }
 
 export const STAGED_PREFIX = "staged:";
@@ -97,6 +111,10 @@ export const createStagedLayersStore = () =>
     },
     setKeeping: (key, keeping) =>
       set({ entries: get().entries.map((entry) => (entry.key === key ? { ...entry, keeping } : entry)) }),
+    recordEdit: (key, edit) =>
+      set({
+        entries: get().entries.map((entry) => (entry.key === key ? { ...entry, edits: [...(entry.edits ?? []), edit] } : entry)),
+      }),
   }));
 
 const {
