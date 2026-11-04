@@ -18,6 +18,8 @@ import HomePage from "./pages/HomePage";
 import LineagePage from "./pages/LineagePage";
 import PeerHomePage from "./pages/PeerHomePage";
 import TableDatasetPage from "./pages/TableDatasetPage";
+import MeshCollectionPage from "./pages/MeshCollectionPage";
+import MeshObjectPage from "./pages/MeshObjectPage";
 import TableDatasetsPage from "./pages/TableDatasetsPage";
 import SparseDatasetPage from "./pages/SparseDatasetPage";
 import SparseDatasetsPage from "./pages/SparseDatasetsPage";
@@ -65,6 +67,8 @@ export const MikroNextModule = () => {
         <Route path="lineage/:kind/:id" element={<LineagePage />} />
         <Route path="tabledatasets" element={<TableDatasetsPage />} />
         <Route path="tabledatasets/:id" element={<TableDatasetPage />} />
+        <Route path="meshcollections/:id" element={<MeshCollectionPage />} />
+        <Route path="meshobjects/:id" element={<MeshObjectPage />} />
         <Route path="sparsedatasets" element={<SparseDatasetsPage />} />
         <Route path="sparsedatasets/:id" element={<SparseDatasetPage />} />
         <Route path="fixtures/:id" element={<FixturePage />} />

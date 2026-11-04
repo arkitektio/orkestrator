@@ -1,0 +1,48 @@
+# One mesh collection, opened: what its page shows and the scenes it can open
+# in. A collection's scenes are its whole lens': those with a layer drawing
+# through it, and the one nominated to open (`createSceneFromLens` nominates).
+query GetMeshCollection($id: ID!) {
+  meshCollection(id: $id) {
+    ...MeshCollection
+    folder {
+      id
+      name
+    }
+    fullLens {
+      id
+      defaultScene {
+        ...ListScene
+      }
+      scenes {
+        ...ListScene
+      }
+    }
+    # Where it came from: the same edges the table and array pages list.
+    derivedFrom {
+      id
+      kind
+      valueRelation
+      output {
+        id
+        name
+        residents {
+          __typename
+          ... on ArrayDataset {
+            id
+            name
+          }
+          ... on ArrayLens {
+            id
+            dataset {
+              id
+              name
+            }
+          }
+        }
+      }
+      ... on UnmappableTransformation {
+        reason
+      }
+    }
+  }
+}

@@ -9,3 +9,31 @@ query GetMeshObjectInfo($collection: ID!, $object: Int!) {
     }
   }
 }
+
+# One mesh of a collection, opened as a page: the collection's scenes (the
+# page opens one with this mesh selected) and what was made from the mesh.
+query GetMeshObject($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      ...MeshCollection
+      folder {
+        id
+        name
+      }
+      fullLens {
+        id
+        defaultScene {
+          ...ListScene
+        }
+        scenes {
+          ...ListScene
+        }
+      }
+    }
+    derivedResidents {
+      ...DerivedResident
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { SelectMeshObject } from "./features/meshes/SelectMeshObject";
 import { type ReactNode } from "react";
 import { SceneFragment } from "@/mikro/api/graphql";
 import {
@@ -92,4 +93,6 @@ export const Scene = Object.assign(SceneRoot, {
   MeshesSidebar: SceneMeshesSidebar,
   ProbeSidebar: SceneProbeSidebar,
   hasMeshLayer: sceneHasMeshLayer,
+  /** Select and frame one mesh of a collection once the scene has it (a mesh's page). */
+  SelectMeshObject,
 });
