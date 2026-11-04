@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   admitGrantedProfile,
+  answerFitsProfile,
+  sameIdentity,
   buildScopeKey,
   findProfileIdByChain,
   createProfileFromSession,
@@ -615,5 +617,79 @@ describe("findProfileIdByChain", () => {
     // Another window rotated it: the window's own profile, else the live one.
     expect(findProfileIdByChain(book, "cid", { refreshToken: "rt-gone", profileId: "b-live" })).toBe("b-live");
     expect(findProfileIdByChain(book, "cid", { refreshToken: "rt-gone" })).toBe("b-live");
+  });
+});
+
+describe("an organization switch caught mid-swap", () => {
+  // The reported bug: in Testing, share links named Stainstorming. The switch
+  // made Testing active while Stainstorming's connection (and its mycontext)
+  // was still live, and that answer was written onto the Testing row.
+  const base = "https://lok.test/lok/f/";
+  const stain = { baseUrl: base, userId: "2", organizationId: "8", hubId: "40" };
+  const testing = { baseUrl: base, userId: "2", organizationId: "102", hubId: "90" };
+  const stainId = deriveProfileId(stain);
+  const testingId = deriveProfileId(testing);
+
+  const book = () =>
+    setActiveProfile(
+      upsertProfile(
+        upsertProfile(emptyProfileBook(), {
+          ...createProfileFromSession(sessionFor("lok.test", "stain"), 1, stainId),
+          identity: stain,
+          label: { organizationName: "Stainstorming" },
+        }),
+        {
+          ...createProfileFromSession(sessionFor("lok.test", "testing"), 2, testingId),
+          identity: testing,
+          label: { organizationName: "Testing" },
+        },
+      ),
+      testingId,
+      10,
+    );
+
+  it("leaves the active row alone when the answer is another stored profile's", () => {
+    const before = book();
+    const next = reidentifyProfile(before, testingId, stain, { organizationName: "Stainstorming" });
+    expect(next).toBe(before);
+    expect(next.profiles[testingId].identity.organizationId).toBe("102");
+    expect(next.profiles[testingId].label.organizationName).toBe("Testing");
+  });
+
+  it("puts a drifted identity back under its own id", () => {
+    // What was on disk: keyed and labelled Testing, identity Stainstorming.
+    const drifted = {
+      ...book(),
+      profiles: {
+        ...book().profiles,
+        [testingId]: { ...book().profiles[testingId], identity: stain },
+      },
+    };
+    expect(sameIdentity(drifted.profiles[testingId].identity, testing)).toBe(false);
+
+    const healed = reidentifyProfile(drifted, testingId, testing, { organizationName: "Testing" });
+    expect(healed.profiles[testingId].identity).toEqual(testing);
+    expect(healed.profiles[stainId].identity).toEqual(stain);
+    expect(healed.profiles[stainId].session.token.access_token).toBe("stain");
+    expect(healed.activeProfileId).toBe(testingId);
+  });
+
+  it("only lets the connection's own login write onto the active profile", () => {
+    const testingGrant = { userId: "2", orgId: "102", hubId: "90" };
+    const stainGrant = { userId: "2", orgId: "8", hubId: "40" };
+    const answer = (o: typeof stain) => ({ userId: o.userId, organizationId: o.organizationId, hubId: o.hubId });
+
+    // Mid-swap: Testing is active, Stainstorming's connection still answers.
+    expect(answerFitsProfile(testingId, base, stainGrant, answer(stain))).toBe(false);
+    // A new connection serving the previous organization's cached answer.
+    expect(answerFitsProfile(testingId, base, testingGrant, answer(stain))).toBe(false);
+    // Settled.
+    expect(answerFitsProfile(testingId, base, testingGrant, answer(testing))).toBe(true);
+    // A fresh grant, still on its provisional id.
+    expect(answerFitsProfile(provisionalProfileId(base), base, testingGrant, answer(testing))).toBe(true);
+    // A row from before hubs, keyed without one.
+    expect(answerFitsProfile(buildScopeKey("https://lok.test/lok/f", "2", "102"), base, testingGrant, answer(testing))).toBe(true);
+    // A deployment whose fakts name nobody: nothing to check against.
+    expect(answerFitsProfile(testingId, base, undefined, answer(stain))).toBe(true);
   });
 });

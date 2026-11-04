@@ -16,7 +16,7 @@ vi.mock("@/mikro/api/graphql", () => ({
   useDeleteAnnotationMutation: () => [mocks.mutate, { loading: false, client: { cache: "cache" } }],
 }));
 
-// The preflight and its toast are `useLineageSafeAnnotationDelete`'s; here it
+// The preflight and its dialog are `useLineageSafeAnnotationDelete`'s; here it
 // hands the delete straight on with the verdict the test set.
 vi.mock("../../../../lib/deletion/useLineageSafeAnnotationDelete", () => ({
   useLineageSafeAnnotationDelete:

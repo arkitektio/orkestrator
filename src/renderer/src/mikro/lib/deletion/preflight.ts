@@ -3,12 +3,14 @@ import {
   PreflightDeleteAnnotationCollectionDocument,
   PreflightDeleteAnnotationDocument,
   PreflightDeleteArrayDatasetDocument,
+  PreflightDeleteDerivedDocument,
   PreflightDeleteFileDocument,
   PreflightDeleteFixtureDocument,
   PreflightDeleteMeshCollectionDocument,
   PreflightDeleteNetworkCollectionDocument,
   PreflightDeleteSparseDatasetDocument,
   PreflightDeleteTableDatasetDocument,
+  type LineageNodeKind,
   type DeletePreflightFragment,
 } from "@/mikro/api/graphql";
 import type { DeletePreflightSummary } from "@/core/smart/localactions/builders/deleteAction";
@@ -68,6 +70,8 @@ const keyOf = (preflight: DeletePreflightFragment) => preflight.target;
 export function summarizePreflights(
   entries: readonly { id: string; preflight: DeletePreflightFragment }[],
   shown = 5,
+  /** "also": the targets go and these with them; "derived": the targets stay and only these go. */
+  wording: "also" | "derived" = "also",
 ): DeletePreflightSummary {
   const targetKeys = new Set(entries.map((entry) => keyOf(entry.preflight)));
   const casualties = new Map<string, DeletePreflightFragment["casualties"][number]>();
@@ -89,7 +93,7 @@ export function summarizePreflights(
   const description =
     outside.length === 0
       ? ""
-      : `This also deletes ${outside.length} thing${outside.length === 1 ? "" : "s"} made from it: ${named.join(", ")}${more}.` +
+      : `${wording === "derived" ? "Deletes" : "This also deletes"} ${outside.length} thing${outside.length === 1 ? "" : "s"} made from it: ${named.join(", ")}${more}.` +
         (alsoGoes.length > 0 ? ` With them go ${alsoGoes.join(", ")}.` : "");
 
   return {
@@ -111,3 +115,46 @@ export async function preflightDeletes(
   const entries = await Promise.all(ids.map(async (id) => ({ id, preflight: await preflightDelete(client, kind, id) })));
   return summarizePreflights(entries);
 }
+
+/**
+ * What `deleteDerived` would delete for each target (the target itself kept):
+ * the same summary, worded for what stays. A target made from another target
+ * is in `skipIds` -- deleting the other's derived data would delete it.
+ */
+export async function preflightDeleteDerived(
+  client: ApolloClient<NormalizedCacheObject> | ApolloClient<unknown>,
+  kind: LineageNodeKind,
+  ids: readonly string[],
+): Promise<DeletePreflightSummary> {
+  const entries = await Promise.all(
+    ids.map(async (id) => {
+      const { data } = await (client as ApolloClient<unknown>).query({ query: PreflightDeleteDerivedDocument, variables: { kind, id }, fetchPolicy: "network-only" });
+      return { id, preflight: data.preflightDeleteDerived };
+    }),
+  );
+  return summarizePreflights(entries, 5, "derived");
+}
+
+/**
+ * The cache `__typename` behind each key prefix the server answers with
+ * (`<kind>:<id>`, mikro's internal kind names -- not the enum's), to evict
+ * what a delete took.
+ */
+const TYPENAME_BY_KEY_KIND: Record<string, string> = {
+  dataset: "ArrayDataset",
+  tabledataset: "TableDataset",
+  sparsedataset: "SparseDataset",
+  meshcollection: "MeshCollection",
+  networkcollection: "NetworkCollection",
+  annotationcollection: "AnnotationCollection",
+  fixture: "Fixture",
+  file: "File",
+  annotation: "Annotation",
+};
+
+/** A `<kind>:<id>` key as the server answers it, as the cache id of that row. */
+export const cacheIdOfKey = (key: string): { __typename: string; id: string } | null => {
+  const at = key.indexOf(":");
+  const typename = at > 0 ? TYPENAME_BY_KEY_KIND[key.slice(0, at)] : undefined;
+  return typename ? { __typename: typename, id: key.slice(at + 1) } : null;
+};

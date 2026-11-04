@@ -11,15 +11,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 let client: ApolloClient<unknown>;
 const setProfileIdentity = vi.fn();
+let activeProfileId = "pending-1";
+let connection: Record<string, unknown> = { endpoint: { base_url: "https://lok.test/lok/f/" } };
 
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   useSelfClient: () => client,
   Arkitekt: {
     useSelfService: () => ({ client }),
-    useActiveProfileId: () => "pending-1",
+    useActiveProfileId: () => activeProfileId,
     useSetProfileIdentity: () => setProfileIdentity,
-    useConnection: () => ({ endpoint: { base_url: "https://lok.test/lok/f/" } }),
+    useConnection: () => connection,
   },
 }));
 
@@ -68,6 +70,8 @@ const mount = (hub: { id: string; name: string; identifier: string } | null) => 
 
 beforeEach(() => {
   setProfileIdentity.mockClear();
+  activeProfileId = "pending-1";
+  connection = { endpoint: { base_url: "https://lok.test/lok/f/" } };
 });
 
 describe("ProfileIdentitySync", () => {
@@ -110,5 +114,37 @@ describe("ProfileIdentitySync", () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(setProfileIdentity).toHaveBeenCalledTimes(1);
+  });
+
+  describe("against the connection's grant", () => {
+    const withGrant = (organization: string) => ({
+      endpoint: { base_url: "https://lok.test/lok/f/" },
+      fakts: { self: { sub: "user-1", organization, hub: "hub-1" } },
+    });
+    const HUB = { id: "hub-1", name: "Imaging", identifier: "com.example.imaging" };
+
+    it("writes when the answer is the active profile's own login", async () => {
+      activeProfileId = "https://lok.test/lok/f::user-1::org-1::hub-1";
+      connection = withGrant("org-1");
+      mount(HUB);
+      await waitFor(() => expect(setProfileIdentity).toHaveBeenCalled());
+    });
+
+    it("writes nothing while the old organization's connection is still live", async () => {
+      // The switch made another profile active; this connection is not its.
+      activeProfileId = "https://lok.test/lok/f::user-1::org-2::hub-9";
+      connection = withGrant("org-1");
+      mount(HUB);
+      await new Promise((r) => setTimeout(r, 30));
+      expect(setProfileIdentity).not.toHaveBeenCalled();
+    });
+
+    it("writes nothing for a cached answer from another organization", async () => {
+      activeProfileId = "https://lok.test/lok/f::user-1::org-2::hub-1";
+      connection = withGrant("org-2");
+      mount(HUB); // answers org-1
+      await new Promise((r) => setTimeout(r, 30));
+      expect(setProfileIdentity).not.toHaveBeenCalled();
+    });
   });
 });

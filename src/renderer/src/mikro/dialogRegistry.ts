@@ -1,4 +1,5 @@
 import { prefersSize } from "@/core/modules/host/dialogNeeds";
+import { CascadeDeleteDialog } from "./components/deletion/CascadeDeleteDialog";
 import { LightPath3DDialog } from "./components/lightpath/LightPath3DDialog";
 import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
 import { AddChartLayerForm } from "./forms/AddChartLayerForm";
@@ -44,4 +45,6 @@ export const MIKRO_DIALOGS = {
   uploadfixture: UploadFixtureForm,
   // a file the Orkestrator agent's `upload_file` asks the person for (awaited)
   agentuploadfile: prefersSize("small", AgentUploadFileForm),
+  // a lineage-safe delete that would take what was made from it along (lib/deletion)
+  cascadedelete: prefersSize("small", CascadeDeleteDialog),
 };

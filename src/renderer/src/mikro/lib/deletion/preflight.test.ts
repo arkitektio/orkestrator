@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { LineageNodeKind } from "@/mikro/api/graphql";
 
-import { summarizePreflights } from "./preflight";
+import { cacheIdOfKey, summarizePreflights } from "./preflight";
 
 const preflight = (target: string, casualties: { key: string; kind: LineageNodeKind; name: string }[], over = {}) => ({
   target,
@@ -40,5 +40,25 @@ describe("summarizePreflights", () => {
     ]);
     expect(summary.blockers).toEqual(["Only the creator can delete this"]);
     expect(summary.description).toContain("With them go 2 layers.");
+  });
+});
+
+describe("delete derived", () => {
+  it("words what goes as the whole delete, the target kept", () => {
+    const summary = summarizePreflights(
+      [{ id: "a", preflight: preflight("annotation:a", [{ key: "dataset:4", kind: LineageNodeKind.Dataset, name: "Straightened" }]) as never }],
+      5,
+      "derived",
+    );
+    expect(summary.description).toBe("Deletes 1 thing made from it: Straightened (array dataset).");
+    expect(summary.casualtyKeys).toEqual(["dataset:4"]);
+  });
+
+  it("reads the server's keys as cache ids", () => {
+    expect(cacheIdOfKey("dataset:4")).toEqual({ __typename: "ArrayDataset", id: "4" });
+    expect(cacheIdOfKey("tabledataset:7")).toEqual({ __typename: "TableDataset", id: "7" });
+    expect(cacheIdOfKey("annotation:9f2c-11")).toEqual({ __typename: "Annotation", id: "9f2c-11" });
+    expect(cacheIdOfKey("lens:1")).toBeNull();
+    expect(cacheIdOfKey("nokey")).toBeNull();
   });
 });

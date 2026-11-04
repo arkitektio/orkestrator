@@ -44,6 +44,7 @@ import {
   markProfileStale,
   findProfileIdByChain,
   reidentifyProfile,
+  sameIdentity,
   removeProfile as removeProfileFromBook,
   setActiveProfile,
   setLastEndpoint,
@@ -1278,6 +1279,12 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         const nextId = deriveProfileId(identity);
 
         if (nextId !== profileId) {
+          return reidentifyProfile(book, profileId, identity, patch.label);
+        }
+        // Same key, different identity: the row's identity drifted from its
+        // id (a stale answer written before `answerFitsProfile` existed).
+        // The id is what the row is, so the identity follows it again.
+        if (patch.identity && !sameIdentity(profile.identity, patch.identity)) {
           return reidentifyProfile(book, profileId, identity, patch.label);
         }
 

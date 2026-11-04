@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useDialog } from "@/core/dialogs/registry";
 import { reportError, toast } from "@/core/notify";
 import { useMikro } from "@/mikro/api/funcs";
 import { preflightDeletes } from "./preflight";
@@ -6,8 +7,8 @@ import { preflightDeletes } from "./preflight";
 /**
  * Delete annotations the way mikro wants them deleted: ask first
  * (`preflightDeleteAnnotation`), and when shapes or data were made from them,
- * say what would go too and delete only once the user agrees -- with
- * `cascade: true`. Nothing made from them: the delete goes straight away, as
+ * say what would go too (the `cascadedelete` dialog) and delete only once
+ * the user agrees -- with `cascade: true`. Nothing made from them: the delete goes straight away, as
  * a shape delete always did (a Backspace in the scene).
  *
  * `run` is the caller's own delete (its cache upkeep, its selection), handed
@@ -16,6 +17,7 @@ import { preflightDeletes } from "./preflight";
  */
 export const useLineageSafeAnnotationDelete = () => {
   const client = useMikro();
+  const { openDialog } = useDialog();
 
   return useCallback(
     async (ids: readonly string[], run: (ids: string[], cascade: boolean, alsoGone: string[]) => Promise<void>): Promise<void> => {
@@ -43,13 +45,13 @@ export const useLineageSafeAnnotationDelete = () => {
         await run(own, false, alsoGone);
         return;
       }
-      toast.warning(ids.length === 1 ? "Delete this annotation and what was made from it?" : `Delete ${ids.length} annotations and what was made from them?`, {
+      openDialog("cascadedelete", {
+        title: ids.length === 1 ? "Delete this annotation and what was made from it?" : `Delete ${ids.length} annotations and what was made from them?`,
         description: summary.description,
-        duration: Infinity,
-        action: { label: `Delete all ${ids.length + summary.casualtyCount}`, onClick: () => void run(own, true, alsoGone) },
-        cancel: { label: "Keep", onClick: () => undefined },
+        confirmLabel: `Delete all ${ids.length + summary.casualtyCount}`,
+        onConfirm: () => run(own, true, alsoGone),
       });
     },
-    [client],
+    [client, openDialog],
   );
 };

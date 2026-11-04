@@ -80,3 +80,11 @@ query PreflightDeleteAnnotation($id: ID!) {
     ...DeletePreflight
   }
 }
+
+# What `deleteDerived` would delete: the casualties of a cascade, the object
+# itself kept and unchecked.
+query PreflightDeleteDerived($kind: LineageNodeKind!, $id: ID!) {
+  preflightDeleteDerived(kind: $kind, id: $id) {
+    ...DeletePreflight
+  }
+}

@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import { grantIdentity } from "@/core/connection/arkitekt/fakts/faktsSchema";
+import { answerFitsProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { useMyContextQuery } from "../api/graphql";
 import { resolveContextBrand } from "../lib/membershipBrand";
@@ -27,6 +29,14 @@ export const ProfileIdentitySync = () => {
   const connection = Arkitekt.useConnection();
 
   const baseUrl = connection?.endpoint?.base_url;
+  // Who this connection was approved as. The answer is written only onto the
+  // profile keyed by it: during a switch the new profile is active before its
+  // connection arrives, and the old connection's answer must not land on it.
+  const self = connection?.fakts?.self;
+  const grant = self ? grantIdentity(self) : undefined;
+  const grantUser = grant?.userId;
+  const grantOrg = grant?.orgId ?? null;
+  const grantHub = grant?.hubId ?? null;
   const context = data?.mycontext;
   const userId = context?.user?.id;
   const username = context?.user?.username;
@@ -62,6 +72,16 @@ export const ProfileIdentitySync = () => {
     if (!activeProfileId || !baseUrl || !userId) {
       return;
     }
+    const fits = answerFitsProfile(
+      activeProfileId,
+      baseUrl,
+      grantUser ? { userId: grantUser, orgId: grantOrg, hubId: grantHub } : undefined,
+      { userId, organizationId: organizationId ?? null, hubId },
+    );
+    if (!fits) {
+      // Mid-switch or a stale cache: the next answer, for the right login, writes.
+      return;
+    }
 
     setProfileIdentity(activeProfileId, {
       identity: {
@@ -88,6 +108,9 @@ export const ProfileIdentitySync = () => {
   }, [
     activeProfileId,
     baseUrl,
+    grantUser,
+    grantOrg,
+    grantHub,
     userId,
     username,
     organizationId,

@@ -1,0 +1,5 @@
+# Delete everything made from one object and keep it (`lib/deletion`, the
+# "Delete Derived" local actions). Answers the `<kind>:<id>` keys deleted.
+mutation DeleteDerived($input: DeleteDerivedInput!) {
+  deleteDerived(input: $input)
+}

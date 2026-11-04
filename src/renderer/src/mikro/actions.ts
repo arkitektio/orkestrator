@@ -1,5 +1,6 @@
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
-import { preflightDeletes } from "./lib/deletion/preflight";
+import { cacheIdOfKey, preflightDeleteDerived, preflightDeletes } from "./lib/deletion/preflight";
+import { toast } from "@/core/notify";
 import type { ModuleServices } from "@/core/connection/arkitekt/host";
 import {
   AutoVisualizeDocument,
@@ -16,6 +17,7 @@ import {
   CreateSceneFromCoordinateSystemMutationVariables,
   DeleteArrayDatasetDocument,
   DeleteChartDocument,
+  DeleteDerivedDocument,
   DeleteCollaborationDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
@@ -89,6 +91,7 @@ import {
   ScanSearch,
   Waypoints,
   GitBranch,
+  GitBranchMinus,
   Upload,
 } from "lucide-react";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
@@ -168,6 +171,13 @@ const LINEAGE_ROOTS = [
   ['meshCollection', '@mikro/meshcollection', LineageNodeKind.MeshCollection, 'mesh collection'],
 ] as const;
 
+// What `Delete Derived` stands on: every lineage kind with a smart object.
+const DELETE_DERIVED_ROOTS = [
+  ...LINEAGE_ROOTS,
+  ['fixture', '@mikro/fixture', LineageNodeKind.Fixture, 'fixture'],
+  ['annotation', '@mikro/annotation', LineageNodeKind.Annotation, 'annotation'],
+] as const;
+
 // A lens has no lineage of its own (it writes no data); its container's is
 // what someone standing on a lens means.
 const lensContainer = (lens: GetLensContainersQuery['lenses'][number]): [LineageNodeKind, string] | undefined => {
@@ -209,6 +219,9 @@ export const COLLABORATION_IDENTIFIERS = [
 
 /** Who may make, fill and share collaborations: mikro and lok ask the same of a member. */
 const COLLABORATING_ROLES = { anyOf: ['admin', 'editor'] } as const
+
+/** Who may delete data mikro writes as an editor's (`deleteDerived`). */
+const EDITING_ROLES = { anyOf: ['admin', 'editor'] } as const
 
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'add-to-collaboration': {
@@ -269,6 +282,90 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
             throw new Error(`No ${noun} selected for Show Lineage action`);
           }
           navigate(lineageLink(kind, selected.id));
+        },
+      },
+    ]),
+  ),
+  // Everything made from this (derived data, crops along a shape, shapes
+  // refined from it, series converted out of a file), transitively; it stays.
+  ...Object.fromEntries(
+    DELETE_DERIVED_ROOTS.map(([key, identifier, kind, noun]): [string, MikroAction] => [
+      `delete-derived-${key}`,
+      {
+        title: 'Delete Derived',
+        description: `Delete everything made from this ${noun}, and keep the ${noun}`,
+        icon: GitBranchMinus,
+        // `deleteDerived` is an editor's write (mikro_write, mikro_editor), even on a shape.
+        roles: EDITING_ROLES,
+        conditions: [{ type: 'identifier', identifier }, { type: 'nopartner' }],
+        collections: ['io'],
+        execute: async ({ state, services, confirm }) => {
+          const client = services.mikro?.client;
+          if (!client) {
+            throw new Error('Mikro service is not available');
+          }
+          const ids = state.left.filter((item) => item.identifier === identifier).map((item) => item.id);
+          if (ids.length === 0) return;
+
+          const summary = await preflightDeleteDerived(client, kind, ids);
+          if (summary.truncated) {
+            throw new Error('More was made from this than one delete may take along. Delete what was made from it in parts, from the leaves.');
+          }
+          if (summary.blockers.length > 0) {
+            throw new Error(`Cannot delete what was made from it: ${summary.blockers.join(' ')}`);
+          }
+          if (summary.skipIds.length > 0) {
+            throw new Error(`Some of the selected were made from others of them, and would be deleted too. Select only the ${noun}s to keep.`);
+          }
+          if (summary.casualtyCount === 0) {
+            toast(ids.length === 1 ? `Nothing was made from this ${noun}` : `Nothing was made from these ${noun}s`);
+            return;
+          }
+
+          const confirmed = await confirm({
+            title: ids.length === 1 ? `Delete what was made from this ${noun}?` : `Delete what was made from ${ids.length} ${noun}s?`,
+            description: `${summary.description} The ${noun}${ids.length === 1 ? '' : 's'} ${ids.length === 1 ? 'stays' : 'stay'}. This action cannot be undone.`,
+            confirmLabel: `Delete ${summary.casualtyCount}`,
+            cancelLabel: 'Keep',
+            destructive: true,
+          });
+          if (!confirmed) return;
+
+          // Found before the eviction, while the cache still holds them: the
+          // active queries showing what goes are refetched once it is gone. A
+          // scene's crop sits at depth 5 (scene > layers > layer > lens >
+          // dataset); 6 leaves room. Lists of it drop the evicted rows.
+          const watching = getRefetchableQueriesForEntities(
+            client,
+            summary.casualtyKeys.flatMap((key) => {
+              const ref = cacheIdOfKey(key);
+              return ref ? [{ typename: ref.__typename, id: ref.id }] : [];
+            }),
+            6,
+          );
+
+          // One target failing never strands what the others already deleted
+          // on screen: every answer is evicted, then one error says what failed.
+          const deleted: string[] = [];
+          const failures: unknown[] = [];
+          for (const id of ids) {
+            try {
+              const { data } = await client.mutate({ mutation: DeleteDerivedDocument, variables: { input: { kind, id } } });
+              deleted.push(...(data?.deleteDerived ?? []));
+            } catch (error) {
+              failures.push(error);
+            }
+          }
+          for (const key of deleted) {
+            const ref = cacheIdOfKey(key);
+            if (ref) client.cache.evict({ id: client.cache.identify(ref) });
+          }
+          client.cache.gc();
+          await Promise.allSettled(watching.map((query) => query.refetch()));
+          if (failures.length === ids.length) throw failures[0];
+          if (failures.length > 0) {
+            throw new Error(`Deleted what was made from ${ids.length - failures.length} of ${ids.length} ${noun}s -- ${failures.length} failed.`);
+          }
         },
       },
     ]),

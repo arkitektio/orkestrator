@@ -227,6 +227,43 @@ export const provisionalProfileId = (baseUrl: string): string =>
 export const isProvisionalProfileId = (id: string): boolean =>
   id.includes("::pending::");
 
+/**
+ * Whether lok's answer about who this login is may be written onto `profileId`.
+ *
+ * The answer comes from the LIVE connection, the profile id from the book, and
+ * the two move at different moments: a switch makes the new profile active
+ * before its connection replaces the old one, and a new connection's cache can
+ * still hold the previous organization's `mycontext`. Written in either gap,
+ * the old organization's identity lands on the new profile, and every link it
+ * copies names the wrong organization.
+ *
+ * `grant` is what the connection was approved as (`fakts.self`): the answer
+ * must be about that user, organization and hub, and the profile must be the
+ * one keyed by it (or still provisional). Without a grant (a deployment that
+ * predates `self.sub`) there is nothing to check against and the answer goes.
+ */
+export const answerFitsProfile = (
+  profileId: string,
+  baseUrl: string,
+  grant: { userId: string; orgId: string | null; hubId: string | null } | undefined,
+  answer: { userId: string; organizationId: string | null; hubId: string | null },
+): boolean => {
+  if (!grant) return true;
+  if (grant.userId !== answer.userId) return false;
+  if (grant.orgId && grant.orgId !== answer.organizationId) return false;
+  if (grant.hubId && answer.hubId && grant.hubId !== answer.hubId) return false;
+  if (isProvisionalProfileId(profileId)) return true;
+  const key = buildScopeKey(normalizeBaseUrl(baseUrl), grant.userId, grant.orgId ?? "personal");
+  return profileId === key || profileId.startsWith(`${key}::`);
+};
+
+/** Same user, organization and hub (a missing hub on `next` means "not answered"). */
+export const sameIdentity = (held: ProfileIdentity, next: ProfileIdentity): boolean =>
+  normalizeBaseUrl(held.baseUrl) === normalizeBaseUrl(next.baseUrl) &&
+  held.userId === next.userId &&
+  held.organizationId === next.organizationId &&
+  (next.hubId ?? held.hubId ?? null) === (held.hubId ?? null);
+
 // ── deriving a profile from a session ──
 
 export const deriveProfileLabel = (session: StoredArkitektSession): ProfileLabel => ({
@@ -459,13 +496,16 @@ export const reidentifyProfile = (
   const existing = book.profiles[nextId];
 
   if (existing && nextId !== currentId && !isProvisionalProfileId(currentId)) {
-    // Two established rows, two live refresh chains: keep both, take the new
-    // labelling, and leave the id alone.
-    return patchProfile(book, currentId, (current) => ({
-      ...current,
-      identity: nextIdentity,
-      label: { ...current.label, ...label },
-    }));
+    // Two established rows, two live refresh chains, and an answer that names
+    // the OTHER one: it is about the other login (a switch caught mid-swap),
+    // not news about this one. Keep both rows as they are. Writing it here
+    // gave this row the other organization's identity under its own id, and
+    // its links named the wrong organization from then on.
+    console.warn(
+      "[profiles] ignored an identity that belongs to another stored profile",
+      { profile: currentId, answer: nextId },
+    );
+    return book;
   }
 
   const merged: StoredProfile = {
