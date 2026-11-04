@@ -1,3 +1,15 @@
+# [5.10.0](https://github.com/arkitektio/orkestrator/compare/v5.9.0...v5.10.0) (2026-11-04)
+
+
+### Features
+
+* **mikro:** cascade deletes of derived data, id breadcrumbs and a profile identity guard ([9b73e37](https://github.com/arkitektio/orkestrator/commit/9b73e37eed86053db73f129e04175b68d3839b90))
+* **mikro:** pages for mesh collections and for single meshes ([9241970](https://github.com/arkitektio/orkestrator/commit/92419702e7eec3bb7841ce56e1324976658a4d48))
+* **mikro:** the table dataset page says what it describes ([5350fdc](https://github.com/arkitektio/orkestrator/commit/5350fdcdc727cd772687ce6424a5975a54bbbd54))
+* **rekuest:** a suggested partner opens the assign form, and every run reaches the sink ([5b5106e](https://github.com/arkitektio/orkestrator/commit/5b5106e34968f0107df3f75da8aa694408d0d78b))
+* **scene:** one float for paths and meshes that stages derived layers ([4a1aa65](https://github.com/arkitektio/orkestrator/commit/4a1aa65051639fde26e99dff17593f950ccec023))
+* **scene:** the float as a drill-in menu, with staged layers edited inline ([881d98d](https://github.com/arkitektio/orkestrator/commit/881d98df93ebd5932138754c5031eb131624674b))
+
 # [5.9.0](https://github.com/arkitektio/orkestrator/compare/v5.8.0...v5.9.0) (2026-11-03)
 
 
