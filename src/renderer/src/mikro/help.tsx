@@ -129,8 +129,9 @@ export const MIKRO_HELP = {
   ),
   tableDataset: (
     <PageHelp
-      intro="The rows of one table dataset. Everything about the table itself (its columns, axes and where it came from) is in the Info tab of the sidebar."
+      intro="The rows of one table dataset. The line under the name says how many rows and columns it has and who made it; Describes names the mask or meshes whose objects the rows are. Everything else about the table (its columns, axes, joins and where it came from) is in the Info tab of the sidebar."
       steps={[
+        <>Click a source next to <b>Describes</b> to open the mask or meshes this table measures.</>,
         <>Type into <b>Search all columns...</b> to filter the rows.</>,
         <>Click the sort arrow in a column header to order by that column.</>,
         <>Open <b>Columns</b> to hide the columns you do not need.</>,
@@ -140,6 +141,26 @@ export const MIKRO_HELP = {
       tips={[
         <>Drag the edge of a column header to resize it; double-click the edge to fit the content.</>,
         <>The <b>Space</b> tab shows the coordinate system this table owns and what it is registered into.</>,
+        <><b>Joins</b> in the Info tab lists the tables this one points to, and the tables that point to it.</>,
+      ]}
+    />
+  ),
+  meshCollection: (
+    <PageHelp
+      intro="A collection of meshes (surfaces, cells, organelles) in a scene of its own space. Each mesh has a page of its own."
+      steps={[
+        <>Press <b>Open in a scene</b> when the meshes are in no scene yet.</>,
+        <>Open the <b>Meshes</b> tab to list every mesh; click one in the scene to select it.</>,
+        <>The <b>Info</b> tab says which coordinate system the meshes are in and what they were made from.</>,
+      ]}
+    />
+  ),
+  meshObject: (
+    <PageHelp
+      intro="One mesh of a collection, shown selected in its collection's scene."
+      steps={[
+        <>The <b>Info</b> tab lists what was computed from this mesh.</>,
+        <>Use the scene picker under the title to look at the mesh in another of its collection's scenes.</>,
       ]}
     />
   ),

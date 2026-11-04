@@ -1,4 +1,7 @@
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+
 import { Badge } from "@/core/ui/badge";
+import { ErrorNote } from "@/core/ui/error-note";
 import { MikroCoordinateSystem, MikroTableDataset } from "@/core/linkers";
 import {
   GetTableDatasetQuery,
@@ -144,15 +147,13 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
         )}
       </div>
 
+      <JoinsSection columns={columns} referencedBy={dataset.referencedBy} />
+
       {/* Lineage and history. One failure message for both: they come from one
           query, so a partial rendering would be a lie about which part is
           missing. */}
       {error ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-          <p className="text-sm text-destructive">
-            Could not load lineage: {error.message}
-          </p>
-        </div>
+        <ErrorNote error={error} title="Couldn't load where this table came from" />
       ) : !data ? (
         <div className="text-xs text-muted-foreground">
           {loading ? "Loading lineage…" : null}
@@ -173,6 +174,47 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
           <ProvenanceSection entries={data.tableDataset.provenanceEntries} />
         </>
       )}
+    </div>
+  );
+};
+
+/**
+ * What this table joins to: its own columns that name another table
+ * (`Column.references`: each value is a row of that table), and the columns
+ * of other tables that name this one (`referencedBy`). Relations between
+ * tables are schema facts, not edges, so the Space graph never shows them —
+ * this is where they are. Nothing when there are none.
+ */
+const JoinsSection = ({
+  columns,
+  referencedBy,
+}: {
+  columns: PageTable["columns"];
+  referencedBy: PageTable["referencedBy"];
+}) => {
+  const outgoing = columns.filter((column) => column.references);
+  if (outgoing.length === 0 && referencedBy.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="text-xs font-semibold">Joins</div>
+      {outgoing.map((column) => (
+        <div key={column.id} className="flex min-w-0 items-center gap-1.5 text-xs" title={`Each ${column.name} is a row of ${column.references!.name}`}>
+          <span className="shrink-0 font-mono">{column.name}</span>
+          <ArrowRightIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <MikroTableDataset.DetailLink object={column.references!} className="min-w-0 truncate hover:underline">
+            {column.references!.name}
+          </MikroTableDataset.DetailLink>
+        </div>
+      ))}
+      {referencedBy.map((column) => (
+        <div key={column.id} className="flex min-w-0 items-center gap-1.5 text-xs" title={`Each ${column.table.name}.${column.name} is a row of this table`}>
+          <ArrowLeftIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <MikroTableDataset.DetailLink object={column.table} className="min-w-0 truncate hover:underline">
+            {column.table.name}
+          </MikroTableDataset.DetailLink>
+          <span className="shrink-0 font-mono text-muted-foreground">.{column.name}</span>
+        </div>
+      ))}
     </div>
   );
 };

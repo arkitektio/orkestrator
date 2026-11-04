@@ -1,12 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { Badge } from "@/core/ui/badge";
 import { MikroTableDataset } from "@/core/linkers";
 import { useGetTableDatasetQuery } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { AttributeServiceProvider } from "../lib/attributes/AttributeServiceProvider";
 import { TableDatasetInfoSidebar } from "../components/sidebars/TableDatasetInfoSidebar";
+import { TableDatasetHeader } from "../components/tables/TableDatasetHeader";
 import { TableDatasetTable } from "../components/tables/TableDatasetTable";
 import { MIKRO_HELP } from "../help";
 import { wholeLensContexts } from "../lenses";
@@ -30,6 +30,20 @@ export const TableDatasetPage = asDetailQueryRoute(
   useGetTableDatasetQuery,
   ({ data }) => {
     const dataset = data.tableDataset;
+    // An id column a mesh collection keys links each value to that mesh's page.
+    const meshLinks = useMemo(
+      () =>
+        new Map(
+          dataset.keyedBy.flatMap((key) =>
+            key.source.__typename === "MeshCollection" && key.produces.length === 1
+              ? [[key.produces[0], key.source.id] as const]
+              : [],
+          ),
+        ),
+      [dataset.keyedBy],
+    );
+    // The table's own row count, as the grid learns it from its first page.
+    const [rowCount, setRowCount] = useState<number | null>(null);
     // Its whole lens, offered in the ⌘K palette beside the table itself.
     const wholeLensId = dataset.fullLens?.id;
     const related = useMemo(
@@ -74,34 +88,19 @@ export const TableDatasetPage = asDetailQueryRoute(
           // tab this page did not choose.
           sidebarKey="TableDatasetDetail"
         >
-          <div className="flex h-full w-full flex-col gap-2">
-            {/* The same title treatment the array page floats over its canvas,
-                in flow rather than absolute — there is no picture to float over
-                and covering rows would only hide data. */}
-            <div className="flex flex-col gap-0.5">
-              <MikroTableDataset.DetailLink
-                object={dataset}
-                className="ellipsis truncate break-all text-3xl font-semibold leading-tight text-ellipsis"
-              >
-                {dataset.name}
-              </MikroTableDataset.DetailLink>
-              <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-                <span className="truncate">
-                  {dataset.axisNames.length
-                    ? dataset.axisNames.join(" × ")
-                    : "measurement table"}
-                </span>
-                <Badge variant="outline" className="font-sans text-[0.625rem]">
-                  {dataset.columns.length} columns
-                </Badge>
-              </div>
-            </div>
+          {/* `pt-3`: the overlay layout insets the sides and the bottom only
+              (a canvas wants its top edge), and a page of rows wants the same
+              inset all round as every other detail page. */}
+          <div className="flex h-full w-full flex-col gap-3 pt-3">
+            {/* What the table is and what it describes, in flow above the
+                rows — there is no picture to float a title over. */}
+            <TableDatasetHeader dataset={dataset} rowCount={rowCount} />
 
             {/* `min-h-0` so the table's own scroll container is what scrolls:
                 without it the flex item grows to its content and the page scrolls
                 instead, taking the column headers off screen. */}
             <div className="min-h-0 flex-1">
-              <TableDatasetTable table={dataset} />
+              <TableDatasetTable table={dataset} onRowCount={setRowCount} meshLinks={meshLinks} />
             </div>
           </div>
         </MikroTableDataset.ModelPage>

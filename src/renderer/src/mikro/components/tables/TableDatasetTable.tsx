@@ -44,6 +44,7 @@ import {
   useGetTableDatasetAnchorsQuery,
 } from "@/mikro/api/graphql";
 import { cn } from "@/core/util/utils";
+import { MikroMeshObject } from "@/core/linkers";
 
 import {
   ColumnAxisGlyph,
@@ -280,6 +281,7 @@ const calculateColumns = (
     ) => void;
     onHideColumn: (columnName: string) => void;
     anchorLabelsForRow: (rowKey: string) => readonly string[];
+    meshLinks?: ReadonlyMap<string, string>;
   },
 ): ColumnDef<Item>[] => {
   const calculatedColumns: ColumnDef<Item>[] = [
@@ -315,6 +317,22 @@ const calculateColumns = (
         ),
         cell: ({ row }) => {
           const text = formatCellValue(row.getValue(column.name));
+          // An id column a mesh collection keys: each value is a mesh, and
+          // the mesh has a page.
+          const collectionId = options.meshLinks?.get(column.name);
+          if (collectionId && text !== "") {
+            return (
+              <div className="truncate text-center font-mono text-sm">
+                <MikroMeshObject.DetailLink
+                  object={{ id: `${collectionId}:${text}` }}
+                  className="text-primary hover:underline"
+                  title={`Open mesh ${text}`}
+                >
+                  {text}
+                </MikroMeshObject.DetailLink>
+              </div>
+            );
+          }
           // Widths are fixed after the first fit, so a longer value on a
           // later page clips rather than widening the column under the
           // reader; the whole value stays one hover away.
@@ -333,7 +351,16 @@ const calculateColumns = (
 const EMPTY_ANCHORS: readonly ThinTableAnchor[] = [];
 const EMPTY_LABELS: readonly string[] = [];
 
-export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
+export const TableDatasetTable = (props: {
+  table: TableDatasetFragment;
+  /**
+   * Id columns whose values are meshes: column name → the mesh collection
+   * keying it (`TableDataset.keyedBy`). Their cells link to each mesh's page.
+   */
+  meshLinks?: ReadonlyMap<string, string>;
+  /** The table's own row count (no search, no filter), once a page has answered it. */
+  onRowCount?: (rows: number) => void;
+}) => {
   "use no memo";
 
   const [pagination, setPagination] = React.useState({
@@ -364,6 +391,14 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
     search,
     columnFilters,
   });
+
+  // What the table holds, whatever is searched for: the count a page with no
+  // search answered with. Reported, not shown here — the page header says it.
+  const { onRowCount } = props;
+  const unfiltered = search.trim() === "";
+  React.useEffect(() => {
+    if (unfiltered && !loading && !error) onRowCount?.(totalRowCount);
+  }, [unfiltered, loading, error, totalRowCount, onRowCount]);
 
   const handleColumnSortingChange = React.useCallback(
     (columnName: string, direction: SortDirection) => {
@@ -453,8 +488,10 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
         onColumnSortingChange: handleColumnSortingChange,
         onHideColumn: handleHideColumn,
         anchorLabelsForRow,
+        meshLinks: props.meshLinks,
       }),
     [
+      props.meshLinks,
       anchorLabelsForRow,
       handleColumnSortingChange,
       handleHideColumn,
@@ -637,7 +674,7 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex flex-initial flex-wrap items-center gap-2 py-4">
+      <div className="flex flex-initial flex-wrap items-center gap-2 pb-3">
         <div className="relative w-full max-w-sm">
           <Input
             placeholder="Search all columns..."
@@ -841,7 +878,7 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
         />
       </div>
 
-      <div className="flex flex-initial items-center justify-end space-x-2 py-4">
+      <div className="flex flex-initial items-center justify-end space-x-2 pt-3">
         <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
           <span>
             Showing {pageStart}-{pageEnd} of {totalRowCount} rows.

@@ -6,6 +6,37 @@ query GetTableDataset($id: ID!) {
     fullLens {
       id
     }
+    # What the table describes: the containers whose contents ARE its row ids
+    # (a label mask, a mesh collection), and the id column each lands on.
+    keyedBy {
+      source {
+        ...DerivedResident
+      }
+      produces
+      passesThrough
+    }
+    # Other tables whose columns point here: what this table joins to from the
+    # other side (its own columns' `references` are on the fragment).
+    referencedBy {
+      id
+      name
+      table {
+        id
+        name
+      }
+    }
+    folder {
+      id
+      name
+    }
+    createdThroughBy {
+      sub
+    }
+    createdThrough {
+      id
+      taskId
+      createdAt
+    }
   }
 }
 

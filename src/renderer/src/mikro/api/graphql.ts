@@ -10807,6 +10807,8 @@ export type TableDataset = {
   /** The lens that selects this whole table dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every table dataset is created with one */
   fullLens?: Maybe<TableLens>;
   id: Scalars['ID']['output'];
+  /** What this table describes: the containers whose contents ARE its row ids -- a label mask whose pixel values are the ids, a mesh collection whose objects are -- each with the table axis its ids land on (`produces`, the id column) and the axes that pass through by name. The other end of `keyedBy` at creation, and of `attributePlans` from the source's side. Empty for a table nothing keys: localizations placed by their own coordinates, or a table of per-dataset values */
+  keyedBy: Array<TableKey>;
   /** The lenses over this table dataset, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
   lenses: Array<TableLens>;
   name: Scalars['String']['output'];
@@ -11023,6 +11025,17 @@ export enum TableDatasetTimestampField {
 export type TableIdentifiesInput = {
   kind?: IdentificationKind;
   table: Scalars['ID']['input'];
+};
+
+/** One container keying a table: its contents are the table's row ids (`TableDataset.keyedBy`) */
+export type TableKey = {
+  __typename?: 'TableKey';
+  /** Table axes the source shares by name (a per-frame mask's `t`), which select alongside the id */
+  passesThrough: Array<Scalars['String']['output']>;
+  /** The table axes its ids land on: the id column(s) a row is found by */
+  produces: Array<Scalars['String']['output']>;
+  /** The container whose contents are the ids: a label mask's dataset, a mesh collection */
+  source: Resident;
 };
 
 /** A selection over a table dataset by value windows on its coordinate columns: the rows kept. Lives in the table's own space */
@@ -18190,6 +18203,84 @@ export type GetMeshObjectInfoQuery = { __typename?: 'Query', meshObject: { __typ
       & DerivedResident_TableLens_Fragment
     )> } };
 
+export type GetMeshObjectQueryVariables = Exact<{
+  collection: Scalars['ID']['input'];
+  object: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeshObjectQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, objectId: number, collection: (
+      { __typename?: 'MeshCollection', folder?: { __typename?: 'Folder', id: string, name: string } | null, fullLens?: { __typename?: 'MeshLens', id: string, defaultScene?: (
+          { __typename?: 'Scene' }
+          & ListSceneFragment
+        ) | null, scenes: Array<(
+          { __typename?: 'Scene' }
+          & ListSceneFragment
+        )> } | null }
+      & MeshCollectionFragment
+    ), derivedResidents: Array<(
+      { __typename?: 'AnnotationCollection' }
+      & DerivedResident_AnnotationCollection_Fragment
+    ) | (
+      { __typename?: 'AnnotationLens' }
+      & DerivedResident_AnnotationLens_Fragment
+    ) | (
+      { __typename?: 'ArrayDataset' }
+      & DerivedResident_ArrayDataset_Fragment
+    ) | (
+      { __typename?: 'ArrayLens' }
+      & DerivedResident_ArrayLens_Fragment
+    ) | (
+      { __typename?: 'DataArray' }
+      & DerivedResident_DataArray_Fragment
+    ) | (
+      { __typename?: 'Fixture' }
+      & DerivedResident_Fixture_Fragment
+    ) | (
+      { __typename?: 'FixtureLens' }
+      & DerivedResident_FixtureLens_Fragment
+    ) | (
+      { __typename?: 'MeshCollection' }
+      & DerivedResident_MeshCollection_Fragment
+    ) | (
+      { __typename?: 'MeshLens' }
+      & DerivedResident_MeshLens_Fragment
+    ) | (
+      { __typename?: 'NetworkCollection' }
+      & DerivedResident_NetworkCollection_Fragment
+    ) | (
+      { __typename?: 'NetworkLens' }
+      & DerivedResident_NetworkLens_Fragment
+    ) | (
+      { __typename?: 'SparseDataset' }
+      & DerivedResident_SparseDataset_Fragment
+    ) | (
+      { __typename?: 'SparseLens' }
+      & DerivedResident_SparseLens_Fragment
+    ) | (
+      { __typename?: 'TableDataset' }
+      & DerivedResident_TableDataset_Fragment
+    ) | (
+      { __typename?: 'TableLens' }
+      & DerivedResident_TableLens_Fragment
+    )> } };
+
+export type GetMeshCollectionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetMeshCollectionQuery = { __typename?: 'Query', meshCollection: (
+    { __typename?: 'MeshCollection', folder?: { __typename?: 'Folder', id: string, name: string } | null, fullLens?: { __typename?: 'MeshLens', id: string, defaultScene?: (
+        { __typename?: 'Scene' }
+        & ListSceneFragment
+      ) | null, scenes: Array<(
+        { __typename?: 'Scene' }
+        & ListSceneFragment
+      )> } | null, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> }
+    & MeshCollectionFragment
+  ) };
+
 export type GetPermissionsQueryVariables = Exact<{
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
@@ -18287,7 +18378,52 @@ export type GetTableDatasetQueryVariables = Exact<{
 
 
 export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: (
-    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null }
+    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null, keyedBy: Array<{ __typename?: 'TableKey', produces: Array<string>, passesThrough: Array<string>, source: (
+        { __typename?: 'AnnotationCollection' }
+        & DerivedResident_AnnotationCollection_Fragment
+      ) | (
+        { __typename?: 'AnnotationLens' }
+        & DerivedResident_AnnotationLens_Fragment
+      ) | (
+        { __typename?: 'ArrayDataset' }
+        & DerivedResident_ArrayDataset_Fragment
+      ) | (
+        { __typename?: 'ArrayLens' }
+        & DerivedResident_ArrayLens_Fragment
+      ) | (
+        { __typename?: 'DataArray' }
+        & DerivedResident_DataArray_Fragment
+      ) | (
+        { __typename?: 'Fixture' }
+        & DerivedResident_Fixture_Fragment
+      ) | (
+        { __typename?: 'FixtureLens' }
+        & DerivedResident_FixtureLens_Fragment
+      ) | (
+        { __typename?: 'MeshCollection' }
+        & DerivedResident_MeshCollection_Fragment
+      ) | (
+        { __typename?: 'MeshLens' }
+        & DerivedResident_MeshLens_Fragment
+      ) | (
+        { __typename?: 'NetworkCollection' }
+        & DerivedResident_NetworkCollection_Fragment
+      ) | (
+        { __typename?: 'NetworkLens' }
+        & DerivedResident_NetworkLens_Fragment
+      ) | (
+        { __typename?: 'SparseDataset' }
+        & DerivedResident_SparseDataset_Fragment
+      ) | (
+        { __typename?: 'SparseLens' }
+        & DerivedResident_SparseLens_Fragment
+      ) | (
+        { __typename?: 'TableDataset' }
+        & DerivedResident_TableDataset_Fragment
+      ) | (
+        { __typename?: 'TableLens' }
+        & DerivedResident_TableLens_Fragment
+      ) }>, referencedBy: Array<{ __typename?: 'Column', id: string, name: string, table: { __typename?: 'TableDataset', id: string, name: string } }>, folder?: { __typename?: 'Folder', id: string, name: string } | null, createdThroughBy?: { __typename?: 'User', sub: string } | null, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any } | null }
     & TableDatasetFragment
   ) };
 
@@ -29357,6 +29493,139 @@ export function useGetMeshObjectInfoLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetMeshObjectInfoQueryHookResult = ReturnType<typeof useGetMeshObjectInfoQuery>;
 export type GetMeshObjectInfoLazyQueryHookResult = ReturnType<typeof useGetMeshObjectInfoLazyQuery>;
 export type GetMeshObjectInfoQueryResult = Apollo.QueryResult<GetMeshObjectInfoQuery, GetMeshObjectInfoQueryVariables>;
+export const GetMeshObjectDocument = gql`
+    query GetMeshObject($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      ...MeshCollection
+      folder {
+        id
+        name
+      }
+      fullLens {
+        id
+        defaultScene {
+          ...ListScene
+        }
+        scenes {
+          ...ListScene
+        }
+      }
+    }
+    derivedResidents {
+      ...DerivedResident
+    }
+  }
+}
+    ${MeshCollectionFragmentDoc}
+${ListSceneFragmentDoc}
+${DerivedResidentFragmentDoc}`;
+
+/**
+ * __useGetMeshObjectQuery__
+ *
+ * To run a query within a React component, call `useGetMeshObjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMeshObjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMeshObjectQuery({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *      object: // value for 'object'
+ *   },
+ * });
+ */
+export function useGetMeshObjectQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMeshObjectQuery, GetMeshObjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMeshObjectQuery, GetMeshObjectQueryVariables>(GetMeshObjectDocument, options);
+      }
+export function useGetMeshObjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMeshObjectQuery, GetMeshObjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMeshObjectQuery, GetMeshObjectQueryVariables>(GetMeshObjectDocument, options);
+        }
+export type GetMeshObjectQueryHookResult = ReturnType<typeof useGetMeshObjectQuery>;
+export type GetMeshObjectLazyQueryHookResult = ReturnType<typeof useGetMeshObjectLazyQuery>;
+export type GetMeshObjectQueryResult = Apollo.QueryResult<GetMeshObjectQuery, GetMeshObjectQueryVariables>;
+export const GetMeshCollectionDocument = gql`
+    query GetMeshCollection($id: ID!) {
+  meshCollection(id: $id) {
+    ...MeshCollection
+    folder {
+      id
+      name
+    }
+    fullLens {
+      id
+      defaultScene {
+        ...ListScene
+      }
+      scenes {
+        ...ListScene
+      }
+    }
+    derivedFrom {
+      id
+      kind
+      valueRelation
+      output {
+        id
+        name
+        residents {
+          __typename
+          ... on ArrayDataset {
+            id
+            name
+          }
+          ... on ArrayLens {
+            id
+            dataset {
+              id
+              name
+            }
+          }
+        }
+      }
+      ... on UnmappableTransformation {
+        reason
+      }
+    }
+  }
+}
+    ${MeshCollectionFragmentDoc}
+${ListSceneFragmentDoc}`;
+
+/**
+ * __useGetMeshCollectionQuery__
+ *
+ * To run a query within a React component, call `useGetMeshCollectionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMeshCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMeshCollectionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetMeshCollectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>(GetMeshCollectionDocument, options);
+      }
+export function useGetMeshCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>(GetMeshCollectionDocument, options);
+        }
+export type GetMeshCollectionQueryHookResult = ReturnType<typeof useGetMeshCollectionQuery>;
+export type GetMeshCollectionLazyQueryHookResult = ReturnType<typeof useGetMeshCollectionLazyQuery>;
+export type GetMeshCollectionQueryResult = Apollo.QueryResult<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>;
 export const GetPermissionsDocument = gql`
     query GetPermissions($identifier: String!, $object: ID!) {
   permissions(identifier: $identifier, object: $object) {
@@ -29742,9 +30011,37 @@ export const GetTableDatasetDocument = gql`
     fullLens {
       id
     }
+    keyedBy {
+      source {
+        ...DerivedResident
+      }
+      produces
+      passesThrough
+    }
+    referencedBy {
+      id
+      name
+      table {
+        id
+        name
+      }
+    }
+    folder {
+      id
+      name
+    }
+    createdThroughBy {
+      sub
+    }
+    createdThrough {
+      id
+      taskId
+      createdAt
+    }
   }
 }
-    ${TableDatasetFragmentDoc}`;
+    ${TableDatasetFragmentDoc}
+${DerivedResidentFragmentDoc}`;
 
 /**
  * __useGetTableDatasetQuery__
