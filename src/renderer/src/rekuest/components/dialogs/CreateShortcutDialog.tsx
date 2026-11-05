@@ -15,7 +15,6 @@ import {
 } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Skeleton } from "@/core/ui/skeleton";
-import { FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
 import * as z from "zod";
@@ -141,7 +140,7 @@ export const CreateShortcutDialog = (props: {
 
       {action.description && (
         <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          <FormActionDescription description={action.description} control={form.control} />
+          {action.description}
         </div>
       )}
 

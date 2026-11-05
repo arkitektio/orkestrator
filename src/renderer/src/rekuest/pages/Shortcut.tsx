@@ -1,7 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
-import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestShortcut } from "@/core/linkers";
 import {
   TaskEventKind,
@@ -113,9 +112,7 @@ export const TPage = asDetailQueryRoute(useShortcutQuery, ({ data }) => {
     navigator.clipboard.writeText(data?.shortcut.action?.hash || "");
   }, [data?.shortcut.action?.hash]);
 
-  const description = useActionDescription({
-    description: data.shortcut.action.description || "",
-  });
+  const description = data.shortcut.action.description || "";
 
   return (
     <RekuestShortcut.ModelPage

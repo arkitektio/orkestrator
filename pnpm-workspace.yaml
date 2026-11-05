@@ -21,7 +21,12 @@ overrides:
   #
   # Keep this pinned to exactly the version react-router-dom depends on, and
   # bump both together. Verify with: pnpm why react-router  ->  1 version.
-  react-router: 6.30.4
+  react-router: 6.30.6
+
+  # monaco-editor 0.56.0 pins dompurify to exactly 3.4.8, which has eight open
+  # advisories (sanitizer bypasses). 3.4.x is patch-compatible; drop this once
+  # monaco ships a dompurify >= 3.4.17.
+  dompurify: ^3.4.17
 
 # pnpm 10+ blocks dependency lifecycle scripts unless they are listed here.
 # Written by `pnpm approve-builds`; keep it that way rather than hand-editing.

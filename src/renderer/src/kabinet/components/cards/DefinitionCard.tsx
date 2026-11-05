@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/ui/card";
-import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { KabinetDefinition } from "@/core/linkers";
 import { ListDefinitionFragment } from "../../api/graphql";
 
@@ -29,9 +28,7 @@ const TheCard = ({ item }: Props) => {
               </KabinetDefinition.DetailLink>
             </CardTitle>
             <CardDescription>
-              {item?.description && (
-                <ActionDescription description={item?.description} />
-              )}
+              {item?.description}
             </CardDescription>
           </div>
         </CardHeader>

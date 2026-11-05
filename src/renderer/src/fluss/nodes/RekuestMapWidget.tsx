@@ -1,6 +1,5 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/core/ui/sheet";
 import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
-import { ActionDescription, useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RunEventKind } from "@/fluss/api/graphql";
 import { Args } from "@/fluss/base/Args";
 import { Constants } from "@/fluss/base/Constants";
@@ -88,7 +87,6 @@ const RekuestMapWidgetInner: React.FC<RekuestMapNodeProps> = ({
   const dependency = adapter.useDependency(id);
   const [expanded, setExpanded] = React.useState(false);
 
-  const description = useActionDescription({ description: data.description, variables: data.constantsMap });
   const nonGlobalConstants = useMemo(
     () => constants.filter((port) => data.globalsMap?.[port.key] == null),
     [constants, data.globalsMap],
@@ -139,7 +137,7 @@ const RekuestMapWidgetInner: React.FC<RekuestMapNodeProps> = ({
           <NodeDescription className="text-red-300">❌ {status.exception}</NodeDescription>
         )}
         <NodeDescription>
-          <ActionDescription description={description} />
+          {data.description}
           {dependency && (
             <div className="mt-1 text-muted-foreground/60">
               {dependency.appFilter ?? "any app"}

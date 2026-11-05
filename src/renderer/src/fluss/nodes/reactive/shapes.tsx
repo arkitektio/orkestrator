@@ -1,7 +1,6 @@
 import { Button } from "@/core/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { cn } from "@/core/util/utils";
 import { ReactiveImplementation, ReactiveNodeFragment } from "@/fluss/api/graphql";
 import { FlowNodeData, ReactiveNodeData } from "@/fluss/types";
@@ -35,12 +34,12 @@ export const Default = ({ data, className }: ShapeProps) => (
       <Tooltip>
         <TooltipTrigger asChild>
           <CardTitle className="text-sm font-light">
-            <ActionDescription description={data.title} variables={{ ...data.constantsMap, __ports: data.ins }} />
+            {data.title}
           </CardTitle>
         </TooltipTrigger>
         <TooltipContent>
           <CardDescription className="text-xs">
-            <ActionDescription description={data.description} variables={data.constantsMap} />
+            {data.description}
           </CardDescription>
         </TooltipContent>
       </Tooltip>
@@ -59,7 +58,7 @@ export const Select = ({ data, className }: ShapeProps) => (
         </TooltipTrigger>
         <TooltipContent>
           <CardDescription className="text-xs">
-            <ActionDescription description={data.description} variables={data.constantsMap} />
+            {data.description}
           </CardDescription>
         </TooltipContent>
       </Tooltip>

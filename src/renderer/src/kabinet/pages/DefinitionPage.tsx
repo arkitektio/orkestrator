@@ -1,7 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ListRender } from "@/core/layout/ListRender";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { KabinetDefinition } from "@/core/linkers";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";
@@ -12,9 +11,7 @@ import { KABINET_HELP } from "../help";
 export const DefinitionPage = asDetailQueryRoute(
   useGetDefinitionQuery,
   ({ data }) => {
-    const description = useActionDescription({
-      description: data.definition.description || "",
-    });
+    const description = data.definition.description || "";
 
     const copyHashToClipboard = useCallback(() => {
       navigator.clipboard.writeText(data?.definition?.hash || "");

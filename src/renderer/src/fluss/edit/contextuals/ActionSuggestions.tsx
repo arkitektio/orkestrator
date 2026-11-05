@@ -2,7 +2,6 @@ import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import { Card } from "@/core/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { ActionScope, ListActionFragment } from "@/rekuest/api/graphql";
 import clsx from "clsx";
 import { TemplateSelector } from "./TemplateSelector";
@@ -54,7 +53,7 @@ export const ActionSuggestions = (props: {
           )}
         </TooltipTrigger>
         <TooltipContent align="center">
-          {action.description && <ActionDescription description={action.description} />}
+          {action.description}
           {action.scope != ActionScope.Global && (
             <div className="text-blue-200 mt-2">This Node will bind this workflow to specific apps</div>
           )}

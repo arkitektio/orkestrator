@@ -1,6 +1,5 @@
 import type { Control, FieldValues } from "react-hook-form";
 import { useDialog } from "@/core/dialogs/registry";
-import { FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { DependencyDefinitionsProvider } from "@arkitektio/bsx/ports/engine/DependencyContext";
 import { PortFitsContext } from "@arkitektio/bsx/ports/engine/PortFitsContext";
 import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
@@ -201,17 +200,9 @@ export const AssignForm = ({
             {implementation && (
               <p className="text-xs text-muted-foreground">@ {implementation.interface}</p>
             )}
-            <DialogDescription asChild>
-              <div>
-                {action?.description && (
-                  <FormActionDescription
-                    description={action.description}
-                    control={fieldsControl}
-                    name="args"
-                  />
-                )}
-              </div>
-            </DialogDescription>
+            {action?.description && (
+              <DialogDescription>{action.description}</DialogDescription>
+            )}
           </DialogHeader>
         )}
 

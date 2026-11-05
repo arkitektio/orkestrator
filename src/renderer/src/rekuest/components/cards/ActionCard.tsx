@@ -1,7 +1,6 @@
 import React from "react";
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
-import { ActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestAction } from "@/core/linkers";
 import { useDialog } from "@/core/dialogs/registry";
 import { Play } from "lucide-react";
@@ -91,7 +90,7 @@ const TheCard = ({ item }: Props) => {
 
         {item.description && (
           <div className="line-clamp-2 text-xs text-muted-foreground/80">
-            <ActionDescription description={item.description} />
+            {item.description}
           </div>
         )}
 

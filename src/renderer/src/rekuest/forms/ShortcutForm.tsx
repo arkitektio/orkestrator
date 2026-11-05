@@ -10,7 +10,6 @@ import {
 } from "@/core/ui/dialog";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Form } from "@/core/ui/form";
-import { ActionDescription, FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { RekuestShortcut } from "@/core/linkers";
 import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import React, { useMemo } from "react";
@@ -102,9 +101,7 @@ export const ReserveForm = (props: {
       </DialogHeader>
 
       <DialogDescription className="mt2">
-        {action?.description && (
-          <FormActionDescription description={action?.description} control={form.control} />
-        )}
+        {action?.description}
 
         <Form {...form}>
           <form
@@ -191,12 +188,7 @@ export const ReserveFormDialog = (props: {
       </DialogHeader>
 
       <DialogDescription className="mt2">
-        {data?.action?.description && (
-          <ActionDescription
-            description={data.action?.description}
-            variables={data}
-          />
-        )}
+        {data?.action?.description}
         {data?.action?.args.length == 0 && (
           <div className="text-muted"> No Arguments needed</div>
         )}

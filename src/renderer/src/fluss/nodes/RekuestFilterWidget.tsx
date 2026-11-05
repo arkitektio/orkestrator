@@ -1,5 +1,4 @@
 import { Card } from "@/core/ui/card";
-import { useActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { Args } from "@/fluss/base/Args";
 import { Constants } from "@/fluss/base/Constants";
 import { InStream } from "@/fluss/base/Instream";
@@ -23,7 +22,6 @@ const RekuestFilterWidgetInner: React.FC<RekuestFilterNodeProps> = ({
   const status = adapter.useNodeStatus(id);
   const [expanded, setExpanded] = React.useState(false);
 
-  const description = useActionDescription({ description: data.description, variables: data.constantsMap });
   const nonGlobalConstants = useMemo(
     () => constants.filter((port) => data.globalsMap?.[port.key] == null),
     [constants, data.globalsMap],
@@ -46,7 +44,7 @@ const RekuestFilterWidgetInner: React.FC<RekuestFilterNodeProps> = ({
         <NodeTitle onDoubleClick={() => setExpanded((e) => !e)}>
           <span className="max-w-[15rem] truncate">{data?.title}</span>
         </NodeTitle>
-        <NodeDescription>{description}</NodeDescription>
+        <NodeDescription>{data.description}</NodeDescription>
         {expanded && edit && (
           <div>
             <div className="text-xs text-muted-foreground inline">Args</div>
