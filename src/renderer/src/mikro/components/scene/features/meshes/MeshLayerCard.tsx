@@ -9,7 +9,6 @@ import {
   FlipHorizontal2,
   Grid3x3,
   Save,
-  Trash2,
   Waves,
   X,
 } from "lucide-react";
@@ -53,7 +52,7 @@ import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layeru
 import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { useMeshStore } from "./store/meshSlice";
-import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LENS_BUTTON, RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 
 /**
@@ -526,7 +525,7 @@ export const MeshLayerCard = memo(
               variant="ghost"
               size="icon"
               className={`h-5 w-5 shrink-0 ${
-                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/45 hover:text-foreground/90"
+                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/75 hover:text-foreground"
               }`}
               title={layer.wireframe ? "Solid surface (session)" : "Wireframe (session)"}
               onClick={() => patchSceneLayer(layerId, { wireframe: !layer.wireframe })}
@@ -536,23 +535,13 @@ export const MeshLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+              className="h-5 w-5 shrink-0 text-foreground/75 hover:text-foreground"
               title={hidden ? "Show (session)" : "Hide (session)"}
               onClick={() => patchSceneLayer(layerId, { visible: hidden })}
             >
               {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </Button>
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-                title="Remove layer from scene"
-                onClick={() => onRemove(layerId)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
+            {onRemove && <RemoveLayerButton onRemove={() => onRemove(layerId)} />}
           </>
         }
       >

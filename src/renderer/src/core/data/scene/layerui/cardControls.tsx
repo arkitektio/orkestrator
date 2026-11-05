@@ -143,7 +143,7 @@ export const LayerCardShell = ({
 
 /** Fixed-width row label, aligning every control row. */
 export const RowLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="w-11 shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
+  <span className="w-11 shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/60">
     {children}
   </span>
 );
@@ -171,13 +171,13 @@ export const CardSection = ({
 }) => (
   <div className="flex flex-col gap-1.5 border-t border-foreground/5 px-2 py-2">
     <div className="flex min-h-4 items-center gap-1.5">
-      <span className="flex-1 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/35">
+      <span className="flex-1 text-[9px] font-medium uppercase tracking-[0.08em] text-foreground/60">
         {title}
       </span>
       {action}
     </div>
     {children}
-    {hint && <span className="text-[9px] leading-tight text-foreground/25">{hint}</span>}
+    {hint && <span className="text-[9px] leading-tight text-foreground/50">{hint}</span>}
   </div>
 );
 
@@ -243,20 +243,20 @@ export const EntryRow = ({
         <span className="min-w-0 flex-1">
           <span
             className={`block truncate text-[10px] leading-tight ${
-              active ? "font-medium text-brand-soft" : "text-foreground/70"
+              active ? "font-medium text-brand-soft" : "text-foreground/85"
             }`}
           >
             {label}
           </span>
           {detail && (
-            <span className="block truncate text-[9px] leading-tight text-foreground/35">
+            <span className="block truncate text-[9px] leading-tight text-foreground/55">
               {detail}
             </span>
           )}
         </span>
         {children != null && (
           <ChevronDown
-            className={`h-2.5 w-2.5 shrink-0 text-foreground/30 transition-transform ${
+            className={`h-2.5 w-2.5 shrink-0 text-foreground/55 transition-transform ${
               expanded ? "rotate-180" : ""
             }`}
           />
@@ -288,8 +288,8 @@ export const RowAction = ({
     onClick={onClick}
     className={`grid h-4 w-4 shrink-0 place-items-center rounded transition-colors ${
       danger
-        ? "text-foreground/30 hover:bg-red-400/10 hover:text-red-700 dark:hover:text-red-300"
-        : "text-foreground/30 hover:bg-foreground/10 hover:text-foreground/90"
+        ? "text-foreground/60 hover:bg-red-400/10 hover:text-red-700 dark:hover:text-red-300"
+        : "text-foreground/60 hover:bg-foreground/10 hover:text-foreground/90"
     }`}
   >
     {children}
@@ -314,7 +314,7 @@ export const Segment = ({
     className={`px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
         ? "bg-brand/25 font-medium text-brand-soft"
-        : "text-foreground/45 hover:bg-foreground/5 hover:text-foreground/80"
+        : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
     }`}
   >
     {children}
@@ -322,7 +322,7 @@ export const Segment = ({
 );
 
 export const SegmentGroup = ({ children }: { children: React.ReactNode }) => (
-  <div className="inline-flex items-stretch overflow-hidden rounded-md border border-foreground/10 bg-background/30 divide-x divide-foreground/10">
+  <div className="inline-flex items-stretch overflow-hidden rounded-md border border-foreground/20 bg-background/30 divide-x divide-foreground/20">
     {children}
   </div>
 );
@@ -347,7 +347,7 @@ export const IconToggle = ({
     className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
         ? "border-brand/40 bg-brand/15 text-brand-soft"
-        : "border-foreground/10 bg-background/30 text-foreground/45 hover:text-foreground/80"
+        : "border-foreground/20 bg-background/30 text-foreground/70 hover:text-foreground"
     }`}
   >
     {icon}
@@ -389,7 +389,7 @@ export const OpacityRow = memo(function OpacityRow({
           onValueCommit={onCommit ? ([value]) => onCommit(value / 100) : undefined}
           className="flex-1 py-1"
         />
-        <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/40">
+        <span className="w-7 shrink-0 text-right font-mono text-[9px] text-foreground/65">
           {percent}%
         </span>
       </div>
@@ -406,7 +406,7 @@ export const Badge = ({
   title?: string;
 }) => (
   <span
-    className="shrink-0 rounded border border-foreground/10 bg-foreground/5 px-1 py-px text-[9px] text-foreground/50"
+    className="shrink-0 rounded border border-foreground/10 bg-foreground/5 px-1 py-px text-[9px] text-foreground/70"
     title={title}
   >
     {children}

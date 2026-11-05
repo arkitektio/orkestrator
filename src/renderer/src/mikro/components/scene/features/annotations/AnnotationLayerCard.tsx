@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, GitBranch, Radio, SquareDashed, Trash2 } from "lucide-react";
+import { Eye, EyeOff, GitBranch, Radio, SquareDashed } from "lucide-react";
 import { memo, useMemo } from "react";
 import { type SceneLayerFragment } from "@/mikro/api/graphql";
 import { useSceneAnnotations } from "./sceneVectors";
@@ -14,7 +14,7 @@ import {
   RowLabel,
   formatCount,
 } from "@/core/data/scene/layerui/cardControls";
-import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LENS_BUTTON, RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 import { AnnotationList, AnnotationSelection } from "./AnnotationList";
 import { partitionDerived } from "../../../../lib/annotations/derivedShapes";
@@ -162,7 +162,7 @@ export const AnnotationLayerCard = memo(
                 variant="ghost"
                 size="icon"
                 className={`h-5 w-5 shrink-0 ${
-                  live ? "text-brand-light hover:text-brand-light" : "text-foreground/45 hover:text-foreground/90"
+                  live ? "text-brand-light hover:text-brand-light" : "text-foreground/75 hover:text-foreground"
                 }`}
                 title={
                   live
@@ -180,7 +180,7 @@ export const AnnotationLayerCard = memo(
                 variant="ghost"
                 size="icon"
                 className={`h-5 w-5 shrink-0 ${
-                  showDerived ? "text-brand-light hover:text-brand-light" : "text-foreground/45 hover:text-foreground/90"
+                  showDerived ? "text-brand-light hover:text-brand-light" : "text-foreground/75 hover:text-foreground"
                 }`}
                 title={
                   showDerived
@@ -196,23 +196,13 @@ export const AnnotationLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+              className="h-5 w-5 shrink-0 text-foreground/75 hover:text-foreground"
               title={hidden ? "Show (session)" : "Hide (session)"}
               onClick={() => patchSceneLayer(layer.id, { visible: hidden })}
             >
               {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </Button>
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-                title="Remove layer from scene"
-                onClick={() => onRemove(layer.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
+            {onRemove && <RemoveLayerButton onRemove={() => onRemove(layer.id)} />}
           </>
         }
       >

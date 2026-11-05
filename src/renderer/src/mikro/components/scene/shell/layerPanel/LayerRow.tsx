@@ -1,11 +1,12 @@
 import { Button } from "@/core/ui/button";
 import { lensSmart } from "@/core/linkers";
-import { Eye, EyeOff, Focus, Save, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Focus, Save } from "lucide-react";
 import { LayerState } from "../../platform/stores/sceneStore";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { LayerGlyph } from "../../platform/layerui/LayerGlyph";
 import { LayerTile } from "@/core/data/scene/layerui/cardControls";
 import { LensButton } from "../../platform/layerui/LensButton";
+import { RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { useLayerCardHeaderActions } from "../../platform/layerui/layerCardSlot";
 import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
 
@@ -71,7 +72,7 @@ export const LayerRow = ({
   const buttonSize = compact
     ? "h-5 w-5 p-0"
     : "h-6 w-6 p-0 @md/card:h-7 @md/card:w-7";
-  const iconMuted = compact ? "text-foreground/45 hover:text-foreground/90" : "text-foreground/70 hover:text-foreground";
+  const iconMuted = "text-foreground/75 hover:text-foreground";
 
   const row = (
     <div
@@ -114,7 +115,7 @@ export const LayerRow = ({
       )}
       {/* Always reachable at every width — a row you cannot hide or focus from
           is worse than a cramped one. Only the hit area grows with the card. */}
-      <div className="flex shrink-0 items-center opacity-60 transition-opacity group-hover:opacity-100 @md/card:opacity-100">
+      <div className="flex shrink-0 items-center">
         {/* What the layer reads, to act on: the lens' smart menu. */}
         {headerActions}
         <LensButton lens={layer.lens} className={`${buttonSize} ${iconMuted}`} />
@@ -141,26 +142,16 @@ export const LayerRow = ({
           }}
         >
           {hidden ? (
-            <EyeOff className="h-3 w-3 text-foreground/50" />
+            <EyeOff className="h-3 w-3" />
           ) : (
             <Eye className="h-3 w-3" />
           )}
         </Button>
         {onRemove && (
-          <Button
-            variant="ghost"
-            size="xs"
-            className={`${buttonSize} ${
-              compact ? "text-foreground/35" : "text-foreground/70"
-            } hover:text-red-400`}
-            title="Remove layer from scene"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          <RemoveLayerButton
+            onRemove={onRemove}
+            className={`${buttonSize} ${iconMuted}`}
+          />
         )}
       </div>
     </div>

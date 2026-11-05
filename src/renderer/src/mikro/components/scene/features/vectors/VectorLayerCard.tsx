@@ -19,7 +19,7 @@
  */
 import { Button } from "@/core/ui/button";
 import { Slider } from "@/core/ui/slider";
-import { Eye, EyeOff, Trash2, Wind } from "lucide-react";
+import { Eye, EyeOff, Wind } from "lucide-react";
 import { memo } from "react";
 import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
@@ -41,7 +41,7 @@ import { ColormapSelect } from "@/core/data/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
-import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LENS_BUTTON, RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 
 type VectorPatch = Omit<UpdateVectorLayerInput, "id">;
@@ -89,23 +89,13 @@ export const VectorLayerCard = memo(
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+            className="h-5 w-5 shrink-0 text-foreground/75 hover:text-foreground"
             title={hidden ? "Show" : "Hide"}
             onClick={() => persist({ visible: hidden })}
           >
             {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           </Button>
-          {onRemove && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-              title="Remove layer from scene"
-              onClick={() => onRemove(layer.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
+          {onRemove && <RemoveLayerButton onRemove={() => onRemove(layer.id)} />}
         </div>
 
         {/* ------------------------------------------------ glyph ---------- */}

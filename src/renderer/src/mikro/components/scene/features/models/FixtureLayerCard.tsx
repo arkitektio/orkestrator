@@ -12,7 +12,7 @@
  *    occupies, read off the file at registration. Shown, never edited: the
  *    unit is what makes the placement come out the right size.
  */
-import { Box, Eye, EyeOff, Grid3x3, Trash2 } from "lucide-react";
+import { Box, Eye, EyeOff, Grid3x3 } from "lucide-react";
 import { memo, useCallback, useSyncExternalStore } from "react";
 
 import {
@@ -32,7 +32,7 @@ import {
   UpdateFixtureLayerDocument,
 } from "@/mikro/api/graphql";
 
-import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LENS_BUTTON, RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
 import type { FixtureLayerFragment } from "../../platform/model/layerGuards";
@@ -111,7 +111,7 @@ export const FixtureLayerCard = memo(
               variant="ghost"
               size="icon"
               className={`h-5 w-5 shrink-0 ${
-                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/45 hover:text-foreground/90"
+                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-foreground/75 hover:text-foreground"
               }`}
               title={layer.wireframe ? "Draw solid surfaces" : "Draw as a wireframe"}
               onClick={() => persist({ wireframe: !layer.wireframe })}
@@ -121,23 +121,13 @@ export const FixtureLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+              className="h-5 w-5 shrink-0 text-foreground/75 hover:text-foreground"
               title={hidden ? "Show" : "Hide"}
               onClick={() => persist({ visible: hidden })}
             >
               {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </Button>
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-                title="Remove layer from scene"
-                onClick={() => onRemove(layerId)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
+            {onRemove && <RemoveLayerButton onRemove={() => onRemove(layerId)} />}
           </>
         }
       >

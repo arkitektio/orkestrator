@@ -1,11 +1,88 @@
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/core/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { useLayerCardHeaderActions } from "./layerCardSlot";
 import { LensButton } from "./LensButton";
 
 /** What the host put in the title bar (`LayerCardHeaderActionsContext`). */
 const HeaderActions = () => <>{useLayerCardHeaderActions()}</>;
+
+/**
+ * The look of a compact card header's icon buttons. Firm enough to read over
+ * the blurred canvas: the cards sit on `bg-background/40`, and anything much
+ * below `/70` vanished into whatever the scene drew behind them.
+ */
+export const HEADER_BUTTON = "h-5 w-5 shrink-0 p-0 text-foreground/75 hover:text-foreground";
+
+/** The lens button's look in a compact card header, for the cards that fill
+ *  `actions` themselves. */
+export const LENS_BUTTON = HEADER_BUTTON;
+
+/**
+ * The remove button every layer card carries — one component, because the
+ * removal ASKS first: a trash icon a few pixels from the eye toggle deleted the
+ * layer row on a slip. The click opens a small confirm beside the button;
+ * only "Remove" there calls `onRemove`.
+ *
+ * Clicks inside the popover stop propagating: it is portalled, but React still
+ * bubbles its events through the card header, which would otherwise fold the
+ * card (or select the row) on every button press.
+ */
+export const RemoveLayerButton = ({
+  onRemove,
+  className = HEADER_BUTTON,
+}: {
+  onRemove: () => void;
+  className?: string;
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`${className} hover:text-red-700 dark:hover:text-red-300`}
+          title="Remove layer from scene"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="flex w-56 flex-col gap-2 p-2.5"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium">Remove this layer?</span>
+          <span className="text-[11px] leading-snug text-muted-foreground">
+            It leaves the scene; the data it shows is kept.
+          </span>
+        </div>
+        <div className="flex justify-end gap-1.5">
+          <Button size="xs" variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            size="xs"
+            variant="destructive"
+            autoFocus
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 /**
  * The show/hide and remove buttons every layer card puts in
@@ -21,10 +98,6 @@ const HeaderActions = () => <>{useLayerCardHeaderActions()}</>;
  * offered — the button is omitted entirely rather than disabled, so there is
  * nothing to click and nothing to explain.
  */
-/** The lens button's look in a compact card header, for the cards that fill
- *  `actions` themselves. */
-export const LENS_BUTTON = "h-5 w-5 shrink-0 p-0 text-foreground/45 hover:text-foreground/90";
-
 export const LayerCardActions = ({
   lens,
   hidden,
@@ -42,22 +115,12 @@ export const LayerCardActions = ({
     <Button
       variant="ghost"
       size="icon"
-      className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+      className={HEADER_BUTTON}
       title={hidden ? "Show" : "Hide"}
       onClick={onToggleVisible}
     >
       {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
     </Button>
-    {onRemove && (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-        title="Remove layer from scene"
-        onClick={onRemove}
-      >
-        <Trash2 className="h-3 w-3" />
-      </Button>
-    )}
+    {onRemove && <RemoveLayerButton onRemove={onRemove} />}
   </>
 );

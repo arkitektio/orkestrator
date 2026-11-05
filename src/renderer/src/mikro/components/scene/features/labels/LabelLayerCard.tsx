@@ -1,6 +1,6 @@
 import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, Puzzle, Save, Spline, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Puzzle, Save, Spline } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useStagedLayerMutation } from "../../platform/float/stagedMutation";
 import {
@@ -27,7 +27,7 @@ import {
 import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layerui/columnOptions";
 import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
-import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LENS_BUTTON, RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { LensButton } from "../../platform/layerui/LensButton";
 import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
@@ -383,23 +383,13 @@ export const LabelLayerCard = memo(
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0 text-foreground/45 hover:text-foreground/90"
+              className="h-5 w-5 shrink-0 text-foreground/75 hover:text-foreground"
               title={hidden ? "Show" : "Hide"}
               onClick={() => persistLayer({ visible: hidden })}
             >
               {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </Button>
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 shrink-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300"
-                title="Remove layer from scene"
-                onClick={() => onRemove(layerId)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
+            {onRemove && <RemoveLayerButton onRemove={() => onRemove(layerId)} />}
           </>
         }
       >
