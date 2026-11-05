@@ -28,6 +28,7 @@ export type Scalars = {
   StructureIdentifier: { input: any; output: any; }
   /** The `StructureObject` scalar type represents a structure object (e.g 1) on a specific identifier) */
   StructureObject: { input: any; output: any; }
+  UUID: { input: any; output: any; }
   _Any: { input: any; output: any; }
 };
 
@@ -111,25 +112,6 @@ export type AssertMeasurementExistsInput = {
 };
 
 /** Input for creating a new metric */
-export type AssertMetricValueForStructureInput = {
-  /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
-  confidence?: InputMaybe<Scalars['Float']['input']>;
-  /** What kind of number `confidence` is — a method's own score, a p-value. Measurement-only */
-  confidenceType?: InputMaybe<Scalars['String']['input']>;
-  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
-  derivedFrom?: Array<Scalars['String']['input']>;
-  key: Scalars['String']['input'];
-  /** When the world was observed. Defaults to when it was claimed. */
-  observedAt?: InputMaybe<Scalars['DateTime']['input']>;
-  /** The unique ID of the structure this metric is associated with */
-  structure: Scalars['ID']['input'];
-  unit?: InputMaybe<Scalars['String']['input']>;
-  value: Scalars['AnyScalar']['input'];
-  /** What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded. */
-  valueKind: PropertyType;
-};
-
-/** Input for creating a new metric */
 export type AssertMetricValueInput = {
   /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
   confidence?: InputMaybe<Scalars['Float']['input']>;
@@ -148,6 +130,12 @@ export type AssertMetricValueInput = {
   value: Scalars['AnyScalar']['input'];
   /** What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded. */
   valueKind: PropertyType;
+};
+
+/** Input for recording many metrics, about any number of data, as one act */
+export type AssertMetricValuesInput = {
+  /** The values to record, at most 5000 in one act */
+  metrics: Array<MetricValueInput>;
 };
 
 /** Input for creating a new natural event instance */
@@ -378,6 +366,19 @@ export type AssertedMetric = Asserted & {
   pending: Scalars['Boolean']['output'];
 };
 
+/** A batch of metrics as one act. A metric that names a uuid already on the record is reported, not recorded again */
+export type AssertedMetricValues = {
+  __typename?: 'AssertedMetricValues';
+  /** The act that recorded this batch's new metrics. Null when every one of them was already recorded */
+  assertion?: Maybe<Assertion>;
+  /** Every metric of the batch, in the order given: new ones and those an earlier attempt recorded */
+  metrics: Array<Metric>;
+  /** True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request. */
+  pending: Scalars['Boolean']['output'];
+  /** How many of the batch's metrics this call recorded */
+  recorded: Scalars['Int']['output'];
+};
+
 /** An assertion about a natural event, and everywhere it is now drawn */
 export type AssertedNaturalEvent = Asserted & {
   __typename?: 'AssertedNaturalEvent';
@@ -517,6 +518,14 @@ export type AssertionFilter = {
   seqAfter?: InputMaybe<Scalars['Int']['input']>;
   /** Who made the claims — user ids, or the identities of automated agents */
   subjects?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+/** Input for putting objects on a todo item */
+export type AttachToTodoItemInput = {
+  /** The item to put the objects on */
+  item: Scalars['ID']['input'];
+  /** The objects; one already on the item is left as it is */
+  structures: Array<TodoStructureInput>;
 };
 
 /** Input for claiming a remark stands again — reopening, as new evidence */
@@ -1026,6 +1035,14 @@ export type CreateNaturalEventCategoryInput = {
   properties?: Array<PropertyDefinitionInput>;
 };
 
+/** Input for creating a project */
+export type CreateProjectInput = {
+  /** What the project is about */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The name of the project */
+  name: Scalars['String']['input'];
+};
+
 /** Input for creating a new protocol event definition in the graph schema */
 export type CreateProtocolEventCategoryInput = {
   /** Draw the evidence this word already admits. Claims made under it before this category existed are in the organization's evidence base; with this on they are projected into the graph now, instead of waiting for the next reproject. Off by default because the work is proportional to the graph's evidence and happens before this mutation returns. */
@@ -1160,6 +1177,34 @@ export type CreateTermInput = {
   label?: InputMaybe<Scalars['String']['input']>;
   /** Persistent URL, where this corresponds to a published ontology term */
   purl?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Input for creating a todo item */
+export type CreateTodoItemInput = {
+  /** The sub of the user the item is assigned to; the list's assignee when not given */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** More about what is to be done */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The list the item goes on */
+  list: Scalars['ID']['input'];
+  /** The column it starts in; To do when not given */
+  status?: InputMaybe<TodoStatus>;
+  /** The objects it is about */
+  structures?: InputMaybe<Array<TodoStructureInput>>;
+  /** What is to be done */
+  title: Scalars['String']['input'];
+};
+
+/** Input for creating a todo list */
+export type CreateTodoListInput = {
+  /** The sub of the user the list is assigned to */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** What the list is for */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The name of the list */
+  name: Scalars['String']['input'];
+  /** The project the list belongs to */
+  project: Scalars['ID']['input'];
 };
 
 /** Input for deleting an existing entity definition in the graph schema */
@@ -2713,6 +2758,41 @@ export type MetricKindStatsSumArgs = {
   field: MetricKindField;
 };
 
+/** One value about one external datum, inside a batch */
+export type MetricValueInput = {
+  /** How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one. */
+  confidence?: InputMaybe<Scalars['Float']['input']>;
+  /** What kind of number `confidence` is — a method's own score, a p-value. Measurement-only */
+  confidenceType?: InputMaybe<Scalars['String']['input']>;
+  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
+  derivedFrom?: Array<Scalars['String']['input']>;
+  /** The structure identifier of the datum this value is about, e.g. '@mikro/annotation' */
+  identifier: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  /** The id of the datum this value is about */
+  object: Scalars['String']['input'];
+  /** When the world was observed. Defaults to when it was claimed. */
+  observedAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The uuid of an earlier metric of this API that this value corrects: that one is retracted and cited, under this act */
+  supersedes?: InputMaybe<Scalars['UUID']['input']>;
+  unit?: InputMaybe<Scalars['String']['input']>;
+  /** Optional: a uuid for this metric that stays the same across retries, so a retried batch records nothing twice. Left out, one is minted, and rerunning records the value again */
+  uuid?: InputMaybe<Scalars['UUID']['input']>;
+  value: Scalars['AnyScalar']['input'];
+  /** What type of value this is. Required: it decides the storage column and the measurement term */
+  valueKind: ValueKind;
+};
+
+/** Input for moving a todo item on its board */
+export type MoveTodoItemInput = {
+  /** The item to move */
+  id: Scalars['ID']['input'];
+  /** Its place in that column once moved, 0 first; past the end puts it last */
+  index?: Scalars['Int']['input'];
+  /** The column to move it to */
+  status: TodoStatus;
+};
+
 /** Graph Engine Mutations */
 export type Mutation = {
   __typename?: 'Mutation';
@@ -2730,8 +2810,8 @@ export type Mutation = {
   assertMeasurementExists: AssertedMeasurement;
   /** Record a measurement, creating the structure it describes if this is its first sight. One assertion covers both */
   assertMetricValue: AssertedMetric;
-  /** Record a measurement against a structure that already exists, named by its evidence id */
-  assertMetricValueForStructure: AssertedMetric;
+  /** Record many measurements, about any number of data, as one act, creating the structures they describe. A metric that names its own uuid is recorded once however often the batch is retried */
+  assertMetricValues: AssertedMetricValues;
   /** Claim that a natural event happened, under one of the organization's words */
   assertNaturalEventExists: AssertedNaturalEvent;
   /** Claim that an entity took part in an event, without displacing anyone else's claim */
@@ -2748,6 +2828,8 @@ export type Mutation = {
   assertStructureExists: AssertedStructure;
   /** Assert a relation between two structures. Drawings are always empty: neither endpoint has a vertex */
   assertStructureRelationExists: AssertedStructureRelation;
+  /** Put objects on a todo item; one already on it is left as it is */
+  attachToTodoItem: TodoItem;
   /** Claim a remark stands again — reopening, as new evidence rather than an undo */
   attestComment: AssertedComment;
   /** Claim that an entity exists, returning it to every projection whose rules admit it */
@@ -2778,6 +2860,8 @@ export type Mutation = {
   createMeasurementCategory: MeasurementCategory;
   /** Create a new natural event category in the graph */
   createNaturalEventCategory: NaturalEventCategory;
+  /** Create a project */
+  createProject: Project;
   /** Create a new protocol event category in the graph */
   createProtocolEventCategory: ProtocolEventCategory;
   /** Create a new relation category in the graph */
@@ -2788,6 +2872,10 @@ export type Mutation = {
   createStructureRelationCategory: StructureRelationCategory;
   /** Declare one of the organization's words, or describe one an ingest minted bare */
   createTerm: Term;
+  /** Create a todo item, optionally with the objects it is about */
+  createTodoItem: TodoItem;
+  /** Create a todo list in a project */
+  createTodoList: TodoList;
   /** Delete an entity category from the graph */
   deleteEntityCategory: Scalars['ID']['output'];
   /** Delete a graph from the graph engine */
@@ -2800,6 +2888,8 @@ export type Mutation = {
   deleteMetricKind: Scalars['ID']['output'];
   /** Delete a natural event category from the graph */
   deleteNaturalEventCategory: Scalars['ID']['output'];
+  /** Delete a project with its todo lists */
+  deleteProject: Scalars['ID']['output'];
   /** Delete a protocol event category from the graph */
   deleteProtocolEventCategory: Scalars['ID']['output'];
   /** Delete a relation category from the graph */
@@ -2810,10 +2900,16 @@ export type Mutation = {
   deleteStructureKind: Scalars['ID']['output'];
   /** Delete a structure relation category from the graph */
   deleteStructureRelationCategory: Scalars['ID']['output'];
+  /** Delete a todo item */
+  deleteTodoItem: Scalars['ID']['output'];
+  /** Delete a todo list with its items */
+  deleteTodoList: Scalars['ID']['output'];
+  /** Take one object off its todo item */
+  detachFromTodoItem: TodoItem;
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
-  /** Record measurements against a datum already on the record, as one act (was `updateStructure`) */
-  recordMetrics: AssertedStructure;
+  /** Move a todo item to a column and a place in it */
+  moveTodoItem: TodoItem;
   /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
   refreshMediaUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for media files in the organization */
@@ -2848,6 +2944,10 @@ export type Mutation = {
   retractStructure: AssertedStructure;
   /** Retract a structure relation assertion without destroying it */
   retractStructureRelation: AssertedStructureRelation;
+  /** Tick or untick one object on a todo item; ticking the last moves the item to Done */
+  setTodoStructureDone: TodoItem;
+  /** Move one object on a todo item to To do, Doing or Done; the item's column follows */
+  setTodoStructureStatus: TodoItem;
   /** Correct a measurement by retracting it and asserting a new one. The returned metric has a new id: it is a new row, not an edited one */
   supersedeMetricValue: AssertedMetric;
   /** Replace a relation with a new assertion, retracting the old one. Two assertions are recorded; the result reports the one that made the relation now standing */
@@ -2868,6 +2968,8 @@ export type Mutation = {
   updateMetricKind: MetricKind;
   /** Update an existing natural event category in the graph */
   updateNaturalEventCategory: NaturalEventCategory;
+  /** Change a project */
+  updateProject: Project;
   /** Update an existing protocol event category in the graph */
   updateProtocolEventCategory: ProtocolEventCategory;
   /** Update an existing relation category in the graph */
@@ -2880,6 +2982,10 @@ export type Mutation = {
   updateStructureRelationCategory: StructureRelationCategory;
   /** Update a term's label, description, PURL or colour, or hide it. Its kind and key are its identity and cannot change, and a term is never deleted — hiding is how a word is put away. */
   updateTerm: Term;
+  /** Change a todo item (title, description, assignee) */
+  updateTodoItem: TodoItem;
+  /** Change a todo list (name, description, assignee) */
+  updateTodoList: TodoList;
 };
 
 
@@ -2926,8 +3032,8 @@ export type MutationAssertMetricValueArgs = {
 
 
 /** Graph Engine Mutations */
-export type MutationAssertMetricValueForStructureArgs = {
-  input: AssertMetricValueForStructureInput;
+export type MutationAssertMetricValuesArgs = {
+  input: AssertMetricValuesInput;
 };
 
 
@@ -2976,6 +3082,12 @@ export type MutationAssertStructureExistsArgs = {
 /** Graph Engine Mutations */
 export type MutationAssertStructureRelationExistsArgs = {
   input: AssertStructureRelationExistsInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationAttachToTodoItemArgs = {
+  input: AttachToTodoItemInput;
 };
 
 
@@ -3070,6 +3182,12 @@ export type MutationCreateNaturalEventCategoryArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationCreateProjectArgs = {
+  input: CreateProjectInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationCreateProtocolEventCategoryArgs = {
   input: CreateProtocolEventCategoryInput;
 };
@@ -3096,6 +3214,18 @@ export type MutationCreateStructureRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationCreateTermArgs = {
   input: CreateTermInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationCreateTodoItemArgs = {
+  input: CreateTodoItemInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationCreateTodoListArgs = {
+  input: CreateTodoListInput;
 };
 
 
@@ -3136,6 +3266,12 @@ export type MutationDeleteNaturalEventCategoryArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationDeleteProjectArgs = {
+  input: ProjectIdInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationDeleteProtocolEventCategoryArgs = {
   input: DeleteProtocolEventCategoryInput;
 };
@@ -3166,14 +3302,32 @@ export type MutationDeleteStructureRelationCategoryArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationDeleteTodoItemArgs = {
+  input: TodoIdInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationDeleteTodoListArgs = {
+  input: TodoIdInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationDetachFromTodoItemArgs = {
+  input: TodoIdInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationFinishMediaUploadArgs = {
   input: FinishMediaUploadInput;
 };
 
 
 /** Graph Engine Mutations */
-export type MutationRecordMetricsArgs = {
-  input: RecordMetricsInput;
+export type MutationMoveTodoItemArgs = {
+  input: MoveTodoItemInput;
 };
 
 
@@ -3280,6 +3434,18 @@ export type MutationRetractStructureRelationArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationSetTodoStructureDoneArgs = {
+  input: SetTodoStructureDoneInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationSetTodoStructureStatusArgs = {
+  input: SetTodoStructureStatusInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationSupersedeMetricValueArgs = {
   input: SupersedeMetricValueInput;
 };
@@ -3340,6 +3506,12 @@ export type MutationUpdateNaturalEventCategoryArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationUpdateProjectArgs = {
+  input: UpdateProjectInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationUpdateProtocolEventCategoryArgs = {
   input: UpdateProtocolEventCategoryInput;
 };
@@ -3372,6 +3544,18 @@ export type MutationUpdateStructureRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationUpdateTermArgs = {
   input: UpdateTermInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationUpdateTodoItemArgs = {
+  input: UpdateTodoItemInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationUpdateTodoListArgs = {
+  input: UpdateTodoListInput;
 };
 
 /** A natural event in the knowledge graph */
@@ -3821,6 +4005,51 @@ export type Plottable = {
   scatterPlots: Array<ScatterPlot>;
 };
 
+/** One piece of work in an organization: the anchor its todo lists hang off */
+export type Project = {
+  __typename?: 'Project';
+  /** When the project was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** What the project is about */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Database ID of the project */
+  id: Scalars['ID']['output'];
+  /** The name of the project */
+  name: Scalars['String']['output'];
+  /** The project's todo lists */
+  todoLists: Array<TodoList>;
+};
+
+
+/** One piece of work in an organization: the anchor its todo lists hang off */
+export type ProjectTodoListsArgs = {
+  filters?: InputMaybe<TodoListFilter>;
+  ordering?: Array<TodoListOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+export type ProjectFilter = {
+  AND?: InputMaybe<ProjectFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<ProjectFilter>;
+  OR?: InputMaybe<ProjectFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Search the name and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Input naming one project */
+export type ProjectIdInput = {
+  /** The project to act on */
+  id: Scalars['ID']['input'];
+};
+
+export type ProjectOrder =
+  { createdAt: Ordering; name?: never; }
+  |  { createdAt?: never; name: Ordering; };
+
 /** Whether a view's drawing reflects the log, has never been drawn, or is mid-replay */
 export enum ProjectionStatus {
   Consistent = 'CONSISTENT',
@@ -4193,6 +4422,10 @@ export type Query = {
   outputParticipation: OutputParticipation;
   /** List the output participation claims a view admits — log grain, under the view's event categories' rules */
   outputParticipations: Array<OutputParticipation>;
+  /** One project by ID */
+  project: Project;
+  /** The organization's projects */
+  projects: Array<Project>;
   /** Get a protocol event by ID, as the named view holds it — see `node` */
   protocolEvent: ProtocolEvent;
   /** List all protocol event categories */
@@ -4249,6 +4482,14 @@ export type Query = {
   term: Term;
   /** List the organization's words — its vocabulary, independent of any graph */
   terms: Array<Term>;
+  /** One todo item by ID */
+  todoItem: TodoItem;
+  /** Todo items across lists; `mine` narrows to those whose effective assignee is the caller, `identifier` + `object` to those that carry an object */
+  todoItems: Array<TodoItem>;
+  /** One todo list by ID */
+  todoList: TodoList;
+  /** Todo lists; `mine` narrows to the caller's */
+  todoLists: Array<TodoList>;
 };
 
 
@@ -4507,6 +4748,18 @@ export type QueryOutputParticipationsArgs = {
 };
 
 
+export type QueryProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProjectsArgs = {
+  filters?: InputMaybe<ProjectFilter>;
+  ordering?: Array<ProjectOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryProtocolEventArgs = {
   graph: Scalars['ID']['input'];
   id: Scalars['ID']['input'];
@@ -4679,16 +4932,28 @@ export type QueryTermsArgs = {
   pagination?: InputMaybe<VocabularyPaginationInput>;
 };
 
-/** Input for recording measurements against a datum already on the record */
-export type RecordMetricsInput = {
-  /** The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`. */
-  derivedFrom?: Array<Scalars['String']['input']>;
-  /** The ID of the structure the measurements describe */
-  id: Scalars['String']['input'];
-  /** List of measurements associated with this structure */
-  metrics?: Array<MetricInput>;
-  /** The unique ID of the object this structure references */
-  object: Scalars['String']['input'];
+
+export type QueryTodoItemArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTodoItemsArgs = {
+  filters?: InputMaybe<TodoItemFilter>;
+  ordering?: Array<TodoItemOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryTodoListArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTodoListsArgs = {
+  filters?: InputMaybe<TodoListFilter>;
+  ordering?: Array<TodoListOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 export type RefreshUploadInput = {
@@ -5180,6 +5445,22 @@ export type ScatterPlotFilter = {
 export type ScatterPlotOrder =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
+
+/** Input for ticking (or unticking) one object on a todo item */
+export type SetTodoStructureDoneInput = {
+  /** Whether it is done */
+  done: Scalars['Boolean']['input'];
+  /** The object on an item (a TodoItemStructure) */
+  id: Scalars['ID']['input'];
+};
+
+/** Input for moving one object on a todo item to To do, Doing or Done */
+export type SetTodoStructureStatusInput = {
+  /** The object on an item (a TodoItemStructure) */
+  id: Scalars['ID']['input'];
+  /** To do, Doing or Done */
+  status: TodoStatus;
+};
 
 /** Somebody's position on whether a claim still holds */
 export type Standing = {
@@ -5737,6 +6018,170 @@ export enum TermKind {
   StructureRelation = 'STRUCTURE_RELATION'
 }
 
+/** Input naming one todo list, item or item object */
+export type TodoIdInput = {
+  /** The row to act on */
+  id: Scalars['ID']['input'];
+};
+
+/** One card on a todo board */
+export type TodoItem = {
+  __typename?: 'TodoItem';
+  /** The item's own assignee (a sub); see `effectiveAssignee` */
+  assignee?: Maybe<Scalars['ID']['output']>;
+  /** When the item was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** More about what is to be done */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Who the item is for: its own assignee, else its list's (a sub) */
+  effectiveAssignee?: Maybe<Scalars['ID']['output']>;
+  /** Database ID of the item */
+  id: Scalars['ID']['output'];
+  /** The list the item is on */
+  list: TodoList;
+  /** Its place within its column, 0 first */
+  position: Scalars['Int']['output'];
+  /** The board column the item is in */
+  status: TodoStatus;
+  /** The objects the item is about */
+  structures: Array<TodoItemStructure>;
+  /** What is to be done */
+  title: Scalars['String']['output'];
+  /** When the item last changed */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type TodoItemFilter = {
+  AND?: InputMaybe<TodoItemFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TodoItemFilter>;
+  OR?: InputMaybe<TodoItemFilter>;
+  /** Items whose effective assignee (their own, else their list's) is this user (a sub) */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Items that carry this object; pair with `object` */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** The items of one list */
+  list?: InputMaybe<Scalars['ID']['input']>;
+  /** Items whose effective assignee is the caller */
+  mine?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Items that carry this object; pair with `identifier` */
+  object?: InputMaybe<Scalars['ID']['input']>;
+  /** The items of one project */
+  project?: InputMaybe<Scalars['ID']['input']>;
+  /** Search the title and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Items in any of these columns */
+  status?: InputMaybe<Array<TodoStatus>>;
+};
+
+export type TodoItemOrder =
+  { createdAt: Ordering; position?: never; updatedAt?: never; }
+  |  { createdAt?: never; position: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; position?: never; updatedAt: Ordering; };
+
+/** An object a todo item is about, with its own To do / Doing / Done */
+export type TodoItemStructure = {
+  __typename?: 'TodoItemStructure';
+  /** Whether this object has been dealt with */
+  done: Scalars['Boolean']['output'];
+  /** When it was ticked */
+  doneAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The sub of who ticked it */
+  doneBy?: Maybe<Scalars['ID']['output']>;
+  /** Database ID of this object on the item */
+  id: Scalars['ID']['output'];
+  /** The object's structure identifier, e.g. @mikro/image */
+  identifier: Scalars['String']['output'];
+  /** The item it is on */
+  item: TodoItem;
+  /** The object's id within its structure */
+  object: Scalars['ID']['output'];
+  /** Its place on the item */
+  position: Scalars['Int']['output'];
+  /** When somebody started on it */
+  startedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The sub of who started on it */
+  startedBy?: Maybe<Scalars['ID']['output']>;
+  /** How far along this object is: To do, Doing or Done */
+  status: TodoStatus;
+};
+
+/** A list of things to do, usually handed to one person */
+export type TodoList = {
+  __typename?: 'TodoList';
+  /** The sub of the user the list is assigned to */
+  assignee?: Maybe<Scalars['ID']['output']>;
+  /** When the list was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** What the list is for */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Database ID of the list */
+  id: Scalars['ID']['output'];
+  /** The list's items */
+  items: Array<TodoItem>;
+  /** The name of the list */
+  name: Scalars['String']['output'];
+  /** Items done, out of all items on the list */
+  progress: TodoProgress;
+  /** The project the list belongs to */
+  project: Project;
+};
+
+
+/** A list of things to do, usually handed to one person */
+export type TodoListItemsArgs = {
+  filters?: InputMaybe<TodoItemFilter>;
+  ordering?: Array<TodoItemOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+export type TodoListFilter = {
+  AND?: InputMaybe<TodoListFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TodoListFilter>;
+  OR?: InputMaybe<TodoListFilter>;
+  /** Lists assigned to this user (a sub), or holding an item assigned to them */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Lists assigned to the caller, or holding an item assigned to them */
+  mine?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The lists of one project */
+  project?: InputMaybe<Scalars['ID']['input']>;
+  /** Search the name and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type TodoListOrder =
+  { createdAt: Ordering; name?: never; }
+  |  { createdAt?: never; name: Ordering; };
+
+/** How far along something is: done out of total */
+export type TodoProgress = {
+  __typename?: 'TodoProgress';
+  done: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
+/** The board column a todo item is in */
+export enum TodoStatus {
+  Doing = 'DOING',
+  Done = 'DONE',
+  Todo = 'TODO'
+}
+
+/** An object to put on a todo item, named the way a comment names one */
+export type TodoStructureInput = {
+  /** The object's structure identifier, e.g. @mikro/image */
+  identifier: Scalars['String']['input'];
+  /** The object's id within its structure */
+  object: Scalars['ID']['input'];
+};
+
 /** Pagination options for a node's drawn edges and neighbours */
 export type TraversalPaginationInput = {
   /** Maximum number of items to return */
@@ -5883,6 +6328,16 @@ export type UpdateNaturalEventCategoryInput = {
   pin?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for changing a project */
+export type UpdateProjectInput = {
+  /** Its new description */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The project to change */
+  id: Scalars['ID']['input'];
+  /** Its new name */
+  name: Scalars['String']['input'];
+};
+
 /** Input for updating an existing protocol event definition in the graph schema */
 export type UpdateProtocolEventCategoryInput = {
   /** Reset the category to primitive — any claim naming its word counts, standings organization grain */
@@ -6023,6 +6478,30 @@ export type UpdateTermInput = {
   purl?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Input for changing a todo item. Every field is replaced. */
+export type UpdateTodoItemInput = {
+  /** Its own assignee (a sub); the list's when not given */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** Its new description */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The item to change */
+  id: Scalars['ID']['input'];
+  /** Its new title */
+  title: Scalars['String']['input'];
+};
+
+/** Input for changing a todo list. Every field is replaced. */
+export type UpdateTodoListInput = {
+  /** Its new assignee (a sub); unassigned when not given */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** Its new description */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The list to change */
+  id: Scalars['ID']['input'];
+  /** Its new name */
+  name: Scalars['String']['input'];
+};
+
 export enum ValueKind {
   Boolean = 'BOOLEAN',
   Category = 'CATEGORY',
@@ -6084,7 +6563,7 @@ export enum WhereOperator {
   StartsWith = 'STARTS_WITH'
 }
 
-export type _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term;
+export type _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | Project | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term | TodoItem | TodoItemStructure | TodoList;
 
 export type _Service = {
   __typename?: '_Service';
@@ -6670,6 +7149,16 @@ export type PathNaturalEventFragment = (
   & ListNaturalEventFragment
 );
 
+export type ListProjectFragment = { __typename?: 'Project', id: string, name: string, description?: string | null, createdAt: any };
+
+export type ProjectFragment = (
+  { __typename?: 'Project', todoLists: Array<(
+    { __typename?: 'TodoList' }
+    & ListTodoListFragment
+  )> }
+  & ListProjectFragment
+);
+
 export type ClaimConditionFragment = { __typename?: 'ClaimCondition', field: ClaimField, operator: ClaimOperator, value: any };
 
 export type ClaimRuleFragment = { __typename?: 'ClaimRule', when: Array<(
@@ -7192,6 +7681,28 @@ export type DetailTermFragment = (
 
 export type AssignableTermFragment = { __typename?: 'Term', id: string, kind: TermKind, key: string, label?: string | null, color?: Array<number> | null, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } }> };
 
+export type TodoItemStructureFragment = { __typename?: 'TodoItemStructure', id: string, identifier: string, object: string, status: TodoStatus, startedAt?: any | null, startedBy?: string | null, done: boolean, doneAt?: any | null, doneBy?: string | null, position: number };
+
+export type ListTodoItemFragment = { __typename?: 'TodoItem', id: string, title: string, description?: string | null, status: TodoStatus, position: number, assignee?: string | null, effectiveAssignee?: string | null, updatedAt: any, structures: Array<(
+    { __typename?: 'TodoItemStructure' }
+    & TodoItemStructureFragment
+  )> };
+
+export type TodoItemWithListFragment = (
+  { __typename?: 'TodoItem', list: { __typename?: 'TodoList', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } } }
+  & ListTodoItemFragment
+);
+
+export type ListTodoListFragment = { __typename?: 'TodoList', id: string, name: string, description?: string | null, assignee?: string | null, createdAt: any, progress: { __typename?: 'TodoProgress', done: number, total: number } };
+
+export type TodoListFragment = (
+  { __typename?: 'TodoList', project: { __typename?: 'Project', id: string, name: string }, items: Array<(
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  )> }
+  & ListTodoListFragment
+);
+
 export type AssertParticipationMutationVariables = Exact<{
   event: Scalars['String']['input'];
   entity: Scalars['String']['input'];
@@ -7479,19 +7990,6 @@ export type RetractMeasurementMutation = { __typename?: 'Mutation', retractMeasu
       & LinkFragment
     ) } };
 
-export type AssertMetricValueForStructureMutationVariables = Exact<{
-  input: AssertMetricValueForStructureInput;
-}>;
-
-
-export type AssertMetricValueForStructureMutation = { __typename?: 'Mutation', assertMetricValueForStructure: { __typename?: 'AssertedMetric', assertion: (
-      { __typename?: 'Assertion' }
-      & AssertionFragment
-    ), metric: (
-      { __typename?: 'Metric' }
-      & MetricFragment
-    ) } };
-
 export type RetractMetricMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -7575,6 +8073,33 @@ export type AttestNaturalEventMutation = { __typename?: 'Mutation', attestNatura
       { __typename?: 'NodeDrawing' }
       & NodeDrawingFragment
     )> } };
+
+export type CreateProjectMutationVariables = Exact<{
+  input: CreateProjectInput;
+}>;
+
+
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: (
+    { __typename?: 'Project' }
+    & ListProjectFragment
+  ) };
+
+export type UpdateProjectMutationVariables = Exact<{
+  input: UpdateProjectInput;
+}>;
+
+
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: (
+    { __typename?: 'Project' }
+    & ListProjectFragment
+  ) };
+
+export type DeleteProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: string };
 
 export type AssertProtocolEventExistsMutationVariables = Exact<{
   input: AssertProtocolEventExistsInput;
@@ -7942,19 +8467,6 @@ export type RetractStructureMutation = { __typename?: 'Mutation', retractStructu
       & StructureFragment
     ) } };
 
-export type RecordMetricsMutationVariables = Exact<{
-  input: RecordMetricsInput;
-}>;
-
-
-export type RecordMetricsMutation = { __typename?: 'Mutation', recordMetrics: { __typename?: 'AssertedStructure', pending: boolean, assertion: (
-      { __typename?: 'Assertion' }
-      & AssertionFragment
-    ), structure: (
-      { __typename?: 'Structure' }
-      & StructureFragment
-    ) } };
-
 export type AssertInformsMutationVariables = Exact<{
   input: AssertInformsInput;
 }>;
@@ -8066,6 +8578,109 @@ export type CreateMeasurementTermInlineMutationVariables = Exact<{
 
 
 export type CreateMeasurementTermInlineMutation = { __typename?: 'Mutation', result: { __typename?: 'Term', value: string, label: string } };
+
+export type CreateTodoListMutationVariables = Exact<{
+  input: CreateTodoListInput;
+}>;
+
+
+export type CreateTodoListMutation = { __typename?: 'Mutation', createTodoList: (
+    { __typename?: 'TodoList' }
+    & ListTodoListFragment
+  ) };
+
+export type UpdateTodoListMutationVariables = Exact<{
+  input: UpdateTodoListInput;
+}>;
+
+
+export type UpdateTodoListMutation = { __typename?: 'Mutation', updateTodoList: (
+    { __typename?: 'TodoList' }
+    & ListTodoListFragment
+  ) };
+
+export type DeleteTodoListMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTodoListMutation = { __typename?: 'Mutation', deleteTodoList: string };
+
+export type CreateTodoItemMutationVariables = Exact<{
+  input: CreateTodoItemInput;
+}>;
+
+
+export type CreateTodoItemMutation = { __typename?: 'Mutation', createTodoItem: (
+    { __typename?: 'TodoItem' }
+    & TodoItemWithListFragment
+  ) };
+
+export type UpdateTodoItemMutationVariables = Exact<{
+  input: UpdateTodoItemInput;
+}>;
+
+
+export type UpdateTodoItemMutation = { __typename?: 'Mutation', updateTodoItem: (
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  ) };
+
+export type DeleteTodoItemMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTodoItemMutation = { __typename?: 'Mutation', deleteTodoItem: string };
+
+export type MoveTodoItemMutationVariables = Exact<{
+  input: MoveTodoItemInput;
+}>;
+
+
+export type MoveTodoItemMutation = { __typename?: 'Mutation', moveTodoItem: { __typename?: 'TodoItem', id: string, status: TodoStatus, position: number } };
+
+export type AttachToTodoItemMutationVariables = Exact<{
+  input: AttachToTodoItemInput;
+}>;
+
+
+export type AttachToTodoItemMutation = { __typename?: 'Mutation', attachToTodoItem: (
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  ) };
+
+export type DetachFromTodoItemMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DetachFromTodoItemMutation = { __typename?: 'Mutation', detachFromTodoItem: (
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  ) };
+
+export type SetTodoStructureStatusMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  status: TodoStatus;
+}>;
+
+
+export type SetTodoStructureStatusMutation = { __typename?: 'Mutation', setTodoStructureStatus: (
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  ) };
+
+export type SetTodoStructureDoneMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  done: Scalars['Boolean']['input'];
+}>;
+
+
+export type SetTodoStructureDoneMutation = { __typename?: 'Mutation', setTodoStructureDone: (
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  ) };
 
 export type RequestMediaUploadMutationVariables = Exact<{
   input: RequestMediaUploadInput;
@@ -8489,6 +9104,27 @@ export type ListNodesQuery = { __typename?: 'Query', nodes: Array<(
     { __typename?: 'ProtocolEvent' }
     & ListNode_ProtocolEvent_Fragment
   )> };
+
+export type ProjectsQueryVariables = Exact<{
+  filters?: InputMaybe<ProjectFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProjectsQuery = { __typename?: 'Query', projects: Array<(
+    { __typename?: 'Project' }
+    & ListProjectFragment
+  )> };
+
+export type ProjectQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ProjectQuery = { __typename?: 'Query', project: (
+    { __typename?: 'Project' }
+    & ProjectFragment
+  ) };
 
 export type GetProtocolEventQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -9018,6 +9654,48 @@ export type SearchMeasurementTermsQueryVariables = Exact<{
 
 
 export type SearchMeasurementTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
+
+export type TodoListsQueryVariables = Exact<{
+  filters?: InputMaybe<TodoListFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type TodoListsQuery = { __typename?: 'Query', todoLists: Array<(
+    { __typename?: 'TodoList', project: { __typename?: 'Project', id: string, name: string } }
+    & ListTodoListFragment
+  )> };
+
+export type TodoListQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TodoListQuery = { __typename?: 'Query', todoList: (
+    { __typename?: 'TodoList' }
+    & TodoListFragment
+  ) };
+
+export type TodoItemQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TodoItemQuery = { __typename?: 'Query', todoItem: (
+    { __typename?: 'TodoItem' }
+    & TodoItemWithListFragment
+  ) };
+
+export type TodoItemsQueryVariables = Exact<{
+  filters?: InputMaybe<TodoItemFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type TodoItemsQuery = { __typename?: 'Query', todoItems: Array<(
+    { __typename?: 'TodoItem' }
+    & TodoItemWithListFragment
+  )> };
 
 export const BaseNodeFragmentDoc = gql`
     fragment BaseNode on Node {
@@ -9685,6 +10363,36 @@ export const PathNaturalEventFragmentDoc = gql`
 }
     ${ListNaturalEventFragmentDoc}
 ${MediaStoreFragmentDoc}`;
+export const ListProjectFragmentDoc = gql`
+    fragment ListProject on Project {
+  id
+  name
+  description
+  createdAt
+}
+    `;
+export const ListTodoListFragmentDoc = gql`
+    fragment ListTodoList on TodoList {
+  id
+  name
+  description
+  assignee
+  createdAt
+  progress {
+    done
+    total
+  }
+}
+    `;
+export const ProjectFragmentDoc = gql`
+    fragment Project on Project {
+  ...ListProject
+  todoLists {
+    ...ListTodoList
+  }
+}
+    ${ListProjectFragmentDoc}
+${ListTodoListFragmentDoc}`;
 export const ListProtocolEventFragmentDoc = gql`
     fragment ListProtocolEvent on ProtocolEvent {
   id
@@ -10359,6 +11067,61 @@ export const AssignableTermFragmentDoc = gql`
   }
 }
     `;
+export const TodoItemStructureFragmentDoc = gql`
+    fragment TodoItemStructure on TodoItemStructure {
+  id
+  identifier
+  object
+  status
+  startedAt
+  startedBy
+  done
+  doneAt
+  doneBy
+  position
+}
+    `;
+export const ListTodoItemFragmentDoc = gql`
+    fragment ListTodoItem on TodoItem {
+  id
+  title
+  description
+  status
+  position
+  assignee
+  effectiveAssignee
+  updatedAt
+  structures {
+    ...TodoItemStructure
+  }
+}
+    ${TodoItemStructureFragmentDoc}`;
+export const TodoItemWithListFragmentDoc = gql`
+    fragment TodoItemWithList on TodoItem {
+  ...ListTodoItem
+  list {
+    id
+    name
+    project {
+      id
+      name
+    }
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export const TodoListFragmentDoc = gql`
+    fragment TodoList on TodoList {
+  ...ListTodoList
+  project {
+    id
+    name
+  }
+  items(ordering: [{position: ASC}]) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoListFragmentDoc}
+${ListTodoItemFragmentDoc}`;
 export const AssertParticipationDocument = gql`
     mutation AssertParticipation($event: String!, $entity: String!, $role: String!, $isInput: Boolean!) {
   assertParticipation(
@@ -11215,45 +11978,6 @@ export function useRetractMeasurementMutation(baseOptions?: ApolloReactHooks.Mut
 export type RetractMeasurementMutationHookResult = ReturnType<typeof useRetractMeasurementMutation>;
 export type RetractMeasurementMutationResult = Apollo.MutationResult<RetractMeasurementMutation>;
 export type RetractMeasurementMutationOptions = Apollo.BaseMutationOptions<RetractMeasurementMutation, RetractMeasurementMutationVariables>;
-export const AssertMetricValueForStructureDocument = gql`
-    mutation AssertMetricValueForStructure($input: AssertMetricValueForStructureInput!) {
-  assertMetricValueForStructure(input: $input) {
-    assertion {
-      ...Assertion
-    }
-    metric {
-      ...Metric
-    }
-  }
-}
-    ${AssertionFragmentDoc}
-${MetricFragmentDoc}`;
-export type AssertMetricValueForStructureMutationFn = Apollo.MutationFunction<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>;
-
-/**
- * __useAssertMetricValueForStructureMutation__
- *
- * To run a mutation, you first call `useAssertMetricValueForStructureMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAssertMetricValueForStructureMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [assertMetricValueForStructureMutation, { data, loading, error }] = useAssertMetricValueForStructureMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useAssertMetricValueForStructureMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>(AssertMetricValueForStructureDocument, options);
-      }
-export type AssertMetricValueForStructureMutationHookResult = ReturnType<typeof useAssertMetricValueForStructureMutation>;
-export type AssertMetricValueForStructureMutationResult = Apollo.MutationResult<AssertMetricValueForStructureMutation>;
-export type AssertMetricValueForStructureMutationOptions = Apollo.BaseMutationOptions<AssertMetricValueForStructureMutation, AssertMetricValueForStructureMutationVariables>;
 export const RetractMetricDocument = gql`
     mutation RetractMetric($id: String!) {
   retractMetric(input: {id: $id}) {
@@ -11496,6 +12220,103 @@ export function useAttestNaturalEventMutation(baseOptions?: ApolloReactHooks.Mut
 export type AttestNaturalEventMutationHookResult = ReturnType<typeof useAttestNaturalEventMutation>;
 export type AttestNaturalEventMutationResult = Apollo.MutationResult<AttestNaturalEventMutation>;
 export type AttestNaturalEventMutationOptions = Apollo.BaseMutationOptions<AttestNaturalEventMutation, AttestNaturalEventMutationVariables>;
+export const CreateProjectDocument = gql`
+    mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    ...ListProject
+  }
+}
+    ${ListProjectFragmentDoc}`;
+export type CreateProjectMutationFn = Apollo.MutationFunction<CreateProjectMutation, CreateProjectMutationVariables>;
+
+/**
+ * __useCreateProjectMutation__
+ *
+ * To run a mutation, you first call `useCreateProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createProjectMutation, { data, loading, error }] = useCreateProjectMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateProjectMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateProjectMutation, CreateProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument, options);
+      }
+export type CreateProjectMutationHookResult = ReturnType<typeof useCreateProjectMutation>;
+export type CreateProjectMutationResult = Apollo.MutationResult<CreateProjectMutation>;
+export type CreateProjectMutationOptions = Apollo.BaseMutationOptions<CreateProjectMutation, CreateProjectMutationVariables>;
+export const UpdateProjectDocument = gql`
+    mutation UpdateProject($input: UpdateProjectInput!) {
+  updateProject(input: $input) {
+    ...ListProject
+  }
+}
+    ${ListProjectFragmentDoc}`;
+export type UpdateProjectMutationFn = Apollo.MutationFunction<UpdateProjectMutation, UpdateProjectMutationVariables>;
+
+/**
+ * __useUpdateProjectMutation__
+ *
+ * To run a mutation, you first call `useUpdateProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProjectMutation, { data, loading, error }] = useUpdateProjectMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateProjectMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateProjectMutation, UpdateProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument, options);
+      }
+export type UpdateProjectMutationHookResult = ReturnType<typeof useUpdateProjectMutation>;
+export type UpdateProjectMutationResult = Apollo.MutationResult<UpdateProjectMutation>;
+export type UpdateProjectMutationOptions = Apollo.BaseMutationOptions<UpdateProjectMutation, UpdateProjectMutationVariables>;
+export const DeleteProjectDocument = gql`
+    mutation DeleteProject($id: ID!) {
+  deleteProject(input: {id: $id})
+}
+    `;
+export type DeleteProjectMutationFn = Apollo.MutationFunction<DeleteProjectMutation, DeleteProjectMutationVariables>;
+
+/**
+ * __useDeleteProjectMutation__
+ *
+ * To run a mutation, you first call `useDeleteProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteProjectMutation, { data, loading, error }] = useDeleteProjectMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteProjectMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteProjectMutation, DeleteProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument, options);
+      }
+export type DeleteProjectMutationHookResult = ReturnType<typeof useDeleteProjectMutation>;
+export type DeleteProjectMutationResult = Apollo.MutationResult<DeleteProjectMutation>;
+export type DeleteProjectMutationOptions = Apollo.BaseMutationOptions<DeleteProjectMutation, DeleteProjectMutationVariables>;
 export const AssertProtocolEventExistsDocument = gql`
     mutation AssertProtocolEventExists($input: AssertProtocolEventExistsInput!) {
   assertProtocolEventExists(input: $input) {
@@ -12736,46 +13557,6 @@ export function useRetractStructureMutation(baseOptions?: ApolloReactHooks.Mutat
 export type RetractStructureMutationHookResult = ReturnType<typeof useRetractStructureMutation>;
 export type RetractStructureMutationResult = Apollo.MutationResult<RetractStructureMutation>;
 export type RetractStructureMutationOptions = Apollo.BaseMutationOptions<RetractStructureMutation, RetractStructureMutationVariables>;
-export const RecordMetricsDocument = gql`
-    mutation RecordMetrics($input: RecordMetricsInput!) {
-  recordMetrics(input: $input) {
-    pending
-    assertion {
-      ...Assertion
-    }
-    structure {
-      ...Structure
-    }
-  }
-}
-    ${AssertionFragmentDoc}
-${StructureFragmentDoc}`;
-export type RecordMetricsMutationFn = Apollo.MutationFunction<RecordMetricsMutation, RecordMetricsMutationVariables>;
-
-/**
- * __useRecordMetricsMutation__
- *
- * To run a mutation, you first call `useRecordMetricsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRecordMetricsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [recordMetricsMutation, { data, loading, error }] = useRecordMetricsMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useRecordMetricsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RecordMetricsMutation, RecordMetricsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<RecordMetricsMutation, RecordMetricsMutationVariables>(RecordMetricsDocument, options);
-      }
-export type RecordMetricsMutationHookResult = ReturnType<typeof useRecordMetricsMutation>;
-export type RecordMetricsMutationResult = Apollo.MutationResult<RecordMetricsMutation>;
-export type RecordMetricsMutationOptions = Apollo.BaseMutationOptions<RecordMetricsMutation, RecordMetricsMutationVariables>;
 export const AssertInformsDocument = gql`
     mutation AssertInforms($input: AssertInformsInput!) {
   assertInforms(input: $input) {
@@ -13198,6 +13979,369 @@ export function useCreateMeasurementTermInlineMutation(baseOptions?: ApolloReact
 export type CreateMeasurementTermInlineMutationHookResult = ReturnType<typeof useCreateMeasurementTermInlineMutation>;
 export type CreateMeasurementTermInlineMutationResult = Apollo.MutationResult<CreateMeasurementTermInlineMutation>;
 export type CreateMeasurementTermInlineMutationOptions = Apollo.BaseMutationOptions<CreateMeasurementTermInlineMutation, CreateMeasurementTermInlineMutationVariables>;
+export const CreateTodoListDocument = gql`
+    mutation CreateTodoList($input: CreateTodoListInput!) {
+  createTodoList(input: $input) {
+    ...ListTodoList
+  }
+}
+    ${ListTodoListFragmentDoc}`;
+export type CreateTodoListMutationFn = Apollo.MutationFunction<CreateTodoListMutation, CreateTodoListMutationVariables>;
+
+/**
+ * __useCreateTodoListMutation__
+ *
+ * To run a mutation, you first call `useCreateTodoListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTodoListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTodoListMutation, { data, loading, error }] = useCreateTodoListMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTodoListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTodoListMutation, CreateTodoListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTodoListMutation, CreateTodoListMutationVariables>(CreateTodoListDocument, options);
+      }
+export type CreateTodoListMutationHookResult = ReturnType<typeof useCreateTodoListMutation>;
+export type CreateTodoListMutationResult = Apollo.MutationResult<CreateTodoListMutation>;
+export type CreateTodoListMutationOptions = Apollo.BaseMutationOptions<CreateTodoListMutation, CreateTodoListMutationVariables>;
+export const UpdateTodoListDocument = gql`
+    mutation UpdateTodoList($input: UpdateTodoListInput!) {
+  updateTodoList(input: $input) {
+    ...ListTodoList
+  }
+}
+    ${ListTodoListFragmentDoc}`;
+export type UpdateTodoListMutationFn = Apollo.MutationFunction<UpdateTodoListMutation, UpdateTodoListMutationVariables>;
+
+/**
+ * __useUpdateTodoListMutation__
+ *
+ * To run a mutation, you first call `useUpdateTodoListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTodoListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTodoListMutation, { data, loading, error }] = useUpdateTodoListMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTodoListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTodoListMutation, UpdateTodoListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTodoListMutation, UpdateTodoListMutationVariables>(UpdateTodoListDocument, options);
+      }
+export type UpdateTodoListMutationHookResult = ReturnType<typeof useUpdateTodoListMutation>;
+export type UpdateTodoListMutationResult = Apollo.MutationResult<UpdateTodoListMutation>;
+export type UpdateTodoListMutationOptions = Apollo.BaseMutationOptions<UpdateTodoListMutation, UpdateTodoListMutationVariables>;
+export const DeleteTodoListDocument = gql`
+    mutation DeleteTodoList($id: ID!) {
+  deleteTodoList(input: {id: $id})
+}
+    `;
+export type DeleteTodoListMutationFn = Apollo.MutationFunction<DeleteTodoListMutation, DeleteTodoListMutationVariables>;
+
+/**
+ * __useDeleteTodoListMutation__
+ *
+ * To run a mutation, you first call `useDeleteTodoListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTodoListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTodoListMutation, { data, loading, error }] = useDeleteTodoListMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteTodoListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTodoListMutation, DeleteTodoListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTodoListMutation, DeleteTodoListMutationVariables>(DeleteTodoListDocument, options);
+      }
+export type DeleteTodoListMutationHookResult = ReturnType<typeof useDeleteTodoListMutation>;
+export type DeleteTodoListMutationResult = Apollo.MutationResult<DeleteTodoListMutation>;
+export type DeleteTodoListMutationOptions = Apollo.BaseMutationOptions<DeleteTodoListMutation, DeleteTodoListMutationVariables>;
+export const CreateTodoItemDocument = gql`
+    mutation CreateTodoItem($input: CreateTodoItemInput!) {
+  createTodoItem(input: $input) {
+    ...TodoItemWithList
+  }
+}
+    ${TodoItemWithListFragmentDoc}`;
+export type CreateTodoItemMutationFn = Apollo.MutationFunction<CreateTodoItemMutation, CreateTodoItemMutationVariables>;
+
+/**
+ * __useCreateTodoItemMutation__
+ *
+ * To run a mutation, you first call `useCreateTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTodoItemMutation, { data, loading, error }] = useCreateTodoItemMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTodoItemMutation, CreateTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTodoItemMutation, CreateTodoItemMutationVariables>(CreateTodoItemDocument, options);
+      }
+export type CreateTodoItemMutationHookResult = ReturnType<typeof useCreateTodoItemMutation>;
+export type CreateTodoItemMutationResult = Apollo.MutationResult<CreateTodoItemMutation>;
+export type CreateTodoItemMutationOptions = Apollo.BaseMutationOptions<CreateTodoItemMutation, CreateTodoItemMutationVariables>;
+export const UpdateTodoItemDocument = gql`
+    mutation UpdateTodoItem($input: UpdateTodoItemInput!) {
+  updateTodoItem(input: $input) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type UpdateTodoItemMutationFn = Apollo.MutationFunction<UpdateTodoItemMutation, UpdateTodoItemMutationVariables>;
+
+/**
+ * __useUpdateTodoItemMutation__
+ *
+ * To run a mutation, you first call `useUpdateTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTodoItemMutation, { data, loading, error }] = useUpdateTodoItemMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTodoItemMutation, UpdateTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTodoItemMutation, UpdateTodoItemMutationVariables>(UpdateTodoItemDocument, options);
+      }
+export type UpdateTodoItemMutationHookResult = ReturnType<typeof useUpdateTodoItemMutation>;
+export type UpdateTodoItemMutationResult = Apollo.MutationResult<UpdateTodoItemMutation>;
+export type UpdateTodoItemMutationOptions = Apollo.BaseMutationOptions<UpdateTodoItemMutation, UpdateTodoItemMutationVariables>;
+export const DeleteTodoItemDocument = gql`
+    mutation DeleteTodoItem($id: ID!) {
+  deleteTodoItem(input: {id: $id})
+}
+    `;
+export type DeleteTodoItemMutationFn = Apollo.MutationFunction<DeleteTodoItemMutation, DeleteTodoItemMutationVariables>;
+
+/**
+ * __useDeleteTodoItemMutation__
+ *
+ * To run a mutation, you first call `useDeleteTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTodoItemMutation, { data, loading, error }] = useDeleteTodoItemMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTodoItemMutation, DeleteTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTodoItemMutation, DeleteTodoItemMutationVariables>(DeleteTodoItemDocument, options);
+      }
+export type DeleteTodoItemMutationHookResult = ReturnType<typeof useDeleteTodoItemMutation>;
+export type DeleteTodoItemMutationResult = Apollo.MutationResult<DeleteTodoItemMutation>;
+export type DeleteTodoItemMutationOptions = Apollo.BaseMutationOptions<DeleteTodoItemMutation, DeleteTodoItemMutationVariables>;
+export const MoveTodoItemDocument = gql`
+    mutation MoveTodoItem($input: MoveTodoItemInput!) {
+  moveTodoItem(input: $input) {
+    id
+    status
+    position
+  }
+}
+    `;
+export type MoveTodoItemMutationFn = Apollo.MutationFunction<MoveTodoItemMutation, MoveTodoItemMutationVariables>;
+
+/**
+ * __useMoveTodoItemMutation__
+ *
+ * To run a mutation, you first call `useMoveTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useMoveTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [moveTodoItemMutation, { data, loading, error }] = useMoveTodoItemMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useMoveTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<MoveTodoItemMutation, MoveTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<MoveTodoItemMutation, MoveTodoItemMutationVariables>(MoveTodoItemDocument, options);
+      }
+export type MoveTodoItemMutationHookResult = ReturnType<typeof useMoveTodoItemMutation>;
+export type MoveTodoItemMutationResult = Apollo.MutationResult<MoveTodoItemMutation>;
+export type MoveTodoItemMutationOptions = Apollo.BaseMutationOptions<MoveTodoItemMutation, MoveTodoItemMutationVariables>;
+export const AttachToTodoItemDocument = gql`
+    mutation AttachToTodoItem($input: AttachToTodoItemInput!) {
+  attachToTodoItem(input: $input) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type AttachToTodoItemMutationFn = Apollo.MutationFunction<AttachToTodoItemMutation, AttachToTodoItemMutationVariables>;
+
+/**
+ * __useAttachToTodoItemMutation__
+ *
+ * To run a mutation, you first call `useAttachToTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAttachToTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [attachToTodoItemMutation, { data, loading, error }] = useAttachToTodoItemMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAttachToTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AttachToTodoItemMutation, AttachToTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AttachToTodoItemMutation, AttachToTodoItemMutationVariables>(AttachToTodoItemDocument, options);
+      }
+export type AttachToTodoItemMutationHookResult = ReturnType<typeof useAttachToTodoItemMutation>;
+export type AttachToTodoItemMutationResult = Apollo.MutationResult<AttachToTodoItemMutation>;
+export type AttachToTodoItemMutationOptions = Apollo.BaseMutationOptions<AttachToTodoItemMutation, AttachToTodoItemMutationVariables>;
+export const DetachFromTodoItemDocument = gql`
+    mutation DetachFromTodoItem($id: ID!) {
+  detachFromTodoItem(input: {id: $id}) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type DetachFromTodoItemMutationFn = Apollo.MutationFunction<DetachFromTodoItemMutation, DetachFromTodoItemMutationVariables>;
+
+/**
+ * __useDetachFromTodoItemMutation__
+ *
+ * To run a mutation, you first call `useDetachFromTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDetachFromTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [detachFromTodoItemMutation, { data, loading, error }] = useDetachFromTodoItemMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetachFromTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DetachFromTodoItemMutation, DetachFromTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DetachFromTodoItemMutation, DetachFromTodoItemMutationVariables>(DetachFromTodoItemDocument, options);
+      }
+export type DetachFromTodoItemMutationHookResult = ReturnType<typeof useDetachFromTodoItemMutation>;
+export type DetachFromTodoItemMutationResult = Apollo.MutationResult<DetachFromTodoItemMutation>;
+export type DetachFromTodoItemMutationOptions = Apollo.BaseMutationOptions<DetachFromTodoItemMutation, DetachFromTodoItemMutationVariables>;
+export const SetTodoStructureStatusDocument = gql`
+    mutation SetTodoStructureStatus($id: ID!, $status: TodoStatus!) {
+  setTodoStructureStatus(input: {id: $id, status: $status}) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type SetTodoStructureStatusMutationFn = Apollo.MutationFunction<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>;
+
+/**
+ * __useSetTodoStructureStatusMutation__
+ *
+ * To run a mutation, you first call `useSetTodoStructureStatusMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetTodoStructureStatusMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setTodoStructureStatusMutation, { data, loading, error }] = useSetTodoStructureStatusMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      status: // value for 'status'
+ *   },
+ * });
+ */
+export function useSetTodoStructureStatusMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>(SetTodoStructureStatusDocument, options);
+      }
+export type SetTodoStructureStatusMutationHookResult = ReturnType<typeof useSetTodoStructureStatusMutation>;
+export type SetTodoStructureStatusMutationResult = Apollo.MutationResult<SetTodoStructureStatusMutation>;
+export type SetTodoStructureStatusMutationOptions = Apollo.BaseMutationOptions<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>;
+export const SetTodoStructureDoneDocument = gql`
+    mutation SetTodoStructureDone($id: ID!, $done: Boolean!) {
+  setTodoStructureDone(input: {id: $id, done: $done}) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type SetTodoStructureDoneMutationFn = Apollo.MutationFunction<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>;
+
+/**
+ * __useSetTodoStructureDoneMutation__
+ *
+ * To run a mutation, you first call `useSetTodoStructureDoneMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetTodoStructureDoneMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setTodoStructureDoneMutation, { data, loading, error }] = useSetTodoStructureDoneMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      done: // value for 'done'
+ *   },
+ * });
+ */
+export function useSetTodoStructureDoneMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>(SetTodoStructureDoneDocument, options);
+      }
+export type SetTodoStructureDoneMutationHookResult = ReturnType<typeof useSetTodoStructureDoneMutation>;
+export type SetTodoStructureDoneMutationResult = Apollo.MutationResult<SetTodoStructureDoneMutation>;
+export type SetTodoStructureDoneMutationOptions = Apollo.BaseMutationOptions<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>;
 export const RequestMediaUploadDocument = gql`
     mutation RequestMediaUpload($input: RequestMediaUploadInput!) {
   requestMediaUpload(input: $input) {
@@ -14704,6 +15848,81 @@ export function useListNodesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListNodesQueryHookResult = ReturnType<typeof useListNodesQuery>;
 export type ListNodesLazyQueryHookResult = ReturnType<typeof useListNodesLazyQuery>;
 export type ListNodesQueryResult = Apollo.QueryResult<ListNodesQuery, ListNodesQueryVariables>;
+export const ProjectsDocument = gql`
+    query Projects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
+  projects(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListProject
+  }
+}
+    ${ListProjectFragmentDoc}`;
+
+/**
+ * __useProjectsQuery__
+ *
+ * To run a query within a React component, call `useProjectsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProjectsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProjectsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProjectsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProjectsQuery, ProjectsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProjectsQuery, ProjectsQueryVariables>(ProjectsDocument, options);
+      }
+export function useProjectsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProjectsQuery, ProjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProjectsQuery, ProjectsQueryVariables>(ProjectsDocument, options);
+        }
+export type ProjectsQueryHookResult = ReturnType<typeof useProjectsQuery>;
+export type ProjectsLazyQueryHookResult = ReturnType<typeof useProjectsLazyQuery>;
+export type ProjectsQueryResult = Apollo.QueryResult<ProjectsQuery, ProjectsQueryVariables>;
+export const ProjectDocument = gql`
+    query Project($id: ID!) {
+  project(id: $id) {
+    ...Project
+  }
+}
+    ${ProjectFragmentDoc}`;
+
+/**
+ * __useProjectQuery__
+ *
+ * To run a query within a React component, call `useProjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProjectQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useProjectQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ProjectQuery, ProjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProjectQuery, ProjectQueryVariables>(ProjectDocument, options);
+      }
+export function useProjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProjectQuery, ProjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProjectQuery, ProjectQueryVariables>(ProjectDocument, options);
+        }
+export type ProjectQueryHookResult = ReturnType<typeof useProjectQuery>;
+export type ProjectLazyQueryHookResult = ReturnType<typeof useProjectLazyQuery>;
+export type ProjectQueryResult = Apollo.QueryResult<ProjectQuery, ProjectQueryVariables>;
 export const GetProtocolEventDocument = gql`
     query GetProtocolEvent($id: ID!, $graph: ID!) {
   protocolEvent(id: $id, graph: $graph) {
@@ -16833,3 +18052,153 @@ export function useSearchMeasurementTermsLazyQuery(baseOptions?: ApolloReactHook
 export type SearchMeasurementTermsQueryHookResult = ReturnType<typeof useSearchMeasurementTermsQuery>;
 export type SearchMeasurementTermsLazyQueryHookResult = ReturnType<typeof useSearchMeasurementTermsLazyQuery>;
 export type SearchMeasurementTermsQueryResult = Apollo.QueryResult<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>;
+export const TodoListsDocument = gql`
+    query TodoLists($filters: TodoListFilter, $pagination: OffsetPaginationInput) {
+  todoLists(filters: $filters, pagination: $pagination) {
+    ...ListTodoList
+    project {
+      id
+      name
+    }
+  }
+}
+    ${ListTodoListFragmentDoc}`;
+
+/**
+ * __useTodoListsQuery__
+ *
+ * To run a query within a React component, call `useTodoListsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoListsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoListsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useTodoListsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TodoListsQuery, TodoListsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoListsQuery, TodoListsQueryVariables>(TodoListsDocument, options);
+      }
+export function useTodoListsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoListsQuery, TodoListsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoListsQuery, TodoListsQueryVariables>(TodoListsDocument, options);
+        }
+export type TodoListsQueryHookResult = ReturnType<typeof useTodoListsQuery>;
+export type TodoListsLazyQueryHookResult = ReturnType<typeof useTodoListsLazyQuery>;
+export type TodoListsQueryResult = Apollo.QueryResult<TodoListsQuery, TodoListsQueryVariables>;
+export const TodoListDocument = gql`
+    query TodoList($id: ID!) {
+  todoList(id: $id) {
+    ...TodoList
+  }
+}
+    ${TodoListFragmentDoc}`;
+
+/**
+ * __useTodoListQuery__
+ *
+ * To run a query within a React component, call `useTodoListQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoListQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoListQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTodoListQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoListQuery, TodoListQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoListQuery, TodoListQueryVariables>(TodoListDocument, options);
+      }
+export function useTodoListLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoListQuery, TodoListQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoListQuery, TodoListQueryVariables>(TodoListDocument, options);
+        }
+export type TodoListQueryHookResult = ReturnType<typeof useTodoListQuery>;
+export type TodoListLazyQueryHookResult = ReturnType<typeof useTodoListLazyQuery>;
+export type TodoListQueryResult = Apollo.QueryResult<TodoListQuery, TodoListQueryVariables>;
+export const TodoItemDocument = gql`
+    query TodoItem($id: ID!) {
+  todoItem(id: $id) {
+    ...TodoItemWithList
+  }
+}
+    ${TodoItemWithListFragmentDoc}`;
+
+/**
+ * __useTodoItemQuery__
+ *
+ * To run a query within a React component, call `useTodoItemQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoItemQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoItemQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTodoItemQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoItemQuery, TodoItemQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoItemQuery, TodoItemQueryVariables>(TodoItemDocument, options);
+      }
+export function useTodoItemLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoItemQuery, TodoItemQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoItemQuery, TodoItemQueryVariables>(TodoItemDocument, options);
+        }
+export type TodoItemQueryHookResult = ReturnType<typeof useTodoItemQuery>;
+export type TodoItemLazyQueryHookResult = ReturnType<typeof useTodoItemLazyQuery>;
+export type TodoItemQueryResult = Apollo.QueryResult<TodoItemQuery, TodoItemQueryVariables>;
+export const TodoItemsDocument = gql`
+    query TodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
+  todoItems(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{updatedAt: DESC}]
+  ) {
+    ...TodoItemWithList
+  }
+}
+    ${TodoItemWithListFragmentDoc}`;
+
+/**
+ * __useTodoItemsQuery__
+ *
+ * To run a query within a React component, call `useTodoItemsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoItemsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoItemsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useTodoItemsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TodoItemsQuery, TodoItemsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoItemsQuery, TodoItemsQueryVariables>(TodoItemsDocument, options);
+      }
+export function useTodoItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoItemsQuery, TodoItemsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoItemsQuery, TodoItemsQueryVariables>(TodoItemsDocument, options);
+        }
+export type TodoItemsQueryHookResult = ReturnType<typeof useTodoItemsQuery>;
+export type TodoItemsLazyQueryHookResult = ReturnType<typeof useTodoItemsLazyQuery>;
+export type TodoItemsQueryResult = Apollo.QueryResult<TodoItemsQuery, TodoItemsQueryVariables>;

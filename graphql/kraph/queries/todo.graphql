@@ -1,0 +1,31 @@
+query TodoLists($filters: TodoListFilter, $pagination: OffsetPaginationInput) {
+  todoLists(filters: $filters, pagination: $pagination) {
+    ...ListTodoList
+    project {
+      id
+      name
+    }
+  }
+}
+
+query TodoList($id: ID!) {
+  todoList(id: $id) {
+    ...TodoList
+  }
+}
+
+query TodoItem($id: ID!) {
+  todoItem(id: $id) {
+    ...TodoItemWithList
+  }
+}
+
+query TodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
+  todoItems(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{ updatedAt: DESC }]
+  ) {
+    ...TodoItemWithList
+  }
+}

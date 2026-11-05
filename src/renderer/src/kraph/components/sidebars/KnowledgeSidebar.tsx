@@ -4,6 +4,7 @@ import { useSelf } from "@/core/connection/useSelf";
 import { SmartDropZone } from "@/core/smart/Drop";
 import { Identifier, Object } from "@/core/types";
 import { Komments } from "../komments/Komments";
+import { TodosForObject } from "../todos/TodosForObject";
 import { LabelsBlock } from "../knowledge/LabelsBlock";
 import { MeasurementsBlock } from "../knowledge/MeasurementsBlock";
 import { useKnowledge } from "../knowledge/useKnowledge";
@@ -42,6 +43,8 @@ const Measurements = (props: KnowledgeSidebarProps) => {
  *   a datum on the card, or on the whole panel to get the "Same thing as…"
  *   action, which is also in the context menu and the `ObjectButton`.
  * - **Measurements** — the metrics recorded on the datum, and "Measure".
+ * - **Todo** — the todo items this datum is on, each with its tick (nothing
+ *   when no todo carries it).
  * - **Discussion** — a comment is the same act as the claims above, recorded
  *   in the same log, so it lives in the same column.
  *
@@ -63,6 +66,8 @@ export const KnowledgeSidebar = ({ identifier, object }: KnowledgeSidebarProps) 
     <Measurements identifier={identifier} object={object} />
 
     <Separator />
+
+    <TodosForObject identifier={identifier} object={object.id} />
 
     <Komments identifier={identifier} object={object} />
   </SmartDropZone>

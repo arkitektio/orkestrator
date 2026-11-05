@@ -1,0 +1,15 @@
+query Projects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
+  projects(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{ createdAt: DESC }]
+  ) {
+    ...ListProject
+  }
+}
+
+query Project($id: ID!) {
+  project(id: $id) {
+    ...Project
+  }
+}

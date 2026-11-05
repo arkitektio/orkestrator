@@ -107,13 +107,17 @@
       "MediaStore",
       "MetricKind",
       "NaturalEventCategory",
+      "Project",
       "ProtocolEventCategory",
       "RelationCategory",
       "ScatterPlot",
       "Standing",
       "StructureKind",
       "StructureRelationCategory",
-      "Term"
+      "Term",
+      "TodoItem",
+      "TodoItemStructure",
+      "TodoList"
     ]
   }
 };

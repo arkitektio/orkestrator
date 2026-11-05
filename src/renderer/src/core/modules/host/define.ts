@@ -75,10 +75,12 @@ export type PageSection = {
   placement: SectionPlacement;
   /**
    * Host-owned places: the "knowledge" (claims, comments) and "chat"
-   * (conversations) sidebars of every page, a member's "home" dashboard and
-   * the "notifications" widget (both matched on `@lok/user`, the member).
+   * (conversations) sidebars of every page, the "pagebar" (small buttons in
+   * every model page's top bar, right after its breadcrumbs), a member's
+   * "home" dashboard and the "notifications" widget (both matched on
+   * `@lok/user`, the member).
    */
-  slot?: "knowledge" | "chat" | "home" | "notifications";
+  slot?: "knowledge" | "chat" | "pagebar" | "home" | "notifications";
   /** Which pages: by identifier(s), and/or every datum. Empty = every model page. */
   match: { identifiers?: readonly string[]; datum?: boolean };
   /** Only for users with these roles in the organization (`core/connection/roles`). */

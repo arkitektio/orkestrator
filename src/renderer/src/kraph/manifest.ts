@@ -49,5 +49,9 @@ export const manifest: ModuleManifest = {
     { identifier: "@kraph/protocol", name: "Protocol", datum: false, path: "protocols/:id" },
     { identifier: "@kraph/protocolstep", name: "Protocol Step", datum: false, path: "protocolsteps/:id" },
     { identifier: "@kraph/protocolsteptemplate", name: "Protocol Step Template", datum: false, path: "protocolsteptemplates/:id" },
+    // Todo lists: product state, never evidence (kraph's `todos/` app).
+    { identifier: "@kraph/project", name: "Project", datum: false, path: "projects/:id" },
+    { identifier: "@kraph/todolist", name: "Todo List", datum: false, path: "todolists/:id" },
+    { identifier: "@kraph/todoitem", name: "Todo Item", datum: false, path: "todoitems/:id" },
   ],
 };

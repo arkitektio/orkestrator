@@ -32,6 +32,7 @@ import {
   MeasureRecentTermRow,
   StructureRelateButton,
 } from "./relations";
+import { KRAPH_TODOS_SECTION } from "./todos";
 
 /**
  * The kraph sections: what you can record about the thing you picked
@@ -337,6 +338,7 @@ export const KRAPH_STRUCTURE_RELATIONS_SECTION: SmartContextSection<StructureRel
 };
 
 export const KRAPH_SECTIONS: SmartContextSection<any>[] = [
+  KRAPH_TODOS_SECTION,
   KRAPH_MEASUREMENTS_SECTION,
   KRAPH_ENTITY_RELATIONS_SECTION,
   KRAPH_STRUCTURE_RELATIONS_SECTION,

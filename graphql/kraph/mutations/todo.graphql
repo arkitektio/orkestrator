@@ -1,0 +1,63 @@
+mutation CreateTodoList($input: CreateTodoListInput!) {
+  createTodoList(input: $input) {
+    ...ListTodoList
+  }
+}
+
+mutation UpdateTodoList($input: UpdateTodoListInput!) {
+  updateTodoList(input: $input) {
+    ...ListTodoList
+  }
+}
+
+mutation DeleteTodoList($id: ID!) {
+  deleteTodoList(input: { id: $id })
+}
+
+mutation CreateTodoItem($input: CreateTodoItemInput!) {
+  createTodoItem(input: $input) {
+    ...TodoItemWithList
+  }
+}
+
+mutation UpdateTodoItem($input: UpdateTodoItemInput!) {
+  updateTodoItem(input: $input) {
+    ...ListTodoItem
+  }
+}
+
+mutation DeleteTodoItem($id: ID!) {
+  deleteTodoItem(input: { id: $id })
+}
+
+mutation MoveTodoItem($input: MoveTodoItemInput!) {
+  moveTodoItem(input: $input) {
+    id
+    status
+    position
+  }
+}
+
+mutation AttachToTodoItem($input: AttachToTodoItemInput!) {
+  attachToTodoItem(input: $input) {
+    ...ListTodoItem
+  }
+}
+
+mutation DetachFromTodoItem($id: ID!) {
+  detachFromTodoItem(input: { id: $id }) {
+    ...ListTodoItem
+  }
+}
+
+mutation SetTodoStructureStatus($id: ID!, $status: TodoStatus!) {
+  setTodoStructureStatus(input: { id: $id, status: $status }) {
+    ...ListTodoItem
+  }
+}
+
+mutation SetTodoStructureDone($id: ID!, $done: Boolean!) {
+  setTodoStructureDone(input: { id: $id, done: $done }) {
+    ...ListTodoItem
+  }
+}

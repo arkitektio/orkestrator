@@ -1,17 +1,3 @@
-# `assertMetricValueForStructure` names an existing structure by its graph id;
-# `assertMetricValue` names the structure by identifier/object and lets the
-# backend reach it, creating it on demand.
-mutation AssertMetricValueForStructure($input: AssertMetricValueForStructureInput!) {
-  assertMetricValueForStructure(input: $input) {
-    assertion {
-      ...Assertion
-    }
-    metric {
-      ...Metric
-    }
-  }
-}
-
 mutation RetractMetric($id: String!) {
   retractMetric(input: { id: $id }) {
     assertion {

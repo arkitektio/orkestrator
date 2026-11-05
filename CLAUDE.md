@@ -264,8 +264,7 @@ Rules:
     `<PageSections placement=… identifier object />`; the host-drawn Knowledge
     and Chat sidebars are the `knowledge` / `chat` slots (`<SlotSections>`),
     and `pagebar` is every model page's top bar (`ModelPageLayout`: small
-    icon buttons, after the page's own actions; read `useActionSlotMode` so
-    they fold into the bar's burger).
+    buttons right after the breadcrumbs, `PageLayout`'s `besideTitle`).
     A page passes only what the section needs (`{ id, clientId }`), not its
     whole fragment.
     When the caller holds a foreign key instead of the model's id, say which

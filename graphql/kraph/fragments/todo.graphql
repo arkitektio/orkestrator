@@ -1,0 +1,63 @@
+# Todo lists: product state in kraph (`todos/` on the server). People are subs,
+# objects are (identifier, object) pairs, the way comments address them.
+fragment TodoItemStructure on TodoItemStructure {
+  id
+  identifier
+  object
+  status
+  startedAt
+  startedBy
+  done
+  doneAt
+  doneBy
+  position
+}
+
+fragment ListTodoItem on TodoItem {
+  id
+  title
+  description
+  status
+  position
+  assignee
+  effectiveAssignee
+  updatedAt
+  structures {
+    ...TodoItemStructure
+  }
+}
+
+fragment TodoItemWithList on TodoItem {
+  ...ListTodoItem
+  list {
+    id
+    name
+    project {
+      id
+      name
+    }
+  }
+}
+
+fragment ListTodoList on TodoList {
+  id
+  name
+  description
+  assignee
+  createdAt
+  progress {
+    done
+    total
+  }
+}
+
+fragment TodoList on TodoList {
+  ...ListTodoList
+  project {
+    id
+    name
+  }
+  items(ordering: [{ position: ASC }]) {
+    ...ListTodoItem
+  }
+}

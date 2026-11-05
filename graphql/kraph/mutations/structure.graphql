@@ -25,20 +25,6 @@ mutation RetractStructure($id: ID!) {
   }
 }
 
-# Was `updateStructure`. A structure's identity is immutable; what a later act
-# adds is measurements against it, which is all this ever did.
-mutation RecordMetrics($input: RecordMetricsInput!) {
-  recordMetrics(input: $input) {
-    pending
-    assertion {
-      ...Assertion
-    }
-    structure {
-      ...Structure
-    }
-  }
-}
-
 # Was `linkStructureToEntity`. Records an INFORMS claim — the datum is evidence
 # for the entity — so what it answers with is the link, not the structure it
 # started from.

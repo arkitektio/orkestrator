@@ -48,6 +48,11 @@ export type PageLayoutProps = {
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
   /**
+   * Small things that belong with the page's name rather than its actions
+   * (a model page's "pagebar" slot): drawn right after the breadcrumbs.
+   */
+  besideTitle?: React.ReactNode;
+  /**
    * A canvas page: the content is one viewer sized `h-full w-full`, inset
    * from the page edges and never scrolled. The rail is the same as on every
    * other page.
@@ -88,6 +93,7 @@ export const PageLayout = ({
   children,
   actions,
   pageActions,
+  besideTitle,
   overlay = false,
   title,
 }: PageLayoutProps) => {
@@ -175,10 +181,11 @@ export const PageLayout = ({
           <div className="h-16 min-h-16 shrink-0 flex-row flex justify-between border-border px-2 py-1 items-center">
             {/* `min-w-0` lets this actually shrink below its content width so
                 the trail truncates instead of wrapping. */}
-            <div className="p-2 flex-grow min-w-[10rem] flex flex-col truncate">
-              <div className="flex-shrink min-w-0">
+            <div className="p-2 flex-grow min-w-[10rem] flex flex-row items-center gap-2 truncate">
+              <div className="flex-shrink min-w-0 truncate">
                 <BreadCrumbs />
               </div>
+              {besideTitle && <div className="flex shrink-0 items-center gap-1">{besideTitle}</div>}
             </div>
             {/* `min-w-0 shrink`: the trail keeps a floor and this side gives
                 way first, collapsing its actions into the burger from the

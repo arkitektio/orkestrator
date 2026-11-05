@@ -1,5 +1,6 @@
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
+import type { ServiceMap } from "@/core/connection/arkitekt/provider";
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
   DeleteEntityCategoryDocument,
@@ -23,10 +24,14 @@ import {
   type GetEntityCategoryQueryVariables,
   type GetStructureQuery,
   type GetStructureQueryVariables,
+  AttachToTodoItemDocument,
+  DeleteTodoItemDocument,
+  type AttachToTodoItemMutation,
+  type AttachToTodoItemMutationVariables,
 } from "./api/graphql";
 import { smartRegistry } from "@/core/smart/registry";
 import type { Structure } from "@/core/types";
-import { Equal, Eye, EyeOff, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { Equal, Eye, EyeOff, Link2, ListPlus, ListTodo, Pencil, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
 import { toast } from "@/core/notify";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
@@ -126,6 +131,59 @@ export const LinkStructureToEntityAction: Action = {
         },
       });
     }
+  },
+  collections: ["io"],
+};
+
+/** The data among `structures`: what a todo item can carry. */
+const dataOf = (structures: Structure[]) =>
+  structures.filter((structure) => smartRegistry.isDatum(structure.identifier));
+
+/**
+ * Put the selected data on a todo item — an existing one or a new one, picked
+ * in the `addtotodo` dialog. Several images selected make one item with each
+ * image ticked on its own.
+ */
+export const AddToTodoAction: Action = {
+  title: "Add to todo…",
+  description: "Put it on a todo item, to be ticked off when done",
+  icon: ListTodo,
+  conditions: [{ type: "nopartner" }, { type: "datum" }],
+  execute: async ({ state, dialog, services }) => {
+    if (!services.kraph) {
+      throw new Error("Kraph is not available, so there are no todo lists.");
+    }
+    dialog.openDialog("addtotodo", { structures: dataOf(state.left) }, { size: "medium" });
+  },
+  collections: ["io"],
+};
+
+/** Drop data on a todo item (a board card) to put it on that item. The card shows it at once. */
+export const AttachToTodoItemAction: Action = {
+  title: "Attach to todo item",
+  description: "Put it on this todo item, to be ticked off when done",
+  icon: ListPlus,
+  conditions: [{ type: "datum" }, { type: "pidentifier", identifier: "@kraph/todoitem" }],
+  execute: async ({ state, services }) => {
+    const item = state.right?.find((structure) => structure.identifier === "@kraph/todoitem");
+    if (!item) {
+      throw new Error("Drop the objects onto a todo item.");
+    }
+    const client = (services.kraph as unknown as { client?: ApolloClient<NormalizedCache> } | undefined)?.client;
+    if (!client) {
+      throw new Error("Kraph is not available, so there are no todo lists.");
+    }
+    await client.mutate<AttachToTodoItemMutation, AttachToTodoItemMutationVariables>({
+      mutation: AttachToTodoItemDocument,
+      variables: {
+        input: {
+          item: item.id,
+          structures: dataOf(state.left).map((structure) => ({ identifier: structure.identifier, object: structure.id })),
+        },
+      },
+      // The card updates from the answer; the Knowledge sidebar and My todos read "items carrying …".
+      refetchQueries: ["TodoItems"],
+    });
   },
   collections: ["io"],
 };
@@ -308,7 +366,47 @@ const buildSetTermHiddenAction = (hidden: boolean): Action => ({
   },
 });
 
+const deleteTodoItem = buildDeleteAction<ServiceMap>({
+  title: "Delete todo item",
+  identifier: "@kraph/todoitem",
+  description: "Delete the todo item. The objects on it stay as they are",
+  service: "kraph",
+  typename: "TodoItem",
+  mutation: DeleteTodoItemDocument,
+});
+
+/**
+ * Delete todo items. The card leaves its board at once (evicted); the lists'
+ * Done counts are read again afterwards, as only the server knows them.
+ */
+export const DeleteTodoItemAction: Action = {
+  ...deleteTodoItem,
+  execute: async (params) => {
+    const result = await deleteTodoItem.execute(params);
+    const client = (params.services.kraph as unknown as { client?: ApolloClient<NormalizedCache> }).client;
+    await client?.refetchQueries({ include: ["TodoList", "Project", "TodoItems"] });
+    return result;
+  },
+};
+
+/** Rename a project or change its description. */
+export const EditProjectAction: Action = {
+  title: "Edit project…",
+  description: "Rename the project or change its description",
+  icon: Pencil,
+  conditions: [{ type: "identifier", identifier: "@kraph/project" }, { type: "nopartner" }],
+  execute: async ({ state, dialog }) => {
+    const project = state.left.at(0);
+    if (!project) throw new Error("Pick a project to edit.");
+    dialog.openDialog("editkraphproject", { id: String(project.id) }, { size: "medium" });
+  },
+};
+
 export const KRAPH_ACTIONS = {
+  "edit-kraph-project": EditProjectAction,
+  "delete-kraph-todoitem": DeleteTodoItemAction,
+  "add-to-todo": AddToTodoAction,
+  "attach-to-todo-item": AttachToTodoItemAction,
   "create-new-entity": NewEntityAction,
   "link-structure-to-entity": LinkStructureToEntityAction,
   "measure-term": MeasureTermAction,

@@ -40,3 +40,6 @@ export const KraphScatterPlot = smartOf(manifest, "@kraph/scatterplot");
 export const KraphProtocol = smartOf(manifest, "@kraph/protocol");
 export const KraphProtocolStep = smartOf(manifest, "@kraph/protocolstep");
 export const KraphProtocolStepTemplate = smartOf(manifest, "@kraph/protocolsteptemplate");
+export const KraphProject = smartOf(manifest, "@kraph/project");
+export const KraphTodoList = smartOf(manifest, "@kraph/todolist");
+export const KraphTodoItem = smartOf(manifest, "@kraph/todoitem");

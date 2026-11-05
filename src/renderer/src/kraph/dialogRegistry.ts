@@ -14,6 +14,11 @@ import CreateTermForm from "./forms/CreateTermForm";
 import { TForm as CreateRelationCategoryForm } from "./forms/CreateRelationCategoryForm";
 import { TForm as CreateStructureRelationCategoryForm } from "./forms/CreateStructureRelationCategoryForm";
 import UpdateEntityCategoryForm from "./forms/UpdateEntityCategoryForm";
+import { AddToTodoForm } from "./forms/todos/AddToTodoForm";
+import { CreateTodoItemForm } from "./forms/todos/CreateTodoItemForm";
+import { CreateTodoListForm } from "./forms/todos/CreateTodoListForm";
+import { CreateProjectForm } from "./forms/projects/CreateProjectForm";
+import { EditProjectForm } from "./forms/projects/EditProjectForm";
 
 /**
  * kraph's dialogs, by id (a `dialogs` builtin). Its own file, apart from
@@ -37,4 +42,9 @@ export const KRAPH_DIALOGS = {
   createrelationcategory: CreateRelationCategoryForm,
   createstructurerelationcategory: CreateStructureRelationCategoryForm,
   createterm: CreateTermForm,
+  createkraphproject: CreateProjectForm,
+  editkraphproject: EditProjectForm,
+  createtodolist: CreateTodoListForm,
+  createtodoitem: CreateTodoItemForm,
+  addtotodo: AddToTodoForm,
 };

@@ -416,4 +416,58 @@ export const KRAPH_HELP = {
       ]}
     />
   ),
+  todos: (
+    <PageHelp
+      intro="Everything handed to you: items assigned to you, and the items of lists assigned to you that name nobody else. They are grouped by their column: To do, Doing, Done."
+      steps={[
+        <>Tick the box next to an object when you have dealt with it. When every object of an item is ticked, the item moves to <b>Done</b>.</>,
+        <>Click an item's title to open it, or its list (on the right) to see the whole board.</>,
+        <>Press <b>All projects</b> to see every project and list in your organization.</>,
+      ]}
+    />
+  ),
+  projects: (
+    <PageHelp
+      intro="A project is one piece of work, for example a study or one round of annotation. Its todo lists hang off it."
+      steps={[
+        <>Press <b>New project</b>, give it a name, and confirm. You land on the new project.</>,
+        <>Click a project to see its lists.</>,
+      ]}
+    />
+  ),
+  project: (
+    <PageHelp
+      intro="One project and its todo lists. Each list shows who it is for and how many of its items are done."
+      steps={[
+        <>Press <b>Edit</b> to rename the project or change its description.</>,
+        <>Press <b>New list</b>, name it, and pick an <b>Assignee</b>: the person the list is for. You land on the list's board.</>,
+        <>Click a list to open its board.</>,
+      ]}
+    />
+  ),
+  todoList: (
+    <PageHelp
+      intro="A todo list as a board with three columns: To do, Doing and Done. Each card is something to do, often over a few objects such as images, each with its own tick."
+      steps={[
+        <>Press <b>New item</b> to add a card. Leave <b>Assignee</b> empty to give it to the list's assignee.</>,
+        <>Drag a card by its grip (the dots left of its title) to another column, or up and down within one.</>,
+        <>Drop images or other objects on a card to put them on it, or right-click them anywhere and choose <b>Add to todo…</b>.</>,
+        <>Tick an object when it is done. When all are ticked, the card moves to <b>Done</b> by itself.</>,
+      ]}
+      tips={[
+        <>A faded assignee on a card is the list's: the item names nobody of its own.</>,
+      ]}
+    />
+  ),
+  todoItem: (
+    <PageHelp
+      intro="One todo item: what is to be done, who it is for, and the objects it is about."
+      steps={[
+        <>Tick an object when it is done. When all are ticked, the item moves to <b>Done</b>.</>,
+        <>Hover an object and press the cross to take it off the item.</>,
+        <>Drop more objects on this page to put them on the item.</>,
+        <>Press <b>Delete</b> to remove the item from its list. The objects on it stay as they are.</>,
+      ]}
+    />
+  ),
 };

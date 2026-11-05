@@ -168,6 +168,9 @@ export const ModelPageLayout = ({
       help={help}
       overlay={overlay}
       actions={actions}
+      // Other modules' small buttons for this model (the "pagebar" slot) sit
+      // beside the page's name, left of its own actions.
+      besideTitle={<SlotSections slot="pagebar" identifier={identifier} object={object} />}
       // The menu is the page's way into everything a model can do, so
       // it is pinned: it stays in the row however tight the row gets.
       pageActions={pageActions || <ObjectButton alwaysShow objects={objects} />}

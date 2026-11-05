@@ -127,38 +127,6 @@ input AssertMeasurementExistsInput {
 }
 
 """Input for creating a new metric"""
-input AssertMetricValueForStructureInput {
-  """
-  How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
-  """
-  confidence: Float = null
-
-  """
-  What kind of number `confidence` is — a method's own score, a p-value. Measurement-only
-  """
-  confidenceType: String = null
-
-  """
-  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
-  """
-  derivedFrom: [String!]! = []
-  key: String!
-
-  """When the world was observed. Defaults to when it was claimed."""
-  observedAt: DateTime = null
-
-  """The unique ID of the structure this metric is associated with"""
-  structure: ID!
-  unit: String = null
-  value: AnyScalar!
-
-  """
-  What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded.
-  """
-  valueKind: PropertyType!
-}
-
-"""Input for creating a new metric"""
 input AssertMetricValueInput {
   """
   How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
@@ -191,6 +159,12 @@ input AssertMetricValueInput {
   What type of value this is. Required: it decides which column the value is stored in and which measurement term it is recorded under, and nothing infers it. Two callers may declare the same key differently — a float `confidence` and a category-label `confidence` are two terms, and both are recorded.
   """
   valueKind: PropertyType!
+}
+
+"""Input for recording many metrics, about any number of data, as one act"""
+input AssertMetricValuesInput {
+  """The values to record, at most 5000 in one act"""
+  metrics: [MetricValueInput!]!
 }
 
 """Input for creating a new natural event instance"""
@@ -590,6 +564,29 @@ type AssertedMetric implements Asserted {
   pending: Boolean!
 }
 
+"""
+A batch of metrics as one act. A metric that names a uuid already on the record is reported, not recorded again
+"""
+type AssertedMetricValues {
+  """
+  The act that recorded this batch's new metrics. Null when every one of them was already recorded
+  """
+  assertion: Assertion
+
+  """
+  Every metric of the batch, in the order given: new ones and those an earlier attempt recorded
+  """
+  metrics: [Metric!]!
+
+  """
+  True when the act was recorded and announced but its drawing did not finish. The claim is durable; the drawing is owed, `Graph.projection { pending lag }` counts it, and `reproject --incremental` (the runner) applies it. `drawings` lists what was drawn so far. False is the ordinary case: the drawing completes within the request.
+  """
+  pending: Boolean!
+
+  """How many of the batch's metrics this call recorded"""
+  recorded: Int!
+}
+
 """An assertion about a natural event, and everywhere it is now drawn"""
 type AssertedNaturalEvent implements Asserted {
   """
@@ -832,6 +829,15 @@ input AssertionFilter {
 
   """Who made the claims — user ids, or the identities of automated agents"""
   subjects: [String!]
+}
+
+"""Input for putting objects on a todo item"""
+input AttachToTodoItemInput {
+  """The item to put the objects on"""
+  item: ID!
+
+  """The objects; one already on the item is left as it is"""
+  structures: [TodoStructureInput!]!
 }
 
 """Input for claiming a remark stands again — reopening, as new evidence"""
@@ -1613,6 +1619,15 @@ input CreateNaturalEventCategoryInput {
   properties: [PropertyDefinitionInput!]! = []
 }
 
+"""Input for creating a project"""
+input CreateProjectInput {
+  """What the project is about"""
+  description: String = null
+
+  """The name of the project"""
+  name: String!
+}
+
 """Input for creating a new protocol event definition in the graph schema"""
 input CreateProtocolEventCategoryInput {
   """
@@ -1822,6 +1837,44 @@ input CreateTermInput {
 
   """Persistent URL, where this corresponds to a published ontology term"""
   purl: String = null
+}
+
+"""Input for creating a todo item"""
+input CreateTodoItemInput {
+  """
+  The sub of the user the item is assigned to; the list's assignee when not given
+  """
+  assignee: ID = null
+
+  """More about what is to be done"""
+  description: String = null
+
+  """The list the item goes on"""
+  list: ID!
+
+  """The column it starts in; To do when not given"""
+  status: TodoStatus = null
+
+  """The objects it is about"""
+  structures: [TodoStructureInput!] = null
+
+  """What is to be done"""
+  title: String!
+}
+
+"""Input for creating a todo list"""
+input CreateTodoListInput {
+  """The sub of the user the list is assigned to"""
+  assignee: ID = null
+
+  """What the list is for"""
+  description: String = null
+
+  """The name of the list"""
+  name: String!
+
+  """The project the list belongs to"""
+  project: ID!
 }
 
 """Date with time (isoformat)"""
@@ -3855,6 +3908,67 @@ type MetricKindStats {
   sum(field: MetricKindField!): Float
 }
 
+"""One value about one external datum, inside a batch"""
+input MetricValueInput {
+  """
+  How sure you are, 0 to 1. Left unset, the claim carries no number — which is neither 1.0 nor 0.0: a category rule with a CONFIDENCE condition admits only claims that carry one.
+  """
+  confidence: Float = null
+
+  """
+  What kind of number `confidence` is — a method's own score, a p-value. Measurement-only
+  """
+  confidenceType: String = null
+
+  """
+  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
+  """
+  derivedFrom: [String!]! = []
+
+  """
+  The structure identifier of the datum this value is about, e.g. '@mikro/annotation'
+  """
+  identifier: String!
+  key: String!
+
+  """The id of the datum this value is about"""
+  object: String!
+
+  """When the world was observed. Defaults to when it was claimed."""
+  observedAt: DateTime = null
+
+  """
+  The uuid of an earlier metric of this API that this value corrects: that one is retracted and cited, under this act
+  """
+  supersedes: UUID = null
+  unit: String = null
+
+  """
+  Optional: a uuid for this metric that stays the same across retries, so a retried batch records nothing twice. Left out, one is minted, and rerunning records the value again
+  """
+  uuid: UUID = null
+  value: AnyScalar!
+
+  """
+  What type of value this is. Required: it decides the storage column and the measurement term
+  """
+  valueKind: ValueKind!
+}
+
+"""Input for moving a todo item on its board"""
+input MoveTodoItemInput {
+  """The item to move"""
+  id: ID!
+
+  """
+  Its place in that column once moved, 0 first; past the end puts it last
+  """
+  index: Int! = 0
+
+  """The column to move it to"""
+  status: TodoStatus!
+}
+
 """Graph Engine Mutations"""
 type Mutation {
   """Archive a graph in the graph engine (soft delete)"""
@@ -3887,9 +4001,9 @@ type Mutation {
   assertMetricValue(input: AssertMetricValueInput!): AssertedMetric!
 
   """
-  Record a measurement against a structure that already exists, named by its evidence id
+  Record many measurements, about any number of data, as one act, creating the structures they describe. A metric that names its own uuid is recorded once however often the batch is retried
   """
-  assertMetricValueForStructure(input: AssertMetricValueForStructureInput!): AssertedMetric!
+  assertMetricValues(input: AssertMetricValuesInput!): AssertedMetricValues!
 
   """
   Claim that a natural event happened, under one of the organization's words
@@ -3930,6 +4044,9 @@ type Mutation {
   Assert a relation between two structures. Drawings are always empty: neither endpoint has a vertex
   """
   assertStructureRelationExists(input: AssertStructureRelationExistsInput!): AssertedStructureRelation!
+
+  """Put objects on a todo item; one already on it is left as it is"""
+  attachToTodoItem(input: AttachToTodoItemInput!): TodoItem!
 
   """
   Claim a remark stands again — reopening, as new evidence rather than an undo
@@ -3990,6 +4107,9 @@ type Mutation {
   """Create a new natural event category in the graph"""
   createNaturalEventCategory(input: CreateNaturalEventCategoryInput!): NaturalEventCategory!
 
+  """Create a project"""
+  createProject(input: CreateProjectInput!): Project!
+
   """Create a new protocol event category in the graph"""
   createProtocolEventCategory(input: CreateProtocolEventCategoryInput!): ProtocolEventCategory!
 
@@ -4006,6 +4126,12 @@ type Mutation {
   Declare one of the organization's words, or describe one an ingest minted bare
   """
   createTerm(input: CreateTermInput!): Term!
+
+  """Create a todo item, optionally with the objects it is about"""
+  createTodoItem(input: CreateTodoItemInput!): TodoItem!
+
+  """Create a todo list in a project"""
+  createTodoList(input: CreateTodoListInput!): TodoList!
 
   """Delete an entity category from the graph"""
   deleteEntityCategory(input: DeleteEntityCategoryInput!): ID!
@@ -4027,6 +4153,9 @@ type Mutation {
   """Delete a natural event category from the graph"""
   deleteNaturalEventCategory(input: DeleteNaturalEventCategoryInput!): ID!
 
+  """Delete a project with its todo lists"""
+  deleteProject(input: ProjectIdInput!): ID!
+
   """Delete a protocol event category from the graph"""
   deleteProtocolEventCategory(input: DeleteProtocolEventCategoryInput!): ID!
 
@@ -4044,13 +4173,20 @@ type Mutation {
   """Delete a structure relation category from the graph"""
   deleteStructureRelationCategory(input: DeleteStructureRelationCategoryInput!): ID!
 
+  """Delete a todo item"""
+  deleteTodoItem(input: TodoIdInput!): ID!
+
+  """Delete a todo list with its items"""
+  deleteTodoList(input: TodoIdInput!): ID!
+
+  """Take one object off its todo item"""
+  detachFromTodoItem(input: TodoIdInput!): TodoItem!
+
   """Finalize a media upload after the client has written the object"""
   finishMediaUpload(input: FinishMediaUploadInput!): MediaStore!
 
-  """
-  Record measurements against a datum already on the record, as one act (was `updateStructure`)
-  """
-  recordMetrics(input: RecordMetricsInput!): AssertedStructure!
+  """Move a todo item to a column and a place in it"""
+  moveTodoItem(input: MoveTodoItemInput!): TodoItem!
 
   """
   Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit
@@ -4126,6 +4262,16 @@ type Mutation {
   retractStructureRelation(input: RetractStructureRelationInput!): AssertedStructureRelation!
 
   """
+  Tick or untick one object on a todo item; ticking the last moves the item to Done
+  """
+  setTodoStructureDone(input: SetTodoStructureDoneInput!): TodoItem!
+
+  """
+  Move one object on a todo item to To do, Doing or Done; the item's column follows
+  """
+  setTodoStructureStatus(input: SetTodoStructureStatusInput!): TodoItem!
+
+  """
   Correct a measurement by retracting it and asserting a new one. The returned metric has a new id: it is a new row, not an edited one
   """
   supersedeMetricValue(input: SupersedeMetricValueInput!): AssertedMetric!
@@ -4159,6 +4305,9 @@ type Mutation {
   """Update an existing natural event category in the graph"""
   updateNaturalEventCategory(input: UpdateNaturalEventCategoryInput!): NaturalEventCategory!
 
+  """Change a project"""
+  updateProject(input: UpdateProjectInput!): Project!
+
   """Update an existing protocol event category in the graph"""
   updateProtocolEventCategory(input: UpdateProtocolEventCategoryInput!): ProtocolEventCategory!
 
@@ -4178,6 +4327,12 @@ type Mutation {
   Update a term's label, description, PURL or colour, or hide it. Its kind and key are its identity and cannot change, and a term is never deleted — hiding is how a word is put away.
   """
   updateTerm(input: UpdateTermInput!): Term!
+
+  """Change a todo item (title, description, assignee)"""
+  updateTodoItem(input: UpdateTodoItemInput!): TodoItem!
+
+  """Change a todo list (name, description, assignee)"""
+  updateTodoList(input: UpdateTodoListInput!): TodoList!
 }
 
 """A natural event in the knowledge graph"""
@@ -4783,6 +4938,51 @@ interface Plottable {
 }
 
 """
+One piece of work in an organization: the anchor its todo lists hang off
+"""
+type Project {
+  """When the project was made"""
+  createdAt: DateTime!
+
+  """What the project is about"""
+  description: String
+
+  """Database ID of the project"""
+  id: ID!
+
+  """The name of the project"""
+  name: String!
+
+  """The project's todo lists"""
+  todoLists(filters: TodoListFilter, ordering: [TodoListOrder!]! = [], pagination: OffsetPaginationInput): [TodoList!]!
+}
+
+input ProjectFilter {
+  AND: ProjectFilter
+  DISTINCT: Boolean
+  NOT: ProjectFilter
+  OR: ProjectFilter
+  id: ID
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """Search the name and description"""
+  search: String
+}
+
+"""Input naming one project"""
+input ProjectIdInput {
+  """The project to act on"""
+  id: ID!
+}
+
+input ProjectOrder @oneOf {
+  createdAt: Ordering
+  name: Ordering
+}
+
+"""
 Whether a view's drawing reflects the log, has never been drawn, or is mid-replay
 """
 enum ProjectionStatus {
@@ -5307,6 +5507,12 @@ type Query {
   """
   outputParticipations(filters: ParticipationFilter = null, graph: ID!, ordering: [ParticipationOrder!] = null, pagination: ParticipationPaginationInput = null): [OutputParticipation!]!
 
+  """One project by ID"""
+  project(id: ID!): Project!
+
+  """The organization's projects"""
+  projects(filters: ProjectFilter, ordering: [ProjectOrder!]! = [], pagination: OffsetPaginationInput): [Project!]!
+
   """Get a protocol event by ID, as the named view holds it — see `node`"""
   protocolEvent(graph: ID!, id: ID!): ProtocolEvent!
 
@@ -5406,23 +5612,20 @@ type Query {
   List the organization's words — its vocabulary, independent of any graph
   """
   terms(filters: TermFilter = null, pagination: VocabularyPaginationInput = null): [Term!]!
-}
 
-"""Input for recording measurements against a datum already on the record"""
-input RecordMetricsInput {
+  """One todo item by ID"""
+  todoItem(id: ID!): TodoItem!
+
   """
-  The claims this one came from — ids of instances, links, metrics or structures in your organization. Each is recorded as a DERIVED_FROM link under the same assertion as the claim itself, because "this, because of that" is one act (RFC 0017). Read back as `derivedFrom`; the cited claim lists it under `derivations`.
+  Todo items across lists; `mine` narrows to those whose effective assignee is the caller, `identifier` + `object` to those that carry an object
   """
-  derivedFrom: [String!]! = []
+  todoItems(filters: TodoItemFilter, ordering: [TodoItemOrder!]! = [], pagination: OffsetPaginationInput): [TodoItem!]!
 
-  """The ID of the structure the measurements describe"""
-  id: String!
+  """One todo list by ID"""
+  todoList(id: ID!): TodoList!
 
-  """List of measurements associated with this structure"""
-  metrics: [MetricInput!]! = []
-
-  """The unique ID of the object this structure references"""
-  object: String!
+  """Todo lists; `mine` narrows to the caller's"""
+  todoLists(filters: TodoListFilter, ordering: [TodoListOrder!]! = [], pagination: OffsetPaginationInput): [TodoList!]!
 }
 
 input RefreshUploadInput {
@@ -6107,6 +6310,24 @@ input ScatterPlotFilter {
 input ScatterPlotOrder @oneOf {
   id: Ordering
   name: Ordering
+}
+
+"""Input for ticking (or unticking) one object on a todo item"""
+input SetTodoStructureDoneInput {
+  """Whether it is done"""
+  done: Boolean!
+
+  """The object on an item (a TodoItemStructure)"""
+  id: ID!
+}
+
+"""Input for moving one object on a todo item to To do, Doing or Done"""
+input SetTodoStructureStatusInput {
+  """The object on an item (a TodoItemStructure)"""
+  id: ID!
+
+  """To do, Doing or Done"""
+  status: TodoStatus!
 }
 
 """Somebody's position on whether a claim still holds"""
@@ -6848,6 +7069,206 @@ enum TermKind {
   STRUCTURE_RELATION
 }
 
+"""Input naming one todo list, item or item object"""
+input TodoIdInput {
+  """The row to act on"""
+  id: ID!
+}
+
+"""One card on a todo board"""
+type TodoItem {
+  """The item's own assignee (a sub); see `effectiveAssignee`"""
+  assignee: ID
+
+  """When the item was made"""
+  createdAt: DateTime!
+
+  """More about what is to be done"""
+  description: String
+
+  """Who the item is for: its own assignee, else its list's (a sub)"""
+  effectiveAssignee: ID
+
+  """Database ID of the item"""
+  id: ID!
+
+  """The list the item is on"""
+  list: TodoList!
+
+  """Its place within its column, 0 first"""
+  position: Int!
+
+  """The board column the item is in"""
+  status: TodoStatus!
+
+  """The objects the item is about"""
+  structures: [TodoItemStructure!]!
+
+  """What is to be done"""
+  title: String!
+
+  """When the item last changed"""
+  updatedAt: DateTime!
+}
+
+input TodoItemFilter {
+  AND: TodoItemFilter
+  DISTINCT: Boolean
+  NOT: TodoItemFilter
+  OR: TodoItemFilter
+
+  """
+  Items whose effective assignee (their own, else their list's) is this user (a sub)
+  """
+  assignee: ID
+  id: ID
+
+  """Items that carry this object; pair with `object`"""
+  identifier: String
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """The items of one list"""
+  list: ID
+
+  """Items whose effective assignee is the caller"""
+  mine: Boolean
+
+  """Items that carry this object; pair with `identifier`"""
+  object: ID
+
+  """The items of one project"""
+  project: ID
+
+  """Search the title and description"""
+  search: String
+
+  """Items in any of these columns"""
+  status: [TodoStatus!]
+}
+
+input TodoItemOrder @oneOf {
+  createdAt: Ordering
+  position: Ordering
+  updatedAt: Ordering
+}
+
+"""An object a todo item is about, with its own To do / Doing / Done"""
+type TodoItemStructure {
+  """Whether this object has been dealt with"""
+  done: Boolean!
+
+  """When it was ticked"""
+  doneAt: DateTime
+
+  """The sub of who ticked it"""
+  doneBy: ID
+
+  """Database ID of this object on the item"""
+  id: ID!
+
+  """The object's structure identifier, e.g. @mikro/image"""
+  identifier: String!
+
+  """The item it is on"""
+  item: TodoItem!
+
+  """The object's id within its structure"""
+  object: ID!
+
+  """Its place on the item"""
+  position: Int!
+
+  """When somebody started on it"""
+  startedAt: DateTime
+
+  """The sub of who started on it"""
+  startedBy: ID
+
+  """How far along this object is: To do, Doing or Done"""
+  status: TodoStatus!
+}
+
+"""A list of things to do, usually handed to one person"""
+type TodoList {
+  """The sub of the user the list is assigned to"""
+  assignee: ID
+
+  """When the list was made"""
+  createdAt: DateTime!
+
+  """What the list is for"""
+  description: String
+
+  """Database ID of the list"""
+  id: ID!
+
+  """The list's items"""
+  items(filters: TodoItemFilter, ordering: [TodoItemOrder!]! = [], pagination: OffsetPaginationInput): [TodoItem!]!
+
+  """The name of the list"""
+  name: String!
+
+  """Items done, out of all items on the list"""
+  progress: TodoProgress!
+
+  """The project the list belongs to"""
+  project: Project!
+}
+
+input TodoListFilter {
+  AND: TodoListFilter
+  DISTINCT: Boolean
+  NOT: TodoListFilter
+  OR: TodoListFilter
+
+  """
+  Lists assigned to this user (a sub), or holding an item assigned to them
+  """
+  assignee: ID
+  id: ID
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """Lists assigned to the caller, or holding an item assigned to them"""
+  mine: Boolean
+
+  """The lists of one project"""
+  project: ID
+
+  """Search the name and description"""
+  search: String
+}
+
+input TodoListOrder @oneOf {
+  createdAt: Ordering
+  name: Ordering
+}
+
+"""How far along something is: done out of total"""
+type TodoProgress {
+  done: Int!
+  total: Int!
+}
+
+"""The board column a todo item is in"""
+enum TodoStatus {
+  DOING
+  DONE
+  TODO
+}
+
+"""An object to put on a todo item, named the way a comment names one"""
+input TodoStructureInput {
+  """The object's structure identifier, e.g. @mikro/image"""
+  identifier: String!
+
+  """The object's id within its structure"""
+  object: ID!
+}
+
 """Pagination options for a node's drawn edges and neighbours"""
 input TraversalPaginationInput {
   """Maximum number of items to return"""
@@ -6856,6 +7277,8 @@ input TraversalPaginationInput {
   """Number of items to skip"""
   offset: Int = 0
 }
+
+scalar UUID
 
 """Input for updating an existing entity definition in the graph schema"""
 input UpdateEntityCategoryInput {
@@ -7071,6 +7494,18 @@ input UpdateNaturalEventCategoryInput {
 
   """Whether to pin this node role in the UI"""
   pin: Boolean = null
+}
+
+"""Input for changing a project"""
+input UpdateProjectInput {
+  """Its new description"""
+  description: String = null
+
+  """The project to change"""
+  id: ID!
+
+  """Its new name"""
+  name: String!
 }
 
 """
@@ -7295,6 +7730,36 @@ input UpdateTermInput {
   purl: String = null
 }
 
+"""Input for changing a todo item. Every field is replaced."""
+input UpdateTodoItemInput {
+  """Its own assignee (a sub); the list's when not given"""
+  assignee: ID = null
+
+  """Its new description"""
+  description: String = null
+
+  """The item to change"""
+  id: ID!
+
+  """Its new title"""
+  title: String!
+}
+
+"""Input for changing a todo list. Every field is replaced."""
+input UpdateTodoListInput {
+  """Its new assignee (a sub); unassigned when not given"""
+  assignee: ID = null
+
+  """Its new description"""
+  description: String = null
+
+  """The list to change"""
+  id: ID!
+
+  """Its new name"""
+  name: String!
+}
+
 enum ValueKind {
   BOOLEAN
   CATEGORY
@@ -7368,7 +7833,7 @@ enum WhereOperator {
 
 scalar _Any
 
-union _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term
+union _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | Project | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term | TodoItem | TodoItemStructure | TodoList
 
 type _Service {
   sdl: String!

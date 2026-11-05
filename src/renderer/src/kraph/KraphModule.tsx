@@ -44,6 +44,11 @@ import { GraphScopeLayout } from "./providers/GraphScopeProvider";
 import { EntityCategorySchemaBuilderPage } from "./pages/EntityCategorySchemaBuilderPage";
 import ScatterPlotsPage from "./pages/ScatterPlotsPage";
 import StructuresPage from "./pages/StructuresPage";
+import TodoItemPage from "./pages/TodoItemPage";
+import TodoListPage from "./pages/TodoListPage";
+import ProjectPage from "./pages/ProjectPage";
+import ProjectsPage from "./pages/ProjectsPage";
+import TodosPage from "./pages/TodosPage";
 interface Props { }
 
 export const KraphModule: React.FC<Props> = () => {
@@ -66,6 +71,11 @@ export const KraphModule: React.FC<Props> = () => {
         />
         <Route path="metrics/:id" element={<MetricPage />} />
         <Route path="scatterplots/:id" element={<ScatterPlotPage />} />
+        <Route path="todos" element={<TodosPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id" element={<ProjectPage />} />
+        <Route path="todolists/:id" element={<TodoListPage />} />
+        <Route path="todoitems/:id" element={<TodoItemPage />} />
         <Route path="structures/:id" element={<StructurePage />} />
         <Route path="graphs" element={<GraphsPage />} />
         {/*

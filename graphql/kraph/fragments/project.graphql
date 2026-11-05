@@ -1,0 +1,15 @@
+# Projects: the organization's anchor for a piece of work. Todo lists hang off
+# one today; graphs are meant to follow.
+fragment ListProject on Project {
+  id
+  name
+  description
+  createdAt
+}
+
+fragment Project on Project {
+  ...ListProject
+  todoLists {
+    ...ListTodoList
+  }
+}
