@@ -1,3 +1,17 @@
+# [5.11.0](https://github.com/arkitektio/orkestrator/compare/v5.10.0...v5.11.0) (2026-11-05)
+
+
+### Bug Fixes
+
+* action descriptions are plain text, and patched dependencies ([a1293ae](https://github.com/arkitektio/orkestrator/commit/a1293aea9d8200e3461b6069029deaec2ddfcafe))
+
+
+### Features
+
+* **dialogs:** dialogs fit their content, with a pinned header and footer ([100f07c](https://github.com/arkitektio/orkestrator/commit/100f07c5b4e918261e5b84751487c625854a4c67))
+* **kraph:** projects, todo lists with per-object Doing/Done, and the todo track ([49d06cf](https://github.com/arkitektio/orkestrator/commit/49d06cf0da3ac6980c070e41827f134f200e066c))
+* **scene:** layer cards read over the canvas, and removing a layer asks first ([2dd13a7](https://github.com/arkitektio/orkestrator/commit/2dd13a77e8691b7e7f3ae61310006f7f8951bf39))
+
 # [5.10.0](https://github.com/arkitektio/orkestrator/compare/v5.9.0...v5.10.0) (2026-11-04)
 
 
