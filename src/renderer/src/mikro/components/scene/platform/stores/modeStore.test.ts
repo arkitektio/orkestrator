@@ -42,4 +42,37 @@ describe("createModeStore", () => {
     expect(store.getState().interactionMode).toBe("PROBE");
     expect(store.getState().displayMode).toBe("3D");
   });
+
+  describe("leaveAnnotate", () => {
+    it("falls back to NAVIGATE when ANNOTATE was picked in the toolbar", () => {
+      const store = createModeStore();
+      store.getState().setInteractionMode("ANNOTATE");
+      store.getState().leaveAnnotate();
+      expect(store.getState().interactionMode).toBe("NAVIGATE");
+    });
+
+    it("returns to the mode a held A came from", () => {
+      const store = createModeStore();
+      store.getState().setInteractionMode("ANNOTATE");
+      store.getState().setAnnotateReturnMode("PROBE");
+      store.getState().leaveAnnotate();
+      expect(store.getState().interactionMode).toBe("PROBE");
+      expect(store.getState().annotateReturnMode).toBeNull();
+    });
+
+    it("forgets the return target on any other mode change", () => {
+      const store = createModeStore();
+      store.getState().setInteractionMode("ANNOTATE");
+      store.getState().setAnnotateReturnMode("PROBE");
+      store.getState().setInteractionMode("DESIGN");
+      expect(store.getState().annotateReturnMode).toBeNull();
+    });
+
+    it("does nothing outside ANNOTATE", () => {
+      const store = createModeStore();
+      store.getState().setInteractionMode("DESIGN");
+      store.getState().leaveAnnotate();
+      expect(store.getState().interactionMode).toBe("DESIGN");
+    });
+  });
 });

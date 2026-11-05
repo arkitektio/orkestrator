@@ -227,6 +227,18 @@ export interface ModeState {
   interactionModeOptions: InteractionModeOption[];
   displayModeOptions: DisplayModeOption[];
   setInteractionMode: (mode: InteractionMode) => void;
+  /**
+   * Where leaving ANNOTATE goes: the mode a held A came from
+   * (`KeyboardModeController` sets it right after the hold switches), null
+   * when ANNOTATE was picked in the toolbar. Any mode change clears it.
+   */
+  annotateReturnMode: InteractionMode | null;
+  setAnnotateReturnMode: (mode: InteractionMode | null) => void;
+  /**
+   * Leave ANNOTATE: to `annotateReturnMode`, else NAVIGATE. The drawer's Esc,
+   * and Backspace on a shape's last point (`RoiDrawer`).
+   */
+  leaveAnnotate: () => void;
   setDisplayMode: (mode: DisplayMode) => void;
   setZoomToCursor: (on: boolean) => void;
   setPivotOnProbe: (on: boolean) => void;
@@ -288,6 +300,18 @@ export const createModeStore = ({
     setInteractionMode: (mode) =>
       set((state) => {
         state.interactionMode = mode;
+        state.annotateReturnMode = null;
+      }),
+    annotateReturnMode: null,
+    setAnnotateReturnMode: (mode) =>
+      set((state) => {
+        state.annotateReturnMode = mode;
+      }),
+    leaveAnnotate: () =>
+      set((state) => {
+        if (state.interactionMode !== "ANNOTATE") return;
+        state.interactionMode = state.annotateReturnMode ?? "NAVIGATE";
+        state.annotateReturnMode = null;
       }),
     setDisplayMode: (mode) =>
       set((state) => {

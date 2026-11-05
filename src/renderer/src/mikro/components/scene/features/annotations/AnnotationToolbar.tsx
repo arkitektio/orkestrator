@@ -172,16 +172,16 @@ export const AnnotationToolbar = () => {
             ) : displayMode === "3D" ? (
               "Click points — each edge follows the data. Double-click to finish"
             ) : activeTool === "PATH" ? (
-              "Click or drag along the structure — the line follows the data. Scrub z to go on in another slice. Esc or double-click to finish, Backspace discards"
+              "Click or drag along the structure — the line follows the data. Scrub z to go on in another slice. Double-click to finish · Backspace removes a point · Esc leaves"
             ) : (
               "Click points — the line follows the data. Double-click to finish"
             )
           ) : activeTool === "PATH" && displayMode === "2D" ? (
-            "Click points or drag freehand — scrub z to go on in another slice. Esc or double-click to finish, Backspace discards"
+            "Click points or drag freehand — scrub z to go on in another slice. Double-click to finish · Backspace removes a point · Esc leaves"
           ) : activeTool === "SELECT" ? (
             "Drag to select annotations"
           ) : displayMode === "3D" ? (
-            "Click the volume to place each point — probed onto the data. Backspace discards"
+            "Click the volume to place each point — probed onto the data. Backspace removes a point · Esc leaves"
           ) : (
             "Drawing annotations on the scene"
           )}

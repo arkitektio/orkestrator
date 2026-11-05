@@ -128,3 +128,28 @@ export function intersectFacingPlane(
   );
   return target;
 }
+
+/**
+ * Backspace on a half-drawn chain: drop its last anchor (click) and every
+ * vertex that click added. `anchorEnds[i]` is `vertices.length` just after
+ * anchor `i` was placed — a traced edge or a freehand stroke adds many
+ * vertices per click, so the cut goes back to the previous anchor's end.
+ *
+ * Null when at most one anchor would remain (or there were none, as for the
+ * flat two-point drag and the primitive anchor): removing that point removes
+ * the shape, which is the caller's to discard.
+ */
+export function undoLastAnchor<V, A>(chain: {
+  vertices: V[];
+  anchors: A[];
+  anchorEnds: number[];
+}): { vertices: V[]; anchors: A[]; anchorEnds: number[] } | null {
+  const { vertices, anchors, anchorEnds } = chain;
+  if (anchors.length <= 1 || anchorEnds.length !== anchors.length) return null;
+  const keep = anchors.length - 1;
+  return {
+    vertices: vertices.slice(0, anchorEnds[keep - 1]),
+    anchors: anchors.slice(0, keep),
+    anchorEnds: anchorEnds.slice(0, keep),
+  };
+}

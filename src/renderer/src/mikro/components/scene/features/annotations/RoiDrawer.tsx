@@ -43,6 +43,7 @@ import {
   intersectDrawPlane,
   intersectFacingPlane,
   withinSlop,
+  undoLastAnchor,
   type ScreenPoint,
 } from "./drawGesture";
 import { MUTED_STROKE } from "./annotationStyle";
@@ -145,6 +146,12 @@ interface DrawSession {
    */
   anchors: DrawAnchor[];
   /**
+   * Parallel to `anchors`: `vertices.length` just after each anchor was
+   * placed, so Backspace can cut the chain back one click
+   * (`drawGesture.undoLastAnchor`).
+   */
+  anchorEnds: number[];
+  /**
    * The rubber band's traced route from the last anchor to the cursor, ends
    * included — the live-wire's answer for where the pointer is, or null when
    * it has none (no tree yet, off its window) and the band runs straight.
@@ -181,6 +188,7 @@ const freshSession = (): DrawSession => ({
   cursor: null,
   lastClickPx: null,
   anchors: [],
+  anchorEnds: [],
   livePath: null,
   treeSeed: null,
   stroke: null,
@@ -245,12 +253,6 @@ export const RoiDrawer = () => {
   const closingRef = useRef<PreviewLineHandle | null>(null);
   const scratch = useRef(new THREE.Vector3());
   const cursorPxRef = useRef<ScreenPoint>({ x: 0, y: 0 });
-  /**
-   * Escape's answer for a PATH: commit what is drawn, true when it did. A
-   * ref because `finishChain` lives below the early return (it is no hook),
-   * while the key listener is an effect above it.
-   */
-  const finishPathRef = useRef<(() => boolean) | null>(null);
 
   const tool: DrawingTool | null = isDrawingTool(activeTool) ? activeTool : null;
   const isPolygonLike = tool === "POLYGON" || tool === "PATH";
@@ -642,29 +644,55 @@ export const RoiDrawer = () => {
   }, [placedVertices.length, setShapeInProgress]);
   useEffect(() => () => setShapeInProgress(false), [setShapeInProgress]);
 
-  // Backspace discards the shape under way, whatever the tool (and only then:
-  // with nothing half-drawn it is `RoiDeleteKeybinding`'s, deleting the
-  // selection).
-  // Escape abandons the shape. Without it a half-placed polygon has no exit —
-  // you have to finish a shape you don't want and then delete it server-side.
-  // A PATH is the exception: Escape is where it ENDS, keeping every point
-  // placed so far (a path has no closing click to aim for, and double-clicking
-  // on top of a live band is fiddly). Too short to be a path, it is dropped.
+  // Backspace takes back the last click of the shape under way: a freehand
+  // stroke still being dragged is dropped alone, otherwise the last anchor goes
+  // with every vertex it added (a traced edge, a stroke). Taking back the LAST
+  // point discards the shape and leaves ANNOTATE — to the mode a held A came
+  // from, else NAVIGATE (`modeStore.leaveAnnotate`). With nothing half-drawn
+  // Backspace is `RoiDeleteKeybinding`'s, deleting the selection.
+  // Escape discards the shape outright, whatever the tool, and leaves ANNOTATE.
+  // Finishing is the double-click's.
   // `pointercancel` has to be a window listener: R3F handles it at the canvas
   // and never forwards it to object handlers. (Deliberately NOT
   // `lostpointercapture`, which fires *before* pointerup and would kill every
   // gesture before it commits.)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const discard = event.key === "Backspace";
-      if (event.key !== "Escape" && !discard) return;
+      const undo = event.key === "Backspace";
+      if (event.key !== "Escape" && !undo) return;
       if (isTypingTarget(event.target as HTMLElement | null)) return;
-      if (sessionRef.current.phase === "idle" && sessionRef.current.vertices.length === 0) {
+      const session = sessionRef.current;
+      if (session.phase === "idle" && session.vertices.length === 0 && !session.stroke) {
         return; // nothing of ours to cancel; leave the key to whoever else wants it
       }
       event.preventDefault();
-      if (!discard && finishPathRef.current?.()) return;
+      if (undo) {
+        if (session.stroke) {
+          // Only the stroke in flight goes; its release then finds no stroke.
+          session.stroke = null;
+          session.strokePx = null;
+          if (session.anchors.length > 0) {
+            growFrom(session.anchors[session.anchors.length - 1]);
+            paintCoalescer.schedule(paint);
+            return;
+          }
+        } else {
+          const shorter = undoLastAnchor(session);
+          if (shorter) {
+            session.vertices = shorter.vertices;
+            session.anchors = shorter.anchors;
+            session.anchorEnds = shorter.anchorEnds;
+            session.lastClickPx = null;
+            setPlacedVertices(shorter.anchors.map((a) => a.world));
+            setTraceMessage(null);
+            growFrom(shorter.anchors[shorter.anchors.length - 1]);
+            paintCoalescer.schedule(paint);
+            return;
+          }
+        }
+      }
       resetSession();
+      modeStoreApi.getState().leaveAnnotate();
     };
     const onCancel = () => resetSession();
 
@@ -676,7 +704,7 @@ export const RoiDrawer = () => {
       window.removeEventListener("pointercancel", onCancel);
       window.removeEventListener("blur", onCancel);
     };
-  }, [resetSession]);
+  }, [resetSession, growFrom, paintCoalescer, paint, setTraceMessage, modeStoreApi]);
 
   /**
    * Keep the capture quad under the pointer.
@@ -728,7 +756,6 @@ export const RoiDrawer = () => {
   // `RectangleDrawer` instead, so the two are mutually exclusive by
   // construction. Arming a layer is not part of it either: shapes land in the
   // scene's own coordinate system, so there is no layer to point at.
-  finishPathRef.current = null;
   if (interactionMode !== "ANNOTATE" || !tool) return null;
 
   /** The live pointer position on the slice being drawn — never `event.point`. */
@@ -834,19 +861,6 @@ export const RoiDrawer = () => {
     if (failure) setTraceMessage(failure);
   };
 
-  if (tool === "PATH") {
-    finishPathRef.current = () => {
-      const session = sessionRef.current;
-      // A freehand stroke still being dragged is dropped; what was already
-      // placed stays. (Its release then finds no stroke and does nothing.)
-      session.stroke = null;
-      session.strokePx = null;
-      if (session.vertices.length < 2) return false;
-      finishChain();
-      return true;
-    };
-  }
-
   /** One clicked point of a chain: resolve it onto the data when enhancing. */
   const anchorAt = (world: THREE.Vector3): DrawAnchor => ({
     world,
@@ -916,8 +930,12 @@ export const RoiDrawer = () => {
     if (session.vertices.length === 0) session.planeZ = stroke[0].z;
     const lead = continues ? [] : last ? enhanceEdge(last, start) : [start.world];
 
+    const leadEnd = session.vertices.length + lead.length;
     session.vertices = [...session.vertices, ...lead, ...strokeSegment(stroke)];
     session.anchors = continues ? [...session.anchors, end] : [...session.anchors, start, end];
+    session.anchorEnds = continues
+      ? [...session.anchorEnds, session.vertices.length]
+      : [...session.anchorEnds, leadEnd, session.vertices.length];
     session.lastClickPx = px;
     session.phase = "anchored";
     session.cursor = end.world.clone();
@@ -1185,6 +1203,7 @@ export const RoiDrawer = () => {
               ? [...session.vertices, ...enhanceEdge(session.anchors[session.anchors.length - 1], anchor)]
               : [...session.vertices, probed];
             session.anchors = [...session.anchors, anchor];
+            session.anchorEnds = [...session.anchorEnds, session.vertices.length];
             session.lastClickPx = px;
             session.phase = "anchored";
             session.cursor = probed.clone();
@@ -1236,6 +1255,7 @@ export const RoiDrawer = () => {
             ...enhanceEdge(session.anchors[session.anchors.length - 1], anchor),
           ];
           session.anchors = [...session.anchors, anchor];
+          session.anchorEnds = [...session.anchorEnds, session.vertices.length];
           session.lastClickPx = px;
           session.phase = "anchored";
           session.cursor = hit.clone();

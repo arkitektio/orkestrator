@@ -53,7 +53,21 @@ export const ScrollGestureNavigation = () => {
     const onWheel = (event: WheelEvent) => {
       if (event.target !== element) return;
       if (event.shiftKey) return; // z, or the controls' own zoom in 3D
-      const intent = classify(event, setting);
+      // `wheelDeltaX/Y` are Chromium's legacy tick fields, not in lib.dom.
+      const legacy = event as WheelEvent & { wheelDeltaX?: number; wheelDeltaY?: number };
+      const intent = classify(
+        {
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode,
+          ctrlKey: event.ctrlKey,
+          timeStamp: event.timeStamp,
+          wheelDeltaX: legacy.wheelDeltaX,
+          wheelDeltaY: legacy.wheelDeltaY,
+          devicePixelRatio: window.devicePixelRatio,
+        },
+        setting,
+      );
       if (intent === "zoom") return; // the controls' wheel, as always
 
       event.preventDefault();

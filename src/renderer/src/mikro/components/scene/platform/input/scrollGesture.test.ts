@@ -41,4 +41,33 @@ describe("scroll classifier", () => {
     expect(createScrollClassifier()(wheel({ deltaY: 1.5 }), "zoom")).toBe("zoom");
     expect(createScrollClassifier()(wheel(), "pan")).toBe("swipe");
   });
+
+  it("reads a wheel notch as a wheel at a fractional display scale or zoom", () => {
+    // 150 %: one notch of 100 px arrives as 66.67 CSS px.
+    expect(
+      createScrollClassifier()(wheel({ deltaY: 100 / 1.5, wheelDeltaX: 0, wheelDeltaY: -120 }), "auto"),
+    ).toBe("zoom");
+    expect(
+      createScrollClassifier()(wheel({ deltaY: 100 / 1.5, devicePixelRatio: 1.5 }), "auto"),
+    ).toBe("zoom");
+    // A tilt wheel's sideways notch.
+    expect(
+      createScrollClassifier()(
+        wheel({ deltaX: 66.67, deltaY: 0, wheelDeltaX: -120, wheelDeltaY: 0 }),
+        "auto",
+      ),
+    ).toBe("zoom");
+  });
+
+  it("still reads a trackpad as a trackpad when wheelDelta is present", () => {
+    expect(
+      createScrollClassifier()(wheel({ deltaY: 2.5, wheelDeltaX: 0, wheelDeltaY: -7.5 }), "auto"),
+    ).toBe("swipe");
+    expect(
+      createScrollClassifier()(
+        wheel({ deltaX: 4, deltaY: 1, wheelDeltaX: -12, wheelDeltaY: -3 }),
+        "auto",
+      ),
+    ).toBe("swipe");
+  });
 });

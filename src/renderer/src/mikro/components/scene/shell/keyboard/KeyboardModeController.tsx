@@ -160,6 +160,9 @@ export const KeyboardModeController = () => {
       heldKeyRef.current = key;
       restoreModeRef.current = waiting ?? modeApi.getState().interactionMode;
       setInteractionMode(next);
+      // Leaving ANNOTATE from the drawer (Esc, Backspace on the last point)
+      // goes back where the hold came from, not to NAVIGATE.
+      if (next === "ANNOTATE") modeApi.getState().setAnnotateReturnMode(restoreModeRef.current);
     };
 
     // A release that found a shape half-drawn: the mode to go back to, and

@@ -68,8 +68,8 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
     shortcuts: [
       { keys: ["A"], description: "Hold to annotate (a shape started meanwhile keeps the mode until it is done)" },
       { keys: ["double-click"], description: "Start an annotation (drag alone moves the view)" },
-      { keys: ["Esc"], description: "Finish the path being drawn (cancels other shapes)" },
-      { keys: ["Backspace"], description: "Discard the shape being drawn" },
+      { keys: ["Backspace"], description: "Remove the last point (the last one discards the shape and leaves annotating)" },
+      { keys: ["Esc"], description: "Discard the shape being drawn and leave annotating" },
       { keys: ["P"], description: "Hold to probe" },
       { keys: ["M"], description: "Hold to design meshes" },
       { keys: ["D"], description: "Draw a path from the probe" },

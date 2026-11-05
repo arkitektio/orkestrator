@@ -6,6 +6,7 @@ import {
   intersectDrawPlane,
   withinSlop,
   intersectFacingPlane,
+  undoLastAnchor,
 } from "./drawGesture";
 
 /**
@@ -167,5 +168,50 @@ describe("intersectFacingPlane", () => {
 
     expect(intersectFacingPlane(parallel, anchor, normal, new THREE.Vector3())).toBeNull();
     expect(intersectFacingPlane(behind, anchor, normal, new THREE.Vector3())).toBeNull();
+  });
+});
+
+describe("undoLastAnchor", () => {
+  it("pops one vertex off a plain chain", () => {
+    expect(
+      undoLastAnchor({ vertices: ["a", "b", "c"], anchors: [1, 2, 3], anchorEnds: [1, 2, 3] }),
+    ).toEqual({ vertices: ["a", "b"], anchors: [1, 2], anchorEnds: [1, 2] });
+  });
+
+  it("cuts a traced edge back to the previous click", () => {
+    // Second click traced through 3 vertices.
+    expect(
+      undoLastAnchor({
+        vertices: ["a", "t1", "t2", "b"],
+        anchors: [1, 2],
+        anchorEnds: [1, 4],
+      }),
+    ).toEqual({ vertices: ["a"], anchors: [1], anchorEnds: [1] });
+    expect(
+      undoLastAnchor({
+        vertices: ["a", "t1", "t2", "b", "t3", "c"],
+        anchors: [1, 2, 3],
+        anchorEnds: [1, 4, 6],
+      }),
+    ).toEqual({ vertices: ["a", "t1", "t2", "b"], anchors: [1, 2], anchorEnds: [1, 4] });
+  });
+
+  it("takes a stroke's two anchors back one at a time", () => {
+    // Click "a", then a stroke: lead edge to "s", stroke s→…→"e".
+    const afterStroke = {
+      vertices: ["a", "s", "p1", "p2", "e"],
+      anchors: ["A", "S", "E"],
+      anchorEnds: [1, 2, 5],
+    };
+    const once = undoLastAnchor(afterStroke);
+    expect(once).toEqual({ vertices: ["a", "s"], anchors: ["A", "S"], anchorEnds: [1, 2] });
+    const twice = undoLastAnchor(once!);
+    expect(twice).toEqual({ vertices: ["a"], anchors: ["A"], anchorEnds: [1] });
+    expect(undoLastAnchor(twice!)).toBeNull();
+  });
+
+  it("is null with one anchor or none — that point is the shape", () => {
+    expect(undoLastAnchor({ vertices: ["a"], anchors: [1], anchorEnds: [1] })).toBeNull();
+    expect(undoLastAnchor({ vertices: ["a"], anchors: [], anchorEnds: [] })).toBeNull();
   });
 });

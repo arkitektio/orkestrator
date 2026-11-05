@@ -6,7 +6,7 @@ import { isTypingTarget } from "../../platform/input/keyboardTarget";
 
 /**
  * Backspace deletes the selected annotations — unless a shape is half-drawn,
- * when Backspace is the drawer's and discards that shape instead
+ * when Backspace is the drawer's and removes its last point instead
  * (`RoiDrawer`). Headless and mounted in
  * `SceneViewport` — it cannot live in an annotation layer card, because sidebar
  * tabs unmount when inactive and the keybinding must not depend on which tab
