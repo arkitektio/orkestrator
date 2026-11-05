@@ -1,4 +1,3 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { RekuestBlok } from "@/core/linkers";
@@ -55,8 +54,6 @@ export const ForkBlokDialog = (props: { id: string; name: string }) => {
         autoFocus
         onChange={(event) => setName(event.target.value)}
       />
-      <DialogError />
-
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel

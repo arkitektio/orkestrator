@@ -1,7 +1,13 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { FolderFragment, useUpdateFolderMutation } from "../api/graphql";
@@ -21,8 +27,11 @@ export const UpdateFolderForm = (props: { folder: FolderFragment }) => {
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>Rename folder</DialogTitle>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -32,20 +41,17 @@ export const UpdateFolderForm = (props: { folder: FolderFragment }) => {
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              <StringField
-                label="New Name"
-                name="name"
-                description="The Name Value"
-              />
-            </div>
-          </div>
+          <DialogBody>
+            <StringField
+              label="Name"
+              name="name"
+            />
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
-            <Button type="submit">Change</Button>
+          <DialogFooter>
+            <Button type="submit">Rename</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

@@ -1,6 +1,11 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -164,7 +169,7 @@ export const AddChartLayerForm = (props: {
     : tables;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <DialogHeader>
         <DialogTitle>Add a layer</DialogTitle>
         <DialogDescription>
@@ -175,7 +180,7 @@ export const AddChartLayerForm = (props: {
       </DialogHeader>
 
       {candidates && (
-        <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+        <DialogBody className="gap-4">
           {candidates.lenses.length > 0 && (
             <Section title="Arrays" hint="read along the axis, as a trace">
               {candidates.lenses.map((lens) => (
@@ -290,7 +295,7 @@ export const AddChartLayerForm = (props: {
               axis and it will be offered here.
             </p>
           )}
-        </div>
+        </DialogBody>
       )}
       {loading && !data && <div className="h-24 animate-pulse rounded-md bg-muted/40" />}
     </div>

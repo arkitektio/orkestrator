@@ -1,7 +1,14 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter, DialogHeader } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import {
   CreateWorkspaceMutation,
@@ -9,7 +16,6 @@ import {
   WorkspaceCarouselDocument,
   WorkspacesDocument,
 } from "@/fluss/api/graphql";
-import { DialogDescription } from "@radix-ui/react-dialog";
 import { useForm } from "react-hook-form";
 
 export const CreateWorkspaceForm = (props: { onSuccess?: (data: CreateWorkspaceMutation | null | undefined) => void }) => {
@@ -23,8 +29,15 @@ export const CreateWorkspaceForm = (props: { onSuccess?: (data: CreateWorkspaceM
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New workspace</DialogTitle>
+        <DialogDescription>
+          A workspace is where you work on a workflow and its versions over
+          time.
+        </DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -33,26 +46,18 @@ export const CreateWorkspaceForm = (props: { onSuccess?: (data: CreateWorkspaceM
             });
           })}
         >
-          <DialogHeader>
-            <h1>Create a new Workspace</h1>
-          </DialogHeader>
-
-          <DialogDescription className="font-light text-sm mt-2">
-            A workspace is way for you to work on a workflow and its various
-            versions over time.
-          </DialogDescription>
-          <div className="grid grid-cols-2 gap-2 mt-2">
+          <DialogBody>
             <StringField
-              label="Lets give it a name"
+              label="Name"
               name="name"
               description="The name of the workspace"
             />
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

@@ -34,7 +34,8 @@ export const MIKRO_DIALOGS = {
   addtocollaboration: AddToCollaborationForm,
   createcollaboration: CreateCollaborationForm,
   sharecollaboration: ShareCollaborationForm,
-  register: RegisterForm,
+  // The axis-mapping table needs the room.
+  register: prefersSize("large", RegisterForm),
   calibrate: CalibrateForm,
   createchart: CreateChartForm,
   createmikrofolder: CreateFolderForm,

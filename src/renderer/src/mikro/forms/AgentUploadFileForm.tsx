@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { acceptsFiles } from "@/core/dnd/files";
 import { useDropTarget } from "@/core/dnd/react";
@@ -91,8 +90,6 @@ export const AgentUploadFileForm = (props: {
       </div>
 
       {progress !== null && <Progress value={progress} />}
-
-      <DialogError />
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={() => props.onCancel?.()}>

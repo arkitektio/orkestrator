@@ -6,6 +6,12 @@ import {
   useAssertStructureExistsMutation,
   useListStructureRelationCategoryQuery
 } from "@/kraph/api/graphql";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { ErrorNote } from "@/core/ui/error-note";
 
 export const RelateStructures = (props: {
@@ -68,24 +74,28 @@ export const RelateStructures = (props: {
   );
 
   return (
-    <div className="flex flex-col w-full h-full items-center justify-center">
-      <div className="flex flex-col space-y-4">Relating structures...</div>
+    <>
+      <DialogHeader>
+        <DialogTitle>Relate structures</DialogTitle>
+        <DialogDescription>Pick how the first structure relates to the second.</DialogDescription>
+      </DialogHeader>
+      <DialogBody className="gap-2">
+        <ErrorNote error={error} title="Couldn't load the relation categories" />
+        {!data && !error && <div className="text-muted-foreground">Loading...</div>}
 
-      <ErrorNote error={error} title="Couldn't load the relation categories" />
-      {!data && !error && <div className="text-muted-foreground">Loading...</div>}
-
-      {data?.structureRelationCategories?.map((category) => (
-        <div
-          key={category.id}
-          className="p-2 border rounded-lg w-full cursor-pointer hover:bg-muted"
-          onClick={() => {
-            if (!submitting) handleRelationCreation(category);
-          }}
-        >
-          <div className="font-bold">{category.label}</div>
-          <div className="text-sm text-muted-foreground">{category.description}</div>
-        </div>
-      ))}
-    </div>
+        {data?.structureRelationCategories?.map((category) => (
+          <button
+            type="button"
+            key={category.id}
+            disabled={submitting}
+            className="p-2 border rounded-lg w-full text-left hover:bg-muted disabled:opacity-50"
+            onClick={() => handleRelationCreation(category)}
+          >
+            <div className="font-medium">{category.label}</div>
+            <div className="text-muted-foreground">{category.description}</div>
+          </button>
+        ))}
+      </DialogBody>
+    </>
   );
 };

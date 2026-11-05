@@ -4,7 +4,14 @@ import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -39,8 +46,12 @@ const TForm = (props: { graph?: string; onSuccess?: (data: CreateNaturalEventCat
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New natural event category</DialogTitle>
+        <DialogDescription>An event that happens to entities on its own, without anyone carrying it out.</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -51,45 +62,43 @@ const TForm = (props: { graph?: string; onSuccess?: (data: CreateNaturalEventCat
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              {!props.graph && (
-                <>
-                  <GraphQLSearchField
-                    label="Graph"
-                    name="graph"
-                    description="What graph do you want to add this expression to?"
-                    searchQuery={search}
-                  />
-                </>
-              )}
-              <StringField
-                label="Label"
-                name="label"
-                description="Whats the expression? (e.g. 'Person' or 'Connected to')"
-              />
-              <ParagraphField
-                label="Description"
-                name="description"
-                description="What describes your expression the best? (e.g. 'A person is a human being')"
-              />
-              <StringField
-                label="PURL"
-                name="purl"
-                description="What is the PURL of this expression?"
-              />
-            </div>
-          </div>
+          <DialogBody>
+            {!props.graph && (
+              <>
+                <GraphQLSearchField
+                  label="Graph"
+                  name="graph"
+                  description="What graph do you want to add this expression to?"
+                  searchQuery={search}
+                />
+              </>
+            )}
+            <StringField
+              label="Label"
+              name="label"
+              description="Whats the expression? (e.g. 'Person' or 'Connected to')"
+            />
+            <ParagraphField
+              label="Description"
+              name="description"
+              description="What describes your expression the best? (e.g. 'A person is a human being')"
+            />
+            <StringField
+              label="PURL"
+              name="purl"
+              description="What is the PURL of this expression?"
+            />
+          </DialogBody>
 
               <SwitchField
                 label="Draw existing evidence"
                 name="backfill"
                 description="Claims already made under this word are in the organization's evidence base. With this on they are projected into the graph now, instead of waiting for the next reproject — which takes as long as the evidence base is large."
               />
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

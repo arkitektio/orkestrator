@@ -2,6 +2,7 @@ import { MikroGuard } from "@/mikro/api/funcs";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
+  DialogBody,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -92,7 +93,7 @@ const SourcePicker = (props: {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto">
+      <DialogBody className="gap-3">
         <div className="flex flex-col gap-1">
           <div className="text-xs font-medium uppercase text-muted-foreground">
             Datasets
@@ -151,7 +152,7 @@ const SourcePicker = (props: {
               </div>
             ),
         )}
-      </div>
+      </DialogBody>
     </>
   );
 };
@@ -252,7 +253,7 @@ const TargetPicker = (props: {
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Input
         placeholder="Search coordinate systems…"
         value={search}
@@ -262,7 +263,7 @@ const TargetPicker = (props: {
         }}
         onFocus={() => runSearch({ variables: { search: search || undefined } })}
       />
-      <div className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
+      <DialogBody className="gap-1">
         {options.map((option) => (
           <PickerRow
             key={option.value}
@@ -275,7 +276,7 @@ const TargetPicker = (props: {
             {search ? "No coordinate systems found" : "Search for a target space"}
           </div>
         )}
-      </div>
+      </DialogBody>
     </div>
   );
 };
@@ -350,7 +351,7 @@ const RegisterFormInner = (props: RegisterFormProps) => {
         : "edge";
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Register</DialogTitle>
         <DialogDescription>

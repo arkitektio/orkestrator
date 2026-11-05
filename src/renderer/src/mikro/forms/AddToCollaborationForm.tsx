@@ -3,7 +3,12 @@ import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { Check, Plus, Share2 } from "lucide-react";
 import { useState } from "react";
@@ -91,7 +96,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
           derived from it as chosen below; whoever the collaboration is shared with sees nothing else.
         </DialogDescription>
       </DialogHeader>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
         <DerivedDataPicker selection={derived} />
         <form
           className="flex items-center gap-2"
@@ -106,7 +111,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
             Create
           </Button>
         </form>
-        <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+        <DialogBody className="gap-1">
           {loading && collaborations.length === 0 && <div className="text-sm text-muted-foreground">Loading…</div>}
           {!loading && collaborations.length === 0 && (
             <div className="text-sm text-muted-foreground">No collaborations yet: name one above.</div>
@@ -130,7 +135,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
               </Button>
             );
           })}
-        </div>
+        </DialogBody>
       </div>
     </>
   );

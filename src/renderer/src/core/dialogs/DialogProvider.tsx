@@ -64,14 +64,56 @@ type ExtractProps<T> =
  * How much of the page a dialog takes. `small` is for confirmations and
  * one-field prompts only; a form is `medium`, a form with a side panel
  * `large`, a workspace `full`. Never wider than the page it covers.
+ *
+ * `small` and `medium` fit their content between a floor and a cap: a short
+ * form opens narrow, a long description wraps at the cap. `large` and `full`
+ * are fixed, for what has no width of its own (a canvas, a flow, an editor,
+ * a chat) and would collapse to the floor if it were fitted. A dialog opened
+ * without a size fits like `medium`.
  */
 export type DialogSize = "small" | "medium" | "large" | "full";
 
 export const DIALOG_SIZES: Record<DialogSize, string> = {
-  small: "w-[min(96cqw,28rem)] max-w-[min(96cqw,28rem)]",
-  medium: "w-[min(96cqw,44rem)] max-w-[min(96cqw,44rem)]",
+  small: "w-fit min-w-[min(96cqw,20rem)] max-w-[min(96cqw,28rem)]",
+  medium: "w-fit min-w-[min(96cqw,24rem)] max-w-[min(96cqw,44rem)]",
   large: "w-[min(96cqw,64rem)] max-w-[min(96cqw,64rem)]",
   full: "w-[96cqw] max-w-[96cqw] min-h-[80cqh]",
+};
+
+/** A sheet's width (left/right) by size; the same names as a dialog's. */
+export const SHEET_SIZES: Record<DialogSize, string> = {
+  small: "!w-[min(96cqw,24rem)] !max-w-none",
+  medium: "!w-[min(96cqw,32rem)] !max-w-none",
+  large: "!w-[min(96cqw,48rem)] !max-w-none",
+  full: "!w-[90cqw] !max-w-none",
+};
+
+/**
+ * A fitted dialog never gets narrower while it is open: a tab switch or a
+ * list that empties would otherwise make it jump. Holds the widest width seen
+ * as its `min-width` (never more than the page), and lets go on `key` change
+ * (another dialog opened in the same frame).
+ */
+const useGrowOnlyWidth = (key: unknown, enabled: boolean) => {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!node || !enabled || typeof ResizeObserver === "undefined") return;
+    let widest = 0;
+    node.style.minWidth = "";
+    const observer = new ResizeObserver(() => {
+      // offsetWidth is the layout width: the open animation's scale is not in it.
+      const width = node.offsetWidth;
+      if (width <= widest) return;
+      widest = width;
+      node.style.minWidth = `min(${width}px, 96cqw)`;
+    });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      node.style.minWidth = "";
+    };
+  }, [node, key, enabled]);
+  return setNode;
 };
 
 // Dialog/Sheet state type
@@ -345,9 +387,12 @@ export function createDialogProvider<
     );
 
     const Component = modalState.id ? registry[modalState.id] : null;
-    // The caller's size, else the one the dialog declared (`prefersSize`).
-    const dialogSize =
-      modalState.size ?? (modalState.className ? undefined : dialogPreferredSize(Component));
+    // The caller's size, else the one the dialog declared (`prefersSize`),
+    // else fitted like `medium`. A caller's own className still wins over it.
+    const dialogSize: DialogSize =
+      modalState.size ?? dialogPreferredSize(Component) ?? "medium";
+    const fitted = dialogSize === "small" || dialogSize === "medium";
+    const growOnly = useGrowOnlyWidth(modalState, fitted && modalState.type === "dialog");
 
     // The three callbacks are stable, so the context value must be too:
     // otherwise every dialog open/close republishes and rerenders all
@@ -365,12 +410,9 @@ export function createDialogProvider<
           modal={true}
         >
           {Component && (
-            <DialogContent container={modalState.container} className={cn(
+            <DialogContent ref={growOnly} container={modalState.container} className={cn(
               "text-foreground",
-              // A tall dialog scrolls inside the page instead of leaving it.
-              "w-[min(96cqw,1200px)] max-w-[min(96cqw,1200px)] max-h-[90cqh] overflow-y-auto",
-              dialogSize && DIALOG_SIZES[dialogSize],
-              !modalState.className && dialogSize === undefined && "min-w-[80cqw]",
+              DIALOG_SIZES[dialogSize],
               // Last: a caller's own width wins over the size.
               modalState.className,
             )}>
@@ -394,22 +436,13 @@ export function createDialogProvider<
               className={cn(
                 // Padded by default; a sheet that lays out its own edges
                 // (its own SheetHeader) opens with `className: "p-0"`.
-                "text-foreground p-6 overflow-y-auto",
-                // Reset default width/height classes when custom dimensions are provided
-                modalState.className &&
-                (modalState.className.includes("w-") ||
-                  modalState.className.includes("!w-") ||
-                  modalState.className.includes("max-w-")) &&
-                "!w-auto !max-w-none",
-                modalState.className &&
-                (modalState.className.includes("h-") ||
-                  modalState.className.includes("!h-") ||
-                  modalState.className.includes("max-h-")) &&
-                "!h-auto !max-h-[90cqh]",
+                "text-foreground p-6 [--dialog-pad:--spacing(6)] gap-4 overflow-y-auto",
+                modalState.size &&
+                  (modalState.side === "top" || modalState.side === "bottom"
+                    ? "max-h-[90cqh]"
+                    : SHEET_SIZES[modalState.size]),
+                // Last: a caller's own width wins over the size.
                 modalState.className,
-                modalState.size === "small" && "!max-w-sm w-[20cqw]",
-                modalState.size === "medium" && "!max-w-md w-[30cqw]",
-                modalState.size === "large" && "!max-w-lg w-[60cqw]",
               )}
             >
               {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}

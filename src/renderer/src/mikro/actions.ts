@@ -240,7 +240,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       if (objects.length === 0) throw new Error('Nothing selected can be put in a collaboration')
       // Room for the lineage graph when something selected has derived data to pick from.
       const walkable = objects.some((object) => lineageRootOf(object) !== null)
-      dialog.openDialog('addtocollaboration', { objects }, walkable ? { size: 'large' } : { className: 'max-w-lg' })
+      dialog.openDialog('addtocollaboration', { objects }, walkable ? { size: 'large' } : undefined)
     },
   },
   'share-collaboration': {
@@ -733,8 +733,6 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog(
         'register',
         { target: selected.id },
-        // The axis-mapping table needs the width addlayer already claims.
-        { className: 'max-w-3xl' },
       );
     },
   },
@@ -762,8 +760,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         {
           target: target.id,
           source: { kind: 'arrayDataset', id: dataset.id },
-        },
-        { className: 'max-w-3xl' },
+        }
       );
     },
   },
@@ -791,8 +788,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         {
           target: target.id,
           source: { kind: 'tabledataset', id: table.id },
-        },
-        { className: 'max-w-3xl' },
+        }
       );
     },
   },
@@ -815,8 +811,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
       dialog.openDialog(
         'calibrate',
-        { dataset: selected.id },
-        { className: 'max-w-2xl' },
+        { dataset: selected.id }
       );
     },
   },
@@ -839,8 +834,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
       dialog.openDialog(
         'register',
-        { source: { kind: 'arrayDataset', id: selected.id } },
-        { className: 'max-w-3xl' },
+        { source: { kind: 'arrayDataset', id: selected.id } }
       );
     },
   },
@@ -865,8 +859,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
 
       dialog.openDialog(
         'addlayer',
-        { scene: selected.id },
-        { className: 'max-w-3xl' },
+        { scene: selected.id }
       );
     },
   },
@@ -889,8 +882,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
       dialog.openDialog(
         'addlayer',
-        { scene: scene.id, lens: lens.id },
-        { className: 'max-w-3xl' },
+        { scene: scene.id, lens: lens.id }
       );
     },
   },
@@ -1063,7 +1055,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
           `${data.fixture.label} has no placement in this scene's world yet. Register it into the world first: "Register Into…" on the model.`,
         );
       }
-      dialog.openDialog('addlayer', { scene: scene.id, lens }, { className: 'max-w-3xl' });
+      dialog.openDialog('addlayer', { scene: scene.id, lens });
     },
   },
   // Placing a model is registering its space: the edge from the model's own
@@ -1137,8 +1129,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
 
       dialog.openDialog(
         'movetofolder',
-        { subject: { kind: 'file', ids } },
-        { className: 'max-w-lg' },
+        { subject: { kind: 'file', ids } }
       )
     },
   },
@@ -1162,8 +1153,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
 
       dialog.openDialog(
         'movetofolder',
-        { subject: { kind: 'arrayDataset', ids } },
-        { className: 'max-w-lg' },
+        { subject: { kind: 'arrayDataset', ids } }
       )
     },
   },

@@ -3,6 +3,12 @@ import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { AutoDerivedStringField, StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
+import {
+  DialogDescription,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Input } from "@/core/ui/input";
 import { ScrollArea } from "@/core/ui/scroll-area";
@@ -131,17 +137,21 @@ export const CreateNewMeasurement = (props: {
   );
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 pt-4 pb-3 border-b">
-        <h2 className="text-xl font-semibold">Create Measurement Category</h2>
-      </div>
+    <>
+      <DialogHeader>
+        <DialogTitle>New measurement category</DialogTitle>
+        <DialogDescription>
+          What a structure measures about an entity: map structure categories on the left to entity categories on the right.
+        </DialogDescription>
+      </DialogHeader>
 
       <Form {...form}>
-        <form
+        {/* Three panes that each scroll: the form has a height of its own. */}
+        <DialogForm
           onSubmit={form.handleSubmit(handleSubmit)}
-          className="flex flex-1 overflow-hidden"
+          className="h-[min(70cqh,40rem)] flex-none overflow-hidden rounded-lg border"
         >
-          <div className="grid grid-cols-3 flex-1 divide-x overflow-hidden">
+          <div className="grid grid-cols-3 flex-1 min-h-0 divide-x overflow-hidden">
             {/* Left Pane — Structure Categories */}
             <div className="flex flex-col overflow-hidden p-4 gap-3">
               <div>
@@ -236,7 +246,7 @@ export const CreateNewMeasurement = (props: {
               <div className="mt-auto pt-4 flex flex-col gap-2">
                 <DialogError />
                 <Button type="submit" className="w-full" disabled={submitting}>
-                  Create Measurement Category
+                  Create
                 </Button>
               </div>
             </div>
@@ -308,8 +318,8 @@ export const CreateNewMeasurement = (props: {
               </ScrollArea>
             </div>
           </div>
-        </form>
+        </DialogForm>
       </Form>
-    </div>
+    </>
   );
 };

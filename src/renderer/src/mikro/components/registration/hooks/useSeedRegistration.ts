@@ -34,7 +34,7 @@ export const useSeedRegistration = () => {
             ? ({ kind: "tabledataset", id: layer.data.id } as const)
             : ({ kind: "coordinatesystem", id: layer.data.id } as const);
       api.getState().setPending(layerId);
-      openDialog("register", { target: world.id, source }, { className: "max-w-3xl" });
+      openDialog("register", { target: world.id, source });
     },
     [api, layers, world.id, openDialog],
   );

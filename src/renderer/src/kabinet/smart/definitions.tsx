@@ -60,7 +60,7 @@ export const InstallDefinitionRow = ({ definition }: { definition: SmartDefiniti
         setFailure({ title: "No release brings this definition" });
         return;
       }
-      openDialog("installrelease", { release: release.id }, { className: "max-w-xl" });
+      openDialog("installrelease", { release: release.id });
     } catch (error) {
       setFailure({
         title: "Could not find its release",

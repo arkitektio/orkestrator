@@ -103,7 +103,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
         variant="outline"
         size="sm"
         onClick={() =>
-          openDialog("register", { target: system.id }, { className: "max-w-3xl" })
+          openDialog("register", { target: system.id })
         }
       >
         <Waypoints className="mr-2 h-4 w-4" />
@@ -124,8 +124,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
         onClick={() =>
           openDialog(
             "calibrate",
-            { dataset: calibrateDataset.id },
-            { className: "max-w-2xl" },
+            { dataset: calibrateDataset.id }
           )
         }
       >

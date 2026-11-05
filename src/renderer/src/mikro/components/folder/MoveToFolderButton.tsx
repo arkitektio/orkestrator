@@ -114,8 +114,7 @@ export const MoveToFolderButton = ({
           onSelect={() =>
             openDialog(
               "movetofolder",
-              { subject, currentFolder: currentFolder?.id ?? null },
-              { className: "max-w-lg" },
+              { subject, currentFolder: currentFolder?.id ?? null }
             )
           }
           className="flex items-center gap-2"
@@ -127,8 +126,7 @@ export const MoveToFolderButton = ({
           onSelect={() =>
             openDialog(
               "movetofolder",
-              { subject, currentFolder: currentFolder?.id ?? null, startCreating: true },
-              { className: "max-w-lg" },
+              { subject, currentFolder: currentFolder?.id ?? null, startCreating: true }
             )
           }
           className="flex items-center gap-2"

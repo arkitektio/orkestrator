@@ -392,7 +392,7 @@ export const KRAPH_ACTIONS = {
         {
           graph: state.left[0].id,
         },
-        { className: "w-[600px] max-w-none" },
+        { size: "large" },
       );
     },
     collections: ["io"],

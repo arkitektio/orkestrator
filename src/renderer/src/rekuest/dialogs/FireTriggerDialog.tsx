@@ -1,4 +1,3 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
@@ -189,8 +188,6 @@ export const FireTriggerDialog = (props: { signal?: string; trigger?: string }) 
       </section>
 
       {refused && <p className="text-sm text-destructive">{refused}</p>}
-      <DialogError />
-
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel

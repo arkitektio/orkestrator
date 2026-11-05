@@ -5,7 +5,13 @@ import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/core/ui/accordion";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Trash2 } from "lucide-react";
 import { buildDerivationRule } from "../components/schema-builder/utils";
@@ -69,12 +75,15 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>Edit entity category</DialogTitle>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(submit)}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
+          <DialogBody>
+            <div className="flex-col gap-1 flex">
               <StringField
                 label="Label"
                 name="label"
@@ -87,8 +96,8 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
               />
             </div>
 
-            <div className="col-span-2 flex-col gap-2 flex">
-              <h3 className="text-lg font-semibold">Property Definitions</h3>
+            <div className="flex-col gap-2 flex">
+              <h3 className="text-sm font-medium">Property definitions</h3>
               <p className="text-sm text-muted-foreground">
                 Define custom properties for entities of this category
               </p>
@@ -183,12 +192,12 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
                 </Button>
               </div>
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit" disabled={submitting}>Save</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

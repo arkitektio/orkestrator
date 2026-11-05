@@ -2,7 +2,13 @@ import { ElektroGuard } from "@/elektro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
@@ -105,7 +111,7 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Add a layer</DialogTitle>
         <DialogDescription>{KINDS.find((k) => k.value === kind)?.hint}</DialogDescription>
@@ -126,7 +132,7 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
         ))}
       </div>
       <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
-      <div className="flex max-h-72 min-h-24 flex-col gap-1 overflow-y-auto">
+      <DialogBody className="min-h-24 gap-1">
         {items.length === 0 && (
           <div className="p-3 text-xs text-muted-foreground">
             {loading ? "Loading…" : "Nothing to add of this kind."}
@@ -150,15 +156,15 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
             {item.detail && <span className="truncate font-mono text-[10px] text-muted-foreground">{item.detail}</span>}
           </button>
         ))}
-      </div>
-      <div className="flex justify-end gap-2">
+      </DialogBody>
+      <DialogFooter>
         <Button variant="ghost" onClick={closeDialog}>
           Cancel
         </Button>
         <Button disabled={!picked || creating} onClick={() => void create()}>
           {creating ? "Adding…" : "Add layer"}
         </Button>
-      </div>
+      </DialogFooter>
     </div>
   );
 };

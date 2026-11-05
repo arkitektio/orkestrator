@@ -1,7 +1,13 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { DetailDeviceFragment, UpdateDeviceMutationVariables, useUpdateDeviceMutation } from "../api/graphql";
@@ -25,8 +31,11 @@ export const UpdateComputeNodeForm = (props: {
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>Rename device</DialogTitle>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             return await update({
               variables: {
@@ -35,19 +44,17 @@ export const UpdateComputeNodeForm = (props: {
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <div className="col-span-2 flex-col gap-1 flex">
-              <StringField
-                label="Name"
-                name="name"
-                description="The name of the compute node."
-              />
-            </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button type="submit">Update</Button>
+          <DialogBody>
+            <StringField
+              label="Name"
+              name="name"
+              description="The name of the compute node."
+            />
+          </DialogBody>
+          <DialogFooter>
+            <Button type="submit">Rename</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

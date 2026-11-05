@@ -1,7 +1,14 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -36,8 +43,12 @@ export const UpdateServiceInstanceForm = (props: {
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>Service instance access</DialogTitle>
+        <DialogDescription>Who may use this service instance.</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             return await cre({
               variables: {
@@ -46,39 +57,36 @@ export const UpdateServiceInstanceForm = (props: {
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <div className="col-span-2 flex-col gap-1 flex">
-              <GraphQLListSearchField
-                label="Allowed Users"
-                name="allowedUsers"
-                searchQuery={userSearch}
-                description="Users that are allowed to access this service instance."
-              />
-              <GraphQLListSearchField
-                label="Denied Users"
-                name="deniedUsers"
-                searchQuery={userSearch}
-                description="Users that are denied to access this service instance."
-              />
-              <GraphQLListSearchField
-                label="Allowed Groups"
-                name="allowedGroups"
-                searchQuery={groupSearch}
-                description="Groups that are allowed to access this service instance."
-              />
-              <GraphQLListSearchField
-                label="Denied Groups"
-                name="deniedGroups"
-                searchQuery={groupSearch}
-                description="Groups that are denied to access this service instance."
-              />
-            </div>
-            <div className="grid cols-2 w-full"></div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button type="submit">Change</Button>
+          <DialogBody>
+            <GraphQLListSearchField
+              label="Allowed Users"
+              name="allowedUsers"
+              searchQuery={userSearch}
+              description="Users that are allowed to access this service instance."
+            />
+            <GraphQLListSearchField
+              label="Denied Users"
+              name="deniedUsers"
+              searchQuery={userSearch}
+              description="Users that are denied to access this service instance."
+            />
+            <GraphQLListSearchField
+              label="Allowed Groups"
+              name="allowedGroups"
+              searchQuery={groupSearch}
+              description="Groups that are allowed to access this service instance."
+            />
+            <GraphQLListSearchField
+              label="Denied Groups"
+              name="deniedGroups"
+              searchQuery={groupSearch}
+              description="Groups that are denied to access this service instance."
+            />
+          </DialogBody>
+          <DialogFooter>
+            <Button type="submit">Save</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

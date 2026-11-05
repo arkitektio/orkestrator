@@ -6,8 +6,10 @@ import { FloatField } from "@arkitektio/bsx/ports/forms/FloatField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import {
+  DialogBody,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
@@ -646,7 +648,8 @@ const LensLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <InferredKind
           kinds={suggestion.kinds}
           info={LAYER_KIND_INFO}
@@ -712,13 +715,14 @@ const LensLayerForm = (props: {
           </div>
         )}
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -894,7 +898,8 @@ const TableLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <LensChoice typename="TableLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <InferredKind
           kinds={props.entry.kinds}
@@ -939,13 +944,14 @@ const TableLayerForm = (props: {
           )}
         </div>
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -1003,7 +1009,8 @@ const MeshLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <LensChoice typename="MeshLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <div className="grid grid-cols-2 gap-2">
           <SwitchField
@@ -1018,13 +1025,14 @@ const MeshLayerForm = (props: {
           />
         </div>
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -1078,7 +1086,8 @@ const FixtureLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <LensChoice typename="FixtureLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <FloatField
           name="opacity"
@@ -1086,13 +1095,14 @@ const FixtureLayerForm = (props: {
           description="Below 1 the model is see-through and stops hiding the volume behind it. Leave empty for opaque"
         />
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -1155,7 +1165,8 @@ const NetworkLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <LensChoice typename="NetworkLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <div className="grid grid-cols-2 gap-2">
           <SwitchField
@@ -1170,13 +1181,14 @@ const NetworkLayerForm = (props: {
           />
         </div>
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -1231,7 +1243,8 @@ const AnnotationLayerForm = (props: {
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <DialogForm onSubmit={onSubmit}>
+        <DialogBody>
         <LensChoice
           typename="AnnotationLens"
           lenses={props.lenses}
@@ -1244,13 +1257,14 @@ const AnnotationLayerForm = (props: {
           description="Leave empty for the default"
         />
 
-        <DialogFooter className="mt-2">
+        </DialogBody>
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={props.onBack}>
             Back
           </Button>
           <Button type="submit">Add layer</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
   );
 };
@@ -1456,7 +1470,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
   }, [props.lens, sections, windowLenses, source]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Add layer</DialogTitle>
         <DialogDescription>
@@ -1475,7 +1489,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto">
+          <DialogBody className="gap-4">
             {sections.map((section) => (
               <SectionView
                 key={section.id}
@@ -1490,7 +1504,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
                   : "Nothing can reach this scene's world yet — register something into it first"}
               </div>
             )}
-          </div>
+          </DialogBody>
         </>
       ) : source.kind === "lens" ? (
         <LensLayerForm

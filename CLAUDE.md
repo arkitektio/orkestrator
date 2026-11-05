@@ -76,14 +76,31 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
   `Sheet`. `closeDialog()` dismisses.
 - **Rendering:** the provider renders the matched component inside one shared
   `DialogContent` / `SheetContent`; the registry has already wrapped it in its
-  module's guard (and those of the services it declares with `needsServices`). Default dialog
-  is wide (`min-w-[80vw]` when no `size`/`className` given) — pass `size` /
-  `className` to shrink. The component receives its props directly and calls
-  `closeDialog()` itself (e.g. after a successful mutation).
+  module's guard (and those of the services it declares with `needsServices`).
+  The component receives its props directly and calls `closeDialog()` itself
+  (e.g. after a successful mutation).
+- **Size fits the content.** With no `size` a dialog is `w-fit` between a floor
+  and a cap (like `medium`: 24rem–44rem, never wider than the page); `small` /
+  `medium` name the cap. While open it only grows, so a tab switch never makes
+  it jump. `large` / `full` are FIXED widths, for what has no natural width (a
+  canvas, a flow, an editor, a chat): `fit-content` would collapse it to the
+  floor. Declare that once on the dialog, `prefersSize("large", Dialog)` in
+  `dialogRegistry.ts`, not at each `openDialog`. A `className` width at the call
+  site is a last resort. Sheets take the same names (`SHEET_SIZES`).
+- **Anatomy** (`core/ui/dialog.tsx`): `DialogHeader` (`DialogTitle`, required,
+  `app/modules/dialogAnatomy.test.ts` checks it; + `DialogDescription`),
+  `DialogBody` (the part that scrolls), `DialogFooter` (buttons). The content is
+  a flex column capped at 90% of the page: header and footer stay put, the body
+  scrolls; never add your own `max-h-[50vh] overflow-y-auto` list. A `<form>`
+  around body + footer is a `DialogForm` (it carries the column on); a wrapper
+  div between the content and the body needs `flex min-h-0 flex-1 flex-col`.
+  Without a `DialogBody` the whole dialog scrolls, as before. A failed submit
+  shows above the first `DialogFooter`'s buttons (§8).
 
-**To add a dialog:** build the component (own props, `closeDialog` on success),
-add it to its module's `<module>/dialogRegistry.ts`, then open it by id from
-anywhere with `useDialog()`.
+**To add a dialog:** build the component (own props, `closeDialog` on success)
+as `DialogHeader` → `DialogForm`/`DialogBody` → `DialogFooter`, add it to its
+module's `<module>/dialogRegistry.ts` (with `prefersSize` if it has no natural
+width), then open it by id from anywhere with `useDialog()`.
 
 ## 3. Local actions are the primary way to add model-specific actions
 
@@ -242,10 +259,13 @@ Rules:
     module's object; the owner registers it in `displays`.
   - **Page sections:** a module adds to another model's page with a
     `pageSections` builtin (`placement: sidebar | main | actions`, matched by
-    identifier or `datum`), or a host slot (`knowledge`, `chat`, `home`,
-    `notifications`). The page names the place with
+    identifier or `datum`), or a host slot (`knowledge`, `chat`, `pagebar`,
+    `home`, `notifications`). The page names the place with
     `<PageSections placement=… identifier object />`; the host-drawn Knowledge
-    and Chat sidebars are the `knowledge` / `chat` slots (`<SlotSections>`).
+    and Chat sidebars are the `knowledge` / `chat` slots (`<SlotSections>`),
+    and `pagebar` is every model page's top bar (`ModelPageLayout`: small
+    icon buttons, after the page's own actions; read `useActionSlotMode` so
+    they fold into the bar's burger).
     A page passes only what the section needs (`{ id, clientId }`), not its
     whole fragment.
     When the caller holds a foreign key instead of the model's id, say which
@@ -359,7 +379,8 @@ bar's palette. No sonner, no other toaster. `import { toast } from
   `DialogErrorScope` (`core/dialogs/DialogError.tsx`). Submit with
   `useDialogSubmit(fn, { errorTitle, successMessage?, close? })` (or
   `useGraphQLDialog` for one mutation): on a throw the dialog stays open with
-  the reason at its foot; render `<DialogError />` to place it elsewhere.
+  the reason above its `DialogFooter`'s buttons (at its foot when it has no
+  footer); render `<DialogError />` to place it elsewhere.
   Never `closeDialog()` in a `finally`. Port-form validation reports the
   same way (`useReportValidation`). Inline errors outside dialogs use
   `ErrorNote` (`core/ui/error-note.tsx`).

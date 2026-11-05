@@ -1,4 +1,3 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
@@ -58,7 +57,6 @@ export const InstallRepoBlokDialog = (props: { id: string; update?: boolean }) =
         </DialogDescription>
       </DialogHeader>
       <p className="break-all font-mono text-xs text-muted-foreground">{blok.origin}</p>
-      <DialogError />
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel

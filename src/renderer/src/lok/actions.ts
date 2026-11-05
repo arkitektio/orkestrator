@@ -29,7 +29,7 @@ export const LOK_ACTIONS = {
         .filter((item) => item.identifier === '@lok/user')
         .map((item) => item.id)
 
-      dialog.openSheet('addusertoorganization', { users }, { className: 'max-w-4xl' })
+      dialog.openSheet('addusertoorganization', { users }, { size: 'large' })
     }
   },
   revoke_mandate: {

@@ -1,4 +1,4 @@
-import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { describeError } from "@/core/notify";
 import { RekuestSchedule, RekuestTrigger } from "@/core/linkers";
@@ -721,8 +721,6 @@ export const AutomationBuilder = ({
           </ScrollArea>
 
           {failure && <p className="text-sm text-destructive">{failure}</p>}
-          <DialogError />
-
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeDialog} disabled={isSubmitting}>
               Cancel

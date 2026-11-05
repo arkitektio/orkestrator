@@ -1,6 +1,11 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import React, { useState } from "react";
 import {
@@ -41,7 +46,7 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Move {messages.length === 1 ? "mail" : `${messages.length} mails`}</DialogTitle>
         {accounts.length > 1 && (
@@ -51,7 +56,7 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
       {accounts.length === 1 && (
         <>
           <Input autoFocus placeholder="Folder…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-          <div className="flex max-h-80 flex-col overflow-y-auto">
+          <DialogBody className="gap-0">
             {folders.map((folder) => (
               <Button
                 key={folder.id}
@@ -64,7 +69,7 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
                 <span className="truncate">{folder.path}</span>
               </Button>
             ))}
-          </div>
+          </DialogBody>
         </>
       )}
     </div>

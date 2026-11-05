@@ -2,6 +2,7 @@ import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
+  DialogBody,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -97,7 +98,7 @@ export const MoveToFolderForm = (props: MoveToFolderFormProps) => {
           Move {describeSubject(props.subject)} into a folder
         </DialogDescription>
       </DialogHeader>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex items-center gap-2">
           <Input
             placeholder="Search folders…"
@@ -118,7 +119,7 @@ export const MoveToFolderForm = (props: MoveToFolderFormProps) => {
             New folder
           </Button>
         </div>
-        <div className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
+        <DialogBody className="gap-1">
           {search ? (
             <>
               {results.map((folder) => (
@@ -167,7 +168,7 @@ export const MoveToFolderForm = (props: MoveToFolderFormProps) => {
               onCreate={createAndMove}
             />
           )}
-        </div>
+        </DialogBody>
       </div>
     </>
   );

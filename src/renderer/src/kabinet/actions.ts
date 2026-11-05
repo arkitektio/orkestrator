@@ -32,7 +32,7 @@ export const KABINET_ACTIONS: Record<string, Action> = {
       if (!release) {
         throw new Error('No release selected')
       }
-      dialog.openDialog('installrelease', { release: String(release.id) }, { className: 'max-w-xl' })
+      dialog.openDialog('installrelease', { release: String(release.id) })
     }
   },
   'deploy-release': {
@@ -48,7 +48,7 @@ export const KABINET_ACTIONS: Record<string, Action> = {
       if (!release) {
         throw new Error('No release selected')
       }
-      dialog.openDialog('deployrelease', { release: String(release.id) }, { className: 'max-w-xl' })
+      dialog.openDialog('deployrelease', { release: String(release.id) })
     }
   },
   'deploy-approval': {
@@ -77,8 +77,7 @@ export const KABINET_ACTIONS: Record<string, Action> = {
       })
       dialog.openDialog(
         'deployrelease',
-        { release: data.releaseApproval.release.id, approval: String(approval.id) },
-        { className: 'max-w-xl' },
+        { release: data.releaseApproval.release.id, approval: String(approval.id) }
       )
     }
   },

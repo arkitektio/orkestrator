@@ -2,6 +2,14 @@ import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { DateTimePicker } from "@/core/ui/datetime-picker";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
@@ -333,23 +341,19 @@ export const CreateEntityWithPropertiesDialog = (props: {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">Create New {props.category.label}</h2>
-        <p className="text-sm text-muted-foreground">
+    <>
+      <DialogHeader>
+        <DialogTitle>New {props.category.label}</DialogTitle>
+        <DialogDescription>
           Fill in the details to create a new entity
-        </p>
-      </div>
+        </DialogDescription>
+      </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-          {/* Dynamic Property Fields */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Properties</h3>
-
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DialogForm onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogBody>
+            <h3 className="text-sm font-medium">Properties</h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">
               {props.category.propertyDefinitions.map((def) => (
                 <Controller
                   key={def.key}
@@ -366,13 +370,9 @@ export const CreateEntityWithPropertiesDialog = (props: {
                 />
               ))}
             </div>
-          </div>
+          </DialogBody>
 
-          {/* Footer */}
-          <div className="flex gap-2 pt-4 border-t">
-            <Button type="submit" disabled={submitting} className="flex-1">
-              {submitting ? "Creating..." : createdId.current ? "Record the remaining values" : "Create Entity"}
-            </Button>
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -381,9 +381,12 @@ export const CreateEntityWithPropertiesDialog = (props: {
             >
               Cancel
             </Button>
-          </div>
-        </form>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : createdId.current ? "Record the remaining values" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogForm>
       </Form>
-    </div>
+    </>
   );
 };

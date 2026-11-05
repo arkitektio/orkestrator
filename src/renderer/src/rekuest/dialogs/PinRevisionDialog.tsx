@@ -1,9 +1,15 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/core/ui/radio-group";
 import Timestamp from "@/core/ui/timestamp";
 import {
@@ -31,14 +37,14 @@ const Choices = (props: { materializedBlokId: string; blokId: string; pinned: st
   if (!blok) return <Loader2 className="m-6 size-5 animate-spin text-muted-foreground" />;
 
   return (
-    <form
-      className="flex flex-col gap-4"
+    <DialogForm
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
-      <RadioGroup value={choice} onValueChange={setChoice} className="max-h-96 gap-0 overflow-y-auto">
+      <DialogBody>
+      <RadioGroup value={choice} onValueChange={setChoice} className="gap-0">
         <label className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50">
           <RadioGroupItem value={LATEST} />
           <span className="flex-1 text-sm">
@@ -56,7 +62,7 @@ const Choices = (props: { materializedBlokId: string; blokId: string; pinned: st
           </label>
         ))}
       </RadioGroup>
-      <DialogError />
+      </DialogBody>
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel
@@ -65,7 +71,7 @@ const Choices = (props: { materializedBlokId: string; blokId: string; pinned: st
           {choice === LATEST ? "Follow the latest" : "Keep at this revision"}
         </Button>
       </DialogFooter>
-    </form>
+    </DialogForm>
   );
 };
 
@@ -81,7 +87,7 @@ export const PinRevisionDialog = (props: { id: string }) => {
   if (!materializedBlok) return <Loader2 className="m-6 size-5 animate-spin text-muted-foreground" />;
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <DialogHeader>
         <DialogTitle>Revision of {materializedBlok.name || materializedBlok.blok.name}</DialogTitle>
         <DialogDescription>
@@ -97,6 +103,6 @@ export const PinRevisionDialog = (props: { id: string }) => {
           pinned={materializedBlok.pinnedRevision?.id ?? null}
         />
       )}
-    </div>
+    </>
   );
 };

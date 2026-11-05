@@ -9,8 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/ui/card";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
-import { ScrollArea } from "@/core/ui/scroll-area";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   ListMeasurementCategoryWithGraphFragment,
@@ -109,55 +115,47 @@ export const SetAsMeasurement = (props: {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="border-b px-6 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Set As Measurement
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Pick the {targetCategory?.label ?? "entity"} this structure measures. The
-              claim names the word, so every graph that declares it holds the
-              measurement.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="gap-1.5 px-2.5 py-1">
-              <Activity className="h-3.5 w-3.5" />
-              {props.category.label}
-            </Badge>
-            <Badge variant="outline" className="gap-1.5 px-2.5 py-1">
-              <CircleDot className="h-3.5 w-3.5" />
-              {props.category.graph.name}
-            </Badge>
+    <>
+      <DialogHeader>
+        <DialogTitle>Set as measurement</DialogTitle>
+        <DialogDescription>
+          Pick the {targetCategory?.label ?? "entity"} this structure measures. The
+          claim names the word, so every graph that declares it holds the
+          measurement.
+        </DialogDescription>
+        <div className="mt-1 flex flex-wrap gap-2">
+          <Badge variant="secondary" className="gap-1.5 px-2.5 py-1">
+            <Activity className="h-3.5 w-3.5" />
+            {props.category.label}
+          </Badge>
+          <Badge variant="outline" className="gap-1.5 px-2.5 py-1">
+            <CircleDot className="h-3.5 w-3.5" />
+            {props.category.graph.name}
+          </Badge>
+        </div>
+      </DialogHeader>
+      {source ? (
+        <div className="shrink-0 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">Source</span>
+          <div className="mt-1 font-medium">{source.identifier}</div>
+          <div className="font-mono text-xs text-muted-foreground">
+            {source.id}
           </div>
         </div>
-        {source ? (
-          <div className="mt-4 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Source</span>
-            <div className="mt-1 font-medium">{source.identifier}</div>
-            <div className="font-mono text-xs text-muted-foreground">
-              {source.id}
-            </div>
-          </div>
-        ) : null}
+      ) : null}
+
+      <div className="relative shrink-0">
+        <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={`Search ${targetCategory?.label ?? "entity".toLowerCase()} entities...`}
+          value={searchQuery}
+          onChange={handleSearchChange}
+          className="h-10 rounded-lg pl-10"
+        />
       </div>
 
-      <div className="px-6 py-4">
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder={`Search ${targetCategory?.label ?? "entity".toLowerCase()} entities...`}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="h-10 rounded-lg pl-10"
-          />
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1 px-6 pb-6">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <DialogBody>
+        <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
           {loading ? (
             <div className="col-span-full flex items-center justify-center rounded-lg border border-dashed py-12">
               <div className="text-sm text-muted-foreground">Loading entities...</div>
@@ -210,13 +208,13 @@ export const SetAsMeasurement = (props: {
             ))
           )}
         </div>
-      </ScrollArea>
+      </DialogBody>
 
-      <div className="flex justify-end space-x-2 border-t px-6 py-4">
+      <DialogFooter>
         <Button variant="outline" onClick={closeDialog}>
           Cancel
         </Button>
-      </div>
-    </div>
+      </DialogFooter>
+    </>
   );
 };

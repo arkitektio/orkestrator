@@ -1,4 +1,3 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
@@ -27,8 +26,6 @@ export const CascadeDeleteDialog = (props: {
         <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>{props.description} This action cannot be undone.</DialogDescription>
       </DialogHeader>
-
-      <DialogError />
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={() => closeDialog()} disabled={submitting}>

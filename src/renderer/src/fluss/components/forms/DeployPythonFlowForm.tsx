@@ -1,6 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { DialogError } from "@/core/dialogs/DialogError";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { cn } from "@/core/util/utils";
@@ -107,7 +106,6 @@ export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }
         ))}
       </div>
 
-      <DialogError />
       <DialogFooter>
         <Button onClick={() => void submit()} disabled={!published || !chosen || submitting}>
           {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}

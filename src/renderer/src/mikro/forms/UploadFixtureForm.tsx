@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { MikroFixture } from "@/core/linkers";
 import { Button } from "@/core/ui/button";
@@ -122,8 +121,6 @@ export const UploadFixtureForm = (props: { folder?: string }) => {
           them; glTF is +y up, so a model lying flat in the file needs a y↔z swap when it is placed.
         </p>
       </div>
-
-      <DialogError />
 
       <DialogFooter>
         <Button type="submit" disabled={!file || submitting}>

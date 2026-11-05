@@ -1,7 +1,13 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -26,8 +32,11 @@ export const CreateServiceInstanceForm = (props: { identifier?: string; onSucces
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New service instance</DialogTitle>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             return await submit({
               variables: {
@@ -36,21 +45,19 @@ export const CreateServiceInstanceForm = (props: { identifier?: string; onSucces
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <div className="col-span-2 flex-col gap-1 flex">
-              {!props.identifier && (
-                <StringField
-                  label="Service identifier"
-                  name="identifier"
-                  description="The identifier of the service"
-                />
-              )}
-            </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button type="submit">Change</Button>
+          <DialogBody>
+            {!props.identifier && (
+              <StringField
+                label="Service identifier"
+                name="identifier"
+                description="The identifier of the service"
+              />
+            )}
+          </DialogBody>
+          <DialogFooter>
+            <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

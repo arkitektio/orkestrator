@@ -211,7 +211,7 @@ export const AddDerivedButton = ({ sceneId, className }: { sceneId: string; clas
             sceneId={sceneId}
             onAdd={(lens) => {
               setOpen(false);
-              openDialog("addlayer", { scene: sceneId, lens }, { className: "max-w-3xl" });
+              openDialog("addlayer", { scene: sceneId, lens });
             }}
           />
         )}

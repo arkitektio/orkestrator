@@ -11,6 +11,12 @@ import {
 } from "@/core/ui/accordion";
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
+import {
+  DialogDescription,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import {
   ResizablePanel,
@@ -88,10 +94,17 @@ export const TForm = (props: { graph: string }) => {
 
 
   return (
+    <>
+    <DialogHeader>
+      <DialogTitle>New protocol event category</DialogTitle>
+      <DialogDescription>
+        A step someone carries out, with the entities it takes in and gives out.
+      </DialogDescription>
+    </DialogHeader>
     <Form {...myform}>
-      <form
+      <DialogForm
         onSubmit={myform.handleSubmit(onUpdate)}
-        className="flex flex-col h-full w-full overflow-hidden"
+        className="w-full overflow-hidden"
       >
         <div className="flex gap-4 p-4 border-b items-end">
           <div className="flex-1 grid grid-cols-2 gap-4">
@@ -296,8 +309,9 @@ export const TForm = (props: { graph: string }) => {
               </ResizablePanelGroup>
           </RoleProvider>
         </div>
-      </form>
+      </DialogForm>
     </Form>
+    </>
   );
 };
 

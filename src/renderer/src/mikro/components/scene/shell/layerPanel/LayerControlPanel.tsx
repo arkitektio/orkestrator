@@ -230,7 +230,7 @@ export const LayerControlPanel = ({
           <button
             className={ADD_BUTTON}
             onClick={() =>
-              openDialog("addlayer", { scene: sceneId }, { className: "max-w-3xl" })
+              openDialog("addlayer", { scene: sceneId })
             }
           >
             + Add layer

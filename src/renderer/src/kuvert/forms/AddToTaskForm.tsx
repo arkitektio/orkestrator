@@ -1,6 +1,11 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { toast } from "@/core/notify";
 import { Plus } from "lucide-react";
@@ -34,7 +39,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
     submit(() => create({ variables: { input: { title, threads } } }), `Added to new task “${title}”`);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Add to task</DialogTitle>
         <DialogDescription>
@@ -53,7 +58,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
           }
         }}
       />
-      <div className="flex max-h-80 flex-col overflow-y-auto">
+      <DialogBody className="gap-0">
         {title && (
           <Button
             variant="ghost"
@@ -80,7 +85,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
             {task.threadCount > 0 && <span className="ml-auto text-xs text-muted-foreground">{task.threadCount}</span>}
           </Button>
         ))}
-      </div>
+      </DialogBody>
     </div>
   );
 };

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/core/ui/button";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
@@ -73,20 +80,21 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
       : null;
 
   return (
-    <div className="flex flex-col gap-3 p-1">
-      <div>
-        <h3 className="text-sm font-semibold">{origin ? "Commit as a new collection" : "Commit mesh collection"}</h3>
-        <p className="text-xs text-muted-foreground">
+    <>
+      <DialogHeader>
+        <DialogTitle>{origin ? "Commit as a new collection" : "Commit mesh collection"}</DialogTitle>
+        <DialogDescription>
           {meshes.length} mesh{meshes.length === 1 ? "" : "es"}, {triangles.toLocaleString()} triangles, baked into one fabriks
           collection and added to this scene as a mesh layer.
           {origin ? ` Derived from ${origin.label}.` : ""}
-        </p>
+        </DialogDescription>
         {triangles > DESIGN_TRIANGLE_BUDGET && (
-          <p className="text-xs text-amber-300/90">
+          <p className="text-xs text-destructive">
             A designed collection has no level of detail yet — it is drawn in full. Consider simplifying before committing.
           </p>
         )}
-      </div>
+      </DialogHeader>
+      <DialogBody>
       <label className="flex flex-col gap-1 text-xs">
         Name
         <Input
@@ -96,7 +104,7 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
           disabled={busy}
         />
       </label>
-      <div className="max-h-40 overflow-y-auto rounded border border-white/10 text-xs">
+      <div className="rounded border text-xs">
         {meshes.map((mesh) => (
           <div key={mesh.id} className="flex items-center gap-2 px-2 py-0.5">
             <span className="h-2 w-2 rounded-full" style={{ background: `hsl(${mesh.hue} 65% 55%)` }} />
@@ -114,14 +122,15 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
           {uploadPct !== null ? ` ${uploadPct}%` : ""}
         </div>
       )}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => closeDialog()} disabled={busy}>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => void commit()} disabled={busy || meshes.length === 0}>
+        <Button onClick={() => void commit()} disabled={busy || meshes.length === 0}>
           {busy ? "Committing…" : "Commit"}
         </Button>
-      </div>
-    </div>
+      </DialogFooter>
+    </>
   );
 };

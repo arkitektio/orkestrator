@@ -2,6 +2,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import * as React from "react"
 
 import { Button } from "@/core/ui/button"
+import { DialogFooterError } from "@/core/dialogs/DialogError"
 import { usePageDialogHost } from "@/core/dialogs/PageDialogHost"
 import { useChromeZoomClass } from "@/core/ui/ChromeSurface"
 import { cn } from "@/core/util/utils"
@@ -68,7 +69,11 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           chromeZoom,
-          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[min(calc(100%-2rem),24rem)] gap-4 rounded-xl p-4 text-xs/relaxed ring-1 duration-100 app-no-drag fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
+          // A column: header and footer keep their height, a `DialogBody`
+          // between them scrolls. A dialog without one scrolls as a whole.
+          // Centered by `inset-0 m-auto`, not `left-1/2` + translate: with
+          // `w-fit`, a left of 50% would leave it half the page to fit into.
+          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 [--dialog-pad:--spacing(4)] flex flex-col h-fit max-h-[90cqh] overflow-y-auto max-w-[min(calc(100%-2rem),24rem)] gap-4 rounded-xl p-4 text-xs/relaxed ring-1 duration-100 app-no-drag fixed inset-0 m-auto z-50 w-full",
           className
         )}
         {...props}
@@ -92,7 +97,39 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("gap-1 flex flex-col", className)}
+      // pr-8: clear of the close button in the corner.
+      className={cn("gap-1 flex flex-col shrink-0 pr-8", className)}
+      {...props}
+    />
+  )
+}
+
+/**
+ * The part of a dialog that scrolls, between its header and footer, which
+ * stay put. Inside a `<form>`, make the form a `DialogForm` so the column
+ * reaches the body.
+ */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      // Bled to the edge (the container's padding, `--dialog-pad`) so the
+      // scrollbar sits there, padded back; py-px keeps focus rings unclipped.
+      className={cn(
+        "mx-[calc(var(--dialog-pad,0px)*-1)] px-[var(--dialog-pad,0px)] min-h-0 flex-1 overflow-y-auto py-px flex flex-col gap-3",
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+/** A dialog's `<form>`: carries the column on to its body and footer. */
+function DialogForm({ className, ...props }: React.ComponentProps<"form">) {
+  return (
+    <form
+      data-slot="dialog-form"
+      className={cn("flex min-h-0 flex-1 flex-col gap-4", className)}
       {...props}
     />
   )
@@ -110,11 +147,13 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "gap-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "gap-2 flex shrink-0 flex-col-reverse sm:flex-row sm:flex-wrap sm:justify-end",
         className
       )}
       {...props}
     >
+      {/* In a registry dialog, a failed submit says why right above the buttons. */}
+      <DialogFooterError className="order-last sm:order-first sm:basis-full" />
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
@@ -153,10 +192,12 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogOverlay,
   DialogPortal,

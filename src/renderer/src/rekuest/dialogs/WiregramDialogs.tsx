@@ -1,4 +1,4 @@
-import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { RekuestWiregram } from "@/core/linkers";
@@ -100,8 +100,6 @@ export const ImportWiregramDialog = (props: { document?: unknown }) => {
       ) : (
         text.trim() && <p className="text-sm text-destructive">{parsed.error}</p>
       )}
-      <DialogError />
-
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel
@@ -241,8 +239,6 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
           ))}
         </div>
       )}
-
-      <DialogError />
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>

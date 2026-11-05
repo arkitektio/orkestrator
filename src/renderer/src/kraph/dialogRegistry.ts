@@ -1,3 +1,4 @@
+import { prefersSize } from "@/core/modules/host/dialogNeeds";
 import { CreateEntityWithPropertiesDialog } from "./dialogs/CreateEntityWithProperties";
 import { CreateNewMeasurement } from "./dialogs/CreateNewMeasurement";
 import { CreateNewRelation } from "./dialogs/CreateNewRelation";
@@ -22,7 +23,8 @@ import UpdateEntityCategoryForm from "./forms/UpdateEntityCategoryForm";
 export const KRAPH_DIALOGS = {
   relatestructure: RelateStructures,
   createnewrelation: CreateNewRelation,
-  createnewmeasurement: CreateNewMeasurement,
+  // Three panes side by side: no natural width to fit.
+  createnewmeasurement: prefersSize("large", CreateNewMeasurement),
   setasmeasurement: SetAsMeasurement,
   measureterm: MeasureTermDialog,
   createentitywithproperties: CreateEntityWithPropertiesDialog,

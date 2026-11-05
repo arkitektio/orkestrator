@@ -12,7 +12,14 @@ import {
 } from "@/core/ui/accordion";
 import { Button } from "@/core/ui/button";
 import { Checkbox } from "@/core/ui/checkbox";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import {
   Form,
   FormControl,
@@ -338,7 +345,7 @@ const STEPS: { id: Step; label: string }[] = [
 ];
 
 const StepIndicator = ({ step }: { step: Step }) => (
-  <div className="flex items-center gap-2 text-xs mb-4">
+  <div className="flex items-center gap-2 text-xs">
     {STEPS.map((s, i) => (
       <div key={s.id} className="flex items-center gap-2">
         {i > 0 && <span className="text-muted-foreground">·</span>}
@@ -530,8 +537,15 @@ const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (d
   };
 
   return (
+    <>
+    <DialogHeader>
+      <DialogTitle>New entity category</DialogTitle>
+      <DialogDescription>
+        Declare a word of the organization in this graph, and what makes an entity of it exist.
+      </DialogDescription>
+    </DialogHeader>
     <Form {...form}>
-      <form
+      <DialogForm
         onSubmit={form.handleSubmit(async ({ existenceMode, rules, ...data }) => {
           // Enter in a step-1 field submits the form; treat it as "Next".
           if (step === "existence") {
@@ -563,15 +577,17 @@ const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (d
           });
         })}
       >
-        <StepIndicator step={step} />
+        <DialogBody>
+          <StepIndicator step={step} />
 
-        {step === "existence" ? (
-          <ExistenceStep showGraph={!props.graph} rulesError={rulesError} />
-        ) : (
-          <PropertyDefinitions />
-        )}
+          {step === "existence" ? (
+            <ExistenceStep showGraph={!props.graph} rulesError={rulesError} />
+          ) : (
+            <PropertyDefinitions />
+          )}
+        </DialogBody>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter>
           {step === "properties" && (
             <Button type="button" variant="outline" onClick={() => setStep("existence")}>
               Back
@@ -579,8 +595,9 @@ const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (d
           )}
           <Button type="submit">{step === "existence" ? "Next" : "Create"}</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </Form>
+    </>
   );
 };
 

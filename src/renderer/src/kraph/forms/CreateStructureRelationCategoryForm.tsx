@@ -4,7 +4,14 @@ import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -44,8 +51,12 @@ export const TForm = (props: { graph?: string; onSuccess?: (data: CreateStructur
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New structure relation category</DialogTitle>
+        <DialogDescription>A kind of relation between structures from other modules (images, files, …).</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -56,46 +67,44 @@ export const TForm = (props: { graph?: string; onSuccess?: (data: CreateStructur
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              {!props.graph && (
-                <>
-                  <GraphQLCreatableSearchField
-                    label="Graph"
-                    name="graph"
-                    description="What graph do you want to add this expression to?"
-                    searchQuery={search}
-                    createMutation={create}
-                  />
-                </>
-              )}
-              <StringField
-                label="Label"
-                name="label"
-                description="Whats the expression? (e.g. 'Person' or 'Connected to')"
-              />
-              <ParagraphField
-                label="Description"
-                name="description"
-                description="What describes your expression the best? (e.g. 'A person is a human being')"
-              />
-              <Collapsible>
-                <CollapsibleTrigger>Advanced</CollapsibleTrigger>
-                <CollapsibleContent>
-                  <StringField
-                    label="PURL"
-                    name="purl"
-                    description="What is the PURL of this expression?"
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          </div>
+          <DialogBody>
+            {!props.graph && (
+              <>
+                <GraphQLCreatableSearchField
+                  label="Graph"
+                  name="graph"
+                  description="What graph do you want to add this expression to?"
+                  searchQuery={search}
+                  createMutation={create}
+                />
+              </>
+            )}
+            <StringField
+              label="Label"
+              name="label"
+              description="Whats the expression? (e.g. 'Person' or 'Connected to')"
+            />
+            <ParagraphField
+              label="Description"
+              name="description"
+              description="What describes your expression the best? (e.g. 'A person is a human being')"
+            />
+            <Collapsible>
+              <CollapsibleTrigger>Advanced</CollapsibleTrigger>
+              <CollapsibleContent>
+                <StringField
+                  label="PURL"
+                  name="purl"
+                  description="What is the PURL of this expression?"
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

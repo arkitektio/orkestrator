@@ -1,3 +1,4 @@
+import { prefersSize } from "@/core/modules/host/dialogNeeds";
 import { ChatDialog } from "./dialogs/ChatDialog";
 import { UseModelForDialog } from "./dialogs/UseModelForDialog";
 
@@ -7,6 +8,6 @@ import { UseModelForDialog } from "./dialogs/UseModelForDialog";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const ALPAKA_DIALOGS = {
-  chat: ChatDialog,
+  chat: prefersSize("large", ChatDialog),
   usemodelfor: UseModelForDialog,
 };

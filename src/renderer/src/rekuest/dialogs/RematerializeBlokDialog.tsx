@@ -1,4 +1,3 @@
-import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
@@ -58,8 +57,6 @@ const ForkStep = (props: { blok: BlokFragment; onForked: (fork: BlokFragment) =>
         autoFocus
         onChange={(event) => setName(event.target.value)}
       />
-      <DialogError />
-
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel

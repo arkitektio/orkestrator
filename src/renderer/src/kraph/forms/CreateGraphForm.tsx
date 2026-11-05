@@ -3,7 +3,14 @@ import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -29,16 +36,20 @@ const TForm = (props: { onSuccess?: (data: CreateGraphMutation) => void }) => {
 
   const form = useForm<CreateGraphMutationVariables["input"]>({
     defaultValues: {
-      name: "New Step",
-      description: "No Description",
+      name: "New graph",
+      description: "",
       backfill: false,
     },
   });
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New graph</DialogTitle>
+        <DialogDescription>A view over the organization's evidence, shaped by the words it declares.</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -49,34 +60,31 @@ const TForm = (props: { onSuccess?: (data: CreateGraphMutation) => void }) => {
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              <StringField
-                label="Name"
-                name="name"
-                description="How do you can to call this Ontology"
-              />
-              <ParagraphField
-                label="Description"
-                name="description"
-                description="What describes your ontology the best?"
-              />
-              <SwitchField
-                label="Draw existing evidence"
-                name="backfill"
-                description="A graph is a view over the organization's evidence. With this on, everything already claimed under a word this schema declares is projected as the graph is created — which takes as long as the evidence base is large. Off, it appears at the next reproject."
-              />
-            </div>
-          </div>
+          <DialogBody>
+            <StringField
+              label="Name"
+              name="name"
+              description="What to call this graph"
+            />
+            <ParagraphField
+              label="Description"
+              name="description"
+              description="What is this graph about?"
+            />
+            <SwitchField
+              label="Draw existing evidence"
+              name="backfill"
+              description="A graph is a view over the organization's evidence. With this on, everything already claimed under a word this schema declares is projected as the graph is created — which takes as long as the evidence base is large. Off, it appears at the next reproject."
+            />
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
-            <Button type="submit">Change</Button>
+          <DialogFooter>
+            <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );
 };
-
 
 export default TForm;

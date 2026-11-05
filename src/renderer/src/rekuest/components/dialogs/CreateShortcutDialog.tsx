@@ -6,13 +6,14 @@ import { SwitchField } from "@/core/forms/SwitchField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
+  DialogBody,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
-import { ScrollArea } from "@/core/ui/scroll-area";
 import { Skeleton } from "@/core/ui/skeleton";
 import { FormActionDescription } from "@arkitektio/bsx/ports/engine/ActionDescription";
 import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
@@ -126,7 +127,7 @@ export const CreateShortcutDialog = (props: {
   const hasArgs = action.args.length > 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           Create Shortcut
@@ -145,12 +146,8 @@ export const CreateShortcutDialog = (props: {
       )}
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
-          <ScrollArea className="max-h-[55vh] pr-3 -mr-3">
-            <div className="flex flex-col gap-6">
+        <DialogForm onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogBody className="gap-6">
               {hasArgs && (
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col gap-0.5">
@@ -225,8 +222,7 @@ export const CreateShortcutDialog = (props: {
                   {form.watch("pin") ? <ShortcutBindingFields /> : null}
                 </div>
               </RoleGuard>
-            </div>
-          </ScrollArea>
+          </DialogBody>
 
           <DialogFooter>
             <Button
@@ -241,7 +237,7 @@ export const CreateShortcutDialog = (props: {
               {isSubmitting ? "Creating…" : "Create Shortcut"}
             </Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </div>
   );

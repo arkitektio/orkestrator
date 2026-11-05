@@ -7,6 +7,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/core/ui/command";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { useKraph } from "@/kraph/api/funcs";
 import { TermKind, useSearchAssignableTermsQuery } from "@/kraph/api/graphql";
@@ -85,17 +86,17 @@ export const MeasureTermDialog = (props: { structures: Structure[] }) => {
   const count = props.structures.length;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="space-y-1">
-        <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
           <Ruler className="h-4 w-4" />
           Measures
-        </h2>
-        <p className="text-sm text-muted-foreground">
+        </DialogTitle>
+        <DialogDescription>
           What {count === 1 ? "this datum measures" : `these ${count} data measure`}. Pick a
           word or type a new one.
-        </p>
-      </div>
+        </DialogDescription>
+      </DialogHeader>
 
       <Command shouldFilter={false} className="bg-transparent">
         <CommandPrimitive.Input
@@ -173,7 +174,7 @@ export const MeasureTermDialog = (props: { structures: Structure[] }) => {
           ) : null}
         </CommandList>
       </Command>
-    </div>
+    </>
   );
 };
 

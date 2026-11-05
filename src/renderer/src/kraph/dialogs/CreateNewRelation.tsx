@@ -10,6 +10,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/core/ui/collapsible";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Separator } from "@/core/ui/separator";
 import {
@@ -89,20 +97,18 @@ export const CreateNewRelation = (props: {
   );
 
   return (
-    <div className="flex flex-col w-full h-full max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Create New Structure Relation Category</h2>
-        <p className="text-muted-foreground">
+    <>
+      <DialogHeader>
+        <DialogTitle>New structure relation category</DialogTitle>
+        <DialogDescription>
           Seeded from the current self and partner identifiers. You can add more
           identifiers before creating the category.
-        </p>
-      </div>
+        </DialogDescription>
+      </DialogHeader>
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleRelationCreation)}
-          className="space-y-6"
-        >
+        <DialogForm onSubmit={form.handleSubmit(handleRelationCreation)}>
+          <DialogBody>
           <GraphQLCreatableSearchField
             label="Graph"
             name="graph"
@@ -152,11 +158,15 @@ export const CreateNewRelation = (props: {
             </CollapsibleContent>
           </Collapsible>
 
-          <Button type="submit" variant="outline" disabled={submitting}>
-            Create Structure Relation Category
-          </Button>
-        </form>
+          </DialogBody>
+
+          <DialogFooter>
+            <Button type="submit" disabled={submitting}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogForm>
       </Form>
-    </div>
+    </>
   );
 };

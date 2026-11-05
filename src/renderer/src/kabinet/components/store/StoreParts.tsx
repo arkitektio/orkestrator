@@ -113,7 +113,7 @@ export const InstallButton = ({
         className={cn("rounded-full", className)}
         onClick={(e) => {
           e.stopPropagation();
-          openDialog("installrelease", { release: release.id, authorize }, { className: "max-w-xl" });
+          openDialog("installrelease", { release: release.id, authorize });
         }}
       >
         <Download />
@@ -151,7 +151,7 @@ export const DeployButton = ({
         className={cn("rounded-full", className)}
         onClick={(e) => {
           e.stopPropagation();
-          openDialog("deployrelease", { release: release.id, approval }, { className: "max-w-xl" });
+          openDialog("deployrelease", { release: release.id, approval });
         }}
       >
         <Rocket />

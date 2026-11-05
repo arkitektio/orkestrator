@@ -2,7 +2,14 @@ import { useOfferedTermSearch } from "@/kraph/lib/terms";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -55,26 +62,28 @@ const TForm = (props: { category?: string }) => {
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New entity</DialogTitle>
+        <DialogDescription>Claim that something exists, under the organization's word for it.</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(submit)}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              <GraphQLCreatableSearchField
-                name="term"
-                label="Claim as"
-                description="The organization's word for what is being claimed, e.g. 'AIS'. Type a new word to claim it."
-                searchQuery={searchTerms}
-                createMutation={createTerm}
-              />
-            </div>
-          </div>
+          <DialogBody>
+            <GraphQLCreatableSearchField
+              name="term"
+              label="Claim as"
+              description="The organization's word for what is being claimed, e.g. 'AIS'. Type a new word to claim it."
+              searchQuery={searchTerms}
+              createMutation={createTerm}
+            />
+          </DialogBody>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit" disabled={submitting}>Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

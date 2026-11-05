@@ -6,7 +6,14 @@ import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
-import { DialogFooter } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogForm,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -48,8 +55,12 @@ export const TForm = (props: { graph?: string; onSuccess?: (data: CreateRelation
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>New relation category</DialogTitle>
+        <DialogDescription>A kind of relation between two entities.</DialogDescription>
+      </DialogHeader>
       <Form {...form}>
-        <form
+        <DialogForm
           onSubmit={form.handleSubmit(async (data) => {
             submit({
               variables: {
@@ -60,67 +71,65 @@ export const TForm = (props: { graph?: string; onSuccess?: (data: CreateRelation
             });
           })}
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2 flex-col gap-1 flex">
-              {!props.graph && (
-                <>
-                  <GraphQLCreatableSearchField
-                    label="Graph"
-                    name="graph"
-                    description="What graph do you want to add this expression to?"
-                    searchQuery={search}
-                    createMutation={create}
+          <DialogBody>
+            {!props.graph && (
+              <>
+                <GraphQLCreatableSearchField
+                  label="Graph"
+                  name="graph"
+                  description="What graph do you want to add this expression to?"
+                  searchQuery={search}
+                  createMutation={create}
+                />
+              </>
+            )}
+            <StringField
+              label="Label"
+              name="label"
+              description="Whats the expression? (e.g. 'Person' or 'Connected to')"
+            />
+            <ParagraphField
+              label="Description"
+              name="description"
+              description="What describes your expression the best? (e.g. 'A person is a human being')"
+            />
+            <Collapsible>
+              <CollapsibleTrigger>Advanced</CollapsibleTrigger>
+              <CollapsibleContent>
+                <StringField
+                  label="PURL"
+                  name="purl"
+                  description="What is the PURL of this expression?"
+                />
+                <div className="col-span-2 flex-col gap-1 flex">
+                  <GraphQLSearchField
+                    name={`sourceDefinition.categoryFilters`}
+                    label="Category Filters"
+                    searchQuery={searchEntityCategory}
+                    description="Filters for the entity's categories."
                   />
-                </>
-              )}
-              <StringField
-                label="Label"
-                name="label"
-                description="Whats the expression? (e.g. 'Person' or 'Connected to')"
-              />
-              <ParagraphField
-                label="Description"
-                name="description"
-                description="What describes your expression the best? (e.g. 'A person is a human being')"
-              />
-              <Collapsible>
-                <CollapsibleTrigger>Advanced</CollapsibleTrigger>
-                <CollapsibleContent>
-                  <StringField
-                    label="PURL"
-                    name="purl"
-                    description="What is the PURL of this expression?"
+                </div>
+                <div className="col-span-2 flex-col gap-1 flex">
+                  <GraphQLSearchField
+                    name={`targetDefinition.categoryFilters`}
+                    label="Category Filters"
+                    searchQuery={searchEntityCategory}
+                    description="Filters for the entity's categories."
                   />
-                  <div className="col-span-2 flex-col gap-1 flex">
-                    <GraphQLSearchField
-                      name={`sourceDefinition.categoryFilters`}
-                      label="Category Filters"
-                      searchQuery={searchEntityCategory}
-                      description="Filters for the entity's categories."
-                    />
-                  </div>
-                  <div className="col-span-2 flex-col gap-1 flex">
-                    <GraphQLSearchField
-                      name={`targetDefinition.categoryFilters`}
-                      label="Category Filters"
-                      searchQuery={searchEntityCategory}
-                      description="Filters for the entity's categories."
-                    />
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </DialogBody>
 
               <SwitchField
                 label="Draw existing evidence"
                 name="backfill"
                 description="Claims already made under this word are in the organization's evidence base. With this on they are projected into the graph now, instead of waiting for the next reproject — which takes as long as the evidence base is large."
               />
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button type="submit">Create</Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </Form>
     </>
   );

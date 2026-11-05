@@ -1,6 +1,12 @@
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import {
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/core/ui/dialog";
 import { Spinner } from "@/core/ui/spinner";
 import { useState } from "react";
 import {
@@ -99,7 +105,7 @@ export const CategorizeForm = ({ messages }: { messages: string[] }) => {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DialogHeader>
         <DialogTitle>Categorize {messages.length === 1 ? "mail" : `${messages.length} mails`}</DialogTitle>
         <DialogDescription>Categories belong to a mailbox; everyone who sees it sees them.</DialogDescription>
@@ -107,7 +113,7 @@ export const CategorizeForm = ({ messages }: { messages: string[] }) => {
       {!data ? (
         <Spinner className="mx-auto size-5 text-muted-foreground" />
       ) : (
-        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+        <DialogBody>
           {groups.map((group) => (
             <AccountCategories
               key={group.account.id}
@@ -119,7 +125,7 @@ export const CategorizeForm = ({ messages }: { messages: string[] }) => {
               }
             />
           ))}
-        </div>
+        </DialogBody>
       )}
       <DialogFooter>
         <Button type="button" disabled={loading || submitting || Object.keys(wanted).length === 0} onClick={() => void save()}>

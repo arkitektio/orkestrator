@@ -116,8 +116,7 @@ export const DeployReleaseDialog = (props: {
       ? props.onAuthorize(agent)
       : openDialog(
           "installrelease",
-          { release: props.release, agent: agent ?? props.agent, authorize: true },
-          { className: "max-w-xl" },
+          { release: props.release, agent: agent ?? props.agent, authorize: true }
         );
   // Deploying with a deployer you approved picks that approval; any other is authorized first.
   const chooseDeployer = (agent: string) => {
