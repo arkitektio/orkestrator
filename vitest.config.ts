@@ -19,6 +19,12 @@ export default defineConfig({
     // window opt into jsdom per-file via a `// @vitest-environment jsdom`
     // docblock at the top of the file.
     environment: "node",
+    // One fork per core (24 on the dev machine) fills the RAM, and earlyoom then
+    // kills the test workers ("Worker exited unexpectedly", EPIPE: files that look
+    // failed) and the running `pnpm dev`. Four forks run the rekuest+kabinet+fluss
+    // folders cleanly. Raise it with VITEST_MAX_WORKERS (or --maxWorkers) where
+    // there is memory to spare.
+    maxWorkers: Number(process.env.VITEST_MAX_WORKERS) || 4,
     setupFiles: ["./vitest.setup.ts"],
     // @arkitektio/bsx is processed like this app's own source: its runtime Tailwind reads
     // stylesheets as text (`?raw`) and its shadcn copies import CJS packages by name.
