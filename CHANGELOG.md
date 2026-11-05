@@ -1,3 +1,15 @@
+# [5.12.0](https://github.com/arkitektio/orkestrator/compare/v5.11.0...v5.12.0) (2026-11-05)
+
+
+### Bug Fixes
+
+* **scene:** Backspace removes the last drawn point; wheel notches at any display scale ([83978fb](https://github.com/arkitektio/orkestrator/commit/83978fb08a5174fb44a72dcbf9f33cc0a460d9e6))
+
+
+### Features
+
+* **kraph:** todo chips, one status control, Done & next, live boards, due dates ([8450605](https://github.com/arkitektio/orkestrator/commit/8450605877c299397e5183e5a8592857038258fe))
+
 # [5.11.0](https://github.com/arkitektio/orkestrator/compare/v5.10.0...v5.11.0) (2026-11-05)
 
 
