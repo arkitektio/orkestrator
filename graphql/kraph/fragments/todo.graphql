@@ -13,6 +13,11 @@ fragment TodoItemStructure on TodoItemStructure {
   position
 }
 
+fragment TodoProgress on TodoProgress {
+  done
+  total
+}
+
 fragment ListTodoItem on TodoItem {
   id
   title
@@ -21,8 +26,16 @@ fragment ListTodoItem on TodoItem {
   position
   assignee
   effectiveAssignee
+  dueAt
+  effectiveDueAt
   updatedAt
-  structures {
+  progress {
+    ...TodoProgress
+  }
+  # The next few objects still to do, not all of them: an item may carry
+  # hundreds. `progress` says how many there are; the item page and the
+  # card's "+N" read the rest (`TodoItemObjects`).
+  upNext: structures(filters: { status: [TODO, DOING] }, ordering: [{ position: ASC }], pagination: { limit: 3 }) {
     ...TodoItemStructure
   }
 }
@@ -44,10 +57,10 @@ fragment ListTodoList on TodoList {
   name
   description
   assignee
+  dueAt
   createdAt
   progress {
-    done
-    total
+    ...TodoProgress
   }
 }
 
@@ -59,5 +72,50 @@ fragment TodoList on TodoList {
   }
   items(ordering: [{ position: ASC }]) {
     ...ListTodoItem
+  }
+}
+
+# An item without its objects: where something else is the point (an object's
+# own track, a dashboard). `progress` says how far its objects are.
+fragment SlimTodoItem on TodoItem {
+  id
+  title
+  description
+  status
+  position
+  assignee
+  effectiveAssignee
+  dueAt
+  effectiveDueAt
+  updatedAt
+  progress {
+    ...TodoProgress
+  }
+  list {
+    id
+    name
+    project {
+      id
+      name
+    }
+  }
+}
+
+# One object's row on one item: the object's todo track.
+fragment TodoTrackRow on TodoItemStructure {
+  ...TodoItemStructure
+  item {
+    ...SlimTodoItem
+  }
+}
+
+fragment TodoSummary on TodoSummary {
+  todo
+  doing
+  done
+  total
+  overdue
+  objects {
+    ...TodoProgress
   }
 }

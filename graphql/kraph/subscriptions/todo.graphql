@@ -1,0 +1,13 @@
+# Todo lists, live. The item comes back in the board's shape, so the normalized
+# cache updates every card, chip and row that shows it; `useTodoLive` handles
+# what the cache cannot (a new item, a deleted one).
+subscription TodoChanged($list: ID, $item: ID) {
+  todoChanged(list: $list, item: $item) {
+    kind
+    listId
+    itemId
+    item {
+      ...TodoItemWithList
+    }
+  }
+}

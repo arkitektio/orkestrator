@@ -2,22 +2,26 @@ import { useSelf } from "@/core/connection/useSelf";
 import { KraphTodoItem, KraphTodoList } from "@/core/linkers";
 import { Badge } from "@/core/ui/badge";
 import {
+  SlimTodoItemFragment,
   TodoItemStructureFragment,
-  TodoItemWithListFragment,
   TodoStatus,
-  useTodoItemsQuery,
+  useTodoTrackQuery,
 } from "@/kraph/api/graphql";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { cn } from "@/core/util/utils";
+import { STATUS_PILL } from "@/kraph/lib/todoStatus";
 import { todoStatusLabel } from "@/kraph/lib/todos";
-import { Check, ListTodo, Play } from "lucide-react";
 import React from "react";
 import { TodoAssignee } from "./TodoAssignee";
-import { TodoStatusButtons } from "./TodoStatusButtons";
+import { DoneAndNextButton } from "./DoneAndNextButton";
+import { TodoDue } from "./TodoDue";
+import { TodoStatusControl } from "./TodoStatusControl";
 
 /**
  * An object's todo track: the items it is on, each with the object's own
  * status there. Drawn in the page bar's hover card and the Knowledge sidebar.
  */
-export type Track = { item: TodoItemWithListFragment; own: TodoItemStructureFragment };
+export type Track = { item: SlimTodoItemFragment; own: TodoItemStructureFragment };
 
 /** The object's state across its todo items: Doing wins, then open, then Done. */
 export const overall = (tracks: readonly Track[]): TodoStatus | null => {
@@ -27,13 +31,7 @@ export const overall = (tracks: readonly Track[]): TodoStatus | null => {
   return TodoStatus.Done;
 };
 
-export const STATUS_ICON: Record<TodoStatus, React.ComponentType<{ className?: string }>> = {
-  [TodoStatus.Todo]: ListTodo,
-  [TodoStatus.Doing]: Play,
-  [TodoStatus.Done]: Check,
-};
-
-/** One todo item the object is on: your Doing / Done when it is yours, else who it is for. */
+/** One todo item the object is on: the object's status there (yours to change when the item is yours), and who it is for. */
 export const TrackRow = ({ track }: { track: Track }) => {
   const { item, own } = track;
   const me = useSelf().userId;
@@ -44,8 +42,11 @@ export const TrackRow = ({ track }: { track: Track }) => {
         <KraphTodoItem.DetailLink object={item} className="min-w-0 flex-1 truncate text-sm font-medium">
           {item.title}
         </KraphTodoItem.DetailLink>
-        {!mine && (
-          <Badge variant="outline" className="shrink-0">
+        <TodoDue due={item.effectiveDueAt} status={own.status} inherited={!item.dueAt} />
+        {mine ? (
+          <TodoStatusControl structure={own} item={item} variant="pill" className="shrink-0" />
+        ) : (
+          <Badge variant="outline" className={cn("shrink-0", STATUS_PILL[own.status])}>
             {todoStatusLabel(own.status)}
           </Badge>
         )}
@@ -53,34 +54,49 @@ export const TrackRow = ({ track }: { track: Track }) => {
       <KraphTodoList.DetailLink object={item.list} className="truncate text-xs text-muted-foreground">
         {item.list.project.name} / {item.list.name}
       </KraphTodoList.DetailLink>
-      {mine ? (
-        <TodoStatusButtons structure={own} />
-      ) : (
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          {item.effectiveAssignee ? (
-            <>
-              For <TodoAssignee own={item.assignee} inherited={item.effectiveAssignee} />
-            </>
-          ) : (
-            "Unassigned"
-          )}
-        </span>
-      )}
+      <span className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
+        {mine ? (
+          <>
+            For you
+            <DoneAndNextButton structure={own} item={item} variant="label" className="ml-auto" />
+          </>
+        ) : item.effectiveAssignee ? (
+          <>
+            For <TodoAssignee own={item.assignee} inherited={item.effectiveAssignee} />
+          </>
+        ) : (
+          "Unassigned"
+        )}
+        {(own.status === TodoStatus.Done ? own.doneBy : own.status === TodoStatus.Doing ? own.startedBy : null) && (
+          <>
+            {" · "}
+            {own.status === TodoStatus.Done ? "done by" : "started by"}{" "}
+            <StructureDisplay
+              identifier="@lok/user"
+              id={own.status === TodoStatus.Done ? own.doneBy : own.startedBy}
+              variant="chip"
+            />
+          </>
+        )}
+      </span>
     </div>
   );
 };
 
-/** The items `object` is on, each with the object's own row there. */
+/**
+ * The items `object` is on, each with the object's own row there. One small
+ * read (`todoItemStructures`): the object's rows with their item, never the
+ * item's other objects, so a page over one of 500 images reads one row.
+ */
+export const useTodoTrackResult = (identifier: string, object: string, skip = false) =>
+  useTodoTrackQuery({ variables: { identifier, object }, skip });
+
+export const tracksOf = (rows: readonly { item: SlimTodoItemFragment }[] | undefined): Track[] =>
+  (rows ?? []).map(({ item, ...own }) => ({ item, own: own as TodoItemStructureFragment }));
+
 export const useTodoTracks = (identifier: string, object: string): Track[] => {
-  const { data } = useTodoItemsQuery({ variables: { filters: { identifier, object } } });
-  return React.useMemo<Track[]>(
-    () =>
-      (data?.todoItems ?? []).flatMap((item) => {
-        const own = item.structures.find((candidate) => candidate.identifier === identifier && candidate.object === object);
-        return own ? [{ item, own }] : [];
-      }),
-    [data, identifier, object],
-  );
+  const { data } = useTodoTrackResult(identifier, object);
+  return React.useMemo(() => tracksOf(data?.todoItemStructures), [data]);
 };
 
 /** Whether the signed-in user is who a track's item is for. */

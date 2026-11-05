@@ -2,19 +2,41 @@ import { asParamlessRoute } from "@/core/layout/routes/ParamlessRoute";
 import { KraphTodoItem } from "@/core/linkers";
 import { Button } from "@/core/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/core/ui/empty";
-import { ListTodo } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Eye, EyeOff, ListTodo } from "lucide-react";
+import { NavLink, useSearchParams } from "react-router-dom";
 import { TodoStatus, useTodoItemsQuery } from "../api/graphql";
 import { TodoItemRow } from "../components/todos/TodoItemRow";
 import { KRAPH_HELP } from "../help";
 import { TODO_COLUMNS, columnOf } from "../lib/todos";
 
-const useMine = () =>
-  useTodoItemsQuery({ variables: { filters: { mine: true }, pagination: { limit: 200 } } });
+/** `?done=show` reads the finished items too; without it the server sends only the open ones. */
+const useShowDone = () => {
+  const [params, setParams] = useSearchParams();
+  const showDone = params.get("done") === "show";
+  const setShowDone = (value: boolean) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value) next.set("done", "show");
+        else next.delete("done");
+        return next;
+      },
+      { replace: true },
+    );
+  return [showDone, setShowDone] as const;
+};
+
+const useMine = () => {
+  const [showDone] = useShowDone();
+  return useTodoItemsQuery({
+    variables: { filters: showDone ? { mine: true } : { mine: true, open: true }, pagination: { limit: 200 } },
+  });
+};
 
 /** Everything handed to the caller, across every list: their own items, and those of lists assigned to them. */
 const TodosPage = asParamlessRoute(useMine, ({ data }) => {
   const items = data.todoItems;
+  const [showDone, setShowDone] = useShowDone();
   const open = items.filter((item) => item.status !== TodoStatus.Done).length;
 
   return (
@@ -22,9 +44,15 @@ const TodosPage = asParamlessRoute(useMine, ({ data }) => {
       title="My todos"
       help={KRAPH_HELP.todos}
       pageActions={
-        <Button asChild variant="outline" size="sm">
-          <NavLink to="/kraph/projects">All projects</NavLink>
-        </Button>
+        <>
+          <Button variant="ghost" size="sm" className="gap-1" onClick={() => setShowDone(!showDone)}>
+            {showDone ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            {showDone ? "Hide done" : "Show done"}
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <NavLink to="/kraph/projects">All projects</NavLink>
+          </Button>
+        </>
       }
     >
       <div className="flex flex-col gap-6 p-6">

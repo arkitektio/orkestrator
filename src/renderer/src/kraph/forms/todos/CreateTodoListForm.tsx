@@ -8,8 +8,9 @@ import { SearchField } from "@arkitektio/bsx/ports/forms/SearchField";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { useForm } from "react-hook-form";
 import { CreateTodoListMutation, ProjectDocument, useCreateTodoListMutation } from "../../api/graphql";
+import { DueDateField } from "./DueDateField";
 
-type Values = { name: string; description: string; assignee: string | null };
+type Values = { name: string; description: string; assignee: string | null; dueAt: Date | null };
 
 /**
  * A new todo list in a project, usually handed to one person. The assignee is
@@ -27,7 +28,7 @@ export const CreateTodoListForm = (props: {
     errorTitle: "Couldn't create the list",
     onSuccess: (data) => data && props.onSuccess?.(data),
   });
-  const form = useForm<Values>({ defaultValues: { name: "", description: "", assignee: null } });
+  const form = useForm<Values>({ defaultValues: { name: "", description: "", assignee: null, dueAt: null } });
 
   return (
     <Form {...form}>
@@ -41,6 +42,7 @@ export const CreateTodoListForm = (props: {
                 name: values.name,
                 description: values.description || null,
                 assignee: values.assignee || null,
+                dueAt: values.dueAt ? values.dueAt.toISOString() : null,
               },
             },
           }),
@@ -55,6 +57,7 @@ export const CreateTodoListForm = (props: {
         {searchUsers && (
           <SearchField name="assignee" label="Assignee" search={searchUsers} placeholder="Pick a member" description="Who the list is for (optional)" />
         )}
+        <DueDateField description="Items without a date of their own follow it (optional)" />
         <DialogFooter>
           <Button type="submit" disabled={loading}>
             Create

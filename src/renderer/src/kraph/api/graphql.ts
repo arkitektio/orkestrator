@@ -520,6 +520,14 @@ export type AssertionFilter = {
   subjects?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+/** Input for changing only who a todo list or item is for */
+export type AssignTodoInput = {
+  /** Who it is for (a sub); nobody when not given (an item then falls back to its list's) */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** The list or item to assign */
+  id: Scalars['ID']['input'];
+};
+
 /** Input for putting objects on a todo item */
 export type AttachToTodoItemInput = {
   /** The item to put the objects on */
@@ -1185,6 +1193,8 @@ export type CreateTodoItemInput = {
   assignee?: InputMaybe<Scalars['ID']['input']>;
   /** More about what is to be done */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** When it is due; the list's due date when not given */
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
   /** The list the item goes on */
   list: Scalars['ID']['input'];
   /** The column it starts in; To do when not given */
@@ -1201,6 +1211,8 @@ export type CreateTodoListInput = {
   assignee?: InputMaybe<Scalars['ID']['input']>;
   /** What the list is for */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** When the list is due; its items without a date of their own follow it */
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
   /** The name of the list */
   name: Scalars['String']['input'];
   /** The project the list belongs to */
@@ -2783,12 +2795,14 @@ export type MetricValueInput = {
   valueKind: ValueKind;
 };
 
-/** Input for moving a todo item on its board */
+/** Input for moving a todo item on its board, or onto another list */
 export type MoveTodoItemInput = {
   /** The item to move */
   id: Scalars['ID']['input'];
   /** Its place in that column once moved, 0 first; past the end puts it last */
   index?: Scalars['Int']['input'];
+  /** Another list (of the same organization) to move it to; its own when not given */
+  list?: InputMaybe<Scalars['ID']['input']>;
   /** The column to move it to */
   status: TodoStatus;
 };
@@ -2828,6 +2842,10 @@ export type Mutation = {
   assertStructureExists: AssertedStructure;
   /** Assert a relation between two structures. Drawings are always empty: neither endpoint has a vertex */
   assertStructureRelationExists: AssertedStructureRelation;
+  /** Change only who a todo item is for; nobody means its list's assignee again */
+  assignTodoItem: TodoItem;
+  /** Change only who a todo list is for */
+  assignTodoList: TodoList;
   /** Put objects on a todo item; one already on it is left as it is */
   attachToTodoItem: TodoItem;
   /** Claim a remark stands again — reopening, as new evidence rather than an undo */
@@ -2944,10 +2962,16 @@ export type Mutation = {
   retractStructure: AssertedStructure;
   /** Retract a structure relation assertion without destroying it */
   retractStructureRelation: AssertedStructureRelation;
+  /** Change only when a todo item is due; no date means its list's again */
+  scheduleTodoItem: TodoItem;
+  /** Change only when a todo list is due */
+  scheduleTodoList: TodoList;
   /** Tick or untick one object on a todo item; ticking the last moves the item to Done */
   setTodoStructureDone: TodoItem;
   /** Move one object on a todo item to To do, Doing or Done; the item's column follows */
   setTodoStructureStatus: TodoItem;
+  /** Move several objects on todo items to one status at once; each item's column follows. Returns the touched items */
+  setTodoStructuresStatus: Array<TodoItem>;
   /** Correct a measurement by retracting it and asserting a new one. The returned metric has a new id: it is a new row, not an edited one */
   supersedeMetricValue: AssertedMetric;
   /** Replace a relation with a new assertion, retracting the old one. Two assertions are recorded; the result reports the one that made the relation now standing */
@@ -3082,6 +3106,18 @@ export type MutationAssertStructureExistsArgs = {
 /** Graph Engine Mutations */
 export type MutationAssertStructureRelationExistsArgs = {
   input: AssertStructureRelationExistsInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationAssignTodoItemArgs = {
+  input: AssignTodoInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationAssignTodoListArgs = {
+  input: AssignTodoInput;
 };
 
 
@@ -3434,6 +3470,18 @@ export type MutationRetractStructureRelationArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationScheduleTodoItemArgs = {
+  input: ScheduleTodoInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationScheduleTodoListArgs = {
+  input: ScheduleTodoInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationSetTodoStructureDoneArgs = {
   input: SetTodoStructureDoneInput;
 };
@@ -3442,6 +3490,12 @@ export type MutationSetTodoStructureDoneArgs = {
 /** Graph Engine Mutations */
 export type MutationSetTodoStructureStatusArgs = {
   input: SetTodoStructureStatusInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationSetTodoStructuresStatusArgs = {
+  input: SetTodoStructuresStatusInput;
 };
 
 
@@ -4484,12 +4538,16 @@ export type Query = {
   terms: Array<Term>;
   /** One todo item by ID */
   todoItem: TodoItem;
+  /** Objects on todo items, one row per (item, object). `identifier` + `object` is an object's own todo track: its row on every item it is on, without the item's other objects */
+  todoItemStructures: Array<TodoItemStructure>;
   /** Todo items across lists; `mine` narrows to those whose effective assignee is the caller, `identifier` + `object` to those that carry an object */
   todoItems: Array<TodoItem>;
   /** One todo list by ID */
   todoList: TodoList;
   /** Todo lists; `mine` narrows to the caller's */
   todoLists: Array<TodoList>;
+  /** The todo items `filters` selects (as in `todoItems`), counted by column, with their objects done out of total */
+  todoSummary: TodoSummary;
 };
 
 
@@ -4938,6 +4996,13 @@ export type QueryTodoItemArgs = {
 };
 
 
+export type QueryTodoItemStructuresArgs = {
+  filters?: InputMaybe<TodoItemStructureFilter>;
+  ordering?: Array<TodoItemStructureOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryTodoItemsArgs = {
   filters?: InputMaybe<TodoItemFilter>;
   ordering?: Array<TodoItemOrder>;
@@ -4954,6 +5019,11 @@ export type QueryTodoListsArgs = {
   filters?: InputMaybe<TodoListFilter>;
   ordering?: Array<TodoListOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryTodoSummaryArgs = {
+  filters?: InputMaybe<TodoItemFilter>;
 };
 
 export type RefreshUploadInput = {
@@ -5446,6 +5516,14 @@ export type ScatterPlotOrder =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
+/** Input for changing only when a todo list or item is due */
+export type ScheduleTodoInput = {
+  /** When it is due; no date when not given (an item then follows its list's) */
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The list or item to schedule */
+  id: Scalars['ID']['input'];
+};
+
 /** Input for ticking (or unticking) one object on a todo item */
 export type SetTodoStructureDoneInput = {
   /** Whether it is done */
@@ -5459,6 +5537,14 @@ export type SetTodoStructureStatusInput = {
   /** The object on an item (a TodoItemStructure) */
   id: Scalars['ID']['input'];
   /** To do, Doing or Done */
+  status: TodoStatus;
+};
+
+/** Input for moving several objects on todo items to one status at once */
+export type SetTodoStructuresStatusInput = {
+  /** The objects on items (TodoItemStructures) */
+  ids: Array<Scalars['ID']['input']>;
+  /** To do, Doing or Done, for all of them */
   status: TodoStatus;
 };
 
@@ -5865,11 +5951,20 @@ export type StructureRelationPaginationInput = {
   offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** The log, as it is written */
+/** The log, and todo lists, as they are written */
 export type Subscription = {
   __typename?: 'Subscription';
   /** Each act of claiming in the caller's organization, as its transaction commits. Never an act that rolled back, never another tenant's */
   assertionRecorded: Assertion;
+  /** Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card */
+  todoChanged: TodoChange;
+};
+
+
+/** The log, and todo lists, as they are written */
+export type SubscriptionTodoChangedArgs = {
+  item?: InputMaybe<Scalars['ID']['input']>;
+  list?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Input for superseding a metric value */
@@ -6018,6 +6113,25 @@ export enum TermKind {
   StructureRelation = 'STRUCTURE_RELATION'
 }
 
+/** A todo list or item changed: re-read it, or drop it when it was deleted */
+export type TodoChange = {
+  __typename?: 'TodoChange';
+  /** The item as it is now; null for a list-only change or a deleted item */
+  item?: Maybe<TodoItem>;
+  /** The item, when the change was to one */
+  itemId?: Maybe<Scalars['ID']['output']>;
+  /** Changed (created, edited, moved, ticked) or deleted */
+  kind: TodoChangeKind;
+  /** The list it is on (or the list itself) */
+  listId: Scalars['ID']['output'];
+};
+
+/** What happened to a todo list or item */
+export enum TodoChangeKind {
+  Changed = 'CHANGED',
+  Deleted = 'DELETED'
+}
+
 /** Input naming one todo list, item or item object */
 export type TodoIdInput = {
   /** The row to act on */
@@ -6033,14 +6147,20 @@ export type TodoItem = {
   createdAt: Scalars['DateTime']['output'];
   /** More about what is to be done */
   description?: Maybe<Scalars['String']['output']>;
+  /** The item's own due date; see `effectiveDueAt` */
+  dueAt?: Maybe<Scalars['DateTime']['output']>;
   /** Who the item is for: its own assignee, else its list's (a sub) */
   effectiveAssignee?: Maybe<Scalars['ID']['output']>;
+  /** When the item is due: its own date, else its list's */
+  effectiveDueAt?: Maybe<Scalars['DateTime']['output']>;
   /** Database ID of the item */
   id: Scalars['ID']['output'];
   /** The list the item is on */
   list: TodoList;
   /** Its place within its column, 0 first */
   position: Scalars['Int']['output'];
+  /** The item's objects done, out of all of them; read it instead of counting `structures` */
+  progress: TodoProgress;
   /** The board column the item is in */
   status: TodoStatus;
   /** The objects the item is about */
@@ -6051,15 +6171,29 @@ export type TodoItem = {
   updatedAt: Scalars['DateTime']['output'];
 };
 
+
+/** One card on a todo board */
+export type TodoItemStructuresArgs = {
+  filters?: InputMaybe<TodoItemStructureFilter>;
+  ordering?: Array<TodoItemStructureOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
 export type TodoItemFilter = {
   AND?: InputMaybe<TodoItemFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<TodoItemFilter>;
   OR?: InputMaybe<TodoItemFilter>;
+  /** Items that are for somebody, their own assignee or their list's (true), or for nobody (false) */
+  assigned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Items whose effective assignee (their own, else their list's) is this user (a sub) */
   assignee?: InputMaybe<Scalars['ID']['input']>;
+  /** Items due (their own date, else their list's) before this time */
+  dueBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Items with a due date, their own or their list's (true), or none (false) */
+  hasDue?: InputMaybe<Scalars['Boolean']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
-  /** Items that carry this object; pair with `object` */
+  /** Items that carry this object; pair with `object` (or use `structure`) */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -6067,20 +6201,29 @@ export type TodoItemFilter = {
   list?: InputMaybe<Scalars['ID']['input']>;
   /** Items whose effective assignee is the caller */
   mine?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Items that carry this object; pair with `identifier` */
+  /** Items that carry this object; pair with `identifier` (or use `structure`) */
   object?: InputMaybe<Scalars['ID']['input']>;
+  /** Items not Done yet (true), or only Done ones (false) */
+  open?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Items past their due date and not Done (true), or not overdue (false) */
+  overdue?: InputMaybe<Scalars['Boolean']['input']>;
   /** The items of one project */
   project?: InputMaybe<Scalars['ID']['input']>;
   /** Search the title and description */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Items in any of these columns */
   status?: InputMaybe<Array<TodoStatus>>;
+  /** Items that carry this object (identifier and object together) */
+  structure?: InputMaybe<TodoObjectFilter>;
+  /** Items changed at or after this time */
+  updatedSince?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type TodoItemOrder =
-  { createdAt: Ordering; position?: never; updatedAt?: never; }
-  |  { createdAt?: never; position: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; position?: never; updatedAt: Ordering; };
+  { createdAt: Ordering; dueAt?: never; position?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt: Ordering; position?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; position: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; position?: never; updatedAt: Ordering; };
 
 /** An object a todo item is about, with its own To do / Doing / Done */
 export type TodoItemStructure = {
@@ -6109,6 +6252,37 @@ export type TodoItemStructure = {
   status: TodoStatus;
 };
 
+export type TodoItemStructureFilter = {
+  AND?: InputMaybe<TodoItemStructureFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TodoItemStructureFilter>;
+  OR?: InputMaybe<TodoItemStructureFilter>;
+  /** Objects on items whose effective assignee is this user (a sub) */
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** This object's rows, one per item it is on; pair with `object` */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** The objects of one item */
+  item?: InputMaybe<Scalars['ID']['input']>;
+  /** The objects on one list's items */
+  list?: InputMaybe<Scalars['ID']['input']>;
+  /** Objects on items whose effective assignee is the caller */
+  mine?: InputMaybe<Scalars['Boolean']['input']>;
+  /** This object's rows, one per item it is on; pair with `identifier` */
+  object?: InputMaybe<Scalars['ID']['input']>;
+  /** The objects on one project's items */
+  project?: InputMaybe<Scalars['ID']['input']>;
+  /** Objects in any of these states */
+  status?: InputMaybe<Array<TodoStatus>>;
+};
+
+export type TodoItemStructureOrder =
+  { createdAt: Ordering; doneAt?: never; position?: never; }
+  |  { createdAt?: never; doneAt: Ordering; position?: never; }
+  |  { createdAt?: never; doneAt?: never; position: Ordering; };
+
 /** A list of things to do, usually handed to one person */
 export type TodoList = {
   __typename?: 'TodoList';
@@ -6118,6 +6292,8 @@ export type TodoList = {
   createdAt: Scalars['DateTime']['output'];
   /** What the list is for */
   description?: Maybe<Scalars['String']['output']>;
+  /** When the list is due; its items without a date of their own follow it */
+  dueAt?: Maybe<Scalars['DateTime']['output']>;
   /** Database ID of the list */
   id: Scalars['ID']['output'];
   /** The list's items */
@@ -6150,6 +6326,8 @@ export type TodoListFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Lists assigned to the caller, or holding an item assigned to them */
   mine?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Lists that still hold an item not Done (true), or none (false) */
+  open?: InputMaybe<Scalars['Boolean']['input']>;
   /** The lists of one project */
   project?: InputMaybe<Scalars['ID']['input']>;
   /** Search the name and description */
@@ -6159,6 +6337,14 @@ export type TodoListFilter = {
 export type TodoListOrder =
   { createdAt: Ordering; name?: never; }
   |  { createdAt?: never; name: Ordering; };
+
+/** One object, named the way a comment names one */
+export type TodoObjectFilter = {
+  /** The object's structure identifier, e.g. @mikro/image */
+  identifier: Scalars['String']['input'];
+  /** The object's id within its structure */
+  object: Scalars['ID']['input'];
+};
 
 /** How far along something is: done out of total */
 export type TodoProgress = {
@@ -6180,6 +6366,23 @@ export type TodoStructureInput = {
   identifier: Scalars['String']['input'];
   /** The object's id within its structure */
   object: Scalars['ID']['input'];
+};
+
+/** Todo items counted by column, and their objects by whether they are done */
+export type TodoSummary = {
+  __typename?: 'TodoSummary';
+  /** Items in Doing */
+  doing: Scalars['Int']['output'];
+  /** Items in Done */
+  done: Scalars['Int']['output'];
+  /** The objects on those items: done out of total */
+  objects: TodoProgress;
+  /** Items past their due date (their own, else their list's) and not Done */
+  overdue: Scalars['Int']['output'];
+  /** Items in To do */
+  todo: Scalars['Int']['output'];
+  /** All items */
+  total: Scalars['Int']['output'];
 };
 
 /** Pagination options for a node's drawn edges and neighbours */
@@ -7683,7 +7886,12 @@ export type AssignableTermFragment = { __typename?: 'Term', id: string, kind: Te
 
 export type TodoItemStructureFragment = { __typename?: 'TodoItemStructure', id: string, identifier: string, object: string, status: TodoStatus, startedAt?: any | null, startedBy?: string | null, done: boolean, doneAt?: any | null, doneBy?: string | null, position: number };
 
-export type ListTodoItemFragment = { __typename?: 'TodoItem', id: string, title: string, description?: string | null, status: TodoStatus, position: number, assignee?: string | null, effectiveAssignee?: string | null, updatedAt: any, structures: Array<(
+export type TodoProgressFragment = { __typename?: 'TodoProgress', done: number, total: number };
+
+export type ListTodoItemFragment = { __typename?: 'TodoItem', id: string, title: string, description?: string | null, status: TodoStatus, position: number, assignee?: string | null, effectiveAssignee?: string | null, dueAt?: any | null, effectiveDueAt?: any | null, updatedAt: any, progress: (
+    { __typename?: 'TodoProgress' }
+    & TodoProgressFragment
+  ), upNext: Array<(
     { __typename?: 'TodoItemStructure' }
     & TodoItemStructureFragment
   )> };
@@ -7693,7 +7901,10 @@ export type TodoItemWithListFragment = (
   & ListTodoItemFragment
 );
 
-export type ListTodoListFragment = { __typename?: 'TodoList', id: string, name: string, description?: string | null, assignee?: string | null, createdAt: any, progress: { __typename?: 'TodoProgress', done: number, total: number } };
+export type ListTodoListFragment = { __typename?: 'TodoList', id: string, name: string, description?: string | null, assignee?: string | null, dueAt?: any | null, createdAt: any, progress: (
+    { __typename?: 'TodoProgress' }
+    & TodoProgressFragment
+  ) };
 
 export type TodoListFragment = (
   { __typename?: 'TodoList', project: { __typename?: 'Project', id: string, name: string }, items: Array<(
@@ -7702,6 +7913,24 @@ export type TodoListFragment = (
   )> }
   & ListTodoListFragment
 );
+
+export type SlimTodoItemFragment = { __typename?: 'TodoItem', id: string, title: string, description?: string | null, status: TodoStatus, position: number, assignee?: string | null, effectiveAssignee?: string | null, dueAt?: any | null, effectiveDueAt?: any | null, updatedAt: any, progress: (
+    { __typename?: 'TodoProgress' }
+    & TodoProgressFragment
+  ), list: { __typename?: 'TodoList', id: string, name: string, project: { __typename?: 'Project', id: string, name: string } } };
+
+export type TodoTrackRowFragment = (
+  { __typename?: 'TodoItemStructure', item: (
+    { __typename?: 'TodoItem' }
+    & SlimTodoItemFragment
+  ) }
+  & TodoItemStructureFragment
+);
+
+export type TodoSummaryFragment = { __typename?: 'TodoSummary', todo: number, doing: number, done: number, total: number, overdue: number, objects: (
+    { __typename?: 'TodoProgress' }
+    & TodoProgressFragment
+  ) };
 
 export type AssertParticipationMutationVariables = Exact<{
   event: Scalars['String']['input'];
@@ -8666,20 +8895,67 @@ export type SetTodoStructureStatusMutationVariables = Exact<{
 }>;
 
 
-export type SetTodoStructureStatusMutation = { __typename?: 'Mutation', setTodoStructureStatus: (
+export type SetTodoStructureStatusMutation = { __typename?: 'Mutation', setTodoStructureStatus: { __typename?: 'TodoItem', id: string, status: TodoStatus, position: number, updatedAt: any, progress: (
+      { __typename?: 'TodoProgress' }
+      & TodoProgressFragment
+    ), structures: Array<(
+      { __typename?: 'TodoItemStructure' }
+      & TodoItemStructureFragment
+    )> } };
+
+export type SetTodoStructuresStatusMutationVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  status: TodoStatus;
+}>;
+
+
+export type SetTodoStructuresStatusMutation = { __typename?: 'Mutation', setTodoStructuresStatus: Array<(
+    { __typename?: 'TodoItem' }
+    & ListTodoItemFragment
+  )> };
+
+export type AssignTodoItemMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  assignee?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type AssignTodoItemMutation = { __typename?: 'Mutation', assignTodoItem: (
     { __typename?: 'TodoItem' }
     & ListTodoItemFragment
   ) };
 
-export type SetTodoStructureDoneMutationVariables = Exact<{
+export type AssignTodoListMutationVariables = Exact<{
   id: Scalars['ID']['input'];
-  done: Scalars['Boolean']['input'];
+  assignee?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
-export type SetTodoStructureDoneMutation = { __typename?: 'Mutation', setTodoStructureDone: (
+export type AssignTodoListMutation = { __typename?: 'Mutation', assignTodoList: (
+    { __typename?: 'TodoList' }
+    & ListTodoListFragment
+  ) };
+
+export type ScheduleTodoItemMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+}>;
+
+
+export type ScheduleTodoItemMutation = { __typename?: 'Mutation', scheduleTodoItem: (
     { __typename?: 'TodoItem' }
     & ListTodoItemFragment
+  ) };
+
+export type ScheduleTodoListMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+}>;
+
+
+export type ScheduleTodoListMutation = { __typename?: 'Mutation', scheduleTodoList: (
+    { __typename?: 'TodoList' }
+    & ListTodoListFragment
   ) };
 
 export type RequestMediaUploadMutationVariables = Exact<{
@@ -9682,7 +9958,10 @@ export type TodoItemQueryVariables = Exact<{
 
 
 export type TodoItemQuery = { __typename?: 'Query', todoItem: (
-    { __typename?: 'TodoItem' }
+    { __typename?: 'TodoItem', allStructures: Array<(
+      { __typename?: 'TodoItemStructure' }
+      & TodoItemStructureFragment
+    )> }
     & TodoItemWithListFragment
   ) };
 
@@ -9696,6 +9975,80 @@ export type TodoItemsQuery = { __typename?: 'Query', todoItems: Array<(
     { __typename?: 'TodoItem' }
     & TodoItemWithListFragment
   )> };
+
+export type TodoTrackQueryVariables = Exact<{
+  identifier: Scalars['String']['input'];
+  object: Scalars['ID']['input'];
+}>;
+
+
+export type TodoTrackQuery = { __typename?: 'Query', todoItemStructures: Array<(
+    { __typename?: 'TodoItemStructure' }
+    & TodoTrackRowFragment
+  )> };
+
+export type TodoSummaryQueryVariables = Exact<{
+  filters?: InputMaybe<TodoItemFilter>;
+}>;
+
+
+export type TodoSummaryQuery = { __typename?: 'Query', todoSummary: (
+    { __typename?: 'TodoSummary' }
+    & TodoSummaryFragment
+  ) };
+
+export type SlimTodoItemsQueryVariables = Exact<{
+  filters?: InputMaybe<TodoItemFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type SlimTodoItemsQuery = { __typename?: 'Query', todoItems: Array<(
+    { __typename?: 'TodoItem' }
+    & SlimTodoItemFragment
+  )> };
+
+export type NextTodoObjectQueryVariables = Exact<{
+  item: Scalars['ID']['input'];
+}>;
+
+
+export type NextTodoObjectQuery = { __typename?: 'Query', todoItemStructures: Array<{ __typename?: 'TodoItemStructure', id: string, identifier: string, object: string, position: number }> };
+
+export type TodoItemObjectsQueryVariables = Exact<{
+  item: Scalars['ID']['input'];
+}>;
+
+
+export type TodoItemObjectsQuery = { __typename?: 'Query', todoItemStructures: Array<(
+    { __typename?: 'TodoItemStructure' }
+    & TodoItemStructureFragment
+  )> };
+
+export type TodoItemAssignmentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TodoItemAssignmentQuery = { __typename?: 'Query', todoItem: { __typename?: 'TodoItem', id: string, assignee?: string | null, dueAt?: any | null } };
+
+export type TodoListAssignmentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TodoListAssignmentQuery = { __typename?: 'Query', todoList: { __typename?: 'TodoList', id: string, assignee?: string | null, dueAt?: any | null } };
+
+export type TodoChangedSubscriptionVariables = Exact<{
+  list?: InputMaybe<Scalars['ID']['input']>;
+  item?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type TodoChangedSubscription = { __typename?: 'Subscription', todoChanged: { __typename?: 'TodoChange', kind: TodoChangeKind, listId: string, itemId?: string | null, item?: (
+      { __typename?: 'TodoItem' }
+      & TodoItemWithListFragment
+    ) | null } };
 
 export const BaseNodeFragmentDoc = gql`
     fragment BaseNode on Node {
@@ -10371,19 +10724,25 @@ export const ListProjectFragmentDoc = gql`
   createdAt
 }
     `;
+export const TodoProgressFragmentDoc = gql`
+    fragment TodoProgress on TodoProgress {
+  done
+  total
+}
+    `;
 export const ListTodoListFragmentDoc = gql`
     fragment ListTodoList on TodoList {
   id
   name
   description
   assignee
+  dueAt
   createdAt
   progress {
-    done
-    total
+    ...TodoProgress
   }
 }
-    `;
+    ${TodoProgressFragmentDoc}`;
 export const ProjectFragmentDoc = gql`
     fragment Project on Project {
   ...ListProject
@@ -11090,12 +11449,22 @@ export const ListTodoItemFragmentDoc = gql`
   position
   assignee
   effectiveAssignee
+  dueAt
+  effectiveDueAt
   updatedAt
-  structures {
+  progress {
+    ...TodoProgress
+  }
+  upNext: structures(
+    filters: {status: [TODO, DOING]}
+    ordering: [{position: ASC}]
+    pagination: {limit: 3}
+  ) {
     ...TodoItemStructure
   }
 }
-    ${TodoItemStructureFragmentDoc}`;
+    ${TodoProgressFragmentDoc}
+${TodoItemStructureFragmentDoc}`;
 export const TodoItemWithListFragmentDoc = gql`
     fragment TodoItemWithList on TodoItem {
   ...ListTodoItem
@@ -11122,6 +11491,52 @@ export const TodoListFragmentDoc = gql`
 }
     ${ListTodoListFragmentDoc}
 ${ListTodoItemFragmentDoc}`;
+export const SlimTodoItemFragmentDoc = gql`
+    fragment SlimTodoItem on TodoItem {
+  id
+  title
+  description
+  status
+  position
+  assignee
+  effectiveAssignee
+  dueAt
+  effectiveDueAt
+  updatedAt
+  progress {
+    ...TodoProgress
+  }
+  list {
+    id
+    name
+    project {
+      id
+      name
+    }
+  }
+}
+    ${TodoProgressFragmentDoc}`;
+export const TodoTrackRowFragmentDoc = gql`
+    fragment TodoTrackRow on TodoItemStructure {
+  ...TodoItemStructure
+  item {
+    ...SlimTodoItem
+  }
+}
+    ${TodoItemStructureFragmentDoc}
+${SlimTodoItemFragmentDoc}`;
+export const TodoSummaryFragmentDoc = gql`
+    fragment TodoSummary on TodoSummary {
+  todo
+  doing
+  done
+  total
+  overdue
+  objects {
+    ...TodoProgress
+  }
+}
+    ${TodoProgressFragmentDoc}`;
 export const AssertParticipationDocument = gql`
     mutation AssertParticipation($event: String!, $entity: String!, $role: String!, $isInput: Boolean!) {
   assertParticipation(
@@ -14277,10 +14692,20 @@ export type DetachFromTodoItemMutationOptions = Apollo.BaseMutationOptions<Detac
 export const SetTodoStructureStatusDocument = gql`
     mutation SetTodoStructureStatus($id: ID!, $status: TodoStatus!) {
   setTodoStructureStatus(input: {id: $id, status: $status}) {
-    ...ListTodoItem
+    id
+    status
+    position
+    updatedAt
+    progress {
+      ...TodoProgress
+    }
+    structures(filters: {ids: [$id]}) {
+      ...TodoItemStructure
+    }
   }
 }
-    ${ListTodoItemFragmentDoc}`;
+    ${TodoProgressFragmentDoc}
+${TodoItemStructureFragmentDoc}`;
 export type SetTodoStructureStatusMutationFn = Apollo.MutationFunction<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>;
 
 /**
@@ -14308,40 +14733,176 @@ export function useSetTodoStructureStatusMutation(baseOptions?: ApolloReactHooks
 export type SetTodoStructureStatusMutationHookResult = ReturnType<typeof useSetTodoStructureStatusMutation>;
 export type SetTodoStructureStatusMutationResult = Apollo.MutationResult<SetTodoStructureStatusMutation>;
 export type SetTodoStructureStatusMutationOptions = Apollo.BaseMutationOptions<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>;
-export const SetTodoStructureDoneDocument = gql`
-    mutation SetTodoStructureDone($id: ID!, $done: Boolean!) {
-  setTodoStructureDone(input: {id: $id, done: $done}) {
+export const SetTodoStructuresStatusDocument = gql`
+    mutation SetTodoStructuresStatus($ids: [ID!]!, $status: TodoStatus!) {
+  setTodoStructuresStatus(input: {ids: $ids, status: $status}) {
     ...ListTodoItem
   }
 }
     ${ListTodoItemFragmentDoc}`;
-export type SetTodoStructureDoneMutationFn = Apollo.MutationFunction<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>;
+export type SetTodoStructuresStatusMutationFn = Apollo.MutationFunction<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>;
 
 /**
- * __useSetTodoStructureDoneMutation__
+ * __useSetTodoStructuresStatusMutation__
  *
- * To run a mutation, you first call `useSetTodoStructureDoneMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useSetTodoStructureDoneMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useSetTodoStructuresStatusMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetTodoStructuresStatusMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [setTodoStructureDoneMutation, { data, loading, error }] = useSetTodoStructureDoneMutation({
+ * const [setTodoStructuresStatusMutation, { data, loading, error }] = useSetTodoStructuresStatusMutation({
  *   variables: {
- *      id: // value for 'id'
- *      done: // value for 'done'
+ *      ids: // value for 'ids'
+ *      status: // value for 'status'
  *   },
  * });
  */
-export function useSetTodoStructureDoneMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>) {
+export function useSetTodoStructuresStatusMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>(SetTodoStructureDoneDocument, options);
+        return ApolloReactHooks.useMutation<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>(SetTodoStructuresStatusDocument, options);
       }
-export type SetTodoStructureDoneMutationHookResult = ReturnType<typeof useSetTodoStructureDoneMutation>;
-export type SetTodoStructureDoneMutationResult = Apollo.MutationResult<SetTodoStructureDoneMutation>;
-export type SetTodoStructureDoneMutationOptions = Apollo.BaseMutationOptions<SetTodoStructureDoneMutation, SetTodoStructureDoneMutationVariables>;
+export type SetTodoStructuresStatusMutationHookResult = ReturnType<typeof useSetTodoStructuresStatusMutation>;
+export type SetTodoStructuresStatusMutationResult = Apollo.MutationResult<SetTodoStructuresStatusMutation>;
+export type SetTodoStructuresStatusMutationOptions = Apollo.BaseMutationOptions<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>;
+export const AssignTodoItemDocument = gql`
+    mutation AssignTodoItem($id: ID!, $assignee: ID) {
+  assignTodoItem(input: {id: $id, assignee: $assignee}) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type AssignTodoItemMutationFn = Apollo.MutationFunction<AssignTodoItemMutation, AssignTodoItemMutationVariables>;
+
+/**
+ * __useAssignTodoItemMutation__
+ *
+ * To run a mutation, you first call `useAssignTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignTodoItemMutation, { data, loading, error }] = useAssignTodoItemMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      assignee: // value for 'assignee'
+ *   },
+ * });
+ */
+export function useAssignTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignTodoItemMutation, AssignTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignTodoItemMutation, AssignTodoItemMutationVariables>(AssignTodoItemDocument, options);
+      }
+export type AssignTodoItemMutationHookResult = ReturnType<typeof useAssignTodoItemMutation>;
+export type AssignTodoItemMutationResult = Apollo.MutationResult<AssignTodoItemMutation>;
+export type AssignTodoItemMutationOptions = Apollo.BaseMutationOptions<AssignTodoItemMutation, AssignTodoItemMutationVariables>;
+export const AssignTodoListDocument = gql`
+    mutation AssignTodoList($id: ID!, $assignee: ID) {
+  assignTodoList(input: {id: $id, assignee: $assignee}) {
+    ...ListTodoList
+  }
+}
+    ${ListTodoListFragmentDoc}`;
+export type AssignTodoListMutationFn = Apollo.MutationFunction<AssignTodoListMutation, AssignTodoListMutationVariables>;
+
+/**
+ * __useAssignTodoListMutation__
+ *
+ * To run a mutation, you first call `useAssignTodoListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignTodoListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignTodoListMutation, { data, loading, error }] = useAssignTodoListMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      assignee: // value for 'assignee'
+ *   },
+ * });
+ */
+export function useAssignTodoListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignTodoListMutation, AssignTodoListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignTodoListMutation, AssignTodoListMutationVariables>(AssignTodoListDocument, options);
+      }
+export type AssignTodoListMutationHookResult = ReturnType<typeof useAssignTodoListMutation>;
+export type AssignTodoListMutationResult = Apollo.MutationResult<AssignTodoListMutation>;
+export type AssignTodoListMutationOptions = Apollo.BaseMutationOptions<AssignTodoListMutation, AssignTodoListMutationVariables>;
+export const ScheduleTodoItemDocument = gql`
+    mutation ScheduleTodoItem($id: ID!, $dueAt: DateTime) {
+  scheduleTodoItem(input: {id: $id, dueAt: $dueAt}) {
+    ...ListTodoItem
+  }
+}
+    ${ListTodoItemFragmentDoc}`;
+export type ScheduleTodoItemMutationFn = Apollo.MutationFunction<ScheduleTodoItemMutation, ScheduleTodoItemMutationVariables>;
+
+/**
+ * __useScheduleTodoItemMutation__
+ *
+ * To run a mutation, you first call `useScheduleTodoItemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useScheduleTodoItemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [scheduleTodoItemMutation, { data, loading, error }] = useScheduleTodoItemMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      dueAt: // value for 'dueAt'
+ *   },
+ * });
+ */
+export function useScheduleTodoItemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ScheduleTodoItemMutation, ScheduleTodoItemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ScheduleTodoItemMutation, ScheduleTodoItemMutationVariables>(ScheduleTodoItemDocument, options);
+      }
+export type ScheduleTodoItemMutationHookResult = ReturnType<typeof useScheduleTodoItemMutation>;
+export type ScheduleTodoItemMutationResult = Apollo.MutationResult<ScheduleTodoItemMutation>;
+export type ScheduleTodoItemMutationOptions = Apollo.BaseMutationOptions<ScheduleTodoItemMutation, ScheduleTodoItemMutationVariables>;
+export const ScheduleTodoListDocument = gql`
+    mutation ScheduleTodoList($id: ID!, $dueAt: DateTime) {
+  scheduleTodoList(input: {id: $id, dueAt: $dueAt}) {
+    ...ListTodoList
+  }
+}
+    ${ListTodoListFragmentDoc}`;
+export type ScheduleTodoListMutationFn = Apollo.MutationFunction<ScheduleTodoListMutation, ScheduleTodoListMutationVariables>;
+
+/**
+ * __useScheduleTodoListMutation__
+ *
+ * To run a mutation, you first call `useScheduleTodoListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useScheduleTodoListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [scheduleTodoListMutation, { data, loading, error }] = useScheduleTodoListMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      dueAt: // value for 'dueAt'
+ *   },
+ * });
+ */
+export function useScheduleTodoListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ScheduleTodoListMutation, ScheduleTodoListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ScheduleTodoListMutation, ScheduleTodoListMutationVariables>(ScheduleTodoListDocument, options);
+      }
+export type ScheduleTodoListMutationHookResult = ReturnType<typeof useScheduleTodoListMutation>;
+export type ScheduleTodoListMutationResult = Apollo.MutationResult<ScheduleTodoListMutation>;
+export type ScheduleTodoListMutationOptions = Apollo.BaseMutationOptions<ScheduleTodoListMutation, ScheduleTodoListMutationVariables>;
 export const RequestMediaUploadDocument = gql`
     mutation RequestMediaUpload($input: RequestMediaUploadInput!) {
   requestMediaUpload(input: $input) {
@@ -18131,9 +18692,13 @@ export const TodoItemDocument = gql`
     query TodoItem($id: ID!) {
   todoItem(id: $id) {
     ...TodoItemWithList
+    allStructures: structures(ordering: [{position: ASC}]) {
+      ...TodoItemStructure
+    }
   }
 }
-    ${TodoItemWithListFragmentDoc}`;
+    ${TodoItemWithListFragmentDoc}
+${TodoItemStructureFragmentDoc}`;
 
 /**
  * __useTodoItemQuery__
@@ -18202,3 +18767,301 @@ export function useTodoItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type TodoItemsQueryHookResult = ReturnType<typeof useTodoItemsQuery>;
 export type TodoItemsLazyQueryHookResult = ReturnType<typeof useTodoItemsLazyQuery>;
 export type TodoItemsQueryResult = Apollo.QueryResult<TodoItemsQuery, TodoItemsQueryVariables>;
+export const TodoTrackDocument = gql`
+    query TodoTrack($identifier: String!, $object: ID!) {
+  todoItemStructures(filters: {identifier: $identifier, object: $object}) {
+    ...TodoTrackRow
+  }
+}
+    ${TodoTrackRowFragmentDoc}`;
+
+/**
+ * __useTodoTrackQuery__
+ *
+ * To run a query within a React component, call `useTodoTrackQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoTrackQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoTrackQuery({
+ *   variables: {
+ *      identifier: // value for 'identifier'
+ *      object: // value for 'object'
+ *   },
+ * });
+ */
+export function useTodoTrackQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoTrackQuery, TodoTrackQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoTrackQuery, TodoTrackQueryVariables>(TodoTrackDocument, options);
+      }
+export function useTodoTrackLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoTrackQuery, TodoTrackQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoTrackQuery, TodoTrackQueryVariables>(TodoTrackDocument, options);
+        }
+export type TodoTrackQueryHookResult = ReturnType<typeof useTodoTrackQuery>;
+export type TodoTrackLazyQueryHookResult = ReturnType<typeof useTodoTrackLazyQuery>;
+export type TodoTrackQueryResult = Apollo.QueryResult<TodoTrackQuery, TodoTrackQueryVariables>;
+export const TodoSummaryDocument = gql`
+    query TodoSummary($filters: TodoItemFilter) {
+  todoSummary(filters: $filters) {
+    ...TodoSummary
+  }
+}
+    ${TodoSummaryFragmentDoc}`;
+
+/**
+ * __useTodoSummaryQuery__
+ *
+ * To run a query within a React component, call `useTodoSummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoSummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoSummaryQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useTodoSummaryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TodoSummaryQuery, TodoSummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoSummaryQuery, TodoSummaryQueryVariables>(TodoSummaryDocument, options);
+      }
+export function useTodoSummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoSummaryQuery, TodoSummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoSummaryQuery, TodoSummaryQueryVariables>(TodoSummaryDocument, options);
+        }
+export type TodoSummaryQueryHookResult = ReturnType<typeof useTodoSummaryQuery>;
+export type TodoSummaryLazyQueryHookResult = ReturnType<typeof useTodoSummaryLazyQuery>;
+export type TodoSummaryQueryResult = Apollo.QueryResult<TodoSummaryQuery, TodoSummaryQueryVariables>;
+export const SlimTodoItemsDocument = gql`
+    query SlimTodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
+  todoItems(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{updatedAt: DESC}]
+  ) {
+    ...SlimTodoItem
+  }
+}
+    ${SlimTodoItemFragmentDoc}`;
+
+/**
+ * __useSlimTodoItemsQuery__
+ *
+ * To run a query within a React component, call `useSlimTodoItemsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSlimTodoItemsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSlimTodoItemsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useSlimTodoItemsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>(SlimTodoItemsDocument, options);
+      }
+export function useSlimTodoItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>(SlimTodoItemsDocument, options);
+        }
+export type SlimTodoItemsQueryHookResult = ReturnType<typeof useSlimTodoItemsQuery>;
+export type SlimTodoItemsLazyQueryHookResult = ReturnType<typeof useSlimTodoItemsLazyQuery>;
+export type SlimTodoItemsQueryResult = Apollo.QueryResult<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>;
+export const NextTodoObjectDocument = gql`
+    query NextTodoObject($item: ID!) {
+  todoItemStructures(
+    filters: {item: $item, status: [TODO, DOING]}
+    ordering: [{position: ASC}]
+    pagination: {limit: 2}
+  ) {
+    id
+    identifier
+    object
+    position
+  }
+}
+    `;
+
+/**
+ * __useNextTodoObjectQuery__
+ *
+ * To run a query within a React component, call `useNextTodoObjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNextTodoObjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNextTodoObjectQuery({
+ *   variables: {
+ *      item: // value for 'item'
+ *   },
+ * });
+ */
+export function useNextTodoObjectQuery(baseOptions: ApolloReactHooks.QueryHookOptions<NextTodoObjectQuery, NextTodoObjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<NextTodoObjectQuery, NextTodoObjectQueryVariables>(NextTodoObjectDocument, options);
+      }
+export function useNextTodoObjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<NextTodoObjectQuery, NextTodoObjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<NextTodoObjectQuery, NextTodoObjectQueryVariables>(NextTodoObjectDocument, options);
+        }
+export type NextTodoObjectQueryHookResult = ReturnType<typeof useNextTodoObjectQuery>;
+export type NextTodoObjectLazyQueryHookResult = ReturnType<typeof useNextTodoObjectLazyQuery>;
+export type NextTodoObjectQueryResult = Apollo.QueryResult<NextTodoObjectQuery, NextTodoObjectQueryVariables>;
+export const TodoItemObjectsDocument = gql`
+    query TodoItemObjects($item: ID!) {
+  todoItemStructures(filters: {item: $item}, ordering: [{position: ASC}]) {
+    ...TodoItemStructure
+  }
+}
+    ${TodoItemStructureFragmentDoc}`;
+
+/**
+ * __useTodoItemObjectsQuery__
+ *
+ * To run a query within a React component, call `useTodoItemObjectsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoItemObjectsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoItemObjectsQuery({
+ *   variables: {
+ *      item: // value for 'item'
+ *   },
+ * });
+ */
+export function useTodoItemObjectsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoItemObjectsQuery, TodoItemObjectsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoItemObjectsQuery, TodoItemObjectsQueryVariables>(TodoItemObjectsDocument, options);
+      }
+export function useTodoItemObjectsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoItemObjectsQuery, TodoItemObjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoItemObjectsQuery, TodoItemObjectsQueryVariables>(TodoItemObjectsDocument, options);
+        }
+export type TodoItemObjectsQueryHookResult = ReturnType<typeof useTodoItemObjectsQuery>;
+export type TodoItemObjectsLazyQueryHookResult = ReturnType<typeof useTodoItemObjectsLazyQuery>;
+export type TodoItemObjectsQueryResult = Apollo.QueryResult<TodoItemObjectsQuery, TodoItemObjectsQueryVariables>;
+export const TodoItemAssignmentDocument = gql`
+    query TodoItemAssignment($id: ID!) {
+  todoItem(id: $id) {
+    id
+    assignee
+    dueAt
+  }
+}
+    `;
+
+/**
+ * __useTodoItemAssignmentQuery__
+ *
+ * To run a query within a React component, call `useTodoItemAssignmentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoItemAssignmentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoItemAssignmentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTodoItemAssignmentQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>(TodoItemAssignmentDocument, options);
+      }
+export function useTodoItemAssignmentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>(TodoItemAssignmentDocument, options);
+        }
+export type TodoItemAssignmentQueryHookResult = ReturnType<typeof useTodoItemAssignmentQuery>;
+export type TodoItemAssignmentLazyQueryHookResult = ReturnType<typeof useTodoItemAssignmentLazyQuery>;
+export type TodoItemAssignmentQueryResult = Apollo.QueryResult<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>;
+export const TodoListAssignmentDocument = gql`
+    query TodoListAssignment($id: ID!) {
+  todoList(id: $id) {
+    id
+    assignee
+    dueAt
+  }
+}
+    `;
+
+/**
+ * __useTodoListAssignmentQuery__
+ *
+ * To run a query within a React component, call `useTodoListAssignmentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoListAssignmentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoListAssignmentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTodoListAssignmentQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>(TodoListAssignmentDocument, options);
+      }
+export function useTodoListAssignmentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>(TodoListAssignmentDocument, options);
+        }
+export type TodoListAssignmentQueryHookResult = ReturnType<typeof useTodoListAssignmentQuery>;
+export type TodoListAssignmentLazyQueryHookResult = ReturnType<typeof useTodoListAssignmentLazyQuery>;
+export type TodoListAssignmentQueryResult = Apollo.QueryResult<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>;
+export const TodoChangedDocument = gql`
+    subscription TodoChanged($list: ID, $item: ID) {
+  todoChanged(list: $list, item: $item) {
+    kind
+    listId
+    itemId
+    item {
+      ...TodoItemWithList
+    }
+  }
+}
+    ${TodoItemWithListFragmentDoc}`;
+
+/**
+ * __useTodoChangedSubscription__
+ *
+ * To run a query within a React component, call `useTodoChangedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useTodoChangedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoChangedSubscription({
+ *   variables: {
+ *      list: // value for 'list'
+ *      item: // value for 'item'
+ *   },
+ * });
+ */
+export function useTodoChangedSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<TodoChangedSubscription, TodoChangedSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<TodoChangedSubscription, TodoChangedSubscriptionVariables>(TodoChangedDocument, options);
+      }
+export type TodoChangedSubscriptionHookResult = ReturnType<typeof useTodoChangedSubscription>;
+export type TodoChangedSubscriptionResult = Apollo.SubscriptionResult<TodoChangedSubscription>;

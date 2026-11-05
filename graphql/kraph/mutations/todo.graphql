@@ -50,14 +50,51 @@ mutation DetachFromTodoItem($id: ID!) {
   }
 }
 
+# One object's status. The answer is the item's column and progress plus that
+# one object, never the item's other objects (an item may carry hundreds); the
+# cache merges it into every view of the item. `useSetTodoStatus` answers it
+# optimistically, so this exact shape is also what the client builds.
 mutation SetTodoStructureStatus($id: ID!, $status: TodoStatus!) {
   setTodoStructureStatus(input: { id: $id, status: $status }) {
+    id
+    status
+    position
+    updatedAt
+    progress {
+      ...TodoProgress
+    }
+    structures(filters: { ids: [$id] }) {
+      ...TodoItemStructure
+    }
+  }
+}
+
+mutation SetTodoStructuresStatus($ids: [ID!]!, $status: TodoStatus!) {
+  setTodoStructuresStatus(input: { ids: $ids, status: $status }) {
     ...ListTodoItem
   }
 }
 
-mutation SetTodoStructureDone($id: ID!, $done: Boolean!) {
-  setTodoStructureDone(input: { id: $id, done: $done }) {
+mutation AssignTodoItem($id: ID!, $assignee: ID) {
+  assignTodoItem(input: { id: $id, assignee: $assignee }) {
     ...ListTodoItem
+  }
+}
+
+mutation AssignTodoList($id: ID!, $assignee: ID) {
+  assignTodoList(input: { id: $id, assignee: $assignee }) {
+    ...ListTodoList
+  }
+}
+
+mutation ScheduleTodoItem($id: ID!, $dueAt: DateTime) {
+  scheduleTodoItem(input: { id: $id, dueAt: $dueAt }) {
+    ...ListTodoItem
+  }
+}
+
+mutation ScheduleTodoList($id: ID!, $dueAt: DateTime) {
+  scheduleTodoList(input: { id: $id, dueAt: $dueAt }) {
+    ...ListTodoList
   }
 }

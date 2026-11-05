@@ -15,6 +15,8 @@ import { TForm as CreateRelationCategoryForm } from "./forms/CreateRelationCateg
 import { TForm as CreateStructureRelationCategoryForm } from "./forms/CreateStructureRelationCategoryForm";
 import UpdateEntityCategoryForm from "./forms/UpdateEntityCategoryForm";
 import { AddToTodoForm } from "./forms/todos/AddToTodoForm";
+import { AssignTodoForm } from "./forms/todos/AssignTodoForm";
+import { ScheduleTodoForm } from "./forms/todos/ScheduleTodoForm";
 import { CreateTodoItemForm } from "./forms/todos/CreateTodoItemForm";
 import { CreateTodoListForm } from "./forms/todos/CreateTodoListForm";
 import { CreateProjectForm } from "./forms/projects/CreateProjectForm";
@@ -47,4 +49,6 @@ export const KRAPH_DIALOGS = {
   createtodolist: CreateTodoListForm,
   createtodoitem: CreateTodoItemForm,
   addtotodo: AddToTodoForm,
+  assigntodo: AssignTodoForm,
+  scheduletodo: ScheduleTodoForm,
 };

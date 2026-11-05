@@ -831,6 +831,17 @@ input AssertionFilter {
   subjects: [String!]
 }
 
+"""Input for changing only who a todo list or item is for"""
+input AssignTodoInput {
+  """
+  Who it is for (a sub); nobody when not given (an item then falls back to its list's)
+  """
+  assignee: ID = null
+
+  """The list or item to assign"""
+  id: ID!
+}
+
 """Input for putting objects on a todo item"""
 input AttachToTodoItemInput {
   """The item to put the objects on"""
@@ -1849,6 +1860,9 @@ input CreateTodoItemInput {
   """More about what is to be done"""
   description: String = null
 
+  """When it is due; the list's due date when not given"""
+  dueAt: DateTime = null
+
   """The list the item goes on"""
   list: ID!
 
@@ -1869,6 +1883,9 @@ input CreateTodoListInput {
 
   """What the list is for"""
   description: String = null
+
+  """When the list is due; its items without a date of their own follow it"""
+  dueAt: DateTime = null
 
   """The name of the list"""
   name: String!
@@ -3955,7 +3972,7 @@ input MetricValueInput {
   valueKind: ValueKind!
 }
 
-"""Input for moving a todo item on its board"""
+"""Input for moving a todo item on its board, or onto another list"""
 input MoveTodoItemInput {
   """The item to move"""
   id: ID!
@@ -3964,6 +3981,11 @@ input MoveTodoItemInput {
   Its place in that column once moved, 0 first; past the end puts it last
   """
   index: Int! = 0
+
+  """
+  Another list (of the same organization) to move it to; its own when not given
+  """
+  list: ID = null
 
   """The column to move it to"""
   status: TodoStatus!
@@ -4044,6 +4066,14 @@ type Mutation {
   Assert a relation between two structures. Drawings are always empty: neither endpoint has a vertex
   """
   assertStructureRelationExists(input: AssertStructureRelationExistsInput!): AssertedStructureRelation!
+
+  """
+  Change only who a todo item is for; nobody means its list's assignee again
+  """
+  assignTodoItem(input: AssignTodoInput!): TodoItem!
+
+  """Change only who a todo list is for"""
+  assignTodoList(input: AssignTodoInput!): TodoList!
 
   """Put objects on a todo item; one already on it is left as it is"""
   attachToTodoItem(input: AttachToTodoItemInput!): TodoItem!
@@ -4261,6 +4291,12 @@ type Mutation {
   """Retract a structure relation assertion without destroying it"""
   retractStructureRelation(input: RetractStructureRelationInput!): AssertedStructureRelation!
 
+  """Change only when a todo item is due; no date means its list's again"""
+  scheduleTodoItem(input: ScheduleTodoInput!): TodoItem!
+
+  """Change only when a todo list is due"""
+  scheduleTodoList(input: ScheduleTodoInput!): TodoList!
+
   """
   Tick or untick one object on a todo item; ticking the last moves the item to Done
   """
@@ -4270,6 +4306,11 @@ type Mutation {
   Move one object on a todo item to To do, Doing or Done; the item's column follows
   """
   setTodoStructureStatus(input: SetTodoStructureStatusInput!): TodoItem!
+
+  """
+  Move several objects on todo items to one status at once; each item's column follows. Returns the touched items
+  """
+  setTodoStructuresStatus(input: SetTodoStructuresStatusInput!): [TodoItem!]!
 
   """
   Correct a measurement by retracting it and asserting a new one. The returned metric has a new id: it is a new row, not an edited one
@@ -5617,6 +5658,11 @@ type Query {
   todoItem(id: ID!): TodoItem!
 
   """
+  Objects on todo items, one row per (item, object). `identifier` + `object` is an object's own todo track: its row on every item it is on, without the item's other objects
+  """
+  todoItemStructures(filters: TodoItemStructureFilter, ordering: [TodoItemStructureOrder!]! = [], pagination: OffsetPaginationInput): [TodoItemStructure!]!
+
+  """
   Todo items across lists; `mine` narrows to those whose effective assignee is the caller, `identifier` + `object` to those that carry an object
   """
   todoItems(filters: TodoItemFilter, ordering: [TodoItemOrder!]! = [], pagination: OffsetPaginationInput): [TodoItem!]!
@@ -5626,6 +5672,11 @@ type Query {
 
   """Todo lists; `mine` narrows to the caller's"""
   todoLists(filters: TodoListFilter, ordering: [TodoListOrder!]! = [], pagination: OffsetPaginationInput): [TodoList!]!
+
+  """
+  The todo items `filters` selects (as in `todoItems`), counted by column, with their objects done out of total
+  """
+  todoSummary(filters: TodoItemFilter = null): TodoSummary!
 }
 
 input RefreshUploadInput {
@@ -6312,6 +6363,17 @@ input ScatterPlotOrder @oneOf {
   name: Ordering
 }
 
+"""Input for changing only when a todo list or item is due"""
+input ScheduleTodoInput {
+  """
+  When it is due; no date when not given (an item then follows its list's)
+  """
+  dueAt: DateTime = null
+
+  """The list or item to schedule"""
+  id: ID!
+}
+
 """Input for ticking (or unticking) one object on a todo item"""
 input SetTodoStructureDoneInput {
   """Whether it is done"""
@@ -6327,6 +6389,15 @@ input SetTodoStructureStatusInput {
   id: ID!
 
   """To do, Doing or Done"""
+  status: TodoStatus!
+}
+
+"""Input for moving several objects on todo items to one status at once"""
+input SetTodoStructuresStatusInput {
+  """The objects on items (TodoItemStructures)"""
+  ids: [ID!]!
+
+  """To do, Doing or Done, for all of them"""
   status: TodoStatus!
 }
 
@@ -6837,12 +6908,17 @@ input StructureRelationPaginationInput {
   offset: Int = 0
 }
 
-"""The log, as it is written"""
+"""The log, and todo lists, as they are written"""
 type Subscription {
   """
   Each act of claiming in the caller's organization, as its transaction commits. Never an act that rolled back, never another tenant's
   """
   assertionRecorded: Assertion!
+
+  """
+  Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card
+  """
+  todoChanged(item: ID = null, list: ID = null): TodoChange!
 }
 
 """Input for superseding a metric value"""
@@ -7069,6 +7145,29 @@ enum TermKind {
   STRUCTURE_RELATION
 }
 
+"""
+A todo list or item changed: re-read it, or drop it when it was deleted
+"""
+type TodoChange {
+  """The item as it is now; null for a list-only change or a deleted item"""
+  item: TodoItem
+
+  """The item, when the change was to one"""
+  itemId: ID
+
+  """Changed (created, edited, moved, ticked) or deleted"""
+  kind: TodoChangeKind!
+
+  """The list it is on (or the list itself)"""
+  listId: ID!
+}
+
+"""What happened to a todo list or item"""
+enum TodoChangeKind {
+  CHANGED
+  DELETED
+}
+
 """Input naming one todo list, item or item object"""
 input TodoIdInput {
   """The row to act on"""
@@ -7086,8 +7185,14 @@ type TodoItem {
   """More about what is to be done"""
   description: String
 
+  """The item's own due date; see `effectiveDueAt`"""
+  dueAt: DateTime
+
   """Who the item is for: its own assignee, else its list's (a sub)"""
   effectiveAssignee: ID
+
+  """When the item is due: its own date, else its list's"""
+  effectiveDueAt: DateTime
 
   """Database ID of the item"""
   id: ID!
@@ -7098,11 +7203,16 @@ type TodoItem {
   """Its place within its column, 0 first"""
   position: Int!
 
+  """
+  The item's objects done, out of all of them; read it instead of counting `structures`
+  """
+  progress: TodoProgress!
+
   """The board column the item is in"""
   status: TodoStatus!
 
   """The objects the item is about"""
-  structures: [TodoItemStructure!]!
+  structures(filters: TodoItemStructureFilter, ordering: [TodoItemStructureOrder!]! = [], pagination: OffsetPaginationInput): [TodoItemStructure!]!
 
   """What is to be done"""
   title: String!
@@ -7118,12 +7228,25 @@ input TodoItemFilter {
   OR: TodoItemFilter
 
   """
+  Items that are for somebody, their own assignee or their list's (true), or for nobody (false)
+  """
+  assigned: Boolean
+
+  """
   Items whose effective assignee (their own, else their list's) is this user (a sub)
   """
   assignee: ID
+
+  """Items due (their own date, else their list's) before this time"""
+  dueBefore: DateTime
+
+  """
+  Items with a due date, their own or their list's (true), or none (false)
+  """
+  hasDue: Boolean
   id: ID
 
-  """Items that carry this object; pair with `object`"""
+  """Items that carry this object; pair with `object` (or use `structure`)"""
   identifier: String
 
   """Filter by list of IDs"""
@@ -7135,8 +7258,16 @@ input TodoItemFilter {
   """Items whose effective assignee is the caller"""
   mine: Boolean
 
-  """Items that carry this object; pair with `identifier`"""
+  """
+  Items that carry this object; pair with `identifier` (or use `structure`)
+  """
   object: ID
+
+  """Items not Done yet (true), or only Done ones (false)"""
+  open: Boolean
+
+  """Items past their due date and not Done (true), or not overdue (false)"""
+  overdue: Boolean
 
   """The items of one project"""
   project: ID
@@ -7146,10 +7277,17 @@ input TodoItemFilter {
 
   """Items in any of these columns"""
   status: [TodoStatus!]
+
+  """Items that carry this object (identifier and object together)"""
+  structure: TodoObjectFilter
+
+  """Items changed at or after this time"""
+  updatedSince: DateTime
 }
 
 input TodoItemOrder @oneOf {
   createdAt: Ordering
+  dueAt: Ordering
   position: Ordering
   updatedAt: Ordering
 }
@@ -7190,6 +7328,47 @@ type TodoItemStructure {
   status: TodoStatus!
 }
 
+input TodoItemStructureFilter {
+  AND: TodoItemStructureFilter
+  DISTINCT: Boolean
+  NOT: TodoItemStructureFilter
+  OR: TodoItemStructureFilter
+
+  """Objects on items whose effective assignee is this user (a sub)"""
+  assignee: ID
+  id: ID
+
+  """This object's rows, one per item it is on; pair with `object`"""
+  identifier: String
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """The objects of one item"""
+  item: ID
+
+  """The objects on one list's items"""
+  list: ID
+
+  """Objects on items whose effective assignee is the caller"""
+  mine: Boolean
+
+  """This object's rows, one per item it is on; pair with `identifier`"""
+  object: ID
+
+  """The objects on one project's items"""
+  project: ID
+
+  """Objects in any of these states"""
+  status: [TodoStatus!]
+}
+
+input TodoItemStructureOrder @oneOf {
+  createdAt: Ordering
+  doneAt: Ordering
+  position: Ordering
+}
+
 """A list of things to do, usually handed to one person"""
 type TodoList {
   """The sub of the user the list is assigned to"""
@@ -7200,6 +7379,9 @@ type TodoList {
 
   """What the list is for"""
   description: String
+
+  """When the list is due; its items without a date of their own follow it"""
+  dueAt: DateTime
 
   """Database ID of the list"""
   id: ID!
@@ -7235,6 +7417,9 @@ input TodoListFilter {
   """Lists assigned to the caller, or holding an item assigned to them"""
   mine: Boolean
 
+  """Lists that still hold an item not Done (true), or none (false)"""
+  open: Boolean
+
   """The lists of one project"""
   project: ID
 
@@ -7245,6 +7430,15 @@ input TodoListFilter {
 input TodoListOrder @oneOf {
   createdAt: Ordering
   name: Ordering
+}
+
+"""One object, named the way a comment names one"""
+input TodoObjectFilter {
+  """The object's structure identifier, e.g. @mikro/image"""
+  identifier: String!
+
+  """The object's id within its structure"""
+  object: ID!
 }
 
 """How far along something is: done out of total"""
@@ -7267,6 +7461,29 @@ input TodoStructureInput {
 
   """The object's id within its structure"""
   object: ID!
+}
+
+"""
+Todo items counted by column, and their objects by whether they are done
+"""
+type TodoSummary {
+  """Items in Doing"""
+  doing: Int!
+
+  """Items in Done"""
+  done: Int!
+
+  """The objects on those items: done out of total"""
+  objects: TodoProgress!
+
+  """Items past their due date (their own, else their list's) and not Done"""
+  overdue: Int!
+
+  """Items in To do"""
+  todo: Int!
+
+  """All items"""
+  total: Int!
 }
 
 """Pagination options for a node's drawn edges and neighbours"""

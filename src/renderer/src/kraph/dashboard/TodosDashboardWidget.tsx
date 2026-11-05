@@ -4,20 +4,21 @@ import { Progress } from "@/core/ui/progress";
 import { ListTodo, Loader2, Play } from "lucide-react";
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { TodoItemWithListFragment, TodoStatus, useTodoItemsQuery } from "../api/graphql";
-import { structureProgress } from "../lib/todos";
+import { SlimTodoItemFragment, TodoStatus, useSlimTodoItemsQuery, useTodoSummaryQuery } from "../api/graphql";
+import { TodoDue } from "../components/todos/TodoDue";
+import { useTodoLive } from "../components/todos/useTodoLive";
 
-/** How many of the member's items are read: a personal list, far below this. */
-const LIMIT = 200;
+/** How many open items the widget lists; the totals come from the summary, not from these. */
+const SHOWN = 30;
 
 /** Doing before To do; within each, the most recently touched first (the query's order). */
-const openFirst = (items: readonly TodoItemWithListFragment[]) => [
+const openFirst = (items: readonly SlimTodoItemFragment[]) => [
   ...items.filter((item) => item.status === TodoStatus.Doing),
   ...items.filter((item) => item.status === TodoStatus.Todo),
 ];
 
-const OpenItem = ({ item }: { item: TodoItemWithListFragment }) => {
-  const progress = structureProgress(item.structures);
+const OpenItem = ({ item }: { item: SlimTodoItemFragment }) => {
+  const { progress } = item;
   const doing = item.status === TodoStatus.Doing;
   return (
     <KraphTodoItem.Smart object={{ id: item.id }} className="rounded-md border bg-muted/40 px-2 py-1.5 hover:bg-muted">
@@ -30,6 +31,7 @@ const OpenItem = ({ item }: { item: TodoItemWithListFragment }) => {
         <KraphTodoItem.DetailLink object={item} className="min-w-0 flex-1 truncate text-xs font-medium hover:underline">
           {item.title}
         </KraphTodoItem.DetailLink>
+        <TodoDue due={item.effectiveDueAt} status={item.status} inherited={!item.dueAt} className="text-[10px]" />
         {progress.total > 0 && (
           <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
             {progress.done}/{progress.total}
@@ -48,14 +50,20 @@ const OpenItem = ({ item }: { item: TodoItemWithListFragment }) => {
  * (items Done out of all theirs) and what is still to do, Doing first.
  */
 const TodosWidget = () => {
-  const { data, loading } = useTodoItemsQuery({
-    variables: { filters: { mine: true }, pagination: { limit: LIMIT } },
+  useTodoLive();
+  // The totals are counted on the server; only the open items to show are read.
+  const summary = useTodoSummaryQuery({ variables: { filters: { mine: true } }, fetchPolicy: "cache-and-network" });
+  const list = useSlimTodoItemsQuery({
+    variables: { filters: { mine: true, open: true }, pagination: { limit: SHOWN } },
     fetchPolicy: "cache-and-network",
   });
-  const items = data?.todoItems ?? [];
-  const open = React.useMemo(() => openFirst(items), [items]);
-  const done = items.length - open.length;
-  const percent = items.length ? Math.round((100 * done) / items.length) : 0;
+  const open = React.useMemo(() => openFirst(list.data?.todoItems ?? []), [list.data]);
+  const counts = summary.data?.todoSummary;
+  const total = counts?.total ?? 0;
+  const done = counts?.done ?? 0;
+  const toGo = total - done;
+  const percent = total ? Math.round((100 * done) / total) : 0;
+  const loading = summary.loading || list.loading;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -67,9 +75,9 @@ const TodosWidget = () => {
         </NavLink>
       </div>
 
-      {loading && items.length === 0 ? (
+      {loading && !counts ? (
         <Loader2 className="size-4 animate-spin text-muted-foreground" />
-      ) : items.length === 0 ? (
+      ) : total === 0 ? (
         <p className="text-xs text-muted-foreground">Nothing is assigned to you.</p>
       ) : (
         <>
@@ -77,7 +85,8 @@ const TodosWidget = () => {
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold tabular-nums">{percent}%</span>
               <span className="text-xs text-muted-foreground">
-                {done} of {items.length} done · {open.length} to go
+                {done} of {total} done · {toGo} to go
+                {counts?.overdue ? <span className="text-destructive"> · {counts.overdue} overdue</span> : null}
               </span>
             </div>
             <Progress value={percent} className="h-1.5" />

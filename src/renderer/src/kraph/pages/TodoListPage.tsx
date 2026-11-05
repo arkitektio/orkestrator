@@ -4,7 +4,9 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { PlusIcon } from "lucide-react";
 import { TodoStatus, useTodoListQuery } from "../api/graphql";
 import { TodoAssignee } from "../components/todos/TodoAssignee";
+import { TodoDue } from "../components/todos/TodoDue";
 import { TodoBoard } from "../components/todos/TodoBoard";
+import { TodoBoardFilters, useTodoBoardFilters } from "../components/todos/TodoBoardFilters";
 import { KRAPH_HELP } from "../help";
 
 /** One todo list as a board. */
@@ -13,6 +15,7 @@ const TodoListPage = asDetailQueryRoute(useTodoListQuery, ({ data }) => {
   // Counted from the cards, not `list.progress`: a tick or a move updates the
   // cards in the cache, and nothing refetches the server's count.
   const done = list.items.filter((item) => item.status === TodoStatus.Done).length;
+  const filters = useTodoBoardFilters();
   return (
     <KraphTodoList.ModelPage
       object={list}
@@ -33,13 +36,16 @@ const TodoListPage = asDetailQueryRoute(useTodoListQuery, ({ data }) => {
             </KraphProject.DetailLink>
             <h1 className="text-2xl font-bold tracking-tight">{list.name}</h1>
           </div>
-          <TodoAssignee own={list.assignee} />
+          <TodoAssignee own={list.assignee} edit={{ kind: "list", id: list.id }} />
+          {/* A finished list is never late. */}
+          <TodoDue due={list.dueAt} status={list.items.length > 0 && done === list.items.length ? TodoStatus.Done : TodoStatus.Todo} />
           <span className="text-xs tabular-nums text-muted-foreground">
             {done}/{list.items.length} done
           </span>
         </div>
         {list.description && <p className="text-sm text-muted-foreground">{list.description}</p>}
-        <TodoBoard list={list} />
+        <TodoBoardFilters items={list.items} filters={filters} />
+        <TodoBoard list={list} visible={filters.visible} hideDone={filters.hideDone} />
       </div>
     </KraphTodoList.ModelPage>
   );

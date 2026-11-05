@@ -3,9 +3,11 @@ import type { DragPoint, DragSession } from "@/core/dnd/types";
 import { reportErrorAs } from "@/core/notify";
 import { cn } from "@/core/util/utils";
 import { ListTodoItemFragment, TodoListFragment, TodoStatus, useMoveTodoItemMutation } from "@/kraph/api/graphql";
+import { STATUS_TONE } from "@/kraph/lib/todoStatus";
 import { TODO_COLUMNS, columnOf, dropIndex, moveCard } from "@/kraph/lib/todos";
 import { useCallback, useRef, useState } from "react";
 import { TODO_CARD_DRAG, TodoCardDrag, TodoItemCard } from "./TodoItemCard";
+import { useTodoLive } from "./useTodoLive";
 
 const cardOf = (session: DragSession): TodoCardDrag | null =>
   session.origin === "internal" && session.kind === TODO_CARD_DRAG ? (session.data as TodoCardDrag) : null;
@@ -61,7 +63,7 @@ const Column = ({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
-      <div className="flex items-center gap-2 px-1 text-sm font-semibold">
+      <div className={cn("flex items-center gap-2 px-1 text-sm font-semibold", STATUS_TONE[status])}>
         {label}
         <span className="text-xs font-normal tabular-nums text-muted-foreground">{items.length}</span>
       </div>
@@ -92,10 +94,33 @@ const Column = ({
  * board shows the move at once (the same renumbering the server does) and
  * Apollo rolls it back if the server refuses.
  */
-export const TodoBoard = ({ list }: { list: TodoListFragment }) => {
+export const TodoBoard = ({
+  list,
+  visible,
+  hideDone = false,
+}: {
+  list: TodoListFragment;
+  /** Which cards are shown (the board's filters); a drop between shown cards lands between them in the full column. */
+  visible?: (item: ListTodoItemFragment) => boolean;
+  hideDone?: boolean;
+}) => {
   const [move] = useMoveTodoItemMutation();
+  // Someone else's tick or move shows here as it happens.
+  useTodoLive({ list: list.id });
+  const shows = visible ?? (() => true);
 
-  const onMove = (id: string, status: TodoStatus, index: number) => {
+  /** A drop at `index` among the shown cards, as an index in the whole column. */
+  const fullIndex = (id: string, status: TodoStatus, index: number) => {
+    if (!visible) return index;
+    const column = columnOf(list.items, status).filter((card) => card.id !== id);
+    const shown = column.filter(shows);
+    if (index < shown.length) return column.indexOf(shown[index]);
+    const last = shown.at(-1);
+    return last ? column.indexOf(last) + 1 : column.length;
+  };
+
+  const onMove = (id: string, status: TodoStatus, shownIndex: number) => {
+    const index = fullIndex(id, status, shownIndex);
     const moved = moveCard(list.items, id, status, index);
     const changed = moved.filter((card, at) => card.status !== list.items[at].status || card.position !== list.items[at].position);
     const target = moved.find((card) => card.id === id);
@@ -119,13 +144,13 @@ export const TodoBoard = ({ list }: { list: TodoListFragment }) => {
 
   return (
     <div className="flex flex-col gap-3 md:flex-row">
-      {TODO_COLUMNS.map((column) => (
+      {TODO_COLUMNS.filter((column) => !(hideDone && column.status === TodoStatus.Done)).map((column) => (
         <Column
           key={column.status}
           status={column.status}
           label={column.label}
           list={list}
-          items={columnOf(list.items, column.status)}
+          items={columnOf(list.items, column.status).filter(shows)}
           onMove={onMove}
         />
       ))}

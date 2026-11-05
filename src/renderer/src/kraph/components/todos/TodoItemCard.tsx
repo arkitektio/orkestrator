@@ -1,12 +1,11 @@
 import { useDragSource } from "@/core/dnd/react";
 import { KraphTodoItem } from "@/core/linkers";
-import { cn } from "@/core/util/utils";
 import { ListTodoItemFragment } from "@/kraph/api/graphql";
-import { structureProgress } from "@/kraph/lib/todos";
 import { GripVertical } from "lucide-react";
 import { DeleteTodoItemButton } from "./DeleteTodoItemButton";
 import { TodoAssignee } from "./TodoAssignee";
-import { TodoStructureRow } from "./TodoStructureRow";
+import { TodoDue } from "./TodoDue";
+import { TodoItemObjects } from "./TodoItemObjects";
 
 /** The kind a todo card's grip drags: only the board's columns take it. */
 export const TODO_CARD_DRAG = "kraph-todo-card";
@@ -31,7 +30,6 @@ export const TodoItemCard = ({
     kind: TODO_CARD_DRAG,
     getData: (): TodoCardDrag => ({ id: item.id, list: listId }),
   });
-  const progress = structureProgress(item.structures);
 
   return (
     <div data-todo-card={item.id} className="group/card has-[[data-dragging=true]]:opacity-40">
@@ -48,24 +46,16 @@ export const TodoItemCard = ({
             <KraphTodoItem.DetailLink object={item} className="min-w-0 flex-1 text-sm font-medium leading-snug hover:underline">
               {item.title}
             </KraphTodoItem.DetailLink>
-            {progress.total > 0 && (
-              <span className={cn("text-xs tabular-nums text-muted-foreground", progress.done === progress.total && "text-primary")}>
-                {progress.done}/{progress.total}
-              </span>
-            )}
             <span className="invisible group-hover/card:visible">
               <DeleteTodoItemButton item={item} />
             </span>
           </div>
           {item.description && <p className="line-clamp-2 text-xs text-muted-foreground">{item.description}</p>}
-          {item.structures.length > 0 && (
-            <div className="flex flex-col gap-1">
-              {item.structures.map((structure) => (
-                <TodoStructureRow key={structure.id} structure={structure} removable />
-              ))}
-            </div>
-          )}
-          <TodoAssignee own={item.assignee} inherited={listAssignee} />
+          <TodoItemObjects item={item} removable />
+          <div className="flex items-center gap-2">
+            <TodoAssignee own={item.assignee} inherited={listAssignee} edit={{ kind: "item", id: item.id }} />
+            <TodoDue due={item.effectiveDueAt} status={item.status} inherited={!item.dueAt} className="ml-auto" />
+          </div>
         </div>
       </KraphTodoItem.Smart>
     </div>

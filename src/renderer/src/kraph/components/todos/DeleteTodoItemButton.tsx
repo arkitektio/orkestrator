@@ -49,7 +49,7 @@ export const DeleteTodoItemButton = ({
     client.cache.evict({ id: client.cache.identify({ __typename: "TodoItem", id: item.id }) });
     client.cache.gc();
     // Only the server knows the lists' Done counts.
-    void client.refetchQueries({ include: ["TodoList", "Project", "TodoItems"] });
+    void client.refetchQueries({ include: ["TodoList", "Project", "TodoItems", "TodoTrack", "TodoSummary", "SlimTodoItems"] });
   };
 
   return (

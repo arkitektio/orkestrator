@@ -28,10 +28,26 @@ import {
   DeleteTodoItemDocument,
   type AttachToTodoItemMutation,
   type AttachToTodoItemMutationVariables,
+  MoveTodoItemDocument,
+  type MoveTodoItemMutation,
+  type MoveTodoItemMutationVariables,
+  SetTodoStructuresStatusDocument,
+  type SetTodoStructuresStatusMutation,
+  type SetTodoStructuresStatusMutationVariables,
+  TodoItemDocument,
+  type TodoItemQuery,
+  type TodoItemQueryVariables,
+  TodoItemAssignmentDocument,
+  type TodoItemAssignmentQuery,
+  type TodoItemAssignmentQueryVariables,
+  TodoListAssignmentDocument,
+  type TodoListAssignmentQuery,
+  type TodoListAssignmentQueryVariables,
+  TodoStatus,
 } from "./api/graphql";
 import { smartRegistry } from "@/core/smart/registry";
 import type { Structure } from "@/core/types";
-import { Equal, Eye, EyeOff, Link2, ListPlus, ListTodo, Pencil, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { CalendarClock, Check, CheckCheck, Circle, Equal, Eye, EyeOff, Link2, ListPlus, ListTodo, Pencil, Play, PlusCircle, Ruler, Stamp, Undo2, UserRoundPen, Workflow } from "lucide-react";
 import { toast } from "@/core/notify";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
@@ -182,7 +198,7 @@ export const AttachToTodoItemAction: Action = {
         },
       },
       // The card updates from the answer; the Knowledge sidebar and My todos read "items carrying …".
-      refetchQueries: ["TodoItems"],
+      refetchQueries: ["TodoItems", "TodoTrack", "TodoSummary", "TodoItem", "TodoItemObjects"],
     });
   },
   collections: ["io"],
@@ -384,10 +400,114 @@ export const DeleteTodoItemAction: Action = {
   execute: async (params) => {
     const result = await deleteTodoItem.execute(params);
     const client = (params.services.kraph as unknown as { client?: ApolloClient<NormalizedCache> }).client;
-    await client?.refetchQueries({ include: ["TodoList", "Project", "TodoItems"] });
+    await client?.refetchQueries({ include: ["TodoList", "Project", "TodoItems", "TodoTrack", "TodoSummary", "SlimTodoItems"] });
     return result;
   },
 };
+
+/**
+ * Every object on the selected todo items to Done in one write
+ * (`setTodoStructuresStatus`): each item then settles into Done. The cards
+ * and chips follow from the answer.
+ */
+export const MarkTodoItemsDoneAction: Action = {
+  title: "Mark all done",
+  description: "Tick every object on the item; the item moves to Done",
+  icon: Check,
+  conditions: [{ type: "identifier", identifier: "@kraph/todoitem" }, { type: "nopartner" }],
+  execute: async ({ state, services }) => {
+    const client = (services.kraph as unknown as { client?: ApolloClient<NormalizedCache> } | undefined)?.client;
+    if (!client) throw new Error("Kraph is not available, so there are no todo lists.");
+    const items = await Promise.all(
+      state.left.map((item) =>
+        client.query<TodoItemQuery, TodoItemQueryVariables>({ query: TodoItemDocument, variables: { id: String(item.id) }, fetchPolicy: "network-only" }),
+      ),
+    );
+    const ids = items.flatMap(({ data }) => data.todoItem.allStructures.filter((structure) => !structure.done).map((structure) => structure.id));
+    if (ids.length === 0) return;
+    await client.mutate<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>({
+      mutation: SetTodoStructuresStatusDocument,
+      variables: { ids, status: TodoStatus.Done },
+      // Item columns move; the summary and a moved board column are counted on the server.
+      refetchQueries: ["TodoList", "TodoSummary", "SlimTodoItems"],
+    });
+  },
+};
+
+/**
+ * Who a todo item or list is for and when it is due, as the server holds it:
+ * what the "Reassign…" and "Due…" dialogs start from, so pressing Save
+ * without touching anything changes nothing. A small read (cache first).
+ */
+const readAssignment = async (
+  services: Parameters<Action["execute"]>[0]["services"],
+  kind: "item" | "list",
+  id: string,
+): Promise<{ assignee?: string | null; dueAt?: string | null }> => {
+  const client = (services.kraph as unknown as { client?: ApolloClient<NormalizedCache> } | undefined)?.client;
+  if (!client) throw new Error("Kraph is not available, so there are no todo lists.");
+  if (kind === "item") {
+    const { data } = await client.query<TodoItemAssignmentQuery, TodoItemAssignmentQueryVariables>({ query: TodoItemAssignmentDocument, variables: { id } });
+    return data.todoItem;
+  }
+  const { data } = await client.query<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>({ query: TodoListAssignmentDocument, variables: { id } });
+  return data.todoList;
+};
+
+/** "Reassign…" on a todo item or list: who it is for, and nothing else. */
+const buildReassignAction = (kind: "item" | "list", identifier: string): Action => ({
+  title: "Reassign…",
+  description: kind === "item" ? "Change who the item is for" : "Change who the list is for",
+  icon: UserRoundPen,
+  conditions: [{ type: "identifier", identifier }, { type: "nopartner" }],
+  execute: async ({ state, dialog, services }) => {
+    const target = state.left.at(0);
+    if (!target) throw new Error(`Pick a todo ${kind} to reassign.`);
+    const { assignee } = await readAssignment(services, kind, String(target.id));
+    dialog.openDialog("assigntodo", { kind, id: String(target.id), current: assignee ?? null });
+  },
+});
+
+/** "Due…" on a todo item or list: when it is due, and nothing else. */
+const buildScheduleAction = (kind: "item" | "list", identifier: string): Action => ({
+  title: "Due…",
+  description: kind === "item" ? "Change when the item is due" : "Change when the list is due",
+  icon: CalendarClock,
+  conditions: [{ type: "identifier", identifier }, { type: "nopartner" }],
+  execute: async ({ state, dialog, services }) => {
+    const target = state.left.at(0);
+    if (!target) throw new Error(`Pick a todo ${kind} to schedule.`);
+    const { dueAt } = await readAssignment(services, kind, String(target.id));
+    dialog.openDialog("scheduletodo", { kind, id: String(target.id), current: dueAt ?? null });
+  },
+});
+
+/** Past the end of any column: the server puts the card last. */
+const COLUMN_END = 1_000_000;
+
+/**
+ * "Move to To do / Doing / Done" for todo items: the board's drag, from the
+ * keyboard, the context menu and the ObjectButton. The card goes last in its
+ * new column. Moving a card ticks nothing; its objects keep their own status.
+ */
+const buildMoveTodoItemAction = (status: TodoStatus, title: string, icon: Action["icon"]): Action => ({
+  title,
+  description: `Move the item to the ${title.replace("Move to ", "")} column`,
+  icon,
+  conditions: [{ type: "identifier", identifier: "@kraph/todoitem" }, { type: "nopartner" }],
+  execute: async ({ state, services }) => {
+    const client = (services.kraph as unknown as { client?: ApolloClient<NormalizedCache> } | undefined)?.client;
+    if (!client) throw new Error("Kraph is not available, so there are no todo lists.");
+    for (const item of state.left) {
+      await client.mutate<MoveTodoItemMutation, MoveTodoItemMutationVariables>({
+        mutation: MoveTodoItemDocument,
+        variables: { input: { id: String(item.id), status, index: COLUMN_END } },
+      });
+    }
+    // The other cards of the column were renumbered on the server.
+    await client.refetchQueries({ include: ["TodoList", "TodoItems", "TodoSummary", "SlimTodoItems", "TodoTrack"] });
+  },
+});
 
 /** Rename a project or change its description. */
 export const EditProjectAction: Action = {
@@ -405,6 +525,14 @@ export const EditProjectAction: Action = {
 export const KRAPH_ACTIONS = {
   "edit-kraph-project": EditProjectAction,
   "delete-kraph-todoitem": DeleteTodoItemAction,
+  "mark-kraph-todoitems-done": MarkTodoItemsDoneAction,
+  "reassign-kraph-todoitem": buildReassignAction("item", "@kraph/todoitem"),
+  "reassign-kraph-todolist": buildReassignAction("list", "@kraph/todolist"),
+  "schedule-kraph-todoitem": buildScheduleAction("item", "@kraph/todoitem"),
+  "schedule-kraph-todolist": buildScheduleAction("list", "@kraph/todolist"),
+  "move-kraph-todoitem-todo": buildMoveTodoItemAction(TodoStatus.Todo, "Move to To do", Circle),
+  "move-kraph-todoitem-doing": buildMoveTodoItemAction(TodoStatus.Doing, "Move to Doing", Play),
+  "move-kraph-todoitem-done": buildMoveTodoItemAction(TodoStatus.Done, "Move to Done", CheckCheck),
   "add-to-todo": AddToTodoAction,
   "attach-to-todo-item": AttachToTodoItemAction,
   "create-new-entity": NewEntityAction,

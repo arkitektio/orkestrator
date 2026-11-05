@@ -79,7 +79,7 @@ export const AddToTodoFields = ({
     try {
       if (!values.list) throw new Error("Pick a todo list first.");
       // The board, and every active "items carrying …" read (the Knowledge sidebar, the page bar, My todos).
-      const refetchQueries = [{ query: TodoListDocument, variables: { id: values.list } }, "TodoItems"];
+      const refetchQueries = [{ query: TodoListDocument, variables: { id: values.list } }, "TodoItems", "TodoTrack", "TodoSummary", "SlimTodoItems", "TodoItem", "TodoItemObjects"];
       if (values.item) {
         await attach({ variables: { input: { item: values.item, structures: pairs } }, refetchQueries });
       } else {

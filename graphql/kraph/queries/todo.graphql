@@ -17,6 +17,9 @@ query TodoList($id: ID!) {
 query TodoItem($id: ID!) {
   todoItem(id: $id) {
     ...TodoItemWithList
+    allStructures: structures(ordering: [{ position: ASC }]) {
+      ...TodoItemStructure
+    }
   }
 }
 
@@ -27,5 +30,68 @@ query TodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
     ordering: [{ updatedAt: DESC }]
   ) {
     ...TodoItemWithList
+  }
+}
+
+# The object's row on every item it is on, never the items' other objects: the
+# page bar's chips, the Knowledge sidebar, the smart menu's Todo section.
+query TodoTrack($identifier: String!, $object: ID!) {
+  todoItemStructures(filters: { identifier: $identifier, object: $object }) {
+    ...TodoTrackRow
+  }
+}
+
+query TodoSummary($filters: TodoItemFilter) {
+  todoSummary(filters: $filters) {
+    ...TodoSummary
+  }
+}
+
+query SlimTodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
+  todoItems(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{ updatedAt: DESC }]
+  ) {
+    ...SlimTodoItem
+  }
+}
+
+# "Done & next": the item's open objects in order, enough to skip the current one.
+query NextTodoObject($item: ID!) {
+  todoItemStructures(
+    filters: { item: $item, status: [TODO, DOING] }
+    ordering: [{ position: ASC }]
+    pagination: { limit: 2 }
+  ) {
+    id
+    identifier
+    object
+    position
+  }
+}
+
+# Every object on one item, in order: a card's "+N", read when it is opened.
+query TodoItemObjects($item: ID!) {
+  todoItemStructures(filters: { item: $item }, ordering: [{ position: ASC }]) {
+    ...TodoItemStructure
+  }
+}
+
+# Who a todo item or list is for and when it is due: what "Reassign…" and
+# "Due…" start from (nothing else of it, an item may carry hundreds of objects).
+query TodoItemAssignment($id: ID!) {
+  todoItem(id: $id) {
+    id
+    assignee
+    dueAt
+  }
+}
+
+query TodoListAssignment($id: ID!) {
+  todoList(id: $id) {
+    id
+    assignee
+    dueAt
   }
 }

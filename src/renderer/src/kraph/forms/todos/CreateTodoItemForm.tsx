@@ -11,14 +11,15 @@ import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { useForm } from "react-hook-form";
 import { TodoListDocument, useCreateTodoItemMutation } from "../../api/graphql";
 import { todoTitleFor } from "../../lib/todos";
+import { DueDateField } from "./DueDateField";
 
-type Values = { title: string; description: string; assignee: string | null };
+type Values = { title: string; description: string; assignee: string | null; dueAt: Date | null };
 
 /** A new card on a todo list, optionally with the objects it is about. */
 export const CreateTodoItemForm = (props: { list: string; structures?: Structure[] }) => {
   const searchUsers = useStructureOptions("@lok/user");
   const [create, { loading }] = useCreateTodoItemMutation({
-    refetchQueries: [{ query: TodoListDocument, variables: { id: props.list } }, "TodoItems"],
+    refetchQueries: [{ query: TodoListDocument, variables: { id: props.list } }, "TodoItems", "TodoSummary", "SlimTodoItems"],
   });
   // No title typed: the item is named after what it is about, if anything.
   const defaultTitle = todoTitleFor((props.structures ?? []).map(structureLabel));
@@ -33,6 +34,7 @@ export const CreateTodoItemForm = (props: { list: string; structures?: Structure
             title,
             description: values.description || null,
             assignee: values.assignee || null,
+            dueAt: values.dueAt ? values.dueAt.toISOString() : null,
             structures: props.structures?.map((structure) => ({ identifier: structure.identifier, object: structure.id })),
           },
         },
@@ -40,7 +42,7 @@ export const CreateTodoItemForm = (props: { list: string; structures?: Structure
     },
     { errorTitle: "Couldn't create the item" },
   );
-  const form = useForm<Values>({ defaultValues: { title: "", description: "", assignee: null } });
+  const form = useForm<Values>({ defaultValues: { title: "", description: "", assignee: null, dueAt: null } });
 
   return (
     <Form {...form}>
@@ -68,6 +70,7 @@ export const CreateTodoItemForm = (props: { list: string; structures?: Structure
             description="Leave empty to give it to the list's assignee"
           />
         )}
+        <DueDateField description="Leave empty to follow the list's due date" />
         <DialogFooter>
           <Button type="submit" disabled={loading}>
             Create
