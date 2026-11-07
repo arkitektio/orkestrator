@@ -9465,13 +9465,20 @@ type Mutation {
   """Rename or re-describe a chart. Its world is fixed"""
   updateChart(input: UpdateChartInput!): Chart!
 
-  """Restyle a chart layer. View state only"""
+  """
+  Restyle a chart layer of any kind: name, visibility, order, opacity, colour and its look
+  """
   updateChartLayer(input: UpdateChartLayerInput!): ChartLayer!
 
   """
   Rename a shared coordinate system or anchor its clock. Shared spaces only -- an owned system's name is its container's business, and where data sits is an edge (updateTransformation), not a property of the space
   """
   updateCoordinateSystem(input: UpdateCoordinateSystemInput!): CoordinateSystem!
+
+  """
+  Retune a distribution: summarise another column, regroup or rebin it, switch between histogram and box, or restyle it
+  """
+  updateDistributionChartLayer(input: UpdateDistributionChartLayerInput!): DistributionChartLayer!
 
   """
   Retune how a fixture layer is drawn: its material override, wireframe and compositing. A patch -- an omitted field keeps its value
@@ -9523,12 +9530,22 @@ type Mutation {
   updatePointLayer(input: UpdatePointLayerInput!): PointLayer!
 
   """
+  Retune a points layer: plot other columns or another table lens' rows, or restyle it
+  """
+  updatePointsChartLayer(input: UpdatePointsChartLayerInput!): PointsChartLayer!
+
+  """
   Update an RGB layer's channel indices, contrast limits and compositing settings. A patch: what is not sent keeps its current value
   """
   updateRgbLayer(input: UpdateRgbLayerInput!): RgbLayer!
 
   """Set a scene's viewer preferences: how a client should open it"""
   updateScene(input: UpdateSceneInput!): Scene!
+
+  """
+  Retune a series: read another value column or table lens against the chart's axis, or restyle it
+  """
+  updateSeriesChartLayer(input: UpdateSeriesChartLayerInput!): SeriesChartLayer!
 
   """
   Rename a sparse dataset or redescribe it -- the whole of what is editable. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset
@@ -9539,6 +9556,11 @@ type Mutation {
   Rename a table dataset or redescribe it -- the whole of what is editable. Its store, columns and coordinate system are fixed at creation; a recomputation is a new table
   """
   updateTableDataset(input: UpdateTableDatasetInput!): TableDataset!
+
+  """
+  Retune a trace: draw another array lens along the chart's axis, or restyle it
+  """
+  updateTraceChartLayer(input: UpdateTraceChartLayerInput!): TraceChartLayer!
 
   """
   Retune a track layer after creation -- its line width, its colouring column and the compositing it takes part in.
@@ -14499,7 +14521,7 @@ input UpdateChartInput {
 }
 
 """
-Input for restyling a chart layer. View state only: what the layer reads, and where its data sits along the chart's axis, are not settings -- the first is fixed at creation and the second is the graph's, changed by editing the registration
+Input for restyling a chart layer of any kind: view state only. What a layer reads -- its lens and its columns -- is changed by its kind's own update (updateTraceChartLayer, updateSeriesChartLayer, updatePointsChartLayer, updateDistributionChartLayer); where its data sits along the chart's axis is the graph's, changed by editing the registration
 """
 input UpdateChartLayerInput {
   color: [Float!] = null
@@ -14521,6 +14543,26 @@ input UpdateCoordinateSystemInput {
   id: ID!
   name: String = null
   reference: String = null
+}
+
+"""
+Retune a distribution: summarise another column, group it otherwise, bin it otherwise, or draw it as a histogram or a box
+"""
+input UpdateDistributionChartLayerInput {
+  bins: Int = null
+  clearBins: Boolean! = false
+  clearGroupColumn: Boolean! = false
+  color: [Float!] = null
+  groupColumn: String = null
+  id: ID!
+  lens: ID = null
+  lineWidth: Float = null
+  mark: ChartMark = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  valueColumn: String = null
+  visible: Boolean = null
 }
 
 """
@@ -14777,6 +14819,26 @@ input UpdatePointLayerInput {
 }
 
 """
+Retune a points layer: plot other columns, or another table lens' rows, or change how they are drawn
+"""
+input UpdatePointsChartLayerInput {
+  clearZColumn: Boolean! = false
+  color: [Float!] = null
+  id: ID!
+  lens: ID = null
+  lineWidth: Float = null
+  mark: ChartMark = null
+  markerSize: Float = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  visible: Boolean = null
+  xColumn: String = null
+  yColumn: String = null
+  zColumn: String = null
+}
+
+"""
 Update an RGB layer's render settings. Every field is a patch: what is not sent keeps its current value
 """
 input UpdateRgbLayerInput {
@@ -14804,6 +14866,23 @@ input UpdateSceneInput {
   preferredView: PreferredView = null
 }
 
+"""
+Retune a series: read another value column, or another table lens, against the chart's axis
+"""
+input UpdateSeriesChartLayerInput {
+  color: [Float!] = null
+  id: ID!
+  lens: ID = null
+  lineWidth: Float = null
+  mark: ChartMark = null
+  markerSize: Float = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  valueColumn: String = null
+  visible: Boolean = null
+}
+
 """Input for renaming or redescribing a sparse dataset"""
 input UpdateSparseDatasetInput {
   description: String = null
@@ -14818,6 +14897,22 @@ input UpdateTableDatasetInput {
   description: String = null
   id: ID!
   name: String = null
+}
+
+"""
+Retune a trace: draw another array lens along the chart's axis, or change how it is drawn
+"""
+input UpdateTraceChartLayerInput {
+  color: [Float!] = null
+  id: ID!
+  lens: ID = null
+  lineWidth: Float = null
+  mark: ChartMark = null
+  markerSize: Float = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  visible: Boolean = null
 }
 
 """

@@ -7170,10 +7170,12 @@ export type Mutation = {
   updateArrayDataset: ArrayDataset;
   /** Rename or re-describe a chart. Its world is fixed */
   updateChart: Chart;
-  /** Restyle a chart layer. View state only */
+  /** Restyle a chart layer of any kind: name, visibility, order, opacity, colour and its look */
   updateChartLayer: ChartLayer;
   /** Rename a shared coordinate system or anchor its clock. Shared spaces only -- an owned system's name is its container's business, and where data sits is an edge (updateTransformation), not a property of the space */
   updateCoordinateSystem: CoordinateSystem;
+  /** Retune a distribution: summarise another column, regroup or rebin it, switch between histogram and box, or restyle it */
+  updateDistributionChartLayer: DistributionChartLayer;
   /** Retune how a fixture layer is drawn: its material override, wireframe and compositing. A patch -- an omitted field keeps its value */
   updateFixtureLayer: FixtureLayer;
   /** Update folder metadata */
@@ -7196,14 +7198,20 @@ export type Mutation = {
   updatePhasorLayer: PhasorLayer;
   /** Retune a point layer after creation -- above all, switch or republish its colour picker. */
   updatePointLayer: PointLayer;
+  /** Retune a points layer: plot other columns or another table lens' rows, or restyle it */
+  updatePointsChartLayer: PointsChartLayer;
   /** Update an RGB layer's channel indices, contrast limits and compositing settings. A patch: what is not sent keeps its current value */
   updateRgbLayer: RgbLayer;
   /** Set a scene's viewer preferences: how a client should open it */
   updateScene: Scene;
+  /** Retune a series: read another value column or table lens against the chart's axis, or restyle it */
+  updateSeriesChartLayer: SeriesChartLayer;
   /** Rename a sparse dataset or redescribe it -- the whole of what is editable. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
   updateSparseDataset: SparseDataset;
   /** Rename a table dataset or redescribe it -- the whole of what is editable. Its store, columns and coordinate system are fixed at creation; a recomputation is a new table */
   updateTableDataset: TableDataset;
+  /** Retune a trace: draw another array lens along the chart's axis, or restyle it */
+  updateTraceChartLayer: TraceChartLayer;
   /** Retune a track layer after creation -- its line width, its colouring column and the compositing it takes part in. */
   updateTrackLayer: TrackLayer;
   /** Refine a transformation's parameters, bumping its version */
@@ -7978,6 +7986,11 @@ export type MutationUpdateCoordinateSystemArgs = {
 };
 
 
+export type MutationUpdateDistributionChartLayerArgs = {
+  input: UpdateDistributionChartLayerInput;
+};
+
+
 export type MutationUpdateFixtureLayerArgs = {
   input: UpdateFixtureLayerInput;
 };
@@ -8033,6 +8046,11 @@ export type MutationUpdatePointLayerArgs = {
 };
 
 
+export type MutationUpdatePointsChartLayerArgs = {
+  input: UpdatePointsChartLayerInput;
+};
+
+
 export type MutationUpdateRgbLayerArgs = {
   input: UpdateRgbLayerInput;
 };
@@ -8043,6 +8061,11 @@ export type MutationUpdateSceneArgs = {
 };
 
 
+export type MutationUpdateSeriesChartLayerArgs = {
+  input: UpdateSeriesChartLayerInput;
+};
+
+
 export type MutationUpdateSparseDatasetArgs = {
   input: UpdateSparseDatasetInput;
 };
@@ -8050,6 +8073,11 @@ export type MutationUpdateSparseDatasetArgs = {
 
 export type MutationUpdateTableDatasetArgs = {
   input: UpdateTableDatasetInput;
+};
+
+
+export type MutationUpdateTraceChartLayerArgs = {
+  input: UpdateTraceChartLayerInput;
 };
 
 
@@ -12297,7 +12325,7 @@ export type UpdateChartInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Input for restyling a chart layer. View state only: what the layer reads, and where its data sits along the chart's axis, are not settings -- the first is fixed at creation and the second is the graph's, changed by editing the registration */
+/** Input for restyling a chart layer of any kind: view state only. What a layer reads -- its lens and its columns -- is changed by its kind's own update (updateTraceChartLayer, updateSeriesChartLayer, updatePointsChartLayer, updateDistributionChartLayer); where its data sits along the chart's axis is the graph's, changed by editing the registration */
 export type UpdateChartLayerInput = {
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
@@ -12316,6 +12344,24 @@ export type UpdateCoordinateSystemInput = {
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   reference?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Retune a distribution: summarise another column, group it otherwise, bin it otherwise, or draw it as a histogram or a box */
+export type UpdateDistributionChartLayerInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  clearBins?: Scalars['Boolean']['input'];
+  clearGroupColumn?: Scalars['Boolean']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Retune how a fixture layer is drawn. A patch: an omitted field keeps its value, and an explicit `null` for `materialColor` returns to the model's own materials. The model and the scene are not editable */
@@ -12486,6 +12532,24 @@ export type UpdatePointLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Retune a points layer: plot other columns, or another table lens' rows, or change how they are drawn */
+export type UpdatePointsChartLayerInput = {
+  clearZColumn?: Scalars['Boolean']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+  xColumn?: InputMaybe<Scalars['String']['input']>;
+  yColumn?: InputMaybe<Scalars['String']['input']>;
+  zColumn?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Update an RGB layer's render settings. Every field is a patch: what is not sent keeps its current value */
 export type UpdateRgbLayerInput = {
   blueLens?: InputMaybe<Scalars['ID']['input']>;
@@ -12509,6 +12573,21 @@ export type UpdateSceneInput = {
   preferredView?: InputMaybe<PreferredView>;
 };
 
+/** Retune a series: read another value column, or another table lens, against the chart's axis */
+export type UpdateSeriesChartLayerInput = {
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Input for renaming or redescribing a sparse dataset */
 export type UpdateSparseDatasetInput = {
   description?: InputMaybe<Scalars['String']['input']>;
@@ -12521,6 +12600,20 @@ export type UpdateTableDatasetInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Retune a trace: draw another array lens along the chart's axis, or change how it is drawn */
+export type UpdateTraceChartLayerInput = {
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Retune a track layer after creation -- its line width, its colouring column and the compositing it takes part in */
@@ -13786,6 +13879,34 @@ export type UpdateChartLayerMutationVariables = Exact<{
 
 
 export type UpdateChartLayerMutation = { __typename?: 'Mutation', updateChartLayer: { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'DistributionChartLayer', mark: ChartMark, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } };
+
+export type UpdateTraceChartLayerMutationVariables = Exact<{
+  input: UpdateTraceChartLayerInput;
+}>;
+
+
+export type UpdateTraceChartLayerMutation = { __typename?: 'Mutation', updateTraceChartLayer: { __typename: 'TraceChartLayer', id: string } };
+
+export type UpdateSeriesChartLayerMutationVariables = Exact<{
+  input: UpdateSeriesChartLayerInput;
+}>;
+
+
+export type UpdateSeriesChartLayerMutation = { __typename?: 'Mutation', updateSeriesChartLayer: { __typename: 'SeriesChartLayer', id: string } };
+
+export type UpdatePointsChartLayerMutationVariables = Exact<{
+  input: UpdatePointsChartLayerInput;
+}>;
+
+
+export type UpdatePointsChartLayerMutation = { __typename?: 'Mutation', updatePointsChartLayer: { __typename: 'PointsChartLayer', id: string } };
+
+export type UpdateDistributionChartLayerMutationVariables = Exact<{
+  input: UpdateDistributionChartLayerInput;
+}>;
+
+
+export type UpdateDistributionChartLayerMutation = { __typename?: 'Mutation', updateDistributionChartLayer: { __typename: 'DistributionChartLayer', id: string } };
 
 export type DeleteChartLayerMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -19020,6 +19141,38 @@ export const UpdateChartLayerDocument = gql`
   }
 }
     ${ChartLayerStyleFragmentDoc}`;
+export const UpdateTraceChartLayerDocument = gql`
+    mutation UpdateTraceChartLayer($input: UpdateTraceChartLayerInput!) {
+  updateTraceChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const UpdateSeriesChartLayerDocument = gql`
+    mutation UpdateSeriesChartLayer($input: UpdateSeriesChartLayerInput!) {
+  updateSeriesChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const UpdatePointsChartLayerDocument = gql`
+    mutation UpdatePointsChartLayer($input: UpdatePointsChartLayerInput!) {
+  updatePointsChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const UpdateDistributionChartLayerDocument = gql`
+    mutation UpdateDistributionChartLayer($input: UpdateDistributionChartLayerInput!) {
+  updateDistributionChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
 export const DeleteChartLayerDocument = gql`
     mutation DeleteChartLayer($id: ID!) {
   deleteChartLayer(input: {id: $id})
@@ -21537,6 +21690,18 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     UpdateChartLayer(variables: UpdateChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateChartLayerMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateChartLayerMutation>({ document: UpdateChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateChartLayer', 'mutation', variables);
+    },
+    UpdateTraceChartLayer(variables: UpdateTraceChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateTraceChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateTraceChartLayerMutation>({ document: UpdateTraceChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateTraceChartLayer', 'mutation', variables);
+    },
+    UpdateSeriesChartLayer(variables: UpdateSeriesChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateSeriesChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateSeriesChartLayerMutation>({ document: UpdateSeriesChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateSeriesChartLayer', 'mutation', variables);
+    },
+    UpdatePointsChartLayer(variables: UpdatePointsChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdatePointsChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdatePointsChartLayerMutation>({ document: UpdatePointsChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdatePointsChartLayer', 'mutation', variables);
+    },
+    UpdateDistributionChartLayer(variables: UpdateDistributionChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateDistributionChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateDistributionChartLayerMutation>({ document: UpdateDistributionChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateDistributionChartLayer', 'mutation', variables);
     },
     DeleteChartLayer(variables: DeleteChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteChartLayerMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteChartLayerMutation>({ document: DeleteChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteChartLayer', 'mutation', variables);

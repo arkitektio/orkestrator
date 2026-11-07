@@ -14,6 +14,8 @@
  * Structural input — no generated types — so the sorting is testable in node.
  */
 
+import { isGroupColumn, isNumericColumn, isValueColumn } from "@/mikro/lib/tables/columnKinds";
+
 export type AxisLike = { name: string; type?: string | null };
 export type SliceLike = { axis: string; start?: number | null; stop?: number | null };
 
@@ -131,29 +133,7 @@ export const traceShapeReason = (lens: {
 };
 
 /** A column a series could read as its value: a measurement, and not text. */
-export const isValueColumn = (column: { role?: string | null; dtype?: string | null }): boolean =>
-  (column.role == null || column.role === "ATTRIBUTE") &&
-  !/str|utf|char|bool|object|categor/i.test(column.dtype ?? "");
-
-/** A column holding numbers, whatever its role: the server's test for a position of a chart of values. */
-export const isNumericColumn = (column: { dtype?: string | null }): boolean => {
-  const dtype = (column.dtype ?? "").toUpperCase();
-  return NUMERIC_DTYPES.has(dtype) || dtype.startsWith("DECIMAL");
-};
-
-/** The DuckDB number types, as the server lists them (`coords.is_numeric_dtype`). */
-const NUMERIC_DTYPES = new Set([
-  "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
-  "UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT",
-  "FLOAT", "REAL", "DOUBLE",
-]);
-
-/** What a distribution may be grouped by: a column naming a group, not measuring one. */
-export const isGroupColumn = (column: { role?: string | null; dtype?: string | null; axisType?: string | null }): boolean =>
-  column.role === "LABEL" ||
-  column.role === "GROUP_ID" ||
-  column.axisType === "CHANNEL" ||
-  /str|utf|char|bool|categor/i.test(column.dtype ?? "");
+export { isGroupColumn, isNumericColumn, isValueColumn };
 
 export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
   const world = input.worldCoordinateSystem;

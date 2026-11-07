@@ -7175,10 +7175,12 @@ export type Mutation = {
   updateArrayDataset: ArrayDataset;
   /** Rename or re-describe a chart. Its world is fixed */
   updateChart: Chart;
-  /** Restyle a chart layer. View state only */
+  /** Restyle a chart layer of any kind: name, visibility, order, opacity, colour and its look */
   updateChartLayer: ChartLayer;
   /** Rename a shared coordinate system or anchor its clock. Shared spaces only -- an owned system's name is its container's business, and where data sits is an edge (updateTransformation), not a property of the space */
   updateCoordinateSystem: CoordinateSystem;
+  /** Retune a distribution: summarise another column, regroup or rebin it, switch between histogram and box, or restyle it */
+  updateDistributionChartLayer: DistributionChartLayer;
   /** Retune how a fixture layer is drawn: its material override, wireframe and compositing. A patch -- an omitted field keeps its value */
   updateFixtureLayer: FixtureLayer;
   /** Update folder metadata */
@@ -7201,14 +7203,20 @@ export type Mutation = {
   updatePhasorLayer: PhasorLayer;
   /** Retune a point layer after creation -- above all, switch or republish its colour picker. */
   updatePointLayer: PointLayer;
+  /** Retune a points layer: plot other columns or another table lens' rows, or restyle it */
+  updatePointsChartLayer: PointsChartLayer;
   /** Update an RGB layer's channel indices, contrast limits and compositing settings. A patch: what is not sent keeps its current value */
   updateRgbLayer: RgbLayer;
   /** Set a scene's viewer preferences: how a client should open it */
   updateScene: Scene;
+  /** Retune a series: read another value column or table lens against the chart's axis, or restyle it */
+  updateSeriesChartLayer: SeriesChartLayer;
   /** Rename a sparse dataset or redescribe it -- the whole of what is editable. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
   updateSparseDataset: SparseDataset;
   /** Rename a table dataset or redescribe it -- the whole of what is editable. Its store, columns and coordinate system are fixed at creation; a recomputation is a new table */
   updateTableDataset: TableDataset;
+  /** Retune a trace: draw another array lens along the chart's axis, or restyle it */
+  updateTraceChartLayer: TraceChartLayer;
   /** Retune a track layer after creation -- its line width, its colouring column and the compositing it takes part in. */
   updateTrackLayer: TrackLayer;
   /** Refine a transformation's parameters, bumping its version */
@@ -7983,6 +7991,11 @@ export type MutationUpdateCoordinateSystemArgs = {
 };
 
 
+export type MutationUpdateDistributionChartLayerArgs = {
+  input: UpdateDistributionChartLayerInput;
+};
+
+
 export type MutationUpdateFixtureLayerArgs = {
   input: UpdateFixtureLayerInput;
 };
@@ -8038,6 +8051,11 @@ export type MutationUpdatePointLayerArgs = {
 };
 
 
+export type MutationUpdatePointsChartLayerArgs = {
+  input: UpdatePointsChartLayerInput;
+};
+
+
 export type MutationUpdateRgbLayerArgs = {
   input: UpdateRgbLayerInput;
 };
@@ -8048,6 +8066,11 @@ export type MutationUpdateSceneArgs = {
 };
 
 
+export type MutationUpdateSeriesChartLayerArgs = {
+  input: UpdateSeriesChartLayerInput;
+};
+
+
 export type MutationUpdateSparseDatasetArgs = {
   input: UpdateSparseDatasetInput;
 };
@@ -8055,6 +8078,11 @@ export type MutationUpdateSparseDatasetArgs = {
 
 export type MutationUpdateTableDatasetArgs = {
   input: UpdateTableDatasetInput;
+};
+
+
+export type MutationUpdateTraceChartLayerArgs = {
+  input: UpdateTraceChartLayerInput;
 };
 
 
@@ -12302,7 +12330,7 @@ export type UpdateChartInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Input for restyling a chart layer. View state only: what the layer reads, and where its data sits along the chart's axis, are not settings -- the first is fixed at creation and the second is the graph's, changed by editing the registration */
+/** Input for restyling a chart layer of any kind: view state only. What a layer reads -- its lens and its columns -- is changed by its kind's own update (updateTraceChartLayer, updateSeriesChartLayer, updatePointsChartLayer, updateDistributionChartLayer); where its data sits along the chart's axis is the graph's, changed by editing the registration */
 export type UpdateChartLayerInput = {
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
@@ -12321,6 +12349,24 @@ export type UpdateCoordinateSystemInput = {
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   reference?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Retune a distribution: summarise another column, group it otherwise, bin it otherwise, or draw it as a histogram or a box */
+export type UpdateDistributionChartLayerInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  clearBins?: Scalars['Boolean']['input'];
+  clearGroupColumn?: Scalars['Boolean']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Retune how a fixture layer is drawn. A patch: an omitted field keeps its value, and an explicit `null` for `materialColor` returns to the model's own materials. The model and the scene are not editable */
@@ -12491,6 +12537,24 @@ export type UpdatePointLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Retune a points layer: plot other columns, or another table lens' rows, or change how they are drawn */
+export type UpdatePointsChartLayerInput = {
+  clearZColumn?: Scalars['Boolean']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+  xColumn?: InputMaybe<Scalars['String']['input']>;
+  yColumn?: InputMaybe<Scalars['String']['input']>;
+  zColumn?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Update an RGB layer's render settings. Every field is a patch: what is not sent keeps its current value */
 export type UpdateRgbLayerInput = {
   blueLens?: InputMaybe<Scalars['ID']['input']>;
@@ -12514,6 +12578,21 @@ export type UpdateSceneInput = {
   preferredView?: InputMaybe<PreferredView>;
 };
 
+/** Retune a series: read another value column, or another table lens, against the chart's axis */
+export type UpdateSeriesChartLayerInput = {
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Input for renaming or redescribing a sparse dataset */
 export type UpdateSparseDatasetInput = {
   description?: InputMaybe<Scalars['String']['input']>;
@@ -12526,6 +12605,20 @@ export type UpdateTableDatasetInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Retune a trace: draw another array lens along the chart's axis, or change how it is drawn */
+export type UpdateTraceChartLayerInput = {
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Retune a track layer after creation -- its line width, its colouring column and the compositing it takes part in */
@@ -15374,6 +15467,34 @@ export type UpdateChartLayerMutation = { __typename?: 'Mutation', updateChartLay
     { __typename?: 'TraceChartLayer' }
     & ChartLayerStyle_TraceChartLayer_Fragment
   ) };
+
+export type UpdateTraceChartLayerMutationVariables = Exact<{
+  input: UpdateTraceChartLayerInput;
+}>;
+
+
+export type UpdateTraceChartLayerMutation = { __typename?: 'Mutation', updateTraceChartLayer: { __typename: 'TraceChartLayer', id: string } };
+
+export type UpdateSeriesChartLayerMutationVariables = Exact<{
+  input: UpdateSeriesChartLayerInput;
+}>;
+
+
+export type UpdateSeriesChartLayerMutation = { __typename?: 'Mutation', updateSeriesChartLayer: { __typename: 'SeriesChartLayer', id: string } };
+
+export type UpdatePointsChartLayerMutationVariables = Exact<{
+  input: UpdatePointsChartLayerInput;
+}>;
+
+
+export type UpdatePointsChartLayerMutation = { __typename?: 'Mutation', updatePointsChartLayer: { __typename: 'PointsChartLayer', id: string } };
+
+export type UpdateDistributionChartLayerMutationVariables = Exact<{
+  input: UpdateDistributionChartLayerInput;
+}>;
+
+
+export type UpdateDistributionChartLayerMutation = { __typename?: 'Mutation', updateDistributionChartLayer: { __typename: 'DistributionChartLayer', id: string } };
 
 export type DeleteChartLayerMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -23712,6 +23833,142 @@ export function useUpdateChartLayerMutation(baseOptions?: ApolloReactHooks.Mutat
 export type UpdateChartLayerMutationHookResult = ReturnType<typeof useUpdateChartLayerMutation>;
 export type UpdateChartLayerMutationResult = Apollo.MutationResult<UpdateChartLayerMutation>;
 export type UpdateChartLayerMutationOptions = Apollo.BaseMutationOptions<UpdateChartLayerMutation, UpdateChartLayerMutationVariables>;
+export const UpdateTraceChartLayerDocument = gql`
+    mutation UpdateTraceChartLayer($input: UpdateTraceChartLayerInput!) {
+  updateTraceChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type UpdateTraceChartLayerMutationFn = Apollo.MutationFunction<UpdateTraceChartLayerMutation, UpdateTraceChartLayerMutationVariables>;
+
+/**
+ * __useUpdateTraceChartLayerMutation__
+ *
+ * To run a mutation, you first call `useUpdateTraceChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTraceChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTraceChartLayerMutation, { data, loading, error }] = useUpdateTraceChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTraceChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTraceChartLayerMutation, UpdateTraceChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTraceChartLayerMutation, UpdateTraceChartLayerMutationVariables>(UpdateTraceChartLayerDocument, options);
+      }
+export type UpdateTraceChartLayerMutationHookResult = ReturnType<typeof useUpdateTraceChartLayerMutation>;
+export type UpdateTraceChartLayerMutationResult = Apollo.MutationResult<UpdateTraceChartLayerMutation>;
+export type UpdateTraceChartLayerMutationOptions = Apollo.BaseMutationOptions<UpdateTraceChartLayerMutation, UpdateTraceChartLayerMutationVariables>;
+export const UpdateSeriesChartLayerDocument = gql`
+    mutation UpdateSeriesChartLayer($input: UpdateSeriesChartLayerInput!) {
+  updateSeriesChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type UpdateSeriesChartLayerMutationFn = Apollo.MutationFunction<UpdateSeriesChartLayerMutation, UpdateSeriesChartLayerMutationVariables>;
+
+/**
+ * __useUpdateSeriesChartLayerMutation__
+ *
+ * To run a mutation, you first call `useUpdateSeriesChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSeriesChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSeriesChartLayerMutation, { data, loading, error }] = useUpdateSeriesChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateSeriesChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateSeriesChartLayerMutation, UpdateSeriesChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateSeriesChartLayerMutation, UpdateSeriesChartLayerMutationVariables>(UpdateSeriesChartLayerDocument, options);
+      }
+export type UpdateSeriesChartLayerMutationHookResult = ReturnType<typeof useUpdateSeriesChartLayerMutation>;
+export type UpdateSeriesChartLayerMutationResult = Apollo.MutationResult<UpdateSeriesChartLayerMutation>;
+export type UpdateSeriesChartLayerMutationOptions = Apollo.BaseMutationOptions<UpdateSeriesChartLayerMutation, UpdateSeriesChartLayerMutationVariables>;
+export const UpdatePointsChartLayerDocument = gql`
+    mutation UpdatePointsChartLayer($input: UpdatePointsChartLayerInput!) {
+  updatePointsChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type UpdatePointsChartLayerMutationFn = Apollo.MutationFunction<UpdatePointsChartLayerMutation, UpdatePointsChartLayerMutationVariables>;
+
+/**
+ * __useUpdatePointsChartLayerMutation__
+ *
+ * To run a mutation, you first call `useUpdatePointsChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePointsChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePointsChartLayerMutation, { data, loading, error }] = useUpdatePointsChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdatePointsChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdatePointsChartLayerMutation, UpdatePointsChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdatePointsChartLayerMutation, UpdatePointsChartLayerMutationVariables>(UpdatePointsChartLayerDocument, options);
+      }
+export type UpdatePointsChartLayerMutationHookResult = ReturnType<typeof useUpdatePointsChartLayerMutation>;
+export type UpdatePointsChartLayerMutationResult = Apollo.MutationResult<UpdatePointsChartLayerMutation>;
+export type UpdatePointsChartLayerMutationOptions = Apollo.BaseMutationOptions<UpdatePointsChartLayerMutation, UpdatePointsChartLayerMutationVariables>;
+export const UpdateDistributionChartLayerDocument = gql`
+    mutation UpdateDistributionChartLayer($input: UpdateDistributionChartLayerInput!) {
+  updateDistributionChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type UpdateDistributionChartLayerMutationFn = Apollo.MutationFunction<UpdateDistributionChartLayerMutation, UpdateDistributionChartLayerMutationVariables>;
+
+/**
+ * __useUpdateDistributionChartLayerMutation__
+ *
+ * To run a mutation, you first call `useUpdateDistributionChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateDistributionChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateDistributionChartLayerMutation, { data, loading, error }] = useUpdateDistributionChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateDistributionChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateDistributionChartLayerMutation, UpdateDistributionChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateDistributionChartLayerMutation, UpdateDistributionChartLayerMutationVariables>(UpdateDistributionChartLayerDocument, options);
+      }
+export type UpdateDistributionChartLayerMutationHookResult = ReturnType<typeof useUpdateDistributionChartLayerMutation>;
+export type UpdateDistributionChartLayerMutationResult = Apollo.MutationResult<UpdateDistributionChartLayerMutation>;
+export type UpdateDistributionChartLayerMutationOptions = Apollo.BaseMutationOptions<UpdateDistributionChartLayerMutation, UpdateDistributionChartLayerMutationVariables>;
 export const DeleteChartLayerDocument = gql`
     mutation DeleteChartLayer($id: ID!) {
   deleteChartLayer(input: {id: $id})
