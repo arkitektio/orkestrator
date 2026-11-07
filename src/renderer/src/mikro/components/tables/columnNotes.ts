@@ -28,6 +28,8 @@ export const COLUMN_ROLE_NOTES: Record<ColumnRole, string> = {
 };
 
 export const AXIS_TYPE_NOTES: Record<AxisType, string> = {
+  [AxisType.Category]:
+    "An enumerating axis whose positions are the values a column holds — a condition, a genotype, a cluster id. No unit, no metric.",
   [AxisType.Channel]:
     "A categorical channel axis: its coordinates index acquisitions, not positions.",
   [AxisType.Coordinate]:
