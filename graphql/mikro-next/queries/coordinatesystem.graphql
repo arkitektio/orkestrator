@@ -13,6 +13,9 @@ query GetCoordinateSystem($id: ID!) {
       ... on Chart {
         ...ListChart
       }
+      ... on Grid {
+        ...ListGrid
+      }
     }
   }
 }

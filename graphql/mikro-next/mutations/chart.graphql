@@ -41,6 +41,30 @@ mutation CreateSeriesChartLayer($input: CreateSeriesChartLayerInput!) {
   }
 }
 
+# VALUES charts: a table lens' rows at the values of two or three columns.
+mutation CreatePointsChartLayer($input: CreatePointsChartLayerInput!) {
+  createPointsChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+# VALUES charts: one column summarised, a histogram or a box per group.
+mutation CreateDistributionChartLayer($input: CreateDistributionChartLayerInput!) {
+  createDistributionChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+# The "Plot table" button: a VALUES chart over the table's space and its one
+# layer, in one transaction.
+mutation CreateTablePlot($input: CreateTablePlotInput!) {
+  createTablePlot(input: $input) {
+    ...ListChart
+  }
+}
+
 # With no collection named the server makes a drawing surface for the chart;
 # its id is what `createAnnotation(collection:)` then draws into.
 mutation CreateAnnotationChartLayer($input: CreateAnnotationChartLayerInput!) {

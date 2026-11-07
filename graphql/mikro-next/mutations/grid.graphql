@@ -1,0 +1,49 @@
+mutation CreateGrid($input: CreateGridInput!) {
+  createGrid(input: $input) {
+    ...ListGrid
+  }
+}
+
+# Draws what already covers the space's axes: matrices and arrays as heatmaps,
+# tables as cells. Authors no edges.
+mutation CreateGridFromCoordinateSystem($input: CreateGridFromCoordinateSystemInput!) {
+  createGridFromCoordinateSystem(input: $input) {
+    ...ListGrid
+  }
+}
+
+mutation UpdateGrid($input: UpdateGridInput!) {
+  updateGrid(input: $input) {
+    ...ListGrid
+  }
+}
+
+mutation DeleteGrid($id: ID!) {
+  deleteGrid(input: { id: $id })
+}
+
+# As for charts: the create-layer mutations answer with the id only, and the
+# caller refetches `GetGrid`.
+mutation CreateHeatmapGridLayer($input: CreateHeatmapGridLayerInput!) {
+  createHeatmapGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+mutation CreateCellsGridLayer($input: CreateCellsGridLayerInput!) {
+  createCellsGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+mutation UpdateGridLayer($input: UpdateGridLayerInput!) {
+  updateGridLayer(input: $input) {
+    ...GridLayerStyle
+  }
+}
+
+mutation DeleteGridLayer($id: ID!) {
+  deleteGridLayer(input: { id: $id })
+}

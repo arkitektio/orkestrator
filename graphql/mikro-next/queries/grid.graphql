@@ -1,0 +1,17 @@
+query GetGrid($id: ID!) {
+  grid(id: $id) {
+    ...Grid
+  }
+}
+
+query GetListGrid($id: ID!) {
+  grid(id: $id) {
+    ...ListGrid
+  }
+}
+
+query GetGrids($filters: GridFilter, $ordering: [GridOrder!], $pagination: OffsetPaginationInput) {
+  grids(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListGrid
+  }
+}

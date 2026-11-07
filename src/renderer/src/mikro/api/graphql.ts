@@ -1200,7 +1200,7 @@ export type AttributePlan = {
   sample: SampleStep;
 };
 
-/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
+/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; a space of two enumerating axes (genes against cells, objects against channels) a grid; any other space with a time or space axis a scene; a table lens whose rows have no place a VALUES chart of its measurements. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
 export type AutoVisualizeInput = {
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -1213,6 +1213,8 @@ export type Axis = {
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   longName?: Maybe<Scalars['String']['output']>;
+  /** The metric group this axis is in: the axes that share one distance with it. What it declared, else 'space' for a SPACE axis, else null -- an axis that shares a distance with nothing. A rotation, a distance and a scene's render axes need one group; a per-axis scale, an offset and an affine map do not */
+  metricGroup?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   order: Scalars['Int']['output'];
   type: AxisType;
@@ -1254,12 +1256,15 @@ export type AxisFilter = {
 export type AxisInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   longName?: InputMaybe<Scalars['String']['input']>;
+  metricGroup?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
 };
 
 /** The semantic kind of an axis. Axes are declared in the order the data has them -- for an array, its store's dimension order; for a table, its coordinate columns as declared -- and no ordering by type is required of them: the time, channel and phasor axes are found by type rather than by position. What the render axes are derived from is the relative order of the SPACE axes, the last being x. */
 export enum AxisType {
+  /** An enumerating axis whose positions are the values a column holds -- a condition, a genotype, a cluster id. It has no unit and no metric, exactly as an INDEX axis has none: nothing scales or offsets it, and a BY_DIMENSION passes it through with an IDENTITY part. The positions are not stored: they are whatever the values are. Never on an array's grid; declared on a coordinate system that enumerates by value. */
+  Category = 'CATEGORY',
   /** A categorical channel axis: its coordinates index acquisitions, not positions. Never downsampled. */
   Channel = 'CHANNEL',
   /** The value axis of a coordinate-valued array: its positions enumerate the components of an absolute output position. This is what makes the array readable as the `field` of a FIELD edge. A scalar-valued field (a label mask, whose one value is an object id) carries no value axis at all -- absent means scalar, and scalar means COORDINATE. */
@@ -1281,6 +1286,7 @@ export enum AxisType {
 }
 
 export enum AxisTypeChoices {
+  Category = 'CATEGORY',
   Channel = 'CHANNEL',
   Coordinate = 'COORDINATE',
   Displacement = 'DISPLACEMENT',
@@ -1583,6 +1589,50 @@ export type CascadeCount = {
   label: Scalars['String']['output'];
 };
 
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayer = GridLayer & {
+  __typename?: 'CellsGridLayer';
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The table lens whose rows are drawn: the rows its windows keep */
+  lens: TableLens;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  /** The table dataset whose rows are drawn: the container of the lens */
+  tableDataset: TableDataset;
+  /** The numeric column whose value colours each row's cell */
+  valueColumn: Scalars['String']['output'];
+  /** The unit of `valueColumn`, as the table declares it. Null when the column declares none */
+  valueUnit?: Maybe<Scalars['Unit']['output']>;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' windows as row filters, always applied. Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+};
+
+
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
 /** Input for changing an existing folder's name or parent */
 export type ChangeFolderInput = {
   /** The ID of the folder to change */
@@ -1618,26 +1668,28 @@ export type ChannelSourceNode = LayerRenderNode & {
   visible: Scalars['Boolean']['output'];
 };
 
-/** A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type Chart = Visualization & {
   __typename?: 'Chart';
-  /** The one axis this chart is laid out along: its name, its metric type and its unit. The world's only axis, repeated here so a client drawing the chart need not unwrap a list of one */
-  axis: Axis;
+  /** The one axis an AXIS chart is laid out along: its name, its metric type and its unit -- the world's only axis, repeated so a client need not unwrap a list of one. Null for a VALUES chart, whose drawn axes are the columns its layers name */
+  axis?: Maybe<Axis>;
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
+  /** What the world is to this chart: AXIS, the one axis it draws and lays its layers along; VALUES, whose rows it draws at the values of their columns */
+  kind: ChartKind;
   /** The layers drawn in this chart, back to front (a heterogeneous list of layer kinds) */
   layers: Array<ChartLayer>;
   name: Scalars['String']['output'];
-  /** The space this chart is laid out along. Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
+  /** The domain this chart's layers live in: an AXIS chart's one metric axis, which it draws; a VALUES chart's space whose rows it draws -- a table's -- which it does not. Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
   worldCoordinateSystem: CoordinateSystem;
 };
 
 
-/** A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type ChartLayersArgs = {
   filters?: InputMaybe<ChartLayerFilter>;
   ordering?: Array<ChartLayerOrder>;
@@ -1670,7 +1722,13 @@ export type ChartFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** What a chart's world is to it. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it by the graph. An AXIS chart draws its world: one measured axis with a unit, which TRACE, SERIES and ANNOTATION layers are laid along (intensity against `t`). A VALUES chart does not draw it: its world says *whose rows* -- a table's space, usually its INDEX axis (`cell_id`) -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name (`area` against `volume`). Two layers placed in one VALUES world are about the same rows. */
+export enum ChartKind {
+  Axis = 'AXIS',
+  Values = 'VALUES'
+}
+
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayer = {
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
   alongAxis?: Maybe<Scalars['String']['output']>;
@@ -1696,37 +1754,37 @@ export type ChartLayer = {
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerAlongAxisArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -1744,15 +1802,19 @@ export type ChartLayerFilter = {
   kind?: InputMaybe<ChartLayerKindChoices>;
 };
 
-/** The kind of a chart layer, which says what it reads -- never how it looks. TRACE reads an array along one axis; SERIES reads one column of a table against another; ANNOTATION reads drawn marks. A line, markers, both or steps is `ChartMark`, a setting on the layer. */
+/** The kind of a chart layer, which says what it reads -- never how it looks. Three are drawn in an AXIS chart, laid along its one world axis by the graph: TRACE reads an array along one axis, SERIES one value column of a table along its coordinate, ANNOTATION drawn marks. Two are drawn in a VALUES chart, their rows placed in its world and drawn at their values: POINTS at two or three columns (a scatter), DISTRIBUTION summarising one column (a histogram, a box), once per value of a grouping column. A line, markers, a histogram or a box is `ChartMark`, a setting on the layer. */
 export enum ChartLayerKind {
   Annotation = 'ANNOTATION',
+  Distribution = 'DISTRIBUTION',
+  Points = 'POINTS',
   Series = 'SERIES',
   Trace = 'TRACE'
 }
 
 export enum ChartLayerKindChoices {
   Annotation = 'ANNOTATION',
+  Distribution = 'DISTRIBUTION',
+  Points = 'POINTS',
   Series = 'SERIES',
   Trace = 'TRACE'
 }
@@ -1761,8 +1823,10 @@ export type ChartLayerOrder =
   { id: Ordering; order?: never; }
   |  { id?: never; order: Ordering; };
 
-/** How a trace or a series is drawn. A look, not a kind: changing it changes nothing about what the layer reads. */
+/** How a layer is drawn. A look, not a kind: changing it changes nothing about what the layer reads. A trace or a series is a LINE, MARKERS, both or STEPS; points are MARKERS or a LINE through them in row order sorted along x; a distribution is a HISTOGRAM or a BOX. */
 export enum ChartMark {
+  Box = 'BOX',
+  Histogram = 'HISTOGRAM',
   Line = 'LINE',
   LineMarkers = 'LINE_MARKERS',
   Markers = 'MARKERS',
@@ -2020,6 +2084,8 @@ export type Column = {
   /** The table this column is declared on. Trivial when the column was read through its table, load-bearing when it was not -- an options list is flat, and a column with no table on it cannot be named in a `colorBy` */
   table: TableDataset;
   unit?: Maybe<Scalars['Unit']['output']>;
+  /** For a long-form table, the CHANNEL coordinate columns this column's value changes along, as declared. In a `(cell, c, volume, mean)` table a per-cell `volume` varies over nothing and is read once per cell; a per-channel `mean` varies over `c`. Null when undeclared: read as varying over every CHANNEL coordinate, which counts nothing twice that should not be */
+  variesOver?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 /** The fields a COLUMN member of a colour picker entry reads. Published for codegen; the wire type is the flat LabelColorByInput / MeshColorByInput / NetworkColorByInput */
@@ -2052,6 +2118,7 @@ export type ColumnInput = {
   name: Scalars['String']['input'];
   role?: InputMaybe<ColumnRole>;
   unit?: InputMaybe<Scalars['Unit']['input']>;
+  variesOver?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type ColumnOptionFilter = {
@@ -2460,6 +2527,20 @@ export type CreateArrayDatasetInput = {
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
 };
 
+/** Input for drawing a table's rows in a grid: each row a cell at its position along the grid's axes -- the table's frame -- coloured by the value of `valueColumn` */
+export type CreateCellsGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  grid: Scalars['ID']['input'];
+  lens: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Bootstrap a chart over an existing coordinate system, drawing what is already laid along its axis: each array placed in it that is a trace, each table that is a series, each annotation collection. Authors no edges -- what places each layer is the registration already in the graph -- and leaves out anything placed in the space that no layer kind reads. Rerunning makes another chart over the same space */
 export type CreateChartFromCoordinateSystemInput = {
   coordinateSystem: Scalars['ID']['input'];
@@ -2467,11 +2548,12 @@ export type CreateChartFromCoordinateSystemInput = {
   policy?: ChartPolicyInput;
 };
 
-/** Input type for creating a chart: a composition of data laid out along one metric axis. The chart is created over a world -- an existing coordinate system adopted as it is, or one created from a single axis -- and starts with no layers */
+/** Input type for creating a chart over a world: an existing coordinate system adopted as it is, or one created from `axis`. An AXIS chart (the default) draws its world -- one metric axis with a unit -- and lays TRACE, SERIES and ANNOTATION layers along it by the graph: intensity against `t`. A VALUES chart does not draw its world: the world says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers, placed into it, draw those rows at the values of the columns they name: `area` against `volume`. It starts with no layers */
 export type CreateChartInput = {
   axis?: InputMaybe<PhysicalAxisInput>;
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  kind?: ChartKind;
   name: Scalars['String']['input'];
 };
 
@@ -2496,6 +2578,21 @@ export type CreateCoordinateSystemInput = {
   name: Scalars['String']['input'];
   reference?: InputMaybe<Scalars['String']['input']>;
   registrations?: Array<RegistrationPathInput>;
+};
+
+/** Input for summarising the values of one column of a table's rows in a VALUES chart: a HISTOGRAM or a BOX, over every row or once per value of `groupColumn` -- the `area` of nuclei, one histogram per `condition`. The rows are placed in the chart's world (whose rows). Writes no edge */
+export type CreateDistributionChartLayerInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  chart: Scalars['ID']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  lens: Scalars['ID']['input'];
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn: Scalars['String']['input'];
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Input for registering a fixture: one binary glTF, in a unit-carrying coordinate system of its own */
@@ -2537,6 +2634,33 @@ export type CreateFolderInput = {
   name: Scalars['String']['input'];
   /** The ID of the parent folder to nest this folder under */
   parent?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Bootstrap a grid over an existing space, drawing what already covers its axes: each sparse matrix and array as a heatmap, each table as cells coloured by its one numeric column. Authors no edges, and leaves out whatever its kind refuses */
+export type CreateGridFromCoordinateSystemInput = {
+  coordinateSystem: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  policy?: GridPolicyInput;
+};
+
+/** Input for creating a grid over an existing space whose one or two enumerating axes (INDEX, CHANNEL, CATEGORY) are its rows and columns -- a sparse dataset's own space, a long-form table's. Adopted as it is, never minted. It starts with no layers */
+export type CreateGridInput = {
+  coordinateSystem: Scalars['ID']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
+/** Input for drawing an array or a sparse matrix in a grid: its lens leaves free exactly the grid's axes, placed in its world, and each position is a cell coloured by the value there */
+export type CreateHeatmapGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  grid: Scalars['ID']['input'];
+  lens: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Create a single-channel intensity layer rendered through a colormap (e.g. a fluorescence channel) */
@@ -2746,6 +2870,23 @@ export type CreatePointLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for drawing a table's rows as points in a VALUES chart: each row at the values of `xColumn` and `yColumn` (and `zColumn` for depth) -- nuclei at their `area` and `volume`. The rows are placed in the chart's world (whose rows); the columns' units are its drawn axes, and a second layer's must convert to them. Writes no edge */
+export type CreatePointsChartLayerInput = {
+  chart: Scalars['ID']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  lens: Scalars['ID']['input'];
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+  xColumn: Scalars['String']['input'];
+  yColumn: Scalars['String']['input'];
+  zColumn?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Create a layer that composites three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture */
 export type CreateRgbLayerInput = {
   blueLens: Scalars['ID']['input'];
@@ -2840,7 +2981,7 @@ export type CreateTableDatasetInput = {
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
 };
 
-/** Input for the lens making a selection over a table dataset, by windows on its coordinate columns */
+/** Input for the lens making a selection over a table dataset, by windows on its columns: a coordinate column bounds a region of space, a numeric measurement column is a gate (`area >= 50`) -- the rows whose value lies in the window */
 export type CreateTableLensInput = {
   /** A lens over the table dataset to select within, in place of the container: the windows then intersect with its own, and the result is the table dataset's lens for what that keeps */
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -2848,6 +2989,20 @@ export type CreateTableLensInput = {
   tableDataset?: InputMaybe<Scalars['ID']['input']>;
   /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the table dataset's whole lens, or the lens cut from */
   windows?: InputMaybe<Array<WindowInput>>;
+};
+
+/** Input for plotting a table's columns in one call: a VALUES chart over the table's space (whose rows, not drawn) and one POINTS or DISTRIBUTION layer through the table's whole lens or a window of it, in one transaction, so a refused layer makes nothing. `area` against `volume` is `{kind: POINTS, xColumn: "area", yColumn: "volume"}`; a histogram of `area` per `condition` is `{kind: DISTRIBUTION, xColumn: "area", groupColumn: "condition"}` */
+export type CreateTablePlotInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  kind: ChartLayerKind;
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  table: Scalars['ID']['input'];
+  xColumn: Scalars['String']['input'];
+  yColumn?: InputMaybe<Scalars['String']['input']>;
+  zColumn?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for drawing an array as a trace in a chart. The lens must leave one metric axis free -- the one the graph lays along the chart's axis -- and may leave one CHANNEL or INDEX axis free beside it, drawn as one line per position; every other axis must be sliced to a single position. The lens' data must already be registered into the chart's world: this writes no edge */
@@ -3082,6 +3237,18 @@ export type DeleteFixtureInput = {
 /** Input for deleting a folder by ID */
 export type DeleteFolderInput = {
   /** The ID of the folder to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** Input for deleting a grid by ID. Deletes its layers and nothing they drew: the data, and the grid's world, are untouched */
+export type DeleteGridInput = {
+  /** The ID of the grid to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** Input for deleting a grid layer by ID. Deletes the layer and nothing it drew */
+export type DeleteGridLayerInput = {
+  /** The ID of the grid layer to delete */
   id: Scalars['ID']['input'];
 };
 
@@ -3371,6 +3538,84 @@ export type DimensionPartInput = {
   outputAxes: Array<Scalars['String']['input']>;
   scale?: InputMaybe<Array<Scalars['Float']['input']>>;
   translation?: InputMaybe<Array<Scalars['Float']['input']>>;
+};
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayer = ChartLayer & {
+  __typename?: 'DistributionChartLayer';
+  /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
+  alongAxis?: Maybe<Scalars['String']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map: a single row, because the chart's world has a single axis. The coefficient on `alongAxis` is the scale from a step along the data to a step along the chart's axis, in the axis's unit, and the last entry is the offset. Derived on read. Null when `pathToWorld` is null; an error when a path exists but does not condense */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How many bins a HISTOGRAM is cut into. Null lets the viewer choose */
+  bins?: Maybe<Scalars['Int']['output']>;
+  chart: Chart;
+  /** The colour the layer is drawn in, as RGBA. Null lets the viewer choose */
+  color?: Maybe<Array<Scalars['Float']['output']>>;
+  /** The column whose values split the rows into one summary each: a text or boolean attribute, a label, a group id, or a long-form CHANNEL coordinate. Null for one summary over every row */
+  groupColumn?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  kind: ChartLayerKind;
+  /** The table lens whose rows are summarised: the rows its selection keeps */
+  lens: TableLens;
+  /** How the values are summarised: a HISTOGRAM or a BOX */
+  mark: ChartMark;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its chart's world. Null when the layer is unregistered; empty when the source already is the world. `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place along its chart's axis, and if not, why not. UNREGISTERED is a gap to close; UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the walk from this layer's data to the chart's world: the weakest edge on its path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The table dataset whose columns are read: the container of the lens */
+  tableDataset: TableDataset;
+  /** The numeric column whose values are summarised: the chart's horizontal axis */
+  valueColumn: Scalars['String']['output'];
+  /** The unit of `valueColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none */
+  valueUnit?: Maybe<Scalars['Unit']['output']>;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' selection as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open). Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerAlongAxisArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 /** How a viewer eases the camera along the travel into an animation waypoint. */
@@ -4435,6 +4680,222 @@ export enum GraphTarget {
   /** Every node, and the segments and glyphs that touch it: a segment takes its start node's value, so colouring nodes colours the wireframe too. */
   Node = 'NODE'
 }
+
+/** A composition that shows **which**: its rows and columns are the members of its world's one or two enumerating axes (INDEX, CHANNEL, CATEGORY), in order and with no distance between them, and a value is drawn as a cell's colour. Beside a scene, which shows *where* (screen axes a place), and a chart, which shows *how much* (values as position): row 3 of a grid comes after row 2, it is not one unit from it. Examples: a sparse matrix of genes against cells as a heatmap; a long-form table's mean per cell and channel; a plate's wells. It adopts its world -- the space whose members it lays out -- names data through lenses and owns none of it */
+export type Grid = Visualization & {
+  __typename?: 'Grid';
+  /** The axis whose members are the columns: the world's second axis. Null for a grid of one axis, a single column of rows */
+  columnAxis?: Maybe<Axis>;
+  createdAt: Scalars['DateTime']['output'];
+  creator?: Maybe<User>;
+  description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** The layers drawn in this grid, back to front (a heterogeneous list of layer kinds) */
+  layers: Array<GridLayer>;
+  name: Scalars['String']['output'];
+  /** The axis whose members are the rows: the world's first axis */
+  rowAxis: Axis;
+  /** The space whose members this grid lays out: one or two enumerating axes, rows then columns. Never owned by the grid: several compositions can share it, and deleting a grid never deletes it */
+  worldCoordinateSystem: CoordinateSystem;
+};
+
+
+/** A composition that shows **which**: its rows and columns are the members of its world's one or two enumerating axes (INDEX, CHANNEL, CATEGORY), in order and with no distance between them, and a value is drawn as a cell's colour. Beside a scene, which shows *where* (screen axes a place), and a chart, which shows *how much* (values as position): row 3 of a grid comes after row 2, it is not one unit from it. Examples: a sparse matrix of genes against cells as a heatmap; a long-form table's mean per cell and channel; a plate's wells. It adopts its world -- the space whose members it lays out -- names data through lenses and owns none of it */
+export type GridLayersArgs = {
+  filters?: InputMaybe<GridLayerFilter>;
+  ordering?: Array<GridLayerOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Numeric/aggregatable fields of Grid */
+export enum GridField {
+  Pk = 'PK'
+}
+
+export type GridFilter = {
+  AND?: InputMaybe<GridFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<GridFilter>;
+  OR?: InputMaybe<GridFilter>;
+  /** Filter to the grids laid out over this coordinate system */
+  coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Search by name (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayer = {
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+export type GridLayerFilter = {
+  AND?: InputMaybe<GridLayerFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<GridLayerFilter>;
+  OR?: InputMaybe<GridLayerFilter>;
+  /** Filter by the grid this layer is drawn in */
+  grid?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  kind?: InputMaybe<GridLayerKindChoices>;
+};
+
+/** The kind of a grid layer, which says what it reads. HEATMAP reads an array or a sparse matrix whose free axes are the grid's: one cell per position, its value the colour -- genes against cells. CELLS reads a table whose frame is the grid's axes: one cell per row, coloured by the value of a column -- the mean of each cell in each channel of a long-form table, or a value per well of a plate. */
+export enum GridLayerKind {
+  Cells = 'CELLS',
+  Heatmap = 'HEATMAP'
+}
+
+export enum GridLayerKindChoices {
+  Cells = 'CELLS',
+  Heatmap = 'HEATMAP'
+}
+
+export type GridLayerOrder =
+  { id: Ordering; order?: never; }
+  |  { id?: never; order: Ordering; };
+
+export type GridOrder =
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
+
+/** How a grid is drawn from what is already placed in a space */
+export type GridPolicyInput = {
+  nchildren?: Scalars['Int']['input'];
+};
+
+export type GridStats = {
+  __typename?: 'GridStats';
+  /** Average */
+  avg?: Maybe<Scalars['Float']['output']>;
+  /** Total number of items in the selection */
+  count: Scalars['Int']['output'];
+  /** Number of distinct values for the field */
+  distinctCount: Scalars['Int']['output'];
+  /** Maximum */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** Minimum */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
+  /** Sum */
+  sum?: Maybe<Scalars['Float']['output']>;
+};
+
+
+export type GridStatsAvgArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsDistinctCountArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsMaxArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsMinArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsSeriesArgs = {
+  by: Granularity;
+  field: GridField;
+  timestampField: GridTimestampField;
+};
+
+
+export type GridStatsSumArgs = {
+  field: GridField;
+};
+
+/** Datetime fields of Grid for bucketing */
+export enum GridTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayer = GridLayer & {
+  __typename?: 'HeatmapGridLayer';
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The array or sparse lens whose values are drawn */
+  lens: Lens;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
 
 /** The type of change that was made. */
 export enum HistoryKind {
@@ -6410,7 +6871,7 @@ export type Mutation = {
   addToCollaboration: Collaboration;
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
-  /** Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
+  /** Show a coordinate system or a lens as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a grid over two enumerating axes, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
   autoVisualize: Visualization;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, the scenes over it (their layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive. Guarded by the space's creator: clearing a space is the space-owner's act */
   clearCoordinateSystem: Array<Scalars['ID']['output']>;
@@ -6432,7 +6893,9 @@ export type Mutation = {
   createAnnotations: Array<Annotation>;
   /** Create a new dataset from array-like data with optional coordinate anchors and OME metadata */
   createArrayDataset: ArrayDataset;
-  /** Create a chart: a composition of data laid out along one metric axis. Over an existing coordinate system with exactly one metric, unit-carrying axis, or over one created from a single axis */
+  /** Draw a table's rows in a grid: one cell per row at its position along the grid's axes, coloured by a numeric column -- a long-form table's mean per cell and channel */
+  createCellsGridLayer: CellsGridLayer;
+  /** Create a chart over a world: values drawn as position. An AXIS chart draws its world's one metric, unit-carrying axis (an existing space, or one created from `axis`); a VALUES chart's world is a table's space -- whose rows -- and its layers draw those rows at the values of columns, for scatters and histograms */
   createChart: Chart;
   /** Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges */
   createChartFromCoordinateSystem: Chart;
@@ -6442,6 +6905,8 @@ export type Mutation = {
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
   createCoordinateSystem: CoordinateSystem;
+  /** Summarise the values of one column of a table lens' rows in a VALUES chart: a histogram or a box, over every row or once per value of a grouping column such as a condition */
+  createDistributionChartLayer: DistributionChartLayer;
   /** Register a fixture -- a coverslip, a dish, a holder -- from an uploaded binary glTF, in a unit-carrying coordinate system of its own */
   createFixture: Fixture;
   /** Create a layer that renders a fixture in a scene */
@@ -6450,6 +6915,12 @@ export type Mutation = {
   createFixtureLens: FixtureLens;
   /** Create a new folder to organize data */
   createFolder: Folder;
+  /** Create a grid over an existing space whose one or two enumerating axes (INDEX, CHANNEL, CATEGORY) are its rows and columns: members in order, a value as each cell's colour */
+  createGrid: Grid;
+  /** Bootstrap a grid over an existing space, drawing each sparse matrix and array covering its axes as a heatmap and each table as cells. Authors no edges */
+  createGridFromCoordinateSystem: Grid;
+  /** Draw an array or a sparse matrix in a grid: one cell per position along the grid's axes, coloured by the value there -- genes against cells */
+  createHeatmapGridLayer: HeatmapGridLayer;
   /** Create an intensity layer: one channel of a lens through one colormap -- or one solid RGBA tint, for a colour that is a measured fact rather than a choice -- with contrast limits and gamma. The fluorescence workhorse, and its own kind -- its settings are fields, not a render graph, because there is nothing here to composite */
   createIntensityLayer: IntensityLayer;
   /** Create a label layer that renders an instance / segmentation map -- an array whose values are discrete object ids. Its own layer kind, not an image layer: ids take a hashed colour, a transparent background value and an optional `colorBy` over the table they key into, and none of an image's contrast limits, gamma or colormaps */
@@ -6482,6 +6953,8 @@ export type Mutation = {
   createPhasorLayer: PhasorLayer;
   /** Create a layer that renders a point cloud (e.g. SMLM localisations, centroids) from columns of a table */
   createPointLayer: PointLayer;
+  /** Draw a table lens' rows as points in a VALUES chart: placed in its world (whose rows), each drawn at the values of two columns (a scatter), or three for depth */
+  createPointsChartLayer: PointsChartLayer;
   /** Create an RGB layer: three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. Its own kind rather than a three-channel render graph, because as a graph it is indistinguishable from three fluorescence markers somebody tinted red, green and blue, which is the commoner reading. Never inferred from that shape: a bootstrapped scene reaches this kind only on evidence ingest recorded -- channels labelled red, green and blue, or arrays read out of a PNG -- so state it here for a photograph that arrived with neither */
   createRgbLayer: RgbLayer;
   /** Create a new scene over a world coordinate system: an adopted existing system, or an ordinary SHARED one created for it (never owned by the scene -- it outlives it) */
@@ -6500,8 +6973,10 @@ export type Mutation = {
   createSparseLens: SparseLens;
   /** Create a table dataset from a Parquet store. Its declared coordinate columns become the axes of a coordinate system it owns, which lets a localization table be placed in a scene; a table with no coordinate columns is a measurement table whose rows enumerate objects and whose lineage edge is UNMAPPABLE */
   createTableDataset: TableDataset;
-  /** The lens keeping these windows of a table dataset's coordinate columns: the one that exists, or a new one. It lives in the table's own space */
+  /** The lens keeping these windows of a table dataset's columns -- a coordinate (a region of space) or a numeric measurement (a gate, `area >= 50`): the one that exists, or a new one. It lives in the table's own space */
   createTableLens: TableLens;
+  /** Plot a table's columns in one call: a VALUES chart over the table's space and one POINTS or DISTRIBUTION layer drawing its rows at the values of the named columns. One transaction */
+  createTablePlot: Chart;
   /** Draw an array as a trace in a chart: a lens with one metric axis free, laid along the chart's axis by the graph, and optionally one CHANNEL or INDEX axis free as one line per position */
   createTraceChartLayer: TraceChartLayer;
   /** Create a layer that renders trajectories from columns of a table, grouped by a track id */
@@ -6536,6 +7011,10 @@ export type Mutation = {
   deleteFixture: Scalars['ID']['output'];
   /** Delete an existing folder */
   deleteFolder: Scalars['ID']['output'];
+  /** Delete a grid and its layers. The data they drew and the grid's world are untouched */
+  deleteGrid: Scalars['ID']['output'];
+  /** Delete a grid layer. Deletes nothing it drew */
+  deleteGridLayer: Scalars['ID']['output'];
   /** Delete an existing layer */
   deleteLayer: Scalars['ID']['output'];
   /** Delete a lens of any kind. Refused while a layer draws through it, and for a container's whole lens */
@@ -6704,6 +7183,10 @@ export type Mutation = {
   updateFixtureLayer: FixtureLayer;
   /** Update folder metadata */
   updateFolder: Folder;
+  /** Rename or re-describe a grid. Its world is fixed */
+  updateGrid: Grid;
+  /** Restyle a grid layer. View state only */
+  updateGridLayer: GridLayer;
   /** Update an intensity layer's channel, colormap or tint, contrast limits, gamma, projection and compositing settings. A patch: what is not sent keeps its current value */
   updateIntensityLayer: IntensityLayer;
   /** Update a label layer's render settings -- the selection, contour, hashing seed or `colorBy`. A patch: what is not sent keeps its current value */
@@ -6805,6 +7288,11 @@ export type MutationCreateArrayDatasetArgs = {
 };
 
 
+export type MutationCreateCellsGridLayerArgs = {
+  input: CreateCellsGridLayerInput;
+};
+
+
 export type MutationCreateChartArgs = {
   input: CreateChartInput;
 };
@@ -6830,6 +7318,11 @@ export type MutationCreateCoordinateSystemArgs = {
 };
 
 
+export type MutationCreateDistributionChartLayerArgs = {
+  input: CreateDistributionChartLayerInput;
+};
+
+
 export type MutationCreateFixtureArgs = {
   input: CreateFixtureInput;
 };
@@ -6847,6 +7340,21 @@ export type MutationCreateFixtureLensArgs = {
 
 export type MutationCreateFolderArgs = {
   input: CreateFolderInput;
+};
+
+
+export type MutationCreateGridArgs = {
+  input: CreateGridInput;
+};
+
+
+export type MutationCreateGridFromCoordinateSystemArgs = {
+  input: CreateGridFromCoordinateSystemInput;
+};
+
+
+export type MutationCreateHeatmapGridLayerArgs = {
+  input: CreateHeatmapGridLayerInput;
 };
 
 
@@ -6930,6 +7438,11 @@ export type MutationCreatePointLayerArgs = {
 };
 
 
+export type MutationCreatePointsChartLayerArgs = {
+  input: CreatePointsChartLayerInput;
+};
+
+
 export type MutationCreateRgbLayerArgs = {
   input: CreateRgbLayerInput;
 };
@@ -6977,6 +7490,11 @@ export type MutationCreateTableDatasetArgs = {
 
 export type MutationCreateTableLensArgs = {
   input: CreateTableLensInput;
+};
+
+
+export type MutationCreateTablePlotArgs = {
+  input: CreateTablePlotInput;
 };
 
 
@@ -7062,6 +7580,16 @@ export type MutationDeleteFixtureArgs = {
 
 export type MutationDeleteFolderArgs = {
   input: DeleteFolderInput;
+};
+
+
+export type MutationDeleteGridArgs = {
+  input: DeleteGridInput;
+};
+
+
+export type MutationDeleteGridLayerArgs = {
+  input: DeleteGridLayerInput;
 };
 
 
@@ -7462,6 +7990,16 @@ export type MutationUpdateFixtureLayerArgs = {
 
 export type MutationUpdateFolderArgs = {
   input: ChangeFolderInput;
+};
+
+
+export type MutationUpdateGridArgs = {
+  input: UpdateGridInput;
+};
+
+
+export type MutationUpdateGridLayerArgs = {
+  input: UpdateGridLayerInput;
 };
 
 
@@ -8436,9 +8974,10 @@ export type PhasorTransferInput = {
 export type PhysicalAxisInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   longName?: InputMaybe<Scalars['String']['input']>;
+  metricGroup?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
-  unit: Scalars['Unit']['input'];
+  unit?: InputMaybe<Scalars['Unit']['input']>;
 };
 
 /** Input for pinning or unpinning a folder for quick access */
@@ -8627,6 +9166,92 @@ export type PointLayerPlacementInvarianceArgs = {
 
 /** A layer that renders a point cloud (e.g. SMLM localisations, centroids) from a table dataset. */
 export type PointLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayer = ChartLayer & {
+  __typename?: 'PointsChartLayer';
+  /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
+  alongAxis?: Maybe<Scalars['String']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map: a single row, because the chart's world has a single axis. The coefficient on `alongAxis` is the scale from a step along the data to a step along the chart's axis, in the axis's unit, and the last entry is the offset. Derived on read. Null when `pathToWorld` is null; an error when a path exists but does not condense */
+  asAffine?: Maybe<AffinePlacement>;
+  chart: Chart;
+  /** The colour the layer is drawn in, as RGBA. Null lets the viewer choose */
+  color?: Maybe<Array<Scalars['Float']['output']>>;
+  id: Scalars['ID']['output'];
+  kind: ChartLayerKind;
+  /** The table lens whose rows are drawn: the rows its selection keeps */
+  lens: TableLens;
+  /** Line width in screen pixels. Null lets the viewer choose */
+  lineWidth?: Maybe<Scalars['Float']['output']>;
+  /** How the rows are drawn: MARKERS, or a LINE through them sorted along x */
+  mark: ChartMark;
+  /** Marker size in screen pixels. Null lets the viewer choose */
+  markerSize?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its chart's world. Null when the layer is unregistered; empty when the source already is the world. `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place along its chart's axis, and if not, why not. UNREGISTERED is a gap to close; UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the walk from this layer's data to the chart's world: the weakest edge on its path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The table dataset whose columns are read: the container of the lens */
+  tableDataset: TableDataset;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' selection as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open). Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+  /** The numeric column whose value is a row's horizontal position */
+  xColumn: Scalars['String']['output'];
+  /** The unit of `xColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none */
+  xUnit?: Maybe<Scalars['Unit']['output']>;
+  /** The numeric column whose value is a row's vertical position */
+  yColumn: Scalars['String']['output'];
+  /** The unit of `yColumn`, as the table declares it: the chart's vertical axis. Null when the column declares none */
+  yUnit?: Maybe<Scalars['Unit']['output']>;
+  /** The numeric column whose value is a row's depth, for a three-dimensional scatter. Null for a flat one */
+  zColumn?: Maybe<Scalars['String']['output']>;
+  /** The unit of `zColumn`, as the table declares it. Null for a flat scatter or a column that declares none */
+  zUnit?: Maybe<Scalars['Unit']['output']>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerAlongAxisArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
@@ -8845,6 +9470,16 @@ export type Query = {
   folders: Array<Folder>;
   /** Get statistics about folders: counts and time-bucketed series over the folders of the current organization */
   foldersStats: FolderStats;
+  /** Get a single grid by ID */
+  grid: Grid;
+  /** Get a single grid layer by ID */
+  gridLayer: GridLayer;
+  /** List layers drawn in grids (a heterogeneous list of layer kinds) */
+  gridLayers: Array<GridLayer>;
+  /** List grids (compositions laying out the members of one or two enumerating axes: a heatmap of genes against cells, a table's cells against channels) */
+  grids: Array<Grid>;
+  /** Get statistics about grids: counts and time-bucketed series over the grids of the current organization */
+  gridsStats: GridStats;
   /** Every column a mask's objects can be coloured or filtered by: `colorByOptions` rooted on the lens a label layer renders instead of on a mesh collection, and the same answer for the same reason -- a mask's pixel values dereference into a table by exactly the FIELD edge a collection's ids do, so the walk, the measure-vs-categorical rule and the `joinPath` to pass back are one. **The set this returns is exactly the set `createLabelLayer(render: {colorBys: ...})` and `filterBys` accept.** The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   labelColorByOptions: Array<ColorByOption>;
   /** Every column a mask's objects can be filtered by -- **the same set `labelColorByOptions` returns**, under the name that reads right where a rule is being authored. One relation, one walk, two names, exactly as `filterByOptions` pairs with `colorByOptions` over a collection: what differs is what a control *means*, since MEASURE takes a `min`/`max` bound here and a colormap there. Everything returned is something `createLabelLayer(render: {filterBys: ...})` accepts */
@@ -9180,6 +9815,35 @@ export type QueryFoldersArgs = {
 
 export type QueryFoldersStatsArgs = {
   filters?: InputMaybe<FolderFilter>;
+};
+
+
+export type QueryGridArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryGridLayerArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryGridLayersArgs = {
+  filters?: InputMaybe<GridLayerFilter>;
+  ordering?: Array<GridLayerOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryGridsArgs = {
+  filters?: InputMaybe<GridFilter>;
+  ordering?: Array<GridOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryGridsStatsArgs = {
+  filters?: InputMaybe<GridFilter>;
 };
 
 
@@ -9871,7 +10535,7 @@ export type ScaleTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type Scene = Visualization & {
   __typename?: 'Scene';
   /** The named camera tours through this composition */
@@ -9899,7 +10563,7 @@ export type Scene = Visualization & {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneAnimationsArgs = {
   filters?: InputMaybe<AnimationFilter>;
   ordering?: Array<AnimationOrder>;
@@ -9907,7 +10571,7 @@ export type SceneAnimationsArgs = {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneLayersArgs = {
   filters?: InputMaybe<LayerFilter>;
   ordering?: Array<LayerOrder>;
@@ -9915,7 +10579,7 @@ export type SceneLayersArgs = {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneSnapshotsArgs = {
   filters?: InputMaybe<SceneSnapshotFilter>;
   ordering?: Array<SceneSnapshotOrder>;
@@ -10824,6 +11488,8 @@ export type TableDataset = {
   spec: Array<TableDatasetSpec>;
   /** The Parquet store holding the rows. Request an access grant from it and read the Parquet directly */
   store: ParquetStore;
+  /** The compositions that draw this table: every scene and chart with a layer through any lens of it -- its whole lens or a window of it. Derived, never stored, kind by kind in registration order and oldest first within a kind */
+  visualizations: Array<Visualization>;
 };
 
 
@@ -11038,7 +11704,7 @@ export type TableKey = {
   source: Resident;
 };
 
-/** A selection over a table dataset by value windows on its coordinate columns: the rows kept. Lives in the table's own space */
+/** A selection over a table dataset by value windows on its columns: the rows kept. A window on a coordinate column bounds a region of space; one on a numeric measurement column is a gate (`area >= 50`), which bounds nothing in space. Lives in the table's own space */
 export type TableLens = Lens & {
   __typename?: 'TableLens';
   /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
@@ -11675,6 +12341,25 @@ export type UpdateFixtureLayerInput = {
   wireframe?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for renaming or re-describing a grid. Its world is not editable: a grid over another space is another grid */
+export type UpdateGridInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Input for restyling a grid layer. View state only: what it reads is fixed at creation, and where it sits is the graph's */
+export type UpdateGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  id: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Update an intensity layer's render settings. Every field is a patch: what is not sent keeps its current value */
 export type UpdateIntensityLayerInput = {
   blending?: InputMaybe<Blending>;
@@ -12028,13 +12713,13 @@ export type VectorLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
-/** A composition laid out over a coordinate system: a scene (a place) or a chart (one metric axis). It adopts the space as its world, names data by id and owns none of it. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type */
+/** A composition: something that draws data through lenses, names it by id and owns none of it. A **scene** shows *where* -- every screen axis is an axis of its world, data is placed there by the graph's edges, and values are drawn as appearance (colour, size). A **chart** shows *how much* -- values are drawn as position, and at most one axis is drawn from its world: an AXIS chart draws its one axis (intensity against `t`), a VALUES chart draws its rows at the values of their columns (nuclei at `area` against `volume`), its world saying whose rows. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type */
 export type Visualization = {
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  /** The space this visualization is laid out over. Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it */
+  /** The space this visualization is laid out over: a scene's place, an AXIS chart's one axis, a VALUES chart's rows (a table's space, not drawn). Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it */
   worldCoordinateSystem: CoordinateSystem;
 };
 
@@ -12171,7 +12856,7 @@ export type ZarrUploadGrant = {
   uploadFileName: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -12755,6 +13440,16 @@ type ChartLayerCommon_AnnotationChartLayer_Fragment = { __typename: 'AnnotationC
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
+type ChartLayerCommon_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ChartAffineFragment
+  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
+type ChartLayerCommon_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ChartAffineFragment
+  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
 type ChartLayerCommon_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
@@ -12765,7 +13460,7 @@ type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer'
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
+export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_DistributionChartLayer_Fragment | ChartLayerCommon_PointsChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
 
 export type ChartLensFragment = { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
@@ -12841,20 +13536,64 @@ export type ChartAnnotationLayerFragment = (
   & ChartLayerCommon_AnnotationChartLayer_Fragment
 );
 
+export type ChartPointsLayerFragment = (
+  { __typename?: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+      { __typename?: 'ParquetStore' }
+      & ParquetStoreFragment
+    ), columns: Array<(
+      { __typename?: 'Column' }
+      & TableDatasetColumnFragment
+    )> }, lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )> }
+  & ChartLayerCommon_PointsChartLayer_Fragment
+);
+
+export type ChartDistributionLayerFragment = (
+  { __typename?: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+      { __typename?: 'ParquetStore' }
+      & ParquetStoreFragment
+    ), columns: Array<(
+      { __typename?: 'Column' }
+      & TableDatasetColumnFragment
+    )> }, lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )> }
+  & ChartLayerCommon_DistributionChartLayer_Fragment
+);
+
 type ChartLayerStyle_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+
+type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+
+type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
 type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
 type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
+export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_DistributionChartLayer_Fragment | ChartLayerStyle_PointsChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
 
-export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, axis: (
+export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, creator?: { __typename?: 'User', sub: string } | null, axis?: (
     { __typename?: 'Axis' }
     & AxisFragment
-  ), worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<(
+  ) | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<(
     { __typename: 'AnnotationChartLayer' }
     & ChartAnnotationLayerFragment
+  ) | (
+    { __typename: 'DistributionChartLayer' }
+    & ChartDistributionLayerFragment
+  ) | (
+    { __typename: 'PointsChartLayer' }
+    & ChartPointsLayerFragment
   ) | (
     { __typename: 'SeriesChartLayer' }
     & ChartSeriesLayerFragment
@@ -12863,10 +13602,10 @@ export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string
     & ChartTraceLayerFragment
   )> };
 
-export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: (
+export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: (
     { __typename?: 'Axis' }
     & AxisFragment
-  ) };
+  ) | null };
 
 type ChartLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null };
 
@@ -13238,6 +13977,79 @@ export type FolderFragment = { __typename?: 'Folder', id: string, name: string, 
   ) | null, creator?: { __typename?: 'User', sub: string } | null };
 
 export type ListFolderFragment = { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean };
+
+export type GridAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean };
+
+type GridLayerCommon_CellsGridLayer_Fragment = { __typename: 'CellsGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & GridAffineFragment
+  ) | null };
+
+type GridLayerCommon_HeatmapGridLayer_Fragment = { __typename: 'HeatmapGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & GridAffineFragment
+  ) | null };
+
+export type GridLayerCommonFragment = GridLayerCommon_CellsGridLayer_Fragment | GridLayerCommon_HeatmapGridLayer_Fragment;
+
+export type GridHeatmapLayerFragment = (
+  { __typename?: 'HeatmapGridLayer', lens: { __typename: 'AnnotationLens', id: string, name?: string | null } | (
+    { __typename: 'ArrayLens', id: string, name?: string | null }
+    & ChartLensFragment
+  ) | { __typename: 'FixtureLens', id: string, name?: string | null } | { __typename: 'MeshLens', id: string, name?: string | null } | { __typename: 'NetworkLens', id: string, name?: string | null } | { __typename: 'SparseLens', id: string, name?: string | null, windows: Array<(
+      { __typename?: 'Window' }
+      & LensWindowFragment
+    )>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: (
+          { __typename?: 'SparseStore' }
+          & SparseStoreReadFragment
+        ) }> } } | { __typename: 'TableLens', id: string, name?: string | null } }
+  & GridLayerCommon_HeatmapGridLayer_Fragment
+);
+
+export type GridCellsLayerFragment = (
+  { __typename?: 'CellsGridLayer', valueColumn: string, valueUnit?: any | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+      { __typename?: 'ParquetStore' }
+      & ParquetStoreFragment
+    ), columns: Array<(
+      { __typename?: 'Column' }
+      & TableDatasetColumnFragment
+    )> }, lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )> }
+  & GridLayerCommon_CellsGridLayer_Fragment
+);
+
+type GridLayerStyle_CellsGridLayer_Fragment = { __typename: 'CellsGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null };
+
+type GridLayerStyle_HeatmapGridLayer_Fragment = { __typename: 'HeatmapGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null };
+
+export type GridLayerStyleFragment = GridLayerStyle_CellsGridLayer_Fragment | GridLayerStyle_HeatmapGridLayer_Fragment;
+
+export type GridFragment = { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, rowAxis: (
+    { __typename?: 'Axis' }
+    & AxisFragment
+  ), columnAxis?: (
+    { __typename?: 'Axis' }
+    & AxisFragment
+  ) | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<(
+    { __typename: 'CellsGridLayer' }
+    & GridCellsLayerFragment
+  ) | (
+    { __typename: 'HeatmapGridLayer' }
+    & GridHeatmapLayerFragment
+  )> };
+
+export type ListGridFragment = { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: (
+    { __typename?: 'Axis' }
+    & AxisFragment
+  ), columnAxis?: (
+    { __typename?: 'Axis' }
+    & AxisFragment
+  ) | null };
 
 export type TransferFunctionFragment = { __typename?: 'TransferFunction', climMin?: number | null, climMax?: number | null, colormap?: ColorMap | null, color?: Array<number> | null, gamma?: number | null, opacity?: number | null, invert?: boolean | null, stops?: Array<{ __typename?: 'LookupStop', position: number, value: number }> | null };
 
@@ -14510,6 +15322,30 @@ export type CreateSeriesChartLayerMutationVariables = Exact<{
 
 export type CreateSeriesChartLayerMutation = { __typename?: 'Mutation', createSeriesChartLayer: { __typename: 'SeriesChartLayer', id: string } };
 
+export type CreatePointsChartLayerMutationVariables = Exact<{
+  input: CreatePointsChartLayerInput;
+}>;
+
+
+export type CreatePointsChartLayerMutation = { __typename?: 'Mutation', createPointsChartLayer: { __typename: 'PointsChartLayer', id: string } };
+
+export type CreateDistributionChartLayerMutationVariables = Exact<{
+  input: CreateDistributionChartLayerInput;
+}>;
+
+
+export type CreateDistributionChartLayerMutation = { __typename?: 'Mutation', createDistributionChartLayer: { __typename: 'DistributionChartLayer', id: string } };
+
+export type CreateTablePlotMutationVariables = Exact<{
+  input: CreateTablePlotInput;
+}>;
+
+
+export type CreateTablePlotMutation = { __typename?: 'Mutation', createTablePlot: (
+    { __typename?: 'Chart' }
+    & ListChartFragment
+  ) };
+
 export type CreateAnnotationChartLayerMutationVariables = Exact<{
   input: CreateAnnotationChartLayerInput;
 }>;
@@ -14525,6 +15361,12 @@ export type UpdateChartLayerMutationVariables = Exact<{
 export type UpdateChartLayerMutation = { __typename?: 'Mutation', updateChartLayer: (
     { __typename?: 'AnnotationChartLayer' }
     & ChartLayerStyle_AnnotationChartLayer_Fragment
+  ) | (
+    { __typename?: 'DistributionChartLayer' }
+    & ChartLayerStyle_DistributionChartLayer_Fragment
+  ) | (
+    { __typename?: 'PointsChartLayer' }
+    & ChartLayerStyle_PointsChartLayer_Fragment
   ) | (
     { __typename?: 'SeriesChartLayer' }
     & ChartLayerStyle_SeriesChartLayer_Fragment
@@ -14605,6 +15447,9 @@ export type AutoVisualizeMutationVariables = Exact<{
 export type AutoVisualizeMutation = { __typename?: 'Mutation', autoVisualize: (
     { __typename: 'Chart', id: string, name: string }
     & ListChartFragment
+  ) | (
+    { __typename: 'Grid', id: string, name: string }
+    & ListGridFragment
   ) | (
     { __typename: 'Scene', id: string, name: string }
     & ListSceneFragment
@@ -15015,6 +15860,77 @@ export type ReleaseTableDatasetsFromFolderMutation = { __typename?: 'Mutation', 
     { __typename?: 'Folder' }
     & FolderFragment
   ) };
+
+export type CreateGridMutationVariables = Exact<{
+  input: CreateGridInput;
+}>;
+
+
+export type CreateGridMutation = { __typename?: 'Mutation', createGrid: (
+    { __typename?: 'Grid' }
+    & ListGridFragment
+  ) };
+
+export type CreateGridFromCoordinateSystemMutationVariables = Exact<{
+  input: CreateGridFromCoordinateSystemInput;
+}>;
+
+
+export type CreateGridFromCoordinateSystemMutation = { __typename?: 'Mutation', createGridFromCoordinateSystem: (
+    { __typename?: 'Grid' }
+    & ListGridFragment
+  ) };
+
+export type UpdateGridMutationVariables = Exact<{
+  input: UpdateGridInput;
+}>;
+
+
+export type UpdateGridMutation = { __typename?: 'Mutation', updateGrid: (
+    { __typename?: 'Grid' }
+    & ListGridFragment
+  ) };
+
+export type DeleteGridMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteGridMutation = { __typename?: 'Mutation', deleteGrid: string };
+
+export type CreateHeatmapGridLayerMutationVariables = Exact<{
+  input: CreateHeatmapGridLayerInput;
+}>;
+
+
+export type CreateHeatmapGridLayerMutation = { __typename?: 'Mutation', createHeatmapGridLayer: { __typename: 'HeatmapGridLayer', id: string } };
+
+export type CreateCellsGridLayerMutationVariables = Exact<{
+  input: CreateCellsGridLayerInput;
+}>;
+
+
+export type CreateCellsGridLayerMutation = { __typename?: 'Mutation', createCellsGridLayer: { __typename: 'CellsGridLayer', id: string } };
+
+export type UpdateGridLayerMutationVariables = Exact<{
+  input: UpdateGridLayerInput;
+}>;
+
+
+export type UpdateGridLayerMutation = { __typename?: 'Mutation', updateGridLayer: (
+    { __typename?: 'CellsGridLayer' }
+    & GridLayerStyle_CellsGridLayer_Fragment
+  ) | (
+    { __typename?: 'HeatmapGridLayer' }
+    & GridLayerStyle_HeatmapGridLayer_Fragment
+  ) };
+
+export type DeleteGridLayerMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteGridLayerMutation = { __typename?: 'Mutation', deleteGridLayer: string };
 
 export type UpdateLaterMutationVariables = Exact<{
   input: UpdateLayerInput;
@@ -16970,10 +17886,10 @@ export type ChartAddLayerCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, axis: (
+export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, kind: ChartKind, axis?: (
       { __typename?: 'Axis' }
       & AxisFragment
-    ), layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
+    ) | null, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'DistributionChartLayer', id: string } | { __typename: 'PointsChartLayer', id: string } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
         { __typename?: 'AnnotationCollection' }
         & ChartLayerCandidate_AnnotationCollection_Fragment
       ) | (
@@ -17244,6 +18160,9 @@ export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem:
     { __typename?: 'CoordinateSystem', visualizations: Array<(
       { __typename: 'Chart', id: string }
       & ListChartFragment
+    ) | (
+      { __typename: 'Grid', id: string }
+      & ListGridFragment
     ) | (
       { __typename: 'Scene', id: string }
       & ListSceneFragment
@@ -17694,6 +18613,38 @@ export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets?: Array<(
   ) | (
     { __typename?: 'TableLens' }
     & ListLens_TableLens_Fragment
+  )> };
+
+export type GetGridQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetGridQuery = { __typename?: 'Query', grid: (
+    { __typename?: 'Grid' }
+    & GridFragment
+  ) };
+
+export type GetListGridQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListGridQuery = { __typename?: 'Query', grid: (
+    { __typename?: 'Grid' }
+    & ListGridFragment
+  ) };
+
+export type GetGridsQueryVariables = Exact<{
+  filters?: InputMaybe<GridFilter>;
+  ordering?: InputMaybe<Array<GridOrder> | GridOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type GetGridsQuery = { __typename?: 'Query', grids: Array<(
+    { __typename?: 'Grid' }
+    & ListGridFragment
   )> };
 
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
@@ -19928,6 +20879,14 @@ export const ChartLayerStyleFragmentDoc = gql`
     lineWidth
     markerSize
   }
+  ... on PointsChartLayer {
+    mark
+    lineWidth
+    markerSize
+  }
+  ... on DistributionChartLayer {
+    mark
+  }
 }
     `;
 export const ChartAffineFragmentDoc = gql`
@@ -20101,6 +21060,70 @@ export const ChartAnnotationLayerFragmentDoc = gql`
 ${LayerLensFragmentDoc}
 ${LensWindowFragmentDoc}
 ${AxisFragmentDoc}`;
+export const ChartPointsLayerFragmentDoc = gql`
+    fragment ChartPointsLayer on PointsChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  xColumn
+  yColumn
+  zColumn
+  xUnit
+  yUnit
+  zUnit
+  mark
+  lineWidth
+  markerSize
+}
+    ${ChartLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
+export const ChartDistributionLayerFragmentDoc = gql`
+    fragment ChartDistributionLayer on DistributionChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  groupColumn
+  bins
+  valueUnit
+  mark
+}
+    ${ChartLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
 export const ChartFragmentDoc = gql`
     fragment Chart on Chart {
   descriptors
@@ -20111,6 +21134,7 @@ export const ChartFragmentDoc = gql`
   creator {
     sub
   }
+  kind
   axis {
     ...Axis
   }
@@ -20123,12 +21147,16 @@ export const ChartFragmentDoc = gql`
     ...ChartTraceLayer
     ...ChartSeriesLayer
     ...ChartAnnotationLayer
+    ...ChartPointsLayer
+    ...ChartDistributionLayer
   }
 }
     ${AxisFragmentDoc}
 ${ChartTraceLayerFragmentDoc}
 ${ChartSeriesLayerFragmentDoc}
-${ChartAnnotationLayerFragmentDoc}`;
+${ChartAnnotationLayerFragmentDoc}
+${ChartPointsLayerFragmentDoc}
+${ChartDistributionLayerFragmentDoc}`;
 export const ListChartFragmentDoc = gql`
     fragment ListChart on Chart {
   descriptors
@@ -20136,6 +21164,7 @@ export const ListChartFragmentDoc = gql`
   name
   description
   createdAt
+  kind
   axis {
     ...Axis
   }
@@ -20635,6 +21664,152 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const GridLayerStyleFragmentDoc = gql`
+    fragment GridLayerStyle on GridLayer {
+  __typename
+  id
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+}
+    `;
+export const GridAffineFragmentDoc = gql`
+    fragment GridAffine on AffinePlacement {
+  matrix
+  inputAxes
+  outputAxes
+  total
+}
+    `;
+export const GridLayerCommonFragmentDoc = gql`
+    fragment GridLayerCommon on GridLayer {
+  __typename
+  id
+  kind
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+  placement
+  asAffine {
+    ...GridAffine
+  }
+}
+    ${GridAffineFragmentDoc}`;
+export const GridHeatmapLayerFragmentDoc = gql`
+    fragment GridHeatmapLayer on HeatmapGridLayer {
+  ...GridLayerCommon
+  lens {
+    __typename
+    id
+    name
+    ... on ArrayLens {
+      ...ChartLens
+    }
+    ... on SparseLens {
+      windows {
+        ...LensWindow
+      }
+      sparseDataset {
+        id
+        name
+        axisNames
+        shape
+        arrays {
+          id
+          indexedAxis
+          indexedAxisName
+          path
+          store {
+            ...SparseStoreRead
+          }
+        }
+      }
+    }
+  }
+}
+    ${GridLayerCommonFragmentDoc}
+${ChartLensFragmentDoc}
+${LensWindowFragmentDoc}
+${SparseStoreReadFragmentDoc}`;
+export const GridCellsLayerFragmentDoc = gql`
+    fragment GridCellsLayer on CellsGridLayer {
+  ...GridLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  valueUnit
+}
+    ${GridLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
+export const GridFragmentDoc = gql`
+    fragment Grid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  creator {
+    sub
+  }
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+  worldCoordinateSystem {
+    id
+    name
+  }
+  layers {
+    __typename
+    ...GridHeatmapLayer
+    ...GridCellsLayer
+  }
+}
+    ${AxisFragmentDoc}
+${GridHeatmapLayerFragmentDoc}
+${GridCellsLayerFragmentDoc}`;
+export const ListGridFragmentDoc = gql`
+    fragment ListGrid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+}
+    ${AxisFragmentDoc}`;
 export const LayerRenderAxesFragmentDoc = gql`
     fragment LayerRenderAxes on RenderAxes {
   x
@@ -22366,6 +23541,107 @@ export function useCreateSeriesChartLayerMutation(baseOptions?: ApolloReactHooks
 export type CreateSeriesChartLayerMutationHookResult = ReturnType<typeof useCreateSeriesChartLayerMutation>;
 export type CreateSeriesChartLayerMutationResult = Apollo.MutationResult<CreateSeriesChartLayerMutation>;
 export type CreateSeriesChartLayerMutationOptions = Apollo.BaseMutationOptions<CreateSeriesChartLayerMutation, CreateSeriesChartLayerMutationVariables>;
+export const CreatePointsChartLayerDocument = gql`
+    mutation CreatePointsChartLayer($input: CreatePointsChartLayerInput!) {
+  createPointsChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type CreatePointsChartLayerMutationFn = Apollo.MutationFunction<CreatePointsChartLayerMutation, CreatePointsChartLayerMutationVariables>;
+
+/**
+ * __useCreatePointsChartLayerMutation__
+ *
+ * To run a mutation, you first call `useCreatePointsChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePointsChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createPointsChartLayerMutation, { data, loading, error }] = useCreatePointsChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreatePointsChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreatePointsChartLayerMutation, CreatePointsChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreatePointsChartLayerMutation, CreatePointsChartLayerMutationVariables>(CreatePointsChartLayerDocument, options);
+      }
+export type CreatePointsChartLayerMutationHookResult = ReturnType<typeof useCreatePointsChartLayerMutation>;
+export type CreatePointsChartLayerMutationResult = Apollo.MutationResult<CreatePointsChartLayerMutation>;
+export type CreatePointsChartLayerMutationOptions = Apollo.BaseMutationOptions<CreatePointsChartLayerMutation, CreatePointsChartLayerMutationVariables>;
+export const CreateDistributionChartLayerDocument = gql`
+    mutation CreateDistributionChartLayer($input: CreateDistributionChartLayerInput!) {
+  createDistributionChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type CreateDistributionChartLayerMutationFn = Apollo.MutationFunction<CreateDistributionChartLayerMutation, CreateDistributionChartLayerMutationVariables>;
+
+/**
+ * __useCreateDistributionChartLayerMutation__
+ *
+ * To run a mutation, you first call `useCreateDistributionChartLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateDistributionChartLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createDistributionChartLayerMutation, { data, loading, error }] = useCreateDistributionChartLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateDistributionChartLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateDistributionChartLayerMutation, CreateDistributionChartLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateDistributionChartLayerMutation, CreateDistributionChartLayerMutationVariables>(CreateDistributionChartLayerDocument, options);
+      }
+export type CreateDistributionChartLayerMutationHookResult = ReturnType<typeof useCreateDistributionChartLayerMutation>;
+export type CreateDistributionChartLayerMutationResult = Apollo.MutationResult<CreateDistributionChartLayerMutation>;
+export type CreateDistributionChartLayerMutationOptions = Apollo.BaseMutationOptions<CreateDistributionChartLayerMutation, CreateDistributionChartLayerMutationVariables>;
+export const CreateTablePlotDocument = gql`
+    mutation CreateTablePlot($input: CreateTablePlotInput!) {
+  createTablePlot(input: $input) {
+    ...ListChart
+  }
+}
+    ${ListChartFragmentDoc}`;
+export type CreateTablePlotMutationFn = Apollo.MutationFunction<CreateTablePlotMutation, CreateTablePlotMutationVariables>;
+
+/**
+ * __useCreateTablePlotMutation__
+ *
+ * To run a mutation, you first call `useCreateTablePlotMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTablePlotMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTablePlotMutation, { data, loading, error }] = useCreateTablePlotMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTablePlotMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTablePlotMutation, CreateTablePlotMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTablePlotMutation, CreateTablePlotMutationVariables>(CreateTablePlotDocument, options);
+      }
+export type CreateTablePlotMutationHookResult = ReturnType<typeof useCreateTablePlotMutation>;
+export type CreateTablePlotMutationResult = Apollo.MutationResult<CreateTablePlotMutation>;
+export type CreateTablePlotMutationOptions = Apollo.BaseMutationOptions<CreateTablePlotMutation, CreateTablePlotMutationVariables>;
 export const CreateAnnotationChartLayerDocument = gql`
     mutation CreateAnnotationChartLayer($input: CreateAnnotationChartLayerInput!) {
   createAnnotationChartLayer(input: $input) {
@@ -22675,10 +23951,14 @@ export const AutoVisualizeDocument = gql`
     ... on Chart {
       ...ListChart
     }
+    ... on Grid {
+      ...ListGrid
+    }
   }
 }
     ${ListSceneFragmentDoc}
-${ListChartFragmentDoc}`;
+${ListChartFragmentDoc}
+${ListGridFragmentDoc}`;
 export type AutoVisualizeMutationFn = Apollo.MutationFunction<AutoVisualizeMutation, AutoVisualizeMutationVariables>;
 
 /**
@@ -24105,6 +25385,268 @@ export function useReleaseTableDatasetsFromFolderMutation(baseOptions?: ApolloRe
 export type ReleaseTableDatasetsFromFolderMutationHookResult = ReturnType<typeof useReleaseTableDatasetsFromFolderMutation>;
 export type ReleaseTableDatasetsFromFolderMutationResult = Apollo.MutationResult<ReleaseTableDatasetsFromFolderMutation>;
 export type ReleaseTableDatasetsFromFolderMutationOptions = Apollo.BaseMutationOptions<ReleaseTableDatasetsFromFolderMutation, ReleaseTableDatasetsFromFolderMutationVariables>;
+export const CreateGridDocument = gql`
+    mutation CreateGrid($input: CreateGridInput!) {
+  createGrid(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export type CreateGridMutationFn = Apollo.MutationFunction<CreateGridMutation, CreateGridMutationVariables>;
+
+/**
+ * __useCreateGridMutation__
+ *
+ * To run a mutation, you first call `useCreateGridMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateGridMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createGridMutation, { data, loading, error }] = useCreateGridMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateGridMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateGridMutation, CreateGridMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateGridMutation, CreateGridMutationVariables>(CreateGridDocument, options);
+      }
+export type CreateGridMutationHookResult = ReturnType<typeof useCreateGridMutation>;
+export type CreateGridMutationResult = Apollo.MutationResult<CreateGridMutation>;
+export type CreateGridMutationOptions = Apollo.BaseMutationOptions<CreateGridMutation, CreateGridMutationVariables>;
+export const CreateGridFromCoordinateSystemDocument = gql`
+    mutation CreateGridFromCoordinateSystem($input: CreateGridFromCoordinateSystemInput!) {
+  createGridFromCoordinateSystem(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export type CreateGridFromCoordinateSystemMutationFn = Apollo.MutationFunction<CreateGridFromCoordinateSystemMutation, CreateGridFromCoordinateSystemMutationVariables>;
+
+/**
+ * __useCreateGridFromCoordinateSystemMutation__
+ *
+ * To run a mutation, you first call `useCreateGridFromCoordinateSystemMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateGridFromCoordinateSystemMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createGridFromCoordinateSystemMutation, { data, loading, error }] = useCreateGridFromCoordinateSystemMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateGridFromCoordinateSystemMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateGridFromCoordinateSystemMutation, CreateGridFromCoordinateSystemMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateGridFromCoordinateSystemMutation, CreateGridFromCoordinateSystemMutationVariables>(CreateGridFromCoordinateSystemDocument, options);
+      }
+export type CreateGridFromCoordinateSystemMutationHookResult = ReturnType<typeof useCreateGridFromCoordinateSystemMutation>;
+export type CreateGridFromCoordinateSystemMutationResult = Apollo.MutationResult<CreateGridFromCoordinateSystemMutation>;
+export type CreateGridFromCoordinateSystemMutationOptions = Apollo.BaseMutationOptions<CreateGridFromCoordinateSystemMutation, CreateGridFromCoordinateSystemMutationVariables>;
+export const UpdateGridDocument = gql`
+    mutation UpdateGrid($input: UpdateGridInput!) {
+  updateGrid(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export type UpdateGridMutationFn = Apollo.MutationFunction<UpdateGridMutation, UpdateGridMutationVariables>;
+
+/**
+ * __useUpdateGridMutation__
+ *
+ * To run a mutation, you first call `useUpdateGridMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateGridMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateGridMutation, { data, loading, error }] = useUpdateGridMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateGridMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateGridMutation, UpdateGridMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateGridMutation, UpdateGridMutationVariables>(UpdateGridDocument, options);
+      }
+export type UpdateGridMutationHookResult = ReturnType<typeof useUpdateGridMutation>;
+export type UpdateGridMutationResult = Apollo.MutationResult<UpdateGridMutation>;
+export type UpdateGridMutationOptions = Apollo.BaseMutationOptions<UpdateGridMutation, UpdateGridMutationVariables>;
+export const DeleteGridDocument = gql`
+    mutation DeleteGrid($id: ID!) {
+  deleteGrid(input: {id: $id})
+}
+    `;
+export type DeleteGridMutationFn = Apollo.MutationFunction<DeleteGridMutation, DeleteGridMutationVariables>;
+
+/**
+ * __useDeleteGridMutation__
+ *
+ * To run a mutation, you first call `useDeleteGridMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteGridMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteGridMutation, { data, loading, error }] = useDeleteGridMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteGridMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteGridMutation, DeleteGridMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteGridMutation, DeleteGridMutationVariables>(DeleteGridDocument, options);
+      }
+export type DeleteGridMutationHookResult = ReturnType<typeof useDeleteGridMutation>;
+export type DeleteGridMutationResult = Apollo.MutationResult<DeleteGridMutation>;
+export type DeleteGridMutationOptions = Apollo.BaseMutationOptions<DeleteGridMutation, DeleteGridMutationVariables>;
+export const CreateHeatmapGridLayerDocument = gql`
+    mutation CreateHeatmapGridLayer($input: CreateHeatmapGridLayerInput!) {
+  createHeatmapGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type CreateHeatmapGridLayerMutationFn = Apollo.MutationFunction<CreateHeatmapGridLayerMutation, CreateHeatmapGridLayerMutationVariables>;
+
+/**
+ * __useCreateHeatmapGridLayerMutation__
+ *
+ * To run a mutation, you first call `useCreateHeatmapGridLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateHeatmapGridLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createHeatmapGridLayerMutation, { data, loading, error }] = useCreateHeatmapGridLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateHeatmapGridLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateHeatmapGridLayerMutation, CreateHeatmapGridLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateHeatmapGridLayerMutation, CreateHeatmapGridLayerMutationVariables>(CreateHeatmapGridLayerDocument, options);
+      }
+export type CreateHeatmapGridLayerMutationHookResult = ReturnType<typeof useCreateHeatmapGridLayerMutation>;
+export type CreateHeatmapGridLayerMutationResult = Apollo.MutationResult<CreateHeatmapGridLayerMutation>;
+export type CreateHeatmapGridLayerMutationOptions = Apollo.BaseMutationOptions<CreateHeatmapGridLayerMutation, CreateHeatmapGridLayerMutationVariables>;
+export const CreateCellsGridLayerDocument = gql`
+    mutation CreateCellsGridLayer($input: CreateCellsGridLayerInput!) {
+  createCellsGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export type CreateCellsGridLayerMutationFn = Apollo.MutationFunction<CreateCellsGridLayerMutation, CreateCellsGridLayerMutationVariables>;
+
+/**
+ * __useCreateCellsGridLayerMutation__
+ *
+ * To run a mutation, you first call `useCreateCellsGridLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCellsGridLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCellsGridLayerMutation, { data, loading, error }] = useCreateCellsGridLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateCellsGridLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCellsGridLayerMutation, CreateCellsGridLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateCellsGridLayerMutation, CreateCellsGridLayerMutationVariables>(CreateCellsGridLayerDocument, options);
+      }
+export type CreateCellsGridLayerMutationHookResult = ReturnType<typeof useCreateCellsGridLayerMutation>;
+export type CreateCellsGridLayerMutationResult = Apollo.MutationResult<CreateCellsGridLayerMutation>;
+export type CreateCellsGridLayerMutationOptions = Apollo.BaseMutationOptions<CreateCellsGridLayerMutation, CreateCellsGridLayerMutationVariables>;
+export const UpdateGridLayerDocument = gql`
+    mutation UpdateGridLayer($input: UpdateGridLayerInput!) {
+  updateGridLayer(input: $input) {
+    ...GridLayerStyle
+  }
+}
+    ${GridLayerStyleFragmentDoc}`;
+export type UpdateGridLayerMutationFn = Apollo.MutationFunction<UpdateGridLayerMutation, UpdateGridLayerMutationVariables>;
+
+/**
+ * __useUpdateGridLayerMutation__
+ *
+ * To run a mutation, you first call `useUpdateGridLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateGridLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateGridLayerMutation, { data, loading, error }] = useUpdateGridLayerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateGridLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateGridLayerMutation, UpdateGridLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateGridLayerMutation, UpdateGridLayerMutationVariables>(UpdateGridLayerDocument, options);
+      }
+export type UpdateGridLayerMutationHookResult = ReturnType<typeof useUpdateGridLayerMutation>;
+export type UpdateGridLayerMutationResult = Apollo.MutationResult<UpdateGridLayerMutation>;
+export type UpdateGridLayerMutationOptions = Apollo.BaseMutationOptions<UpdateGridLayerMutation, UpdateGridLayerMutationVariables>;
+export const DeleteGridLayerDocument = gql`
+    mutation DeleteGridLayer($id: ID!) {
+  deleteGridLayer(input: {id: $id})
+}
+    `;
+export type DeleteGridLayerMutationFn = Apollo.MutationFunction<DeleteGridLayerMutation, DeleteGridLayerMutationVariables>;
+
+/**
+ * __useDeleteGridLayerMutation__
+ *
+ * To run a mutation, you first call `useDeleteGridLayerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteGridLayerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteGridLayerMutation, { data, loading, error }] = useDeleteGridLayerMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteGridLayerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteGridLayerMutation, DeleteGridLayerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteGridLayerMutation, DeleteGridLayerMutationVariables>(DeleteGridLayerDocument, options);
+      }
+export type DeleteGridLayerMutationHookResult = ReturnType<typeof useDeleteGridLayerMutation>;
+export type DeleteGridLayerMutationResult = Apollo.MutationResult<DeleteGridLayerMutation>;
+export type DeleteGridLayerMutationOptions = Apollo.BaseMutationOptions<DeleteGridLayerMutation, DeleteGridLayerMutationVariables>;
 export const UpdateLaterDocument = gql`
     mutation UpdateLater($input: UpdateLayerInput!) {
   updateLayer(input: $input) {
@@ -26845,6 +28387,7 @@ export const ChartAddLayerCandidatesDocument = gql`
   chart(id: $chart) {
     id
     name
+    kind
     axis {
       ...Axis
     }
@@ -27360,12 +28903,16 @@ export const GetCoordinateSystemDocument = gql`
       ... on Chart {
         ...ListChart
       }
+      ... on Grid {
+        ...ListGrid
+      }
     }
   }
 }
     ${CoordinateSystemFragmentDoc}
 ${ListSceneFragmentDoc}
-${ListChartFragmentDoc}`;
+${ListChartFragmentDoc}
+${ListGridFragmentDoc}`;
 
 /**
  * __useGetCoordinateSystemQuery__
@@ -28544,6 +30091,113 @@ export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export const GetGridDocument = gql`
+    query GetGrid($id: ID!) {
+  grid(id: $id) {
+    ...Grid
+  }
+}
+    ${GridFragmentDoc}`;
+
+/**
+ * __useGetGridQuery__
+ *
+ * To run a query within a React component, call `useGetGridQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGridQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGridQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetGridQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetGridQuery, GetGridQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetGridQuery, GetGridQueryVariables>(GetGridDocument, options);
+      }
+export function useGetGridLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetGridQuery, GetGridQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetGridQuery, GetGridQueryVariables>(GetGridDocument, options);
+        }
+export type GetGridQueryHookResult = ReturnType<typeof useGetGridQuery>;
+export type GetGridLazyQueryHookResult = ReturnType<typeof useGetGridLazyQuery>;
+export type GetGridQueryResult = Apollo.QueryResult<GetGridQuery, GetGridQueryVariables>;
+export const GetListGridDocument = gql`
+    query GetListGrid($id: ID!) {
+  grid(id: $id) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+
+/**
+ * __useGetListGridQuery__
+ *
+ * To run a query within a React component, call `useGetListGridQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListGridQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListGridQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListGridQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListGridQuery, GetListGridQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListGridQuery, GetListGridQueryVariables>(GetListGridDocument, options);
+      }
+export function useGetListGridLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListGridQuery, GetListGridQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListGridQuery, GetListGridQueryVariables>(GetListGridDocument, options);
+        }
+export type GetListGridQueryHookResult = ReturnType<typeof useGetListGridQuery>;
+export type GetListGridLazyQueryHookResult = ReturnType<typeof useGetListGridLazyQuery>;
+export type GetListGridQueryResult = Apollo.QueryResult<GetListGridQuery, GetListGridQueryVariables>;
+export const GetGridsDocument = gql`
+    query GetGrids($filters: GridFilter, $ordering: [GridOrder!], $pagination: OffsetPaginationInput) {
+  grids(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+
+/**
+ * __useGetGridsQuery__
+ *
+ * To run a query within a React component, call `useGetGridsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGridsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGridsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useGetGridsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetGridsQuery, GetGridsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetGridsQuery, GetGridsQueryVariables>(GetGridsDocument, options);
+      }
+export function useGetGridsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetGridsQuery, GetGridsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetGridsQuery, GetGridsQueryVariables>(GetGridsDocument, options);
+        }
+export type GetGridsQueryHookResult = ReturnType<typeof useGetGridsQuery>;
+export type GetGridsLazyQueryHookResult = ReturnType<typeof useGetGridsLazyQuery>;
+export type GetGridsQueryResult = Apollo.QueryResult<GetGridsQuery, GetGridsQueryVariables>;
 export const HomePageDocument = gql`
     query HomePage {
   lenses(pagination: {limit: 1}) {

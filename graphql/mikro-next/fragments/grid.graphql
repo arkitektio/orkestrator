@@ -1,0 +1,145 @@
+# The grid: mikro's third composition beside the scene and the chart.
+#
+# A scene shows WHERE, a chart HOW MUCH, a grid WHICH: its rows and columns are
+# the members of its world's one or two enumerating axes (genes against cells,
+# cells against channels, a plate's wells) -- in order, no distance between
+# them -- and a value is drawn as each cell's colour. Every layer is placed into
+# the world and covers its axes; `asAffine` maps the layer's positions onto the
+# grid's rows and columns.
+
+fragment GridAffine on AffinePlacement {
+  matrix
+  inputAxes
+  outputAxes
+  total
+}
+
+fragment GridLayerCommon on GridLayer {
+  __typename
+  id
+  kind
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+  placement
+  asAffine {
+    ...GridAffine
+  }
+}
+
+# An array or a sparse matrix, one cell per position. What the lens is decides
+# the reader: an array lens through the zarr window reader, a sparse lens
+# through its stored layouts.
+fragment GridHeatmapLayer on HeatmapGridLayer {
+  ...GridLayerCommon
+  lens {
+    __typename
+    id
+    name
+    ... on ArrayLens {
+      ...ChartLens
+    }
+    ... on SparseLens {
+      windows {
+        ...LensWindow
+      }
+      sparseDataset {
+        id
+        name
+        axisNames
+        shape
+        arrays {
+          id
+          indexedAxis
+          indexedAxisName
+          path
+          store {
+            ...SparseStoreRead
+          }
+        }
+      }
+    }
+  }
+}
+
+# A table's rows, one cell each at its position along the grid's axes (the
+# table's frame), coloured by `valueColumn`.
+fragment GridCellsLayer on CellsGridLayer {
+  ...GridLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  valueUnit
+}
+
+# What `updateGridLayer` answers with: view state only.
+fragment GridLayerStyle on GridLayer {
+  __typename
+  id
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+}
+
+fragment Grid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  creator {
+    sub
+  }
+  # Rows are the world's first axis, columns its second (null for one axis).
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+  worldCoordinateSystem {
+    id
+    name
+  }
+  layers {
+    __typename
+    ...GridHeatmapLayer
+    ...GridCellsLayer
+  }
+}
+
+fragment ListGrid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+}

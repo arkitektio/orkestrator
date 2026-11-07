@@ -1195,7 +1195,7 @@ export type AttributePlan = {
   sample: SampleStep;
 };
 
-/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
+/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; a space of two enumerating axes (genes against cells, objects against channels) a grid; any other space with a time or space axis a scene; a table lens whose rows have no place a VALUES chart of its measurements. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
 export type AutoVisualizeInput = {
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -1208,6 +1208,8 @@ export type Axis = {
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   longName?: Maybe<Scalars['String']['output']>;
+  /** The metric group this axis is in: the axes that share one distance with it. What it declared, else 'space' for a SPACE axis, else null -- an axis that shares a distance with nothing. A rotation, a distance and a scene's render axes need one group; a per-axis scale, an offset and an affine map do not */
+  metricGroup?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   order: Scalars['Int']['output'];
   type: AxisType;
@@ -1249,12 +1251,15 @@ export type AxisFilter = {
 export type AxisInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   longName?: InputMaybe<Scalars['String']['input']>;
+  metricGroup?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
 };
 
 /** The semantic kind of an axis. Axes are declared in the order the data has them -- for an array, its store's dimension order; for a table, its coordinate columns as declared -- and no ordering by type is required of them: the time, channel and phasor axes are found by type rather than by position. What the render axes are derived from is the relative order of the SPACE axes, the last being x. */
 export enum AxisType {
+  /** An enumerating axis whose positions are the values a column holds -- a condition, a genotype, a cluster id. It has no unit and no metric, exactly as an INDEX axis has none: nothing scales or offsets it, and a BY_DIMENSION passes it through with an IDENTITY part. The positions are not stored: they are whatever the values are. Never on an array's grid; declared on a coordinate system that enumerates by value. */
+  Category = 'CATEGORY',
   /** A categorical channel axis: its coordinates index acquisitions, not positions. Never downsampled. */
   Channel = 'CHANNEL',
   /** The value axis of a coordinate-valued array: its positions enumerate the components of an absolute output position. This is what makes the array readable as the `field` of a FIELD edge. A scalar-valued field (a label mask, whose one value is an object id) carries no value axis at all -- absent means scalar, and scalar means COORDINATE. */
@@ -1276,6 +1281,7 @@ export enum AxisType {
 }
 
 export enum AxisTypeChoices {
+  Category = 'CATEGORY',
   Channel = 'CHANNEL',
   Coordinate = 'COORDINATE',
   Displacement = 'DISPLACEMENT',
@@ -1578,6 +1584,50 @@ export type CascadeCount = {
   label: Scalars['String']['output'];
 };
 
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayer = GridLayer & {
+  __typename?: 'CellsGridLayer';
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The table lens whose rows are drawn: the rows its windows keep */
+  lens: TableLens;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  /** The table dataset whose rows are drawn: the container of the lens */
+  tableDataset: TableDataset;
+  /** The numeric column whose value colours each row's cell */
+  valueColumn: Scalars['String']['output'];
+  /** The unit of `valueColumn`, as the table declares it. Null when the column declares none */
+  valueUnit?: Maybe<Scalars['Unit']['output']>;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' windows as row filters, always applied. Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+};
+
+
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table's rows as cells: each row at its position along the grid's axes (the table's frame), coloured by the value of `valueColumn`. Example: a long-form `(cell, c, mean)` table, cells against channels coloured by `mean`; a plate's `(row, column)` wells coloured by a readout */
+export type CellsGridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
 /** Input for changing an existing folder's name or parent */
 export type ChangeFolderInput = {
   /** The ID of the folder to change */
@@ -1613,26 +1663,28 @@ export type ChannelSourceNode = LayerRenderNode & {
   visible: Scalars['Boolean']['output'];
 };
 
-/** A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type Chart = Visualization & {
   __typename?: 'Chart';
-  /** The one axis this chart is laid out along: its name, its metric type and its unit. The world's only axis, repeated here so a client drawing the chart need not unwrap a list of one */
-  axis: Axis;
+  /** The one axis an AXIS chart is laid out along: its name, its metric type and its unit -- the world's only axis, repeated so a client need not unwrap a list of one. Null for a VALUES chart, whose drawn axes are the columns its layers name */
+  axis?: Maybe<Axis>;
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
+  /** What the world is to this chart: AXIS, the one axis it draws and lays its layers along; VALUES, whose rows it draws at the values of their columns */
+  kind: ChartKind;
   /** The layers drawn in this chart, back to front (a heterogeneous list of layer kinds) */
   layers: Array<ChartLayer>;
   name: Scalars['String']['output'];
-  /** The space this chart is laid out along. Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
+  /** The domain this chart's layers live in: an AXIS chart's one metric axis, which it draws; a VALUES chart's space whose rows it draws -- a table's -- which it does not. Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
   worldCoordinateSystem: CoordinateSystem;
 };
 
 
-/** A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type ChartLayersArgs = {
   filters?: InputMaybe<ChartLayerFilter>;
   ordering?: Array<ChartLayerOrder>;
@@ -1665,7 +1717,13 @@ export type ChartFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** What a chart's world is to it. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it by the graph. An AXIS chart draws its world: one measured axis with a unit, which TRACE, SERIES and ANNOTATION layers are laid along (intensity against `t`). A VALUES chart does not draw it: its world says *whose rows* -- a table's space, usually its INDEX axis (`cell_id`) -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name (`area` against `volume`). Two layers placed in one VALUES world are about the same rows. */
+export enum ChartKind {
+  Axis = 'AXIS',
+  Values = 'VALUES'
+}
+
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayer = {
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
   alongAxis?: Maybe<Scalars['String']['output']>;
@@ -1691,37 +1749,37 @@ export type ChartLayer = {
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerAlongAxisArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. Where its data sits along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table, AnnotationChartLayer drawn marks */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
 export type ChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -1739,15 +1797,19 @@ export type ChartLayerFilter = {
   kind?: InputMaybe<ChartLayerKindChoices>;
 };
 
-/** The kind of a chart layer, which says what it reads -- never how it looks. TRACE reads an array along one axis; SERIES reads one column of a table against another; ANNOTATION reads drawn marks. A line, markers, both or steps is `ChartMark`, a setting on the layer. */
+/** The kind of a chart layer, which says what it reads -- never how it looks. Three are drawn in an AXIS chart, laid along its one world axis by the graph: TRACE reads an array along one axis, SERIES one value column of a table along its coordinate, ANNOTATION drawn marks. Two are drawn in a VALUES chart, their rows placed in its world and drawn at their values: POINTS at two or three columns (a scatter), DISTRIBUTION summarising one column (a histogram, a box), once per value of a grouping column. A line, markers, a histogram or a box is `ChartMark`, a setting on the layer. */
 export enum ChartLayerKind {
   Annotation = 'ANNOTATION',
+  Distribution = 'DISTRIBUTION',
+  Points = 'POINTS',
   Series = 'SERIES',
   Trace = 'TRACE'
 }
 
 export enum ChartLayerKindChoices {
   Annotation = 'ANNOTATION',
+  Distribution = 'DISTRIBUTION',
+  Points = 'POINTS',
   Series = 'SERIES',
   Trace = 'TRACE'
 }
@@ -1756,8 +1818,10 @@ export type ChartLayerOrder =
   { id: Ordering; order?: never; }
   |  { id?: never; order: Ordering; };
 
-/** How a trace or a series is drawn. A look, not a kind: changing it changes nothing about what the layer reads. */
+/** How a layer is drawn. A look, not a kind: changing it changes nothing about what the layer reads. A trace or a series is a LINE, MARKERS, both or STEPS; points are MARKERS or a LINE through them in row order sorted along x; a distribution is a HISTOGRAM or a BOX. */
 export enum ChartMark {
+  Box = 'BOX',
+  Histogram = 'HISTOGRAM',
   Line = 'LINE',
   LineMarkers = 'LINE_MARKERS',
   Markers = 'MARKERS',
@@ -2015,6 +2079,8 @@ export type Column = {
   /** The table this column is declared on. Trivial when the column was read through its table, load-bearing when it was not -- an options list is flat, and a column with no table on it cannot be named in a `colorBy` */
   table: TableDataset;
   unit?: Maybe<Scalars['Unit']['output']>;
+  /** For a long-form table, the CHANNEL coordinate columns this column's value changes along, as declared. In a `(cell, c, volume, mean)` table a per-cell `volume` varies over nothing and is read once per cell; a per-channel `mean` varies over `c`. Null when undeclared: read as varying over every CHANNEL coordinate, which counts nothing twice that should not be */
+  variesOver?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 /** The fields a COLUMN member of a colour picker entry reads. Published for codegen; the wire type is the flat LabelColorByInput / MeshColorByInput / NetworkColorByInput */
@@ -2047,6 +2113,7 @@ export type ColumnInput = {
   name: Scalars['String']['input'];
   role?: InputMaybe<ColumnRole>;
   unit?: InputMaybe<Scalars['Unit']['input']>;
+  variesOver?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type ColumnOptionFilter = {
@@ -2455,6 +2522,20 @@ export type CreateArrayDatasetInput = {
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
 };
 
+/** Input for drawing a table's rows in a grid: each row a cell at its position along the grid's axes -- the table's frame -- coloured by the value of `valueColumn` */
+export type CreateCellsGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  grid: Scalars['ID']['input'];
+  lens: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Bootstrap a chart over an existing coordinate system, drawing what is already laid along its axis: each array placed in it that is a trace, each table that is a series, each annotation collection. Authors no edges -- what places each layer is the registration already in the graph -- and leaves out anything placed in the space that no layer kind reads. Rerunning makes another chart over the same space */
 export type CreateChartFromCoordinateSystemInput = {
   coordinateSystem: Scalars['ID']['input'];
@@ -2462,11 +2543,12 @@ export type CreateChartFromCoordinateSystemInput = {
   policy?: ChartPolicyInput;
 };
 
-/** Input type for creating a chart: a composition of data laid out along one metric axis. The chart is created over a world -- an existing coordinate system adopted as it is, or one created from a single axis -- and starts with no layers */
+/** Input type for creating a chart over a world: an existing coordinate system adopted as it is, or one created from `axis`. An AXIS chart (the default) draws its world -- one metric axis with a unit -- and lays TRACE, SERIES and ANNOTATION layers along it by the graph: intensity against `t`. A VALUES chart does not draw its world: the world says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers, placed into it, draw those rows at the values of the columns they name: `area` against `volume`. It starts with no layers */
 export type CreateChartInput = {
   axis?: InputMaybe<PhysicalAxisInput>;
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  kind?: ChartKind;
   name: Scalars['String']['input'];
 };
 
@@ -2491,6 +2573,21 @@ export type CreateCoordinateSystemInput = {
   name: Scalars['String']['input'];
   reference?: InputMaybe<Scalars['String']['input']>;
   registrations?: Array<RegistrationPathInput>;
+};
+
+/** Input for summarising the values of one column of a table's rows in a VALUES chart: a HISTOGRAM or a BOX, over every row or once per value of `groupColumn` -- the `area` of nuclei, one histogram per `condition`. The rows are placed in the chart's world (whose rows). Writes no edge */
+export type CreateDistributionChartLayerInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  chart: Scalars['ID']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  lens: Scalars['ID']['input'];
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn: Scalars['String']['input'];
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Input for registering a fixture: one binary glTF, in a unit-carrying coordinate system of its own */
@@ -2532,6 +2629,33 @@ export type CreateFolderInput = {
   name: Scalars['String']['input'];
   /** The ID of the parent folder to nest this folder under */
   parent?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Bootstrap a grid over an existing space, drawing what already covers its axes: each sparse matrix and array as a heatmap, each table as cells coloured by its one numeric column. Authors no edges, and leaves out whatever its kind refuses */
+export type CreateGridFromCoordinateSystemInput = {
+  coordinateSystem: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  policy?: GridPolicyInput;
+};
+
+/** Input for creating a grid over an existing space whose one or two enumerating axes (INDEX, CHANNEL, CATEGORY) are its rows and columns -- a sparse dataset's own space, a long-form table's. Adopted as it is, never minted. It starts with no layers */
+export type CreateGridInput = {
+  coordinateSystem: Scalars['ID']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
+/** Input for drawing an array or a sparse matrix in a grid: its lens leaves free exactly the grid's axes, placed in its world, and each position is a cell coloured by the value there */
+export type CreateHeatmapGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  grid: Scalars['ID']['input'];
+  lens: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Create a single-channel intensity layer rendered through a colormap (e.g. a fluorescence channel) */
@@ -2741,6 +2865,23 @@ export type CreatePointLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for drawing a table's rows as points in a VALUES chart: each row at the values of `xColumn` and `yColumn` (and `zColumn` for depth) -- nuclei at their `area` and `volume`. The rows are placed in the chart's world (whose rows); the columns' units are its drawn axes, and a second layer's must convert to them. Writes no edge */
+export type CreatePointsChartLayerInput = {
+  chart: Scalars['ID']['input'];
+  color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  lens: Scalars['ID']['input'];
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  markerSize?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+  xColumn: Scalars['String']['input'];
+  yColumn: Scalars['String']['input'];
+  zColumn?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Create a layer that composites three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture */
 export type CreateRgbLayerInput = {
   blueLens: Scalars['ID']['input'];
@@ -2835,7 +2976,7 @@ export type CreateTableDatasetInput = {
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
 };
 
-/** Input for the lens making a selection over a table dataset, by windows on its coordinate columns */
+/** Input for the lens making a selection over a table dataset, by windows on its columns: a coordinate column bounds a region of space, a numeric measurement column is a gate (`area >= 50`) -- the rows whose value lies in the window */
 export type CreateTableLensInput = {
   /** A lens over the table dataset to select within, in place of the container: the windows then intersect with its own, and the result is the table dataset's lens for what that keeps */
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -2843,6 +2984,20 @@ export type CreateTableLensInput = {
   tableDataset?: InputMaybe<Scalars['ID']['input']>;
   /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the table dataset's whole lens, or the lens cut from */
   windows?: InputMaybe<Array<WindowInput>>;
+};
+
+/** Input for plotting a table's columns in one call: a VALUES chart over the table's space (whose rows, not drawn) and one POINTS or DISTRIBUTION layer through the table's whole lens or a window of it, in one transaction, so a refused layer makes nothing. `area` against `volume` is `{kind: POINTS, xColumn: "area", yColumn: "volume"}`; a histogram of `area` per `condition` is `{kind: DISTRIBUTION, xColumn: "area", groupColumn: "condition"}` */
+export type CreateTablePlotInput = {
+  bins?: InputMaybe<Scalars['Int']['input']>;
+  groupColumn?: InputMaybe<Scalars['String']['input']>;
+  kind: ChartLayerKind;
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  mark?: InputMaybe<ChartMark>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  table: Scalars['ID']['input'];
+  xColumn: Scalars['String']['input'];
+  yColumn?: InputMaybe<Scalars['String']['input']>;
+  zColumn?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for drawing an array as a trace in a chart. The lens must leave one metric axis free -- the one the graph lays along the chart's axis -- and may leave one CHANNEL or INDEX axis free beside it, drawn as one line per position; every other axis must be sliced to a single position. The lens' data must already be registered into the chart's world: this writes no edge */
@@ -3077,6 +3232,18 @@ export type DeleteFixtureInput = {
 /** Input for deleting a folder by ID */
 export type DeleteFolderInput = {
   /** The ID of the folder to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** Input for deleting a grid by ID. Deletes its layers and nothing they drew: the data, and the grid's world, are untouched */
+export type DeleteGridInput = {
+  /** The ID of the grid to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** Input for deleting a grid layer by ID. Deletes the layer and nothing it drew */
+export type DeleteGridLayerInput = {
+  /** The ID of the grid layer to delete */
   id: Scalars['ID']['input'];
 };
 
@@ -3366,6 +3533,84 @@ export type DimensionPartInput = {
   outputAxes: Array<Scalars['String']['input']>;
   scale?: InputMaybe<Array<Scalars['Float']['input']>>;
   translation?: InputMaybe<Array<Scalars['Float']['input']>>;
+};
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayer = ChartLayer & {
+  __typename?: 'DistributionChartLayer';
+  /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
+  alongAxis?: Maybe<Scalars['String']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map: a single row, because the chart's world has a single axis. The coefficient on `alongAxis` is the scale from a step along the data to a step along the chart's axis, in the axis's unit, and the last entry is the offset. Derived on read. Null when `pathToWorld` is null; an error when a path exists but does not condense */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How many bins a HISTOGRAM is cut into. Null lets the viewer choose */
+  bins?: Maybe<Scalars['Int']['output']>;
+  chart: Chart;
+  /** The colour the layer is drawn in, as RGBA. Null lets the viewer choose */
+  color?: Maybe<Array<Scalars['Float']['output']>>;
+  /** The column whose values split the rows into one summary each: a text or boolean attribute, a label, a group id, or a long-form CHANNEL coordinate. Null for one summary over every row */
+  groupColumn?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  kind: ChartLayerKind;
+  /** The table lens whose rows are summarised: the rows its selection keeps */
+  lens: TableLens;
+  /** How the values are summarised: a HISTOGRAM or a BOX */
+  mark: ChartMark;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its chart's world. Null when the layer is unregistered; empty when the source already is the world. `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place along its chart's axis, and if not, why not. UNREGISTERED is a gap to close; UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the walk from this layer's data to the chart's world: the weakest edge on its path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The table dataset whose columns are read: the container of the lens */
+  tableDataset: TableDataset;
+  /** The numeric column whose values are summarised: the chart's horizontal axis */
+  valueColumn: Scalars['String']['output'];
+  /** The unit of `valueColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none */
+  valueUnit?: Maybe<Scalars['Unit']['output']>;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' selection as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open). Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerAlongAxisArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+export type DistributionChartLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 /** How a viewer eases the camera along the travel into an animation waypoint. */
@@ -4430,6 +4675,222 @@ export enum GraphTarget {
   /** Every node, and the segments and glyphs that touch it: a segment takes its start node's value, so colouring nodes colours the wireframe too. */
   Node = 'NODE'
 }
+
+/** A composition that shows **which**: its rows and columns are the members of its world's one or two enumerating axes (INDEX, CHANNEL, CATEGORY), in order and with no distance between them, and a value is drawn as a cell's colour. Beside a scene, which shows *where* (screen axes a place), and a chart, which shows *how much* (values as position): row 3 of a grid comes after row 2, it is not one unit from it. Examples: a sparse matrix of genes against cells as a heatmap; a long-form table's mean per cell and channel; a plate's wells. It adopts its world -- the space whose members it lays out -- names data through lenses and owns none of it */
+export type Grid = Visualization & {
+  __typename?: 'Grid';
+  /** The axis whose members are the columns: the world's second axis. Null for a grid of one axis, a single column of rows */
+  columnAxis?: Maybe<Axis>;
+  createdAt: Scalars['DateTime']['output'];
+  creator?: Maybe<User>;
+  description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** The layers drawn in this grid, back to front (a heterogeneous list of layer kinds) */
+  layers: Array<GridLayer>;
+  name: Scalars['String']['output'];
+  /** The axis whose members are the rows: the world's first axis */
+  rowAxis: Axis;
+  /** The space whose members this grid lays out: one or two enumerating axes, rows then columns. Never owned by the grid: several compositions can share it, and deleting a grid never deletes it */
+  worldCoordinateSystem: CoordinateSystem;
+};
+
+
+/** A composition that shows **which**: its rows and columns are the members of its world's one or two enumerating axes (INDEX, CHANNEL, CATEGORY), in order and with no distance between them, and a value is drawn as a cell's colour. Beside a scene, which shows *where* (screen axes a place), and a chart, which shows *how much* (values as position): row 3 of a grid comes after row 2, it is not one unit from it. Examples: a sparse matrix of genes against cells as a heatmap; a long-form table's mean per cell and channel; a plate's wells. It adopts its world -- the space whose members it lays out -- names data through lenses and owns none of it */
+export type GridLayersArgs = {
+  filters?: InputMaybe<GridLayerFilter>;
+  ordering?: Array<GridLayerOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Numeric/aggregatable fields of Grid */
+export enum GridField {
+  Pk = 'PK'
+}
+
+export type GridFilter = {
+  AND?: InputMaybe<GridFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<GridFilter>;
+  OR?: InputMaybe<GridFilter>;
+  /** Filter to the grids laid out over this coordinate system */
+  coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Search by name (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayer = {
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer drawn in a grid: a lens placed in the grid's world, covering its rows and columns, each cell coloured by a value. It carries view state only; where its data sits (`asAffine`, `placement`) is derived from the graph on read. The concrete kind says what it reads: HeatmapGridLayer an array or a sparse matrix, CellsGridLayer a table's rows */
+export type GridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+export type GridLayerFilter = {
+  AND?: InputMaybe<GridLayerFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<GridLayerFilter>;
+  OR?: InputMaybe<GridLayerFilter>;
+  /** Filter by the grid this layer is drawn in */
+  grid?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  kind?: InputMaybe<GridLayerKindChoices>;
+};
+
+/** The kind of a grid layer, which says what it reads. HEATMAP reads an array or a sparse matrix whose free axes are the grid's: one cell per position, its value the colour -- genes against cells. CELLS reads a table whose frame is the grid's axes: one cell per row, coloured by the value of a column -- the mean of each cell in each channel of a long-form table, or a value per well of a plate. */
+export enum GridLayerKind {
+  Cells = 'CELLS',
+  Heatmap = 'HEATMAP'
+}
+
+export enum GridLayerKindChoices {
+  Cells = 'CELLS',
+  Heatmap = 'HEATMAP'
+}
+
+export type GridLayerOrder =
+  { id: Ordering; order?: never; }
+  |  { id?: never; order: Ordering; };
+
+export type GridOrder =
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
+
+/** How a grid is drawn from what is already placed in a space */
+export type GridPolicyInput = {
+  nchildren?: Scalars['Int']['input'];
+};
+
+export type GridStats = {
+  __typename?: 'GridStats';
+  /** Average */
+  avg?: Maybe<Scalars['Float']['output']>;
+  /** Total number of items in the selection */
+  count: Scalars['Int']['output'];
+  /** Number of distinct values for the field */
+  distinctCount: Scalars['Int']['output'];
+  /** Maximum */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** Minimum */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
+  /** Sum */
+  sum?: Maybe<Scalars['Float']['output']>;
+};
+
+
+export type GridStatsAvgArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsDistinctCountArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsMaxArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsMinArgs = {
+  field: GridField;
+};
+
+
+export type GridStatsSeriesArgs = {
+  by: Granularity;
+  field: GridField;
+  timestampField: GridTimestampField;
+};
+
+
+export type GridStatsSumArgs = {
+  field: GridField;
+};
+
+/** Datetime fields of Grid for bucketing */
+export enum GridTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayer = GridLayer & {
+  __typename?: 'HeatmapGridLayer';
+  /** This layer's placement composed into one affine map from its lens' space onto the grid's world: which of its positions is which row and column. Derived on read. Null when the layer is no longer placed */
+  asAffine?: Maybe<AffinePlacement>;
+  /** How a value becomes a colour */
+  colormap: ColorMap;
+  grid: Grid;
+  id: Scalars['ID']['output'];
+  kind: GridLayerKind;
+  /** The array or sparse lens whose values are drawn */
+  lens: Lens;
+  /** The value drawn at the top of the colormap. Null lets the viewer choose */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The value drawn at the bottom of the colormap. Null lets the viewer choose */
+  min?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** Whether this layer has a place in its grid's world, and if not, why not. Derived, never stored */
+  placement: PlacementState;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws an array or a sparse matrix as a heatmap: its lens leaves free exactly the grid's axes, and each position is a cell coloured by the value there. Example: a sparse matrix of genes against cells, read through its whole lens */
+export type HeatmapGridLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
 
 /** The type of change that was made. */
 export enum HistoryKind {
@@ -6405,7 +6866,7 @@ export type Mutation = {
   addToCollaboration: Collaboration;
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
-  /** Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
+  /** Show a coordinate system or a lens as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a grid over two enumerating axes, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
   autoVisualize: Visualization;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, the scenes over it (their layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive. Guarded by the space's creator: clearing a space is the space-owner's act */
   clearCoordinateSystem: Array<Scalars['ID']['output']>;
@@ -6427,7 +6888,9 @@ export type Mutation = {
   createAnnotations: Array<Annotation>;
   /** Create a new dataset from array-like data with optional coordinate anchors and OME metadata */
   createArrayDataset: ArrayDataset;
-  /** Create a chart: a composition of data laid out along one metric axis. Over an existing coordinate system with exactly one metric, unit-carrying axis, or over one created from a single axis */
+  /** Draw a table's rows in a grid: one cell per row at its position along the grid's axes, coloured by a numeric column -- a long-form table's mean per cell and channel */
+  createCellsGridLayer: CellsGridLayer;
+  /** Create a chart over a world: values drawn as position. An AXIS chart draws its world's one metric, unit-carrying axis (an existing space, or one created from `axis`); a VALUES chart's world is a table's space -- whose rows -- and its layers draw those rows at the values of columns, for scatters and histograms */
   createChart: Chart;
   /** Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges */
   createChartFromCoordinateSystem: Chart;
@@ -6437,6 +6900,8 @@ export type Mutation = {
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
   createCoordinateSystem: CoordinateSystem;
+  /** Summarise the values of one column of a table lens' rows in a VALUES chart: a histogram or a box, over every row or once per value of a grouping column such as a condition */
+  createDistributionChartLayer: DistributionChartLayer;
   /** Register a fixture -- a coverslip, a dish, a holder -- from an uploaded binary glTF, in a unit-carrying coordinate system of its own */
   createFixture: Fixture;
   /** Create a layer that renders a fixture in a scene */
@@ -6445,6 +6910,12 @@ export type Mutation = {
   createFixtureLens: FixtureLens;
   /** Create a new folder to organize data */
   createFolder: Folder;
+  /** Create a grid over an existing space whose one or two enumerating axes (INDEX, CHANNEL, CATEGORY) are its rows and columns: members in order, a value as each cell's colour */
+  createGrid: Grid;
+  /** Bootstrap a grid over an existing space, drawing each sparse matrix and array covering its axes as a heatmap and each table as cells. Authors no edges */
+  createGridFromCoordinateSystem: Grid;
+  /** Draw an array or a sparse matrix in a grid: one cell per position along the grid's axes, coloured by the value there -- genes against cells */
+  createHeatmapGridLayer: HeatmapGridLayer;
   /** Create an intensity layer: one channel of a lens through one colormap -- or one solid RGBA tint, for a colour that is a measured fact rather than a choice -- with contrast limits and gamma. The fluorescence workhorse, and its own kind -- its settings are fields, not a render graph, because there is nothing here to composite */
   createIntensityLayer: IntensityLayer;
   /** Create a label layer that renders an instance / segmentation map -- an array whose values are discrete object ids. Its own layer kind, not an image layer: ids take a hashed colour, a transparent background value and an optional `colorBy` over the table they key into, and none of an image's contrast limits, gamma or colormaps */
@@ -6477,6 +6948,8 @@ export type Mutation = {
   createPhasorLayer: PhasorLayer;
   /** Create a layer that renders a point cloud (e.g. SMLM localisations, centroids) from columns of a table */
   createPointLayer: PointLayer;
+  /** Draw a table lens' rows as points in a VALUES chart: placed in its world (whose rows), each drawn at the values of two columns (a scatter), or three for depth */
+  createPointsChartLayer: PointsChartLayer;
   /** Create an RGB layer: three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. Its own kind rather than a three-channel render graph, because as a graph it is indistinguishable from three fluorescence markers somebody tinted red, green and blue, which is the commoner reading. Never inferred from that shape: a bootstrapped scene reaches this kind only on evidence ingest recorded -- channels labelled red, green and blue, or arrays read out of a PNG -- so state it here for a photograph that arrived with neither */
   createRgbLayer: RgbLayer;
   /** Create a new scene over a world coordinate system: an adopted existing system, or an ordinary SHARED one created for it (never owned by the scene -- it outlives it) */
@@ -6495,8 +6968,10 @@ export type Mutation = {
   createSparseLens: SparseLens;
   /** Create a table dataset from a Parquet store. Its declared coordinate columns become the axes of a coordinate system it owns, which lets a localization table be placed in a scene; a table with no coordinate columns is a measurement table whose rows enumerate objects and whose lineage edge is UNMAPPABLE */
   createTableDataset: TableDataset;
-  /** The lens keeping these windows of a table dataset's coordinate columns: the one that exists, or a new one. It lives in the table's own space */
+  /** The lens keeping these windows of a table dataset's columns -- a coordinate (a region of space) or a numeric measurement (a gate, `area >= 50`): the one that exists, or a new one. It lives in the table's own space */
   createTableLens: TableLens;
+  /** Plot a table's columns in one call: a VALUES chart over the table's space and one POINTS or DISTRIBUTION layer drawing its rows at the values of the named columns. One transaction */
+  createTablePlot: Chart;
   /** Draw an array as a trace in a chart: a lens with one metric axis free, laid along the chart's axis by the graph, and optionally one CHANNEL or INDEX axis free as one line per position */
   createTraceChartLayer: TraceChartLayer;
   /** Create a layer that renders trajectories from columns of a table, grouped by a track id */
@@ -6531,6 +7006,10 @@ export type Mutation = {
   deleteFixture: Scalars['ID']['output'];
   /** Delete an existing folder */
   deleteFolder: Scalars['ID']['output'];
+  /** Delete a grid and its layers. The data they drew and the grid's world are untouched */
+  deleteGrid: Scalars['ID']['output'];
+  /** Delete a grid layer. Deletes nothing it drew */
+  deleteGridLayer: Scalars['ID']['output'];
   /** Delete an existing layer */
   deleteLayer: Scalars['ID']['output'];
   /** Delete a lens of any kind. Refused while a layer draws through it, and for a container's whole lens */
@@ -6699,6 +7178,10 @@ export type Mutation = {
   updateFixtureLayer: FixtureLayer;
   /** Update folder metadata */
   updateFolder: Folder;
+  /** Rename or re-describe a grid. Its world is fixed */
+  updateGrid: Grid;
+  /** Restyle a grid layer. View state only */
+  updateGridLayer: GridLayer;
   /** Update an intensity layer's channel, colormap or tint, contrast limits, gamma, projection and compositing settings. A patch: what is not sent keeps its current value */
   updateIntensityLayer: IntensityLayer;
   /** Update a label layer's render settings -- the selection, contour, hashing seed or `colorBy`. A patch: what is not sent keeps its current value */
@@ -6800,6 +7283,11 @@ export type MutationCreateArrayDatasetArgs = {
 };
 
 
+export type MutationCreateCellsGridLayerArgs = {
+  input: CreateCellsGridLayerInput;
+};
+
+
 export type MutationCreateChartArgs = {
   input: CreateChartInput;
 };
@@ -6825,6 +7313,11 @@ export type MutationCreateCoordinateSystemArgs = {
 };
 
 
+export type MutationCreateDistributionChartLayerArgs = {
+  input: CreateDistributionChartLayerInput;
+};
+
+
 export type MutationCreateFixtureArgs = {
   input: CreateFixtureInput;
 };
@@ -6842,6 +7335,21 @@ export type MutationCreateFixtureLensArgs = {
 
 export type MutationCreateFolderArgs = {
   input: CreateFolderInput;
+};
+
+
+export type MutationCreateGridArgs = {
+  input: CreateGridInput;
+};
+
+
+export type MutationCreateGridFromCoordinateSystemArgs = {
+  input: CreateGridFromCoordinateSystemInput;
+};
+
+
+export type MutationCreateHeatmapGridLayerArgs = {
+  input: CreateHeatmapGridLayerInput;
 };
 
 
@@ -6925,6 +7433,11 @@ export type MutationCreatePointLayerArgs = {
 };
 
 
+export type MutationCreatePointsChartLayerArgs = {
+  input: CreatePointsChartLayerInput;
+};
+
+
 export type MutationCreateRgbLayerArgs = {
   input: CreateRgbLayerInput;
 };
@@ -6972,6 +7485,11 @@ export type MutationCreateTableDatasetArgs = {
 
 export type MutationCreateTableLensArgs = {
   input: CreateTableLensInput;
+};
+
+
+export type MutationCreateTablePlotArgs = {
+  input: CreateTablePlotInput;
 };
 
 
@@ -7057,6 +7575,16 @@ export type MutationDeleteFixtureArgs = {
 
 export type MutationDeleteFolderArgs = {
   input: DeleteFolderInput;
+};
+
+
+export type MutationDeleteGridArgs = {
+  input: DeleteGridInput;
+};
+
+
+export type MutationDeleteGridLayerArgs = {
+  input: DeleteGridLayerInput;
 };
 
 
@@ -7457,6 +7985,16 @@ export type MutationUpdateFixtureLayerArgs = {
 
 export type MutationUpdateFolderArgs = {
   input: ChangeFolderInput;
+};
+
+
+export type MutationUpdateGridArgs = {
+  input: UpdateGridInput;
+};
+
+
+export type MutationUpdateGridLayerArgs = {
+  input: UpdateGridLayerInput;
 };
 
 
@@ -8431,9 +8969,10 @@ export type PhasorTransferInput = {
 export type PhysicalAxisInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   longName?: InputMaybe<Scalars['String']['input']>;
+  metricGroup?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
-  unit: Scalars['Unit']['input'];
+  unit?: InputMaybe<Scalars['Unit']['input']>;
 };
 
 /** Input for pinning or unpinning a folder for quick access */
@@ -8622,6 +9161,92 @@ export type PointLayerPlacementInvarianceArgs = {
 
 /** A layer that renders a point cloud (e.g. SMLM localisations, centroids) from a table dataset. */
 export type PointLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayer = ChartLayer & {
+  __typename?: 'PointsChartLayer';
+  /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
+  alongAxis?: Maybe<Scalars['String']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map: a single row, because the chart's world has a single axis. The coefficient on `alongAxis` is the scale from a step along the data to a step along the chart's axis, in the axis's unit, and the last entry is the offset. Derived on read. Null when `pathToWorld` is null; an error when a path exists but does not condense */
+  asAffine?: Maybe<AffinePlacement>;
+  chart: Chart;
+  /** The colour the layer is drawn in, as RGBA. Null lets the viewer choose */
+  color?: Maybe<Array<Scalars['Float']['output']>>;
+  id: Scalars['ID']['output'];
+  kind: ChartLayerKind;
+  /** The table lens whose rows are drawn: the rows its selection keeps */
+  lens: TableLens;
+  /** Line width in screen pixels. Null lets the viewer choose */
+  lineWidth?: Maybe<Scalars['Float']['output']>;
+  /** How the rows are drawn: MARKERS, or a LINE through them sorted along x */
+  mark: ChartMark;
+  /** Marker size in screen pixels. Null lets the viewer choose */
+  markerSize?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its chart's world. Null when the layer is unregistered; empty when the source already is the world. `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place along its chart's axis, and if not, why not. UNREGISTERED is a gap to close; UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the walk from this layer's data to the chart's world: the weakest edge on its path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The table dataset whose columns are read: the container of the lens */
+  tableDataset: TableDataset;
+  visible: Scalars['Boolean']['output'];
+  /** The lens' selection as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open). Derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
+  /** The numeric column whose value is a row's horizontal position */
+  xColumn: Scalars['String']['output'];
+  /** The unit of `xColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none */
+  xUnit?: Maybe<Scalars['Unit']['output']>;
+  /** The numeric column whose value is a row's vertical position */
+  yColumn: Scalars['String']['output'];
+  /** The unit of `yColumn`, as the table declares it: the chart's vertical axis. Null when the column declares none */
+  yUnit?: Maybe<Scalars['Unit']['output']>;
+  /** The numeric column whose value is a row's depth, for a three-dimensional scatter. Null for a flat one */
+  zColumn?: Maybe<Scalars['String']['output']>;
+  /** The unit of `zColumn`, as the table declares it. Null for a flat scatter or a column that declares none */
+  zUnit?: Maybe<Scalars['Unit']['output']>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerAlongAxisArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+export type PointsChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
@@ -8840,6 +9465,16 @@ export type Query = {
   folders: Array<Folder>;
   /** Get statistics about folders: counts and time-bucketed series over the folders of the current organization */
   foldersStats: FolderStats;
+  /** Get a single grid by ID */
+  grid: Grid;
+  /** Get a single grid layer by ID */
+  gridLayer: GridLayer;
+  /** List layers drawn in grids (a heterogeneous list of layer kinds) */
+  gridLayers: Array<GridLayer>;
+  /** List grids (compositions laying out the members of one or two enumerating axes: a heatmap of genes against cells, a table's cells against channels) */
+  grids: Array<Grid>;
+  /** Get statistics about grids: counts and time-bucketed series over the grids of the current organization */
+  gridsStats: GridStats;
   /** Every column a mask's objects can be coloured or filtered by: `colorByOptions` rooted on the lens a label layer renders instead of on a mesh collection, and the same answer for the same reason -- a mask's pixel values dereference into a table by exactly the FIELD edge a collection's ids do, so the walk, the measure-vs-categorical rule and the `joinPath` to pass back are one. **The set this returns is exactly the set `createLabelLayer(render: {colorBys: ...})` and `filterBys` accept.** The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   labelColorByOptions: Array<ColorByOption>;
   /** Every column a mask's objects can be filtered by -- **the same set `labelColorByOptions` returns**, under the name that reads right where a rule is being authored. One relation, one walk, two names, exactly as `filterByOptions` pairs with `colorByOptions` over a collection: what differs is what a control *means*, since MEASURE takes a `min`/`max` bound here and a colormap there. Everything returned is something `createLabelLayer(render: {filterBys: ...})` accepts */
@@ -9175,6 +9810,35 @@ export type QueryFoldersArgs = {
 
 export type QueryFoldersStatsArgs = {
   filters?: InputMaybe<FolderFilter>;
+};
+
+
+export type QueryGridArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryGridLayerArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryGridLayersArgs = {
+  filters?: InputMaybe<GridLayerFilter>;
+  ordering?: Array<GridLayerOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryGridsArgs = {
+  filters?: InputMaybe<GridFilter>;
+  ordering?: Array<GridOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryGridsStatsArgs = {
+  filters?: InputMaybe<GridFilter>;
 };
 
 
@@ -9866,7 +10530,7 @@ export type ScaleTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type Scene = Visualization & {
   __typename?: 'Scene';
   /** The named camera tours through this composition */
@@ -9894,7 +10558,7 @@ export type Scene = Visualization & {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneAnimationsArgs = {
   filters?: InputMaybe<AnimationFilter>;
   ordering?: Array<AnimationOrder>;
@@ -9902,7 +10566,7 @@ export type SceneAnimationsArgs = {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneLayersArgs = {
   filters?: InputMaybe<LayerFilter>;
   ordering?: Array<LayerOrder>;
@@ -9910,7 +10574,7 @@ export type SceneLayersArgs = {
 };
 
 
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
+/** A composition that shows **where**: every screen axis is an axis of its world -- a place, with a time or space axis -- and each layer is placed there by the graph's edges, so refining a registration moves what is drawn. Values are drawn as appearance: an image's intensity as colour, a table's `area` as the colour or size of its points. The counterpart of a chart, which shows *how much*: there values are drawn as position. The same table lens may be drawn both ways -- nuclei at their `(y, x)` on the image here, at `(area, volume)` in a VALUES chart. If rotating the view makes sense, it is a scene. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
 export type SceneSnapshotsArgs = {
   filters?: InputMaybe<SceneSnapshotFilter>;
   ordering?: Array<SceneSnapshotOrder>;
@@ -10819,6 +11483,8 @@ export type TableDataset = {
   spec: Array<TableDatasetSpec>;
   /** The Parquet store holding the rows. Request an access grant from it and read the Parquet directly */
   store: ParquetStore;
+  /** The compositions that draw this table: every scene and chart with a layer through any lens of it -- its whole lens or a window of it. Derived, never stored, kind by kind in registration order and oldest first within a kind */
+  visualizations: Array<Visualization>;
 };
 
 
@@ -11033,7 +11699,7 @@ export type TableKey = {
   source: Resident;
 };
 
-/** A selection over a table dataset by value windows on its coordinate columns: the rows kept. Lives in the table's own space */
+/** A selection over a table dataset by value windows on its columns: the rows kept. A window on a coordinate column bounds a region of space; one on a numeric measurement column is a gate (`area >= 50`), which bounds nothing in space. Lives in the table's own space */
 export type TableLens = Lens & {
   __typename?: 'TableLens';
   /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
@@ -11670,6 +12336,25 @@ export type UpdateFixtureLayerInput = {
   wireframe?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for renaming or re-describing a grid. Its world is not editable: a grid over another space is another grid */
+export type UpdateGridInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Input for restyling a grid layer. View state only: what it reads is fixed at creation, and where it sits is the graph's */
+export type UpdateGridLayerInput = {
+  colormap?: InputMaybe<ColorMap>;
+  id: Scalars['ID']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Update an intensity layer's render settings. Every field is a patch: what is not sent keeps its current value */
 export type UpdateIntensityLayerInput = {
   blending?: InputMaybe<Blending>;
@@ -12023,13 +12708,13 @@ export type VectorLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
-/** A composition laid out over a coordinate system: a scene (a place) or a chart (one metric axis). It adopts the space as its world, names data by id and owns none of it. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type */
+/** A composition: something that draws data through lenses, names it by id and owns none of it. A **scene** shows *where* -- every screen axis is an axis of its world, data is placed there by the graph's edges, and values are drawn as appearance (colour, size). A **chart** shows *how much* -- values are drawn as position, and at most one axis is drawn from its world: an AXIS chart draws its one axis (intensity against `t`), a VALUES chart draws its rows at the values of their columns (nuclei at `area` against `volume`), its world saying whose rows. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type */
 export type Visualization = {
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  /** The space this visualization is laid out over. Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it */
+  /** The space this visualization is laid out over: a scene's place, an AXIS chart's one axis, a VALUES chart's rows (a table's space, not drawn). Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it */
   worldCoordinateSystem: CoordinateSystem;
 };
 
@@ -12166,7 +12851,7 @@ export type ZarrUploadGrant = {
   uploadFileName: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -12365,11 +13050,15 @@ export type ChartAffineFragment = { __typename?: 'AffinePlacement', matrix: Arra
 
 type ChartLayerCommon_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
+type ChartLayerCommon_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
+type ChartLayerCommon_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
 type ChartLayerCommon_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
 type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
+export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_DistributionChartLayer_Fragment | ChartLayerCommon_PointsChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
 
 export type ChartLensFragment = { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } };
 
@@ -12379,17 +13068,25 @@ export type ChartSeriesLayerFragment = { __typename: 'SeriesChartLayer', valueCo
 
 export type ChartAnnotationLayerFragment = { __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename: 'AnnotationLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } }, clip: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
+export type ChartPointsLayerFragment = { __typename: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
+export type ChartDistributionLayerFragment = { __typename: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+
 type ChartLayerStyle_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+
+type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+
+type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
 type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
 type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
+export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_DistributionChartLayer_Fragment | ChartLayerStyle_PointsChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
 
-export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename: 'AnnotationLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } }, clip: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null }> };
+export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, creator?: { __typename?: 'User', sub: string } | null, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename: 'AnnotationLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } }, clip: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null }> };
 
-export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } };
+export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null };
 
 type ChartLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null };
 
@@ -12590,6 +13287,28 @@ export type DetailFixtureFragment = { __typename?: 'Fixture', descriptors: any, 
 export type FolderFragment = { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, files: Array<{ __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } }>, children: Array<{ __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean }>, parent?: { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean } | null, creator?: { __typename?: 'User', sub: string } | null };
 
 export type ListFolderFragment = { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean };
+
+export type GridAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean };
+
+type GridLayerCommon_CellsGridLayer_Fragment = { __typename: 'CellsGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+
+type GridLayerCommon_HeatmapGridLayer_Fragment = { __typename: 'HeatmapGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+
+export type GridLayerCommonFragment = GridLayerCommon_CellsGridLayer_Fragment | GridLayerCommon_HeatmapGridLayer_Fragment;
+
+export type GridHeatmapLayerFragment = { __typename: 'HeatmapGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, lens: { __typename: 'AnnotationLens', id: string, name?: string | null } | { __typename: 'ArrayLens', id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } } | { __typename: 'FixtureLens', id: string, name?: string | null } | { __typename: 'MeshLens', id: string, name?: string | null } | { __typename: 'NetworkLens', id: string, name?: string | null } | { __typename: 'SparseLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }> } } | { __typename: 'TableLens', id: string, name?: string | null }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+
+export type GridCellsLayerFragment = { __typename: 'CellsGridLayer', valueColumn: string, valueUnit?: any | null, id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+
+type GridLayerStyle_CellsGridLayer_Fragment = { __typename: 'CellsGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null };
+
+type GridLayerStyle_HeatmapGridLayer_Fragment = { __typename: 'HeatmapGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null };
+
+export type GridLayerStyleFragment = GridLayerStyle_CellsGridLayer_Fragment | GridLayerStyle_HeatmapGridLayer_Fragment;
+
+export type GridFragment = { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'CellsGridLayer', valueColumn: string, valueUnit?: any | null, id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null } | { __typename: 'HeatmapGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, lens: { __typename: 'AnnotationLens', id: string, name?: string | null } | { __typename: 'ArrayLens', id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } } | { __typename: 'FixtureLens', id: string, name?: string | null } | { __typename: 'MeshLens', id: string, name?: string | null } | { __typename: 'NetworkLens', id: string, name?: string | null } | { __typename: 'SparseLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }> } } | { __typename: 'TableLens', id: string, name?: string | null }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null }> };
+
+export type ListGridFragment = { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null };
 
 export type TransferFunctionFragment = { __typename?: 'TransferFunction', climMin?: number | null, climMax?: number | null, colormap?: ColorMap | null, color?: Array<number> | null, gamma?: number | null, opacity?: number | null, invert?: boolean | null, stops?: Array<{ __typename?: 'LookupStop', position: number, value: number }> | null };
 
@@ -12996,21 +13715,21 @@ export type CreateChartMutationVariables = Exact<{
 }>;
 
 
-export type CreateChartMutation = { __typename?: 'Mutation', createChart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } };
+export type CreateChartMutation = { __typename?: 'Mutation', createChart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
 
 export type CreateChartFromCoordinateSystemMutationVariables = Exact<{
   input: CreateChartFromCoordinateSystemInput;
 }>;
 
 
-export type CreateChartFromCoordinateSystemMutation = { __typename?: 'Mutation', createChartFromCoordinateSystem: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } };
+export type CreateChartFromCoordinateSystemMutation = { __typename?: 'Mutation', createChartFromCoordinateSystem: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
 
 export type UpdateChartMutationVariables = Exact<{
   input: UpdateChartInput;
 }>;
 
 
-export type UpdateChartMutation = { __typename?: 'Mutation', updateChart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } };
+export type UpdateChartMutation = { __typename?: 'Mutation', updateChart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
 
 export type DeleteChartMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13033,6 +13752,27 @@ export type CreateSeriesChartLayerMutationVariables = Exact<{
 
 export type CreateSeriesChartLayerMutation = { __typename?: 'Mutation', createSeriesChartLayer: { __typename: 'SeriesChartLayer', id: string } };
 
+export type CreatePointsChartLayerMutationVariables = Exact<{
+  input: CreatePointsChartLayerInput;
+}>;
+
+
+export type CreatePointsChartLayerMutation = { __typename?: 'Mutation', createPointsChartLayer: { __typename: 'PointsChartLayer', id: string } };
+
+export type CreateDistributionChartLayerMutationVariables = Exact<{
+  input: CreateDistributionChartLayerInput;
+}>;
+
+
+export type CreateDistributionChartLayerMutation = { __typename?: 'Mutation', createDistributionChartLayer: { __typename: 'DistributionChartLayer', id: string } };
+
+export type CreateTablePlotMutationVariables = Exact<{
+  input: CreateTablePlotInput;
+}>;
+
+
+export type CreateTablePlotMutation = { __typename?: 'Mutation', createTablePlot: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
+
 export type CreateAnnotationChartLayerMutationVariables = Exact<{
   input: CreateAnnotationChartLayerInput;
 }>;
@@ -13045,7 +13785,7 @@ export type UpdateChartLayerMutationVariables = Exact<{
 }>;
 
 
-export type UpdateChartLayerMutation = { __typename?: 'Mutation', updateChartLayer: { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } };
+export type UpdateChartLayerMutation = { __typename?: 'Mutation', updateChartLayer: { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'DistributionChartLayer', mark: ChartMark, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null } };
 
 export type DeleteChartLayerMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13101,7 +13841,7 @@ export type AutoVisualizeMutationVariables = Exact<{
 }>;
 
 
-export type AutoVisualizeMutation = { __typename?: 'Mutation', autoVisualize: { __typename: 'Chart', id: string, name: string, descriptors: any, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } | { __typename: 'Scene', id: string, name: string, descriptors: any, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } };
+export type AutoVisualizeMutation = { __typename?: 'Mutation', autoVisualize: { __typename: 'Chart', id: string, name: string, descriptors: any, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Grid', id: string, name: string, descriptors: any, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Scene', id: string, name: string, descriptors: any, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } };
 
 export type RequestBigfileUploadMutationVariables = Exact<{
   input: RequestBigFileUploadInput;
@@ -13409,6 +14149,62 @@ export type ReleaseTableDatasetsFromFolderMutationVariables = Exact<{
 
 
 export type ReleaseTableDatasetsFromFolderMutation = { __typename?: 'Mutation', releaseTableDatasetsFromFolder: { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, files: Array<{ __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } }>, children: Array<{ __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean }>, parent?: { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean } | null, creator?: { __typename?: 'User', sub: string } | null } };
+
+export type CreateGridMutationVariables = Exact<{
+  input: CreateGridInput;
+}>;
+
+
+export type CreateGridMutation = { __typename?: 'Mutation', createGrid: { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
+
+export type CreateGridFromCoordinateSystemMutationVariables = Exact<{
+  input: CreateGridFromCoordinateSystemInput;
+}>;
+
+
+export type CreateGridFromCoordinateSystemMutation = { __typename?: 'Mutation', createGridFromCoordinateSystem: { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
+
+export type UpdateGridMutationVariables = Exact<{
+  input: UpdateGridInput;
+}>;
+
+
+export type UpdateGridMutation = { __typename?: 'Mutation', updateGrid: { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
+
+export type DeleteGridMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteGridMutation = { __typename?: 'Mutation', deleteGrid: string };
+
+export type CreateHeatmapGridLayerMutationVariables = Exact<{
+  input: CreateHeatmapGridLayerInput;
+}>;
+
+
+export type CreateHeatmapGridLayerMutation = { __typename?: 'Mutation', createHeatmapGridLayer: { __typename: 'HeatmapGridLayer', id: string } };
+
+export type CreateCellsGridLayerMutationVariables = Exact<{
+  input: CreateCellsGridLayerInput;
+}>;
+
+
+export type CreateCellsGridLayerMutation = { __typename?: 'Mutation', createCellsGridLayer: { __typename: 'CellsGridLayer', id: string } };
+
+export type UpdateGridLayerMutationVariables = Exact<{
+  input: UpdateGridLayerInput;
+}>;
+
+
+export type UpdateGridLayerMutation = { __typename?: 'Mutation', updateGridLayer: { __typename: 'CellsGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null } | { __typename: 'HeatmapGridLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null } };
+
+export type DeleteGridLayerMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteGridLayerMutation = { __typename?: 'Mutation', deleteGridLayer: string };
 
 export type UpdateLaterMutationVariables = Exact<{
   input: UpdateLayerInput;
@@ -13928,14 +14724,14 @@ export type GetChartQueryVariables = Exact<{
 }>;
 
 
-export type GetChartQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename: 'AnnotationLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } }, clip: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null }> } };
+export type GetChartQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, creator?: { __typename?: 'User', sub: string } | null, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename: 'AnnotationLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } }, clip: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null } | { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, lens: { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> } | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null }> } };
 
 export type GetListChartQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetListChartQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } };
+export type GetListChartQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
 
 export type GetChartsQueryVariables = Exact<{
   filters?: InputMaybe<ChartFilter>;
@@ -13944,14 +14740,14 @@ export type GetChartsQueryVariables = Exact<{
 }>;
 
 
-export type GetChartsQuery = { __typename?: 'Query', charts: Array<{ __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } }> };
+export type GetChartsQuery = { __typename?: 'Query', charts: Array<{ __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null }> };
 
 export type ChartAddLayerCandidatesQueryVariables = Exact<{
   chart: Scalars['ID']['input'];
 }>;
 
 
-export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } | { __typename: 'TableLens' }>, placedSystems: Array<{ __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } | { __typename: 'TableLens' }> }> } } };
+export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'DistributionChartLayer', id: string } | { __typename: 'PointsChartLayer', id: string } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } | { __typename: 'TableLens' }>, placedSystems: Array<{ __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } | { __typename: 'TableLens' }> }> } } };
 
 export type ChildrenQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -14047,7 +14843,7 @@ export type GetCoordinateSystemQueryVariables = Exact<{
 }>;
 
 
-export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, visualizations: Array<{ __typename: 'Chart', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, axis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } } | { __typename: 'Scene', id: string, descriptors: any, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
+export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, visualizations: Array<{ __typename: 'Chart', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Grid', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Scene', id: string, descriptors: any, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
 
 export type GetCoordinateSystemProvenanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -14271,6 +15067,29 @@ export type GlobalSearchQueryVariables = Exact<{
 
 
 export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets?: Array<{ __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null }>, files?: Array<{ __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } }>, folders?: Array<{ __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean }>, lenses?: Array<{ __typename: 'AnnotationLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, shape: Array<number>, axisNames: Array<string>, arraySpec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean, name: string, axisNames: Array<string>, shape: Array<number> }, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }> } | { __typename: 'FixtureLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, sparseSpec: Array<SparseDatasetSpec>, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, tableSpec: Array<TableDatasetSpec>, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }> };
+
+export type GetGridQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetGridQuery = { __typename?: 'Query', grid: { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<{ __typename: 'CellsGridLayer', valueColumn: string, valueUnit?: any | null, id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> }, lens: { __typename: 'TableLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }, windowFilters: Array<{ __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> }>, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null } | { __typename: 'HeatmapGridLayer', id: string, kind: GridLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, colormap: ColorMap, min?: number | null, max?: number | null, placement: PlacementState, lens: { __typename: 'AnnotationLens', id: string, name?: string | null } | { __typename: 'ArrayLens', id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } } | { __typename: 'FixtureLens', id: string, name?: string | null } | { __typename: 'MeshLens', id: string, name?: string | null } | { __typename: 'NetworkLens', id: string, name?: string | null } | { __typename: 'SparseLens', id: string, name?: string | null, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }> } } | { __typename: 'TableLens', id: string, name?: string | null }, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null }> } };
+
+export type GetListGridQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListGridQuery = { __typename?: 'Query', grid: { __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } };
+
+export type GetGridsQueryVariables = Exact<{
+  filters?: InputMaybe<GridFilter>;
+  ordering?: InputMaybe<Array<GridOrder> | GridOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type GetGridsQuery = { __typename?: 'Query', grids: Array<{ __typename?: 'Grid', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null }> };
 
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -15976,6 +16795,14 @@ export const ChartLayerStyleFragmentDoc = gql`
     lineWidth
     markerSize
   }
+  ... on PointsChartLayer {
+    mark
+    lineWidth
+    markerSize
+  }
+  ... on DistributionChartLayer {
+    mark
+  }
 }
     `;
 export const ChartAffineFragmentDoc = gql`
@@ -16149,6 +16976,70 @@ export const ChartAnnotationLayerFragmentDoc = gql`
 ${LayerLensFragmentDoc}
 ${LensWindowFragmentDoc}
 ${AxisFragmentDoc}`;
+export const ChartPointsLayerFragmentDoc = gql`
+    fragment ChartPointsLayer on PointsChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  xColumn
+  yColumn
+  zColumn
+  xUnit
+  yUnit
+  zUnit
+  mark
+  lineWidth
+  markerSize
+}
+    ${ChartLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
+export const ChartDistributionLayerFragmentDoc = gql`
+    fragment ChartDistributionLayer on DistributionChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  groupColumn
+  bins
+  valueUnit
+  mark
+}
+    ${ChartLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
 export const ChartFragmentDoc = gql`
     fragment Chart on Chart {
   descriptors
@@ -16159,6 +17050,7 @@ export const ChartFragmentDoc = gql`
   creator {
     sub
   }
+  kind
   axis {
     ...Axis
   }
@@ -16171,12 +17063,16 @@ export const ChartFragmentDoc = gql`
     ...ChartTraceLayer
     ...ChartSeriesLayer
     ...ChartAnnotationLayer
+    ...ChartPointsLayer
+    ...ChartDistributionLayer
   }
 }
     ${AxisFragmentDoc}
 ${ChartTraceLayerFragmentDoc}
 ${ChartSeriesLayerFragmentDoc}
-${ChartAnnotationLayerFragmentDoc}`;
+${ChartAnnotationLayerFragmentDoc}
+${ChartPointsLayerFragmentDoc}
+${ChartDistributionLayerFragmentDoc}`;
 export const ListChartFragmentDoc = gql`
     fragment ListChart on Chart {
   descriptors
@@ -16184,6 +17080,7 @@ export const ListChartFragmentDoc = gql`
   name
   description
   createdAt
+  kind
   axis {
     ...Axis
   }
@@ -16683,6 +17580,152 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const GridLayerStyleFragmentDoc = gql`
+    fragment GridLayerStyle on GridLayer {
+  __typename
+  id
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+}
+    `;
+export const GridAffineFragmentDoc = gql`
+    fragment GridAffine on AffinePlacement {
+  matrix
+  inputAxes
+  outputAxes
+  total
+}
+    `;
+export const GridLayerCommonFragmentDoc = gql`
+    fragment GridLayerCommon on GridLayer {
+  __typename
+  id
+  kind
+  name
+  visible
+  order
+  opacity
+  colormap
+  min
+  max
+  placement
+  asAffine {
+    ...GridAffine
+  }
+}
+    ${GridAffineFragmentDoc}`;
+export const GridHeatmapLayerFragmentDoc = gql`
+    fragment GridHeatmapLayer on HeatmapGridLayer {
+  ...GridLayerCommon
+  lens {
+    __typename
+    id
+    name
+    ... on ArrayLens {
+      ...ChartLens
+    }
+    ... on SparseLens {
+      windows {
+        ...LensWindow
+      }
+      sparseDataset {
+        id
+        name
+        axisNames
+        shape
+        arrays {
+          id
+          indexedAxis
+          indexedAxisName
+          path
+          store {
+            ...SparseStoreRead
+          }
+        }
+      }
+    }
+  }
+}
+    ${GridLayerCommonFragmentDoc}
+${ChartLensFragmentDoc}
+${LensWindowFragmentDoc}
+${SparseStoreReadFragmentDoc}`;
+export const GridCellsLayerFragmentDoc = gql`
+    fragment GridCellsLayer on CellsGridLayer {
+  ...GridLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  valueUnit
+}
+    ${GridLayerCommonFragmentDoc}
+${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
+export const GridFragmentDoc = gql`
+    fragment Grid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  creator {
+    sub
+  }
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+  worldCoordinateSystem {
+    id
+    name
+  }
+  layers {
+    __typename
+    ...GridHeatmapLayer
+    ...GridCellsLayer
+  }
+}
+    ${AxisFragmentDoc}
+${GridHeatmapLayerFragmentDoc}
+${GridCellsLayerFragmentDoc}`;
+export const ListGridFragmentDoc = gql`
+    fragment ListGrid on Grid {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  rowAxis {
+    ...Axis
+  }
+  columnAxis {
+    ...Axis
+  }
+}
+    ${AxisFragmentDoc}`;
 export const LayerRenderAxesFragmentDoc = gql`
     fragment LayerRenderAxes on RenderAxes {
   x
@@ -17936,6 +18979,29 @@ export const CreateSeriesChartLayerDocument = gql`
   }
 }
     `;
+export const CreatePointsChartLayerDocument = gql`
+    mutation CreatePointsChartLayer($input: CreatePointsChartLayerInput!) {
+  createPointsChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const CreateDistributionChartLayerDocument = gql`
+    mutation CreateDistributionChartLayer($input: CreateDistributionChartLayerInput!) {
+  createDistributionChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const CreateTablePlotDocument = gql`
+    mutation CreateTablePlot($input: CreateTablePlotInput!) {
+  createTablePlot(input: $input) {
+    ...ListChart
+  }
+}
+    ${ListChartFragmentDoc}`;
 export const CreateAnnotationChartLayerDocument = gql`
     mutation CreateAnnotationChartLayer($input: CreateAnnotationChartLayerInput!) {
   createAnnotationChartLayer(input: $input) {
@@ -18011,10 +19077,14 @@ export const AutoVisualizeDocument = gql`
     ... on Chart {
       ...ListChart
     }
+    ... on Grid {
+      ...ListGrid
+    }
   }
 }
     ${ListSceneFragmentDoc}
-${ListChartFragmentDoc}`;
+${ListChartFragmentDoc}
+${ListGridFragmentDoc}`;
 export const RequestBigfileUploadDocument = gql`
     mutation RequestBigfileUpload($input: RequestBigFileUploadInput!) {
   requestBigfileUpload(input: $input) {
@@ -18309,6 +19379,60 @@ export const ReleaseTableDatasetsFromFolderDocument = gql`
   }
 }
     ${FolderFragmentDoc}`;
+export const CreateGridDocument = gql`
+    mutation CreateGrid($input: CreateGridInput!) {
+  createGrid(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export const CreateGridFromCoordinateSystemDocument = gql`
+    mutation CreateGridFromCoordinateSystem($input: CreateGridFromCoordinateSystemInput!) {
+  createGridFromCoordinateSystem(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export const UpdateGridDocument = gql`
+    mutation UpdateGrid($input: UpdateGridInput!) {
+  updateGrid(input: $input) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export const DeleteGridDocument = gql`
+    mutation DeleteGrid($id: ID!) {
+  deleteGrid(input: {id: $id})
+}
+    `;
+export const CreateHeatmapGridLayerDocument = gql`
+    mutation CreateHeatmapGridLayer($input: CreateHeatmapGridLayerInput!) {
+  createHeatmapGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const CreateCellsGridLayerDocument = gql`
+    mutation CreateCellsGridLayer($input: CreateCellsGridLayerInput!) {
+  createCellsGridLayer(input: $input) {
+    __typename
+    id
+  }
+}
+    `;
+export const UpdateGridLayerDocument = gql`
+    mutation UpdateGridLayer($input: UpdateGridLayerInput!) {
+  updateGridLayer(input: $input) {
+    ...GridLayerStyle
+  }
+}
+    ${GridLayerStyleFragmentDoc}`;
+export const DeleteGridLayerDocument = gql`
+    mutation DeleteGridLayer($id: ID!) {
+  deleteGridLayer(input: {id: $id})
+}
+    `;
 export const UpdateLaterDocument = gql`
     mutation UpdateLater($input: UpdateLayerInput!) {
   updateLayer(input: $input) {
@@ -19099,6 +20223,7 @@ export const ChartAddLayerCandidatesDocument = gql`
   chart(id: $chart) {
     id
     name
+    kind
     axis {
       ...Axis
     }
@@ -19292,12 +20417,16 @@ export const GetCoordinateSystemDocument = gql`
       ... on Chart {
         ...ListChart
       }
+      ... on Grid {
+        ...ListGrid
+      }
     }
   }
 }
     ${CoordinateSystemFragmentDoc}
 ${ListSceneFragmentDoc}
-${ListChartFragmentDoc}`;
+${ListChartFragmentDoc}
+${ListGridFragmentDoc}`;
 export const GetCoordinateSystemProvenanceDocument = gql`
     query GetCoordinateSystemProvenance($id: ID!) {
   coordinateSystem(id: $id) {
@@ -19618,6 +20747,27 @@ export const GlobalSearchDocument = gql`
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}
 ${ListLensFragmentDoc}`;
+export const GetGridDocument = gql`
+    query GetGrid($id: ID!) {
+  grid(id: $id) {
+    ...Grid
+  }
+}
+    ${GridFragmentDoc}`;
+export const GetListGridDocument = gql`
+    query GetListGrid($id: ID!) {
+  grid(id: $id) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
+export const GetGridsDocument = gql`
+    query GetGrids($filters: GridFilter, $ordering: [GridOrder!], $pagination: OffsetPaginationInput) {
+  grids(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListGrid
+  }
+}
+    ${ListGridFragmentDoc}`;
 export const HomePageDocument = gql`
     query HomePage {
   lenses(pagination: {limit: 1}) {
@@ -20373,6 +21523,15 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     CreateSeriesChartLayer(variables: CreateSeriesChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateSeriesChartLayerMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateSeriesChartLayerMutation>({ document: CreateSeriesChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateSeriesChartLayer', 'mutation', variables);
     },
+    CreatePointsChartLayer(variables: CreatePointsChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreatePointsChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreatePointsChartLayerMutation>({ document: CreatePointsChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreatePointsChartLayer', 'mutation', variables);
+    },
+    CreateDistributionChartLayer(variables: CreateDistributionChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateDistributionChartLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateDistributionChartLayerMutation>({ document: CreateDistributionChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateDistributionChartLayer', 'mutation', variables);
+    },
+    CreateTablePlot(variables: CreateTablePlotMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateTablePlotMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateTablePlotMutation>({ document: CreateTablePlotDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateTablePlot', 'mutation', variables);
+    },
     CreateAnnotationChartLayer(variables: CreateAnnotationChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateAnnotationChartLayerMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateAnnotationChartLayerMutation>({ document: CreateAnnotationChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateAnnotationChartLayer', 'mutation', variables);
     },
@@ -20528,6 +21687,30 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     ReleaseTableDatasetsFromFolder(variables: ReleaseTableDatasetsFromFolderMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ReleaseTableDatasetsFromFolderMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<ReleaseTableDatasetsFromFolderMutation>({ document: ReleaseTableDatasetsFromFolderDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ReleaseTableDatasetsFromFolder', 'mutation', variables);
+    },
+    CreateGrid(variables: CreateGridMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateGridMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateGridMutation>({ document: CreateGridDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateGrid', 'mutation', variables);
+    },
+    CreateGridFromCoordinateSystem(variables: CreateGridFromCoordinateSystemMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateGridFromCoordinateSystemMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateGridFromCoordinateSystemMutation>({ document: CreateGridFromCoordinateSystemDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateGridFromCoordinateSystem', 'mutation', variables);
+    },
+    UpdateGrid(variables: UpdateGridMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateGridMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateGridMutation>({ document: UpdateGridDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateGrid', 'mutation', variables);
+    },
+    DeleteGrid(variables: DeleteGridMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteGridMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteGridMutation>({ document: DeleteGridDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteGrid', 'mutation', variables);
+    },
+    CreateHeatmapGridLayer(variables: CreateHeatmapGridLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateHeatmapGridLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateHeatmapGridLayerMutation>({ document: CreateHeatmapGridLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateHeatmapGridLayer', 'mutation', variables);
+    },
+    CreateCellsGridLayer(variables: CreateCellsGridLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateCellsGridLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateCellsGridLayerMutation>({ document: CreateCellsGridLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateCellsGridLayer', 'mutation', variables);
+    },
+    UpdateGridLayer(variables: UpdateGridLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateGridLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateGridLayerMutation>({ document: UpdateGridLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateGridLayer', 'mutation', variables);
+    },
+    DeleteGridLayer(variables: DeleteGridLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteGridLayerMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteGridLayerMutation>({ document: DeleteGridLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteGridLayer', 'mutation', variables);
     },
     UpdateLater(variables: UpdateLaterMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateLaterMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateLaterMutation>({ document: UpdateLaterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateLater', 'mutation', variables);
@@ -20867,6 +22050,15 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GlobalSearch(variables: GlobalSearchQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GlobalSearchQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GlobalSearchQuery>({ document: GlobalSearchDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GlobalSearch', 'query', variables);
+    },
+    GetGrid(variables: GetGridQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetGridQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetGridQuery>({ document: GetGridDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetGrid', 'query', variables);
+    },
+    GetListGrid(variables: GetListGridQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetListGridQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetListGridQuery>({ document: GetListGridDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetListGrid', 'query', variables);
+    },
+    GetGrids(variables?: GetGridsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetGridsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetGridsQuery>({ document: GetGridsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetGrids', 'query', variables);
     },
     HomePage(variables?: HomePageQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<HomePageQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<HomePageQuery>({ document: HomePageDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'HomePage', 'query', variables);

@@ -1,11 +1,14 @@
 # The chart: mikro's second composition beside the scene.
 #
-# A `Scene` is a place; a `Chart` is an AXIS. Its layers are data laid out along
-# one metric axis (time, wavelength, distance, ...) with values read off it: a
-# trace (a lens over an array), a series (one column of a table against
-# another), or an annotation collection's drawn marks. `worldCoordinateSystem`
-# is the space they share, and each layer's `asAffine` is the one authority on
-# where its samples land along the axis.
+# A `Scene` shows WHERE; a `Chart` shows HOW MUCH -- values drawn as position,
+# at most one axis drawn from its world. `kind` says which:
+# - AXIS: its world is one metric axis (time, wavelength, distance, ...) and its
+#   layers are laid along it: a trace (a lens over an array), a series (one
+#   column of a table against another), or an annotation collection's marks.
+#   Each layer's `asAffine` is the one authority on where its samples land.
+# - VALUES: its world is a table's space (whose rows; not drawn) and its layers
+#   draw those rows at the values of the columns they name: points (a scatter)
+#   or a distribution (a histogram or a box per group). `axis` is null.
 #
 # `layers` comes back in server order; the client sorts it by (order, id) for
 # drawing and by (typename, id) for its structural signature.
@@ -171,6 +174,64 @@ fragment ChartAnnotationLayer on AnnotationChartLayer {
   }
 }
 
+# A table lens' rows at the values of two or three columns: a scatter. Placed in
+# the VALUES chart's world (whose rows), never along an axis.
+fragment ChartPointsLayer on PointsChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  xColumn
+  yColumn
+  zColumn
+  xUnit
+  yUnit
+  zUnit
+  mark
+  lineWidth
+  markerSize
+}
+
+# One column of a table lens' rows summarised: a histogram or a box, over every
+# row or once per value of `groupColumn`.
+fragment ChartDistributionLayer on DistributionChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
+  valueColumn
+  groupColumn
+  bins
+  valueUnit
+  mark
+}
+
 # What `updateChartLayer` answers with: view state only, which is all it can
 # change. No placement fields, so a restyle can never fail on `asAffine`.
 fragment ChartLayerStyle on ChartLayer {
@@ -191,6 +252,14 @@ fragment ChartLayerStyle on ChartLayer {
     lineWidth
     markerSize
   }
+  ... on PointsChartLayer {
+    mark
+    lineWidth
+    markerSize
+  }
+  ... on DistributionChartLayer {
+    mark
+  }
 }
 
 fragment Chart on Chart {
@@ -202,7 +271,11 @@ fragment Chart on Chart {
   creator {
     sub
   }
-  # The world's only axis, repeated on the chart: its name, metric type, unit.
+  # AXIS: drawn along its world's one axis; VALUES: draws its world's rows at
+  # the values of their columns.
+  kind
+  # An AXIS chart's world axis, repeated on the chart: its name, metric type,
+  # unit. Null for a VALUES chart.
   axis {
     ...Axis
   }
@@ -215,6 +288,8 @@ fragment Chart on Chart {
     ...ChartTraceLayer
     ...ChartSeriesLayer
     ...ChartAnnotationLayer
+    ...ChartPointsLayer
+    ...ChartDistributionLayer
   }
 }
 
@@ -224,6 +299,7 @@ fragment ListChart on Chart {
   name
   description
   createdAt
+  kind
   axis {
     ...Axis
   }

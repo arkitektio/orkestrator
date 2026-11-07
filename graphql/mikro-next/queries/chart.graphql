@@ -32,6 +32,8 @@ query ChartAddLayerCandidates($chart: ID!) {
   chart(id: $chart) {
     id
     name
+    # AXIS charts take traces, series and marks; VALUES charts points or distributions.
+    kind
     axis {
       ...Axis
     }
