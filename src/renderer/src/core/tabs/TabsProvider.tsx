@@ -15,6 +15,8 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
 import { consumePendingShare, rememberPendingShare } from "./pendingShare";
+import { loadSplitRatio, ratioForSide, type SideSize } from "./splitRatio";
+import { setSplitRatio } from "./useSplitRatio";
 import type { Action, Location } from "@remix-run/router";
 
 import type { TabHistory } from "./tabHistory";
@@ -32,7 +34,9 @@ import {
   saveTabs,
   setTabLabel,
   setTabPinned,
+  setTabSidebar,
   shownSplit,
+  sidebarSiblingOf,
   splitTab,
   splitTabWith,
   swapSplit,
@@ -46,7 +50,7 @@ import {
   type TabRecord,
   type TabsState,
 } from "./tabs";
-import { linkClickIntent } from "./linkClicks";
+import { linkClickIntent, sidebarIntent } from "./linkClicks";
 
 /**
  * The open tabs, as a store the rest of the app subscribes to.
@@ -84,10 +88,20 @@ export type TabsSnapshot = TabsState & {
   warmIds: ReadonlySet<string>;
 };
 
+export type BesideOptions = Omit<OpenOptions, "background"> & {
+  /**
+   * How wide the side pane starts (`SideSize`). Without one it starts where
+   * the user last left the divider.
+   */
+  size?: SideSize;
+  /** Open it as a sidebar tab: its links open in this page — see `TabRecord.sidebar`. */
+  sidebar?: boolean;
+};
+
 export type TabActions = {
   open: (to: string, options?: OpenOptions) => void;
   /** Open in a new tab shown beside this one — see `openTabBeside`. */
-  openBeside: (to: string, options?: Omit<OpenOptions, "background">) => void;
+  openBeside: (to: string, options?: BesideOptions) => void;
   focus: (id: string) => void;
   close: (id: string) => void;
   closeOthers: (id: string) => void;
@@ -95,6 +109,13 @@ export type TabActions = {
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
   /** Pin or unpin a tab — see `setTabPinned`. */
   setPinned: (id: string, pinned: boolean) => void;
+  /** Make a tab a sidebar tab, or an ordinary one — see `TabRecord.sidebar`. */
+  setSidebar: (id: string, sidebar: boolean) => void;
+  /**
+   * Open `to` in the pane beside sidebar tab `from`, and focus it. `false`
+   * (nothing done) when `from` is not a sidebar tab shown in a split.
+   */
+  navigateSibling: (from: string, to: string) => boolean;
   /** Show a tab beside the view tab — see `splitTab`. */
   split: (id: string, side?: "left" | "right") => void;
   /** Make a tab the view and give it a partner, or a new tab — see `splitTabWith`. */
@@ -316,10 +337,28 @@ export const TabsProvider = ({
     [store],
   );
   const openBeside = useCallback<TabActions["openBeside"]>(
-    (to, options) => store.set((s) => openTabBeside(s, to, options)),
+    (to, { size, ...options } = {}) => {
+      store.set((s) => openTabBeside(s, to, options));
+      // A hint moves the divider without saving it; an open without one goes
+      // back to the user's own position, whatever an earlier hint left.
+      setSplitRatio(size === undefined ? loadSplitRatio() : ratioForSide(size));
+    },
     [store],
   );
   const focus = useCallback((id: string) => store.set((s) => focusTab(s, id)), [store]);
+  const navigateSibling = useCallback<TabActions["navigateSibling"]>(
+    (from, to) => {
+      const s = store.getState();
+      const sibling = sidebarSiblingOf(s, from);
+      const tab = sibling ? s.tabs.find((t) => t.id === sibling) : undefined;
+      if (!tab) return false;
+      tab.history.push(to);
+      // Focus goes where the page changed: Back/Forward and the palette act on it.
+      focus(tab.id);
+      return true;
+    },
+    [store, focus],
+  );
   const close = useCallback((id: string) => store.set((s) => closeTab(s, id)), [store]);
   const closeOthers = useCallback(
     (id: string) => store.set((s) => closeOtherTabs(s, id)),
@@ -335,6 +374,10 @@ export const TabsProvider = ({
   );
   const setPinned = useCallback<TabActions["setPinned"]>(
     (id, pinned) => store.set((s) => setTabPinned(s, id, pinned)),
+    [store],
+  );
+  const setSidebar = useCallback<TabActions["setSidebar"]>(
+    (id, sidebar) => store.set((s) => setTabSidebar(s, id, sidebar)),
     [store],
   );
   const split = useCallback<TabActions["split"]>(
@@ -435,10 +478,21 @@ export const TabsProvider = ({
     };
     const onClick = (e: MouseEvent) => {
       const intent = claim(e);
-      if (!intent) return;
+      if (intent) {
+        e.preventDefault();
+        e.stopPropagation();
+        open(intent.to, { background: intent.background, evict: true });
+        return;
+      }
+      // A plain click in a sidebar tab: the link opens in the pane beside it.
+      if (e.type !== "click") return;
+      const anchor = (e.target as Element | null)?.closest?.("a[href]");
+      if (!anchor) return;
+      const beside = sidebarIntent(e, anchor, (id) => sidebarSiblingOf(store.getState(), id));
+      if (!beside) return;
       e.preventDefault();
       e.stopPropagation();
-      open(intent.to, { background: intent.background, evict: true });
+      navigateSibling(beside.from, beside.to);
     };
     // Middle-button mousedown starts autoscroll on Windows/Linux; not on a link.
     const onMouseDown = (e: MouseEvent) => {
@@ -452,7 +506,7 @@ export const TabsProvider = ({
       window.removeEventListener("auxclick", onClick, true);
       window.removeEventListener("mousedown", onMouseDown, true);
     };
-  }, [open]);
+  }, [open, store, navigateSibling]);
 
   // Not an optimization: the identity of this object is a CONTRACT.
   // `useTabActions` promises callers — every page in the app through
@@ -470,6 +524,8 @@ export const TabsProvider = ({
       move,
       setLabel,
       setPinned,
+      setSidebar,
+      navigateSibling,
       split,
       splitWith,
       unsplit: unsplitAction,
@@ -485,6 +541,8 @@ export const TabsProvider = ({
       move,
       setLabel,
       setPinned,
+      setSidebar,
+      navigateSibling,
       split,
       splitWith,
       unsplitAction,
@@ -510,6 +568,8 @@ const ActionsContext = createContext<TabActions>({
   move: noop,
   setLabel: noop,
   setPinned: noop,
+  setSidebar: noop,
+  navigateSibling: () => false,
   split: noop,
   splitWith: noop,
   unsplit: noop,

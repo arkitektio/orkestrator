@@ -29,6 +29,28 @@ export const saveSplitRatio = (ratio: number, storage: Storage | null = safeStor
   }
 };
 
+/**
+ * How wide a tab opened to the side STARTS: a name, or the side pane's share
+ * of the width (clamped to what the divider allows). A hint for that one
+ * open; dragging the divider afterwards is the user's and is saved as usual.
+ * `tiny` (a fifth, as narrow as the divider goes) suits a list kept at hand
+ * (My todos beside an image), `wide` a page that becomes the focus.
+ */
+export type SideSize = "tiny" | "narrow" | "half" | "wide" | number;
+
+const SIDE_SHARE: Record<Exclude<SideSize, number>, number> = {
+  tiny: 1 / 5,
+  narrow: 1 / 3,
+  half: 1 / 2,
+  wide: 2 / 3,
+};
+
+/** The divider position (the LEFT pane's share) that gives the side pane `size`. */
+export const ratioForSide = (size: SideSize): number => {
+  const share = typeof size === "number" ? size : SIDE_SHARE[size];
+  return Number.isFinite(share) ? clampSplitRatio(1 - share) : DEFAULT_SPLIT_RATIO;
+};
+
 /** The ratio for a pointer at `clientX` over a container spanning `left`..`left + width`. */
 export const splitRatioFromPointer = (clientX: number, left: number, width: number): number =>
   width > 0 ? clampSplitRatio((clientX - left) / width) : DEFAULT_SPLIT_RATIO;

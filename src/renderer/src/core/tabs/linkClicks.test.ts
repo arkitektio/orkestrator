@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkClickIntent, type AnchorLike, type LinkClickLike } from "./linkClicks";
+import { linkClickIntent, sidebarIntent, type AnchorLike, type LinkClickLike } from "./linkClicks";
 
 const anchor = (attrs: Record<string, string>, off = false): AnchorLike => ({
   getAttribute: (name) => attrs[name] ?? null,
@@ -56,5 +56,46 @@ describe("linkClickIntent", () => {
     expect(linkClickIntent(ctrl, anchor({ href: "/x", target: "_blank" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "/x", download: "" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "/x" }, true))).toBeNull();
+  });
+});
+
+/** A link inside the pane of tab `tabId` (or in none), optionally opted out. */
+const inPane = (href: string, tabId: string | null, off = false): AnchorLike => ({
+  getAttribute: (name) => (name === "href" ? href : null),
+  hasAttribute: () => false,
+  closest: (selector) => {
+    if (selector === "[data-tab-link='off']") return off ? {} : null;
+    if (selector === "[data-tab-id]") return tabId ? { getAttribute: (name: string) => (name === "data-tab-id" ? tabId : null) } : null;
+    return null;
+  },
+});
+
+describe("sidebarIntent", () => {
+  // "side" is a sidebar tab beside "main"; "main" is not one.
+  const siblingFor = (id: string) => (id === "side" ? "main" : null);
+
+  it("sends a plain click in a sidebar pane to the pane beside it", () => {
+    expect(sidebarIntent(click(), inPane("/kraph/todoitems/3", "side"), siblingFor)).toEqual({
+      to: "/kraph/todoitems/3",
+      from: "side",
+      tabId: "main",
+    });
+  });
+
+  it("leaves a link in an ordinary pane, or outside any pane, alone", () => {
+    expect(sidebarIntent(click(), inPane("/kraph/todoitems/3", "main"), siblingFor)).toBeNull();
+    expect(sidebarIntent(click(), inPane("/kraph/todoitems/3", null), siblingFor)).toBeNull();
+  });
+
+  it("leaves modified and other-button clicks to the other gestures", () => {
+    const link = inPane("/kraph/todoitems/3", "side");
+    for (const patch of [{ metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }]) {
+      expect(sidebarIntent(click(patch), link, siblingFor)).toBeNull();
+    }
+  });
+
+  it("leaves external and opted-out links alone", () => {
+    expect(sidebarIntent(click(), inPane("https://example.org", "side"), siblingFor)).toBeNull();
+    expect(sidebarIntent(click(), inPane("/kraph/todoitems/3", "side", true), siblingFor)).toBeNull();
   });
 });

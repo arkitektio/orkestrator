@@ -65,3 +65,25 @@ export const linkClickIntent = (
   const to = inAppPath(anchor);
   return to ? { to, background: true } : null;
 };
+
+/**
+ * A plain click on an in-app link inside a SIDEBAR tab's pane: the link opens
+ * in the pane beside it (`TabRecord.sidebar`). `siblingFor(tabId)` answers the
+ * other pane's tab when `tabId` is a sidebar tab shown in a split, else
+ * `null`. Any modifier, another button, or a link outside a pane is not
+ * claimed here (⌘/middle-click stay `linkClickIntent`'s).
+ */
+export const sidebarIntent = (
+  event: LinkClickLike,
+  anchor: AnchorLike,
+  siblingFor: (tabId: string) => string | null,
+): { to: string; from: string; tabId: string } | null => {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+  const pane = anchor.closest?.("[data-tab-id]") as AnchorLike | null | undefined;
+  const from = pane?.getAttribute("data-tab-id");
+  if (!from) return null;
+  const tabId = siblingFor(from);
+  if (!tabId) return null;
+  const to = inAppPath(anchor);
+  return to ? { to, from, tabId } : null;
+};

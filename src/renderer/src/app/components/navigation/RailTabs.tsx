@@ -7,6 +7,7 @@ import {
 import { NEW_TAB_PATH, type TabRecord } from "@/core/tabs/tabs";
 import {
   ContextMenu,
+  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
@@ -24,7 +25,7 @@ import { cn } from "@/core/util/utils";
 import { acceptsSmartDrag } from "@/core/smart/dragPayload";
 import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
-import { Pin, Plus, X } from "lucide-react";
+import { PanelRight, Pin, Plus, X } from "lucide-react";
 
 import { type RailRow, rowBlock, rowMoves, rowsOf } from "./railRows";
 
@@ -122,7 +123,7 @@ const TabCell = ({
 }) => {
   // Actions only, and deliberately: these are stable for the provider's
   // lifetime, so a cell does not re-render when some other tab navigates.
-  const { focus, close, closeOthers, open, setPinned, split, unsplit, swapSplit } =
+  const { focus, close, closeOthers, open, setPinned, setSidebar, split, unsplit, swapSplit } =
     useTabActions();
   // On screen as the OTHER pane: visible, but not the focused one.
   const shown = half && onScreen && !active;
@@ -194,6 +195,10 @@ const TabCell = ({
             )}
           />
           <span className="min-w-0 flex-1 truncate">{tab.label}</span>
+          {/* A sidebar tab: its links open in the pane beside it. */}
+          {tab.sidebar && (
+            <PanelRight aria-label="Sidebar" className="h-3 w-3 shrink-0 opacity-60" />
+          )}
           {/* A half has no room for the pin; the menu still pins it. */}
           {!half && (
             <button
@@ -261,6 +266,13 @@ const TabCell = ({
             <ContextMenuItem onSelect={() => unsplit(rowId)}>Unsplit</ContextMenuItem>
           </>
         )}
+        {/* Its links open in the pane beside it while split. */}
+        <ContextMenuCheckboxItem
+          checked={Boolean(tab.sidebar)}
+          onCheckedChange={(checked) => setSidebar(tab.id, checked === true)}
+        >
+          Sidebar mode
+        </ContextMenuCheckboxItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => open(NEW_TAB_PATH)}>New tab</ContextMenuItem>
       </ContextMenuContent>

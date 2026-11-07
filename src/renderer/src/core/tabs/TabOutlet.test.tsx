@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import React from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
@@ -39,7 +39,9 @@ const PageProbe = () => {
       data-page-sidebar={layout?.pageSidebar === false ? "hidden" : "default"}
     >
       <span data-testid="page-path">{pathname}</span>
-      <button onClick={() => navigate(`${pathname}/deeper`)}>deeper</button>
+      {/* Joined without a doubled slash: the router collapses `//deeper` to `/deeper`. */}
+      <button onClick={() => navigate(`${pathname.replace(/\/$/, "")}/deeper`)}>deeper</button>
+      <Link to="/linked">link</Link>
     </div>
   );
 };
@@ -76,6 +78,7 @@ const Chrome = () => {
     <div>
       <span data-testid="labels">{tabs.map((t) => t.label).join(",")}</span>
       <button onClick={() => openBeside("/side")}>open-beside</button>
+      <button onClick={() => openBeside("/side", { sidebar: true })}>open-sidebar</button>
       <button onClick={toggleSplit}>toggle-split</button>
       <button onClick={swapSplit}>swap-split</button>
       <button onClick={() => open("/b")}>open-b</button>
@@ -120,6 +123,42 @@ const wrapperOf = (page: HTMLElement) => page.closest("[data-tab-id]") as HTMLEl
 beforeEach(() => {
   localStorage.clear();
   window.location.hash = "";
+});
+
+describe("TabOutlet — sidebar tabs", () => {
+  const path = (page: HTMLElement) => page.querySelector("[data-testid='page-path']")?.textContent;
+  const follow = (page: HTMLElement) => act(() => within(page).getByText("link").click());
+
+  it("opens a sidebar tab's links in the pane beside it, and focuses that pane", () => {
+    renderApp();
+    click("open-sidebar");
+    const [main, side] = pages();
+    expect(side.dataset.pane).toBe("right");
+    follow(side);
+    expect(path(main)).toBe("/linked");
+    expect(path(side)).toBe("/side");
+    expect(screen.getByTestId("active-index").textContent).toBe("0");
+  });
+
+  it("leaves the links of an ordinary side tab, and of the page beside a sidebar, in their own pane", () => {
+    renderApp();
+    click("open-beside");
+    const [main, side] = pages();
+    follow(side);
+    expect(path(side)).toBe("/linked");
+    expect(path(main)).toBe("/");
+  });
+
+  it("navigates a sidebar tab itself once it is shown alone", () => {
+    renderApp();
+    click("open-sidebar");
+    click("toggle-split"); // unsplit: the main tab alone
+    click("focus-1"); // the sidebar tab, now alone
+    const side = pages()[1];
+    expect(wrapperOf(side).dataset.pane).toBeUndefined();
+    follow(side);
+    expect(path(side)).toBe("/linked");
+  });
 });
 
 describe("TabOutlet", () => {
@@ -180,12 +219,12 @@ describe("TabOutlet", () => {
   it("restores a hidden tab exactly where it was left", () => {
     renderApp();
     const [a] = pages();
-    act(() => (a.querySelector("button") as HTMLButtonElement).click()); // A → //deeper
+    act(() => (a.querySelector("button") as HTMLButtonElement).click()); // A → /deeper
     click("open-b");
     click("focus-first");
     const [aAgain] = pages();
     expect(wrapperOf(aAgain).className).not.toBe("hidden");
-    expect(aAgain.querySelector("[data-testid='page-path']")?.textContent).toBe("//deeper");
+    expect(aAgain.querySelector("[data-testid='page-path']")?.textContent).toBe("/deeper");
   });
 
   it("unmounts cold tabs beyond the warm cap, keeping the active one", () => {

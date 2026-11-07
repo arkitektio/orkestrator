@@ -60,6 +60,13 @@ export type TabRecord = {
    * `tabs` (`closeTab` scrubs it), never this tab's own.
    */
   beside?: string;
+  /**
+   * A sidebar tab: while it is shown in a split, its in-app links open in the
+   * pane BESIDE it, not in itself (My todos at a fifth of the width, its items
+   * opening in the page next to it). Shown alone it is an ordinary tab. On the
+   * record, not in `TabLayout`, whose `sidebar` is the page's `?sidebar=`.
+   */
+  sidebar?: true;
 };
 
 /**
@@ -115,7 +122,7 @@ export const labelForPath = (to: string): string => {
 
 export const createTab = (
   to: string,
-  options: { label?: string; now?: number; id?: string; layout?: TabLayout } = {},
+  options: { label?: string; now?: number; id?: string; layout?: TabLayout; sidebar?: boolean } = {},
 ): TabRecord => {
   const parsed = parsePath(to);
   const entry = {
@@ -128,6 +135,7 @@ export const createTab = (
     history: createTabHistory({ entries: [entry], index: 0 }),
     label: options.label ?? labelForPath(to),
     ...(options.layout ? { layout: options.layout } : {}),
+    ...(options.sidebar ? { sidebar: true as const } : {}),
     lastActiveAt: options.now ?? Date.now(),
   };
 };
@@ -156,6 +164,20 @@ export const splitPartnerId = (state: TabsState): string | null => {
   if (!split) return null;
   return split.left === state.activeId ? split.right : split.left;
 };
+
+/**
+ * The other half of the pair on screen, when `id` is one of them; `null` when
+ * `id` is not on screen in a split. Where a sidebar tab's links go.
+ */
+export const siblingOf = (state: TabsState, id: string): string | null => {
+  const split = shownSplit(state);
+  if (!split || !inSplit(split, id)) return null;
+  return split.left === id ? split.right : split.left;
+};
+
+/** Where tab `id`'s links go instead of itself: its sibling, when it is a sidebar tab shown in a split. */
+export const sidebarSiblingOf = (state: TabsState, id: string): string | null =>
+  tabOf(state, id)?.sidebar ? siblingOf(state, id) : null;
 
 /** `tabs` with tab `id`'s partner set, or removed for `undefined` — no dangling key. */
 const withBeside = (tabs: TabRecord[], id: string, beside: string | undefined): TabRecord[] =>
@@ -186,6 +208,8 @@ export type OpenOptions = {
   now?: number;
   /** The new tab's page-layout defaults — see `TabLayout`. */
   layout?: TabLayout;
+  /** Open it as a sidebar tab — see `TabRecord.sidebar`. */
+  sidebar?: boolean;
 };
 
 export const openTab = (state: TabsState, to: string, options: OpenOptions = {}): TabsState => {
@@ -206,7 +230,7 @@ export const openTab = (state: TabsState, to: string, options: OpenOptions = {})
     );
   }
 
-  const tab = createTab(to, { label: options.label, now, layout: options.layout });
+  const tab = createTab(to, { label: options.label, now, layout: options.layout, sidebar: options.sidebar });
   if (options.background) return { ...state, tabs: [...tabs, tab] };
   // A new tab starts alone: it has no partner, and takes none from the tab
   // it was opened from.
@@ -411,6 +435,20 @@ export const setTabPinned = (state: TabsState, id: string, pinned: boolean): Tab
   return { ...state, tabs };
 };
 
+/** Make tab `id` a sidebar tab, or an ordinary one again — see `TabRecord.sidebar`. */
+export const setTabSidebar = (state: TabsState, id: string, sidebar: boolean): TabsState => {
+  const tab = state.tabs.find((t) => t.id === id);
+  if (!tab || Boolean(tab.sidebar) === sidebar) return state;
+  return {
+    ...state,
+    tabs: state.tabs.map((t) => {
+      if (t.id !== id) return t;
+      const { sidebar: _was, ...bare } = t;
+      return sidebar ? { ...bare, sidebar: true as const } : bare;
+    }),
+  };
+};
+
 export type LabelSource = {
   /** `page`: the page's own `title`. `path`: derived from the URL, a fallback. */
   source: "page" | "path";
@@ -481,6 +519,7 @@ const PersistedTabSchema = z.object({
   pinned: z.boolean().optional(),
   lastActiveAt: z.number(),
   beside: z.string().optional(),
+  sidebar: z.boolean().optional(),
   layout: z
     .object({ pageSidebar: z.boolean().optional(), sidebar: z.boolean().optional() })
     .optional(),
@@ -511,6 +550,7 @@ export const serializeTabs = (state: TabsState): TabsPersisted => ({
     label: t.label,
     ...(t.pinned ? { pinned: true } : {}),
     ...(t.beside ? { beside: t.beside } : {}),
+    ...(t.sidebar ? { sidebar: true } : {}),
     ...(t.layout ? { layout: t.layout } : {}),
     lastActiveAt: t.lastActiveAt,
     history: t.history.serialize() as SerializedHistory,
@@ -523,6 +563,7 @@ const reviveTab = (row: z.infer<typeof PersistedTabSchema>): TabRecord => ({
   label: row.label,
   ...(row.pinned ? { pinned: true } : {}),
   ...(row.beside ? { beside: row.beside } : {}),
+  ...(row.sidebar ? { sidebar: true as const } : {}),
   ...(row.layout ? { layout: row.layout } : {}),
   lastActiveAt: row.lastActiveAt,
 });

@@ -19,6 +19,9 @@ import {
   serializeTabs,
   setTabLabel,
   setTabPinned,
+  setTabSidebar,
+  siblingOf,
+  sidebarSiblingOf,
   openTabBeside,
   shownSplit,
   splitPartnerId,
@@ -637,5 +640,49 @@ describe("tab labels have a source", () => {
     s = setTabLabel(s, "t0", "HeLa s3", page("/mikro/arraydatasets/5"));
     saveTabs("org-a", s, storage);
     expect(loadTabs("org-a", storage)!.tabs[0].label).toBe("HeLa s3");
+  });
+});
+
+describe("sidebar tabs — links open in the pane beside", () => {
+  it("opens to the side as a sidebar tab, flagging only the new tab", () => {
+    const s = openTabBeside(stateOf("/a"), "/kraph/todos", { sidebar: true });
+    const side = s.tabs[1];
+    expect(side.sidebar).toBe(true);
+    expect(s.tabs[0]).not.toHaveProperty("sidebar");
+    expect(openTabBeside(stateOf("/a"), "/b").tabs[1]).not.toHaveProperty("sidebar");
+  });
+
+  it("names the other half of the pair on screen, either way round", () => {
+    const s = openTabBeside(stateOf("/a"), "/b");
+    const side = s.tabs[1].id;
+    expect(siblingOf(s, side)).toBe("t0");
+    expect(siblingOf(s, "t0")).toBe(side);
+    const swapped = swapSplit(s);
+    expect(siblingOf(swapped, side)).toBe("t0");
+    expect(siblingOf(swapped, "t0")).toBe(side);
+    // Not split, or not on screen: nobody beside it.
+    expect(siblingOf(unsplit(s), side)).toBeNull();
+    expect(siblingOf(stateOf("/a", "/b"), "t0")).toBeNull();
+  });
+
+  it("sends links on only from a sidebar tab shown in a split", () => {
+    const s = openTabBeside(stateOf("/a"), "/b", { sidebar: true });
+    const side = s.tabs[1].id;
+    expect(sidebarSiblingOf(s, side)).toBe("t0");
+    // The page beside it is an ordinary tab: its links stay its own.
+    expect(sidebarSiblingOf(s, "t0")).toBeNull();
+    // Alone, a sidebar tab is an ordinary tab.
+    expect(sidebarSiblingOf(unsplit(s), side)).toBeNull();
+  });
+
+  it("turns on and off without a dangling key, and persists", () => {
+    let s = setTabSidebar(stateOf("/a", "/b"), "t1", true);
+    expect(s.tabs[1].sidebar).toBe(true);
+    expect(setTabSidebar(s, "t1", true)).toBe(s);
+    saveTabs("org-a", s, storage);
+    expect(loadTabs("org-a", storage)!.tabs[1].sidebar).toBe(true);
+    expect(loadTabs("org-a", storage)!.tabs[0]).not.toHaveProperty("sidebar");
+    s = setTabSidebar(s, "t1", false);
+    expect(s.tabs[1]).not.toHaveProperty("sidebar");
   });
 });

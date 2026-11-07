@@ -9,13 +9,13 @@ import {
   AlertDialogTitle,
 } from "@/core/ui/alert-dialog";
 import { useTabActions } from "@/core/tabs/TabsProvider";
+import { usePaneNavigate } from "@/core/tabs/usePaneNavigate";
 import { useConnection } from "@/core/connection/arkitekt/provider";
 import { Action, ActionState } from "@/core/smart/localactions/LocalActionProvider";
 import type { ServiceMap } from "@/core/connection/arkitekt/provider";
 import type { OnDone } from "@/core/smart/extensions/types";
 import { useSelectionSelector } from "@/core/dnd/selection/SelectionContext";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useDialog } from "../../dialogs/registry";
 import {
   cancelLocalActionRun,
@@ -58,7 +58,8 @@ export const usePerformAction = (props: {
   } | null>(null);
   const connection = useConnection();
   const dialog = useDialog();
-  const navigate = useNavigate();
+  // In a sidebar tab, an action's navigation lands in the page beside it.
+  const navigate = usePaneNavigate();
   const { open: openTab, openBeside: openTabBeside } = useTabActions();
   const setSelection = useSelectionSelector((state) => state.setSelection);
   const setBSelection = useSelectionSelector((state) => state.setBSelection);
