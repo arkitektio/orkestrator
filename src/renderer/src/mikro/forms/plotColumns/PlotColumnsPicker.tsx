@@ -81,7 +81,8 @@ export const PlotColumnsPicker = ({
   const [z, setZ] = useState<string | null>(null);
   const [pointMark, setPointMark] = useState<"MARKERS" | "LINE">("MARKERS");
   const [value, setValue] = useState<string | null>(numeric[0]?.name ?? null);
-  const [group, setGroup] = useState<string | null>(groups[0]?.name ?? null);
+  // Every row until a grouping is chosen: the first label column may be a per-object id.
+  const [group, setGroup] = useState<string | null>(null);
   const [mark, setMark] = useState<"HISTOGRAM" | "BOX">("HISTOGRAM");
   const [bins, setBins] = useState("");
 

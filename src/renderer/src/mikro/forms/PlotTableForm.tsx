@@ -5,7 +5,7 @@ import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { MikroChart } from "@/core/linkers";
 import { DialogBody, DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { ChartLayerKind, ChartMark, GetChartsDocument, useCreateTablePlotMutation, useGetTableDatasetQuery } from "../api/graphql";
-import { isGroupColumn, isValueColumn } from "./addChartLayer/candidates";
+import { isGroupColumn, isNumericColumn } from "./addChartLayer/candidates";
 import { PlotColumnsPicker, type PlotSpec } from "./plotColumns/PlotColumnsPicker";
 
 /**
@@ -43,7 +43,8 @@ export const PlotTableForm = (props: { table: string; lens?: string }) => {
 
   const columns = useMemo(() => data?.tableDataset.columns ?? [], [data]);
   const numeric = useMemo(
-    () => columns.filter((c) => !c.axisType && isValueColumn(c)).map((c) => ({ name: c.name, unit: c.unit ?? null })),
+    // Coordinates are values here too: a localization table's x against y is a scatter.
+    () => columns.filter(isNumericColumn).map((c) => ({ name: c.name, unit: c.unit ?? null })),
     [columns],
   );
   const groups = useMemo(() => columns.filter(isGroupColumn).map((c) => ({ name: c.name, unit: c.unit ?? null })), [columns]);

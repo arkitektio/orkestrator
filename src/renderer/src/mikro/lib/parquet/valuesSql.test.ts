@@ -34,7 +34,9 @@ describe("points", () => {
   });
   it("samples above the cap, and carries the row number", () => {
     expect(pointsSql(URL, { x: "a", y: "b" }, [], 10)).not.toContain("SAMPLE");
-    expect(pointsSql(URL, { x: "a", y: "b", z: "c" }, [], POINTS_MAX + 1)).toContain(`USING SAMPLE reservoir(${POINTS_MAX} ROWS)`);
+    const sampled = pointsSql(URL, { x: "a", y: "b", z: "c" }, [{ column: "a", min: 1 }], POINTS_MAX + 1);
+    // Sampled AFTER the filter: DuckDB samples a FROM before its WHERE.
+    expect(sampled).toMatch(/^SELECT \* FROM \(SELECT .* WHERE .*>= 1.*\) USING SAMPLE reservoir\(\d+ ROWS\)/);
     expect(pointsSql(URL, { x: "a", y: "b" }, [], 10)).toContain("file_row_number");
   });
 });
@@ -62,5 +64,8 @@ describe("grid cells", () => {
     const sql = cellsSql(URL, { row: "cell", column: "c", value: "mean" }, [], 100);
     expect(sql).toContain('TRY_CAST("cell" AS DOUBLE) AS r');
     expect(sql).toContain("LIMIT 100");
+  });
+  it("numbers the rows of a table with no coordinate column", () => {
+    expect(cellsSql(URL, { row: null, column: "c", value: "mean" }, [], 10)).toContain("CAST(file_row_number AS DOUBLE) AS r");
   });
 });

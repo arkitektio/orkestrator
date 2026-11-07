@@ -378,7 +378,7 @@ export const MIKRO_HELP = {
       intro="Grids show which: their rows and columns are members -- genes and cells, cells and channels, a plate's wells -- and each cell is coloured by a value."
       steps={[
         <>Click a grid to open it.</>,
-        <>Right-click a sparse dataset or a long-form table and choose <b>Show as grid</b> to make one.</>,
+        <>Press <b>Visualize</b> on a sparse dataset or a long-form table, or right-click a coordinate system of one or two member axes and choose <b>Show as Grid</b>.</>,
       ]}
       tips={[<>A grid owns none of its data: deleting one leaves the matrices, tables and the space untouched.</>]}
     />

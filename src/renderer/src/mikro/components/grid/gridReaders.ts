@@ -138,18 +138,38 @@ export const readSparseHeatmap = async (
   const rows = memberSpan(rowMap, rowRange.to, rowRange.from);
   const cols = memberSpan(colMap, colRange.to, colRange.from);
   const raster = emptyRaster(rows.first, rows.span, cols.first, cols.span);
-  // A sparse matrix's absent entries are zeros, not gaps: the cells it spans start at 0.
-  raster.values.fill(0);
-  raster.lo = 0;
-  raster.hi = 0;
+  // How many stored entries each texel received: one that holds fewer than the
+  // members it covers also covers an absent entry, which is a zero.
+  const stored = new Int32Array(raster.values.length);
   for (let k = 0; k < block.to - block.from; k++) {
     const position = block.from + k;
     for (let e = block.offsets[k]; e < block.offsets[k + 1]; e++) {
       const at = block.indices[e];
       if (at < inner.from || at >= inner.to) continue;
       const [r, c] = indexedIsRow ? [position, at] : [at, position];
-      put(raster, member(rowMap, r), member(colMap, c), block.values[e]);
+      const row = member(rowMap, r);
+      const col = member(colMap, c);
+      put(raster, row, col, block.values[e]);
+      const t = Math.floor((row - raster.row0) / raster.rowStep) * raster.cols + Math.floor((col - raster.col0) / raster.colStep);
+      if (t >= 0 && t < stored.length) stored[t]++;
     }
+  }
+  // Absent entries are zeros, not gaps -- and a bucket's largest is at least the zeros it holds.
+  const perTexel = raster.rowStep * raster.colStep;
+  let zeros = false;
+  for (let t = 0; t < raster.values.length; t++) {
+    const v = raster.values[t];
+    if (Number.isNaN(v)) {
+      raster.values[t] = 0;
+      zeros = true;
+    } else if (stored[t] < perTexel && v < 0) {
+      raster.values[t] = 0;
+      zeros = true;
+    }
+  }
+  if (zeros) {
+    raster.lo = Math.min(raster.lo, 0);
+    raster.hi = Math.max(raster.hi, 0);
   }
   return {
     raster,
@@ -163,9 +183,20 @@ export const readCells = async (layer: GridCellsLayerFragment, world: GridWorld,
   const placed = placedOf(layer.asAffine, world);
   const filters = (layer.windowFilters ?? []).filter((f) => !(f.joinPath && f.joinPath.length > 0));
   const store = layer.tableDataset.store;
+  // A position that is no column of the table is its synthetic `object` axis: the row's number.
+  const columnNames = new Set(layer.tableDataset.columns.map((c) => c.name));
+  const asColumn = (axis: string | null | undefined) => (axis && columnNames.has(axis) ? axis : null);
+  const colIsRowNumber = !!placed.col && !asColumn(placed.col.input);
   const read = await engine.readColumnsTyped(
     [store],
-    (urlOf) => cellsSql(urlOf(store.id), { row: placed.row.input, column: placed.col?.input ?? null, value: layer.valueColumn }, filters, MAX_CELL_ROWS + 1),
+    (urlOf) =>
+      cellsSql(
+        urlOf(store.id),
+        { row: asColumn(placed.row.input), column: asColumn(placed.col?.input), value: layer.valueColumn },
+        filters,
+        MAX_CELL_ROWS + 1,
+        colIsRowNumber,
+      ),
     ["r", "c", "v"],
   );
   if (!read) throw new Error("the read was cancelled");

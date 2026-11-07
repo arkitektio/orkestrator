@@ -40,14 +40,14 @@ export const pointsExtentSql = (url: string, columns: PointColumns, filters: rea
  */
 export const pointsSql = (url: string, columns: PointColumns, filters: readonly RowFilter[], total: number): string => {
   const needed = [columns.x, columns.y, ...(columns.z ? [columns.z] : [])];
-  const sample = total > POINTS_MAX ? ` USING SAMPLE reservoir(${POINTS_MAX} ROWS) REPEATABLE (7)` : "";
-  return (
+  const kept =
     `SELECT ${dbl(columns.x)} AS ${POINT_COLUMNS.x}, ${dbl(columns.y)} AS ${POINT_COLUMNS.y}` +
     (columns.z ? `, ${dbl(columns.z)} AS ${POINT_COLUMNS.z}` : "") +
     `, CAST(file_row_number AS DOUBLE) AS ${POINT_COLUMNS.row}` +
     ` FROM read_parquet(${escapeSqlLiteral(url)}, file_row_number = true)` +
-    ` WHERE ${whereClause(filters, present(needed))}${sample}`
-  );
+    ` WHERE ${whereClause(filters, present(needed))}`;
+  // DuckDB samples the FROM, before the WHERE: sampling the kept rows needs them as a subquery.
+  return total > POINTS_MAX ? `SELECT * FROM (${kept}) USING SAMPLE reservoir(${POINTS_MAX} ROWS) REPEATABLE (7)` : kept;
 };
 
 /** One row of a table, by its row number: what a tooltip shows beside the plotted values. */
@@ -104,12 +104,23 @@ export const defaultBins = (n: number): number => Math.max(10, Math.min(80, Math
 
 // --- grid cells -----------------------------------------------------------
 
-/** Cells of a grid from a table: (row member, column member, value), one per row. */
+/**
+ * Cells of a grid from a table: (row member, column member, value), one per
+ * row. A position named null is the row's own number in the file: the synthetic
+ * `object` axis of a table with no coordinate column.
+ */
 export const cellsSql = (
   url: string,
-  columns: { row: string; column: string | null; value: string },
+  columns: { row: string | null; column: string | null; value: string },
   filters: readonly RowFilter[],
   limit: number,
-): string =>
-  `SELECT ${dbl(columns.row)} AS r, ${columns.column ? dbl(columns.column) : "0"} AS c, ${dbl(columns.value)} AS v ` +
-  `FROM ${from(url)} WHERE ${whereClause(filters, present([columns.row, ...(columns.column ? [columns.column] : []), columns.value]))} LIMIT ${Math.max(1, Math.floor(limit))}`;
+  columnIsRowNumber = false,
+): string => {
+  const at = (name: string | null) => (name ? dbl(name) : "CAST(file_row_number AS DOUBLE)");
+  const col = columns.column ? dbl(columns.column) : columnIsRowNumber ? at(null) : "0";
+  const needed = [...(columns.row ? [columns.row] : []), ...(columns.column ? [columns.column] : []), columns.value];
+  return (
+    `SELECT ${at(columns.row)} AS r, ${col} AS c, ${dbl(columns.value)} AS v ` +
+    `FROM read_parquet(${escapeSqlLiteral(url)}, file_row_number = true) WHERE ${whereClause(filters, present(needed))} LIMIT ${Math.max(1, Math.floor(limit))}`
+  );
+};

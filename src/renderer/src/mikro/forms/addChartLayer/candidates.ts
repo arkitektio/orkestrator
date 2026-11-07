@@ -84,6 +84,11 @@ export type TableCandidate = {
   drawnColumns: string[];
   /** Columns a distribution can be grouped by: labels, flags, group ids, a long-form channel. */
   groupColumns: { name: string; unit: string | null }[];
+  /**
+   * Every numeric column, coordinates included: what a chart of VALUES may put
+   * at a position -- a localization table's x and y are values to plot too.
+   */
+  numericColumns: { name: string; unit: string | null }[];
 };
 
 export type CollectionCandidate = {
@@ -129,6 +134,19 @@ export const traceShapeReason = (lens: {
 export const isValueColumn = (column: { role?: string | null; dtype?: string | null }): boolean =>
   (column.role == null || column.role === "ATTRIBUTE") &&
   !/str|utf|char|bool|object|categor/i.test(column.dtype ?? "");
+
+/** A column holding numbers, whatever its role: the server's test for a position of a chart of values. */
+export const isNumericColumn = (column: { dtype?: string | null }): boolean => {
+  const dtype = (column.dtype ?? "").toUpperCase();
+  return NUMERIC_DTYPES.has(dtype) || dtype.startsWith("DECIMAL");
+};
+
+/** The DuckDB number types, as the server lists them (`coords.is_numeric_dtype`). */
+const NUMERIC_DTYPES = new Set([
+  "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
+  "UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT",
+  "FLOAT", "REAL", "DOUBLE",
+]);
 
 /** What a distribution may be grouped by: a column naming a group, not measuring one. */
 export const isGroupColumn = (column: { role?: string | null; dtype?: string | null; axisType?: string | null }): boolean =>
@@ -183,6 +201,9 @@ export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
           .map((l) => l.valueColumn as string),
         groupColumns: table.columns
           .filter(isGroupColumn)
+          .map((column) => ({ name: column.name, unit: column.unit ?? null })),
+        numericColumns: table.columns
+          .filter(isNumericColumn)
           .map((column) => ({ name: column.name, unit: column.unit ?? null })),
       });
     } else if (resident.__typename === "AnnotationCollection") {

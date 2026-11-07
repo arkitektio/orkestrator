@@ -62,12 +62,12 @@ export const AddValuesLayer = ({
             onClick={() => setOpen((current) => (current === table.id ? null : table.id))}
           >
             <span className="truncate">{table.name}</span>
-            <span className="text-[11px] text-muted-foreground">{table.valueColumns.length} numeric columns</span>
+            <span className="text-[11px] text-muted-foreground">{table.numericColumns.length} numeric columns</span>
           </button>
           {open === table.id && (
             <div className="border-t border-border/60 p-3">
               <PlotColumnsPicker
-                numeric={table.valueColumns}
+                numeric={table.numericColumns}
                 groups={table.groupColumns}
                 only={only}
                 busy={busy}
