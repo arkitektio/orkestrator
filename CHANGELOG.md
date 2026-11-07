@@ -1,3 +1,10 @@
+## [5.13.1](https://github.com/arkitektio/orkestrator/compare/v5.13.0...v5.13.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **mikro:** a column note for the CATEGORY axis type ([19ae065](https://github.com/arkitektio/orkestrator/commit/19ae06505768eb6ffceddc87542b55d4bdd48d9d))
+
 # [5.13.0](https://github.com/arkitektio/orkestrator/compare/v5.12.0...v5.13.0) (2026-11-07)
 
 
