@@ -1,3 +1,10 @@
+# [5.15.0](https://github.com/arkitektio/orkestrator/compare/v5.14.0...v5.15.0) (2026-11-07)
+
+
+### Features
+
+* **chart:** change what a layer reads from its card ([f225be6](https://github.com/arkitektio/orkestrator/commit/f225be674a7be40d733e64fd91a2a16deeba6a1d))
+
 # [5.14.0](https://github.com/arkitektio/orkestrator/compare/v5.13.1...v5.14.0) (2026-11-07)
 
 
