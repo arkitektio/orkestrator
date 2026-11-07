@@ -14,6 +14,7 @@
  * Pure — runs in node.
  */
 
+import { formatSi } from "./siFormat";
 import { decimalsFor, niceStep } from "./ticks";
 
 export type ValueTick = { value: number; label: string };
@@ -38,6 +39,8 @@ export const valueTicks = (
   const decimals = decimalsFor(step);
 
   const first = Math.ceil(clim.lo / step) * step;
+  // One SI prefix for the whole band, picked by its largest magnitude.
+  const reference = Math.max(Math.abs(clim.lo), Math.abs(clim.hi));
   const ticks: ValueTick[] = [];
   // Bounded: a pathological clim must not spin.
   for (let i = 0; i < 1000; i++) {
@@ -45,7 +48,7 @@ export const valueTicks = (
     if (value > clim.hi + step * 1e-9) break;
     // Snap away float noise (0.30000000000000004) before formatting.
     const snapped = Number((Math.round(value / step) * step).toFixed(decimals));
-    ticks.push({ value: snapped, label: snapped.toFixed(decimals) });
+    ticks.push({ value: snapped, label: formatSi(snapped, step, reference) });
   }
   return ticks;
 };
