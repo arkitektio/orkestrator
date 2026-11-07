@@ -1,3 +1,11 @@
+# [5.14.0](https://github.com/arkitektio/orkestrator/compare/v5.13.1...v5.14.0) (2026-11-07)
+
+
+### Features
+
+* **kraph:** the todo track says where an object stands, and opens My todos beside it ([db00c46](https://github.com/arkitektio/orkestrator/commit/db00c461565dcb896adc522a0469c28a8ed107ca))
+* **tabs:** sidebar tabs open their links in the pane beside them ([735ebd0](https://github.com/arkitektio/orkestrator/commit/735ebd0cdb5154721cfdd709d959773b994c0a78))
+
 ## [5.13.1](https://github.com/arkitektio/orkestrator/compare/v5.13.0...v5.13.1) (2026-11-07)
 
 
