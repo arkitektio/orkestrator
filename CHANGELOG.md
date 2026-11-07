@@ -1,3 +1,18 @@
+# [5.13.0](https://github.com/arkitektio/orkestrator/compare/v5.12.0...v5.13.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **chart:** sample after the filters, plot coordinates, frameless cells ([31cbac0](https://github.com/arkitektio/orkestrator/commit/31cbac0f257506f9e6351cd3ff52d2cd7400bb7d))
+
+
+### Features
+
+* **chart:** charts of values -- points and distributions; hover readout ([49d141f](https://github.com/arkitektio/orkestrator/commit/49d141fd5003cc7c23290baeb78c65b38135e20b))
+* **mikro:** client types for charts of values and grids ([7c57a50](https://github.com/arkitektio/orkestrator/commit/7c57a5018068eba68f4234f4a8df6803cb60c594))
+* **mikro:** grids -- members in rows and columns ([804d008](https://github.com/arkitektio/orkestrator/commit/804d008219dfa5ea19bb55d80fa884bf238a55ce))
+* **plot:** a 2-D plane view ([d2a82d3](https://github.com/arkitektio/orkestrator/commit/d2a82d305982593a2b8b437b1b99ba92f9e2ad45))
+
 # [5.12.0](https://github.com/arkitektio/orkestrator/compare/v5.11.0...v5.12.0) (2026-11-05)
 
 
