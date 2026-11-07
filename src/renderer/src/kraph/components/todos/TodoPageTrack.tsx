@@ -1,15 +1,17 @@
+import { useSelf } from "@/core/connection/useSelf";
 import { KraphTodoItem } from "@/core/linkers";
 import { structure } from "@/core/smart/structure";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import type { Object } from "@/core/types";
 import { Button } from "@/core/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
+import { useTabActions } from "@/core/tabs/TabsProvider";
 import { cn } from "@/core/util/utils";
 import { TodoStatus } from "@/kraph/api/graphql";
 import { AddToTodoFields } from "@/kraph/forms/todos/AddToTodoForm";
 import { dueState, formatDue, todoStatusLabel } from "@/kraph/lib/todos";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { Clock, ListPlus, ListTodo } from "lucide-react";
+import { ChevronRight, CircleCheck, Clock, Columns2, ListPlus, ListTodo, Plus } from "lucide-react";
 import React from "react";
 import { STATUS_ICON, STATUS_RING } from "@/kraph/lib/todoStatus";
 import { DoneAndNextButton } from "./DoneAndNextButton";
@@ -17,6 +19,9 @@ import { TodoDue } from "./TodoDue";
 import { TodoStatusControl } from "./TodoStatusControl";
 import { Track, TrackRow, useIsMine, useTodoTracks } from "./TodoTrack";
 import { useTodoLive } from "./useTodoLive";
+
+/** My todos: the signed-in user's open items, across every list. */
+const TODOS_PATH = "/kraph/todos";
 
 /** How many open items get their own chip in the bar; the rest are in the popover. */
 const INLINE = 5;
@@ -202,18 +207,66 @@ const TrackChip = ({ track }: { track: Track }) => {
   );
 };
 
+/** "2 open · 1 yours · 1 done", or nothing to say yet. */
+const summaryOf = (open: readonly Track[], done: number, me: string | null) => {
+  if (open.length === 0 && done === 0) return "This isn't on any todo yet.";
+  const yours = me === null ? 0 : open.filter(({ item }) => item.effectiveAssignee === me).length;
+  return [
+    open.length ? `${open.length} open` : "Nothing open",
+    yours ? `${yours} yours` : null,
+    done ? `${done} done` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+};
+
+/** A section of the popover that folds: done items, the add form. */
+const Disclosure = ({
+  open,
+  onOpenChange,
+  icon: Icon,
+  label,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <div className="flex flex-col">
+    <button
+      type="button"
+      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+      aria-expanded={open}
+      onClick={() => onOpenChange(!open)}
+    >
+      <Icon className="size-3.5" />
+      <span className="flex-1 text-left">{label}</span>
+      <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
+    </button>
+    {open && children}
+  </div>
+);
+
 /**
  * The object's todo track beside every datum page's breadcrumbs (the host's
  * "pagebar" slot): each open item it is on as an unfolding chip, and a button
  * that opens every item in a popover, done ones included (the only place they
- * still show), together with adding the object to another one.
+ * still show), together with adding the object to another one and opening
+ * your open tasks (My todos) to the side.
  */
 export const TodoPageTrack = ({ identifier, object }: { identifier: string; object: Object }) => {
   const id = String(object.id);
   const tracks = useTodoTracks(identifier, id);
   // A colleague's Done, or this object put on a new item, shows without a reload.
   useTodoLive();
+  const self = useSelf().userId;
+  const me = self === null ? null : String(self);
+  const { openBeside } = useTabActions();
   const [open, setOpen] = React.useState(false);
+  const [showDone, setShowDone] = React.useState(false);
+  const [adding, setAdding] = React.useState(false);
 
   const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
   const structures = React.useMemo(() => [structure(identifier, id, { label })], [identifier, id, label]);
@@ -224,6 +277,13 @@ export const TodoPageTrack = ({ identifier, object }: { identifier: string; obje
   const doneTracks = React.useMemo(() => tracks.filter(({ own }) => own.status === TodoStatus.Done), [tracks]);
   const hidden = openTracks.length - INLINE;
 
+  const openTasksBeside = () => {
+    setOpen(false);
+    // A list kept at hand: a fifth of the width, the object keeps the rest,
+    // and its links (an item, its objects) open there, not in the list.
+    openBeside(TODOS_PATH, { label: "My todos", evict: true, size: "tiny", sidebar: true });
+  };
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="flex items-center gap-1.5 p-0.5">
@@ -232,46 +292,80 @@ export const TodoPageTrack = ({ identifier, object }: { identifier: string; obje
             <TrackChip key={track.item.id} track={track} />
           ))}
         </AnimatePresence>
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (!next) setAdding(false);
+          }}
+        >
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="relative size-7 rounded-full"
+              size="sm"
+              className={cn("h-7 gap-1 rounded-full text-xs tabular-nums text-muted-foreground hover:text-foreground", hidden > 0 ? "px-2" : "w-7 px-0")}
               aria-label={tracks.length ? "Todo items" : "Add to todo…"}
               title={tracks.length ? "Todo items" : "Add to todo…"}
             >
               {tracks.length ? <ListTodo className="size-4" /> : <ListPlus className="size-4" />}
-              {hidden > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 min-w-3.5 rounded-full bg-primary px-0.5 text-[0.6rem] leading-3.5 text-primary-foreground tabular-nums">
-                  +{hidden}
-                </span>
-              )}
+              {hidden > 0 && <>+{hidden}</>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="flex w-96 flex-col gap-3">
-            {openTracks.length > 0 && (
-              <div className="flex flex-col gap-2">
+          <PopoverContent align="start" className="flex w-96 flex-col p-0">
+            <div className="flex items-start gap-2 border-b px-3 py-2.5">
+              <div className="flex min-w-0 flex-1 flex-col">
                 <h3 className="text-sm font-semibold">Todo</h3>
+                <p className="truncate text-xs text-muted-foreground">{summaryOf(openTracks, doneTracks.length, me)}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 shrink-0 gap-1.5 px-2 text-xs"
+                title="Your open tasks, in a tab beside this page"
+                onClick={openTasksBeside}
+              >
+                <Columns2 className="size-3.5" />
+                Open tasks to the side
+              </Button>
+            </div>
+
+            {tracks.length > 0 && (
+              <div className="flex max-h-[min(28rem,60vh)] flex-col overflow-y-auto p-1">
                 {openTracks.map((track) => (
                   <TrackRow key={track.item.id} track={track} />
                 ))}
+                {openTracks.length === 0 && (
+                  <p className="px-2 py-3 text-xs text-muted-foreground">All done here.</p>
+                )}
+                {doneTracks.length > 0 && (
+                  <Disclosure
+                    open={showDone}
+                    onOpenChange={setShowDone}
+                    icon={CircleCheck}
+                    label={`${doneTracks.length} done`}
+                  >
+                    {doneTracks.map((track) => (
+                      <TrackRow key={track.item.id} track={track} />
+                    ))}
+                  </Disclosure>
+                )}
               </div>
             )}
-            {doneTracks.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">Done</h3>
-                {doneTracks.map((track) => (
-                  <div key={track.item.id} className="opacity-70 transition-opacity hover:opacity-100">
-                    <TrackRow track={track} />
+
+            <div className={cn("p-1", tracks.length > 0 && "border-t")}>
+              {tracks.length === 0 ? (
+                // Nothing to show yet: adding is the point.
+                <div className="p-2">
+                  <AddToTodoFields structures={structures} />
+                </div>
+              ) : (
+                <Disclosure open={adding} onOpenChange={setAdding} icon={Plus} label="Add to another todo">
+                  {/* The new item shows up above once it is made. */}
+                  <div className="px-2 pb-2 pt-1">
+                    <AddToTodoFields structures={structures} onAdded={() => setAdding(false)} />
                   </div>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold">{tracks.length ? "Add to another todo" : "Add to todo"}</h3>
-              {/* The new item shows up above once it is made; the popover stays. */}
-              <AddToTodoFields structures={structures} />
+                </Disclosure>
+              )}
             </div>
           </PopoverContent>
         </Popover>
