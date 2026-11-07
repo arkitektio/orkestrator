@@ -26,6 +26,7 @@ import {
 import { LokUser, RekuestTask } from "@/core/linkers";
 
 import { ArrowUpDown } from "lucide-react";
+import { formatUnit } from "@/core/util/units";
 
 export type MetricsTableItem = {
   id: string;
@@ -79,7 +80,7 @@ const columns: ColumnDef<MetricsTableItem>[] = [
     cell: ({ row }) => (
       <div className="truncate">
         {row.original.value}
-        {row.original.unit ? ` ${row.original.unit}` : ""}
+        {formatUnit(row.original.unit) ? ` ${formatUnit(row.original.unit)}` : ""}
       </div>
     ),
   },

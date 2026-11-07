@@ -2,6 +2,7 @@ import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { cn } from "@/core/util/utils";
 import { useChartLayer } from "../../platform/stores/chartStore";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * What each row of the chart is: a legend down the left edge, one entry per
@@ -50,7 +51,7 @@ const LegendEntry = ({ layerId, unitOnly }: { layerId: string; unitOnly: boolean
   const hi = useViewerStore((s) => s.clims[layerId]?.hi);
   if (!layer) return null;
   const range = !unitOnly && lo != null && hi != null ? `${formatValue(lo)}…${formatValue(hi)}` : null;
-  const scale = [range, layer.valueUnit].filter(Boolean).join(" ");
+  const scale = [range, formatUnit(layer.valueUnit)].filter(Boolean).join(" ");
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />

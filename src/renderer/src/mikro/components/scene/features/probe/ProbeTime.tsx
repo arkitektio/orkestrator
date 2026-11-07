@@ -3,6 +3,7 @@ import type { AxisCoords } from "@/mikro/lib/coords/axisPath";
 import { selectionsFor } from "../../platform/model/worldSelections";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * When a probed value was taken: for each of the layer's world-timed dims, the
@@ -50,7 +51,7 @@ export const ProbeTime = ({
           <span
             key={reading.key}
             className="font-mono text-foreground/50"
-            title={reading.clock ? reading.clock.toISOString() : `${reading.t} ${reading.unit}`}
+            title={reading.clock ? reading.clock.toISOString() : `${reading.t} ${formatUnit(reading.unit) ?? ""}`}
           >
             {reading.clock ? formatClock(reading.clock) : `${reading.axis}=${reading.t}`}
           </span>
@@ -69,7 +70,7 @@ export const ProbeTime = ({
             title={reading.clock ? reading.clock.toISOString() : undefined}
           >
             {reading.axis} {reading.index} · {reading.t}
-            {reading.unit ? ` ${reading.unit}` : ""}
+            {formatUnit(reading.unit) ? ` ${formatUnit(reading.unit)}` : ""}
             {reading.clock ? ` (${formatClock(reading.clock)})` : ""}
           </span>
         </div>

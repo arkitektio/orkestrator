@@ -3,7 +3,7 @@ import type { ParquetQueryEngine } from "@/core/data/parquet/parquetEngine";
 import { formatSiValue } from "@/core/data/plot/coords/siFormat";
 import { groupColor } from "@/core/data/plot/plane/PlaneLegend";
 import { PlaneQuads, PlaneSegments } from "@/core/data/plot/plane/PlaneMarks";
-import { hexToLinear, packQuads, packSegments, srgbToLinear } from "@/core/data/plot/plane/planeMarks";
+import { hexToLinear, packQuads, packSegments, srgbToLinear } from "@/core/data/plot/plane/planeMarkPacking";
 import { usePlaneProbe, type PlaneProbe } from "@/core/data/plot/plane/planeProbe";
 import { usePlaneStoreApi } from "@/core/data/plot/plane/planeStore";
 import type { LayerReadout } from "@/core/data/plot/stores/viewerStore";
@@ -13,6 +13,7 @@ import { boxSql, defaultBins, distributionExtentSql, histogramSql } from "@/mikr
 import type { ChartLayerState, ValuesSource } from "../../platform/model/chartLayerModel";
 import { useChartLayer } from "../../platform/stores/chartStore";
 import { boxGeometry, histogramGeometry, type BoxStats, type Group, type HistogramBin } from "./distributionModel";
+import { formatUnit } from "@/core/util/units";
 
 export type DistributionSource = Extract<ValuesSource, { kind: "distribution" }>;
 
@@ -175,7 +176,8 @@ export const DistributionChartLayer = ({ layerId }: { layerId: string }) => {
   useEffect(() => {
     const plane = planeApi.getState();
     plane.reportExtent(layerId, drawn?.extent ?? null);
-    plane.setXCategories(drawn?.categories ?? null);
+    // Its own categories only: another layer on the plane keeps its own.
+    plane.setXCategories(layerId, drawn?.categories ?? null);
   }, [drawn, planeApi, layerId]);
   useEffect(() => {
     if (!layer) return;
@@ -190,7 +192,7 @@ export const DistributionChartLayer = ({ layerId }: { layerId: string }) => {
     () => () => {
       const plane = planeApi.getState();
       plane.reportExtent(layerId, null);
-      plane.setXCategories(null);
+      plane.setXCategories(layerId, null);
       plane.setLegend(layerId, null);
     },
     [planeApi, layerId],
@@ -229,7 +231,7 @@ export const DistributionChartLayer = ({ layerId }: { layerId: string }) => {
       const top = Math.max(...heights);
       if (at.y < 0 || at.y > top * 1.05 + geometry.maxHeight * 0.02) return null;
       const lo = s.domain.lo + k * geometry.width;
-      const unit = source.unit ? ` ${source.unit}` : "";
+      const unit = formatUnit(source.unit) ? ` ${formatUnit(source.unit)}` : "";
       const format = (h: number) => (geometry.normalized ? `${(h * 100).toFixed(1)} %` : h.toLocaleString());
       return {
         layerId,

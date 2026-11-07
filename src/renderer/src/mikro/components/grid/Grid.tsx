@@ -27,6 +27,7 @@ import { AttributeServiceProvider } from "@/mikro/lib/attributes/AttributeServic
 import type { GridWorld } from "./gridReaders";
 import { createGridStore, GridStoreContext, useGridStore } from "./gridStore";
 import { colormapOf, GridLayerView, type GridLayerFragment } from "./GridLayerView";
+import { withUnit } from "@/core/util/units";
 
 /**
  * A grid: the members of one or two enumerating axes, rows and columns, each
@@ -100,7 +101,7 @@ const Viewport = () => {
     const lo = top.min ?? r?.lo;
     const hi = top.max ?? r?.hi;
     if (lo == null || hi == null || !Number.isFinite(lo) || !Number.isFinite(hi)) return null;
-    const title = top.__typename === "CellsGridLayer" ? `${top.valueColumn}${top.valueUnit ? ` · ${top.valueUnit}` : ""}` : (top.name ?? top.lens.name ?? "value");
+    const title = top.__typename === "CellsGridLayer" ? withUnit(top.valueColumn, top.valueUnit) : (top.name ?? top.lens.name ?? "value");
     return { title, colormap: colormapOf(top), lo, hi };
   }, [top, readouts]);
 

@@ -143,7 +143,7 @@ describe("host registries", () => {
   });
 
   it("hold every viewer", () => {
-    expect(Object.keys(MODULE_VIEWERS).sort()).toEqual(["@mikro/arraydataset", "@mikro/scene"]);
+    expect(Object.keys(MODULE_VIEWERS).sort()).toEqual(["@mikro/arraydataset", "@mikro/meshobject", "@mikro/scene"]);
   });
 
   it("hold every display", () => {
@@ -205,6 +205,7 @@ describe("host registries", () => {
       "@mikro/folder",
       "@mikro/grid",
       "@mikro/meshlens",
+      "@mikro/meshobject",
       "@mikro/networklens",
       "@mikro/scene",
       "@mikro/sparsedataset",

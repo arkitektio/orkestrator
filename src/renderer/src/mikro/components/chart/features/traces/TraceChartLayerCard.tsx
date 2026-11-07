@@ -4,16 +4,50 @@ import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { CardSection } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
+import { useUpdateTraceChartLayerMutation } from "@/mikro/api/graphql";
+import { lensLabel } from "@/mikro/lenses";
+import { CardRow } from "../../platform/edits/cardRows";
 import {
   CHART_CARD_BUTTON,
   ChartFact,
   ChartFacts,
   ChartLayerCardShell,
 } from "../../platform/edits/ChartLayerCardShell";
+import { ChartReads, LensPick, RETUNE, useChartLayerRetune } from "../../platform/edits/ChartLayerReads";
 import { ChartLayerStyle } from "../../platform/edits/ChartLayerStyle";
 import { useChartAutoscale } from "../../platform/edits/useChartAutoscale";
 import { ChannelTags } from "../../platform/lines/ChannelTags";
 import type { ChartLayerState } from "../../platform/model/chartLayerModel";
+import { useRawChartLayer } from "../../platform/stores/chartStore";
+
+/**
+ * What a trace reads, editable: another array lens laid along the chart's
+ * axis. The lens is the whole of it — which axis runs along the chart and
+ * which one is drawn as several lines follow from the lens and its placement.
+ */
+const TraceReads = ({ layer }: { layer: ChartLayerState }) => {
+  const raw = useRawChartLayer(layer.id, "TraceChartLayer");
+  const [update, { loading }] = useUpdateTraceChartLayerMutation(RETUNE);
+  const retune = useChartLayerRetune(layer.label);
+  if (!raw) return null;
+  const lens = raw.lens;
+  return (
+    <ChartReads pending={loading}>
+      <CardRow label="Array">
+        <LensPick
+          current={{ id: lens.id, label: lens.dataset.name ?? `Array ${lens.dataset.id}` }}
+          disabled={loading}
+          onPick={(next) =>
+            void retune(() => update({ variables: { input: { id: layer.id, lens: next.id } } }))
+          }
+        />
+      </CardRow>
+      <div className="truncate text-right font-mono text-[9px] text-foreground/40" title={lensLabel(lens)}>
+        {lensLabel(lens)}
+      </div>
+    </ChartReads>
+  );
+};
 
 /**
  * The card for a trace layer: what it reads, how it is drawn, and where it is
@@ -55,6 +89,7 @@ export const TraceChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCard
         )
       }
     >
+      <TraceReads layer={layer} />
       {layer.source && (
         <>
           <ChartLayerStyle layer={layer} />

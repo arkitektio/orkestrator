@@ -2,6 +2,7 @@ import { Button } from "@/core/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { FlaskConical } from "lucide-react";
 import { useMetricsForAssertionLazyQuery } from "../api/graphql";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The metrics backing an assertion — the evidence the claim rests on. Loaded
@@ -45,7 +46,7 @@ export const AssertionEvidence = ({ assertionId }: { assertionId: string }) => {
               </span>
               <span className="font-mono shrink-0">
                 {String(metric.value)}
-                {metric.unit ? ` ${metric.unit}` : ""}
+                {formatUnit(metric.unit) ? ` ${formatUnit(metric.unit)}` : ""}
               </span>
             </div>
           ))}

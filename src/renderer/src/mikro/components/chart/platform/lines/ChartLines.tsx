@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { PackedLine } from "@/core/data/plot/lines/PackedLine";
+import { PackedMarkers } from "@/core/data/plot/lines/PackedMarkers";
+import type { MarkerShape } from "@/core/data/plot/marks/screenMarkers";
 import { markerDots } from "@/core/data/plot/lines/pointPacking";
 import type { PackedChannel } from "@/core/data/plot/lines/tracePacking";
 import { useTraceStore } from "@/core/data/plot/lines/traceSlice";
@@ -41,6 +43,7 @@ export const ChartLines = ({ layerId }: { layerId: string }) => {
           packed={packed}
           line={drawsLine(layer.mark) ? layer.lineWidth : null}
           markers={drawsMarkers(layer.mark) ? layer.markerSize : null}
+          shape={layer.markerShape}
         />
       ))}
     </>
@@ -54,6 +57,7 @@ const ChartLine = ({
   packed,
   line,
   markers,
+  shape,
 }: {
   layerId: string;
   channel: number;
@@ -63,6 +67,7 @@ const ChartLine = ({
   line: number | null;
   /** The markers' size in pixels, or null when the mark draws none. */
   markers: number | null;
+  shape: MarkerShape;
 }) => {
   // A per-pixel envelope's points are column extremes, not samples: a dot on
   // each would mark values the data does not hold at those positions.
@@ -77,7 +82,7 @@ const ChartLine = ({
         <PackedLine layerId={layerId} channel={channel} color={color} lineWidth={line ?? 1} packed={packed} />
       )}
       {dots && markers != null && (
-        <PackedLine layerId={layerId} channel={channel} color={color} lineWidth={markers} packed={dots} />
+        <PackedMarkers layerId={layerId} channel={channel} color={color} size={markers} shape={shape} packed={dots} />
       )}
     </>
   );

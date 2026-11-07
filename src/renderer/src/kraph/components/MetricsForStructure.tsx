@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/core/ui/table";
 import { useMetricsForStructureQuery } from "../api/graphql";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * All measurements recorded for a structure, including those not projected into
@@ -50,7 +51,7 @@ export const MetricsForStructure = ({ structureId }: { structureId: string }) =>
               </TableCell>
               <TableCell>{String(metric.value)}</TableCell>
               <TableCell className="text-muted-foreground">
-                {metric.unit || ""}
+                {formatUnit(metric.unit) ?? ""}
               </TableCell>
             </TableRow>
           ))}

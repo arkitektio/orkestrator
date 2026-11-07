@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { reportError } from "@/core/notify";
-import { ChartMark, useUpdateChartLayerMutation } from "@/mikro/api/graphql";
+import { ChartMark, ChartMarkerShape, useUpdateChartLayerMutation } from "@/mikro/api/graphql";
 import type { PersistedChartLayer } from "../model/chartLayerModel";
 import { useChartStoreApi } from "../stores/chartStore";
 
@@ -42,6 +42,7 @@ export const useChartLayerWrite = () => {
               mark: patch.mark as ChartMark | undefined,
               lineWidth: patch.lineWidth ?? undefined,
               markerSize: patch.markerSize ?? undefined,
+              markerShape: (patch.markerShape ?? undefined) as ChartMarkerShape | undefined,
             },
           },
         });

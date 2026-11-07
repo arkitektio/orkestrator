@@ -84,9 +84,10 @@ mutation UpdateChartLayer($input: UpdateChartLayerInput!) {
   }
 }
 
-# What a layer reads is its kind's own update, as for a scene's layers: another lens, other
-# columns, another grouping or bin count. Structural -- the caller refetches `GetChart`, so
-# the fold rereads the layer -- hence the id only.
+# What a layer READS -- its lens, its columns, its grouping and bins -- each
+# kind through its own update. Like the creates, they answer with the id only
+# and the caller refetches `GetChart`: a new lens is a new placement, and
+# selecting `asAffine` here would reject a write that succeeded.
 mutation UpdateTraceChartLayer($input: UpdateTraceChartLayerInput!) {
   updateTraceChartLayer(input: $input) {
     __typename

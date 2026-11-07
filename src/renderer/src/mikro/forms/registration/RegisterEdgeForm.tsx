@@ -33,6 +33,7 @@ import {
   prefillMapping,
   validateRegistration,
 } from "./mapping";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The registration edge form: map the source system's axes onto the target's,
@@ -84,7 +85,7 @@ const axisSignature = (system: CoordinateSystemFragment) =>
 
 /** The unit of the axis a parameter lands in — a scale converts INTO these. */
 const unitOf = (axis: AxisLike | null): string =>
-  (axis?.unit as string | undefined) || "—";
+  formatUnit(axis?.unit as string | undefined) || "—";
 
 /**
  * The M x (N+1) grid the matrix editor opens onto: identity on the mapped axes,
@@ -326,7 +327,7 @@ export const RegisterEdgeForm = (props: {
                               disabled={takenByOther.has(axis.name)}
                             >
                               {axis.name} · {axis.type}
-                              {axis.unit ? ` · ${axis.unit}` : ""}
+                              {formatUnit(axis.unit) ? ` · ${formatUnit(axis.unit)}` : ""}
                               {takenByOther.has(axis.name)
                                 ? " (already mapped)"
                                 : ""}

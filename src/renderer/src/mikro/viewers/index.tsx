@@ -6,6 +6,8 @@ import type { ViewerWidgetProps } from "@/core/smart/display/registry";
 // actually mounted, never by registering the module.
 const LazyArrayDatasetViewer = lazy(() => import("./ArrayDatasetViewer"));
 const LazySceneViewer = lazy(() => import("./SceneViewer"));
+const LazyMeshObjectViewer = lazy(() => import("./MeshObjectViewer"));
 
 export const ArrayDatasetViewer = (props: ViewerWidgetProps) => <LazyArrayDatasetViewer {...props} />;
 export const SceneViewer = (props: ViewerWidgetProps) => <LazySceneViewer {...props} />;
+export const MeshObjectViewer = (props: ViewerWidgetProps) => <LazyMeshObjectViewer {...props} />;

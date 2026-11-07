@@ -221,6 +221,15 @@ export type AttributeHopBase = {
       axisType?: string | null;
     } | null;
     axis?: string | null;
+    /**
+     * Which way the fact is crossed. FORWARD (or absent, as attribute plans
+     * were before it existed): as declared. REVERSE: a `references` read
+     * backwards — the parent row's INDEX bound into this table's referencing
+     * column (a cluster's members). SAME_ROWS: the same row in another table,
+     * the parent's INDEX mapped through `lookup.keyMap`. Only a row's plan
+     * (`rowPlan`) carries the last two.
+     */
+    direction?: string | null;
   } | null;
   /** The picker's name for this hop (`colorBys[].joinPath`); empty on the
    * landing and once the chain has crossed a matrix. */
@@ -229,7 +238,14 @@ export type AttributeHopBase = {
 
 /** A hop landing in a table: rows of a parquet, read with DuckDB. */
 export type TableHopLike = AttributeHopBase & {
-  table: { id: string; name: string };
+  table: {
+    id: string;
+    name: string;
+    /** (Row plans) The table's columns by role: which one is its INDEX. */
+    columns?: readonly { name: string; role?: string | null; axisType?: string | null }[] | null;
+    /** (Row plans) Which container's objects the rows are, and as what structure. */
+    keyedBy?: readonly TableKeyLike[] | null;
+  };
   sparseDataset?: null;
   arrayDataset?: null;
   lookup: {
@@ -239,7 +255,21 @@ export type TableHopLike = AttributeHopBase & {
     keyColumns: readonly { axis: string; column: AttributeColumnLike }[];
     /** What the statement selects — every declared non-coordinate column. */
     attributes: readonly AttributeColumnLike[];
+    /** (A SAME_ROWS hop) The held id as the target's INDEX: `id · scale +
+     * offset`; null when the id is the same in both tables. */
+    keyMap?: { scale: number; offset: number } | null;
   };
+};
+
+/**
+ * One container keying a table (`TableDataset.keyedBy`): its objects ARE the
+ * table's rows. `structure` is what each row opens as (`@mikro/meshobject`),
+ * null where a row has none yet (a label of a mask).
+ */
+export type TableKeyLike = {
+  produces: readonly string[];
+  structure?: string | null;
+  source: { __typename?: string; id?: string; label?: string | null };
 };
 
 /** A hop landing in a matrix: one object's whole profile, a slice of the
@@ -309,8 +339,26 @@ export type AttributePlanLike = {
   hops: readonly AttributeHopLike[];
 };
 
-/** The landing: the table or matrix the sampled id keys directly. */
-export const landingOf = (plan: AttributePlanLike): AttributeHopLike => plan.hops[0];
+/**
+ * What a picked ROW of a table reaches (`rowPlan`): a point of a chart of
+ * values. No sample and no path — the row's INDEX value IS the id, held under
+ * `key.axis` — then `hops`, run exactly as an attribute plan's.
+ */
+export type RowPlanLike = {
+  kind: "row";
+  table: { id: string; name: string };
+  key: { axis: string; column: AttributeColumnLike };
+  hops: readonly AttributeHopLike[];
+};
+
+/** Either kind of plan the executor runs. */
+export type PlanLike = AttributePlanLike | RowPlanLike;
+
+export const isRowPlan = (plan: PlanLike): plan is RowPlanLike =>
+  (plan as RowPlanLike).kind === "row";
+
+/** The landing: the table or matrix the sampled id (or the picked row) keys directly. */
+export const landingOf = (plan: PlanLike): AttributeHopLike => plan.hops[0];
 
 export type HopSourceKind = "TABLE" | "SPARSE" | "ARRAY";
 
@@ -330,8 +378,12 @@ export const hopSource = (
  * — parquet contents changing never stales one — so it doubles as the cache
  * key for prepared statements and result LRUs.
  */
-export const planIdentity = (plan: AttributePlanLike): string =>
-  [
+export const planIdentity = (plan: PlanLike): string =>
+  isRowPlan(plan)
+    ? // A row plan is the table's: the same for every row, and stale only when
+      // the table is (which the cache's table key already says).
+      `row:${plan.table.id}`
+    : [
     `${hopSource(landingOf(plan)).id}:${plan.edge.id}@${plan.edge.version}`,
     ...plan.path.map(
       (step) =>
@@ -345,7 +397,7 @@ export const planIdentity = (plan: AttributePlanLike): string =>
  * per plan before the chain existed (persisted selections included) keeps
  * its key.
  */
-export const hopKey = (plan: AttributePlanLike, hop: AttributeHopLike): string =>
+export const hopKey = (plan: PlanLike, hop: AttributeHopLike): string =>
   hop.index === 0
     ? planIdentity(plan)
     : `${planIdentity(plan)}#${hop.index}:${hopSource(hop).id}`;
@@ -353,6 +405,48 @@ export const hopKey = (plan: AttributePlanLike, hop: AttributeHopLike): string =
 /** The name the hop binds its parent's values under (`via`), or null on the landing. */
 export const hopViaName = (hop: AttributeHopLike): string | null =>
   hop.via?.column?.name ?? hop.via?.axis ?? null;
+
+export type HopDirectionValue = "FORWARD" | "REVERSE" | "SAME_ROWS";
+
+/** The hop's direction; an attribute plan's hops predate it and are FORWARD. Null for one this client does not know. */
+export const hopDirection = (hop: AttributeHopLike): HopDirectionValue | null => {
+  const direction = hop.via?.direction ?? "FORWARD";
+  return direction === "FORWARD" || direction === "REVERSE" || direction === "SAME_ROWS" ? direction : null;
+};
+
+/** A row's id, as a hop's rows carry it. */
+export type RowId = number | bigint | string;
+
+/** A table's INDEX column — what its rows are found by (the lookup engine's rule). */
+export const indexColumnOf = (hop: AttributeHopLike): string | null => {
+  if (!isTableHop(hop)) return null;
+  const column = hop.table.columns?.find((c) => c.role === "COORDINATE" && c.axisType === "INDEX");
+  return column?.name ?? null;
+};
+
+/** A structure a row opens as. */
+export type RowObject = { identifier: string; id: string; source: { id: string; label: string | null } };
+
+/**
+ * What a hop's rows ARE: one structure per row id and per container keying
+ * the table that names a structure. A mesh collection's object is
+ * `<collection>:<id>`, the rule `MeshObject.id` and its route already use.
+ */
+export const objectsOf = (hop: AttributeHopLike, ids: readonly RowId[]): RowObject[] => {
+  if (!isTableHop(hop)) return [];
+  const out: RowObject[] = [];
+  for (const key of hop.table.keyedBy ?? []) {
+    if (!key.structure || !key.source.id) continue;
+    for (const id of ids) {
+      out.push({
+        identifier: key.structure,
+        id: `${key.source.id}:${String(id)}`,
+        source: { id: key.source.id, label: key.source.label ?? null },
+      });
+    }
+  }
+  return out;
+};
 
 /**
  * Display metadata for one hop, captured when a fetch begins so the HUD can
@@ -369,15 +463,25 @@ export type HopMeta = {
   name: string;
   sourceId: string;
   attributes: readonly AttributeColumnLike[];
-  /** How this hop is reached from its parent, for a label: `via <column>`
-   * or `along <axis>`; null on the landing. */
+  /** How this hop is reached from its parent, for a label: `via <column>`,
+   * `along <axis>`, `members via <column>` or `same rows`; null on the landing. */
   via: string | null;
+  /** FORWARD, REVERSE or SAME_ROWS (row plans); null for one unknown. */
+  direction: HopDirectionValue | null;
   cardinality: "ONE" | "MANY";
   /** (SPARSE, ARRAY) The value axes a profile or a line is indexed by. */
   valueAxes: readonly string[];
 };
 
-export const hopMetaOf = (plan: AttributePlanLike, hop: AttributeHopLike): HopMeta => {
+const viaLabel = (hop: AttributeHopLike): string | null => {
+  const column = hop.via?.column ? (hop.via.column.longName ?? hop.via.column.name) : null;
+  const direction = hopDirection(hop);
+  if (direction === "REVERSE") return column ? `members via ${column}` : "members";
+  if (direction === "SAME_ROWS") return "same rows";
+  return column ? `via ${column}` : hop.via?.axis ? `along ${hop.via.axis}` : null;
+};
+
+export const hopMetaOf = (plan: PlanLike, hop: AttributeHopLike): HopMeta => {
   const source = hopSource(hop);
   const parent =
     hop.parent === null || hop.parent === undefined
@@ -392,11 +496,8 @@ export const hopMetaOf = (plan: AttributePlanLike, hop: AttributeHopLike): HopMe
     name: source.name,
     sourceId: source.id,
     attributes: hop.lookup.attributes ?? [],
-    via: hop.via?.column
-      ? `via ${hop.via.column.longName ?? hop.via.column.name}`
-      : hop.via?.axis
-        ? `along ${hop.via.axis}`
-        : null,
+    via: hop.parent === null || hop.parent === undefined ? null : viaLabel(hop),
+    direction: hopDirection(hop),
     cardinality: hop.cardinality === "MANY" ? "MANY" : "ONE",
     valueAxes: isSparseHop(hop) || isArrayHop(hop) ? hop.lookup.valueAxes : [],
   };
@@ -404,7 +505,7 @@ export const hopMetaOf = (plan: AttributePlanLike, hop: AttributeHopLike): HopMe
 
 /** Metadata for the given hops (default: every hop) of a plan, in order. */
 export const hopMetasOf = (
-  plan: AttributePlanLike,
+  plan: PlanLike,
   hops: readonly AttributeHopLike[] = plan.hops,
 ): HopMeta[] => hops.map((hop) => hopMetaOf(plan, hop));
 
@@ -460,6 +561,9 @@ export type PlanSeries = {
   marker: number | null;
 };
 
+/** One of several lines an ARRAY hop read: a member's, named by the id it was bound with. */
+export type PlanLine = PlanSeries & { id: number | bigint };
+
 export type PlanRowsState = {
   status: PlanRowsStatus;
   /** For a TABLE hop, the parquet rows. For a SPARSE hop, one row per
@@ -475,6 +579,18 @@ export type PlanRowsState = {
   truncated?: { shown: number; total: number };
   /** (ARRAY) The line read; `rows` stays empty. */
   series?: PlanSeries;
+  /**
+   * (ARRAY) One line per id, when the parent returned several (a cluster's
+   * members): in the parent's row order, absent ones dropped. `series` is
+   * then unset; `rows` stays empty.
+   */
+  lines?: readonly PlanLine[];
+  /**
+   * (Row plans) The INDEX ids the rows are, in row order: what `objectsOf`
+   * turns into structures and a REVERSE or SAME_ROWS child binds. From the
+   * rows where they carry the INDEX, else from what the hop was bound with.
+   */
+  ids?: readonly RowId[];
 };
 
 /** Everything known about the attributes under one probed point. */
@@ -518,6 +634,12 @@ export function buildProbedAttributes<K extends AttributeFetchKey>(
   return { key, byPlan, planMeta };
 }
 
+const sameLines = (a: readonly PlanLine[] | undefined, b: readonly PlanLine[] | undefined): boolean => {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  return a.every((line, i) => line.values === b[i].values && line.marker === b[i].marker && line.id === b[i].id);
+};
+
 const samePlanRows = (
   a: Record<string, PlanRowsState>,
   b: Record<string, PlanRowsState>,
@@ -537,6 +659,7 @@ const samePlanRows = (
       left.rows !== right.rows ||
       left.series?.values !== right.series?.values ||
       left.series?.marker !== right.series?.marker ||
+      !sameLines(left.lines, right.lines) ||
       left.sampledValue !== right.sampledValue ||
       left.sampleSource !== right.sampleSource ||
       left.error !== right.error ||

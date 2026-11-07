@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
+import { useScreenMarkers, type MarkerShape } from "../marks/screenMarkers";
 import { useSegmentGeometry, writeSegments } from "../marks/segmentGeometry";
 
 /**
@@ -11,7 +12,7 @@ import { useSegmentGeometry, writeSegments } from "../marks/segmentGeometry";
  * of object), filled quads (bars, boxes) and an image (a heatmap).
  *
  * Every object is drawn RELATIVE to an origin its matrix translates back
- * (`planeMarks.ts`). The camera's projection is the view; nothing here reads the
+ * (`planeMarkPacking.ts`). The camera's projection is the view; nothing here reads the
  * view, so a pan re-renders none of these.
  */
 
@@ -87,6 +88,42 @@ export const PlaneSegments = ({
   }, [pairs, count, colors, geometry, line, origin, invalidate]);
 
   return <primitive object={line} renderOrder={renderOrder} />;
+};
+
+/**
+ * Points as markers of a shape, in screen-pixel sizes (`screenMarkers.ts`):
+ * the same dot buffer `PlaneSegments` drew discs from (`packDots`), its colours
+ * included. `opacity` < 1 blends, as for the segments.
+ */
+export const PlaneMarkers = ({
+  pairs,
+  count,
+  origin,
+  color,
+  colors,
+  size,
+  shape,
+  opacity = 1,
+  renderOrder = 3,
+}: {
+  pairs: Float32Array;
+  count: number;
+  origin: { x: number; y: number };
+  color: string;
+  colors?: Float32Array | null;
+  size: number;
+  shape: MarkerShape;
+  opacity?: number;
+  renderOrder?: number;
+}) => {
+  const invalidate = useThree((s) => s.invalidate);
+  const mesh = useScreenMarkers({ pairs, count, colors, color, size, shape, opacity });
+  useLayoutEffect(() => {
+    atOrigin(mesh, origin);
+    mesh.visible = count > 0;
+    invalidate();
+  }, [mesh, origin, count, invalidate]);
+  return <primitive object={mesh} renderOrder={renderOrder} />;
 };
 
 /** Filled triangles with per-vertex colour: bars, box bodies, heatmap cells at small sizes. */

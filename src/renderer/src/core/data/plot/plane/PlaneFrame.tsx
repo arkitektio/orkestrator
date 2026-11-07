@@ -34,15 +34,31 @@ export type PlaneAxisSpec = {
 
 const GUTTER = { left: 64, right: 14, top: 12, bottom: 44 };
 
+/**
+ * How far a pointer may travel and still be a click: below it nothing pans, so
+ * clicking a point leaves the view where it was.
+ */
+export const CLICK_SLOP_PX = 4;
+
+/** Whether a pointer has left its press far enough to be a drag. */
+export const isDrag = (start: { px: number; py: number }, at: { px: number; py: number }): boolean =>
+  Math.hypot(at.px - start.px, at.py - start.py) > CLICK_SLOP_PX;
+
+/** A click on the plot: where, in data space and on the canvas. */
+export type PlanePick = { x: number; y: number; px: number; py: number };
+
 export const PlaneFrame = ({
   x,
   y,
   children,
   overlay,
   className,
+  onPick,
 }: {
   x: PlaneAxisSpec;
   y: PlaneAxisSpec;
+  /** A click that was not a drag (left button, no shift). A double-click still fits. */
+  onPick?: (pick: PlanePick) => void;
   /** The canvas, filling the plot area. */
   children: ReactNode;
   /** DOM over the plot area: tooltips, legends, notices. Pointer-transparent unless they opt in. */
@@ -57,7 +73,7 @@ export const PlaneFrame = ({
         style={{ left: GUTTER.left, right: GUTTER.right, top: GUTTER.top, bottom: GUTTER.bottom }}
       >
         <div className="absolute inset-0">{children}</div>
-        <Gestures />
+        <Gestures onPick={onPick} />
         <div className="pointer-events-none absolute inset-0">{overlay}</div>
       </div>
     </div>
@@ -139,9 +155,12 @@ const Axes = ({ x, y }: { x: PlaneAxisSpec; y: PlaneAxisSpec }) => {
 const axesOf = (event: { shiftKey: boolean; altKey: boolean }): PlaneAxes => (event.shiftKey ? "x" : event.altKey ? "y" : "both");
 
 /** The gesture surface over the plot area. Writes the view and the hover; renders a box while one is drawn. */
-const Gestures = () => {
+const Gestures = ({ onPick }: { onPick?: (pick: PlanePick) => void }) => {
   const planeApi = usePlaneStoreApi();
   const ref = useRef<HTMLDivElement>(null);
+  // Read when a click lands, so a new callback never rebinds the listeners.
+  const pickRef = useRef(onPick);
+  pickRef.current = onPick;
   const [box, setBox] = useState<{ a: { px: number; py: number }; b: { px: number; py: number } } | null>(null);
 
   useEffect(() => {
@@ -167,17 +186,28 @@ const Gestures = () => {
       setLive(zoomAbout(live, dataAt(live, sizePx, at.px, at.py), zoomFactorForWheel(delta), axesOf(event)));
     };
 
-    let drag: { start: { px: number; py: number }; last: { px: number; py: number }; boxing: boolean } | null = null;
+    let drag: {
+      start: { px: number; py: number };
+      last: { px: number; py: number };
+      boxing: boolean;
+      /** Past the click slop: a pan (or a box), no longer a click. */
+      moved: boolean;
+      button: number;
+    } | null = null;
     const onDown = (event: PointerEvent) => {
       if (event.button !== 0 && event.button !== 1) return;
       element.setPointerCapture(event.pointerId);
       const at = local(event);
-      drag = { start: at, last: at, boxing: event.shiftKey && event.button === 0 };
+      drag = { start: at, last: at, boxing: event.shiftKey && event.button === 0, moved: false, button: event.button };
     };
     const onMove = (event: PointerEvent) => {
       const at = local(event);
       hover.schedule(at);
       if (!drag) return;
+      if (!drag.moved) {
+        if (!isDrag(drag.start, at)) return;
+        drag.moved = true;
+      }
       if (drag.boxing) {
         setBox({ a: drag.start, b: at });
       } else {
@@ -188,6 +218,19 @@ const Gestures = () => {
     };
     const onUp = (event: PointerEvent) => {
       if (!drag) return;
+      if (!drag.moved) {
+        // A click: nothing panned, nothing to commit.
+        const at = local(event);
+        const pick = pickRef.current;
+        if (pick && drag.button === 0 && !drag.boxing && event.type === "pointerup") {
+          const { live, sizePx } = planeApi.getState();
+          const d = dataAt(live, sizePx, at.px, at.py);
+          pick({ x: d.x, y: d.y, px: at.px, py: at.py });
+        }
+        setBox(null);
+        drag = null;
+        return;
+      }
       if (drag.boxing) {
         const { committed, sizePx, jumpTo } = planeApi.getState();
         const view = viewForBox(committed, sizePx, drag.start, local(event));

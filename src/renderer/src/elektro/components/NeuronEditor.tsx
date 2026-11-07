@@ -42,7 +42,7 @@ import { buildMorphology, locationOf } from "./morphology/model/buildMorphology"
 import { compartmentColors, sectionColor, sectionColors } from "./morphology/model/colouring";
 import { buildNetworkLayout } from "./morphology/model/networkLayout";
 import { createMorphologyStore, MorphologyStoreContext } from "./morphology/stores/morphologyStore";
-import { useWebGPUGate } from "./morphology/useWebGPUGate";
+import { useWebGPUGate } from "@/core/data/scene/gpu/useWebGPUGate";
 import { QuantityInput } from "@arkitektio/bsx/ports/forms/QuantityInput";
 
 const getParentInfo = (section: SectionFragment) => {

@@ -4,11 +4,15 @@ import {
   AttributePlansDocument,
   AttributePlansQuery,
   AttributePlansQueryVariables,
+  RowPlanDocument,
+  RowPlanQuery,
+  RowPlanQueryVariables,
 } from "@/mikro/api/graphql";
 import type {
   ArrayHopLike,
   AttributeHopLike,
   AttributePlanLike,
+  RowPlanLike,
   SparseHopLike,
   TableHopLike,
 } from "./attributeTypes";
@@ -31,12 +35,12 @@ import { LruMap } from "@/core/util/lruMap";
  */
 
 /** The imperative slice of ApolloClient this cache needs (structural). */
-export type QueryClient = {
+export type QueryClient<D = AttributePlansQuery> = {
   query(options: {
     query: unknown;
     variables?: unknown;
     fetchPolicy?: string;
-  }): Promise<{ data?: AttributePlansQuery | null }>;
+  }): Promise<{ data?: D | null }>;
 };
 
 /**
@@ -80,15 +84,15 @@ const isArrayHopFragment = (
   hop.lookup.valueAxes != null;
 
 /**
- * One fragment as a core plan, or null when its landing is not executable.
- * A later hop that is malformed is dropped WITH its descendants (a hop never
- * runs without its parent) and said out loud: a field silently withheld is
- * indistinguishable from one the server never published.
+ * The executable hops of a chain, in order. A malformed hop is dropped WITH
+ * its descendants (a hop never runs without its parent) and said out loud: a
+ * field silently withheld is indistinguishable from one the server never
+ * published. Shared by both kinds of plan.
  */
-const toStructuralPlan = (fragment: AttributePlanFragment): AttributePlanLike | null => {
+const filterHops = (hops: readonly AttributePlanHopFragment[], label: string): AttributeHopLike[] => {
   const accepted = new Map<number, AttributeHopLike>();
   const dropped: number[] = [];
-  for (const hop of [...fragment.hops].sort((a, b) => a.index - b.index)) {
+  for (const hop of [...hops].sort((a, b) => a.index - b.index)) {
     const executable = isTableHopFragment(hop) || isSparseHopFragment(hop) || isArrayHopFragment(hop);
     const parentAccepted = hop.parent === null || hop.parent === undefined || accepted.has(hop.parent);
     if (executable && parentAccepted) accepted.set(hop.index, hop);
@@ -96,17 +100,29 @@ const toStructuralPlan = (fragment: AttributePlanFragment): AttributePlanLike | 
   }
   if (dropped.length) {
     console.warn(
-      `[attributePlans] edge ${fragment.edge.id}: hop(s) ${dropped.join(", ")} ignored — neither a parquet TABLE, a sliceable SPARSE nor a dense ARRAY lookup, or under a hop that was`,
+      `[attributePlans] ${label}: hop(s) ${dropped.join(", ")} ignored — neither a parquet TABLE, a sliceable SPARSE nor a dense ARRAY lookup, or under a hop that was`,
     );
   }
-  const landing = accepted.get(0);
-  if (!landing) return null;
+  return [...accepted.values()];
+};
+
+/** One fragment as a core plan, or null when its landing is not executable. */
+const toStructuralPlan = (fragment: AttributePlanFragment): AttributePlanLike | null => {
+  const hops = filterHops(fragment.hops, `edge ${fragment.edge.id}`);
+  if (!hops.some((hop) => hop.index === 0)) return null;
   return {
     edge: fragment.edge,
     path: fragment.path,
     sample: fragment.sample,
-    hops: [...accepted.values()],
+    hops,
   };
+};
+
+/** A row's plan as a core plan, or null when its landing (the row itself) is not executable. */
+export const toRowPlan = (fragment: RowPlanQuery["rowPlan"]): RowPlanLike | null => {
+  const hops = filterHops(fragment.hops, `table ${fragment.table.id}`);
+  if (!hops.some((hop) => hop.index === 0)) return null;
+  return { kind: "row", table: fragment.table, key: fragment.key, hops };
 };
 
 export const toStructuralPlans = (
@@ -193,6 +209,65 @@ export class AttributePlanCache {
           throw error;
         });
       this.plans.set(systemId, pending);
+    }
+    return pending;
+  }
+}
+
+const DEFAULT_TABLE_CAP = 32;
+
+/**
+ * What a picked row of a table reaches (`rowPlan`), memoized per table. A
+ * row's plan takes no id — the same plan serves every row — so it is fetched
+ * once and executed per pick. A refusal (a table not keyed by one INDEX
+ * column) rejects with the server's own message and is not cached, like any
+ * failure: a later pick asks again.
+ */
+export class RowPlanCache {
+  private plans: LruMap<Promise<RowPlanLike | null>>;
+  /** Wrapped, so a table whose plan is null (nothing executable) is still known. */
+  private resolved: LruMap<{ plan: RowPlanLike | null }>;
+
+  constructor(
+    private readonly client: QueryClient<RowPlanQuery>,
+    tableCap: number = DEFAULT_TABLE_CAP,
+  ) {
+    this.plans = new LruMap(tableCap);
+    this.resolved = new LruMap(tableCap);
+  }
+
+  /** The settled plan for a table, synchronously: undefined while unknown, null when nothing is executable. */
+  peek(tableId: string): RowPlanLike | null | undefined {
+    return this.resolved.get(tableId)?.plan;
+  }
+
+  invalidate(tableId?: string): void {
+    if (tableId === undefined) {
+      this.plans.drain();
+      this.resolved.drain();
+      return;
+    }
+    this.plans.take(tableId);
+    this.resolved.take(tableId);
+  }
+
+  get(tableId: string): Promise<RowPlanLike | null> {
+    let pending = this.plans.get(tableId);
+    if (!pending) {
+      const variables: RowPlanQueryVariables = { table: tableId, maxJoinDepth: PLAN_JOIN_DEPTH };
+      pending = this.client
+        .query({ query: RowPlanDocument, variables })
+        .then((result) => {
+          const fragment = result.data?.rowPlan;
+          const plan = fragment ? toRowPlan(fragment) : null;
+          this.resolved.set(tableId, { plan });
+          return plan;
+        })
+        .catch((error) => {
+          this.plans.take(tableId);
+          throw error;
+        });
+      this.plans.set(tableId, pending);
     }
     return pending;
   }

@@ -30,6 +30,7 @@ import {
 import { createLookupEngine } from "./createLookupEngine";
 import {
   executePlanAt,
+  executeRowPlan,
   executePlanWithValue,
   peekPlanWithValue,
   type ExecutePlanDeps,
@@ -39,7 +40,9 @@ import {
 import type { AttributeLookupEngine } from "./lookupEngine";
 import { LruMap } from "@/core/util/lruMap";
 import type { HeldValue } from "./planExec";
-import { AttributePlanCache, type QueryClient } from "./planCache";
+import { AttributePlanCache, RowPlanCache, type QueryClient } from "./planCache";
+import type { RowPlanQuery } from "@/mikro/api/graphql";
+import type { RowId, RowPlanLike } from "./attributeTypes";
 
 /**
  * The standalone "what are the attributes at this point?" service: given a
@@ -142,6 +145,20 @@ export interface AttributeService {
     sampleSource: "resident" | "exact",
     opts?: PeekPlanOptions,
   ): PlanHopStates | null;
+  /**
+   * What a picked row of a table reaches (`rowPlan`), cached per table; null
+   * when nothing in it is executable. Rejects with the server's refusal (a
+   * table not keyed by one INDEX column).
+   */
+  rowPlanFor(tableId: string): Promise<RowPlanLike | null>;
+  /** The settled row plan, synchronously; undefined while unknown. */
+  peekRowPlan(tableId: string): RowPlanLike | null | undefined;
+  /** Run a row's plan from the picked row's id (a chart of values' probe). */
+  executeRowPlan(
+    plan: RowPlanLike,
+    id: RowId,
+    opts?: Omit<ExecutePlanOptions, "sampleSync" | "probed">,
+  ): Promise<PlanHopStates | null>;
   /** Attach/detach a host's already-open arrays (scene registry). */
   registerArrayProvider(
     provider: ((storeId: string) => OpenedZarrArray | null) | null,
@@ -172,6 +189,9 @@ export function createAttributeService(
   const windows = createWindowReader(() => ({ client: options.client, datalayer: options.datalayer }));
   const arrays = createArrayLineReader({ read: windows.read });
   const planCache = new AttributePlanCache(options.client, options.planCacheCap);
+  // The same Apollo client answers the row-plan query; `QueryClient` is typed
+  // per document, so it is named here for the one it runs.
+  const rowPlans = new RowPlanCache(options.client as unknown as QueryClient<RowPlanQuery>);
   const sampler = createExactSampler({
     client: options.client,
     datalayer: options.datalayer,
@@ -284,8 +304,21 @@ export function createAttributeService(
       sampler.registerArrayProvider(provider);
     },
 
+    rowPlanFor(tableId) {
+      return rowPlans.get(tableId);
+    },
+
+    peekRowPlan(tableId) {
+      return rowPlans.peek(tableId);
+    },
+
+    executeRowPlan(plan, id, opts) {
+      return executeRowPlan(execDeps, plan, id, opts);
+    },
+
     invalidate(systemId) {
       planCache.invalidate(systemId);
+      if (systemId === undefined) rowPlans.invalidate();
       results.drain();
     },
 

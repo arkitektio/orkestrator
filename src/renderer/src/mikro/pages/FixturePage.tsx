@@ -17,6 +17,7 @@ import { cloneForView } from "../lib/fixtures/glass";
 import { acquireGltf, releaseGltf } from "../lib/fixtures/gltfCache";
 import { MIKRO_HELP } from "../help";
 import { wholeLensContexts } from "../lenses";
+import { formatUnit } from "@/core/util/units";
 
 /** "24 × 24 × 0.17 mm": the box the file declares, in the model's own unit. */
 const sizeOf = (model: DetailFixtureFragment): string | null => {
@@ -87,7 +88,7 @@ const FixtureInfo = ({ model }: { model: DetailFixtureFragment }) => {
   const rows: [string, string | null | undefined][] = [
     ["File", model.store.originalFileName],
     ["Size", size],
-    ["Axes", model.coordinateSystem.axes.map((axis) => `${axis.name} (${axis.unit ?? "no unit"})`).join(", ")],
+    ["Axes", model.coordinateSystem.axes.map((axis) => `${axis.name} (${formatUnit(axis.unit) ?? "no unit"})`).join(", ")],
     ["Folder", model.folder?.name],
     ["Registered", new Date(model.createdAt).toLocaleString()],
   ];

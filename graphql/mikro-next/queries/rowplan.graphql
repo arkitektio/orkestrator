@@ -1,0 +1,21 @@
+# What a picked row of a table reaches: a point of a chart of values. No
+# sample -- the row's INDEX value is the id, held under `key.axis` -- then
+# `hops` in order, exactly as an attribute plan's after its sample. Fetched
+# once per table; the server refuses a table not keyed by one INDEX column.
+query RowPlan($table: ID!, $maxJoinDepth: Int! = 2) {
+  rowPlan(table: $table, maxJoinDepth: $maxJoinDepth) {
+    key {
+      axis
+      column {
+        ...AttributePlanColumn
+      }
+    }
+    table {
+      id
+      name
+    }
+    hops {
+      ...RowPlanHop
+    }
+  }
+}

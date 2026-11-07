@@ -38,6 +38,7 @@ import {
   type FabriksInstanceColormap,
 } from "../gpu/instanceColormaps";
 import { controlForRole, type ColorByEntry, type FilterByEntry } from "./columnOptions";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The configure step behind a stored colouring or rule: which colormap paints a
@@ -799,8 +800,10 @@ export const ColumnEntrySettings = ({
 
   return (
     <div className="space-y-2 text-xs">
-      {column?.unit != null && (
-        <div className="truncate text-[9px] text-foreground/35">unit: {String(column.unit)}</div>
+      {formatUnit(column?.unit as string | null | undefined) && (
+        <div className="truncate text-[9px] text-foreground/35">
+          unit: {formatUnit(column?.unit as string | null | undefined)}
+        </div>
       )}
 
       {tableResult.loading && (

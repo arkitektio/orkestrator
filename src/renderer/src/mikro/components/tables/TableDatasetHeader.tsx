@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { CalendarIcon, ColumnsIcon, FolderIcon, Rows3Icon } from "lucide-react";
+import { CalendarIcon, ChartSpline, ColumnsIcon, FolderIcon, Grid3x3, Layers3Icon, Rows3Icon } from "lucide-react";
 
-import { MikroFolder, MikroTableDataset } from "@/core/linkers";
+import { MikroChart, MikroFolder, MikroGrid, MikroScene, MikroTableDataset } from "@/core/linkers";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import type { GetTableDatasetQuery } from "@/mikro/api/graphql";
 
@@ -21,6 +21,8 @@ type PageTable = GetTableDatasetQuery["tableDataset"];
  *   mesh collection whose surfaces — each with the id column it lands on. The
  *   one fact that turns a grid of numbers back into objects, and the way back
  *   to them.
+ * - **Shown in**: the scenes, charts and grids that draw this table
+ *   (`TableDataset.visualizations`), each a link straight to it.
  *
  * `rowCount` is the table's own (unfiltered) count, which the grid learns
  * from its first page; null until then.
@@ -106,8 +108,53 @@ export const TableDatasetHeader = ({ dataset, rowCount }: { dataset: PageTable; 
           })}
         </div>
       )}
+
+      {dataset.visualizations.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <span className="text-muted-foreground">Shown in</span>
+          {dataset.visualizations.map((visualization) => (
+            <VisualizationChip key={`${visualization.__typename}:${visualization.id}`} visualization={visualization} />
+          ))}
+        </div>
+      )}
     </header>
   );
+};
+
+type PageVisualization = PageTable["visualizations"][number];
+
+const CHIP = "flex max-w-xs items-center gap-1.5 rounded-md border border-border px-2 py-1 hover:bg-muted";
+
+/** One composition drawing this table: its kind's icon and name, linking to its page. */
+const VisualizationChip = ({ visualization }: { visualization: PageVisualization }) => {
+  const body = (Icon: typeof ChartSpline, kind: string) => (
+    <>
+      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={kind} />
+      <span className="min-w-0 truncate font-medium">{visualization.name}</span>
+    </>
+  );
+  switch (visualization.__typename) {
+    case "Chart":
+      return (
+        <MikroChart.DetailLink object={visualization} className={CHIP} title="Chart">
+          {body(ChartSpline, "Chart")}
+        </MikroChart.DetailLink>
+      );
+    case "Grid":
+      return (
+        <MikroGrid.DetailLink object={visualization} className={CHIP} title="Grid">
+          {body(Grid3x3, "Grid")}
+        </MikroGrid.DetailLink>
+      );
+    case "Scene":
+      return (
+        <MikroScene.DetailLink object={visualization} className={CHIP} title="Scene">
+          {body(Layers3Icon, "Scene")}
+        </MikroScene.DetailLink>
+      );
+    default:
+      return null;
+  }
 };
 
 /** "One row per object of this mask, found by i (and t)". */

@@ -1,23 +1,82 @@
 import { Scaling } from "lucide-react";
-import { useMemo, useState } from "react";
 import type { LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { Badge } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
+import { useUpdateSeriesChartLayerMutation } from "@/mikro/api/graphql";
+import { CardRow } from "../../platform/edits/cardRows";
 import {
   CHART_CARD_BUTTON,
   ChartFact,
   ChartFacts,
   ChartLayerCardShell,
 } from "../../platform/edits/ChartLayerCardShell";
+import {
+  ChartReads,
+  ColumnPick,
+  keepOr,
+  RETUNE,
+  TablePick,
+  tableColumns,
+  useChartLayerRetune,
+  useTableLens,
+} from "../../platform/edits/ChartLayerReads";
 import { ChartLayerStyle } from "../../platform/edits/ChartLayerStyle";
-import { BindingRow, BindingSection } from "../../platform/edits/ColumnBinding";
-import { useChartLayerRetune } from "../../platform/edits/useChartLayerRetune";
-import { isNumericColumn, isValueColumn } from "@/mikro/lib/tables/columnKinds";
-import { useRawChartLayer } from "../../platform/stores/chartStore";
 import { useChartAutoscale } from "../../platform/edits/useChartAutoscale";
 import type { ChartLayerState } from "../../platform/model/chartLayerModel";
+import { useRawChartLayer } from "../../platform/stores/chartStore";
+import { formatUnit } from "@/core/util/units";
+
+/**
+ * What a series reads, editable: another table laid along the axis, or another
+ * of its value columns. Shown whether or not the layer is drawn — an undrawn
+ * layer is exactly the one you may want to point elsewhere.
+ */
+const SeriesReads = ({ layer }: { layer: ChartLayerState }) => {
+  const raw = useRawChartLayer(layer.id, "SeriesChartLayer");
+  const [update, { loading }] = useUpdateSeriesChartLayerMutation(RETUNE);
+  const retune = useChartLayerRetune(layer.label);
+  const lensOf = useTableLens();
+  if (!raw) return null;
+  const columns = tableColumns(raw.tableDataset.columns);
+  return (
+    <ChartReads pending={loading}>
+      <CardRow label="Table">
+        <TablePick
+          current={raw.tableDataset}
+          disabled={loading}
+          refuses={(t) => (t.valueColumns.length === 0 ? "no numeric column to read as the value" : null)}
+          onPick={(table) =>
+            void retune(async () =>
+              update({
+                variables: {
+                  input: {
+                    id: layer.id,
+                    lens: await lensOf(table),
+                    // The same column when the new table has one by that name.
+                    valueColumn: keepOr(raw.valueColumn, table.valueColumns),
+                  },
+                },
+              }),
+            )
+          }
+        />
+      </CardRow>
+      <CardRow label="Value">
+        <ColumnPick
+          value={raw.valueColumn}
+          columns={columns.value}
+          disabled={loading}
+          title="The column read as the value"
+          onChange={(valueColumn) =>
+            valueColumn && void retune(() => update({ variables: { input: { id: layer.id, valueColumn } } }))
+          }
+        />
+      </CardRow>
+    </ChartReads>
+  );
+};
 
 /**
  * The card for a series layer: which column of which table, against which
@@ -27,17 +86,6 @@ export const SeriesChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
   const readout = useViewerStore((s) => s.readouts[layer.id]);
   const clim = useViewerStore((s) => s.clims[layer.id]);
   const autoscale = useChartAutoscale();
-  const raw = useRawChartLayer(layer.id, "SeriesChartLayer");
-  const retune = useChartLayerRetune();
-  const [busy, setBusy] = useState(false);
-  // A measurement, not the coordinate the table is laid along: what the server accepts as a value.
-  const valueColumns = useMemo(
-    () =>
-      (raw?.tableDataset.columns ?? [])
-        .filter((c) => !c.axisType && isValueColumn(c) && isNumericColumn(c))
-        .map((c) => ({ name: c.name, unit: c.unit ?? null })),
-    [raw],
-  );
 
   const rows =
     readout?.total != null
@@ -51,7 +99,7 @@ export const SeriesChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
       layer={layer}
       hidden={hidden}
       onToggleHidden={onToggleHidden}
-      badges={layer.valueUnit && <Badge>{layer.valueUnit}</Badge>}
+      badges={formatUnit(layer.valueUnit) && <Badge>{formatUnit(layer.valueUnit)}</Badge>}
       actions={
         layer.series && (
           <Button
@@ -66,20 +114,7 @@ export const SeriesChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
         )
       }
     >
-      <BindingSection>
-        <BindingRow
-          label="Value"
-          value={raw?.valueColumn ?? null}
-          columns={valueColumns}
-          disabled={busy}
-          onCommit={async (valueColumn) => {
-            if (!valueColumn) return;
-            setBusy(true);
-            await retune.series(layer.label, { id: layer.id, valueColumn });
-            setBusy(false);
-          }}
-        />
-      </BindingSection>
+      <SeriesReads layer={layer} />
       {layer.series && (
         <>
           <ChartLayerStyle layer={layer} />

@@ -26,6 +26,7 @@ import {
 } from "../../platform/model/anchors";
 import { useLayerState, useRawLayer } from "../../platform/stores/experimentStore";
 import { useRangeStore } from "@/core/data/plot/stores/rangeStore";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * A channel's NAME at the right edge of its track (its label, else its site's,
@@ -164,7 +165,7 @@ const SiteSection = ({
 };
 
 const ValuesSection = ({ histogram, unit }: { histogram: ValueHistogramLike; unit: string | null }) => (
-  <PopoutSection title={unit ? `Values · ${unit}` : "Values"}>
+  <PopoutSection title={formatUnit(unit) ? `Values · ${formatUnit(unit)}` : "Values"}>
     {histogram.histogram && histogram.histogram.length > 0 && (
       <HistogramSparkline histogram={histogram.histogram} />
     )}

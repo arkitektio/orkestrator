@@ -12,6 +12,7 @@ import type {
   ChartTraceLayerFragment,
 } from "@/mikro/api/graphql";
 import { withPersisted, type ChartLayerState, type PersistedChartLayer } from "../model/chartLayerModel";
+import type { ChartLayoutValue } from "../model/chartStructure";
 import { finestPeriodOf } from "../model/foldChart";
 
 /**
@@ -31,17 +32,40 @@ export type ChartLayerFragment =
   | ChartPointsLayerFragment
   | ChartDistributionLayerFragment;
 
-/** AXIS: laid along its world's one axis. VALUES: draws its world's rows at the values of their columns. */
-export type ChartKindValue = "AXIS" | "VALUES";
-
 export type ChartAxis = { name: string; unit: string | null; type: string | null };
 
 type ChartExtra = {
   chartId: string;
-  kind: ChartKindValue;
-  /** An AXIS chart's one axis: what every position is measured along, and in. Null for VALUES. */
+  /**
+   * The one measured axis along-axis layers (traces, series, marks) are laid
+   * along: what every position there is measured along, and in. Null when the
+   * world is not one measured axis — then there is no axis plot, only value panels.
+   */
   axis: ChartAxis | null;
   worldId: string | null;
+  /**
+   * The chart's layout as the SERVER last said it — not the mode on screen,
+   * which is the viewer's `layoutMode`. `ChartLayoutSync` applies it when it
+   * changes, and only then, so a refetch never undoes a toggle in flight.
+   */
+  layout: ChartLayoutValue;
+  /**
+   * The row a click pinned on a chart of values — what the Probe tab follows
+   * (`rowPlan`). Session-only; set with `setState`, read per field.
+   */
+  pinnedRow: PinnedRow | null;
+};
+
+/** A pinned point: which layer drew it, which row of which table it is, and where it sits. */
+export type PinnedRow = {
+  layerId: string;
+  /** The table's id (what `rowPlan` is asked for). */
+  table: string;
+  /** The row's INDEX value. */
+  id: number | bigint | string;
+  label: string;
+  color: string;
+  at: { x: number; y: number } | null;
 };
 
 export type ChartStoreState = PlotStoreState<ChartLayerState, PersistedChartLayer, ChartLayerFragment> &

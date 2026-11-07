@@ -11,6 +11,7 @@ import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
 import { ChartDisplay } from "./displays/ChartDisplay";
+import { MeshObjectDisplay } from "./displays/MeshObjectDisplay";
 import { GridDisplay } from "./displays/GridDisplay";
 import { FileDisplay } from "./displays/FileDisplay";
 import { FolderDisplay } from "./displays/FolderDisplay";
@@ -27,7 +28,7 @@ import { service } from "./service";
 import { MIKRO_NAV_LINKS } from "./navLinks";
 import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
-import { ArrayDatasetViewer, SceneViewer } from "./viewers";
+import { ArrayDatasetViewer, MeshObjectViewer, SceneViewer } from "./viewers";
 
 
 export const MIKRO_MODULE = defineModule({
@@ -47,11 +48,13 @@ export const MIKRO_MODULE = defineModule({
       // One per kind of lens; the line draws whichever kind it is.
       ...Object.fromEntries(LENS_IDENTIFIERS.map((identifier) => [identifier, LensDisplay])),
       "@mikro/chart": ChartDisplay,
+      "@mikro/meshobject": MeshObjectDisplay,
       "@mikro/grid": GridDisplay,
     },
     viewers: {
       "@mikro/scene": SceneViewer,
       "@mikro/arraydataset": ArrayDatasetViewer,
+      "@mikro/meshobject": MeshObjectViewer,
     },
     // The scene as parts an app's blok composes (`mikro/bloks`).
     bloks: MIKRO_BLOKS,

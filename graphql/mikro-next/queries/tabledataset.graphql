@@ -6,6 +6,13 @@ query GetTableDataset($id: ID!) {
     fullLens {
       id
     }
+    # The scenes, charts and grids that draw this table (through its whole lens
+    # or a window of it): the header links straight to each.
+    visualizations {
+      __typename
+      id
+      name
+    }
     # What the table describes: the containers whose contents ARE its row ids
     # (a label mask, a mesh collection), and the id column each lands on.
     keyedBy {

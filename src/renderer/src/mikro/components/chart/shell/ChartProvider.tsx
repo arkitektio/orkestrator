@@ -21,6 +21,7 @@ import {
   type ChartLayerFragment,
   type ChartStoreApi,
 } from "../platform/stores/chartStore";
+import { ChartLayoutSync } from "./ChartLayoutSync";
 import { ChartSystemHost } from "./ChartSystemHost";
 import { MIN_VISIBLE_SAMPLES } from "./chartSystem";
 import { FEATURE_SLICES } from "./featureSlices";
@@ -28,9 +29,12 @@ import { FEATURE_SLICES } from "./featureSlices";
 /** The fold is structural (no generated types); the fragments it passes on ARE the chart's. */
 const typedRaw = (raw: Record<string, unknown>) => raw as Record<string, ChartLayerFragment>;
 
-/** The system host reads the plot store as the chart's. */
+/** The system host reads the plot store as the chart's; the chart's layout rides beside it. */
 const System = ({ scope }: { scope: PlotScope<ChartStoreApi> }) => (
-  <ChartSystemHost scope={{ chart: scope.plot, range: scope.range, viewer: scope.viewer }} />
+  <>
+    <ChartLayoutSync chart={scope.plot} viewer={scope.viewer} />
+    <ChartSystemHost scope={{ chart: scope.plot, range: scope.range, viewer: scope.viewer }} />
+  </>
 );
 
 const SPEC: PlotScopeSpec<ChartLike, FoldedChart, ChartStoreApi> = {
@@ -42,22 +46,27 @@ const SPEC: PlotScopeSpec<ChartLike, FoldedChart, ChartStoreApi> = {
   createStore: (chart, folded) =>
     createChartStore({
       chartId: chart.id,
-      kind: chart.kind === "VALUES" ? "VALUES" : "AXIS",
       axis: chart.axis
         ? { name: chart.axis.name, unit: chart.axis.unit ?? null, type: chart.axis.type ?? null }
         : null,
       worldId: chart.worldCoordinateSystem?.id ?? null,
+      layout: folded.layout,
+      pinnedRow: null,
       layers: folded.layers,
       rawLayers: typedRaw(folded.rawLayers),
       timeOrigin: folded.timeOrigin,
       worldSpan: folded.worldSpan,
     }),
-  sync: (plot, folded) =>
-    plot.getState().syncLayers(folded.layers, typedRaw(folded.rawLayers), folded.worldSpan),
+  sync: (plot, folded) => {
+    // The server's layout is content: noted here, applied by `ChartLayoutSync`.
+    if (plot.getState().layout !== folded.layout) plot.setState({ layout: folded.layout });
+    return plot.getState().syncLayers(folded.layers, typedRaw(folded.rawLayers), folded.worldSpan);
+  },
   minVisibleSamples: MIN_VISIBLE_SAMPLES,
   featureSlices: FEATURE_SLICES,
-  // Layers that measure the same thing share one row and one scale: a chart is
-  // for comparing values, where a timeline of recordings stacks them.
+  // The mode before the chart's own is applied (`ChartLayoutSync`, before the
+  // first paint): layers that measure the same thing share one row and one
+  // scale — a chart is for comparing values, where a timeline stacks them.
   layoutMode: "SHARED",
   System,
 };

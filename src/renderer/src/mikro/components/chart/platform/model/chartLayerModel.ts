@@ -9,6 +9,7 @@ import {
   type TraceSource,
 } from "@/core/data/plot/sources/traceSource";
 import type { PlotLayerBase } from "@/core/data/plot/stores/plotStore";
+import { MARKER_SHAPES, type MarkerShape } from "@/core/data/plot/marks/screenMarkers";
 import { markSpaceOf, vectorAxes, type AxisLike, type MarkSpace } from "./chartMarks";
 
 /**
@@ -50,9 +51,15 @@ export type PersistedChartLayer = {
   /** RGBA, each 0..1, or null: "let the viewer choose". */
   color: readonly number[] | null;
   mark: ChartMark;
-  /** Screen pixels, or null: the viewer's default. */
+  /**
+   * Multiples of the chart's default (1 = the default, 2 twice as thick, 0.5
+   * half), never pixels — what the default is on screen is the viewer's
+   * (`DEFAULT_LINE_WIDTH`, `DEFAULT_MARKER_SIZE`). Null: the default.
+   */
   lineWidth: number | null;
   markerSize: number | null;
+  /** The symbol a marker is drawn as; null: a circle. */
+  markerShape: MarkerShape | null;
 };
 
 /** A table read as a series: one numeric column against a coordinate column. */
@@ -104,6 +111,8 @@ export type ValuesSource = {
       x: string;
       y: string;
       z: string | null;
+      /** The table's INDEX column: what each row IS, the id a probe binds (`rowPlan`). Null without one. */
+      indexColumn: string | null;
       units: { x: string | null; y: string | null; z: string | null };
     }
   | {
@@ -122,9 +131,10 @@ export type ChartLayerState = PlotLayerBase<PersistedChartLayer> & {
   kind: ChartLayerKind;
   label: string;
   opacity: number;
-  /** Screen pixels. */
+  /** Screen pixels: the persisted multiple times the viewer's default. */
   lineWidth: number;
   markerSize: number;
+  markerShape: MarkerShape;
   mark: ChartMark;
   /** What the tile and table drivers read of `mark`: how samples are joined. */
   lineShape: "linear" | "steps";
@@ -166,6 +176,12 @@ export type ChartLayerState = PlotLayerBase<PersistedChartLayer> & {
   channelLabels: string[];
   /** The scale to draw at before any data lands. None is persisted for a chart. */
   climSeed: { lo: number; hi: number } | null;
+  /**
+   * Points and distributions: which layers may share a panel in a SHARED
+   * layout (`valuesGroupOf`). Null for the axis kinds, and for a layer that is
+   * not drawn.
+   */
+  valuesGroup: string | null;
 };
 
 // --- structural inputs -----------------------------------------------------
@@ -184,7 +200,12 @@ export type ChartLayerCommonLike = {
   asAffine?: AffinePlacementLike | null;
 };
 
-type MarkedLike = { mark?: string | null; lineWidth?: number | null; markerSize?: number | null };
+type MarkedLike = {
+  mark?: string | null;
+  lineWidth?: number | null;
+  markerSize?: number | null;
+  markerShape?: string | null;
+};
 
 export type ChartLensLike = {
   id: string;
@@ -216,7 +237,12 @@ type ValuesTableLike = {
   id: string;
   name?: string | null;
   store: { id: string; sizeBytes?: number | null };
+  columns?: readonly { name: string; role?: string | null; axisType?: string | null }[] | null;
 };
+
+/** A table's INDEX column — its rows' ids (the rule the attribute lookups use). */
+const indexColumnOf = (table: ValuesTableLike): string | null =>
+  table.columns?.find((c) => c.role === "COORDINATE" && c.axisType === "INDEX")?.name ?? null;
 
 export type PointsChartLayerLike = ChartLayerCommonLike &
   MarkedLike & {
@@ -231,7 +257,7 @@ export type PointsChartLayerLike = ChartLayerCommonLike &
   };
 
 export type DistributionChartLayerLike = ChartLayerCommonLike &
-  Pick<MarkedLike, "mark"> & {
+  Pick<MarkedLike, "mark" | "lineWidth"> & {
     tableDataset: ValuesTableLike;
     windowFilters?: readonly RowFilterLike[] | null;
     valueColumn: string;
@@ -250,8 +276,13 @@ export type AnnotationChartLayerLike = ChartLayerCommonLike & {
 
 // --- derivation ------------------------------------------------------------
 
+/** What a line width of 1 (the default) is on screen, in CSS pixels. */
 export const DEFAULT_LINE_WIDTH = 1.25;
+/** What a marker size of 1 (the default) is on screen, in CSS pixels. */
 export const DEFAULT_MARKER_SIZE = 5;
+
+const markerShapeOf = (value: string | null | undefined): MarkerShape | null =>
+  value && (MARKER_SHAPES as readonly string[]).includes(value) ? (value as MarkerShape) : null;
 
 export const kindOfTypename = (typename: string | undefined): ChartLayerKind | null => {
   switch (typename) {
@@ -270,7 +301,12 @@ export const kindOfTypename = (typename: string | undefined): ChartLayerKind | n
   }
 };
 
-/** Whether a kind draws values against values (a chart of VALUES), rather than along an axis. */
+/**
+ * Where a layer's positions come from is its kind, and nothing else: traces,
+ * series and marks are laid along the chart's axis; points and distributions
+ * are drawn at the values of their columns. One chart may hold both: the axis
+ * plot draws the first, the value panels the second.
+ */
 export const isValuesKind = (kind: ChartLayerKind): boolean => kind === "points" || kind === "distribution";
 
 /** Reads a server mark leniently: anything unknown (or absent) is a line. */
@@ -316,6 +352,7 @@ const persistedOf = (layer: ChartLayerCommonLike & MarkedLike): PersistedChartLa
   mark: markOf(layer.mark),
   lineWidth: layer.lineWidth ?? null,
   markerSize: layer.markerSize ?? null,
+  markerShape: markerShapeOf(layer.markerShape),
 });
 
 /**
@@ -331,8 +368,9 @@ const derivedFromPersisted = (id: string, persisted: PersistedChartLayer) => ({
     ? cssOf(persisted.color, persisted.opacity)
     : dimmed(colorForLayerId(id), persisted.opacity),
   solidColor: persisted.color ? cssOf(persisted.color, 1) : colorForLayerId(id),
-  lineWidth: persisted.lineWidth ?? DEFAULT_LINE_WIDTH,
-  markerSize: persisted.markerSize ?? DEFAULT_MARKER_SIZE,
+  lineWidth: (persisted.lineWidth ?? 1) * DEFAULT_LINE_WIDTH,
+  markerSize: (persisted.markerSize ?? 1) * DEFAULT_MARKER_SIZE,
+  markerShape: persisted.markerShape ?? "CIRCLE",
   mark: persisted.mark,
   lineShape: persisted.mark === "STEPS" ? ("steps" as const) : ("linear" as const),
 });
@@ -345,7 +383,42 @@ export const withPersisted = (
   const persisted = { ...layer.persisted, ...patch };
   const next: ChartLayerState = { ...layer, persisted, ...derivedFromPersisted(layer.id, persisted) };
   if ("name" in patch) next.label = patch.name ?? layer.label;
+  // A histogram restyled as a box puts its value on the other axis: another panel.
+  if ("mark" in patch) next.valuesGroup = valuesGroupOf(next.values, next.mark);
   return next;
+};
+
+/** One axis of a panel: its unit when the column declares one, else the column itself. */
+const axisKey = (column: string, unit: string | null) => (unit ? `unit:${unit}` : `column:${column}`);
+
+/**
+ * Which panel a points or distribution layer shares in a SHARED layout: the
+ * layers whose two axes mean the same thing. By UNIT on each axis, so `area`
+ * and `area_corrected`, both µm², share; a column with no unit shares only with
+ * itself, so two unitless columns (`cluster_id`, `count`) never do by accident.
+ *
+ * - points: their x and y.
+ * - a histogram: its value along x; up the side a row count, or — grouped — the
+ *   fraction of each group's rows: two different y axes, so grouped and
+ *   ungrouped histograms do not share, whatever they are grouped by.
+ * - a box: its value up the side; along x the groups of its group column, which
+ *   is an axis only that column's boxes can share.
+ *
+ * The server's rule (`ChartLayout`: one kind, one mark, the same x and y units),
+ * with two things it leaves open made explicit: a box's categorical x, and a
+ * column with no unit, which stands for itself. A histogram and a box of one
+ * column put it on different axes, and a scatter is neither.
+ */
+export const valuesGroupOf = (values: ValuesSource | null, mark: ChartMark): string | null => {
+  if (!values) return null;
+  if (values.kind === "points") {
+    return `points|x:${axisKey(values.x, values.units.x)}|y:${axisKey(values.y, values.units.y)}`;
+  }
+  const value = axisKey(values.value, values.unit);
+  const by = values.group ?? "";
+  return mark === "BOX"
+    ? `box|y:${value}|by:${by}`
+    : `histogram|x:${value}|y:${values.group ? "fraction" : "rows"}`;
 };
 
 const base = (
@@ -371,6 +444,7 @@ const base = (
   channelCount: 1,
   channelLabels: [],
   climSeed: null,
+  valuesGroup: null,
   persisted,
 });
 
@@ -559,7 +633,7 @@ export const normalizePointsLayer = (layer: PointsChartLayerLike, asAffineError?
   const tableName = layer.tableDataset.name ?? `Table ${layer.tableDataset.id}`;
   const z = layer.zColumn ?? null;
   const drawn = [layer.xColumn, layer.yColumn, z].filter(Boolean).join(" · ");
-  return {
+  return withValuesGroup({
     ...base(layer, "points", persisted, placeability),
     label: layer.name ?? `${tableName} · ${layer.yColumn} vs ${layer.xColumn}`,
     reads: `${tableName} · ${drawn}`,
@@ -572,13 +646,14 @@ export const normalizePointsLayer = (layer: PointsChartLayerLike, asAffineError?
           x: layer.xColumn,
           y: layer.yColumn,
           z,
+          indexColumn: indexColumnOf(layer.tableDataset),
           units: { x: layer.xUnit ?? null, y: layer.yUnit ?? null, z: layer.zUnit ?? null },
         }
       : null,
     sourceFailure: skippedNote(skipped),
     valueUnit: layer.yUnit ?? null,
     rowGroup: `layer:${layer.id}`,
-  };
+  });
 };
 
 export const normalizeDistributionLayer = (
@@ -590,7 +665,7 @@ export const normalizeDistributionLayer = (
   const { applied, skipped } = valueFilters(layer.windowFilters);
   const tableName = layer.tableDataset.name ?? `Table ${layer.tableDataset.id}`;
   const group = layer.groupColumn ?? null;
-  return {
+  return withValuesGroup({
     ...base(layer, "distribution", persisted, placeability),
     label: layer.name ?? `${tableName} · ${layer.valueColumn}${group ? ` by ${group}` : ""}`,
     reads: `${tableName} · ${layer.valueColumn}${group ? ` per ${group}` : ""}`,
@@ -609,8 +684,14 @@ export const normalizeDistributionLayer = (
     sourceFailure: skippedNote(skipped),
     valueUnit: layer.valueUnit ?? null,
     rowGroup: `layer:${layer.id}`,
-  };
+  });
 };
+
+/** A value layer with the panel it shares (`valuesGroupOf`) filled in. */
+const withValuesGroup = (layer: ChartLayerState): ChartLayerState => ({
+  ...layer,
+  valuesGroup: valuesGroupOf(layer.values, layer.mark),
+});
 
 /** The line a card shows under an undrawn chart layer. */
 export const unplacedMessage = (p: Placeability): string | null => {

@@ -16,6 +16,7 @@ import {
   useViewerStoreApi,
 } from "@/core/data/plot/stores/viewerStore";
 import { formatValue } from "@/core/data/plot/probe/formatValue";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The hover probe: a cursor line across every row, and a readout of each view's
@@ -147,7 +148,7 @@ const ReadoutPanel = () => {
                   </span>
                 ))
               : row.values.map((v) => (v == null ? "—" : formatValue(v.value))).join(" / ")}
-            {row.unit ? ` ${row.unit}` : ""}
+            {formatUnit(row.unit) ? ` ${formatUnit(row.unit)}` : ""}
           </span>
           {row.decimated && (
             <span className="text-[10px] text-amber-500" title="Read from a coarser pyramid level, not the raw samples">

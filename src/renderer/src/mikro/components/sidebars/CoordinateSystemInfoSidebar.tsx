@@ -15,6 +15,7 @@ import {
 } from "../coordinates/pixelSize";
 import { isReferenceFrame, residentLabel } from "../coordinates/residents";
 import { AnyTransformation } from "../coordinates/types";
+import { formatUnit } from "@/core/util/units";
 
 type PageSystem = GetCoordinateSystemQuery["coordinateSystem"];
 
@@ -111,7 +112,7 @@ export const CoordinateSystemInfoSidebar = ({
               </div>
               <div className="flex flex-row flex-wrap items-baseline gap-x-2 font-mono text-[0.625rem] text-muted-foreground">
                 <span>#{axis.order}</span>
-                {axis.unit && <span>· {axis.unit}</span>}
+                {formatUnit(axis.unit) && <span>· {formatUnit(axis.unit)}</span>}
               </div>
               {axis.longName && (
                 <div className="text-[0.625rem] text-muted-foreground">

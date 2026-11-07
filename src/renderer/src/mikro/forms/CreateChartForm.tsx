@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import {
   AxisType,
-  ChartKind,
+  ChartLayout,
   GetChartsDocument,
   GetCoordinateSystemDocument,
   useCoordinateSystemOptionsLazyQuery,
@@ -27,6 +27,7 @@ type Values = {
   axisName: string;
   axisType: AxisType;
   axisUnit: string;
+  layout: ChartLayout;
 };
 
 // The metric kinds: a chart is laid out along an axis that MEASURES something
@@ -36,6 +37,14 @@ const AXIS_TYPE_OPTIONS = [
   { label: "Space", value: AxisType.Space },
   { label: "Spectrum", value: AxisType.Spectrum },
   { label: "Microtime", value: AxisType.Microtime },
+];
+
+// How the layers share the screen. OVERLAY needs an axis to lay them along, so a
+// chart of values is offered the other two.
+const LAYOUT_OPTIONS = [
+  { label: "Shared: layers in the same units together", value: ChartLayout.Shared },
+  { label: "Stacked: one row or panel per layer", value: ChartLayout.Stacked },
+  { label: "Overlay: every layer in one plot, each on its own scale", value: ChartLayout.Overlay },
 ];
 
 /**
@@ -71,6 +80,7 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
       axisName: "t",
       axisType: AxisType.Time,
       axisUnit: "second",
+      layout: ChartLayout.Shared,
     },
   });
 
@@ -87,7 +97,11 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
               input: {
                 name: data.name,
                 description: data.description || null,
-                kind: world === "values" ? ChartKind.Values : ChartKind.Axis,
+                // No kind: what the world is decides what can be drawn in it. A
+                // table's rows have no axis, so OVERLAY (which lays along-axis
+                // layers in one plot) is not offered there (the field hides it).
+                layout:
+                  world === "values" && data.layout === ChartLayout.Overlay ? ChartLayout.Shared : data.layout,
                 ...(world !== "new"
                   ? { coordinateSystem: data.coordinateSystem }
                   : {
@@ -150,6 +164,15 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
               />
             </TabsContent>
           </Tabs>
+
+          <ChoicesField
+            label="Layout"
+            name="layout"
+            options={
+              world === "values" ? LAYOUT_OPTIONS.filter((o) => o.value !== ChartLayout.Overlay) : LAYOUT_OPTIONS
+            }
+            description="How the layers share the screen. It can be changed on the chart at any time."
+          />
         </div>
 
         <DialogFooter>

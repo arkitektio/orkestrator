@@ -1200,7 +1200,7 @@ export type AttributePlan = {
   sample: SampleStep;
 };
 
-/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; a space of two enumerating axes (genes against cells, objects against channels) a grid; any other space with a time or space axis a scene; a table lens whose rows have no place a VALUES chart of its measurements. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
+/** Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; a space of two enumerating axes (genes against cells, objects against channels) a grid; any other space with a time or space axis a scene; a table lens whose rows have no place a chart of its measurements' values. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens` */
 export type AutoVisualizeInput = {
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -1668,10 +1668,10 @@ export type ChannelSourceNode = LayerRenderNode & {
   visible: Scalars['Boolean']['output'];
 };
 
-/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type Chart = Visualization & {
   __typename?: 'Chart';
-  /** The one axis an AXIS chart is laid out along: its name, its metric type and its unit -- the world's only axis, repeated so a client need not unwrap a list of one. Null for a VALUES chart, whose drawn axes are the columns its layers name */
+  /** The one measured axis this chart's along-axis layers (TRACE, SERIES, ANNOTATION) are laid along: its name, its type and its unit -- the world's only axis, repeated so a client need not unwrap a list of one. Null when the world is not one measured axis, and then only value layers can be drawn here. A renderer reads it to know whether an axis panel exists before any layer does */
   axis?: Maybe<Axis>;
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
@@ -1679,17 +1679,17 @@ export type Chart = Visualization & {
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
-  /** What the world is to this chart: AXIS, the one axis it draws and lays its layers along; VALUES, whose rows it draws at the values of their columns */
-  kind: ChartKind;
   /** The layers drawn in this chart, back to front (a heterogeneous list of layer kinds) */
   layers: Array<ChartLayer>;
+  /** How the layers share the screen, remembered with the chart: STACKED (one row or panel each), SHARED (overlaid where they read their axes alike) or OVERLAY (every along-axis layer in one plot) */
+  layout: ChartLayout;
   name: Scalars['String']['output'];
-  /** The domain this chart's layers live in: an AXIS chart's one metric axis, which it draws; a VALUES chart's space whose rows it draws -- a table's -- which it does not. Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
+  /** The domain this chart's layers live in: one measured axis its along-axis layers are laid along (`axis`), the space whose rows its value layers draw (a table's), or both at once (a table framed by `t`). Never owned by the chart: several charts can share it, it outlives each of them, and deleting a chart never deletes it. Ask it for `placedSystems` to learn what could be drawn here */
   worldCoordinateSystem: CoordinateSystem;
 };
 
 
-/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a VALUES chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
+/** A composition that shows **how much**: values drawn as position. The counterpart of a scene, which shows **where**: in a scene every screen axis is a world axis, data is placed by the graph's edges and values are drawn as appearance (a colour, a size); in a chart at most one axis is drawn from the world and every other position is a value. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it. An **AXIS** chart draws its world, one metric axis with a unit, and lays TRACE, SERIES and ANNOTATION layers along it: a timelapse's intensity against `t`. A **VALUES** chart does not draw its world, which says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name: nuclei at `area` against `volume`, a histogram of `area` per `condition`. Two layers in one VALUES world are about the same rows (a table and the PCA derived from it). The same table lens may be drawn as a scene, at its `(y, x)` coloured by `area`, and as a chart at `(area, volume)`. A chart names data through lenses and owns none of it; if rotating its view would mix units, it is a chart, and if it would not, a scene */
 export type ChartLayersArgs = {
   filters?: InputMaybe<ChartLayerFilter>;
   ordering?: Array<ChartLayerOrder>;
@@ -1722,13 +1722,7 @@ export type ChartFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** What a chart's world is to it. Every chart has a world -- the domain its layers' rows live in -- and every layer is placed into it by the graph. An AXIS chart draws its world: one measured axis with a unit, which TRACE, SERIES and ANNOTATION layers are laid along (intensity against `t`). A VALUES chart does not draw it: its world says *whose rows* -- a table's space, usually its INDEX axis (`cell_id`) -- and its POINTS and DISTRIBUTION layers draw those rows at the values of the columns they name (`area` against `volume`). Two layers placed in one VALUES world are about the same rows. */
-export enum ChartKind {
-  Axis = 'AXIS',
-  Values = 'VALUES'
-}
-
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayer = {
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
   alongAxis?: Maybe<Scalars['String']['output']>;
@@ -1754,37 +1748,37 @@ export type ChartLayer = {
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerAlongAxisArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the VALUES chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along an AXIS chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, in a VALUES chart */
+/** A layer drawn in a chart. It carries view state only. A placed layer's position along the chart's axis -- `pathToWorld`, `asAffine`, `alongAxis`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one registration moves every layer that looks through it. A value layer is placed the same way -- its rows into the chart's world, which says they are the same rows as the others' -- and drawn at the values of the columns it names. The concrete kind says what the layer reads: TraceChartLayer an array, SeriesChartLayer a table's value column, AnnotationChartLayer drawn marks -- along the chart's axis -- and PointsChartLayer and DistributionChartLayer a table's columns, by their values -- the kind says which, and one chart may hold both */
 export type ChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -1802,7 +1796,7 @@ export type ChartLayerFilter = {
   kind?: InputMaybe<ChartLayerKindChoices>;
 };
 
-/** The kind of a chart layer, which says what it reads -- never how it looks. Three are drawn in an AXIS chart, laid along its one world axis by the graph: TRACE reads an array along one axis, SERIES one value column of a table along its coordinate, ANNOTATION drawn marks. Two are drawn in a VALUES chart, their rows placed in its world and drawn at their values: POINTS at two or three columns (a scatter), DISTRIBUTION summarising one column (a histogram, a box), once per value of a grouping column. A line, markers, a histogram or a box is `ChartMark`, a setting on the layer. */
+/** The kind of a chart layer, which says what it reads -- never how it looks. Three are laid along the chart's world axis by the graph: TRACE reads an array along one axis, SERIES one value column of a table along its coordinate, ANNOTATION drawn marks. Two are drawn by their values, their rows placed in the chart's world: POINTS at two or three columns (a scatter), DISTRIBUTION summarising one column (a histogram, a box), once per value of a grouping column. One chart may hold both. A line, markers, a histogram or a box is `ChartMark`, a setting on the layer. */
 export enum ChartLayerKind {
   Annotation = 'ANNOTATION',
   Distribution = 'DISTRIBUTION',
@@ -1823,6 +1817,13 @@ export type ChartLayerOrder =
   { id: Ordering; order?: never; }
   |  { id?: never; order: Ordering; };
 
+/** How a chart's layers share the screen, remembered with the chart. STACKED: one row (an along-axis layer) or one panel (a value layer) per layer, each on its own scale. SHARED: layers measuring the same thing overlaid on one scale -- along the axis, the same value unit; by their values, one kind, one mark and the same x and y units -- and the rest beside them. OVERLAY: every along-axis layer in one plot, each on its own scale; value layers lay out as SHARED, since there a layer's scale is its axis */
+export enum ChartLayout {
+  Overlay = 'OVERLAY',
+  Shared = 'SHARED',
+  Stacked = 'STACKED'
+}
+
 /** How a layer is drawn. A look, not a kind: changing it changes nothing about what the layer reads. A trace or a series is a LINE, MARKERS, both or STEPS; points are MARKERS or a LINE through them in row order sorted along x; a distribution is a HISTOGRAM or a BOX. */
 export enum ChartMark {
   Box = 'BOX',
@@ -1831,6 +1832,16 @@ export enum ChartMark {
   LineMarkers = 'LINE_MARKERS',
   Markers = 'MARKERS',
   Steps = 'STEPS'
+}
+
+/** The symbol each marker is drawn as. A look: it changes nothing about what the layer reads */
+export enum ChartMarkerShape {
+  Circle = 'CIRCLE',
+  Cross = 'CROSS',
+  Diamond = 'DIAMOND',
+  Plus = 'PLUS',
+  Square = 'SQUARE',
+  Triangle = 'TRIANGLE'
 }
 
 export type ChartOrder =
@@ -2548,12 +2559,12 @@ export type CreateChartFromCoordinateSystemInput = {
   policy?: ChartPolicyInput;
 };
 
-/** Input type for creating a chart over a world: an existing coordinate system adopted as it is, or one created from `axis`. An AXIS chart (the default) draws its world -- one metric axis with a unit -- and lays TRACE, SERIES and ANNOTATION layers along it by the graph: intensity against `t`. A VALUES chart does not draw its world: the world says whose rows -- a table's space, usually its INDEX axis -- and its POINTS and DISTRIBUTION layers, placed into it, draw those rows at the values of the columns they name: `area` against `volume`. It starts with no layers */
+/** Input type for creating a chart over a world: an existing coordinate system adopted as it is, or one created from `axis`. The world is the domain the layers live in. TRACE, SERIES and ANNOTATION layers are laid along its one measured axis by the graph (intensity against `t`), so they need a world of exactly one; POINTS and DISTRIBUTION layers have their rows placed in it -- a table's space -- and are drawn at the values of the columns they name (`area` against `volume`). One chart may hold both. It starts with no layers */
 export type CreateChartInput = {
   axis?: InputMaybe<PhysicalAxisInput>;
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
-  kind?: ChartKind;
+  layout?: ChartLayout;
   name: Scalars['String']['input'];
 };
 
@@ -2580,7 +2591,7 @@ export type CreateCoordinateSystemInput = {
   registrations?: Array<RegistrationPathInput>;
 };
 
-/** Input for summarising the values of one column of a table's rows in a VALUES chart: a HISTOGRAM or a BOX, over every row or once per value of `groupColumn` -- the `area` of nuclei, one histogram per `condition`. The rows are placed in the chart's world (whose rows). Writes no edge */
+/** Input for summarising the values of one column of a table's rows in a chart: a HISTOGRAM or a BOX, over every row or once per value of `groupColumn` -- the `area` of nuclei, one histogram per `condition`. The rows are placed in the chart's world (whose rows). Writes no edge */
 export type CreateDistributionChartLayerInput = {
   bins?: InputMaybe<Scalars['Int']['input']>;
   chart: Scalars['ID']['input'];
@@ -2870,13 +2881,14 @@ export type CreatePointLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Input for drawing a table's rows as points in a VALUES chart: each row at the values of `xColumn` and `yColumn` (and `zColumn` for depth) -- nuclei at their `area` and `volume`. The rows are placed in the chart's world (whose rows); the columns' units are its drawn axes, and a second layer's must convert to them. Writes no edge */
+/** Input for drawing a table's rows as points in a chart: each row at the values of `xColumn` and `yColumn` (and `zColumn` for depth) -- nuclei at their `area` and `volume`. The rows are placed in the chart's world (whose rows); the columns' units are its drawn axes, and a second layer's must convert to them. Writes no edge */
 export type CreatePointsChartLayerInput = {
   chart: Scalars['ID']['input'];
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -2939,6 +2951,7 @@ export type CreateSeriesChartLayerInput = {
   lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -2991,7 +3004,7 @@ export type CreateTableLensInput = {
   windows?: InputMaybe<Array<WindowInput>>;
 };
 
-/** Input for plotting a table's columns in one call: a VALUES chart over the table's space (whose rows, not drawn) and one POINTS or DISTRIBUTION layer through the table's whole lens or a window of it, in one transaction, so a refused layer makes nothing. `area` against `volume` is `{kind: POINTS, xColumn: "area", yColumn: "volume"}`; a histogram of `area` per `condition` is `{kind: DISTRIBUTION, xColumn: "area", groupColumn: "condition"}` */
+/** Input for plotting a table's columns in one call: a chart over the table's space (whose rows) and one POINTS or DISTRIBUTION layer through the table's whole lens or a window of it, in one transaction, so a refused layer makes nothing. `area` against `volume` is `{kind: POINTS, xColumn: "area", yColumn: "volume"}`; a histogram of `area` per `condition` is `{kind: DISTRIBUTION, xColumn: "area", groupColumn: "condition"}` */
 export type CreateTablePlotInput = {
   bins?: InputMaybe<Scalars['Int']['input']>;
   groupColumn?: InputMaybe<Scalars['String']['input']>;
@@ -3012,6 +3025,7 @@ export type CreateTraceChartLayerInput = {
   lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -3540,7 +3554,7 @@ export type DimensionPartInput = {
   translation?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayer = ChartLayer & {
   __typename?: 'DistributionChartLayer';
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
@@ -3558,6 +3572,8 @@ export type DistributionChartLayer = ChartLayer & {
   kind: ChartLayerKind;
   /** The table lens whose rows are summarised: the rows its selection keeps */
   lens: TableLens;
+  /** How thick the outlines are, as a multiple of the chart's default: 1 is the default, 2 twice as thick, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
+  lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the values are summarised: a HISTOGRAM or a BOX */
   mark: ChartMark;
   name?: Maybe<Scalars['String']['output']>;
@@ -3583,37 +3599,37 @@ export type DistributionChartLayer = ChartLayer & {
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerAlongAxisArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the VALUES chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
+/** A layer that summarises the values of one column of a table lens' rows: a HISTOGRAM (`bins`) or a BOX, over every row or once per value of `groupColumn` -- a condition, a cluster, a long-form channel. The rows are placed in the chart's world; their values are the horizontal axis. Example: the `area` of nuclei, one histogram per `condition` */
 export type DistributionChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -4935,6 +4951,13 @@ export enum HopCardinality {
   One = 'ONE'
 }
 
+/** Which way a hop crosses its fact. FORWARD: as declared -- a column's values are rows of the table it `references`, a matrix axis' positions are rows. REVERSE: a `references` read backwards -- every row of another table whose column names the held row (a cluster's members); MANY, binding the parent's INDEX into the child's referencing column. SAME_ROWS: the same row in another table, across an edge between the two tables' frames (the PCA row of a measurement row); the lookup's `keyMap`, when set, maps the held id onto the other INDEX first. REVERSE and SAME_ROWS appear only in a row's plan (`rowPlan`) */
+export enum HopDirection {
+  Forward = 'FORWARD',
+  Reverse = 'REVERSE',
+  SameRows = 'SAME_ROWS'
+}
+
 /** The schema fact one hop crosses. `column`: a `Column.references` hop -- the parent row's column whose values are row ids of the next table -- or, on a hop into a matrix, or a dense array, the parent table's INDEX column whose values are positions along `axis`. `axis`: the matrix axis crossed, in either direction, or the array axis entered. Whichever is set, its name is the name the hop's lookup binds under (`keyColumns[].axis` / `keyHeld`) */
 export type HopVia = {
   __typename?: 'HopVia';
@@ -4942,6 +4965,8 @@ export type HopVia = {
   axis?: Maybe<Scalars['String']['output']>;
   /** The column whose values are bound: the parent row's reference column, or its INDEX column when the hop enters a matrix or a dense array */
   column?: Maybe<Column>;
+  /** Which way the fact is crossed: FORWARD as declared, REVERSE a `references` read backwards (the child's referencing column binds the parent's INDEX), SAME_ROWS the same row in another table */
+  direction: HopDirection;
 };
 
 export type IdFilterLookup = {
@@ -6247,7 +6272,7 @@ export type LookupStep = {
   keyColumns: Array<PlanKeyColumn>;
   /** (SPARSE, ARRAY) The name the worker holds the value bound to `keyAxis` under -- what `keyColumns[].axis` is for a table. Equal to `keyAxis` on a landing, where the sample produced it under the axis' name; the parent row's column name on a hop into a matrix or an array */
   keyHeld?: Maybe<Scalars['String']['output']>;
-  /** (ARRAY) The held id as a position along `keyAxis`. A matrix axis *is* the row ids; a dense array's positions relate to them by whatever its derivation edge states (`cell_id = cell + 1`), and this is that edge already inverted. Do not re-derive it from the edge's steps */
+  /** (ARRAY) The held id as a position along `keyAxis`. A matrix axis *is* the row ids; a dense array's positions relate to them by whatever its derivation edge states (`cell_id = cell + 1`), and this is that edge already inverted. Do not re-derive it from the edge's steps. (TABLE, a SAME_ROWS hop) The held id as the target's INDEX value, when the edge between the two frames relabels it; null when the id is the same in both tables */
   keyMap?: Maybe<KeyMap>;
   /** Which shape this lookup is: `TABLE` for a row of a parquet, `SPARSE` for a slice of a matrix, `ARRAY` for one position of a dense array along `keyAxis`. The fields of the other shapes are null -- a flat discriminator rather than an interface, which over these would carry nothing in common */
   kind: Scalars['String']['output'];
@@ -6895,7 +6920,7 @@ export type Mutation = {
   createArrayDataset: ArrayDataset;
   /** Draw a table's rows in a grid: one cell per row at its position along the grid's axes, coloured by a numeric column -- a long-form table's mean per cell and channel */
   createCellsGridLayer: CellsGridLayer;
-  /** Create a chart over a world: values drawn as position. An AXIS chart draws its world's one metric, unit-carrying axis (an existing space, or one created from `axis`); a VALUES chart's world is a table's space -- whose rows -- and its layers draw those rows at the values of columns, for scatters and histograms */
+  /** Create a chart over a world: values drawn as position. The world is an existing space or one created from `axis`; along-axis layers (traces, series, marks) are laid along its one metric, unit-carrying axis, value layers (scatters, histograms) draw the rows placed in it at the values of their columns. One chart may hold both */
   createChart: Chart;
   /** Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges */
   createChartFromCoordinateSystem: Chart;
@@ -6905,7 +6930,7 @@ export type Mutation = {
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
   createCoordinateSystem: CoordinateSystem;
-  /** Summarise the values of one column of a table lens' rows in a VALUES chart: a histogram or a box, over every row or once per value of a grouping column such as a condition */
+  /** Summarise the values of one column of a table lens' rows in a chart: a histogram or a box, over every row or once per value of a grouping column such as a condition */
   createDistributionChartLayer: DistributionChartLayer;
   /** Register a fixture -- a coverslip, a dish, a holder -- from an uploaded binary glTF, in a unit-carrying coordinate system of its own */
   createFixture: Fixture;
@@ -6953,7 +6978,7 @@ export type Mutation = {
   createPhasorLayer: PhasorLayer;
   /** Create a layer that renders a point cloud (e.g. SMLM localisations, centroids) from columns of a table */
   createPointLayer: PointLayer;
-  /** Draw a table lens' rows as points in a VALUES chart: placed in its world (whose rows), each drawn at the values of two columns (a scatter), or three for depth */
+  /** Draw a table lens' rows as points in a chart: placed in its world (whose rows), each drawn at the values of two columns (a scatter), or three for depth */
   createPointsChartLayer: PointsChartLayer;
   /** Create an RGB layer: three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. Its own kind rather than a three-channel render graph, because as a graph it is indistinguishable from three fluorescence markers somebody tinted red, green and blue, which is the commoner reading. Never inferred from that shape: a bootstrapped scene reaches this kind only on evidence ingest recorded -- channels labelled red, green and blue, or arrays read out of a PNG -- so state it here for a photograph that arrived with neither */
   createRgbLayer: RgbLayer;
@@ -6975,7 +7000,7 @@ export type Mutation = {
   createTableDataset: TableDataset;
   /** The lens keeping these windows of a table dataset's columns -- a coordinate (a region of space) or a numeric measurement (a gate, `area >= 50`): the one that exists, or a new one. It lives in the table's own space */
   createTableLens: TableLens;
-  /** Plot a table's columns in one call: a VALUES chart over the table's space and one POINTS or DISTRIBUTION layer drawing its rows at the values of the named columns. One transaction */
+  /** Plot a table's columns in one call: a chart over the table's space and one POINTS or DISTRIBUTION layer drawing its rows at the values of the named columns. One transaction */
   createTablePlot: Chart;
   /** Draw an array as a trace in a chart: a lens with one metric axis free, laid along the chart's axis by the graph, and optionally one CHANNEL or INDEX axis free as one line per position */
   createTraceChartLayer: TraceChartLayer;
@@ -9197,7 +9222,7 @@ export type PointLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayer = ChartLayer & {
   __typename?: 'PointsChartLayer';
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
@@ -9211,11 +9236,13 @@ export type PointsChartLayer = ChartLayer & {
   kind: ChartLayerKind;
   /** The table lens whose rows are drawn: the rows its selection keeps */
   lens: TableLens;
-  /** Line width in screen pixels. Null lets the viewer choose */
+  /** How thick lines are, as a multiple of the chart's default: 1 is the default, 2 twice as thick, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the rows are drawn: MARKERS, or a LINE through them sorted along x */
   mark: ChartMark;
-  /** Marker size in screen pixels. Null lets the viewer choose */
+  /** The symbol a marker is drawn as. Null lets the viewer choose (a circle) */
+  markerShape?: Maybe<ChartMarkerShape>;
+  /** How big markers are, as a multiple of the chart's default: 1 is the default, 2 twice as big, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   markerSize?: Maybe<Scalars['Float']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
@@ -9248,37 +9275,37 @@ export type PointsChartLayer = ChartLayer & {
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerAlongAxisArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the VALUES chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
+/** A layer that draws a table lens' rows at the values of its columns: each row a point at (`xColumn`, `yColumn`), and at `zColumn` too for depth -- a scatter. The rows are placed in the chart's world -- whose rows -- and drawn at their values: the position is the measurement, read from the row. A row with a null in a named column is not drawn. MARKERS, or a LINE through the rows sorted along x. Example: nuclei at (`area`, `volume`), through a lens that keeps `area >= 50` */
 export type PointsChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -9578,6 +9605,8 @@ export type Query = {
   previewLayer: Layer;
   /** The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time */
   roots: Array<RootNode>;
+  /** What a picked row of a table reaches -- a point of a chart of values: the row itself, then every hop the schema allows from it, as `attributePlans` describes its chain, plus REVERSE references (a cluster's member rows) and SAME_ROWS crossings (the PCA row of a measurement row). No sample: the picked row's INDEX value is the id. Instructions, never values, and no id argument, so fetch it once per table. Refused for a table not keyed by one INDEX column */
+  rowPlan: RowPlan;
   /** Get a single scene by ID */
   scene: Scene;
   /** Get a single scene snapshot by ID */
@@ -10081,6 +10110,12 @@ export type QueryRootsArgs = {
 };
 
 
+export type QueryRowPlanArgs = {
+  maxJoinDepth?: Scalars['Int']['input'];
+  table: Scalars['ID']['input'];
+};
+
+
 export type QuerySceneArgs = {
   id: Scalars['ID']['input'];
 };
@@ -10447,6 +10482,17 @@ export type RotationTransformation = Transformation & {
 /** A rotation, given as an orthonormal matrix */
 export type RotationTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** What a picked row of a table reaches -- a point of a chart of values. There is no sample: the row's INDEX value IS the id, so a client holding it binds `key` and runs `hops` in order, exactly as it runs an `AttributePlan`'s after its sample. `hops[0]` is the row itself; later hops cross every fact the schema allows from it, including two only a row's plan takes: REVERSE references (a cluster's member rows) and SAME_ROWS crossings (the PCA row of a measurement row). Like an attribute plan it takes no id and reads no store, so fetch it once per table */
+export type RowPlan = {
+  __typename?: 'RowPlan';
+  /** The chain, in execution order. `hops[0]` is the row in its own table, bound from `key`; each later hop binds from its `parent` */
+  hops: Array<Hop>;
+  /** The INDEX column a row is found by: hold the picked row's value under `key.axis` */
+  key: PlanKeyColumn;
+  /** Whose rows these are */
+  table: TableDataset;
 };
 
 /** The sample */
@@ -10843,11 +10889,13 @@ export type SeriesChartLayer = ChartLayer & {
   kind: ChartLayerKind;
   /** The table lens this series reads through: the rows its windows keep */
   lens: TableLens;
-  /** Line width in screen pixels. Null lets the viewer choose */
+  /** How thick lines are, as a multiple of the chart's default: 1 is the default, 2 twice as thick, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the values are drawn: a line, markers, both, or steps */
   mark: ChartMark;
-  /** Marker size in screen pixels. Null lets the viewer choose */
+  /** The symbol a marker is drawn as. Null lets the viewer choose (a circle) */
+  markerShape?: Maybe<ChartMarkerShape>;
+  /** How big markers are, as a multiple of the chart's default: 1 is the default, 2 twice as big, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   markerSize?: Maybe<Scalars['Float']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
@@ -11730,6 +11778,8 @@ export type TableKey = {
   produces: Array<Scalars['String']['output']>;
   /** The container whose contents are the ids: a label mask's dataset, a mesh collection */
   source: Resident;
+  /** What each row IS, as a structure a client can open: `@mikro/meshobject` for a mesh collection's objects, whose id is `<collection>:<object>` (the `produces` value as the object, `MeshObject.id`). Null where a row has no structure of its own yet -- a label of a mask */
+  structure?: Maybe<Scalars['String']['output']>;
 };
 
 /** A selection over a table dataset by value windows on its columns: the rows kept. A window on a coordinate column bounds a region of space; one on a numeric measurement column is a gate (`area >= 50`), which bounds nothing in space. Lives in the table's own space */
@@ -11855,11 +11905,13 @@ export type TraceChartLayer = ChartLayer & {
   kind: ChartLayerKind;
   /** The array lens whose values are read */
   lens: ArrayLens;
-  /** Line width in screen pixels. Null lets the viewer choose */
+  /** How thick lines are, as a multiple of the chart's default: 1 is the default, 2 twice as thick, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the values are drawn: a line, markers, both, or steps */
   mark: ChartMark;
-  /** Marker size in screen pixels. Null lets the viewer choose */
+  /** The symbol a marker is drawn as. Null lets the viewer choose (a circle) */
+  markerShape?: Maybe<ChartMarkerShape>;
+  /** How big markers are, as a multiple of the chart's default: 1 is the default, 2 twice as big, 0.5 half. Never pixels -- what the default is on screen is the viewer's. Null lets the viewer choose */
   markerSize?: Maybe<Scalars['Float']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
@@ -12323,10 +12375,11 @@ export type UpdateArrayDatasetInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Input for renaming or re-describing a chart. Its world is not editable: a chart along another axis is another chart */
+/** Input for renaming, re-describing or re-laying-out a chart. Its world is not editable: a chart over another space is another chart */
 export type UpdateChartInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  layout?: InputMaybe<ChartLayout>;
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -12336,6 +12389,7 @@ export type UpdateChartLayerInput = {
   id: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -12545,6 +12599,7 @@ export type UpdatePointsChartLayerInput = {
   lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -12585,6 +12640,7 @@ export type UpdateSeriesChartLayerInput = {
   lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -12614,6 +12670,7 @@ export type UpdateTraceChartLayerInput = {
   lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
+  markerShape?: InputMaybe<ChartMarkerShape>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -13465,7 +13522,7 @@ export type AttributePlanArrayDatasetFragment = { __typename?: 'ArrayDataset', i
       & ZarrStoreFragment
     ) }> };
 
-export type AttributePlanHopFragment = { __typename?: 'Hop', index: number, parent?: number | null, cardinality: HopCardinality, via?: { __typename?: 'HopVia', axis?: string | null, column?: { __typename?: 'Column', id: string, name: string, longName?: string | null, role: ColumnRole, axisType?: AxisType | null } | null } | null, table?: { __typename?: 'TableDataset', id: string, name: string } | null, sparseDataset?: (
+export type AttributePlanHopFragment = { __typename?: 'Hop', index: number, parent?: number | null, cardinality: HopCardinality, via?: { __typename?: 'HopVia', axis?: string | null, direction: HopDirection, column?: { __typename?: 'Column', id: string, name: string, longName?: string | null, role: ColumnRole, axisType?: AxisType | null } | null } | null, table?: { __typename?: 'TableDataset', id: string, name: string } | null, sparseDataset?: (
     { __typename?: 'SparseDataset' }
     & AttributePlanSparseDatasetFragment
   ) | null, arrayDataset?: (
@@ -13525,6 +13582,11 @@ export type AttributePlanFragment = { __typename?: 'AttributePlan', edge: { __ty
     { __typename?: 'Hop' }
     & AttributePlanHopFragment
   )> };
+
+export type RowPlanHopFragment = (
+  { __typename?: 'Hop', table?: { __typename?: 'TableDataset', id: string, name: string, columns: Array<{ __typename?: 'Column', name: string, role: ColumnRole, axisType?: AxisType | null }>, keyedBy: Array<{ __typename?: 'TableKey', produces: Array<string>, structure?: string | null, source: { __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' } }> } | null }
+  & AttributePlanHopFragment
+);
 
 export type ChartAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> };
 
@@ -13591,7 +13653,7 @@ export type ChartLensFragment = { __typename?: 'ArrayLens', id: string, shape: A
       ) }> } };
 
 export type ChartTraceLayerFragment = (
-  { __typename?: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, lens: (
+  { __typename?: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, seriesAxis?: string | null, lens: (
     { __typename?: 'ArrayLens' }
     & ChartLensFragment
   ) }
@@ -13599,7 +13661,7 @@ export type ChartTraceLayerFragment = (
 );
 
 export type ChartSeriesLayerFragment = (
-  { __typename?: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+  { __typename?: 'SeriesChartLayer', valueColumn: string, coordinateColumn?: string | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
       & ParquetStoreFragment
     ), columns: Array<(
@@ -13630,7 +13692,7 @@ export type ChartAnnotationLayerFragment = (
 );
 
 export type ChartPointsLayerFragment = (
-  { __typename?: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+  { __typename?: 'PointsChartLayer', xColumn: string, yColumn: string, zColumn?: string | null, xUnit?: any | null, yUnit?: any | null, zUnit?: any | null, mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
       & ParquetStoreFragment
     ), columns: Array<(
@@ -13647,7 +13709,7 @@ export type ChartPointsLayerFragment = (
 );
 
 export type ChartDistributionLayerFragment = (
-  { __typename?: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
+  { __typename?: 'DistributionChartLayer', valueColumn: string, groupColumn?: string | null, bins?: number | null, valueUnit?: any | null, mark: ChartMark, lineWidth?: number | null, tableDataset: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
       & ParquetStoreFragment
     ), columns: Array<(
@@ -13665,17 +13727,17 @@ export type ChartDistributionLayerFragment = (
 
 type ChartLayerStyle_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, lineWidth?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
-type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
 
 export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_DistributionChartLayer_Fragment | ChartLayerStyle_PointsChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
 
-export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, creator?: { __typename?: 'User', sub: string } | null, axis?: (
+export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, layout: ChartLayout, creator?: { __typename?: 'User', sub: string } | null, axis?: (
     { __typename?: 'Axis' }
     & AxisFragment
   ) | null, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, layers: Array<(
@@ -13695,7 +13757,7 @@ export type ChartFragment = { __typename?: 'Chart', descriptors: any, id: string
     & ChartTraceLayerFragment
   )> };
 
-export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, kind: ChartKind, axis?: (
+export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: string, name: string, description?: string | null, createdAt: any, layout: ChartLayout, axis?: (
     { __typename?: 'Axis' }
     & AxisFragment
   ) | null };
@@ -18007,7 +18069,7 @@ export type ChartAddLayerCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, kind: ChartKind, axis?: (
+export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, axis?: (
       { __typename?: 'Axis' }
       & AxisFragment
     ) | null, layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'DistributionChartLayer', id: string } | { __typename: 'PointsChartLayer', id: string } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
@@ -19337,6 +19399,25 @@ export type GetMeshObjectQuery = { __typename?: 'Query', meshObject: { __typenam
       & DerivedResident_TableLens_Fragment
     )> } };
 
+export type GetMeshObjectLabelQueryVariables = Exact<{
+  collection: Scalars['ID']['input'];
+  object: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeshObjectLabelQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, objectId: number, collection: { __typename?: 'MeshCollection', id: string, label: string } } };
+
+export type GetMeshObjectSourceQueryVariables = Exact<{
+  collection: Scalars['ID']['input'];
+  object: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeshObjectSourceQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, objectId: number, collection: { __typename?: 'MeshCollection', id: string, label: string, store: (
+        { __typename?: 'FabriksStore' }
+        & FabriksStoreFragment
+      ) } } };
+
 export type GetMeshCollectionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -19369,6 +19450,20 @@ export type PermissionOptionsQueryVariables = Exact<{
 
 
 export type PermissionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'PermissionOption', value: string, label: string }> };
+
+export type RowPlanQueryVariables = Exact<{
+  table: Scalars['ID']['input'];
+  maxJoinDepth?: Scalars['Int']['input'];
+}>;
+
+
+export type RowPlanQuery = { __typename?: 'Query', rowPlan: { __typename?: 'RowPlan', key: { __typename?: 'PlanKeyColumn', axis: string, column: (
+        { __typename?: 'Column' }
+        & AttributePlanColumnFragment
+      ) }, table: { __typename?: 'TableDataset', id: string, name: string }, hops: Array<(
+      { __typename?: 'Hop' }
+      & RowPlanHopFragment
+    )> } };
 
 export type GetSceneQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -19450,7 +19545,7 @@ export type GetTableDatasetQueryVariables = Exact<{
 
 
 export type GetTableDatasetQuery = { __typename?: 'Query', tableDataset: (
-    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null, keyedBy: Array<{ __typename?: 'TableKey', produces: Array<string>, passesThrough: Array<string>, source: (
+    { __typename?: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null, visualizations: Array<{ __typename: 'Chart', id: string, name: string } | { __typename: 'Grid', id: string, name: string } | { __typename: 'Scene', id: string, name: string }>, keyedBy: Array<{ __typename?: 'TableKey', produces: Array<string>, passesThrough: Array<string>, source: (
         { __typename?: 'AnnotationCollection' }
         & DerivedResident_AnnotationCollection_Fragment
       ) | (
@@ -20870,6 +20965,7 @@ export const AttributePlanHopFragmentDoc = gql`
       axisType
     }
     axis
+    direction
   }
   table {
     id
@@ -20981,6 +21077,31 @@ ${ZarrStoreFragmentDoc}
 ${FabriksStoreFragmentDoc}
 ${KonnektionStoreFragmentDoc}
 ${AttributePlanHopFragmentDoc}`;
+export const RowPlanHopFragmentDoc = gql`
+    fragment RowPlanHop on Hop {
+  ...AttributePlanHop
+  table {
+    id
+    name
+    columns {
+      name
+      role
+      axisType
+    }
+    keyedBy {
+      produces
+      structure
+      source {
+        __typename
+        ... on MeshCollection {
+          id
+          label
+        }
+      }
+    }
+  }
+}
+    ${AttributePlanHopFragmentDoc}`;
 export const ChartLayerStyleFragmentDoc = gql`
     fragment ChartLayerStyle on ChartLayer {
   __typename
@@ -20994,19 +21115,23 @@ export const ChartLayerStyleFragmentDoc = gql`
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on SeriesChartLayer {
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on PointsChartLayer {
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on DistributionChartLayer {
     mark
+    lineWidth
   }
 }
     `;
@@ -21097,6 +21222,7 @@ export const ChartTraceLayerFragmentDoc = gql`
   mark
   lineWidth
   markerSize
+  markerShape
   seriesAxis
 }
     ${ChartLayerCommonFragmentDoc}
@@ -21150,6 +21276,7 @@ export const ChartSeriesLayerFragmentDoc = gql`
   mark
   lineWidth
   markerSize
+  markerShape
 }
     ${ChartLayerCommonFragmentDoc}
 ${ParquetStoreFragmentDoc}
@@ -21209,6 +21336,7 @@ export const ChartPointsLayerFragmentDoc = gql`
   mark
   lineWidth
   markerSize
+  markerShape
 }
     ${ChartLayerCommonFragmentDoc}
 ${ParquetStoreFragmentDoc}
@@ -21239,6 +21367,7 @@ export const ChartDistributionLayerFragmentDoc = gql`
   bins
   valueUnit
   mark
+  lineWidth
 }
     ${ChartLayerCommonFragmentDoc}
 ${ParquetStoreFragmentDoc}
@@ -21255,7 +21384,7 @@ export const ChartFragmentDoc = gql`
   creator {
     sub
   }
-  kind
+  layout
   axis {
     ...Axis
   }
@@ -21285,7 +21414,7 @@ export const ListChartFragmentDoc = gql`
   name
   description
   createdAt
-  kind
+  layout
   axis {
     ...Axis
   }
@@ -28644,7 +28773,6 @@ export const ChartAddLayerCandidatesDocument = gql`
   chart(id: $chart) {
     id
     name
-    kind
     axis {
       ...Axis
     }
@@ -31462,6 +31590,91 @@ export function useGetMeshObjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GetMeshObjectQueryHookResult = ReturnType<typeof useGetMeshObjectQuery>;
 export type GetMeshObjectLazyQueryHookResult = ReturnType<typeof useGetMeshObjectLazyQuery>;
 export type GetMeshObjectQueryResult = Apollo.QueryResult<GetMeshObjectQuery, GetMeshObjectQueryVariables>;
+export const GetMeshObjectLabelDocument = gql`
+    query GetMeshObjectLabel($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      id
+      label
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetMeshObjectLabelQuery__
+ *
+ * To run a query within a React component, call `useGetMeshObjectLabelQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMeshObjectLabelQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMeshObjectLabelQuery({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *      object: // value for 'object'
+ *   },
+ * });
+ */
+export function useGetMeshObjectLabelQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMeshObjectLabelQuery, GetMeshObjectLabelQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMeshObjectLabelQuery, GetMeshObjectLabelQueryVariables>(GetMeshObjectLabelDocument, options);
+      }
+export function useGetMeshObjectLabelLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMeshObjectLabelQuery, GetMeshObjectLabelQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMeshObjectLabelQuery, GetMeshObjectLabelQueryVariables>(GetMeshObjectLabelDocument, options);
+        }
+export type GetMeshObjectLabelQueryHookResult = ReturnType<typeof useGetMeshObjectLabelQuery>;
+export type GetMeshObjectLabelLazyQueryHookResult = ReturnType<typeof useGetMeshObjectLabelLazyQuery>;
+export type GetMeshObjectLabelQueryResult = Apollo.QueryResult<GetMeshObjectLabelQuery, GetMeshObjectLabelQueryVariables>;
+export const GetMeshObjectSourceDocument = gql`
+    query GetMeshObjectSource($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      id
+      label
+      store {
+        ...FabriksStore
+      }
+    }
+  }
+}
+    ${FabriksStoreFragmentDoc}`;
+
+/**
+ * __useGetMeshObjectSourceQuery__
+ *
+ * To run a query within a React component, call `useGetMeshObjectSourceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMeshObjectSourceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMeshObjectSourceQuery({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *      object: // value for 'object'
+ *   },
+ * });
+ */
+export function useGetMeshObjectSourceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>(GetMeshObjectSourceDocument, options);
+      }
+export function useGetMeshObjectSourceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>(GetMeshObjectSourceDocument, options);
+        }
+export type GetMeshObjectSourceQueryHookResult = ReturnType<typeof useGetMeshObjectSourceQuery>;
+export type GetMeshObjectSourceLazyQueryHookResult = ReturnType<typeof useGetMeshObjectSourceLazyQuery>;
+export type GetMeshObjectSourceQueryResult = Apollo.QueryResult<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>;
 export const GetMeshCollectionDocument = gql`
     query GetMeshCollection($id: ID!) {
   meshCollection(id: $id) {
@@ -31618,6 +31831,55 @@ export function usePermissionOptionsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type PermissionOptionsQueryHookResult = ReturnType<typeof usePermissionOptionsQuery>;
 export type PermissionOptionsLazyQueryHookResult = ReturnType<typeof usePermissionOptionsLazyQuery>;
 export type PermissionOptionsQueryResult = Apollo.QueryResult<PermissionOptionsQuery, PermissionOptionsQueryVariables>;
+export const RowPlanDocument = gql`
+    query RowPlan($table: ID!, $maxJoinDepth: Int! = 2) {
+  rowPlan(table: $table, maxJoinDepth: $maxJoinDepth) {
+    key {
+      axis
+      column {
+        ...AttributePlanColumn
+      }
+    }
+    table {
+      id
+      name
+    }
+    hops {
+      ...RowPlanHop
+    }
+  }
+}
+    ${AttributePlanColumnFragmentDoc}
+${RowPlanHopFragmentDoc}`;
+
+/**
+ * __useRowPlanQuery__
+ *
+ * To run a query within a React component, call `useRowPlanQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRowPlanQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRowPlanQuery({
+ *   variables: {
+ *      table: // value for 'table'
+ *      maxJoinDepth: // value for 'maxJoinDepth'
+ *   },
+ * });
+ */
+export function useRowPlanQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RowPlanQuery, RowPlanQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RowPlanQuery, RowPlanQueryVariables>(RowPlanDocument, options);
+      }
+export function useRowPlanLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RowPlanQuery, RowPlanQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RowPlanQuery, RowPlanQueryVariables>(RowPlanDocument, options);
+        }
+export type RowPlanQueryHookResult = ReturnType<typeof useRowPlanQuery>;
+export type RowPlanLazyQueryHookResult = ReturnType<typeof useRowPlanLazyQuery>;
+export type RowPlanQueryResult = Apollo.QueryResult<RowPlanQuery, RowPlanQueryVariables>;
 export const GetSceneDocument = gql`
     query GetScene($id: ID!) {
   scene(id: $id) {
@@ -31921,6 +32183,11 @@ export const GetTableDatasetDocument = gql`
     ...TableDataset
     fullLens {
       id
+    }
+    visualizations {
+      __typename
+      id
+      name
     }
     keyedBy {
       source {

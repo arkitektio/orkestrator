@@ -19,6 +19,7 @@ import {
 } from "../api/graphql";
 import { residentLabel } from "../components/coordinates/residents";
 import { RegisterEdgeForm } from "./registration/RegisterEdgeForm";
+import { withUnit } from "@/core/util/units";
 
 /**
  * Register a source into a coordinate system: author one edge of the
@@ -207,7 +208,7 @@ const DatasetSystemStep = (props: {
           badge={residentLabel(system)}
           secondary={[...system.axes]
             .sort((a, b) => a.order - b.order)
-            .map((axis) => `${axis.name}${axis.unit ? `: ${axis.unit}` : ""}`)
+            .map((axis) => withUnit(axis.name, axis.unit))
             .join(", ")}
           onClick={() => props.onResolve(system)}
         />

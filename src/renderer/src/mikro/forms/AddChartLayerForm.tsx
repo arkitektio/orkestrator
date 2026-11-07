@@ -30,6 +30,7 @@ import {
   type CandidatesInput,
   type TableCandidate,
 } from "./addChartLayer/candidates";
+import { withUnit } from "@/core/util/units";
 
 const REFETCH = ["GetChart", "ChartAddLayerCandidates"];
 
@@ -100,7 +101,7 @@ const TableRow = ({
               <SelectContent align="end">
                 {open.map((c) => (
                   <SelectItem key={c.name} value={c.name} className="text-xs">
-                    {c.unit ? `${c.name} (${c.unit})` : c.name}
+                    {withUnit(c.name, c.unit)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -169,39 +170,28 @@ export const AddChartLayerForm = (props: {
     ? [...tables].sort((a, b) => Number(b.id === props.table) - Number(a.id === props.table))
     : tables;
 
-  if (data?.chart.kind === "VALUES") {
-    const kinds = new Set(data.chart.layers.map((l) => l.__typename));
-    const only = kinds.has("PointsChartLayer") ? "POINTS" : kinds.has("DistributionChartLayer") ? "DISTRIBUTION" : null;
-    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <DialogHeader>
-          <DialogTitle>Add a layer</DialogTitle>
-          <DialogDescription>
-            {`The rows that live in ${data.chart.worldCoordinateSystem.name} can be drawn in ${data.chart.name}: ${
-              only === "POINTS" ? "as points" : only === "DISTRIBUTION" ? "as a distribution" : "as points, or as a distribution"
-            }.`}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>
-          <AddValuesLayer chart={chart} tables={orderedTables} only={only} preselect={props.table} lens={props.lens} run={add} />
-        </DialogBody>
-      </div>
-    );
-  }
+  // A chart has no kind: traces, series and marks need its one measured axis
+  // (`axis`), points and distributions only rows in its world. One chart may
+  // hold both, so the dialog offers every section that applies.
+  const hasAxis = data?.chart.axis != null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <DialogHeader>
         <DialogTitle>Add a layer</DialogTitle>
         <DialogDescription>
-          {data
-            ? `What is laid along ${chartAxisLabel(data.chart.axis)} can be drawn in ${data.chart.name}.`
-            : "Looking for what is laid along this chart's axis…"}
+          {!data
+            ? "Looking for what this chart can draw…"
+            : hasAxis
+              ? `What is laid along ${chartAxisLabel(data.chart.axis)} can be drawn along it in ${data.chart.name}; the rows of a table can be drawn by their values beside it.`
+              : `The rows that live in ${data.chart.worldCoordinateSystem.name} can be drawn in ${data.chart.name}: as points, or as a distribution.`}
         </DialogDescription>
       </DialogHeader>
 
       {candidates && (
         <DialogBody className="gap-4">
+          {hasAxis && (
+            <>
           {candidates.lenses.length > 0 && (
             <Section title="Arrays" hint="read along the axis, as a trace">
               {candidates.lenses.map((lens) => (
@@ -315,6 +305,23 @@ export const AddChartLayerForm = (props: {
               No array or table is registered into this chart's space yet. Register one along its
               axis and it will be offered here.
             </p>
+          )}
+            </>
+          )}
+
+          {/* Drawn by their values: points or a distribution of a table's rows,
+              in panels beside the axis plot (or alone, without one). */}
+          {(!hasAxis || orderedTables.length > 0) && (
+            <Section title="By their values" hint="a table's rows as points, or as a distribution">
+              <AddValuesLayer
+                chart={chart}
+                tables={orderedTables}
+                only={null}
+                preselect={props.table}
+                lens={props.lens}
+                run={add}
+              />
+            </Section>
           )}
         </DialogBody>
       )}

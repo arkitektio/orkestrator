@@ -4,6 +4,7 @@ import {
   usePlotScopeStatus,
 } from "@/core/data/plot/scope/plotScope";
 import { ChartAnnotationsPanel } from "./features/annotations/ChartAnnotationsPanel";
+import { ChartProbePanel } from "./features/probe/ChartProbePanel";
 import { ChartProvider } from "./shell/ChartProvider";
 import { CHART_PHASE_WORDING, ChartViewport } from "./shell/ChartViewport";
 import { ChartLayerPanel } from "./shell/layerPanel/ChartLayerPanel";
@@ -39,6 +40,17 @@ const AnnotationsSidebar = () => (
   </PlotScopeGuard>
 );
 
+/** What a clicked point reaches (a chart of values): its row's plan, run from the row. */
+const ProbeSidebar = () => (
+  <PlotScopeGuard fallback={<SidebarFallback />}>
+    <ChartProbePanel />
+  </PlotScopeGuard>
+);
+
+/** Whether the chart has points to click — the Probe tab is shown only then. */
+const hasPointsLayer = (chart: { layers: readonly { __typename?: string }[] }): boolean =>
+  chart.layers.some((layer) => layer.__typename === "PointsChartLayer");
+
 /** Whether the chart draws any annotation collection — the Annotations tab is shown only then. */
 const hasAnnotationLayer = (chart: { layers: readonly { __typename?: string }[] }): boolean =>
   chart.layers.some((layer) => layer.__typename === "AnnotationChartLayer");
@@ -48,5 +60,7 @@ export const Chart = {
   Viewport: ChartViewport,
   LayersSidebar,
   AnnotationsSidebar,
+  ProbeSidebar,
   hasAnnotationLayer,
+  hasPointsLayer,
 };

@@ -30,6 +30,7 @@ import {
   type GraphOption,
   type SparseOption,
 } from "./columnOptions";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The "+" that turns a mesh collection's or a label mask's OFFERED columns into
@@ -326,9 +327,9 @@ export const ColumnOptionPicker = ({
                     >
                       <span className="flex-1 truncate">
                         {optionLabel(option)}
-                        {option.column.unit ? (
+                        {formatUnit(option.column.unit as string | null) ? (
                           <span className="ml-1 text-[9px] text-muted-foreground">
-                            {String(option.column.unit)}
+                            {formatUnit(option.column.unit as string | null)}
                           </span>
                         ) : null}
                       </span>

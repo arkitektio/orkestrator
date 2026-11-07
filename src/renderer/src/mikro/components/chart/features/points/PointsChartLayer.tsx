@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { formatSiValue } from "@/core/data/plot/coords/siFormat";
-import { PlaneSegments } from "@/core/data/plot/plane/PlaneMarks";
-import { colorsThrough, packDots, packPolyline } from "@/core/data/plot/plane/planeMarks";
+import { PlaneMarkers, PlaneSegments } from "@/core/data/plot/plane/PlaneMarks";
+import { colorsThrough, packDots, packPolyline } from "@/core/data/plot/plane/planeMarkPacking";
 import { usePlaneProbe, type PlaneProbe } from "@/core/data/plot/plane/planeProbe";
 import { usePlaneStoreApi } from "@/core/data/plot/plane/planeStore";
 import { buildPointIndex } from "@/core/data/plot/plane/pointIndex";
@@ -14,11 +14,11 @@ import { rowSql } from "@/mikro/lib/parquet/valuesSql";
 import { drawsLine, drawsMarkers } from "../../platform/model/chartLayerModel";
 import { useChartLayer } from "../../platform/stores/chartStore";
 import { usePointsData, type PointsSource } from "./usePointsData";
+import { withUnit } from "@/core/util/units";
 
 /** The colormap a third column (`zColumn`) is drawn through. */
 export const POINTS_Z_COLORMAP = ColorMap.Viridis;
 
-const withUnit = (name: string, unit: string | null) => (unit ? `${name} (${unit})` : name);
 
 const formatCell = (value: unknown): string =>
   typeof value === "number" ? formatSiValue(value) : value == null ? "–" : String(value);
@@ -76,6 +76,8 @@ export const PointsChartLayer = ({ layerId }: { layerId: string }) => {
       const dx = (data.xs[i] - at.x) * scale.pxPerX;
       const dy = (data.ys[i] - at.y) * scale.pxPerY;
       const row = data.rows[i];
+      // The row's id (its INDEX value), where the table has one: what a click pins.
+      const id = data.ids ? data.ids[i] : undefined;
       const rows: [string, string][] = [
         [withUnit(source.x, source.units.x), formatSiValue(data.xs[i])],
         [withUnit(source.y, source.units.y), formatSiValue(data.ys[i])],
@@ -83,11 +85,12 @@ export const PointsChartLayer = ({ layerId }: { layerId: string }) => {
       if (source.z && data.zs) rows.push([withUnit(source.z, source.units.z), formatSiValue(data.zs[i])]);
       return {
         layerId,
-        title: `${layer.label} · row ${row}`,
+        title: id !== undefined && id !== null ? `${layer.label} · ${String(id)}` : `${layer.label} · row ${row}`,
         color: layer.solidColor,
         rows,
         distancePx: Math.hypot(dx, dy),
         at: { x: data.xs[i], y: data.ys[i] },
+        ...(id !== undefined && id !== null ? { pick: { table: source.table, id } } : {}),
         detail: engine
           ? {
               key: `${layerId}:${row}`,
@@ -140,13 +143,14 @@ export const PointsChartLayer = ({ layerId }: { layerId: string }) => {
         />
       )}
       {drawDots && (
-        <PlaneSegments
+        <PlaneMarkers
           pairs={dots.pairs}
           count={dots.count}
           origin={origin}
           color={layer.solidColor}
           colors={dots.colors}
-          width={layer.markerSize}
+          size={layer.markerSize}
+          shape={layer.markerShape}
           opacity={layer.opacity}
           renderOrder={3}
         />

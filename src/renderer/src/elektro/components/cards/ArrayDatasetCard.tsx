@@ -5,6 +5,7 @@ import { formatShape } from "@/core/data/arrays/formatShape";
 import { ElektroArrayDataset } from "@/core/linkers";
 import { ListArrayDatasetFragment } from "../../api/graphql";
 import { specsOf } from "../../specs";
+import { formatUnit } from "@/core/util/units";
 
 interface Props {
   item: ListArrayDatasetFragment;
@@ -32,7 +33,7 @@ const TheCard = ({ item, className }: Props) => {
             </span>
           ))}
           <span className="truncate font-mono">{formatShape(item.axisNames, item.shape)}</span>
-          {item.valueUnit && <span className="shrink-0 font-mono">{item.valueUnit}</span>}
+          {formatUnit(item.valueUnit) && <span className="shrink-0">{formatUnit(item.valueUnit)}</span>}
           {item.simulation && (
             <Badge variant="outline" className="ml-auto max-w-[50%] shrink truncate text-[10px]">
               simulated · {item.simulation.model.name}

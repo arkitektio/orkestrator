@@ -22,7 +22,7 @@
  */
 import type { MikroClient } from "@/core/data/zarr/store/types";
 import type {
-  AttributePlanLike,
+  PlanLike,
   AttributeRow,
   PlanRowsState,
   SparseHopLike,
@@ -174,11 +174,11 @@ export function createSparseProfileReader(deps: SparseProfileReaderDeps): Sparse
   const states = new LruMap<PlanRowsState>(deps.stateCap ?? DEFAULT_STATE_CAP);
   let disposed = false;
 
-  const profileKey = (plan: AttributePlanLike, hop: SparseHopLike, position: number) =>
+  const profileKey = (plan: PlanLike, hop: SparseHopLike, position: number) =>
     `${hopKey(plan, hop)}|${position}`;
 
   const profileFor = (
-    plan: AttributePlanLike,
+    plan: PlanLike,
     hop: SparseHopLike,
     choice: SparseLayoutChoice,
     position: number,

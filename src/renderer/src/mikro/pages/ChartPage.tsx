@@ -8,6 +8,9 @@ import { chartAxisLabel } from "../chartAxis";
 import { Chart } from "../components/chart/Chart";
 import { MIKRO_HELP } from "../help";
 
+/** The layer kinds drawn at their columns' values rather than along the axis. */
+const DRAWN_BY_VALUES = new Set(["PointsChartLayer", "DistributionChartLayer"]);
+
 /**
  * A chart: data laid out along one metric axis, with values read off it -- or,
  * for a chart of values, a table's rows drawn at the values of their columns.
@@ -50,6 +53,13 @@ export const ChartPage = asDetailQueryRoute(
                   <Chart.AnnotationsSidebar />
                 </Sidebars.Tab>
               )}
+              {/* A point of a chart of values is a row: click one, and this says
+                  what it is and what it reaches. */}
+              {Chart.hasPointsLayer(chart) && (
+                <Sidebars.Tab label="Probe">
+                  <Chart.ProbeSidebar />
+                </Sidebars.Tab>
+              )}
               <Sidebars.Tab label="About">
                 <div className="flex flex-col gap-3 p-4 text-sm">
                   {chart.description && (
@@ -57,8 +67,13 @@ export const ChartPage = asDetailQueryRoute(
                   )}
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {/* An axis chart is laid along its world; a chart of values draws its world's rows. */}
-                      {chart.kind === "VALUES" ? "Values of the rows of" : "Laid out along"}
+                      {/* Along-axis layers are laid along the world's axis; value
+                          layers draw the rows placed in it. One chart may do both. */}
+                      {!chart.axis
+                        ? "Values of the rows of"
+                        : chart.layers.some((layer) => DRAWN_BY_VALUES.has(layer.__typename))
+                          ? "Laid out along, with values of the rows of"
+                          : "Laid out along"}
                     </span>
                     {chart.axis && <span className="font-mono">{chartAxisLabel(chart.axis)}</span>}
                     <MikroCoordinateSystem.DetailLink

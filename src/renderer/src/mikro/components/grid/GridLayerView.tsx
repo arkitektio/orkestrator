@@ -13,6 +13,7 @@ import { createWindowReader } from "@/mikro/lib/zarr/windowReader";
 import { cellAt, rectOf, rgbaOf } from "./gridModel";
 import { readArrayHeatmap, readCells, readSparseHeatmap, type GridRead, type GridWorld } from "./gridReaders";
 import { useGridStoreApi } from "./gridStore";
+import { withUnit } from "@/core/util/units";
 
 export type GridLayerFragment = GridHeatmapLayerFragment | GridCellsLayerFragment;
 
@@ -100,7 +101,7 @@ export const GridLayerView = ({ layer, world, memberText }: { layer: GridLayerFr
     [raster, lo, hi, colormap],
   );
 
-  const valueLabel = layer.__typename === "CellsGridLayer" ? `${layer.valueColumn}${layer.valueUnit ? ` (${layer.valueUnit})` : ""}` : "value";
+  const valueLabel = layer.__typename === "CellsGridLayer" ? withUnit(layer.valueColumn, layer.valueUnit) : "value";
   const probe = useMemo<PlaneProbe | null>(() => {
     if (!raster) return null;
     return (at) => {

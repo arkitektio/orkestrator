@@ -1,6 +1,6 @@
 import type {
   AttributeColumnLike,
-  AttributePlanLike,
+  PlanLike,
   AttributeRow,
   ParquetStoreLike,
   TableHopLike,
@@ -84,7 +84,7 @@ export class AttributeLookupEngine extends ParquetQueryEngine {
    * empty or complete set means the declared list.
    */
   lookup(
-    plan: AttributePlanLike,
+    plan: PlanLike,
     hop: TableHopLike,
     held: HeldMap,
     isStale: () => boolean = () => false,
@@ -118,7 +118,7 @@ export class AttributeLookupEngine extends ParquetQueryEngine {
    * Null on a miss OR when `held` does not cover the key columns.
    */
   peek(
-    plan: AttributePlanLike,
+    plan: PlanLike,
     hop: TableHopLike,
     held: HeldMap,
     options: LookupOptions = {},
@@ -137,7 +137,7 @@ export class AttributeLookupEngine extends ParquetQueryEngine {
    * surfaces them properly). The statement prepared is the ONE, full-width
    * one; a projected statement is prepared on first use.
    */
-  warm(plan: AttributePlanLike, hop: TableHopLike): void {
+  warm(plan: PlanLike, hop: TableHopLike): void {
     if (this.disposed) return;
     const store = hop.lookup.store;
     const statementKey = hopKey(plan, hop);

@@ -1,17 +1,24 @@
 import type { AxisCoords } from "../coords/axisPath";
 import { applyPathToCoords } from "../coords/axisPath";
 import type { ArrayLineReaderLike } from "./arrayLine";
-import { markerFor } from "./arrayLine";
+import { DEFAULT_LINE_CAP, markerFor } from "./arrayLine";
 import type {
   ArrayHopLike,
   AttributeHopLike,
   AttributePlanLike,
+  PlanLike,
+  PlanLine,
   PlanRowsState,
+  RowId,
+  RowPlanLike,
   SparseHopLike,
   TableHopLike,
 } from "./attributeTypes";
 import {
+  hopDirection,
   hopKey,
+  indexColumnOf,
+  isRowPlan,
   hopSource,
   hopViaName,
   isArrayHop,
@@ -67,19 +74,25 @@ export type ExecutePlanOptions = {
    * is handed the mapped point, takes it here.
    */
   probed?: AxisCoords | null;
+  /**
+   * (Row plans) How many rows a MANY hop keeps — and so how many ids its
+   * children bind — first in row order; the rest is reported as `truncated`.
+   * A cluster's members: the first 50, then all when asked. Null = all.
+   */
+  manyLimit?: number | null;
 };
 
 /** What the executor needs of the sparse profile reader (structural; the
  * concrete reader lives in `lib/sparse/sparseProfile.ts`). */
 export type SparseProfileReaderLike = {
   read(
-    plan: AttributePlanLike,
+    plan: PlanLike,
     hop: SparseHopLike,
     id: HeldValue,
     options: { isStale?: () => boolean; limit: number },
   ): Promise<PlanRowsState | null>;
-  peek(plan: AttributePlanLike, hop: SparseHopLike, id: HeldValue, limit: number): PlanRowsState | null;
-  warm(plan: AttributePlanLike, hop: SparseHopLike): void;
+  peek(plan: PlanLike, hop: SparseHopLike, id: HeldValue, limit: number): PlanRowsState | null;
+  warm(plan: PlanLike, hop: SparseHopLike): void;
   dispose(): void;
 };
 
@@ -98,14 +111,25 @@ export type PlanHopStates = Record<string, PlanRowsState>;
 
 export const DEFAULT_SPARSE_LIMIT = 25;
 
+/**
+ * The most lines one ARRAY hop reads for several ids. The reader keeps this
+ * many, so a run never evicts its own lines before `peek` can answer them.
+ */
+export const ARRAY_LINES_CAP = DEFAULT_LINE_CAP;
+
 const UNREACHABLE: PlanRowsState = { status: "unreachable", rows: [] };
 
 type ChainDeps = Pick<ExecutePlanDeps, "engine" | "sparse" | "arrays">;
 
 type ChainContext = {
-  plan: AttributePlanLike;
+  plan: PlanLike;
   hops: readonly AttributeHopLike[];
   value: HeldValue;
+  /** A row plan's landing is a real row whatever its id: row 0 is not background. */
+  rowRooted: boolean;
+  /** Whether `value` is worth showing as the landing's id (a string row id is not a HeldValue). */
+  showValue: boolean;
+  manyLimit: number | null;
   sampleSource: "resident" | "exact";
   isStale: () => boolean;
   unreachable: (hop: AttributeHopLike, reason: string, detail?: unknown) => PlanRowsState;
@@ -117,9 +141,15 @@ type ChainContext = {
 
 /** How one hop is bound, decided from its parent's settled state. */
 type Binding =
-  | { kind: "table"; held: HeldMap }
+  /** `ids`: the row ids this binding names, where it names rows (a row plan's
+   * landing, a REVERSE or SAME_ROWS hop) — what the hop's rows ARE when they
+   * do not carry their INDEX themselves. */
+  | { kind: "table"; held: HeldMap; ids?: readonly RowId[] }
   | { kind: "sparse"; id: HeldValue }
   | { kind: "array"; id: HeldValue }
+  /** An ARRAY hop whose parent returned several ids (a cluster's members):
+   * one line each, at most `ARRAY_LINES_CAP`; `total` is how many there were. */
+  | { kind: "arrays"; ids: HeldValue[]; total: number }
   /** Nothing to bind — the parent had no rows (or was background). */
   | { kind: "empty" }
   | { kind: "unreachable"; reason: string; detail?: unknown };
@@ -163,10 +193,76 @@ const valuesFrom = (
   return Array.isArray(bound) ? [...(bound as readonly BindParam[])] : [bound as BindParam];
 };
 
+const isRowId = (value: unknown): value is RowId =>
+  typeof value === "number" || typeof value === "bigint" || typeof value === "string";
+
+const asIds = (value: HeldMap[string] | undefined): RowId[] =>
+  value === undefined ? [] : Array.isArray(value) ? value.filter(isRowId) : isRowId(value) ? [value] : [];
+
+/** Whole within this of an integer: what floating-point `id · scale + offset` may drift by. */
+const KEY_MAP_TOLERANCE = 1e-6;
+
+/**
+ * A held id as the other table's INDEX (`keyMap`, the edge between the two
+ * frames already inverted by the server). Null when it lands between rows —
+ * that row has no counterpart there — or is not a number to map.
+ */
+const mapRowId = (id: RowId, keyMap: { scale: number; offset: number } | null | undefined): RowId | null => {
+  if (!keyMap) return id;
+  if (typeof id === "string") return null;
+  const mapped = Number(id) * keyMap.scale + keyMap.offset;
+  const whole = Math.round(mapped);
+  return Number.isFinite(mapped) && Math.abs(mapped - whole) <= KEY_MAP_TOLERANCE ? whole : null;
+};
+
+/**
+ * A REVERSE or SAME_ROWS hop of a row plan binds the parent ROW's id — its
+ * INDEX — never a column the parent's rows carry: a cluster's members are the
+ * rows whose referencing column names the cluster's id; its PCA row is the row
+ * with that id (mapped). The ids are bound under every name the hop's lookup
+ * reads (`keyColumns[].axis`), as a list for REVERSE (the members are many).
+ */
+const bindByRow = (
+  hop: AttributeHopLike,
+  rootHeld: HeldMap,
+  parent: { hop: AttributeHopLike; state: PlanRowsState; held: HeldMap | null },
+  direction: "REVERSE" | "SAME_ROWS",
+): Binding => {
+  if (!isTableHop(hop)) {
+    return { kind: "unreachable", reason: `a ${direction} hop lands in a table, and this one does not`, detail: { hop: hop.index } };
+  }
+  const parentIds = parent.state.ids;
+  if (!parentIds) {
+    return {
+      kind: "unreachable",
+      reason: "the hop's parent rows do not say which rows they are (no INDEX)",
+      detail: { parent: hop.parent },
+    };
+  }
+  const seen = new Set<string>();
+  const ids: RowId[] = [];
+  for (const id of parentIds) {
+    const mapped = direction === "SAME_ROWS" ? mapRowId(id, hop.lookup.keyMap) : id;
+    if (mapped === null) continue;
+    const token = `${typeof mapped}:${String(mapped)}`;
+    if (seen.has(token)) continue;
+    seen.add(token);
+    ids.push(mapped);
+  }
+  if (ids.length === 0) return { kind: "empty" };
+  const many = direction === "REVERSE" || ids.length > 1;
+  const held: HeldMap = { ...rootHeld };
+  for (const key of hop.lookup.keyColumns) held[key.axis] = many ? ids : ids[0];
+  // A SAME_ROWS hop's rows ARE these ids; a REVERSE hop's are the members,
+  // which its rows name themselves.
+  return { kind: "table", held, ids: direction === "SAME_ROWS" ? ids : undefined };
+};
+
 const bindHop = (
   hop: AttributeHopLike,
   rootHeld: HeldMap,
   parent: { hop: AttributeHopLike; state: PlanRowsState; held: HeldMap | null } | null,
+  plan: PlanLike,
 ): Binding => {
   if (hop.parent === null || hop.parent === undefined) {
     if (isSparseHop(hop)) {
@@ -192,7 +288,10 @@ const bindHop = (
       }
       return { kind: "array", id };
     }
-    return { kind: "table", held: rootHeld };
+    // A row plan's landing IS the picked row: its id is what the rows are.
+    return isRowPlan(plan)
+      ? { kind: "table", held: rootHeld, ids: asIds(rootHeld[plan.key.axis]) }
+      : { kind: "table", held: rootHeld };
   }
 
   if (!parent) {
@@ -207,6 +306,16 @@ const bindHop = (
       detail: { parent: hop.parent },
     };
   }
+  const direction = hopDirection(hop);
+  if (direction === null) {
+    return {
+      kind: "unreachable",
+      reason: `the hop crosses its fact in a direction this client does not know (${String(hop.via?.direction)})`,
+      detail: { hop: hop.index },
+    };
+  }
+  if (direction !== "FORWARD") return bindByRow(hop, rootHeld, parent, direction);
+
   const name = hopViaName(hop);
   if (name === null) {
     return { kind: "unreachable", reason: "the hop names nothing to bind from its parent", detail: { hop: hop.index } };
@@ -214,6 +323,11 @@ const bindHop = (
   const values = valuesFrom(parent, name);
   if (values.length === 0) return { kind: "empty" };
 
+  // Several members, each its own line through the array.
+  if (isArrayHop(hop) && values.length > 1 && values.every(isHeldValue)) {
+    const ids = values as HeldValue[];
+    return { kind: "arrays", ids: ids.slice(0, ARRAY_LINES_CAP), total: ids.length };
+  }
   if (isSparseHop(hop) || isArrayHop(hop)) {
     if (values.length !== 1 || !isHeldValue(values[0])) {
       return {
@@ -240,7 +354,7 @@ const withSample = (
   state: PlanRowsState,
   context: ChainContext,
 ): PlanRowsState =>
-  hop.parent === null || hop.parent === undefined
+  (hop.parent === null || hop.parent === undefined) && context.showValue
     ? { ...state, sampledValue: context.value, sampleSource: context.sampleSource }
     : state;
 
@@ -249,6 +363,61 @@ const withMarker = (hop: ArrayHopLike, state: PlanRowsState, context: ChainConte
   if (!state.series) return state;
   const marker = markerFor(hop, state.series, context.probed);
   return marker === null ? state : { ...state, series: { ...state.series, marker } };
+};
+
+/**
+ * Several lines' reads as one hop state: the lines that exist, in the order
+ * the ids came; an error only when every read failed. Null when any read was
+ * superseded (or, peeking, missed).
+ */
+const asLines = (
+  reads: readonly (PlanRowsState | null)[],
+  binding: { ids: readonly HeldValue[]; total: number },
+): PlanRowsState | null => {
+  if (reads.some((read) => read === null)) return null;
+  const lines: PlanLine[] = [];
+  let firstError: string | undefined;
+  let errors = 0;
+  reads.forEach((read, i) => {
+    if (!read) return;
+    if (read.status === "error") {
+      errors++;
+      firstError ??= read.error;
+      return;
+    }
+    if (read.series) lines.push({ ...read.series, id: binding.ids[i] });
+  });
+  if (errors > 0 && errors === reads.length) return { status: "error", rows: [], error: firstError };
+  const truncated = binding.total > binding.ids.length ? { shown: binding.ids.length, total: binding.total } : undefined;
+  return { status: "rows", rows: [], lines, ...(truncated ? { truncated } : {}) };
+};
+
+/**
+ * A row plan's TABLE result, made to say which rows it holds: a MANY result
+ * capped at `manyLimit` (the rest reported as `truncated`), and the rows' ids —
+ * read off the rows where they carry the table's INDEX (a cluster's members),
+ * else the ids the hop was bound with (the picked row, a SAME_ROWS row).
+ * Attribute plans pass through untouched.
+ */
+const asRowResult = (
+  hop: TableHopLike,
+  state: PlanRowsState,
+  binding: Binding,
+  context: ChainContext,
+): PlanRowsState => {
+  if (!isRowPlan(context.plan) || state.status !== "rows") return state;
+  let rows = state.rows;
+  let truncated = state.truncated;
+  const limit = context.manyLimit;
+  if (limit !== null && rows.length > limit && (hop.cardinality === "MANY" || hopDirection(hop) === "REVERSE")) {
+    truncated = { shown: limit, total: rows.length };
+    rows = rows.slice(0, limit);
+  }
+  const index = indexColumnOf(hop);
+  const fromRows = index ? rows.map((row) => row[index]).filter(isRowId) : [];
+  const ids =
+    fromRows.length > 0 ? fromRows : binding.kind === "table" && binding.ids ? binding.ids : undefined;
+  return { ...state, rows, truncated, ...(ids ? { ids } : {}) };
 };
 
 /** What a hop settled to, and what it was bound with (for its children). */
@@ -276,7 +445,7 @@ async function executeChain(
 ): Promise<PlanHopStates | null> {
   const states: PlanHopStates = {};
   const byIndex = new Map<number, HopOutcome>();
-  const background = isBackground(context.value);
+  const background = !context.rowRooted && isBackground(context.value);
 
   for (const hop of context.hops) {
     const key = hopKey(context.plan, hop);
@@ -285,13 +454,14 @@ async function executeChain(
     if (rootHeld === null) {
       state = context.unreachable(hop, "held values do not cover the plan's key axes", {
         source: hopSource(hop).name,
-        passthrough: context.plan.sample.passthrough,
-        produces: context.plan.sample.produces,
+        ...(isRowPlan(context.plan)
+          ? { key: context.plan.key.axis }
+          : { passthrough: context.plan.sample.passthrough, produces: context.plan.sample.produces }),
       });
     } else if (background && (hop.parent === null || hop.parent === undefined)) {
       state = { status: "background", rows: [], sampledValue: context.value, sampleSource: context.sampleSource };
     } else {
-      const binding = bindHop(hop, rootHeld, parentOf(context, hop, byIndex));
+      const binding = bindHop(hop, rootHeld, parentOf(context, hop, byIndex), context.plan);
       held = heldOf(binding);
       try {
         if (binding.kind === "unreachable") {
@@ -310,13 +480,21 @@ async function executeChain(
           const read = await deps.arrays.read(context.plan, array, binding.id, { isStale: context.isStale });
           if (read === null) return null;
           state = withSample(hop, withMarker(array, read, context), context);
+        } else if (binding.kind === "arrays") {
+          const array = hop as ArrayHopLike;
+          const reads = await Promise.all(
+            binding.ids.map((id) => deps.arrays.read(context.plan, array, id, { isStale: context.isStale })),
+          );
+          const lines = asLines(reads, binding);
+          if (lines === null) return null;
+          state = lines;
         } else {
           const table = hop as TableHopLike;
           const rows = await deps.engine.lookup(context.plan, table, binding.held, context.isStale, {
             columns: context.columnsFor(table),
           });
           if (rows === null) return null;
-          state = withSample(hop, { status: "rows", rows }, context);
+          state = withSample(hop, asRowResult(table, { status: "rows", rows }, binding, context), context);
         }
       } catch (error) {
         state = asError(error);
@@ -334,7 +512,7 @@ async function executeChain(
 function peekChain(deps: ChainDeps, context: ChainContext, rootHeld: HeldMap | null): PlanHopStates | null {
   const states: PlanHopStates = {};
   const byIndex = new Map<number, HopOutcome>();
-  const background = isBackground(context.value);
+  const background = !context.rowRooted && isBackground(context.value);
 
   for (const hop of context.hops) {
     const key = hopKey(context.plan, hop);
@@ -345,7 +523,7 @@ function peekChain(deps: ChainDeps, context: ChainContext, rootHeld: HeldMap | n
     } else if (background && (hop.parent === null || hop.parent === undefined)) {
       state = { status: "background", rows: [], sampledValue: context.value, sampleSource: context.sampleSource };
     } else {
-      const binding = bindHop(hop, rootHeld, parentOf(context, hop, byIndex));
+      const binding = bindHop(hop, rootHeld, parentOf(context, hop, byIndex), context.plan);
       held = heldOf(binding);
       if (binding.kind === "unreachable") {
         state = UNREACHABLE;
@@ -360,11 +538,19 @@ function peekChain(deps: ChainDeps, context: ChainContext, rootHeld: HeldMap | n
         const read = deps.arrays.peek(context.plan, array, binding.id);
         if (read === null) return null;
         state = withSample(hop, withMarker(array, read, context), context);
+      } else if (binding.kind === "arrays") {
+        const array = hop as ArrayHopLike;
+        const lines = asLines(
+          binding.ids.map((id) => deps.arrays.peek(context.plan, array, id)),
+          binding,
+        );
+        if (lines === null) return null;
+        state = lines;
       } else {
         const table = hop as TableHopLike;
         const rows = deps.engine.peek(context.plan, table, binding.held, { columns: context.columnsFor(table) });
         if (rows === null) return null;
-        state = withSample(hop, { status: "rows", rows }, context);
+        state = withSample(hop, asRowResult(table, { status: "rows", rows }, binding, context), context);
       }
     }
     byIndex.set(hop.index, { state, held });
@@ -374,7 +560,7 @@ function peekChain(deps: ChainDeps, context: ChainContext, rootHeld: HeldMap | n
 }
 
 const contextFor = (
-  plan: AttributePlanLike,
+  plan: PlanLike,
   value: HeldValue,
   sampleSource: "resident" | "exact",
   opts: ExecutePlanOptions,
@@ -382,6 +568,9 @@ const contextFor = (
   plan,
   hops: opts.hops ?? plan.hops,
   value,
+  rowRooted: isRowPlan(plan),
+  showValue: true,
+  manyLimit: opts.manyLimit ?? null,
   sampleSource,
   isStale: opts.isStale ?? (() => false),
   unreachable: (hop, reason, detail) => {
@@ -523,6 +712,23 @@ export function peekPlanWithValue(
   opts: Pick<ExecutePlanOptions, "hops" | "columnsFor" | "sparseLimit" | "probed"> = {},
 ): PlanHopStates | null {
   return peekChain(deps, contextFor(plan, value, sampleSource, opts), buildHeld(plan, mapped, value));
+}
+
+/**
+ * Run a ROW's plan (`rowPlan`): no sample and no path — the picked row's
+ * INDEX value is held under `key.axis` and the hops run in order, exactly as
+ * an attribute plan's after its sample. Row 0 is a row like any other.
+ */
+export async function executeRowPlan(
+  deps: ChainDeps,
+  plan: RowPlanLike,
+  id: RowId,
+  opts: Omit<ExecutePlanOptions, "sampleSync" | "probed"> = {},
+): Promise<PlanHopStates | null> {
+  // `value` is the landing's provenance for display only; a string id has none.
+  const value: HeldValue = typeof id === "string" ? 0 : id;
+  const context = { ...contextFor(plan, value, "exact", opts), showValue: typeof id !== "string" };
+  return executeChain(deps, context, { [plan.key.axis]: id });
 }
 
 /** Re-exported for hosts that key their own caches the executor's way. */

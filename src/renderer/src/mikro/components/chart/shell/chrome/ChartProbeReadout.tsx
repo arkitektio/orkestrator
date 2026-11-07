@@ -7,6 +7,7 @@ import { useRangeStoreApi } from "@/core/data/plot/stores/rangeStore";
 import { useViewerStore, useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 import { bindFields } from "@/core/data/scene/stores/bindStore";
 import { useChartStore, useChartStoreApi } from "../../platform/stores/chartStore";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * The hover readout of an axis chart: a cursor line across the plot, and each
@@ -101,7 +102,7 @@ const Readout = ({ axisName, unit }: { axisName: string; unit: string | null }) 
           <span className="truncate text-foreground/80">{row.label}</span>
           <span className="ml-auto pl-3 font-mono tabular-nums text-foreground/95">
             {row.values.map((v) => (v == null ? "–" : formatSiValue(v.value))).join(" / ")}
-            {row.unit ? ` ${row.unit}` : ""}
+            {formatUnit(row.unit) ? ` ${formatUnit(row.unit)}` : ""}
           </span>
           {row.approximate && (
             <span className="text-[10px] text-amber-400" title="Read off the drawn envelope, not the raw samples">

@@ -31,8 +31,13 @@ export type PlaneState = {
   touched: boolean;
   sizePx: { width: number; height: number };
   hover: PlaneHover;
-  /** Member labels of a categorical x axis (the groups of a box plot); null for a numeric one. */
-  xCategories: readonly string[] | null;
+  /**
+   * Member labels of a categorical x axis (the groups of a box plot), by the
+   * layer that reported them. Keyed like `extents` and `legends`, so one layer
+   * clearing its own (a histogram, a box still loading, an unmount) never wipes
+   * another's; the host reads the layer whose axis it draws (`categoriesOf`).
+   */
+  xCategories: Record<string, readonly string[]>;
   /** What each layer adds to the legend: its groups, and a colour scale. */
   legends: Record<string, PlaneLayerLegend>;
   history: PlaneView[];
@@ -46,7 +51,7 @@ export type PlaneState = {
   fit: () => void;
   setSize: (size: { width: number; height: number }) => void;
   setHover: (hover: PlaneHover) => void;
-  setXCategories: (categories: readonly string[] | null) => void;
+  setXCategories: (layerId: string, categories: readonly string[] | null) => void;
   setLegend: (layerId: string, legend: PlaneLayerLegend | null) => void;
   undo: () => void;
   redo: () => void;
@@ -76,7 +81,7 @@ export const createPlaneStore = (options: { padding?: number } = {}) => {
     touched: false,
     sizePx: { width: 1, height: 1 },
     hover: null,
-    xCategories: null,
+    xCategories: {},
     legends: {},
     history: [],
     future: [],
@@ -129,11 +134,15 @@ export const createPlaneStore = (options: { padding?: number } = {}) => {
       else delete legends[layerId];
       set({ legends });
     },
-    setXCategories: (categories) => {
-      const current = get().xCategories;
+    setXCategories: (layerId, categories) => {
+      const all = get().xCategories;
+      const current = all[layerId] ?? null;
       if (current === categories) return;
       if (current && categories && current.length === categories.length && current.every((c, i) => c === categories[i])) return;
-      set({ xCategories: categories });
+      const next = { ...all };
+      if (categories) next[layerId] = categories;
+      else delete next[layerId];
+      set({ xCategories: next });
     },
     undo: () => {
       const { history, future, committed } = get();

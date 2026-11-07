@@ -7,6 +7,7 @@ import { useLayerState } from "../../platform/stores/experimentStore";
 import { coloursChannels } from "@/core/data/plot/model/channelColor";
 import type { RowInfo } from "@/core/data/plot/stores/viewer/layoutSlice";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * Row labels. Down the LEFT edge: which layer each row is, in its colour, with
@@ -188,7 +189,7 @@ const RowScale = ({
   const range = !unitOnly && lo != null && hi != null;
   return (
     <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-      {range ? `${formatValue(lo)}…${formatValue(hi)} ${unit}` : unit}
+      {range ? `${formatValue(lo)}…${formatValue(hi)} ${formatUnit(unit) ?? ""}` : formatUnit(unit)}
     </span>
   );
 };

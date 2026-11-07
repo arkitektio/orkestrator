@@ -1,300 +1,44 @@
-import { useMemo, useState } from "react";
-import { TraceSparkline } from "@/core/data/plot/chrome/TraceSparkline";
-import { MikroArrayDataset } from "@/mikro/linkers";
+import { useMemo } from "react";
+import {
+  AttributePlanBlock as BaseAttributePlanBlock,
+  FollowReferenceContext,
+  HopBlocks as BaseHopBlocks,
+  formatCell,
+  profileLabelsFor,
+  type HopBlock,
+} from "@/mikro/lib/attributes/ui/AttributeBlocks";
 import type { ProbeResult } from "../probe/probeTypes";
 import { isSameProbeKey } from "../probe/probeTypes";
-import type {
-  AttributeColumnLike,
-  AttributeRow,
-  HopMeta,
-  PlanRowsState,
-  PlanSeries,
-} from "@/mikro/lib/attributes/attributeTypes";
 import { useViewerStore } from "../stores/viewerStore";
-import { profileLabelsFor, type HopBlock } from "./attributeComparison";
-
-export { profileLabelsFor, type HopBlock };
 import { perfMonitor } from "../perf/perfMonitor";
+
+export { formatCell, profileLabelsFor, type HopBlock };
 
 /**
  * "What is under this pixel?" — the probe HUD section rendering the active
- * probe's attribute-plan results: one block per HOP that ran (the landing
- * table or matrix, then every reference the user switched on), its 0..n rows
- * (plural is the plan contract), and a lazy `references` follow-up per
- * referencing column for the hops left off. Pure store consumer: all data
- * arrives via `probedAttributes` (written by AttributeProbeTracker), so no
- * GraphQL hook mounts here and no extra Guard is needed.
+ * probe's attribute-plan results. Pure store consumer: all data arrives via
+ * `probedAttributes` (written by AttributeProbeTracker), so no GraphQL hook
+ * mounts here and no extra Guard is needed.
  *
- * A SPARSE block is one object's profile — `position → value`, strongest
- * first, capped — and reads its labels (gene symbols) off the names hop that
- * follows it in the chain, when that hop ran: the rows of a MANY hop carry
- * the position they answer, so the join is a map lookup here, not a query.
- *
- * An ARRAY block is one object's line through a dense array (a cell's trace),
- * drawn small, with the probed point marked on it when the graph relates the
- * line's axis to the scene's.
+ * The blocks themselves are `@/mikro/lib/attributes/ui` (a chart's probe draws
+ * the same ones); these wrappers hand them the scene's reference follow-up.
  */
 
-export const formatCell = (value: unknown): string => {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "number") {
-    if (Number.isInteger(value)) return String(value);
-    return String(Number(value.toPrecision(5)));
-  }
-  return String(value);
-};
-
-const StatusBadge = ({ state }: { state: PlanRowsState }) => {
-  if (state.status === "pending") {
-    return (
-      <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/40">…</span>
-    );
-  }
-  if (state.status === "rows") {
-    return state.sampleSource === "exact" ? (
-      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
-        exact
-      </span>
-    ) : (
-      <span className="rounded bg-foreground/10 px-1 text-[9px] font-medium text-foreground/50">~LOD</span>
-    );
-  }
-  return null;
-};
-
-const ReferenceFollowUp = ({
-  column,
-  value,
-}: {
-  column: AttributeColumnLike;
-  value: number | bigint;
-}) => {
+const SceneFollow = ({ children }: { children: React.ReactNode }) => {
   const follow = useViewerStore((s) => s.followAttributeReference);
-  const [state, setState] = useState<
-    | { phase: "collapsed" }
-    | { phase: "loading" }
-    | { phase: "rows"; rows: readonly AttributeRow[] }
-    | { phase: "error" }
-  >({ phase: "collapsed" });
-
-  if (!column.references || !follow) return null;
-
-  const expand = async () => {
-    setState({ phase: "loading" });
-    try {
-      const rows = await follow(column, value);
-      setState(rows ? { phase: "rows", rows } : { phase: "error" });
-    } catch {
-      setState({ phase: "error" });
-    }
-  };
-
-  if (state.phase === "collapsed") {
-    return (
-      <button
-        className="pointer-events-auto rounded border border-foreground/10 bg-foreground/5 px-1 text-[9px] text-foreground/60 hover:bg-foreground/15 hover:text-foreground"
-        title={`Look up in ${column.references.name}`}
-        onClick={() => void expand()}
-      >
-        → {column.references.name}
-      </button>
-    );
-  }
-  if (state.phase === "loading") {
-    return <span className="text-[9px] text-foreground/40">…</span>;
-  }
-  if (state.phase === "error") {
-    return <span className="text-[9px] text-red-700/70 dark:text-red-300/70">lookup failed</span>;
-  }
-  return (
-    <div className="col-span-2 ml-2 space-y-0.5 border-l border-foreground/10 pl-2">
-      {state.rows.length === 0 && (
-        <span className="text-[10px] text-foreground/40">no matching row</span>
-      )}
-      {state.rows.map((row, index) => (
-        <div key={index} className="grid grid-cols-[auto_1fr] gap-x-2">
-          {Object.entries(row).map(([name, cell]) => (
-            <RowCellPair key={name} name={name} value={cell} />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  return <FollowReferenceContext.Provider value={follow}>{children}</FollowReferenceContext.Provider>;
 };
 
-const RowCellPair = ({ name, value }: { name: string; value: unknown }) => (
-  <>
-    <span className="truncate text-[10px] text-foreground/50">{name}</span>
-    <span className="text-right font-mono text-[10px] text-foreground/90">{formatCell(value)}</span>
-  </>
+export const AttributePlanBlock = (props: React.ComponentProps<typeof BaseAttributePlanBlock>) => (
+  <SceneFollow>
+    <BaseAttributePlanBlock {...props} />
+  </SceneFollow>
 );
 
-const AttributeRowBlock = ({
-  row,
-  columns,
-}: {
-  row: AttributeRow;
-  /** Pre-indexed by name: the linear `attributes.find` this replaces ran once
-   * per CELL, so a wide table cost rows x columns scans per render. */
-  columns: ReadonlyMap<string, AttributeColumnLike>;
-}) => (
-  <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
-    {Object.entries(row).map(([name, cell]) => {
-      const column = columns.get(name);
-      const referenceValue =
-        typeof cell === "number" || typeof cell === "bigint" ? cell : null;
-      return (
-        <div key={name} className="contents">
-          <RowCellPair name={column?.longName ?? name} value={cell} />
-          {column?.references && referenceValue !== null && (
-            <div className="col-span-2 text-right">
-              <ReferenceFollowUp column={column} value={referenceValue} />
-            </div>
-          )}
-        </div>
-      );
-    })}
-  </div>
-);
-
-const ProfileRows = ({
-  state,
-  valueAxes,
-  labels,
-}: {
-  state: PlanRowsState;
-  valueAxes: readonly string[];
-  labels: ReadonlyMap<number, string> | null;
-}) => (
-  <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
-    {state.rows.map((row, index) => {
-      const position = Number(row.position);
-      const coords = valueAxes.length > 1 ? valueAxes.map((axis) => String(row[axis])).join(",") : null;
-      const name = labels?.get(position) ?? (coords ?? `#${position}`);
-      return <RowCellPair key={index} name={name} value={row.value} />;
-    })}
-  </div>
-);
-
-const SeriesLine = ({ series }: { series: PlanSeries }) => (
-  <div className="text-foreground/80">
-    <TraceSparkline values={series.values} marker={series.marker} />
-    <span className="block text-[9px] text-foreground/35">
-      {series.values.length * series.stride} samples along {series.axis}
-      {series.stride > 1 ? `, every ${series.stride}th shown` : ""}
-    </span>
-  </div>
-);
-
-/**
- * One hop's result block — presentational, host-agnostic. The probe section
- * feeds it from `probedAttributes`; the selected-ROI section feeds it from
- * `useAttributesAt` results (same `PlanRowsState` contract).
- */
-export const AttributePlanBlock = ({
-  meta,
-  state,
-  labels = null,
-}: {
-  meta: Pick<HopMeta, "name" | "kind" | "attributes" | "via" | "valueAxes"> &
-    Partial<Pick<HopMeta, "sourceId">>;
-  state: PlanRowsState;
-  /** (SPARSE) Position → label, when the names hop ran. */
-  labels?: ReadonlyMap<number, string> | null;
-}) => {
-  const columns = useMemo(
-    () => new Map(meta.attributes.map((column) => [column.name, column])),
-    [meta.attributes],
-  );
-  const sparse = meta.kind === "SPARSE";
-  const array = meta.kind === "ARRAY";
-
-  return (
-    <div className="space-y-0.5 rounded border border-foreground/10 bg-foreground/5 px-2 py-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1">
-          {array && meta.sourceId ? (
-            <MikroArrayDataset.DetailLink
-              object={{ id: meta.sourceId }}
-              className="pointer-events-auto truncate text-[10px] font-medium text-foreground/60 hover:text-foreground"
-            >
-              {meta.name}
-            </MikroArrayDataset.DetailLink>
-          ) : (
-            <span className="truncate text-[10px] font-medium text-foreground/60">{meta.name}</span>
-          )}
-          {meta.via && (
-            <span className="truncate text-[9px] text-foreground/35">{meta.via}</span>
-          )}
-          {sparse && (
-            <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-700/80 dark:text-sky-200/80">
-              matrix
-            </span>
-          )}
-          {array && (
-            <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-700/80 dark:text-amber-200/80">
-              array
-            </span>
-          )}
-        </span>
-        <span className="flex items-center gap-1.5">
-          {state.sampledValue !== undefined && state.sampledValue !== null && (
-            <span className="font-mono text-[10px] text-foreground/70">
-              #{String(state.sampledValue)}
-            </span>
-          )}
-          <StatusBadge state={state} />
-        </span>
-      </div>
-      {state.status === "background" && (
-        <span className="text-[10px] text-foreground/40">background</span>
-      )}
-      {state.status === "error" && (
-        <span className="text-[10px] text-red-700/70 dark:text-red-300/70">{state.error ?? "failed"}</span>
-      )}
-      {state.status === "rows" && state.rows.length === 0 && !state.series && (
-        <span className="text-[10px] text-foreground/40">
-          {array
-            ? "no line for this object"
-            : sparse
-              ? "no entries for this object"
-              : "no row for this object (never measured)"}
-        </span>
-      )}
-      {state.status === "rows" && state.series && <SeriesLine series={state.series} />}
-      {state.status === "rows" && sparse && state.rows.length > 0 && (
-        <ProfileRows state={state} valueAxes={meta.valueAxes} labels={labels} />
-      )}
-      {state.status === "rows" &&
-        !sparse &&
-        state.rows.map((row, index) => (
-          <AttributeRowBlock key={index} row={row} columns={columns} />
-        ))}
-      {state.truncated && (
-        <span className="block text-right text-[9px] text-foreground/35">
-          top {state.truncated.shown} of {state.truncated.total} entries
-        </span>
-      )}
-    </div>
-  );
-};
-
-/** The blocks of a point, in chain order, hiding honest absences. */
-export const HopBlocks = ({ blocks }: { blocks: readonly HopBlock[] }) => (
-  <>
-    {blocks.map((block) => {
-      // Unreachable hops are honest absences, not errors — hide them.
-      if (block.state.status === "unreachable") return null;
-      return (
-        <AttributePlanBlock
-          key={block.meta.hopKey}
-          meta={block.meta}
-          state={block.state}
-          labels={profileLabelsFor(block.meta, blocks)}
-        />
-      );
-    })}
-  </>
+export const HopBlocks = (props: React.ComponentProps<typeof BaseHopBlocks>) => (
+  <SceneFollow>
+    <BaseHopBlocks {...props} />
+  </SceneFollow>
 );
 
 export const AttributeRowsSection = ({ probe }: { probe: ProbeResult }) => {

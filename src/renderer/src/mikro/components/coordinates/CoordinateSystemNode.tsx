@@ -5,6 +5,7 @@ import CircleNode from "./CircleNode";
 import { RESIDENT_ICON, RESIDENT_KIND_LABEL } from "./ResidentLink";
 import { isReferenceFrame, occupancyLabel, residentName } from "./residents";
 import { CoordinateSystemNode as TNode } from "./types";
+import { withUnit } from "@/core/util/units";
 
 // Inhabited vs. uninhabited is the whole vocabulary the graph has left, and
 // colour is the fastest way to read a component: which spaces hold data, and
@@ -131,7 +132,7 @@ export const CoordinateSystemNode = ({ data }: NodeProps<TNode>) => {
   // the hover, in their declared order.
   const axes = [...system.axes]
     .sort((a, b) => a.order - b.order)
-    .map((axis) => `${axis.name}${axis.unit ? ` (${axis.unit})` : ""}`)
+    .map((axis) => withUnit(axis.name, axis.unit))
     .join(" · ");
 
   // A folded node names one of its members and lists the rest on the hover:

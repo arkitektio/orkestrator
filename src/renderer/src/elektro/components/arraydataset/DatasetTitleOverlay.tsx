@@ -10,6 +10,7 @@ import { formatShape } from "@/core/data/arrays/formatShape";
 import { ElektroArrayDataset, ElektroNeuronModel } from "@/core/linkers";
 import { GetArrayDatasetQuery } from "../../api/graphql";
 import { CreateExperimentControl } from "./DatasetBackdrop";
+import { formatUnit } from "@/core/util/units";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
@@ -48,7 +49,7 @@ export const DatasetTitleOverlay = ({
       </ElektroArrayDataset.DetailLink>
       <div className="flex min-w-0 items-center gap-2 font-mono text-xs text-muted-foreground">
         <span className="truncate">{formatShape(dataset.axisNames, dataset.shape)}</span>
-        {dataset.valueUnit && <span className="shrink-0">{dataset.valueUnit}</span>}
+        {formatUnit(dataset.valueUnit) && <span className="shrink-0">{formatUnit(dataset.valueUnit)}</span>}
         {dataset.multiscale && (
           <Badge variant="outline" className="font-sans text-[0.625rem]">
             multiscale

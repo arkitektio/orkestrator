@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { usePlaneStore } from "./planeStore";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePlaneStore, usePlaneStoreApi } from "./planeStore";
 import { pixelOf } from "./planeView";
 import { formatSiValue } from "../coords/siFormat";
 
@@ -23,6 +23,11 @@ export type PlaneHit = {
   at: { x: number; y: number } | null;
   /** More about the hit, read on demand (the rest of a row); keyed so a pause fetches it once. */
   detail?: { key: string; load: () => Promise<readonly (readonly [string, string])[]> };
+  /**
+   * WHICH row the hit is, where the layer knows: its table and its id (the
+   * table's INDEX value). What a click pins, and what a probe then follows.
+   */
+  pick?: { table: string; id: number | bigint | string };
 };
 
 export type PlaneProbe = (at: { x: number; y: number }, scale: { pxPerX: number; pxPerY: number }) => PlaneHit | null;
@@ -58,6 +63,25 @@ const probeAll = (registry: Registry, at: { x: number; y: number }, scale: { pxP
     if (!best || hit.distancePx < best.distancePx) best = hit;
   }
   return best;
+};
+
+/**
+ * Ask every probe of this plane what is nearest a point in data space — what
+ * the tooltip shows, for a host that acts on it (a click pins it). Reads the
+ * view when called, so it never re-renders anything.
+ */
+export const usePlaneProbeAt = (maxPx = 24) => {
+  const registry = useContext(ProbeContext);
+  const plane = usePlaneStoreApi();
+  return useCallback(
+    (at: { x: number; y: number }): PlaneHit | null => {
+      if (!registry) return null;
+      const { live, sizePx } = plane.getState();
+      const scale = { pxPerX: sizePx.width / (live.x1 - live.x0), pxPerY: sizePx.height / (live.y1 - live.y0) };
+      return probeAll(registry, at, scale, maxPx);
+    },
+    [registry, plane, maxPx],
+  );
 };
 
 const DETAIL_DELAY_MS = 180;

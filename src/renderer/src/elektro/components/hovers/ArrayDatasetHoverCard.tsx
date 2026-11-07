@@ -3,6 +3,7 @@ import { formatShape } from "@/core/data/arrays/formatShape";
 import { formatDisplay } from "@/core/util/quantities";
 import { Object } from "@/core/types";
 import { useGetArrayDatasetQuery } from "../../api/graphql";
+import { formatUnit } from "@/core/util/units";
 
 export const ArrayDatasetHoverCard = ({ object }: { object: Object }) => {
   const { data, error } = useGetArrayDatasetQuery({
@@ -25,7 +26,7 @@ export const ArrayDatasetHoverCard = ({ object }: { object: Object }) => {
       )}
       <div className="flex flex-col gap-1">
         <HoverRow label="Shape" value={formatShape(dataset.axisNames, dataset.shape)} />
-        <HoverRow label="Unit" value={dataset.valueUnit} />
+        <HoverRow label="Unit" value={formatUnit(dataset.valueUnit)} />
         {dataset.simulation && (
           <>
             <HoverRow label="Model" value={dataset.simulation.model.name} />

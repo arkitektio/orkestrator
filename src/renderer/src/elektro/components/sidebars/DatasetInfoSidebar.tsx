@@ -7,6 +7,7 @@ import { arrayDatasetSpecLink, specsOf } from "../../specs";
 import { GetArrayDatasetQuery } from "../../api/graphql";
 import HistoryCard from "../cards/HistoryCard";
 import { Fact, SectionHeader } from "./sidebarParts";
+import { formatUnit } from "@/core/util/units";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
@@ -33,7 +34,7 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
 
       <div className="flex flex-col gap-1">
         <Fact label="Shape" value={formatShape(dataset.axisNames, dataset.shape)} />
-        <Fact label="Unit" value={dataset.valueUnit} />
+        <Fact label="Unit" value={formatUnit(dataset.valueUnit)} />
         <Fact label="Dimension" value={dataset.valueDimension} />
         <Fact label="Grid" value={dataset.intrinsicSystem?.name} />
         <Fact label="Folder" value={dataset.folder?.name} />

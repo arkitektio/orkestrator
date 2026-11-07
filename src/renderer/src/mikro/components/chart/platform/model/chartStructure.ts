@@ -46,16 +46,34 @@ export type ChartScopeLike = {
   id: string;
   worldCoordinateSystem?: { id: string } | null;
   axis?: { name: string } | null;
-  kind?: string | null;
 };
 
 export const chartScopeSignature = (chart: ChartScopeLike): string =>
   JSON.stringify({
     id: chart.id,
     world: chart.worldCoordinateSystem?.id ?? null,
+    // Whether there is an axis plot at all, and along what: the one thing that
+    // says what the chart's canvas is before any layer does.
     axis: chart.axis?.name ?? null,
-    kind: chart.kind ?? null,
   });
+
+/** How a chart's layers share the screen — the server's `ChartLayout`. */
+export type ChartLayoutValue = "STACKED" | "SHARED" | "OVERLAY";
+
+/**
+ * The layout a chart is drawn in: its own, remembered by the server.
+ *
+ * CONTENT, not structure — deliberately absent from `chartScopeSignature`: a
+ * toggle relays the rows or panels out and never rebuilds. Unknown or missing
+ * reads as SHARED (what a chart was before it had one). OVERLAY is kept as the
+ * chart says: it puts every along-axis layer in one plot, and value panels —
+ * whose scale is their axis — read it as SHARED (`valuesPanels`).
+ */
+export const chartLayoutOf = (chart: { layout?: string | null }): ChartLayoutValue => {
+  if (chart.layout === "STACKED") return "STACKED";
+  if (chart.layout === "OVERLAY") return "OVERLAY";
+  return "SHARED";
+};
 
 /**
  * One layer's structural identity: which layer, of what kind, reading what,

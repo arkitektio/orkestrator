@@ -31,6 +31,7 @@ import {
   axisTypeLabel,
   columnRoleLabel,
 } from "./columnNotes";
+import { formatUnit } from "@/core/util/units";
 
 /**
  * Everything about one column, behind a click on its name.
@@ -248,7 +249,7 @@ export const ColumnInfoContent = ({
         {column.unit != null && (
           <HoverRow
             label="Unit"
-            value={<span className="font-mono">{String(column.unit)}</span>}
+            value={<span title={String(column.unit)}>{formatUnit(String(column.unit)) ?? "none"}</span>}
           />
         )}
         {column.axisType && (

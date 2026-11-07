@@ -11,7 +11,7 @@ import { whereClause, type RowFilter } from "./filterSql";
  * here and nowhere else.
  */
 
-export const POINT_COLUMNS = { x: "__x", y: "__y", z: "__z", row: "__row" } as const;
+export const POINT_COLUMNS = { x: "__x", y: "__y", z: "__z", row: "__row", id: "__id" } as const;
 
 /** Tables up to this many (filtered) rows are drawn whole; beyond it, a uniform sample of this many. */
 export const POINTS_MAX = 2_000_000;
@@ -20,7 +20,12 @@ const from = (url: string) => `read_parquet(${escapeSqlLiteral(url)})`;
 const dbl = (column: string) => `TRY_CAST(${escapeSqlIdentifier(column)} AS DOUBLE)`;
 const present = (columns: readonly string[]) => columns.map((c) => `${dbl(c)} IS NOT NULL`);
 
-export type PointColumns = { x: string; y: string; z?: string | null };
+/**
+ * `id`: the table's INDEX column — what a row IS (`rowPlan` binds it). Read in
+ * its own type, never cast: an id is not a measurement, and a BIGINT or a
+ * string id cast to DOUBLE would name another row, or none.
+ */
+export type PointColumns = { x: string; y: string; z?: string | null; id?: string | null };
 
 /** How many rows a points layer would draw, and the box they span. */
 export const pointsExtentSql = (url: string, columns: PointColumns, filters: readonly RowFilter[]): string => {
@@ -44,6 +49,7 @@ export const pointsSql = (url: string, columns: PointColumns, filters: readonly 
     `SELECT ${dbl(columns.x)} AS ${POINT_COLUMNS.x}, ${dbl(columns.y)} AS ${POINT_COLUMNS.y}` +
     (columns.z ? `, ${dbl(columns.z)} AS ${POINT_COLUMNS.z}` : "") +
     `, CAST(file_row_number AS DOUBLE) AS ${POINT_COLUMNS.row}` +
+    (columns.id ? `, ${escapeSqlIdentifier(columns.id)} AS ${POINT_COLUMNS.id}` : "") +
     ` FROM read_parquet(${escapeSqlLiteral(url)}, file_row_number = true)` +
     ` WHERE ${whereClause(filters, present(needed))}`;
   // DuckDB samples the FROM, before the WHERE: sampling the kept rows needs them as a subquery.

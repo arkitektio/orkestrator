@@ -19,7 +19,7 @@ import {
   useMorphologyStore,
   useMorphologyStoreApi,
 } from "./stores/morphologyStore";
-import { useWebGPUGate, type WebGPUGate } from "./useWebGPUGate";
+import { useWebGPUGate, type WebGPUGate } from "@/core/data/scene/gpu/useWebGPUGate";
 
 /**
  * The neuron model's morphology viewer — the public surface, shaped like the

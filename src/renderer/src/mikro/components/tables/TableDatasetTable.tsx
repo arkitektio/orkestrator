@@ -63,6 +63,7 @@ import {
   rowsToCsv,
   useDuckDbTable,
 } from "./useDuckDbTable";
+import { formatUnit } from "@/core/util/units";
 
 export type Item = Record<string, unknown>;
 
@@ -234,7 +235,7 @@ const ColumnHeader = (props: {
       >
         <button
           type="button"
-          title={`${column.dtype}${column.unit != null ? ` · ${String(column.unit)}` : ""}`}
+          title={`${column.dtype}${formatUnit(column.unit as string | null) ? ` · ${formatUnit(column.unit as string | null)}` : ""}`}
           className="flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-center font-medium transition-colors hover:bg-accent"
         >
           <ColumnAxisGlyph column={column} />

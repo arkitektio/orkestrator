@@ -1,14 +1,16 @@
 # The chart: mikro's second composition beside the scene.
 #
-# A `Scene` shows WHERE; a `Chart` shows HOW MUCH -- values drawn as position,
-# at most one axis drawn from its world. `kind` says which:
-# - AXIS: its world is one metric axis (time, wavelength, distance, ...) and its
-#   layers are laid along it: a trace (a lens over an array), a series (one
+# A `Scene` shows WHERE; a `Chart` shows HOW MUCH -- values drawn as position.
+# Its layers' kinds say where their positions come from, and one chart may
+# hold both:
+# - along the axis (trace, series, annotation): laid along the chart's one measured axis (`axis`; time,
+#   wavelength, distance, ...): a trace (a lens over an array), a series (one
 #   column of a table against another), or an annotation collection's marks.
 #   Each layer's `asAffine` is the one authority on where its samples land.
-# - VALUES: its world is a table's space (whose rows; not drawn) and its layers
-#   draw those rows at the values of the columns they name: points (a scatter)
-#   or a distribution (a histogram or a box per group). `axis` is null.
+#   They need a world of one measured axis; `axis` is null when there is none.
+# - by their values (points, distribution): a table's rows placed in the chart's world, drawn at the values
+#   of the columns they name: points (a scatter) or a distribution (a
+#   histogram or a box per group).
 #
 # `layers` comes back in server order; the client sorts it by (order, id) for
 # drawing and by (typename, id) for its structural signature.
@@ -115,8 +117,11 @@ fragment ChartTraceLayer on TraceChartLayer {
     ...ChartLens
   }
   mark
+  # Multiples of the chart's default (1 = default), never pixels.
   lineWidth
   markerSize
+  # The symbol a marker is drawn as; null is a circle.
+  markerShape
   # The CHANNEL or INDEX axis the lens leaves free beside `alongAxis`: one line
   # per position along it. Null for a single line.
   seriesAxis
@@ -147,8 +152,11 @@ fragment ChartSeriesLayer on SeriesChartLayer {
   coordinateColumn
   valueUnit
   mark
+  # Multiples of the chart's default (1 = default), never pixels.
   lineWidth
   markerSize
+  # The symbol a marker is drawn as; null is a circle.
+  markerShape
 }
 
 fragment ChartAnnotationLayer on AnnotationChartLayer {
@@ -201,8 +209,11 @@ fragment ChartPointsLayer on PointsChartLayer {
   yUnit
   zUnit
   mark
+  # Multiples of the chart's default (1 = default), never pixels.
   lineWidth
   markerSize
+  # The symbol a marker is drawn as; null is a circle.
+  markerShape
 }
 
 # One column of a table lens' rows summarised: a histogram or a box, over every
@@ -230,6 +241,8 @@ fragment ChartDistributionLayer on DistributionChartLayer {
   bins
   valueUnit
   mark
+  # The outlines' thickness, as a multiple of the chart's default.
+  lineWidth
 }
 
 # What `updateChartLayer` answers with: view state only, which is all it can
@@ -246,19 +259,23 @@ fragment ChartLayerStyle on ChartLayer {
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on SeriesChartLayer {
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on PointsChartLayer {
     mark
     lineWidth
     markerSize
+    markerShape
   }
   ... on DistributionChartLayer {
     mark
+    lineWidth
   }
 }
 
@@ -271,9 +288,10 @@ fragment Chart on Chart {
   creator {
     sub
   }
-  # AXIS: drawn along its world's one axis; VALUES: draws its world's rows at
-  # the values of their columns.
-  kind
+  # How the layers share the screen, remembered with the chart: STACKED (a
+  # row or panel each), SHARED (together where they measure the same thing),
+  # OVERLAY (every along-axis layer in one plot; value layers lay out as SHARED).
+  layout
   # An AXIS chart's world axis, repeated on the chart: its name, metric type,
   # unit. Null for a VALUES chart.
   axis {
@@ -299,7 +317,7 @@ fragment ListChart on Chart {
   name
   description
   createdAt
-  kind
+  layout
   axis {
     ...Axis
   }

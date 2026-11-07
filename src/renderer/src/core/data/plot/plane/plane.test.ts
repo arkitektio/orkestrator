@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatSi, formatSiValue } from "../coords/siFormat";
 import { buildPointIndex } from "./pointIndex";
 import { createPlaneStore } from "./planeStore";
+import { CLICK_SLOP_PX, isDrag } from "./PlaneFrame";
 import { categoricalTicks, numericTicks } from "./planeTicks";
 import { dataAt, panByPixels, padded, pixelOf, viewForBox, zoomAbout, zoomFactorForWheel } from "./planeView";
 
@@ -78,6 +79,18 @@ describe("plane store", () => {
     store.getState().commit();
     expect(store.getState().history).toHaveLength(1);
   });
+  it("keeps each layer's categories: one clearing its own leaves another's", () => {
+    const store = createPlaneStore();
+    const groups = ["a", "b"];
+    store.getState().setXCategories("box", groups);
+    store.getState().setXCategories("histogram", null);
+    expect(store.getState().xCategories).toEqual({ box: groups });
+    const before = store.getState().xCategories;
+    store.getState().setXCategories("box", ["a", "b"]);
+    expect(store.getState().xCategories).toBe(before);
+    store.getState().setXCategories("box", null);
+    expect(store.getState().xCategories).toEqual({});
+  });
 });
 
 describe("point index", () => {
@@ -89,5 +102,14 @@ describe("point index", () => {
     expect(index.nearest(9, 90, 1, 0.1, 5)).toBe(2);
     expect(index.nearest(9, 0, 1, 0.1, 5)).toBe(1);
     expect(index.nearest(50, 50, 1, 1, 5)).toBeNull();
+  });
+});
+
+describe("a click, not a drag", () => {
+  it("stays a click within the slop, and becomes a drag past it", () => {
+    const start = { px: 10, py: 10 };
+    expect(isDrag(start, { px: 10 + CLICK_SLOP_PX, py: 10 })).toBe(false);
+    expect(isDrag(start, { px: 12, py: 12 })).toBe(false);
+    expect(isDrag(start, { px: 10 + CLICK_SLOP_PX + 1, py: 10 })).toBe(true);
   });
 });

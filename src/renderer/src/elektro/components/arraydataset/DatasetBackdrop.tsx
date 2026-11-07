@@ -16,6 +16,7 @@ import {
   useCreateExperimentFromCoordinateSystemMutation,
   usePlacementContextQuery,
 } from "../../api/graphql";
+import { formatUnit } from "@/core/util/units";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
@@ -147,7 +148,7 @@ export const DatasetBackdrop = ({
           <div className="flex flex-wrap justify-center gap-1.5">
             {dataset.valueUnit && (
               <Badge variant="outline" className="text-[0.625rem]">
-                {dataset.valueUnit}
+                {formatUnit(dataset.valueUnit) ?? dataset.valueUnit}
               </Badge>
             )}
             {dataset.multiscale && (

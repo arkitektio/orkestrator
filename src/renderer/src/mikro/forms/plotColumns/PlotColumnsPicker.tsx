@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/core/ui/button";
 import { Input } from "@/core/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
+import { ColumnCombobox } from "@/mikro/components/columns/ColumnCombobox";
 
 /**
  * Which columns of a table a chart of values draws, and how: POINTS at two (or
@@ -16,10 +17,7 @@ export type PlotSpec =
   | { kind: "POINTS"; x: string; y: string; z: string | null; mark: "MARKERS" | "LINE" }
   | { kind: "DISTRIBUTION"; value: string; group: string | null; bins: number | null; mark: "HISTOGRAM" | "BOX" };
 
-const NONE = "__none__";
-
-const label = (c: PlotColumn) => (c.unit ? `${c.name} (${c.unit})` : c.name);
-
+/** One column field of the dialog: the shared column combobox, in its form size. */
 const ColumnSelect = ({
   value,
   columns,
@@ -33,23 +31,14 @@ const ColumnSelect = ({
   optional?: boolean;
   placeholder: string;
 }) => (
-  <Select value={value ?? (optional ? NONE : undefined)} onValueChange={(v) => onChange(v === NONE ? null : v)}>
-    <SelectTrigger className="h-7 text-xs">
-      <SelectValue placeholder={placeholder} />
-    </SelectTrigger>
-    <SelectContent>
-      {optional && (
-        <SelectItem value={NONE} className="text-xs text-muted-foreground">
-          none
-        </SelectItem>
-      )}
-      {columns.map((c) => (
-        <SelectItem key={c.name} value={c.name} className="text-xs">
-          {label(c)}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
+  <ColumnCombobox
+    value={value}
+    columns={columns}
+    onChange={onChange}
+    none={optional ? placeholder : undefined}
+    placeholder={placeholder}
+    size="form"
+  />
 );
 
 const Field = ({ name, children }: { name: string; children: React.ReactNode }) => (

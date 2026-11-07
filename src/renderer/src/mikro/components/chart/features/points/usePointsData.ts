@@ -14,6 +14,8 @@ export type PointsData = {
   zs: Float64Array | null;
   /** The table row each point came from (what a tooltip reads the rest of the row by). */
   rows: Float64Array;
+  /** Each point's row id — the table's INDEX value, in its own type — or null when the table has no INDEX. */
+  ids: ArrayLike<number | bigint | string> | null;
   extent: PlaneExtent;
   zRange: { lo: number; hi: number } | null;
   total: number;
@@ -51,7 +53,7 @@ export const usePointsData = (
       return;
     }
     let cancelled = false;
-    const columns = { x: source.x, y: source.y, z: source.z };
+    const columns = { x: source.x, y: source.y, z: source.z, id: source.indexColumn };
     readout({ loading: true, error: null, note: null });
     (async () => {
       const head = await engine.readAcross([source.store], (urlOf) => pointsExtentSql(urlOf(source.store.id), columns, source.filters));
@@ -64,7 +66,13 @@ export const usePointsData = (
       }
       const box: PlaneExtent = { x0: Number(head[0].x0), x1: Number(head[0].x1), y0: Number(head[0].y0), y1: Number(head[0].y1) };
       extent(box);
-      const names = [POINT_COLUMNS.x, POINT_COLUMNS.y, ...(source.z ? [POINT_COLUMNS.z] : []), POINT_COLUMNS.row];
+      const names = [
+        POINT_COLUMNS.x,
+        POINT_COLUMNS.y,
+        ...(source.z ? [POINT_COLUMNS.z] : []),
+        POINT_COLUMNS.row,
+        ...(source.indexColumn ? [POINT_COLUMNS.id] : []),
+      ];
       const read = await engine.readColumnsTyped(
         [source.store],
         (urlOf) => pointsSql(urlOf(source.store.id), columns, source.filters, total),
@@ -74,7 +82,13 @@ export const usePointsData = (
       const zs = source.z ? asF64(read[POINT_COLUMNS.z]) : null;
       const zRange = source.z ? { lo: Number(head[0].z0), hi: Number(head[0].z1) } : null;
       const xs = asF64(read[POINT_COLUMNS.x]);
-      setHeld({ source, data: { xs, ys: asF64(read[POINT_COLUMNS.y]), zs, rows: asF64(read[POINT_COLUMNS.row]), extent: box, zRange, total } });
+      const ids = source.indexColumn
+        ? ((read[POINT_COLUMNS.id] as ArrayLike<number | bigint | string> | undefined) ?? null)
+        : null;
+      setHeld({
+        source,
+        data: { xs, ys: asF64(read[POINT_COLUMNS.y]), zs, rows: asF64(read[POINT_COLUMNS.row]), ids, extent: box, zRange, total },
+      });
       readout({
         loading: false,
         total,

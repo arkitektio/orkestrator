@@ -1,7 +1,7 @@
 import { LruMap } from "@/core/util/lruMap";
 import type { AxisCoords } from "../coords/axisPath";
 import type { WindowReader, WindowStore } from "../zarr/windowReader";
-import type { ArrayHopLike, AttributePlanLike, PlanRowsState, PlanSeries } from "./attributeTypes";
+import type { ArrayHopLike, PlanLike, PlanRowsState, PlanSeries } from "./attributeTypes";
 import { hopKey } from "./attributeTypes";
 import type { HeldValue } from "./planExec";
 
@@ -22,7 +22,8 @@ import type { HeldValue } from "./planExec";
  * pixels wide shows no more, and the whole line would be megabytes per hover. */
 export const ARRAY_LINE_SAMPLE_CAP = 16_384;
 
-const DEFAULT_LINE_CAP = 128;
+/** Lines kept per reader. Also the most lines one hop reads at once (`ARRAY_LINES_CAP`). */
+export const DEFAULT_LINE_CAP = 128;
 
 export type ArrayLineRead = {
   store: WindowStore;
@@ -101,13 +102,13 @@ export const markerFor = (
 /** The executor's view of the reader (structural, like the sparse one). */
 export type ArrayLineReaderLike = {
   read(
-    plan: AttributePlanLike,
+    plan: PlanLike,
     hop: ArrayHopLike,
     id: HeldValue,
     options: { isStale?: () => boolean },
   ): Promise<PlanRowsState | null>;
-  peek(plan: AttributePlanLike, hop: ArrayHopLike, id: HeldValue): PlanRowsState | null;
-  warm(plan: AttributePlanLike, hop: ArrayHopLike): void;
+  peek(plan: PlanLike, hop: ArrayHopLike, id: HeldValue): PlanRowsState | null;
+  warm(plan: PlanLike, hop: ArrayHopLike): void;
   dispose(): void;
 };
 

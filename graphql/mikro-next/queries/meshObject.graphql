@@ -37,3 +37,33 @@ query GetMeshObject($collection: ID!, $object: Int!) {
     }
   }
 }
+
+# A mesh object in one line, wherever another surface names it (its display):
+# which object of which collection. Nothing else, so a list of chips stays cheap.
+query GetMeshObjectLabel($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      id
+      label
+    }
+  }
+}
+
+# What drawing one mesh on its own needs (its viewer): the collection's
+# fabriks store, opened off any scene. Nothing else -- the collection's scenes
+# are what `GetMeshObject` is for.
+query GetMeshObjectSource($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    objectId
+    collection {
+      id
+      label
+      store {
+        ...FabriksStore
+      }
+    }
+  }
+}

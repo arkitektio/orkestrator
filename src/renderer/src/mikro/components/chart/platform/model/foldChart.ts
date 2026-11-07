@@ -14,7 +14,13 @@ import {
   type SeriesChartLayerLike,
   type TraceChartLayerLike,
 } from "./chartLayerModel";
-import { layerStructureKey, orderedLayers, type ChartLayerStructureLike } from "./chartStructure";
+import {
+  chartLayoutOf,
+  layerStructureKey,
+  orderedLayers,
+  type ChartLayerStructureLike,
+  type ChartLayoutValue,
+} from "./chartStructure";
 
 /**
  * Folding a chart fragment into the state the stores hold.
@@ -38,11 +44,11 @@ type AnyLayerLike = ChartLayerStructureLike &
 
 export type ChartLike = {
   id: string;
-  /** AXIS: laid along its world's one axis; VALUES: draws its world's rows at their values. */
-  kind?: string | null;
-  /** An AXIS chart's world axis; null for a VALUES chart, which draws none. */
+  /** The one measured axis along-axis layers are laid along; null when the world has none (value layers only). */
   axis?: { name: string; unit?: string | null; type?: string | null } | null;
   worldCoordinateSystem?: { id: string; name?: string | null } | null;
+  /** How the layers share the screen (`chartLayoutOf`); content, never a rebuild. */
+  layout?: string | null;
   layers?: readonly AnyLayerLike[] | null;
 };
 
@@ -72,6 +78,8 @@ export type FoldedChart = {
   rawLayers: Record<string, unknown>;
   worldSpan: Span | null;
   timeOrigin: number;
+  /** The chart's own layout, as the server last said it. */
+  layout: ChartLayoutValue;
   /** The memo to pass to the next fold. */
   memo: ChartFoldMemo;
 };
@@ -134,7 +142,14 @@ export const foldChart = (
   }
 
   const extent = worldExtentOf(layers);
-  return { layers, rawLayers, worldSpan: extent.span, timeOrigin: extent.timeOrigin, memo };
+  return {
+    layers,
+    rawLayers,
+    worldSpan: extent.span,
+    timeOrigin: extent.timeOrigin,
+    layout: chartLayoutOf(chart),
+    memo,
+  };
 };
 
 /** The finest sample step among the chart's traces (a series has none). */

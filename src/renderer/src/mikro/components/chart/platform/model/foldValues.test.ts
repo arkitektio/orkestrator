@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_LINE_WIDTH, DEFAULT_MARKER_SIZE, withPersisted } from "./chartLayerModel";
 import { foldChart, type ChartLike } from "./foldChart";
 
 /** A VALUES chart: no axis; its world is whose rows. */
-const valuesChart = (layers: ChartLike["layers"]): ChartLike => ({ id: "c1", kind: "VALUES", axis: null, layers });
+const valuesChart = (layers: ChartLike["layers"]): ChartLike => ({ id: "c1", axis: null, layers });
 
 const IDENTITY = { matrix: [[1, 0]], inputAxes: ["object"], outputAxes: ["object"], total: true };
 const table = { id: "t1", name: "Nuclei", store: { id: "p1" } };
@@ -51,6 +52,14 @@ describe("a chart of values", () => {
     expect(layer.label).toBe("Nuclei · volume vs area");
   });
 
+  it("knows which column is the table's INDEX — what a picked point's id is", () => {
+    const keyed = { ...table, columns: [{ name: "object", role: "COORDINATE", axisType: "INDEX" }, { name: "area" }] };
+    const [layer] = foldChart(valuesChart([points({ tableDataset: keyed })]), NO_ERRORS, null).layers;
+    expect(layer.values).toMatchObject({ kind: "points", indexColumn: "object" });
+    const [plain] = foldChart(valuesChart([points()]), NO_ERRORS, null).layers;
+    expect(plain.values).toMatchObject({ indexColumn: null });
+  });
+
   it("folds a distribution, keeping its mark and grouping", () => {
     const [layer] = foldChart(valuesChart([distribution()]), NO_ERRORS, null).layers;
     expect(layer.mark).toBe("BOX");
@@ -70,5 +79,29 @@ describe("a chart of values", () => {
     expect(second.layers[0].values).toBe(first.layers[0].values);
     const third = foldChart(valuesChart([points({ yColumn: "perimeter" })]), NO_ERRORS, second.memo);
     expect(third.layers[0].values).not.toBe(first.layers[0].values);
+  });
+});
+
+describe("how big a layer is drawn", () => {
+  it("reads widths and sizes as multiples of the chart's default, never pixels", () => {
+    const [plain] = foldChart(valuesChart([points()]), NO_ERRORS, null).layers;
+    expect(plain.lineWidth).toBe(DEFAULT_LINE_WIDTH);
+    expect(plain.markerSize).toBe(DEFAULT_MARKER_SIZE);
+    const [doubled] = foldChart(valuesChart([points({ lineWidth: 2, markerSize: 0.5 })]), NO_ERRORS, null).layers;
+    expect(doubled.lineWidth).toBe(2 * DEFAULT_LINE_WIDTH);
+    expect(doubled.markerSize).toBe(0.5 * DEFAULT_MARKER_SIZE);
+  });
+
+  it("draws a circle unless the layer names another shape it knows", () => {
+    const [plain] = foldChart(valuesChart([points()]), NO_ERRORS, null).layers;
+    expect(plain.markerShape).toBe("CIRCLE");
+    const [diamond] = foldChart(valuesChart([points({ markerShape: "DIAMOND" })]), NO_ERRORS, null).layers;
+    expect(diamond.markerShape).toBe("DIAMOND");
+    const [unknown] = foldChart(valuesChart([points({ markerShape: "STAR" })]), NO_ERRORS, null).layers;
+    expect(unknown.markerShape).toBe("CIRCLE");
+    expect(withPersisted(plain, { markerShape: "CROSS", markerSize: 2 })).toMatchObject({
+      markerShape: "CROSS",
+      markerSize: 2 * DEFAULT_MARKER_SIZE,
+    });
   });
 });

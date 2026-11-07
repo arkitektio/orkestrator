@@ -24,9 +24,12 @@ import { ChartAnnotationDrawer } from "../features/annotations/ChartAnnotationDr
 import { ChartAnnotationOverlay } from "../features/annotations/ChartAnnotationOverlay";
 import { ChartAnnotationToolbar } from "../features/annotations/ChartAnnotationToolbar";
 import { useChartAutoscale } from "../platform/edits/useChartAutoscale";
-import type { ChartLayerState } from "../platform/model/chartLayerModel";
+import { useChartLayoutWrite } from "../platform/edits/useChartLayoutWrite";
+import { isValuesKind, type ChartLayerState } from "../platform/model/chartLayerModel";
 import { useChartStore } from "../platform/stores/chartStore";
 import { rowOf } from "./chartRows";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/core/ui/resizable";
+import { chartCanvasOf } from "../platform/model/chartCanvas";
 import { ValuesViewport } from "./ValuesViewport";
 import { ChartLineLabels } from "./chrome/ChartLineLabels";
 import { ChartProbeReadout } from "./chrome/ChartProbeReadout";
@@ -76,10 +79,30 @@ export const ChartViewport = () => {
   return <KindViewport key={status.subjectId} />;
 };
 
-/** An AXIS chart lays its data along its world's axis; a VALUES chart draws values against values. */
+/**
+ * The axis plot, the value panels, or both (`chartCanvasOf`): a chart has no
+ * kind, its layers say where their positions come from, and one chart may hold
+ * both. Together, the axis plot spans the top — a time axis wants the width —
+ * and the panels sit beneath, the split draggable.
+ */
 const KindViewport = () => {
-  const kind = useChartStore((s) => s.kind);
-  return kind === "VALUES" ? <ValuesViewport /> : <ReadyViewport />;
+  const hasAxis = useChartStore((s) => s.axis != null);
+  const hasValueLayers = useChartStore((s) => s.layers.some((l) => isValuesKind(l.kind)));
+  const canvas = chartCanvasOf({ hasAxis, hasValueLayers });
+  if (canvas === "axis") return <ReadyViewport />;
+  if (canvas === "values") return <ValuesViewport />;
+  return (
+    <ResizablePanelGroup direction="vertical" className="h-full w-full gap-1">
+      <ResizablePanel defaultSize={55} minSize={20}>
+        <ReadyViewport />
+      </ResizablePanel>
+      <ResizableHandle className="bg-transparent" />
+      <ResizablePanel defaultSize={45} minSize={15}>
+        {/* The axis plot's HUD holds the chart's one layout toggle and loading bar. */}
+        <ValuesViewport embedded />
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
 };
 
 const ALWAYS = () => true;
@@ -105,6 +128,7 @@ const ReadyViewport = () => {
   const rowCount = useViewerStore((s) => s.rowCount);
   const axis = useChartStore((s) => s.axis);
   const autoscale = useChartAutoscale();
+  const writeLayout = useChartLayoutWrite();
   const viewerApi = useViewerStoreApi();
   // A chart is read off its axes: the value axis and the grid start shown
   // (the timeline keeps them off; the display menu toggles both).
@@ -145,6 +169,7 @@ const ReadyViewport = () => {
         onAutoscale={() => autoscale()}
         fitTitle="Fit the whole chart (double-click the plot)"
         modeOptions={MODE_OPTIONS}
+        onLayoutModeChange={(mode) => void writeLayout(mode)}
       />
       <ChartAnnotationToolbar />
       <ChartProbeReadout axisName={axis?.name ?? ""} unit={axis?.unit ?? null} />

@@ -96,6 +96,10 @@ fragment AttributePlanHop on Hop {
       axisType
     }
     axis
+    # FORWARD as declared; REVERSE a `references` read backwards (a cluster's
+    # members) and SAME_ROWS the same row in another table (its PCA row) --
+    # both only in a row's plan (`rowPlan`).
+    direction
   }
   table {
     id
@@ -232,5 +236,34 @@ fragment AttributePlan on AttributePlan {
   # The chain, in execution order; a hop's parent always precedes it.
   hops {
     ...AttributePlanHop
+  }
+}
+
+# A hop of a ROW's plan (`rowPlan`): the attribute-plan hop, plus what the
+# client needs to say what the rows it lands on ARE. `columns` names the
+# table's INDEX (a row's id, what REVERSE and SAME_ROWS hops bind); `keyedBy`
+# says which container's objects those ids are, and as which structure
+# (`@mikro/meshobject`, id `<collection>:<id>`).
+fragment RowPlanHop on Hop {
+  ...AttributePlanHop
+  table {
+    id
+    name
+    columns {
+      name
+      role
+      axisType
+    }
+    keyedBy {
+      produces
+      structure
+      source {
+        __typename
+        ... on MeshCollection {
+          id
+          label
+        }
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import { pixelAtTime } from "../camera/rangeToCamera";
 import { timeTicks } from "../coords/ticks";
 import { useRangeStoreApi } from "../stores/rangeStore";
 import { useViewerStoreApi } from "../stores/viewerStore";
+import { formatUnit, withUnit } from "@/core/util/units";
 
 /**
  * The plot's axis along the bottom of the viewport: time on a timeline, any
@@ -96,9 +97,9 @@ export const AxisTicks = ({
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-7 border-t border-border/40 bg-background/40 backdrop-blur-sm">
       <div ref={containerRef} className="relative h-full w-full" />
-      {(unit || label) && (
+      {(formatUnit(unit) || label) && (
         <div className="absolute bottom-1 right-2 font-mono text-[10px] text-muted-foreground">
-          {[label, unit].filter(Boolean).join(" · ")}
+          {withUnit(label, unit)}
         </div>
       )}
     </div>
