@@ -15,7 +15,8 @@ import {
   usePlotScopeStatus,
   type PhaseWording,
 } from "@/core/data/plot/scope/plotScope";
-import { useViewerStore, type InteractionModeOption } from "@/core/data/plot/stores/viewerStore";
+import { useViewerStore, useViewerStoreApi, type InteractionModeOption } from "@/core/data/plot/stores/viewerStore";
+import { useEffect } from "react";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { useKeepTabLive } from "@/core/tabs/keepLive";
@@ -26,7 +27,9 @@ import { useChartAutoscale } from "../platform/edits/useChartAutoscale";
 import type { ChartLayerState } from "../platform/model/chartLayerModel";
 import { useChartStore } from "../platform/stores/chartStore";
 import { rowOf } from "./chartRows";
+import { ValuesViewport } from "./ValuesViewport";
 import { ChartLineLabels } from "./chrome/ChartLineLabels";
+import { ChartProbeReadout } from "./chrome/ChartProbeReadout";
 import { ChartRowLabels } from "./chrome/ChartRowLabels";
 import { LAYER_RENDERERS } from "./layerRegistry";
 
@@ -70,7 +73,13 @@ export const ChartViewport = () => {
     );
   }
   // Keyed: a different chart remounts the canvas rather than repopulating it.
-  return <ReadyViewport key={status.subjectId} />;
+  return <KindViewport key={status.subjectId} />;
+};
+
+/** An AXIS chart lays its data along its world's axis; a VALUES chart draws values against values. */
+const KindViewport = () => {
+  const kind = useChartStore((s) => s.kind);
+  return kind === "VALUES" ? <ValuesViewport /> : <ReadyViewport />;
 };
 
 const ALWAYS = () => true;
@@ -96,6 +105,14 @@ const ReadyViewport = () => {
   const rowCount = useViewerStore((s) => s.rowCount);
   const axis = useChartStore((s) => s.axis);
   const autoscale = useChartAutoscale();
+  const viewerApi = useViewerStoreApi();
+  // A chart is read off its axes: the value axis and the grid start shown
+  // (the timeline keeps them off; the display menu toggles both).
+  useEffect(() => {
+    const viewer = viewerApi.getState();
+    viewer.setShowValueAxis(true);
+    viewer.setShowGrid(true);
+  }, [viewerApi]);
 
   return (
     <div className="dark text-foreground relative h-full w-full select-none overflow-hidden rounded-lg bg-black [-webkit-user-select:none]">
@@ -122,7 +139,7 @@ const ReadyViewport = () => {
       <ZoomBoxOverlay />
       <ChartAnnotationDrawer />
       <OverviewStrip />
-      <AxisTicks unit={axis.unit} label={axis.name} />
+      <AxisTicks unit={axis?.unit ?? null} label={axis?.name ?? ""} />
       <PlotModeControls
         annotatable
         onAutoscale={() => autoscale()}
@@ -130,6 +147,7 @@ const ReadyViewport = () => {
         modeOptions={MODE_OPTIONS}
       />
       <ChartAnnotationToolbar />
+      <ChartProbeReadout axisName={axis?.name ?? ""} unit={axis?.unit ?? null} />
       <LoadingBar />
     </div>
   );

@@ -6,6 +6,8 @@ import {
 } from "@/core/data/plot/stores/plotStore";
 import type {
   ChartAnnotationLayerFragment,
+  ChartDistributionLayerFragment,
+  ChartPointsLayerFragment,
   ChartSeriesLayerFragment,
   ChartTraceLayerFragment,
 } from "@/mikro/api/graphql";
@@ -25,14 +27,20 @@ import { finestPeriodOf } from "../model/foldChart";
 export type ChartLayerFragment =
   | ChartTraceLayerFragment
   | ChartSeriesLayerFragment
-  | ChartAnnotationLayerFragment;
+  | ChartAnnotationLayerFragment
+  | ChartPointsLayerFragment
+  | ChartDistributionLayerFragment;
+
+/** AXIS: laid along its world's one axis. VALUES: draws its world's rows at the values of their columns. */
+export type ChartKindValue = "AXIS" | "VALUES";
 
 export type ChartAxis = { name: string; unit: string | null; type: string | null };
 
 type ChartExtra = {
   chartId: string;
-  /** The chart's one axis: what every position is measured along, and in. */
-  axis: ChartAxis;
+  kind: ChartKindValue;
+  /** An AXIS chart's one axis: what every position is measured along, and in. Null for VALUES. */
+  axis: ChartAxis | null;
   worldId: string | null;
 };
 

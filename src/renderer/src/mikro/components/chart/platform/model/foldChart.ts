@@ -3,10 +3,14 @@ import { worldExtentOf, type Span } from "@/core/data/plot/stores/plotStore";
 import {
   kindOfTypename,
   normalizeAnnotationLayer,
+  normalizeDistributionLayer,
+  normalizePointsLayer,
   normalizeSeriesLayer,
   normalizeTraceLayer,
   type AnnotationChartLayerLike,
   type ChartLayerState,
+  type DistributionChartLayerLike,
+  type PointsChartLayerLike,
   type SeriesChartLayerLike,
   type TraceChartLayerLike,
 } from "./chartLayerModel";
@@ -30,11 +34,14 @@ type Kept = { key: string; layer: ChartLayerState };
 export type ChartFoldMemo = Map<string, Kept>;
 
 type AnyLayerLike = ChartLayerStructureLike &
-  (TraceChartLayerLike | SeriesChartLayerLike | AnnotationChartLayerLike);
+  (TraceChartLayerLike | SeriesChartLayerLike | AnnotationChartLayerLike | PointsChartLayerLike | DistributionChartLayerLike);
 
 export type ChartLike = {
   id: string;
-  axis: { name: string; unit?: string | null; type?: string | null };
+  /** AXIS: laid along its world's one axis; VALUES: draws its world's rows at their values. */
+  kind?: string | null;
+  /** An AXIS chart's world axis; null for a VALUES chart, which draws none. */
+  axis?: { name: string; unit?: string | null; type?: string | null } | null;
   worldCoordinateSystem?: { id: string; name?: string | null } | null;
   layers?: readonly AnyLayerLike[] | null;
 };
@@ -76,7 +83,7 @@ export const foldChart = (
   /** What a lens is called on a card; the module's (`lensLabel`), passed in. */
   lensText: (lens: TraceChartLayerLike["lens"]) => string = () => "",
 ): FoldedChart => {
-  const chartAxis = chart.axis.name;
+  const chartAxis = chart.axis?.name ?? "";
   const memo: ChartFoldMemo = new Map();
   const rawLayers: Record<string, unknown> = {};
   const layers: ChartLayerState[] = [];
@@ -106,6 +113,17 @@ export const foldChart = (
       case "annotation":
         normalized = normalizeAnnotationLayer(raw as AnnotationChartLayerLike, chartAxis, error);
         break;
+      case "points": {
+        const next = normalizePointsLayer(raw as PointsChartLayerLike, error);
+        // Same structure: keep the source object, so the layer keeps what it read.
+        normalized = same?.values && next.values ? { ...next, values: same.values } : next;
+        break;
+      }
+      case "distribution": {
+        const next = normalizeDistributionLayer(raw as DistributionChartLayerLike, error);
+        normalized = same?.values && next.values ? { ...next, values: same.values } : next;
+        break;
+      }
       default:
         // A kind this client does not know: a newer server — skip, do not guess.
         break;

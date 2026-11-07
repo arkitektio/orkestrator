@@ -9,7 +9,8 @@ import { Chart } from "../components/chart/Chart";
 import { MIKRO_HELP } from "../help";
 
 /**
- * A chart: data laid out along one metric axis, with values read off it.
+ * A chart: data laid out along one metric axis, with values read off it -- or,
+ * for a chart of values, a table's rows drawn at the values of their columns.
  *
  * ## `errorPolicy: "all"` is load-bearing
  *
@@ -56,9 +57,10 @@ export const ChartPage = asDetailQueryRoute(
                   )}
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Laid out along
+                      {/* An axis chart is laid along its world; a chart of values draws its world's rows. */}
+                      {chart.kind === "VALUES" ? "Values of the rows of" : "Laid out along"}
                     </span>
-                    <span className="font-mono">{chartAxisLabel(chart.axis)}</span>
+                    {chart.axis && <span className="font-mono">{chartAxisLabel(chart.axis)}</span>}
                     <MikroCoordinateSystem.DetailLink
                       object={chart.worldCoordinateSystem}
                       className="hover:text-primary"

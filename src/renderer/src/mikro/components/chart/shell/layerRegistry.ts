@@ -12,7 +12,12 @@ import { TraceChartLayer } from "../features/traces/TraceChartLayer";
  * only from its own subscriptions (the two-plane contract).
  */
 
-export type ChartLayerTypename = "TraceChartLayer" | "SeriesChartLayer" | "AnnotationChartLayer";
+export type ChartLayerTypename =
+  | "TraceChartLayer"
+  | "SeriesChartLayer"
+  | "AnnotationChartLayer"
+  | "PointsChartLayer"
+  | "DistributionChartLayer";
 
 const memoized = (component: FC<LayerRendererProps>) => memo(component) as FC<LayerRendererProps>;
 
@@ -22,4 +27,7 @@ export const LAYER_RENDERERS: Record<ChartLayerTypename, LayerRenderers> = {
   // Drawn marks are SVG, laid over the canvas by the viewport
   // (`ChartAnnotationOverlay`) — not a GPU layer.
   AnnotationChartLayer: { Layer: null },
+  // A chart of values draws on its own plane (`ValuesViewport`), not along the axis.
+  PointsChartLayer: { Layer: null },
+  DistributionChartLayer: { Layer: null },
 };

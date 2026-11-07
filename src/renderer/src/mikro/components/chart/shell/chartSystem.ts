@@ -58,7 +58,7 @@ export const createChartSystem = (stores: ChartScopeStores, deps: ChartDeps): Ch
   const warmParquet = () => {
     if (warmed) return;
     const engine = deps.engine();
-    if (!engine || !chart.getState().layers.some((l) => l.kind === "series")) return;
+    if (!engine || !chart.getState().layers.some((l) => l.kind === "series" || l.kind === "points" || l.kind === "distribution")) return;
     warmed = true;
     engine.warmUp();
   };

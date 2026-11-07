@@ -1,6 +1,8 @@
 import type { ComponentType } from "react";
 import type { LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { AnnotationChartLayerCard } from "../../features/annotations/AnnotationChartLayerCard";
+import { DistributionChartLayerCard } from "../../features/distribution/DistributionChartLayerCard";
+import { PointsChartLayerCard } from "../../features/points/PointsChartLayerCard";
 import { SeriesChartLayerCard } from "../../features/series/SeriesChartLayerCard";
 import { TraceChartLayerCard } from "../../features/traces/TraceChartLayerCard";
 import type { ChartLayerState } from "../../platform/model/chartLayerModel";
@@ -20,4 +22,6 @@ export const LAYER_CARDS: Record<
   TraceChartLayer: { Card: TraceChartLayerCard },
   SeriesChartLayer: { Card: SeriesChartLayerCard },
   AnnotationChartLayer: { Card: AnnotationChartLayerCard },
+  PointsChartLayer: { Card: PointsChartLayerCard },
+  DistributionChartLayer: { Card: DistributionChartLayerCard },
 };

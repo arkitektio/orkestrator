@@ -33,12 +33,20 @@ export type ChartLayerStructureLike = {
   annotationCollection?: { id: string } | null;
   seriesAxis?: string | null;
   valueColumn?: string | null;
+  // What a VALUES layer reads: its columns, its grouping, its bins, its filters.
+  xColumn?: string | null;
+  yColumn?: string | null;
+  zColumn?: string | null;
+  groupColumn?: string | null;
+  bins?: number | null;
+  windowFilters?: readonly unknown[] | null;
 };
 
 export type ChartScopeLike = {
   id: string;
   worldCoordinateSystem?: { id: string } | null;
   axis?: { name: string } | null;
+  kind?: string | null;
 };
 
 export const chartScopeSignature = (chart: ChartScopeLike): string =>
@@ -46,6 +54,7 @@ export const chartScopeSignature = (chart: ChartScopeLike): string =>
     id: chart.id,
     world: chart.worldCoordinateSystem?.id ?? null,
     axis: chart.axis?.name ?? null,
+    kind: chart.kind ?? null,
   });
 
 /**
@@ -65,6 +74,8 @@ export const layerStructureKey = (l: ChartLayerStructureLike): string =>
     along: l.alongAxis ?? null,
     series: l.seriesAxis ?? null,
     value: l.valueColumn ?? null,
+    columns: [l.xColumn ?? null, l.yColumn ?? null, l.zColumn ?? null, l.groupColumn ?? null, l.bins ?? null],
+    filters: l.windowFilters ?? null,
     path:
       l.pathToWorld?.map((step) => [
         step.transformation?.id ?? null,

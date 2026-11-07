@@ -27,10 +27,14 @@ import { markSpaceOf, vectorAxes, type AxisLike, type MarkSpace } from "./chartM
  * and its card says why.
  */
 
-export type ChartLayerKind = "trace" | "series" | "annotation";
+export type ChartLayerKind = "trace" | "series" | "annotation" | "points" | "distribution";
 
-/** How a trace or a series is drawn. A look, not a kind. */
-export type ChartMark = "LINE" | "MARKERS" | "LINE_MARKERS" | "STEPS";
+/**
+ * How a layer is drawn. A look, not a kind: a trace or a series is a LINE,
+ * MARKERS, both or STEPS; points are MARKERS or a LINE; a distribution is a
+ * HISTOGRAM or a BOX.
+ */
+export type ChartMark = "LINE" | "MARKERS" | "LINE_MARKERS" | "STEPS" | "HISTOGRAM" | "BOX";
 
 /**
  * What the server holds for the fields a user edits — exactly
@@ -70,6 +74,47 @@ export type AnnotationSource = {
   space: MarkSpace | null;
 };
 
+/**
+ * A row filter of a table lens, as the server hands it out (`windowFilters`):
+ * keep the rows whose `column` lies in `[min, max]` (or is one of `values`),
+ * the opposite when `exclude`. One with a `joinPath` reads another table, which
+ * a chart of values does not do: it is reported, never silently dropped.
+ */
+export type RowFilterLike = {
+  column?: string | null;
+  min?: number | null;
+  max?: number | null;
+  values?: readonly string[] | null;
+  exclude?: boolean | null;
+  joinPath?: readonly unknown[] | null;
+};
+
+/**
+ * What a VALUES layer reads: a table's rows, drawn at the values of the
+ * columns it names. Nothing is placed along an axis -- the position IS the
+ * measurement.
+ */
+export type ValuesSource = {
+  store: { id: string; sizeBytes?: number | null };
+  table: string;
+  filters: readonly RowFilterLike[];
+} & (
+  | {
+      kind: "points";
+      x: string;
+      y: string;
+      z: string | null;
+      units: { x: string | null; y: string | null; z: string | null };
+    }
+  | {
+      kind: "distribution";
+      value: string;
+      group: string | null;
+      bins: number | null;
+      unit: string | null;
+    }
+);
+
 /** Why a layer's data cannot be read, in words for its card. */
 export type ChartSourceFailure = string;
 
@@ -83,6 +128,12 @@ export type ChartLayerState = PlotLayerBase<PersistedChartLayer> & {
   mark: ChartMark;
   /** What the tile and table drivers read of `mark`: how samples are joined. */
   lineShape: "linear" | "steps";
+  /**
+   * The layer's colour at full strength. `color` folds the opacity in against
+   * black (cheap, opaque lines); a chart of values draws with real alpha, so
+   * overlapping points and bars read as overlapping, and takes this instead.
+   */
+  solidColor: string;
   placeability: Placeability;
   /** Traces: the pyramid placed along the chart's axis; null when undrawable. */
   source: TraceSource | null;
@@ -90,6 +141,8 @@ export type ChartLayerState = PlotLayerBase<PersistedChartLayer> & {
   series: SeriesSource | null;
   /** Annotations: the collection drawn, and how its vectors are read. */
   marks: AnnotationSource | null;
+  /** Points and distributions: the table and the columns whose values are drawn. */
+  values: ValuesSource | null;
   sourceFailure: ChartSourceFailure | null;
   /** What this layer reads, for its card: a dataset, a table and column, a collection. */
   reads: string;
@@ -159,6 +212,34 @@ export type SeriesChartLayerLike = ChartLayerCommonLike &
     valueUnit?: string | null;
   };
 
+type ValuesTableLike = {
+  id: string;
+  name?: string | null;
+  store: { id: string; sizeBytes?: number | null };
+};
+
+export type PointsChartLayerLike = ChartLayerCommonLike &
+  MarkedLike & {
+    tableDataset: ValuesTableLike;
+    windowFilters?: readonly RowFilterLike[] | null;
+    xColumn: string;
+    yColumn: string;
+    zColumn?: string | null;
+    xUnit?: string | null;
+    yUnit?: string | null;
+    zUnit?: string | null;
+  };
+
+export type DistributionChartLayerLike = ChartLayerCommonLike &
+  Pick<MarkedLike, "mark"> & {
+    tableDataset: ValuesTableLike;
+    windowFilters?: readonly RowFilterLike[] | null;
+    valueColumn: string;
+    groupColumn?: string | null;
+    bins?: number | null;
+    valueUnit?: string | null;
+  };
+
 export type AnnotationChartLayerLike = ChartLayerCommonLike & {
   annotationCollection: {
     id: string;
@@ -180,14 +261,23 @@ export const kindOfTypename = (typename: string | undefined): ChartLayerKind | n
       return "series";
     case "AnnotationChartLayer":
       return "annotation";
+    case "PointsChartLayer":
+      return "points";
+    case "DistributionChartLayer":
+      return "distribution";
     default:
       return null;
   }
 };
 
+/** Whether a kind draws values against values (a chart of VALUES), rather than along an axis. */
+export const isValuesKind = (kind: ChartLayerKind): boolean => kind === "points" || kind === "distribution";
+
 /** Reads a server mark leniently: anything unknown (or absent) is a line. */
 export const markOf = (value: string | null | undefined): ChartMark =>
-  value === "MARKERS" || value === "LINE_MARKERS" || value === "STEPS" ? value : "LINE";
+  value === "MARKERS" || value === "LINE_MARKERS" || value === "STEPS" || value === "HISTOGRAM" || value === "BOX"
+    ? value
+    : "LINE";
 
 export const drawsLine = (mark: ChartMark): boolean => mark !== "MARKERS";
 export const drawsMarkers = (mark: ChartMark): boolean => mark === "MARKERS" || mark === "LINE_MARKERS";
@@ -240,6 +330,7 @@ const derivedFromPersisted = (id: string, persisted: PersistedChartLayer) => ({
   color: persisted.color
     ? cssOf(persisted.color, persisted.opacity)
     : dimmed(colorForLayerId(id), persisted.opacity),
+  solidColor: persisted.color ? cssOf(persisted.color, 1) : colorForLayerId(id),
   lineWidth: persisted.lineWidth ?? DEFAULT_LINE_WIDTH,
   markerSize: persisted.markerSize ?? DEFAULT_MARKER_SIZE,
   mark: persisted.mark,
@@ -271,6 +362,7 @@ const base = (
   source: null,
   series: null,
   marks: null,
+  values: null,
   sourceFailure: null,
   alongAxis: layer.alongAxis ?? null,
   seriesAxis: null,
@@ -443,6 +535,79 @@ export const normalizeAnnotationLayer = (
       axisCount: vectorAxes(axes).length,
       space: markSpaceOf(axes, along, axisMap),
     },
+    rowGroup: `layer:${layer.id}`,
+  };
+};
+
+/** A table lens' filters a chart of values applies itself; those reaching another table are left out. */
+const valueFilters = (filters: readonly RowFilterLike[] | null | undefined) => {
+  const all = filters ?? [];
+  const applied = all.filter((f) => f.column && !(f.joinPath && f.joinPath.length > 0));
+  return { applied, skipped: all.length - applied.length };
+};
+
+const skippedNote = (skipped: number): string | null =>
+  skipped > 0 ? `${skipped} filter${skipped === 1 ? "" : "s"} through another table not applied` : null;
+
+/** A VALUES layer is drawn when its rows are placed in the chart's world (the table's own space). */
+const valuesDrawable = (p: Placeability): boolean => p.drawable;
+
+export const normalizePointsLayer = (layer: PointsChartLayerLike, asAffineError?: string | null): ChartLayerState => {
+  const placeability = placeabilityOf(layer, asAffineError);
+  const persisted = persistedOf(layer);
+  const { applied, skipped } = valueFilters(layer.windowFilters);
+  const tableName = layer.tableDataset.name ?? `Table ${layer.tableDataset.id}`;
+  const z = layer.zColumn ?? null;
+  const drawn = [layer.xColumn, layer.yColumn, z].filter(Boolean).join(" · ");
+  return {
+    ...base(layer, "points", persisted, placeability),
+    label: layer.name ?? `${tableName} · ${layer.yColumn} vs ${layer.xColumn}`,
+    reads: `${tableName} · ${drawn}`,
+    values: valuesDrawable(placeability)
+      ? {
+          kind: "points",
+          store: layer.tableDataset.store,
+          table: layer.tableDataset.id,
+          filters: applied,
+          x: layer.xColumn,
+          y: layer.yColumn,
+          z,
+          units: { x: layer.xUnit ?? null, y: layer.yUnit ?? null, z: layer.zUnit ?? null },
+        }
+      : null,
+    sourceFailure: skippedNote(skipped),
+    valueUnit: layer.yUnit ?? null,
+    rowGroup: `layer:${layer.id}`,
+  };
+};
+
+export const normalizeDistributionLayer = (
+  layer: DistributionChartLayerLike,
+  asAffineError?: string | null,
+): ChartLayerState => {
+  const placeability = placeabilityOf(layer, asAffineError);
+  const persisted = persistedOf(layer);
+  const { applied, skipped } = valueFilters(layer.windowFilters);
+  const tableName = layer.tableDataset.name ?? `Table ${layer.tableDataset.id}`;
+  const group = layer.groupColumn ?? null;
+  return {
+    ...base(layer, "distribution", persisted, placeability),
+    label: layer.name ?? `${tableName} · ${layer.valueColumn}${group ? ` by ${group}` : ""}`,
+    reads: `${tableName} · ${layer.valueColumn}${group ? ` per ${group}` : ""}`,
+    values: valuesDrawable(placeability)
+      ? {
+          kind: "distribution",
+          store: layer.tableDataset.store,
+          table: layer.tableDataset.id,
+          filters: applied,
+          value: layer.valueColumn,
+          group,
+          bins: layer.bins ?? null,
+          unit: layer.valueUnit ?? null,
+        }
+      : null,
+    sourceFailure: skippedNote(skipped),
+    valueUnit: layer.valueUnit ?? null,
     rowGroup: `layer:${layer.id}`,
   };
 };

@@ -16,12 +16,24 @@ import {
 } from "../model/chartLayerModel";
 import { useChartLayerWrite } from "./useChartLayerWrite";
 
-const MARKS: { value: ChartMark; label: string }[] = [
+const LINE_MARKS: { value: ChartMark; label: string }[] = [
   { value: "LINE", label: "Line" },
   { value: "MARKERS", label: "Markers" },
   { value: "LINE_MARKERS", label: "Line + markers" },
   { value: "STEPS", label: "Steps" },
 ];
+
+/** What each kind may be drawn as: the server refuses the rest. */
+const MARKS_BY_KIND: Partial<Record<ChartLayerState["kind"], { value: ChartMark; label: string }[]>> = {
+  points: [
+    { value: "MARKERS", label: "Markers" },
+    { value: "LINE", label: "Line through" },
+  ],
+  distribution: [
+    { value: "HISTOGRAM", label: "Histogram" },
+    { value: "BOX", label: "Box" },
+  ],
+};
 
 const MARKER_SIZES = [3, 5, 8, 12];
 
@@ -49,6 +61,8 @@ const SELECT = "h-5 rounded border border-foreground/10 bg-background/30 px-1.5 
  */
 export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
   const write = useChartLayerWrite();
+  const marks = MARKS_BY_KIND[layer.kind] ?? LINE_MARKS;
+  const isDistribution = layer.kind === "distribution";
   return (
     <CardSection title="style">
       <Row label="Look">
@@ -62,7 +76,7 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="end">
-            {MARKS.map((option) => (
+            {marks.map((option) => (
               <SelectItem key={option.value} value={option.value} className="text-xs">
                 {option.label}
               </SelectItem>
@@ -70,7 +84,7 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
           </SelectContent>
         </Select>
       </Row>
-      {drawsLine(layer.mark) && (
+      {(isDistribution || drawsLine(layer.mark)) && (
         <Row label="Line">
           <LineWidthSelect
             value={layer.lineWidth}
@@ -78,7 +92,7 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
           />
         </Row>
       )}
-      {drawsMarkers(layer.mark) && (
+      {(drawsMarkers(layer.mark) || (layer.kind === "points" && layer.mark === "MARKERS")) && (
         <Row label="Markers">
           <select
             title="Marker size (px)"

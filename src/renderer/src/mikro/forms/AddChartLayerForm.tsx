@@ -24,6 +24,7 @@ import {
 import { chartAxisLabel } from "../chartAxis";
 import { lensLabel } from "../lenses";
 import { useLensRegistry } from "../lib/lenses/useLensRegistry";
+import { AddValuesLayer } from "./addChartLayer/AddValuesLayer";
 import {
   chartCandidates,
   type CandidatesInput,
@@ -167,6 +168,26 @@ export const AddChartLayerForm = (props: {
   const orderedTables = props.table
     ? [...tables].sort((a, b) => Number(b.id === props.table) - Number(a.id === props.table))
     : tables;
+
+  if (data?.chart.kind === "VALUES") {
+    const kinds = new Set(data.chart.layers.map((l) => l.__typename));
+    const only = kinds.has("PointsChartLayer") ? "POINTS" : kinds.has("DistributionChartLayer") ? "DISTRIBUTION" : null;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <DialogHeader>
+          <DialogTitle>Add a layer</DialogTitle>
+          <DialogDescription>
+            {`The rows that live in ${data.chart.worldCoordinateSystem.name} can be drawn in ${data.chart.name}: ${
+              only === "POINTS" ? "as points" : only === "DISTRIBUTION" ? "as a distribution" : "as points, or as a distribution"
+            }.`}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <AddValuesLayer chart={chart} tables={orderedTables} only={only} preselect={props.table} lens={props.lens} run={add} />
+        </DialogBody>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">

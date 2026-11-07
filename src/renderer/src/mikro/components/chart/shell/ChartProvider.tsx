@@ -42,11 +42,10 @@ const SPEC: PlotScopeSpec<ChartLike, FoldedChart, ChartStoreApi> = {
   createStore: (chart, folded) =>
     createChartStore({
       chartId: chart.id,
-      axis: {
-        name: chart.axis.name,
-        unit: chart.axis.unit ?? null,
-        type: chart.axis.type ?? null,
-      },
+      kind: chart.kind === "VALUES" ? "VALUES" : "AXIS",
+      axis: chart.axis
+        ? { name: chart.axis.name, unit: chart.axis.unit ?? null, type: chart.axis.type ?? null }
+        : null,
       worldId: chart.worldCoordinateSystem?.id ?? null,
       layers: folded.layers,
       rawLayers: typedRaw(folded.rawLayers),

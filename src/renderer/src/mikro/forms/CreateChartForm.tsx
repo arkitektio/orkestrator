@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import {
   AxisType,
+  ChartKind,
   GetChartsDocument,
   GetCoordinateSystemDocument,
   useCoordinateSystemOptionsLazyQuery,
@@ -50,7 +51,7 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
     refetchQueries: [GetChartsDocument, GetCoordinateSystemDocument],
   });
   const [searchSystems] = useCoordinateSystemOptionsLazyQuery();
-  const [world, setWorld] = useState<"existing" | "new">(
+  const [world, setWorld] = useState<"existing" | "new" | "values">(
     props.coordinateSystem ? "existing" : "new",
   );
 
@@ -77,7 +78,7 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(async (data) => {
-          if (world === "existing" && !data.coordinateSystem) {
+          if (world !== "new" && !data.coordinateSystem) {
             form.setError("coordinateSystem", { message: "Pick a coordinate system" });
             return;
           }
@@ -86,7 +87,8 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
               input: {
                 name: data.name,
                 description: data.description || null,
-                ...(world === "existing"
+                kind: world === "values" ? ChartKind.Values : ChartKind.Axis,
+                ...(world !== "new"
                   ? { coordinateSystem: data.coordinateSystem }
                   : {
                       axis: {
@@ -103,7 +105,8 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
         <DialogHeader>
           <DialogTitle>Create Chart</DialogTitle>
           <DialogDescription>
-            A chart lays data out along one axis. It starts empty; layers are added afterwards.
+            A chart shows how much: along one axis, or as values against values. It starts empty;
+            layers are added afterwards.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,10 +114,11 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
           <StringField label="Name" name="name" placeholder="My Chart" />
           <ParagraphField label="Description" name="description" />
 
-          <Tabs value={world} onValueChange={(value) => setWorld(value as "existing" | "new")}>
+          <Tabs value={world} onValueChange={(value) => setWorld(value as "existing" | "new" | "values")}>
             <TabsList>
               <TabsTrigger value="new">New axis</TabsTrigger>
-              <TabsTrigger value="existing">Existing space</TabsTrigger>
+              <TabsTrigger value="existing">Existing axis</TabsTrigger>
+              <TabsTrigger value="values">Values of rows</TabsTrigger>
             </TabsList>
             <TabsContent value="new" className="grid grid-cols-1 gap-4 pt-2">
               <StringField
@@ -135,6 +139,14 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
                 label="Coordinate system"
                 searchQuery={searchSystems}
                 description="A space with exactly one metric axis. What is already registered into it can be drawn in the chart."
+              />
+            </TabsContent>
+            <TabsContent value="values" className="pt-2">
+              <GraphQLSearchField
+                name="coordinateSystem"
+                label="Whose rows"
+                searchQuery={searchSystems}
+                description="The space a table's rows live in -- usually its own. Its rows are drawn at the values of their columns: a scatter, a histogram, a box per group. Nothing about the space is drawn. To plot one table straight away, use Plot on the table."
               />
             </TabsContent>
           </Tabs>

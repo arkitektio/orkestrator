@@ -32,7 +32,7 @@ export type ResidentLike =
       id: string;
       name: string;
       fullLens?: { id: string } | null;
-      columns: readonly { name: string; role?: string | null; dtype?: string | null; unit?: string | null }[];
+      columns: readonly { name: string; role?: string | null; dtype?: string | null; unit?: string | null; axisType?: string | null }[];
     }
   | {
       __typename: "AnnotationCollection";
@@ -82,6 +82,8 @@ export type TableCandidate = {
   valueColumns: { name: string; unit: string | null }[];
   /** The value columns of this table already drawn in the chart. */
   drawnColumns: string[];
+  /** Columns a distribution can be grouped by: labels, flags, group ids, a long-form channel. */
+  groupColumns: { name: string; unit: string | null }[];
 };
 
 export type CollectionCandidate = {
@@ -124,9 +126,16 @@ export const traceShapeReason = (lens: {
 };
 
 /** A column a series could read as its value: a measurement, and not text. */
-const isValueColumn = (column: { role?: string | null; dtype?: string | null }): boolean =>
+export const isValueColumn = (column: { role?: string | null; dtype?: string | null }): boolean =>
   (column.role == null || column.role === "ATTRIBUTE") &&
   !/str|utf|char|bool|object|categor/i.test(column.dtype ?? "");
+
+/** What a distribution may be grouped by: a column naming a group, not measuring one. */
+export const isGroupColumn = (column: { role?: string | null; dtype?: string | null; axisType?: string | null }): boolean =>
+  column.role === "LABEL" ||
+  column.role === "GROUP_ID" ||
+  column.axisType === "CHANNEL" ||
+  /str|utf|char|bool|categor/i.test(column.dtype ?? "");
 
 export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
   const world = input.worldCoordinateSystem;
@@ -172,6 +181,9 @@ export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
         drawnColumns: layers
           .filter((l) => l.tableDataset?.id === table.id && l.valueColumn)
           .map((l) => l.valueColumn as string),
+        groupColumns: table.columns
+          .filter(isGroupColumn)
+          .map((column) => ({ name: column.name, unit: column.unit ?? null })),
       });
     } else if (resident.__typename === "AnnotationCollection") {
       const collection = resident as Extract<ResidentLike, { __typename: "AnnotationCollection" }>;

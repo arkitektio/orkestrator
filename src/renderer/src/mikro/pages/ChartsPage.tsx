@@ -29,7 +29,7 @@ const Page = () => {
       <div className="p-3">
         <Explainer
           title="Charts"
-          description="A chart lays data out along one axis, such as time or wavelength, and reads values off it: arrays as traces, table columns as series, and marks you draw."
+          description="A chart shows how much: data along one axis, such as time or wavelength (arrays as traces, table columns as series, marks you draw), or a table's rows at the values of their columns (a scatter, a histogram, a box per group)."
         />
         <ChartList defaultLimit={40} />
       </div>
