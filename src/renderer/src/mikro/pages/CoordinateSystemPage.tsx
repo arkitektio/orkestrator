@@ -17,6 +17,7 @@ import {
   useGetCoordinateSystemQuery,
 } from "../api/graphql";
 import ChartCard from "../components/cards/ChartCard";
+import GridCard from "../components/cards/GridCard";
 import SceneCard from "../components/cards/SceneCard";
 import CoordinateGraphView, {
   DEFAULT_MAX_DEPTH,
@@ -204,7 +205,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
                 {system.visualizations.length === 0 ? (
                   <>
                     <span className="text-xs text-muted-foreground">
-                      No scene or chart uses this coordinate system as its world yet.
+                      No scene, chart or grid uses this coordinate system as its world yet.
                     </span>
                     {visualizeButton}
                   </>
@@ -213,6 +214,8 @@ export const CoordinateSystemPage = asDetailQueryRoute(
                     {system.visualizations.map((visualization) =>
                       visualization.__typename === "Chart" ? (
                         <ChartCard key={`chart-${visualization.id}`} item={visualization} />
+                      ) : visualization.__typename === "Grid" ? (
+                        <GridCard key={`grid-${visualization.id}`} item={visualization} />
                       ) : (
                         <SceneCard key={`scene-${visualization.id}`} scene={visualization} />
                       ),

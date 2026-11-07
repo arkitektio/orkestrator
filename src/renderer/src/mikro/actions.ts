@@ -37,6 +37,13 @@ import {
   GetWholeLensQuery,
   GetWholeLensQueryVariables,
   GetWindowLensSubjectDocument,
+  CreateGridFromCoordinateSystemDocument,
+  CreateGridFromCoordinateSystemMutation,
+  CreateGridFromCoordinateSystemMutationVariables,
+  CreateHeatmapGridLayerDocument,
+  CreateCellsGridLayerDocument,
+  DeleteGridDocument,
+  GetGridsDocument,
   GetWindowLensSubjectQuery,
   GetWindowLensSubjectQueryVariables,
   CreateAnnotationChartLayerDocument,
@@ -79,7 +86,9 @@ import {
   Share2,
   Boxes,
   ChartSpline,
+  ChartScatter,
   Clapperboard,
+  Grid3x3,
   Eye,
   File,
   FolderInput,
@@ -114,7 +123,7 @@ const visualizeSystem = async (
     mutation: AutoVisualizeDocument,
     variables: { input: { coordinateSystem } },
     // Either list may have grown, and the system's page lists both kinds.
-    refetchQueries: [GetScenesDocument, GetChartsDocument, GetCoordinateSystemDocument],
+    refetchQueries: [GetScenesDocument, GetChartsDocument, GetGridsDocument, GetCoordinateSystemDocument],
   });
 
   const visualization = data?.autoVisualize;
@@ -140,7 +149,7 @@ const visualizeLens = async (
     // The lens' page lists its scenes; awaited so it holds the new one by the
     // time we land there asking for it. Named, so only the queries on screen
     // run again: the dataset's, when the lens is an array's.
-    refetchQueries: [GetScenesDocument, GetChartsDocument, 'GetLens', 'GetArrayDataset'],
+    refetchQueries: [GetScenesDocument, GetChartsDocument, GetGridsDocument, 'GetLens', 'GetArrayDataset'],
     awaitRefetchQueries: true,
   });
 
@@ -148,7 +157,8 @@ const visualizeLens = async (
   if (!visualization) {
     throw new Error('Visualizing returned neither a scene nor a chart');
   }
-  return visualization.__typename === 'Chart'
+  // A chart and a grid have pages of their own; a scene is drawn on the lens' page.
+  return visualization.__typename === 'Chart' || visualization.__typename === 'Grid'
     ? visualizationLink(visualization)
     : `${linkBuilder('mikro/lenses')(lens)}?scene=${encodeURIComponent(visualization.id)}`;
 };
@@ -706,6 +716,115 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       navigate(linkBuilder('mikro/charts')(chart.id));
     },
   },
+  'create-grid-from-coordinatesystem': {
+    title: 'Show as Grid',
+    description:
+      'Lay out the members of this space\'s one or two enumerating axes as rows and columns: its matrices and arrays as heatmaps, its tables as cells',
+    icon: Grid3x3,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/coordinatesystem' },
+      { type: 'nopartner' },
+    ],
+    collections: ['coordinatesystem'],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/coordinatesystem');
+      if (!selected?.id) throw new Error('No coordinate system selected for Show as Grid');
+      const mikro = services.mikro;
+      if (!mikro) throw new Error('Mikro service is not available');
+      // Whether the space is one of members is the server's call: its refusal
+      // (a measured axis, three axes) is the message shown.
+      const { data } = await mikro.client.mutate<
+        CreateGridFromCoordinateSystemMutation,
+        CreateGridFromCoordinateSystemMutationVariables
+      >({
+        mutation: CreateGridFromCoordinateSystemDocument,
+        variables: { input: { coordinateSystem: selected.id } },
+        refetchQueries: [GetGridsDocument, GetCoordinateSystemDocument],
+      });
+      const grid = data?.createGridFromCoordinateSystem;
+      if (!grid) throw new Error('Grid creation returned no grid');
+      navigate(linkBuilder('mikro/grids')(grid.id));
+    },
+  },
+  'plot-tabledataset': {
+    title: 'Plot',
+    description: 'Draw this table\'s rows at the values of its columns: one against another, or the distribution of one per group',
+    icon: ChartScatter,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/tabledataset' },
+      { type: 'nopartner' },
+    ],
+    collections: ['tabledataset'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/tabledataset');
+      if (!selected?.id) throw new Error('No table selected for Plot');
+      dialog.openDialog('plottable', { table: selected.id }, { size: 'medium' });
+    },
+  },
+  'plot-tablelens': {
+    title: 'Plot',
+    description: 'Draw the rows this lens keeps at the values of their columns',
+    icon: ChartScatter,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/tablelens' },
+      { type: 'nopartner' },
+    ],
+    collections: ['lens'],
+    execute: async ({ state, services, dialog }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/tablelens');
+      if (!selected?.id) throw new Error('No lens selected for Plot');
+      const mikro = services.mikro;
+      if (!mikro) throw new Error('Mikro service is not available');
+      const { data } = await mikro.client.query<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>({
+        query: GetWindowLensSubjectDocument,
+        variables: { id: selected.id },
+      });
+      if (data.lens.__typename !== 'TableLens') throw new Error('Only a table lens can be plotted');
+      dialog.openDialog('plottable', { table: data.lens.tableDataset.id, lens: selected.id }, { size: 'medium' });
+    },
+  },
+  // A lens dropped on a grid: an array or a sparse matrix is a heatmap, a table
+  // its cells. The server checks it covers the grid's rows and columns.
+  'add-lens-to-grid': {
+    title: 'Draw in Grid',
+    description: 'Draw this lens in the grid it was dropped on: an array or a matrix as a heatmap, a table as cells',
+    icon: Grid3x3,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/grid' },
+      { type: 'pmixture', identifiers: [...LENS_IDENTIFIERS] },
+    ],
+    collections: ['grid'],
+    execute: async ({ state, services }) => {
+      const grid = state.left.find((item) => item.identifier === '@mikro/grid');
+      const lenses = (state.right ?? []).filter((item) => isLensIdentifier(item.identifier));
+      if (!grid?.id || lenses.length === 0) throw new Error('Draw in Grid needs both a grid and a lens');
+      const mikro = services.mikro;
+      if (!mikro) throw new Error('Mikro service is not available');
+      for (const lens of lenses) {
+        const { data } = await mikro.client.query<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>({
+          query: GetWindowLensSubjectDocument,
+          variables: { id: lens.id },
+        });
+        const kind = data.lens.__typename;
+        if (kind !== 'ArrayLens' && kind !== 'SparseLens' && kind !== 'TableLens') {
+          throw new Error('A grid draws arrays, sparse matrices and tables; this lens selects over none of them');
+        }
+        await mikro.client.mutate({
+          mutation: kind === 'TableLens' ? CreateCellsGridLayerDocument : CreateHeatmapGridLayerDocument,
+          variables: { input: { grid: grid.id, lens: lens.id } },
+          refetchQueries: ['GetGrid'],
+        });
+      }
+    },
+  },
+  'delete-mikro-grid': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete Grid',
+    identifier: '@mikro/grid',
+    description: 'Delete the grid and its layers. The data they drew and the space it lays out are untouched',
+    service: 'mikro',
+    typename: 'Grid',
+    mutation: DeleteGridDocument,
+  }),
   // The three registration entry points. All open the same dialog; they differ
   // only in which of its two slots the entry point can already fill.
   //

@@ -8,6 +8,8 @@ import AnnotationPage from "./pages/AnnotationPage";
 import AnnotationsPage from "./pages/AnnotationsPage";
 import ChartPage from "./pages/ChartPage";
 import ChartsPage from "./pages/ChartsPage";
+import GridPage from "./pages/GridPage";
+import GridsPage from "./pages/GridsPage";
 import CoordinateSystemPage from "./pages/CoordinateSystemPage";
 import CoordinateSystemsPage from "./pages/CoordinateSystemsPage";
 import FilePage from "./pages/FilePage";
@@ -62,6 +64,8 @@ export const MikroNextModule = () => {
         <Route path="scenes/:id/register" element={<SceneRegistrationPage />} />
         <Route path="charts" element={<ChartsPage />} />
         <Route path="charts/:id" element={<ChartPage />} />
+        <Route path="grids" element={<GridsPage />} />
+        <Route path="grids/:id" element={<GridPage />} />
         <Route path="peerhome/:id" element={<PeerHomePage />} />
         <Route path="files/:id" element={<FilePage />} />
         <Route path="lineage/:kind/:id" element={<LineagePage />} />

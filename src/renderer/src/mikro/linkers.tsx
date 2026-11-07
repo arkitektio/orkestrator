@@ -41,6 +41,7 @@ export const MikroFile = smartOf(manifest, "@mikro/file");
 export const MikroScene = smartOf(manifest, "@mikro/scene");
 export const MikroCollaboration = smartOf(manifest, "@mikro/collaboration");
 export const MikroChart = smartOf(manifest, "@mikro/chart");
+export const MikroGrid = smartOf(manifest, "@mikro/grid");
 export const MikroTableDataset = smartOf(manifest, "@mikro/tabledataset");
 export const MikroSparseDataset = smartOf(manifest, "@mikro/sparsedataset");
 export const MikroAnnotation = smartOf(manifest, "@mikro/annotation");

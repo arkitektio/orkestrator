@@ -9,6 +9,7 @@ import { CreateCollaborationForm } from "./forms/CreateCollaborationForm";
 import { ShareCollaborationForm } from "./forms/ShareCollaborationForm";
 import { CalibrateForm } from "./forms/CalibrateForm";
 import { CreateChartForm } from "./forms/CreateChartForm";
+import { PlotTableForm } from "./forms/PlotTableForm";
 import { CreateFolderForm } from "./forms/CreateFolderForm";
 import { CreateLensForm } from "./forms/CreateLensForm";
 import { MoveToFolderForm } from "./forms/MoveToFolderForm";
@@ -38,6 +39,7 @@ export const MIKRO_DIALOGS = {
   register: prefersSize("large", RegisterForm),
   calibrate: CalibrateForm,
   createchart: CreateChartForm,
+  plottable: PlotTableForm,
   createmikrofolder: CreateFolderForm,
   createlens: CreateLensForm,
   renamelens: RenameLensForm,

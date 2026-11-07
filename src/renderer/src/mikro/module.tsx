@@ -3,6 +3,7 @@ import { defineModule } from "@/core/modules/host/define";
 import { MIKRO_ACTIONS } from "./actions";
 import ArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
 import ChartHoverCard from "./components/hovers/ChartHoverCard";
+import GridHoverCard from "./components/hovers/GridHoverCard";
 import FileHoverCard from "./components/hovers/FileHoverCard";
 import FolderHoverCard from "./components/hovers/FolderHoverCard";
 import { LatestArrayDatasetsDashboardWidget } from "./dashboard/LatestArrayDatasetsDashboardWidget";
@@ -10,6 +11,7 @@ import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
 import { ChartDisplay } from "./displays/ChartDisplay";
+import { GridDisplay } from "./displays/GridDisplay";
 import { FileDisplay } from "./displays/FileDisplay";
 import { FolderDisplay } from "./displays/FolderDisplay";
 import { LensDisplay } from "./displays/LensDisplay";
@@ -45,6 +47,7 @@ export const MIKRO_MODULE = defineModule({
       // One per kind of lens; the line draws whichever kind it is.
       ...Object.fromEntries(LENS_IDENTIFIERS.map((identifier) => [identifier, LensDisplay])),
       "@mikro/chart": ChartDisplay,
+      "@mikro/grid": GridDisplay,
     },
     viewers: {
       "@mikro/scene": SceneViewer,
@@ -57,6 +60,7 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/folder": FolderHoverCard,
       "@mikro/arraydataset": ArrayDatasetHoverCard,
       "@mikro/chart": ChartHoverCard,
+      "@mikro/grid": GridHoverCard,
     },
     dialogs: MIKRO_DIALOGS,
     actions: MIKRO_ACTIONS,

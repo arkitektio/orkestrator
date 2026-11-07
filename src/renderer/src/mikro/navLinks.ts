@@ -25,6 +25,7 @@ export const MIKRO_NAV_LINKS: NavLinkDecl[] = [
   { label: "Folders", route: "/mikro/folders", group: "Files", icon: Folder, description: "How data is organized" },
   { label: "Files", route: "/mikro/files", group: "Files", icon: File, description: "Uploaded raw files" },
   { label: "Scenes", route: "/mikro/scenes", keywords: ["3d", "viewer"], group: "Data", icon: Clapperboard, description: "Composed viewer scenes" },
-  { label: "Charts", route: "/mikro/charts", keywords: ["plots", "traces", "series", "curves"], group: "Data", icon: ChartSpline, description: "Data laid out along one axis" },
+  { label: "Charts", route: "/mikro/charts", keywords: ["plots", "traces", "series", "curves", "scatter", "histogram"], group: "Data", icon: ChartSpline, description: "How much: along one axis, or values against values" },
+  { label: "Grids", route: "/mikro/grids", keywords: ["heatmap", "matrix", "plate", "wells", "cells"], group: "Data", icon: Grid3x3, description: "Which: members in rows and columns" },
   { label: "Collaborations", route: "/mikro/collaborations", keywords: ["share", "guests", "invite", "spaces"], group: "Sharing", icon: Share2, description: "What guests are granted" },
 ];

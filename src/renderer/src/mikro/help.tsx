@@ -348,7 +348,7 @@ export const MIKRO_HELP = {
   ),
   charts: (
     <PageHelp
-      intro="Charts lay data out along one axis, such as time or wavelength, and read values off it. Arrays are drawn as traces, table columns as series."
+      intro="Charts show how much. An axis chart lays data out along one axis, such as time or wavelength, and reads values off it: arrays as traces, table columns as series. A chart of values draws a table's rows at the values of their columns: a scatter of two columns, or the distribution of one."
       steps={[
         <>Click a chart to open it.</>,
         <>Press <b>New</b> to make an empty chart over a new axis or an existing space.</>,
@@ -361,14 +361,37 @@ export const MIKRO_HELP = {
   ),
   chart: (
     <PageHelp
-      intro="A chart is data laid out along one axis. Each layer reads one source: a trace reads an array, a series reads a table column, an annotation layer shows drawn marks."
+      intro="A chart shows how much. Along an axis, each layer reads one source: a trace reads an array, a series reads a table column, an annotation layer shows drawn marks. Of values, each layer draws a table's rows: points at two (or three) columns, or one column's histogram or box per group."
       steps={[
+        <>Hover a point, a bar or a box to read its values; pause on a point to see the rest of its row.</>,
+        <>Scroll to zoom at the cursor (shift: across only, alt: up only), drag to pan, shift-drag a box to zoom into it, double-click to fit.</>,
         <>Read <b>Laid out along</b> for the axis and its unit, and click the space below it to see what is registered into it.</>,
         <>Under <b>Layers</b>, click a source to open the data a layer reads.</>,
       ]}
       tips={[
         <>Where a layer sits along the axis comes from how its data is registered into the space, not from the chart.</>,
       ]}
+    />
+  ),
+  grids: (
+    <PageHelp
+      intro="Grids show which: their rows and columns are members -- genes and cells, cells and channels, a plate's wells -- and each cell is coloured by a value."
+      steps={[
+        <>Click a grid to open it.</>,
+        <>Right-click a sparse dataset or a long-form table and choose <b>Show as grid</b> to make one.</>,
+      ]}
+      tips={[<>A grid owns none of its data: deleting one leaves the matrices, tables and the space untouched.</>]}
+    />
+  ),
+  grid: (
+    <PageHelp
+      intro="A grid lays out the members of one or two axes as rows and columns, with no distance between them. A heatmap layer reads an array or a sparse matrix; a cells layer reads a table, coloured by one of its columns."
+      steps={[
+        <>Hover a cell to read its row, its column and its value.</>,
+        <>Under <b>Layers</b>, pick a colour map and a range for each layer; left empty, the range is the data’s own.</>,
+        <>Scroll to zoom, drag to pan, double-click to fit.</>,
+      ]}
+      tips={[<>Past 4096 members along a side, each texel shows the largest value of the members it covers.</>]}
     />
   ),
   lens: (

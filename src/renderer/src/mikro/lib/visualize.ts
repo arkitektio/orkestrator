@@ -11,12 +11,14 @@ export const visualizationLink = (
 ): string =>
   visualization.__typename === "Chart"
     ? linkBuilder("mikro/charts")(visualization.id)
-    : linkBuilder("mikro/scenes")(visualization.id);
+    : visualization.__typename === "Grid"
+      ? linkBuilder("mikro/grids")(visualization.id)
+      : linkBuilder("mikro/scenes")(visualization.id);
 
 /**
  * Show one lens from a page that draws scenes itself. A scene is handed to
  * `onScene` once the page's own queries hold it; a chart has a page of its
- * own, so that is where it opens. A refusal rejects: the caller reports it
+ * own, and so has a grid, so that is where those open. A refusal rejects: the caller reports it
  * (the server's prose is the toast's sentence).
  */
 export const useVisualizeLens = (onScene: (sceneId: string) => void) => {
@@ -26,7 +28,7 @@ export const useVisualizeLens = (onScene: (sceneId: string) => void) => {
     refetchQueries: ["GetLens", "GetArrayDataset"],
     awaitRefetchQueries: true,
     onCompleted: ({ autoVisualize }) =>
-      autoVisualize.__typename === "Chart"
+      autoVisualize.__typename === "Chart" || autoVisualize.__typename === "Grid"
         ? navigate(visualizationLink(autoVisualize))
         : onScene(autoVisualize.id),
   });
