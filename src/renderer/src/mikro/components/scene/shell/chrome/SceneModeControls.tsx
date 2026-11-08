@@ -1,6 +1,7 @@
 import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { ButtonGroup } from "@/core/ui/button-group";
+import { cn } from "@/core/util/utils";
 import {
   Hand,
   Pin,
@@ -30,6 +31,50 @@ const INTERACTION_ICONS: Record<InteractionMode, LucideIcon> = {
   PROBE: Target,
   DESIGN: Boxes,
 };
+
+const DISPLAY_MODES = ["2D", "3D"] as const;
+
+/**
+ * The 2D/3D switch: one pill, a thumb that slides behind the view you are
+ * in. Reads as a state, not as a button that might name where you would go.
+ */
+const DisplayModeSwitch = ({
+  value,
+  onChange,
+}: {
+  value: (typeof DISPLAY_MODES)[number];
+  onChange: (mode: (typeof DISPLAY_MODES)[number]) => void;
+}) => (
+  <div
+    role="radiogroup"
+    aria-label="View"
+    className="relative grid h-7 grid-cols-2 rounded-md bg-black/60 p-0.5 ring-1 ring-white/10"
+  >
+    <span
+      aria-hidden
+      className={cn(
+        "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-[5px] bg-primary shadow-sm transition-transform duration-200 ease-out",
+        value === "3D" && "translate-x-full",
+      )}
+    />
+    {DISPLAY_MODES.map((mode) => (
+      <BarTooltip key={mode} label={`${mode} view`}>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={value === mode}
+          onClick={() => onChange(mode)}
+          className={cn(
+            "relative z-10 w-8 text-[11px] font-semibold tracking-tight transition-colors",
+            value === mode ? "text-primary-foreground" : "text-white/55 hover:text-white",
+          )}
+        >
+          {mode}
+        </button>
+      </BarTooltip>
+    ))}
+  </div>
+);
 
 /**
  * The mode controls, docked bottom-right — under the gizmo, which answers the
@@ -73,8 +118,6 @@ export const SceneModeControls = () => {
     void savePreferredView(displayModeToPreferredView(displayMode)).catch(
       reportErrorAs("Couldn't pin the view"),
     );
-
-  const nextDisplayMode = displayMode === "2D" ? "3D" : "2D";
 
   // An option that would be inert is not offered — see `features/annotations/modeCompat.ts`.
   const modeContext = {
@@ -130,16 +173,7 @@ export const SceneModeControls = () => {
 
       {probeable && <LayerTargetPicker />}
 
-      <BarTooltip label={`Switch to ${nextDisplayMode} view`}>
-        <Button
-          variant={"outline"}
-          size={"xs"}
-          className="h-7 w-11 bg-black tabular-nums"
-          onClick={() => setDisplayMode(nextDisplayMode)}
-        >
-          <span className="text-xs font-bold">{displayMode}</span>
-        </Button>
-      </BarTooltip>
+      <DisplayModeSwitch value={displayMode} onChange={setDisplayMode} />
       <BarTooltip
         label={
           isDefaultView

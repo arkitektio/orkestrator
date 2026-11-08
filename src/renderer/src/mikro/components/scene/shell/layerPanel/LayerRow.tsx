@@ -93,13 +93,14 @@ export const LayerRow = ({
       <LayerTile tint="bg-foreground/10">
         <LayerGlyph layer={layer} className="h-3.5 w-3.5" />
       </LayerTile>
-      {/* The name is the rename: a click names what the layer shows (the
-          channel it pins, or the layer itself) instead of folding the card. */}
-      <LayerNamePopover
-        layer={layer}
-        label={label}
-        className={`font-medium text-foreground/90 ${compact ? "text-[11px]" : "text-xs"}`}
-      />
+      {/* The name folds the card like the rest of the row; renaming is the
+          pencil among the actions. */}
+      <span
+        className={`min-w-0 flex-1 truncate font-medium text-foreground/90 ${compact ? "text-[11px]" : "text-xs"}`}
+        title={label}
+      >
+        {label}
+      </span>
       {graphDirty && onSaveGraph && (
         <button
           className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
@@ -118,6 +119,12 @@ export const LayerRow = ({
       <div className="flex shrink-0 items-center">
         {/* What the layer reads, to act on: the lens' smart menu. */}
         {headerActions}
+        <LayerNamePopover
+          layer={layer}
+          label={label}
+          trigger="icon"
+          className={`${buttonSize} ${iconMuted}`}
+        />
         <LensButton lens={layer.lens} className={`${buttonSize} ${iconMuted}`} />
         <Button
           variant="ghost"

@@ -292,12 +292,20 @@ export const CropBoxGesture = () => {
       const slices = session.grid && session.grid.step > 0
         ? Math.round((session.grid.max - session.grid.min) / session.grid.step)
         : 0;
+      if (flat) {
+        // The flat view has no depth to pick: the box takes the whole stack,
+        // so scrubbing z keeps the crop, and the second click applies it.
+        const box = boxOf(session, corner, slices);
+        viewer.fixCropRect(box);
+        viewer.commitCrop();
+        return;
+      }
       session.steps = 0;
       session.depthFromY = event.clientY;
       session.pixelsPerStep = depthPixelsPerStep(element.getBoundingClientRect().height, slices);
       const box = boxOf(session, corner, 0);
       // From here the outline is the box the pointer's depth gives, drawn here.
-      if (!flat) lineRef.current?.setPoints(boxOutline(box));
+      lineRef.current?.setPoints(boxOutline(box));
       viewer.fixCropRect(box);
     };
 

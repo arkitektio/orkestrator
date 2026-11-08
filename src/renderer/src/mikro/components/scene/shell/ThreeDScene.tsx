@@ -1,7 +1,6 @@
 import { SceneVolume } from "./SceneVolume";
 import { BrushStrokeSession } from "../features/annotations/enhancers/paths/brushSkeleton/BrushStrokeSession";
 import { MeshDesignSession } from "../features/meshDesign/ui/MeshDesignSession";
-import { CropOrbitPivot } from "../features/crop/CropOrbitPivot";
 import { DoubleClickRecenter } from "../features/probe/DoubleClickRecenter";
 import { ProbeAxisGuides } from "../features/probe/ProbeAxisGuides";
 import { RoiDrawer } from "../features/annotations/RoiDrawer";
@@ -19,8 +18,6 @@ export const ThreeDScene = () => {
       {/* NAVIGATE double-click → recenter on the clicked content (3D-only by
           construction: this component tree only mounts in 3D). */}
       <DoubleClickRecenter />
-      {/* A committed crop box becomes the orbit pivot, at screen center. */}
-      <CropOrbitPivot />
       <SceneVolume />
       {/* Axis guides through the probed point — probing and 3D annotating are
           both probe-driven, so the guides serve as the anchor preview too. */}

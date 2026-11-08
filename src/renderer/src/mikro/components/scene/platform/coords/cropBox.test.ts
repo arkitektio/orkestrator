@@ -107,6 +107,11 @@ describe("crop z range", () => {
     expect(cropZRange(10 - 1e-9, 0, grid)).toEqual([9, 11]);
   });
 
+  it("takes the whole stack from any slice with as many steps as slices (the 2D crop)", () => {
+    const slices = (grid.max - grid.min) / grid.step;
+    for (const z of [0, 7, 20]) expect(cropZRange(z, slices, grid)).toEqual([-1, 21]);
+  });
+
   it("grows a slice per step on each side", () => {
     expect(cropZRange(10, 3, grid)).toEqual([3, 17]);
   });

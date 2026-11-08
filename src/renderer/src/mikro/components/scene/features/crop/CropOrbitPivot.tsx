@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
+import { panCameraTo } from "@/core/data/scene/camera/cameraFit";
 import { cropOrbitCenter, repivotPreservingView } from "../../platform/camera/orbitPivot";
 import { gatherLayerWorldBoxes } from "../../platform/visibility/layerBoxes";
 import { useAnimationStoreApi } from "../../platform/stores/animationStore";
-import { useModeStoreApi } from "../../platform/stores/modeStore";
+import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 
 /** The controls surface a repivot needs (structural, as everywhere). */
@@ -23,15 +24,20 @@ type PivotControls = {
  * double-click recenter. `PanScaleSync` gathers crop-clipped boxes, so its
  * retargets keep the pivot there.
  *
+ * In 2D there is no rotation: the commit just pans the crop to the middle of
+ * the view, zoom kept (`panCameraTo`, at the target's own depth).
+ *
  * Fires on the commit edge only (`cropPhase` depth → idle with a box):
- * cancel and clear leave the camera alone. The probe pivot and a playing
- * animation own the target, as everywhere. 3D only (mounted by
- * `ThreeDScene`); the 2D camera does not rotate.
+ * cancel and clear leave the camera alone. The probe pivot (3D) and a
+ * playing animation own the target, as everywhere. Mounted once per Canvas,
+ * beside `CropBoxGesture`.
  */
 export const CropOrbitPivot = () => {
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls);
   const invalidate = useThree((s) => s.invalidate);
+  const size = useThree((s) => s.size);
+  const flat = useModeStore((s) => s.displayMode !== "3D");
   const viewerApi = useViewerStoreApi();
   const animationApi = useAnimationStoreApi();
   const modeApi = useModeStoreApi();
@@ -48,11 +54,19 @@ export const CropOrbitPivot = () => {
       const committed = lastPhase === "depth" && state.cropPhase === "idle" && state.cropBox !== null;
       lastPhase = state.cropPhase;
       if (!committed || !state.cropBox) return;
-      if (modeApi.getState().pivotOnProbe) return; // the probe pivot owns the target
       if (animationApi.getState().playingId !== null) return; // the player owns the camera
 
       gatherLayerWorldBoxes(state.trackables, boxes, state.cropBox);
       cropOrbitCenter(state.cropBox, boxes, center);
+
+      if (flat) {
+        // Looking straight down: only x/y move the view.
+        center.z = ctrl.target.z;
+        panCameraTo(center, { camera, controls: ctrl, size, invalidate });
+        return;
+      }
+
+      if (modeApi.getState().pivotOnProbe) return; // the probe pivot owns the target
       if (!repivotPreservingView({ camera, controls: ctrl }, center)) return;
 
       // The user took the wheel: arm InitialCameraFit's latch, paired so
@@ -61,7 +75,7 @@ export const CropOrbitPivot = () => {
       ctrl.dispatchEvent?.({ type: "end" });
       invalidate(); // frameloop="demand"
     });
-  }, [camera, controls, invalidate, viewerApi, animationApi, modeApi]);
+  }, [camera, controls, invalidate, size, flat, viewerApi, animationApi, modeApi]);
 
   return null; // Headless: a binding, not a control.
 };

@@ -69,6 +69,7 @@ import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
 import { useViewerStore } from "../platform/stores/viewerStore";
 import { CropBoxGesture } from "../features/crop/CropBoxGesture";
+import { CropOrbitPivot } from "../features/crop/CropOrbitPivot";
 import { ScrollGestureNavigation } from "../platform/camera/ScrollGestureNavigation";
 import { LeftPressArbiter } from "./pointer/LeftPressArbiter";
 import { CropChip } from "../features/crop/CropChip";
@@ -438,6 +439,9 @@ export const SceneViewport = (props: {
           <SceneModeContent />
           {/* The crop box: its `s` gesture and its outline, in 2D and 3D. */}
           <CropBoxGesture />
+          {/* A committed crop comes to the middle of the view (and is the
+              orbit pivot in 3D). */}
+          <CropOrbitPivot />
 
           {props.inCanvas}
 
