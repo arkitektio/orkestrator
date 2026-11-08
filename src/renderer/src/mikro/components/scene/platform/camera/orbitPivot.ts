@@ -67,3 +67,27 @@ export function shouldRepivot(args: {
   if (!args.pivotOnProbe || !args.probe || args.isAnimationPlaying) return false;
   return args.justEnabled || args.probe.origin === "click";
 }
+
+/**
+ * Where a committed crop box puts the orbit pivot: the center of what is
+ * DRAWN inside it — the union of the layer boxes already clipped to the crop
+ * (`gatherLayerWorldBoxes(…, crop)`) — so a crop dragged deeper than the
+ * stack still turns around the data. The crop's own center when no layer
+ * overlaps it. Matching the drawn content is also what keeps the pivot put:
+ * `PanScaleSync`'s retarget seats the target at the same content's chord
+ * midpoint, inside its dead band.
+ */
+export function cropOrbitCenter(
+  crop: { min: readonly number[]; max: readonly number[] },
+  clippedBoxes: readonly THREE.Box3[],
+  out: THREE.Vector3,
+): THREE.Vector3 {
+  const union = new THREE.Box3();
+  for (const box of clippedBoxes) if (!box.isEmpty()) union.union(box);
+  if (!union.isEmpty()) return union.getCenter(out);
+  return out.set(
+    (crop.min[0] + crop.max[0]) / 2,
+    (crop.min[1] + crop.max[1]) / 2,
+    (crop.min[2] + crop.max[2]) / 2,
+  );
+}

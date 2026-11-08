@@ -59,7 +59,7 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
       { keys: ["S"], description: "Enter crop mode (again to leave it)" },
       { keys: ["click"], description: "Set the first corner, then the opposite one, then apply" },
       { keys: ["move up / down"], description: "Grow or shrink the box through Z, after the second click" },
-      { keys: ["Esc"], description: "Cancel the box being drawn" },
+      { keys: ["Esc"], description: "Remove the crop box, the whole image again (after leaving annotating, if that is on)" },
       { keys: ["Shift", "S"], description: "Remove the crop box" },
     ],
   },

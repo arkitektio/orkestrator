@@ -149,7 +149,12 @@ const PanScaleSync = () => {
     // camera emission: the setFromObject subtree walks were running at
     // ~17 Hz per layer during a gesture for values that cannot change
     // mid-gesture.
-    const gatherBoxes = () => gatherLayerWorldBoxes(viewerApi.getState().trackables, boxes);
+    // Clipped to the crop box: only what is drawn decides the pivot depth, so
+    // a crop's pivot (`CropOrbitPivot`) survives the gesture-start retarget.
+    const gatherBoxes = () => {
+      const { trackables, cropBox } = viewerApi.getState();
+      gatherLayerWorldBoxes(trackables, boxes, cropBox);
+    };
 
     const applyPanSpeed = () => {
       const targetDistance = perspective.position.distanceTo(ctrl.target);

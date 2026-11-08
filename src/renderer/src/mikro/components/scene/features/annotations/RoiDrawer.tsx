@@ -657,13 +657,14 @@ export const RoiDrawer = () => {
   // `lostpointercapture`, which fires *before* pointerup and would kill every
   // gesture before it commits.)
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
+    /** Whether the key was ours: a shape under way to shorten or discard. */
+    const onKeyDown = (event: KeyboardEvent): boolean => {
       const undo = event.key === "Backspace";
-      if (event.key !== "Escape" && !undo) return;
-      if (isTypingTarget(event.target as HTMLElement | null)) return;
+      if (event.key !== "Escape" && !undo) return false;
+      if (isTypingTarget(event.target as HTMLElement | null)) return false;
       const session = sessionRef.current;
       if (session.phase === "idle" && session.vertices.length === 0 && !session.stroke) {
-        return; // nothing of ours to cancel; leave the key to whoever else wants it
+        return false; // nothing of ours to cancel; leave the key to whoever else wants it
       }
       event.preventDefault();
       if (undo) {
@@ -674,7 +675,7 @@ export const RoiDrawer = () => {
           if (session.anchors.length > 0) {
             growFrom(session.anchors[session.anchors.length - 1]);
             paintCoalescer.schedule(paint);
-            return;
+            return true;
           }
         } else {
           const shorter = undoLastAnchor(session);
@@ -687,20 +688,33 @@ export const RoiDrawer = () => {
             setTraceMessage(null);
             growFrom(shorter.anchors[shorter.anchors.length - 1]);
             paintCoalescer.schedule(paint);
-            return;
+            return true;
           }
         }
       }
       resetSession();
       modeStoreApi.getState().leaveAnnotate();
+      return true;
+    };
+    // Backspace bubbles as before. Escape
+    // is heard in the CAPTURE phase: the app's SelectionBox stops it on
+    // `document`. Taken, it stops there — one press, one step
+    // (`shell/keyboard/escapeOrder.ts`).
+    const onBackspace = (event: KeyboardEvent) => {
+      if (event.key === "Backspace") onKeyDown(event);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && onKeyDown(event)) event.stopImmediatePropagation();
     };
     const onCancel = () => resetSession();
 
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onBackspace);
+    window.addEventListener("keydown", onEscape, true);
     window.addEventListener("pointercancel", onCancel);
     window.addEventListener("blur", onCancel);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onBackspace);
+      window.removeEventListener("keydown", onEscape, true);
       window.removeEventListener("pointercancel", onCancel);
       window.removeEventListener("blur", onCancel);
     };

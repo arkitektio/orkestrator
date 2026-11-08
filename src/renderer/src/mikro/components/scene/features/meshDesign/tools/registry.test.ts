@@ -7,8 +7,9 @@ describe("design tool registry", () => {
   it("assigns every tool a unique key that no hold-mode uses", () => {
     const keys = DESIGN_TOOLS.map((tool) => tool.key);
     expect(new Set(keys).size).toBe(keys.length);
-    // a = hold-ANNOTATE, p = hold-PROBE, m = hold-DESIGN, d = path-from-probe.
-    for (const reserved of ["a", "p", "m", "d"]) expect(keys).not.toContain(reserved);
+    // a = hold-ANNOTATE, p = hold-PROBE, m = hold-DESIGN, d = path-from-probe,
+    // s = crop box (every mode), q = depth view, f = frame the scene.
+    for (const reserved of ["a", "p", "m", "d", "s", "q", "f"]) expect(keys).not.toContain(reserved);
     for (const key of keys) expect(key).toMatch(/^[a-z]$/);
   });
 

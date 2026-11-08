@@ -8,20 +8,20 @@ import type { MeshDesignState, StampShape } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
 
 /**
- * S — stamp: click places the toolbar-chosen primitive at the clicked point
+ * O — stamp: click places the toolbar-chosen primitive at the clicked point
  * (on the overlay surface, or the fallback plane when the session is empty)
  * and unions it into the active mesh. Data-free building: phantoms, filled
- * holes, blocked-out shapes.
+ * holes, blocked-out shapes. Not S: that is the crop box, in every mode.
  */
 export const stampTool: DesignTool = {
   id: "stamp",
-  key: "s",
+  key: "o",
   label: "Stamp",
   icon: Shapes,
   group: "primary",
   gesture: "surface",
   hint: "Click to place the primitive on the mesh (or in space)",
-  shortcut: { keys: ["S", "click"], description: "Stamp: click to place a primitive" },
+  shortcut: { keys: ["O", "click"], description: "Stamp: click to place a primitive" },
 };
 
 export const stampSpecFor = (shape: StampShape, center: Vec3, radius: number): StampSpec => {

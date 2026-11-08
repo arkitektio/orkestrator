@@ -158,7 +158,7 @@ export interface MeshDesignState {
    * and field is immutable. Depth-capped: fields are megabytes each. */
   history: DesignSnapshot[];
   future: DesignSnapshot[];
-  /** The stamp tool's primitive (S). */
+  /** The stamp tool's primitive (O). */
   stampShape: StampShape;
   /** The sculpt brush's verb (B). */
   sculptVariant: SculptVariant;

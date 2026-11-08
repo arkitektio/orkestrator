@@ -9,6 +9,8 @@ import { stepSceneZ } from "@/core/data/scene/camera/sceneNavigation";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 import { useRoiDrawingStoreApi } from "../../features/annotations/roiDrawingStore";
+import { useBrushSkeletonStoreApi } from "../../features/annotations/enhancers/brushSkeletonStore";
+import { inOverlay, sceneEscapeAction } from "./escapeOrder";
 import { holdReleaseAction } from "./holdRelease";
 
 /** Hold-to-activate bindings. Release restores whatever was active before. */
@@ -36,6 +38,7 @@ export const KeyboardModeController = () => {
   const viewerStoreApi = useViewerStoreApi();
   const setCurrentZ = useViewerStore((s) => s.setCurrentZ);
   const roiDrawingApi = useRoiDrawingStoreApi();
+  const brushApi = useBrushSkeletonStoreApi();
   // Read at key-release time through a ref, so a settings change does not
   // tear down (and lose) a hold in flight by rebuilding the listeners.
   const { settings } = useSettings();
@@ -101,15 +104,15 @@ export const KeyboardModeController = () => {
       const key = e.key.toLowerCase();
 
       // The crop box. Shift+S first: the key is lowercased, so below it would
-      // read as DESIGN's Stamp.
+      // read as a plain `s` and begin a crop.
       const crop = viewerStoreApi.getState();
       if (key === "s" && e.shiftKey) {
         crop.clearCrop();
         return;
       }
       if (crop.cropPhase !== "idle") {
-        // `s` again leaves the mode it entered. Esc does too, but is heard by
-        // the gesture itself (`CropBoxGesture`): it never bubbles this far.
+        // `s` again leaves the mode it entered. Esc removes the crop
+        // altogether (`handleEscape`).
         if (key === "s") {
           crop.cancelCrop();
           return;
@@ -118,6 +121,16 @@ export const KeyboardModeController = () => {
           crop.commitCrop();
           return;
         }
+      }
+
+      // `s`: enter the crop mode, in every mode (DESIGN included — no tool
+      // takes S). Nothing is drawn yet — the box starts with a click, and the
+      // gesture runs on from there (`features/crop/CropBoxGesture.tsx`, which
+      // takes the left button from whatever tool has it). A one-shot, not a
+      // hold.
+      if (key === "s") {
+        crop.beginCrop();
+        return;
       }
 
       if (modeApi.getState().interactionMode === "DESIGN") {
@@ -138,15 +151,6 @@ export const KeyboardModeController = () => {
         return;
       }
 
-      // `s`: enter the crop mode. Nothing is drawn yet — the box starts with a
-      // click, and the gesture runs on from there
-      // (`features/crop/CropBoxGesture.tsx`). A one-shot, not a hold. After the DESIGN lookup above, so
-      // there it stays the Stamp tool.
-      if (key === "s") {
-        crop.beginCrop();
-        return;
-      }
-
       const next = HOLD_MODES[key];
       if (!next || heldKeyRef.current) return;
 
@@ -163,6 +167,30 @@ export const KeyboardModeController = () => {
       // Leaving ANNOTATE from the drawer (Esc, Backspace on the last point)
       // goes back where the hold came from, not to NAVIGATE.
       if (next === "ANNOTATE") modeApi.getState().setAnnotateReturnMode(restoreModeRef.current);
+    };
+
+    // Escape, innermost first (`sceneEscapeAction`): annotation, then the
+    // crop box — which it removes, the whole image back. CAPTURE phase: the
+    // app's `SelectionBox` stops every Escape on `document`, so a bubble
+    // listener here would never hear it. A step taken here stops the key
+    // outright, so one press is one step (and does not also clear the
+    // selection).
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target as { tagName?: string; isContentEditable?: boolean } | null)) return;
+      if (inOverlay(e.target)) return;
+      const viewer = viewerStoreApi.getState();
+      const mode = modeApi.getState();
+      const action = sceneEscapeAction({
+        drawing: roiDrawingApi.getState().shapeInProgress || brushApi.getState().status !== "idle",
+        annotating: mode.interactionMode === "ANNOTATE",
+        cropOn: viewer.cropPhase !== "idle" || viewer.cropBox !== null,
+      });
+      if (action === null || action === "drawer") return; // the app's, or the drawer's
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (action === "leave-annotate") mode.leaveAnnotate();
+      else viewer.clearCrop();
     };
 
     // A release that found a shape half-drawn: the mode to go back to, and
@@ -257,6 +285,7 @@ export const KeyboardModeController = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleEscape, true);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
     window.addEventListener("wheel", handleWheel, { passive: false, capture: true });
@@ -264,11 +293,12 @@ export const KeyboardModeController = () => {
     return () => {
       cancelDeferredRestore();
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleEscape, true);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("wheel", handleWheel, { capture: true });
     };
-  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, roiDrawingApi, zNavigation]);
+  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, roiDrawingApi, brushApi, zNavigation]);
 
   return null; // This is a headless component, it renders nothing
 };

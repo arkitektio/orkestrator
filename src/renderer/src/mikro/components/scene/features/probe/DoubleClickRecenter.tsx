@@ -68,7 +68,9 @@ export const DoubleClickRecenter = () => {
       );
       raycaster.setFromCamera(ndc, camera);
 
-      gatherLayerWorldBoxes(viewerApi.getState().trackables, boxes);
+      // Clipped to the crop: content hidden outside it is not a target.
+      const { trackables, cropBox } = viewerApi.getState();
+      gatherLayerWorldBoxes(trackables, boxes, cropBox);
       const depth = nearestChordMidpointAlongRay(
         raycaster.ray.origin,
         raycaster.ray.direction,

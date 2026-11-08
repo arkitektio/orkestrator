@@ -60,7 +60,7 @@ Every one ends in a single `applySculpt` (one undo step).
 - **X carve** — drag over the mesh; the stroke's capsule is subtracted and
   the cut closes.
 - **B sculpt** — drag ON the mesh: inflate / deflate / smooth.
-- **S stamp** — click places the chosen primitive (sphere / box / ellipsoid).
+- **O stamp** — click places the chosen primitive (sphere / box / ellipsoid). (S is the crop box, in every mode.)
 - *More* menu:
   - **T trim** — drag a screen line; the plane cuts the active mesh.
   - **K split** — two clicks on the mesh; it parts at the watershed, the far

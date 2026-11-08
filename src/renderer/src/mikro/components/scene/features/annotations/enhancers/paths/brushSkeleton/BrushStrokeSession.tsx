@@ -223,14 +223,16 @@ export const BrushStrokeSession = () => {
       if (brushApi.getState().status !== "idle") brushApi.getState().clear();
       return;
     }
+    // Capture phase: the app's SelectionBox stops Escape on `document`.
+    // Taken, the key stops here (`shell/keyboard/escapeOrder.ts`).
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (brushApi.getState().status === "idle") return;
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       brushApi.getState().clear();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [armed, brushApi]);
 
   return (

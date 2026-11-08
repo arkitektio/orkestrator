@@ -14,12 +14,17 @@ import {
 } from "../../platform/coords/cropBox";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
-import { isTypingTarget } from "../../platform/input/keyboardTarget";
 import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { gatherLayerWorldBoxes } from "../../platform/visibility/layerBoxes";
-import { rectOutline, boxOutline, depthPixelsPerStep, depthSteps, EDGE_ON_LIMIT } from "./cropGesture";
+import {
+  rectOutline,
+  boxOutline,
+  depthPixelsPerStep,
+  depthSteps,
+  EDGE_ON_LIMIT,
+} from "./cropGesture";
 
 const OUTLINE_COLOR = "#f5c84c";
 
@@ -296,26 +301,15 @@ export const CropBoxGesture = () => {
       viewer.fixCropRect(box);
     };
 
-    // Esc leaves the mode. Capture-phase, and here rather than with the other
-    // scene keys: the selection box (`core/dnd/selection/SelectionBox`) hears
-    // Escape on `document` and stops it, so a bubble listener on `window`
-    // never sees the key. Stopped in turn — this Esc cancels the box, it does
-    // not also clear the selection.
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isTypingTarget(event.target as { tagName?: string; isContentEditable?: boolean } | null)) return;
-      event.stopPropagation();
-      viewerApi.getState().cancelCrop();
-    };
+    // Escape is `KeyboardModeController`'s (`shell/keyboard/escapeOrder.ts`):
+    // after annotation, it removes the crop box altogether.
 
-    window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerdown", swallow, true);
     window.addEventListener("pointerup", swallow, true);
     window.addEventListener("click", onClick, true);
     return () => {
       if (settle !== null) clearTimeout(settle);
-      window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", swallow, true);
       window.removeEventListener("pointerup", swallow, true);
