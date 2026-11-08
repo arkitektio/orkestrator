@@ -13,9 +13,12 @@ export const Mention = ({ element }: { element: MentionType }) => {
   if (!element?.subject) return null;
 
   return (
+    // The smart wrapper is a size container (`@container`), which would size
+    // this inline badge to nothing and let it draw over the text after it;
+    // `@container-normal!` keeps it as wide as the name.
     <LokUser.Smart
       object={{ id: element.subject }}
-      className="inline-flex"
+      className="inline @container-normal!"
       containerClassName="inline"
     >
       <LokUser.DetailLink object={{ id: element.subject }} className="inline">
