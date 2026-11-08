@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { MeshBasicNodeMaterial, StorageBufferAttribute } from "three/webgpu";
+import type { ReleaseAttribute } from "@/core/data/scene/gpu/storageAttributes";
 import * as TSLTyped from "three/tsl";
 import {
   DEFAULT_INSTANCE_COLORMAP,
@@ -213,7 +214,10 @@ export type NetworkGpuBundle = {
     edges: number;
     edgeValues: number;
   }) => void;
-  dispose: () => void;
+  /** Pass the canvas renderer's `storageAttributeReleaser`: three frees a
+   *  geometry's attributes on dispose but never a `storage(...)` buffer, so
+   *  without it every manager rebuild leaked the whole capacity bundle. */
+  dispose: (release?: ReleaseAttribute) => void;
 };
 
 /** The unit quad every segment instance is expanded from.
@@ -683,7 +687,7 @@ export function createNetworkGpuBundle(
         attribute.needsUpdate = true;
       }
     },
-    dispose: () => {
+    dispose: (release) => {
       for (const geometry of geometries) geometry.dispose();
       segmentMaterial.dispose();
       glyphMaterial.dispose();
@@ -692,6 +696,7 @@ export function createNetworkGpuBundle(
       glyphPick.dispose();
       arrowPick.dispose();
       disposeMeasurePalette(paletteNode, paletteIdentity);
+      for (const attribute of [positions, aux, values, edgeValues, edges]) release?.(attribute);
     },
   };
 }

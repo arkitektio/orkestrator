@@ -36,6 +36,7 @@ import { isVectorLayer, type VectorLayerFragment } from "../../platform/model/la
 import { createVectorMaterial, type VectorGlyphKind, type VectorMaterialBundle } from "./vectorsMaterial";
 import { loadVectorField, type VectorField } from "./vectorsSource";
 import { bindFields } from "@/core/data/scene/stores/bindStore";
+import { storageAttributeReleaser } from "@/core/data/scene/gpu/storageAttributes";
 
 export const VectorLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));
@@ -60,6 +61,8 @@ const glyphKindOf = (glyph: string | null | undefined): VectorGlyphKind =>
 
 const VectorField = ({ layer }: { layer: VectorLayerFragment }) => {
   const invalidate = useThree((state) => state.invalidate);
+  // The canvas's renderer, for the dispose path only: stable for the layer's lifetime.
+  const renderer = useThree((state) => state.gl);
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const transformContext = useSceneStore((s) => s.transformContext);
@@ -188,11 +191,13 @@ const VectorField = ({ layer }: { layer: VectorLayerFragment }) => {
     bundleRef.current = made;
     setBundle(made);
     return () => {
-      made.dispose();
+      // Three frees none of the storage buffers on its own (see
+      // `storageAttributeReleaser`); without this every scrub step leaked a pair.
+      made.dispose(storageAttributeReleaser(renderer));
       bundleRef.current = null;
       setBundle(null);
     };
-  }, [field]);
+  }, [field, renderer]);
 
   // The crop box: glyphs anchored outside it collapse in the material.
   useEffect(() => {

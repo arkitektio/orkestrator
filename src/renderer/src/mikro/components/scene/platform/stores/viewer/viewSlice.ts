@@ -30,7 +30,9 @@ export interface ViewSlice {
   frustumNear: number;
   frustumFar: number;
   canvas: CanvasContext | null;
-  registerCanvas: (ctx: CanvasContext) => void;
+  /** Null on the canvas's unmount: the context closes over R3F's root store
+   *  (renderer, scene graph, controls), which must not outlive the canvas. */
+  registerCanvas: (ctx: CanvasContext | null) => void;
   /**
    * Renders the current scene to an offscreen target and returns a PNG Blob.
    * Null until an in-Canvas component (SceneScreenshot) registers it; the

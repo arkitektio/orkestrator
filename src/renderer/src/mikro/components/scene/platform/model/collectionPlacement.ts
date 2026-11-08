@@ -104,8 +104,16 @@ export const collectionSpatialAxes = (
 ): readonly string[] | null => collectionAxisOrder(collection.store);
 
 /** Placement warnings fire once per collection, not once per recompute — the
- * caller's matrix memo re-runs on unrelated store identity churn. */
+ * caller's matrix memo re-runs on unrelated store identity churn. Capped like
+ * `transformGraph`'s: past the cap, warn-once degrades to warn-never rather
+ * than growing for the app's lifetime. */
+const WARNED_COLLECTIONS_CAP = 256;
 const warnedCollections = new Set<string>();
+const firstWarningFor = (collectionId: string): boolean => {
+  if (warnedCollections.has(collectionId) || warnedCollections.size >= WARNED_COLLECTIONS_CAP) return false;
+  warnedCollections.add(collectionId);
+  return true;
+};
 
 export function resolveCollectionMatrix(
   layer: PlaceableLayer,
@@ -117,12 +125,10 @@ export function resolveCollectionMatrix(
   // itself addresses components by position.
   const spatial = collectionSpatialAxes(collection);
 
-  const firstResolve = !warnedCollections.has(collection.id);
-  if (firstResolve) warnedCollections.add(collection.id);
   if (!spatial) {
     // Never drawn (`hasUnnamedSlots`); panels that still ask for a matrix get
     // the collection's own space, never a guessed order.
-    if (firstResolve) {
+    if (firstWarningFor(collection.id)) {
       console.warn(
         `[collection] store ${collection.store.id} names no vertex slots in its manifest; ` +
           `not drawn — rebuild it with build_collection(..., axes=[...]).`,
@@ -136,7 +142,7 @@ export function resolveCollectionMatrix(
     // does not dispatch such a layer at all (`isPlaceable`); panels that
     // still ask for a matrix (navigation, mesh design) get the collection's
     // own space, never a guess.
-    if (firstResolve) {
+    if (firstWarningFor(collection.id)) {
       console.warn(
         `[collection] ${collection.id}: no placement (asAffine is null); ` +
           `not drawn — using the collection's own space where a matrix is required`,

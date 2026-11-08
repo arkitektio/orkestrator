@@ -41,6 +41,7 @@ import { useActivePickers } from "../../platform/attributes/useActivePickers";
 import { usePickerResolution } from "../../platform/attributes/pickerResolution";
 import { useCollectionDriver } from "../../platform/collections/useCollectionDriver";
 import { useGpuPicker } from "../../platform/draw/useGpuPicker";
+import { storageAttributeReleaser } from "@/core/data/scene/gpu/storageAttributes";
 import type { GpuPickHit } from "../../platform/draw/gpuPick";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import {
@@ -124,6 +125,8 @@ const NetworkCollectionGroup = ({
   collection: NetworkCollectionRef;
 }) => {
   const rawInvalidate = useThree((state) => state.invalidate);
+  // The canvas's renderer, for the manager's dispose path: stable for the layer's lifetime.
+  const renderer = useThree((state) => state.gl);
   const transformContext = useSceneStore((s) => s.transformContext);
   const viewApi = useViewStoreApi();
   const networkApi = useNetworkStoreApi();
@@ -193,8 +196,9 @@ const NetworkCollectionGroup = ({
       collection: opened,
       onInvalidate: invalidate,
       onStatsChanged,
+      releaseAttribute: storageAttributeReleaser(renderer),
     });
-  }, [opened, invalidate, onStatsChanged]);
+  }, [opened, invalidate, onStatsChanged, renderer]);
 
   useEffect(() => () => manager?.dispose(), [manager]);
 

@@ -224,13 +224,9 @@ export class AdjacentPrefetcher {
     }
   }
 
-  /** A pool moved to a new key: its slab marker must not suppress the next
-   * warm-up (the dim marker is keyed by slice signature and self-corrects). */
-  forgetSlab(poolKey: string): void {
-    this.slabMarker.delete(poolKey);
-  }
-
-  /** A pool was disposed. */
+  /** A pool was disposed, or moved to a new key (both markers live under the
+   * key: a move that dropped only the slab marker stranded the dim marker
+   * under a key nothing would ever ask about again). */
   forget(poolKey: string): void {
     this.slabMarker.delete(poolKey);
     this.dimMarker.delete(poolKey);

@@ -89,10 +89,20 @@ export function createWorkerDesignDispatcher(spawn: () => Worker = spawnDesignWo
         else current.resolve("baked" in event.data ? event.data.baked : event.data.result);
         finish();
       };
-      created.onerror = (event) => {
-        running?.reject(new Error(`design worker error: ${event.message}`));
+      // A worker that failed to load (or died) answers nothing ever again.
+      // Left in place, the next job would be posted into it and never
+      // settle, `running` would never clear, and every job after it would
+      // queue forever (each holding a field of up to 32 MB). Retire it and
+      // let the queue drain on this thread instead.
+      const retire = (reason: string) => {
+        running?.reject(new Error(reason));
+        created.terminate();
+        worker = null;
+        broken = true;
         finish();
       };
+      created.onerror = (event) => retire(`design worker error: ${event.message}`);
+      created.onmessageerror = () => retire("design worker error: a message could not be decoded");
       worker = created;
     } catch {
       broken = true;

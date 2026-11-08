@@ -31,6 +31,7 @@
  */
 import * as THREE from "three";
 import { MeshBasicNodeMaterial, StorageInstancedBufferAttribute } from "three/webgpu";
+import type { ReleaseAttribute } from "@/core/data/scene/gpu/storageAttributes";
 import * as TSLTyped from "three/tsl";
 import {
   createCropUniforms,
@@ -94,7 +95,10 @@ export type VectorMaterialBundle = {
   setCount: (count: number) => void;
   setPalette: (row: THREE.DataTexture | null) => void;
   markUploaded: () => void;
-  dispose: () => void;
+  /** Pass the canvas renderer's `storageAttributeReleaser`: three frees a
+   *  geometry's attributes on dispose but never a `storage(...)` buffer, so
+   *  without it every field re-read leaked `positions` and `vectors`. */
+  dispose: (release?: ReleaseAttribute) => void;
 };
 
 /** A template geometry re-hosted as instanced, sans attributes nothing reads. */
@@ -227,10 +231,12 @@ export const createVectorMaterial = (capacity: number): VectorMaterialBundle => 
       positions.needsUpdate = true;
       vectors.needsUpdate = true;
     },
-    dispose: () => {
+    dispose: (release) => {
       for (const geometry of geometries) geometry.dispose();
       material.dispose();
       disposeMeasurePalette(paletteNode, paletteIdentity);
+      release?.(positions);
+      release?.(vectors);
     },
   };
 };

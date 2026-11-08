@@ -48,17 +48,25 @@ export const CanvasSync = () => {
           })
         : null;
 
-    registerCanvas({
+    const context = {
       camera,
       controls: ctrl,
       size,
       dpr,
       invalidate,
-    });
+    };
+    registerCanvas(context);
     // `dpr` is a dep so the registered context tracks the quality governor's
     // DPR switches; nothing subscribes to `canvas` in React, so the extra
     // writes cost a store set and no renders.
-  }, [camera, controls, invalidate, registerCanvas, size, dpr]);
+    return () => {
+      // Only OUR registration: a remounted canvas may already have replaced
+      // it. Left in place, `invalidate` kept the whole unmounted R3F root
+      // (renderer, scene graph, controls and the detached <canvas>) alive
+      // for as long as the scene scope lived.
+      if (storeApi.getState().canvas === context) registerCanvas(null);
+    };
+  }, [camera, controls, invalidate, registerCanvas, size, dpr, storeApi]);
 
   // Publish worldUnitsPerPixel at a bounded cadence (leading + trailing).
   useFrame(({ camera, size, controls }) => {

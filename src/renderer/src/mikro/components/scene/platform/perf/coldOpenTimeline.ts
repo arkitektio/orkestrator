@@ -96,12 +96,27 @@ const measureSafely = (name: string, start: string, end: string): void => {
   }
 };
 
+/** User-timing entries stay in the page's buffer until cleared, so a session
+ * that opens scenes all day would accumulate them; each open clears the
+ * previous open's. */
+const clearSafely = (marks: readonly string[], measures: readonly string[]): void => {
+  try {
+    for (const name of marks) performance.clearMarks?.(name);
+    for (const name of measures) performance.clearMeasures?.(name);
+  } catch {
+    /* as above */
+  }
+};
+
 export class ColdOpenTimeline {
   private startedAt: number | null = null;
   private sceneId: string | null = null;
   private readonly stamps = new Map<ColdOpenPhase, number>();
   /** The most recently recorded phase, for the delta chain. */
   private lastPhase: ColdOpenPhase | null = null;
+  /** The user-timing entries this session emitted, cleared by the next `begin`. */
+  private emittedMarks: string[] = [];
+  private emittedMeasures: string[] = [];
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -119,6 +134,9 @@ export class ColdOpenTimeline {
     this.sceneId = sceneId;
     this.stamps.clear();
     this.lastPhase = null;
+    clearSafely(this.emittedMarks, this.emittedMeasures);
+    this.emittedMarks = [`${MARK_PREFIX}:begin`];
+    this.emittedMeasures = [];
     markSafely(`${MARK_PREFIX}:begin`);
   }
 
@@ -130,12 +148,15 @@ export class ColdOpenTimeline {
     this.stamps.set(phase, this.now() - this.startedAt);
 
     const mark = `${MARK_PREFIX}:${phase}`;
+    const measure = `${MARK_PREFIX} ${this.lastPhase ?? "begin"} → ${phase}`;
     markSafely(mark);
     measureSafely(
-      `${MARK_PREFIX} ${this.lastPhase ?? "begin"} → ${phase}`,
+      measure,
       this.lastPhase === null ? `${MARK_PREFIX}:begin` : `${MARK_PREFIX}:${this.lastPhase}`,
       mark,
     );
+    this.emittedMarks.push(mark);
+    this.emittedMeasures.push(measure);
     this.lastPhase = phase;
   }
 

@@ -528,6 +528,13 @@ export const createSceneStore = ({
           result.sceneLayers.filter((layer) => previousRaw.has(layer)).map((layer) => layer.id),
         );
         const prunedBases = prunePreviewBases(get().placementPreviewBases, keptIds);
+        // A tail window is the USER's setting, so it survives a re-derived
+        // layer (unlike a preview base) and goes only with a removed one.
+        const liveIds = new Set(result.sceneLayers.map((layer) => layer.id));
+        const tails = get().trackTailWindows;
+        const prunedTails = Object.keys(tails).some((id) => !liveIds.has(id))
+          ? Object.fromEntries(Object.entries(tails).filter(([id]) => liveIds.has(id)))
+          : null;
         // A re-derived layer leaves the registration request too: its new
         // placement is (typically) the saved registration, and previewing the
         // same delta on top of it would apply it twice (R1a).
@@ -544,6 +551,7 @@ export const createSceneStore = ({
           sceneLayers: result.sceneLayers,
           layers: result.layers,
           ...(prunedBases ? { placementPreviewBases: prunedBases } : {}),
+          ...(prunedTails ? { trackTailWindows: prunedTails } : {}),
           ...(request && keptRequest && keptRequest.length !== request.layerIds.length
             ? {
                 placementPreviewRequest: keptRequest.length

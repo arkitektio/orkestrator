@@ -52,6 +52,7 @@ import {
   type TrackGeometry,
 } from "./tracksSource";
 import { bindField } from "@/core/data/scene/stores/bindStore";
+import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
 
 /** Tail length in timepoints when the layer has not been told otherwise. */
 export const DEFAULT_TAIL_WINDOW = 10;
@@ -176,18 +177,18 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
     [Boolean(layer.colorByColumn) && Boolean(geometry?.values)],
   );
 
-  const lineGeometry = useMemo(() => new LineSegmentsGeometry(), []);
+  // A fresh (empty) geometry per line: the upload below hands it a filled one.
   const line = useMemo(
-    () => new Line2(lineGeometry as never, bundle.material as never),
-    [lineGeometry, bundle],
+    () => new Line2(new LineSegmentsGeometry() as never, bundle.material as never),
+    [bundle],
   );
 
   useEffect(
     () => () => {
-      lineGeometry.dispose();
+      line.geometry.dispose();
       bundle.dispose();
     },
-    [lineGeometry, bundle],
+    [line, bundle],
   );
 
   /**
@@ -199,27 +200,34 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
    * missing attribute collapses to a scalar 0.0 in the generated shader rather
    * than failing loudly.
    *
-   * `bundle` is a DEPENDENCY even though nothing here reads it. Toggling the
-   * colorBy column rebuilds the material and therefore the `Line2`, while the
-   * geometry object survives — so without this the new line would be handed a
-   * geometry whose attributes were uploaded against the old material's
-   * pipeline, and the WebGPU failure mode for that is drawing nothing, with no
-   * error. Re-uploading is idempotent; not re-uploading is silent.
+   * A NEW geometry object per upload, handed over with `swapGeometry`, never
+   * `setPositions` on the one being drawn: three's WebGPU renderer tracks a
+   * replaced attribute neither for upload (interleaved attributes have no id,
+   * so a larger upload drew past the bound buffer and froze the canvas) nor
+   * for release (the replaced buffers were never freed, so every re-read and
+   * every colour-column switch leaked a full copy of the segment data). A new
+   * `geometry.id` is the change it does see, and disposing the old geometry
+   * frees exactly the buffers the render object had bound.
+   *
+   * `line` is rebuilt with the material (a colorBy toggle), so this re-runs
+   * and the new line gets a geometry uploaded against its own pipeline.
    */
   useLayoutEffect(() => {
     if (!geometry || geometry.segmentCount === 0) return;
-    lineGeometry.setPositions(geometry.pairs);
+    const next = new LineSegmentsGeometry();
+    next.setPositions(geometry.pairs);
 
     // Per-segment attributes the material reads by name. One value per
     // INSTANCE: the geometry is instanced, so a plain InstancedBufferAttribute
     // is one scalar per segment.
     const times = geometry.times ?? new Float32Array(geometry.segmentCount);
     const values = geometry.values ?? new Float32Array(geometry.segmentCount);
-    lineGeometry.setAttribute("instanceT", new THREE.InstancedBufferAttribute(times, 1));
-    lineGeometry.setAttribute("instanceValue", new THREE.InstancedBufferAttribute(values, 1));
-    lineGeometry.instanceCount = geometry.segmentCount;
+    next.setAttribute("instanceT", new THREE.InstancedBufferAttribute(times, 1));
+    next.setAttribute("instanceValue", new THREE.InstancedBufferAttribute(values, 1));
+    next.instanceCount = geometry.segmentCount;
+    swapGeometry(line as unknown as { geometry: LineSegmentsGeometry }, next);
     invalidate();
-  }, [geometry, lineGeometry, bundle, invalidate]);
+  }, [geometry, line, invalidate]);
 
   // ------------------------------------------------------------- appearance
   useEffect(() => {

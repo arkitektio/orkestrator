@@ -1297,7 +1297,7 @@ export class BrickResidencyManager {
     );
     if (movable) {
       this.pools.delete(movable.poolKey);
-      this.prefetcher.forgetSlab(movable.poolKey);
+      this.prefetcher.forget(movable.poolKey);
       const flushed = movable.sliceSignature !== derivation.sliceSignature;
       if (flushed) {
         this.flushPool(movable, derivation.sliceSignature, layer, levels as LevelSource[]);

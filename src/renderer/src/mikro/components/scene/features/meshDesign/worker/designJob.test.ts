@@ -173,4 +173,34 @@ describe("design dispatcher", () => {
     expect((await dispatcher.run(job))?.current.indices.length).toBeGreaterThan(0);
     expect((await dispatcher.run(job))?.current.indices.length).toBeGreaterThan(0);
   });
+
+  it("retires a worker that errors and drains the queue on this thread", async () => {
+    // A worker that never answers: the only way out is its error event.
+    let posted = 0;
+    let terminated = 0;
+    const worker = {
+      onmessage: null as ((event: MessageEvent) => void) | null,
+      onerror: null as ((event: ErrorEvent) => void) | null,
+      onmessageerror: null,
+      postMessage() {
+        posted += 1;
+      },
+      terminate() {
+        terminated += 1;
+      },
+    };
+    const dispatcher = createWorkerDesignDispatcher(() => worker as unknown as Worker);
+    const first = dispatcher.run(job);
+    const second = dispatcher.run(job);
+    const third = dispatcher.run(job);
+    expect(posted).toBe(1);
+
+    worker.onerror?.({ message: "boom" } as ErrorEvent);
+    await expect(first).rejects.toThrow("design worker error: boom");
+    expect(terminated).toBe(1);
+    // The dead worker is never posted to again; the waiting jobs run here.
+    expect((await second)?.current.indices.length).toBeGreaterThan(0);
+    expect((await third)?.current.indices.length).toBeGreaterThan(0);
+    expect(posted).toBe(1);
+  });
 });

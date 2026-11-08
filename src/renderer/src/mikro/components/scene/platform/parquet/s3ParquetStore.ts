@@ -134,9 +134,11 @@ export class S3ParquetStore implements ParquetTransport {
 
     // A gateway that ignores Range answers 200 with the WHOLE object. Slicing
     // locally is the difference between correct-and-slow and handing the
-    // Parquet reader bytes from the wrong offset.
+    // Parquet reader bytes from the wrong offset. A COPY, not a `subarray`
+    // view: the cache accounts the slice's length, and a view would have
+    // pinned the whole object's buffer behind every few-KB entry.
     if (response.status === 200 && !response.headers.get("Content-Range")) {
-      return body.subarray(range.start, range.end);
+      return body.slice(range.start, range.end);
     }
     return body;
   }

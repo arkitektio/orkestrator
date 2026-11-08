@@ -18,7 +18,7 @@
  * redundant on-screen, so zoomed out the survivors still overdraw each other. The mesh planner
  * answers that by substituting pre-authored coarser geometry, which a point set has none of.
  */
-import type { BufferAttribute } from "three";
+import type { ReleaseAttribute } from "@/core/data/scene/gpu/storageAttributes";
 import { IndirectStorageBufferAttribute, StorageBufferAttribute, StorageInstancedBufferAttribute } from "three/webgpu";
 import * as TSLTyped from "three/tsl";
 
@@ -32,32 +32,10 @@ export const VERTICES_PER_POINT = 6;
 /**
  * Frees one attribute's GPU buffer. Injected rather than imported so the passes stay
  * renderer-free (and testable); the layer builds it with `storageAttributeReleaser`.
+ * Shared with every layer that binds storage buffers (vectors, network):
+ * `@/core/data/scene/gpu/storageAttributes`.
  */
-export type ReleaseAttribute = (attribute: BufferAttribute) => void;
-
-/**
- * The only path three has to free a STORAGE attribute's GPU buffer.
- *
- * Three frees a geometry's vertex and index attributes when the geometry is disposed, and
- * nothing else: a buffer bound as `storage(...)` (a compute pass's, a material's) or used as
- * `geometry.indirect` is created by `Bindings`/`Geometries` through the renderer's `Attributes`
- * map and never deleted, so every rebuild leaks it for the renderer's lifetime. `Attributes.delete`
- * is what `Geometries` calls on dispose — it destroys the `GPUBuffer` and drops the entry, and is
- * a no-op for an attribute that never reached the GPU. It is renderer-internal (`_attributes`),
- * hence the guard: without it this degrades to the old leak, never to a throw.
- */
-export const storageAttributeReleaser = (renderer: unknown): ReleaseAttribute => {
-  const attributes = (renderer as { _attributes?: { delete?: (attribute: BufferAttribute) => unknown } | null })
-    ?._attributes;
-  return (attribute) => {
-    if (!attributes || typeof attributes.delete !== "function") return;
-    try {
-      attributes.delete(attribute);
-    } catch (error) {
-      console.warn("[points] could not free a storage buffer:", error);
-    }
-  };
-};
+export { storageAttributeReleaser, type ReleaseAttribute } from "@/core/data/scene/gpu/storageAttributes";
 
 /** Drops a compute node's pipeline and bindings (three's `dispose` event on a `ComputeNode`). */
 const disposeComputeNodes = (nodes: unknown[]): void => {

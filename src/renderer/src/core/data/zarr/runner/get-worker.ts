@@ -318,10 +318,13 @@ export function getStoreId(store: Readable): string {
  * blank channel when channels are chunked separately). Warn once per path so
  * "missing data" is never invisible.
  */
+const WARNED_FILL_CHUNK_PATHS_CAP = 256
 const warnedFillChunkPaths = new Set<string>()
 
 function warnFillChunk(chunkPath: string, fillValue: unknown): void {
-  if (warnedFillChunkPaths.has(chunkPath)) return
+  // Capped: a genuinely sparse array has a missing object per empty chunk, and
+  // a process-wide set grew by one path each. Past the cap, warn-once is warn-never.
+  if (warnedFillChunkPaths.has(chunkPath) || warnedFillChunkPaths.size >= WARNED_FILL_CHUNK_PATHS_CAP) return
   warnedFillChunkPaths.add(chunkPath)
   console.warn(
     `[zarr] chunk object missing from store — substituting fill value ` +

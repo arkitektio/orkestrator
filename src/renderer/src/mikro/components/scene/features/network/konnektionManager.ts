@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { GpuPickSource } from "../../platform/draw/gpuPick";
+import type { ReleaseAttribute } from "@/core/data/scene/gpu/storageAttributes";
 import {
   DEFAULT_INSTANCE_COLORMAP,
   INSTANCE_COLORMAP_SPECS,
@@ -170,6 +171,9 @@ type Options = {
   collection: KonnektionCollection;
   onInvalidate: () => void;
   onStatsChanged: () => void;
+  /** The canvas renderer's `storageAttributeReleaser`, so `dispose` can free
+   *  the bundle's storage buffers (three never does on its own). */
+  releaseAttribute?: ReleaseAttribute;
 };
 
 export class KonnektionCollectionManager extends CollectionManagerBase<
@@ -241,9 +245,12 @@ export class KonnektionCollectionManager extends CollectionManagerBase<
   // the race handling a swap-the-buffers strategy needs. Its `disposed` stops a
   // plan in flight at unmount from building a bundle nothing frees (P13).
 
+  private readonly releaseAttribute: ReleaseAttribute | undefined;
+
   constructor(options: Options) {
     super({ onInvalidate: options.onInvalidate, onStatsChanged: options.onStatsChanged });
     this.collection = options.collection;
+    this.releaseAttribute = options.releaseAttribute;
   }
 
   protected buildIndex(rows: KonnektionCellRow[], voxelToWorld: THREE.Matrix4): KonnektionCellIndex {
@@ -593,7 +600,7 @@ export class KonnektionCollectionManager extends CollectionManagerBase<
     this.markDisposed(); // strands any fetch still in flight
     if (this.bundle) {
       this.group.remove(this.bundle.segments, this.bundle.nodeGlyphs, this.bundle.arrowGlyphs);
-      this.bundle.dispose();
+      this.bundle.dispose(this.releaseAttribute);
       this.bundle = null;
     }
     this.collection.release();

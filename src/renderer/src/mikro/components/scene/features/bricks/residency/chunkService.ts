@@ -12,6 +12,9 @@ import { chunkFidelityForDtype } from "../octree/atlasFormat";
 import { ChunkRefRegistry } from "../octree/chunkRefRegistry";
 import type { BrickSystemStats } from "./residencyTypes";
 
+/** How many chunk keys `bytesDecoded` dedupes over (a few scenes' working sets). */
+const COUNTED_CHUNK_KEYS_CAP = 8192;
+
 export type ZarrArrayHandle = Parameters<typeof getChunkWorker>[0];
 
 /**
@@ -58,7 +61,10 @@ export class ChunkService {
   /** Chunk fetches outlive individual brick aborts (shared!); this cancels
    * them all on dispose. */
   private readonly fetchAbort = new AbortController();
-  /** Chunk keys already counted toward bytesDecoded. */
+  /** Chunk keys already counted toward bytesDecoded. Bounded: past the cap
+   * the oldest key is forgotten (its chunk has long left the byte-budgeted
+   * cache, so a re-decode counting again is the truer figure), where an
+   * unbounded set grew by one key per chunk ever decoded for the scene's life. */
   private readonly countedChunkKeys = new Set<string>();
   /** Stores whose chunk-key metadata read failed at least once (one warning). */
   private readonly warnedEncoderStores = new Set<string>();
@@ -222,10 +228,7 @@ export class ChunkService {
     fresh.forEach((entry, j) => {
       const promise: Promise<Chunk<DataType>> = promises[j]
         .then((chunk) => {
-          if (!this.countedChunkKeys.has(entry.key)) {
-            this.countedChunkKeys.add(entry.key);
-            this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
-          }
+          this.countDecoded(entry.key, chunk);
           return chunk as Chunk<DataType>;
         })
         .finally(() => {
@@ -287,10 +290,7 @@ export class ChunkService {
       textureFidelity: chunkFidelityForDtype(arr.dtype),
     })
       .then((chunk) => {
-        if (!this.countedChunkKeys.has(key)) {
-          this.countedChunkKeys.add(key);
-          this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
-        }
+        this.countDecoded(key, chunk);
         return chunk as Chunk<DataType>;
       })
       .finally(() => {
@@ -306,12 +306,24 @@ export class ChunkService {
     return promise;
   }
 
+  /** Count a decode toward `bytesDecoded` once per chunk key (bounded set). */
+  private countDecoded(key: string, chunk: Chunk<DataType>): void {
+    if (this.countedChunkKeys.has(key)) return;
+    if (this.countedChunkKeys.size >= COUNTED_CHUNK_KEYS_CAP) {
+      const oldest = this.countedChunkKeys.values().next().value;
+      if (oldest !== undefined) this.countedChunkKeys.delete(oldest);
+    }
+    this.countedChunkKeys.add(key);
+    this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
+  }
+
   /** Cancel every chunk fetch and drop the in-flight bookkeeping. */
   dispose(): void {
     this.fetchAbort.abort();
     this.inFlightChunks.clear();
     this.inFlightChunkAborts.clear();
     this.chunkRefs.clear();
+    this.countedChunkKeys.clear();
     this.lastChunkRead = null;
   }
 }
