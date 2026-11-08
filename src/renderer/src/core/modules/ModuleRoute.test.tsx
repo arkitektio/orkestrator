@@ -17,12 +17,13 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
 vi.mock("@/core/connection/arkitekt/hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/hooks")>()),
   useActiveProfile: () => null,
+  useActiveProfileRoles: () => undefined,
 }));
 vi.mock("@/core/layout/fallbacks/ServiceUnavailable", () => ({
   ServiceUnavailable: ({ serviceKey }: { serviceKey: string }) => <div>unavailable: {serviceKey}</div>,
 }));
 
-import { resetRoles, setRoleOverride } from "@/core/connection/roles";
+import { resetRoleOverride, setRoleOverride } from "@/core/connection/roles";
 import { ModuleRoute } from "./ModuleRoute";
 
 const renderRoute = (props: { serviceKey?: string; roles?: string }) =>
@@ -41,7 +42,7 @@ const renderRoute = (props: { serviceKey?: string; roles?: string }) =>
 describe("ModuleRoute", () => {
   afterEach(() => {
     ready.clear();
-    resetRoles();
+    resetRoleOverride();
   });
 
   it("shows the page once the role and the service hold", () => {

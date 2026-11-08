@@ -184,7 +184,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                 run(() => {
                   openTarget({
                     kind: "route",
-                    route: moduleHomeRoute(module.key, module.route),
+                    route: moduleHomeRoute(module.key, module.route, roles),
                     label: module.definition.label || module.key,
                   });
                 })

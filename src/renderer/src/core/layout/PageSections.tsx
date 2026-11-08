@@ -37,10 +37,6 @@ export const PageSections = ({
   );
 };
 
-/** Whether anything fills a host-drawn sidebar for this model (for the effective roles, read outside React). */
-export const hasSlotSections = (identifier: Identifier, slot: NonNullable<PageSection["slot"]>) =>
-  pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier)).length > 0;
-
 /** The contents of a host-drawn sidebar ("knowledge", "chat") for one model. */
 export const SlotSections = ({
   identifier,

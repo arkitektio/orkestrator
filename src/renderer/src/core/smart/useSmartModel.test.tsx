@@ -10,6 +10,11 @@ import { createSelectionStore, SelectionStore } from "../dnd/selection/store";
 import { STRUCTURES_MIME } from "./dragPayload";
 import { useSmartModel } from "./useSmartModel";
 
+vi.mock("@/core/connection/roles", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/roles")>()),
+  useRoles: () => ({ roles: [], known: true, overridden: false }),
+}));
+
 const Card = ({ id }: { id: string }) => {
   const { ref, partners, dropObjects } = useSmartModel({
     identifier: "@test/thing",

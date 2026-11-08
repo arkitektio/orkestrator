@@ -1,9 +1,7 @@
 import { AssetAccessDocument, AssetAccessQuery, AssetAccessQueryVariables, MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
 import { presignS3Url, stampGrant } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
-import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
-import { useRekuest } from "@/rekuest/api/hooks";
-import React from "react";
+import { mediaGrantKey, sharedGrant } from "@/core/connection/arkitekt/host";
 
 /** A grant plus its issue time and absolute expiry — stamped once on arrival,
  * so the presign memo (keyed on both) and the URLs it mints stay stable. */
@@ -116,37 +114,4 @@ export const createBlobedUrl = async (
 ) => {
   const credentials = await getCredentials(media, client, datalayer, profileId);
   return await createBlobUrl(media, datalayer, credentials);
-};
-
-export const WithMediaUrl = (props: { children: (url: string) => React.ReactNode, media?: MediaStoreFragment | undefined | null }) => {
-
-  const endpointUrl = useDatalayerEndpoint();
-  const rekuest = useRekuest();
-  const profileId = Arkitekt.useActiveProfileId();
-
-  const [url, setUrl] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (!endpointUrl) return;
-    if (!props.media) return;
-
-    let isMounted = true;
-
-    getRekuestMediaUrl(props.media, rekuest, endpointUrl, profileId)
-      .then((mediaUrl) => {
-        if (isMounted) setUrl(mediaUrl);
-      })
-      .catch(err => console.error("Error creating media URL:", err));
-
-    return () => {
-      isMounted = false;
-      setUrl(null);
-    };
-  }, [props.media, endpointUrl, rekuest, profileId]);
-
-  if (!url) {
-    return null;
-  }
-
-  return props.children(url);
 };

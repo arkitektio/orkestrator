@@ -37,7 +37,6 @@ import {
   ExtensionContext,
   Modifier,
   selectSmarts,
-  useSmartExtension,
 } from "./ExtensionContext";
 
 type DisplayIdentifier = Parameters<typeof useDisplayComponent>[0];
@@ -70,26 +69,6 @@ export const DisplayWidget = (props: {
   }
 
   return <Suspense>{widgetElement}</Suspense>;
-};
-
-export const DisplayWidgetHub = () => {
-  const { modifiers } = useSmartExtension();
-
-  return (
-    <>
-      {modifiers.map((modifier) => {
-        return (
-          <>
-            <DisplayWidget
-              identifier={modifier.identifier}
-              id={modifier.id}
-              context="widget"
-            />
-          </>
-        );
-      })}
-    </>
-  );
 };
 
 export const ModifierRender = (props: { modifier: Modifier; context?: "command" | "widget" }) => {

@@ -5,6 +5,8 @@ import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react
 import { createSelector } from "reselect";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { reportError, toast } from "@/core/notify";
+import { useRoles } from "@/core/connection/roles";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 
 import { DropPayload } from "@/core/dnd/engine";
 import { useDragSource, useDropTarget } from "@/core/dnd/react";
@@ -122,6 +124,8 @@ export const useSmartModel = ({
   const latestSelectionRef = useRef<Structure[]>(selectionStore.getState().selection);
   const latestBSelectionRef = useRef<Structure[]>(selectionStore.getState().bselection);
   const latestSnapshotRef = useRef({ selectedIndex: 0, bselectedIndex: 0 });
+  // Read at drop time: a drop never offers an action the menu would hide.
+  const rolesRef = useLatestRef(useRoles().roles);
   // Both sides of the drop the partner panel is open for, as they were when
   // it landed — the selection may well change while the panel is up.
   const [smartDrop, setSmartDrop] = useState<SmartDropState | null>(null);
@@ -159,7 +163,7 @@ export const useSmartModel = ({
 
     if (!resolvedDrop.omitDefaultBehaviour) {
       try {
-        const matchingActions = await getMatchingActions(objects, resolvedDrop.partners);
+        const matchingActions = await getMatchingActions(objects, resolvedDrop.partners, rolesRef.current);
         const registration = smartDropRegistryStore
           .getState()
           .findMatchingRegistration({
@@ -192,7 +196,7 @@ export const useSmartModel = ({
     syncAttribute(nodeRef.current, "data-isdropping", "false");
 
     setSmartDrop({ objects, partners: resolvedDrop.partners });
-  }, [self, selectionStore]);
+  }, [self, selectionStore, rolesRef]);
 
   // The engine marks the node itself — `data-over` while this card would take
   // the drop, `data-dragging` while it is the one in the air — so neither is

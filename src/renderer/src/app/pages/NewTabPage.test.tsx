@@ -14,6 +14,11 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   Arkitekt: { useAvailableModules: () => modules },
   moduleRegistry: { mikro: { label: "Mikro" }, rekuest: { label: "Rekuest" }, kraph: { label: "Kraph" } },
 }));
+// Role-gated UI reads the active profile's roles; unknown here.
+vi.mock("@/core/connection/arkitekt/hooks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/hooks")>()),
+  useActiveProfileRoles: () => undefined,
+}));
 vi.mock("@/core/modules/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}</i> }));
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));
 

@@ -1,21 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FlussRun } from "@/core/linkers";
-import { useFlowQuery, useGetRunQuery } from "@/fluss/api/graphql";
-import { EditFlow } from "@/fluss/edit/EditFlow";
+import { useGetRunQuery } from "@/fluss/api/graphql";
 import { TrackFlow } from "../track/TrackFlow";
 import { FLUSS_HELP } from "../help";
-
-export const FlowDetail = (props: { id: string }) => {
-  const { data, error } = useFlowQuery({
-    variables: {
-      id: props.id,
-    },
-  });
-
-  console.log(error?.message, data);
-
-  return <>{data?.flow && <EditFlow flow={data.flow} />}</>;
-};
 
 export const Page = asDetailQueryRoute(useGetRunQuery, ({ data }) => {
   return (
@@ -28,6 +15,5 @@ export const Page = asDetailQueryRoute(useGetRunQuery, ({ data }) => {
     </FlussRun.ModelPage>
   );
 });
-
 
 export default Page;

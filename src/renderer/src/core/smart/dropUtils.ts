@@ -11,6 +11,7 @@ export * from "./dragPayload";
 export const getMatchingActions = async (
   objects: Structure[],
   partners: Structure[],
+  roles: readonly string[],
 ): Promise<Action[]> => {
   const state: ActionState = {
     left: objects,
@@ -18,5 +19,5 @@ export const getMatchingActions = async (
     isCommand: false,
   };
 
-  return getActionsForState(smartActions(), state);
+  return getActionsForState(smartActions(), state, roles);
 };

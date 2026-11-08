@@ -26,6 +26,7 @@ import {
 import {
   useActiveProfile,
   useActiveProfileId,
+  useConnectionWards,
   useHasActiveProfile,
   useIsAutoLoggingIn,
   useProfiles,
@@ -141,6 +142,8 @@ export const arkitektHooks = {
   useArkitekt: useArkitekt,
   /** The vanilla store, for reading services from outside a render (prefetch). */
   useStoreApi: useArkitektStoreApi,
+  /** The port widgets' wards (search/describe), resolved against the live services. */
+  useConnectionWards,
 };
 
 export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuilder>({

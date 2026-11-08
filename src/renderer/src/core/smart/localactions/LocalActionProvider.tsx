@@ -29,7 +29,7 @@ export type {
   PartnerMixtureActive,
 } from "@/core/modules/spec";
 import type { Condition } from "@/core/modules/spec";
-import { currentRoles, satisfiesRoles, useRoles, type RoleRequirement } from "@/core/connection/roles";
+import { satisfiesRoles, useRoles, type RoleRequirement } from "@/core/connection/roles";
 
 export type Structure = AppStructure;
 
@@ -250,14 +250,13 @@ const matchesConditionsForState = (
 };
 
 /**
- * The actions that apply to `state`, for a user with `roles`. Without
- * `roles` it reads the effective roles outside React (`currentRoles`), so
- * a drop target never offers an action the menu would hide.
+ * The actions that apply to `state`, for a user with `roles` (the caller's
+ * `useRoles()`), so a drop target never offers an action the menu would hide.
  */
 export const getActionsForState = <TAppOrServices = ServiceMap>(
   registry: ActionRegistry<TAppOrServices>,
   state: ActionState,
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): Action<TAppOrServices>[] => {
   return Object.values(registry).filter(
     (action) =>
@@ -268,7 +267,7 @@ export const getActionsForState = <TAppOrServices = ServiceMap>(
 export const getActionEntriesForState = <TRegistry extends Record<string, ActionMetadata>>(
   registry: TRegistry,
   state: ActionState,
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): ActionEntry<TRegistry>[] => {
   return getRegistryEntries(registry).filter(
     (entry) =>

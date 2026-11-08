@@ -70,7 +70,7 @@ describe("page sections", () => {
     await import("./install");
     const { pageSectionsFor } = await import("../../core/modules/registries");
     const ids = (identifier: string, where: Parameters<typeof pageSectionsFor>[1], datum: boolean) =>
-      pageSectionsFor(identifier, where, datum).map((section) => section.id);
+      pageSectionsFor(identifier, where, datum, []).map((section) => section.id);
 
     // Knowledge is a datum's affair; chat (rooms, then calls) applies to every model.
     expect(ids("@mikro/image", { slot: "knowledge" }, true)).toEqual(["kraph.knowledge"]);

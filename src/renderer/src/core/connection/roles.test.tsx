@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 let labelRoles: string[] | undefined;
 vi.mock("@/core/connection/arkitekt/hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/hooks")>()),
-  useActiveProfile: () => ({ label: { roles: labelRoles } }),
+  useActiveProfileRoles: () => labelRoles,
 }));
 // Real serviceGuard would need connection state; every service is ready here.
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
@@ -26,24 +26,21 @@ import { isModuleAllowed, MODULE_DIALOGS, pageSectionsFor } from "@/core/modules
 import { getActionsForState } from "@/core/smart/localactions/LocalActionProvider";
 import { Dialog, DialogContent } from "@/core/ui/dialog";
 import {
-  currentRoles,
   RoleGuard,
-  resetRoles,
-  RolesBridge,
+  resetRoleOverride,
   satisfiesRoles,
   setRoleOverride,
   useRoles,
 } from "./roles";
 
-/** The profile's cached roles, mirrored into the role store as the app does. */
+/** The active profile's cached roles, as the profile store holds them. */
 const signIn = (roles: string[]) => {
   labelRoles = roles;
-  render(<RolesBridge />);
 };
 
 afterEach(() => {
   labelRoles = undefined;
-  act(() => resetRoles());
+  act(() => resetRoleOverride());
   resetModuleHost();
 });
 
@@ -119,13 +116,6 @@ describe("view-as override", () => {
     expect(screen.getByText("as:")).toBeTruthy();
     act(() => setRoleOverride(null));
     expect(screen.getByText("real:admin")).toBeTruthy();
-  });
-
-  it("reaches readers outside React through the bridge", () => {
-    signIn(["admin"]);
-    expect(currentRoles()).toEqual(["admin"]);
-    act(() => setRoleOverride(["member"]));
-    expect(currentRoles()).toEqual(["member"]);
   });
 });
 

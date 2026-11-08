@@ -14,7 +14,7 @@ import type {
 } from "@/core/modules/host/define";
 import type { PassDownProps } from "@/core/smart/extensions/types";
 import { dialogNeeds, dialogRoles, keepPreferredSize } from "@/core/modules/host/dialogNeeds";
-import { currentRoles, describeRoles, RoleGuard, satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
+import { describeRoles, RoleGuard, satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
 import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
 import type { ProfileSection } from "@/core/connection/profile/section";
@@ -297,7 +297,7 @@ export const moduleRoles = (namespace: string): RoleRequirement | undefined =>
  * routes, pages in the palette, rail islands). Not installed = no module
  * requirement: the host's own entries ("blok") and runtime-only keys pass.
  */
-export const isModuleAllowed = (namespace: string, roles: readonly string[] = currentRoles()): boolean =>
+export const isModuleAllowed = (namespace: string, roles: readonly string[]): boolean =>
   satisfiesRoles(roles, moduleRoles(namespace));
 
 /** Every module's pages (palette rows, popout tiles), tagged with the module they belong to. */
@@ -336,7 +336,7 @@ export const pageSectionsFor = (
   identifier: string,
   where: { placement?: PageSection["placement"]; slot?: PageSection["slot"] | null },
   isDatum: boolean,
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): HostPageSection[] =>
   modulePageSections().filter((section) => {
     if (!satisfiesRoles(roles, section.roles)) return false;

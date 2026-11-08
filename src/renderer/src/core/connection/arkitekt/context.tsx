@@ -1,3 +1,4 @@
+import type { Ward } from "@arkitektio/bsx/ports/engine/types";
 import { createContext } from "react";
 import { StoreApi } from "zustand/vanilla";
 
@@ -9,6 +10,8 @@ export type ArkitektContextValue<
 > = {
   store: StoreApi<AppContext<T, S>>;
   actions: AppFunctions;
+  /** One stable ward per `wardKey`, resolving the live service when called. */
+  wards: Record<string, Ward>;
 };
 
 export const ArkitektContext = createContext<ArkitektContextValue<any, any> | null>(null);

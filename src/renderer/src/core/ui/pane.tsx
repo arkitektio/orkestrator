@@ -1,8 +1,6 @@
 import { cn } from "@/core/util/utils";
 import {
   Card,
-  CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "./card";
@@ -39,18 +37,4 @@ export const DetailPaneTitle = ({
       <div>{actions}</div>
     </CardTitle>
   );
-};
-
-export const DetailPaneDescription = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof CardDescription>) => {
-  return <CardDescription {...props} className={cn("", className)} />;
-};
-
-export const DetailPaneContent = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof CardContent>) => {
-  return <CardContent {...props} className={cn("", className)} />;
 };

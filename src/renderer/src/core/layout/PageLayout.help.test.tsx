@@ -7,6 +7,11 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: { useActiveProfileId: () => "org-a", useActiveProfile: () => null },
 }));
+// Role-gated UI reads the active profile's roles; unknown here.
+vi.mock("@/core/connection/arkitekt/hooks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/hooks")>()),
+  useActiveProfileRoles: () => undefined,
+}));
 vi.mock("@/core/constants", () => ({ baseName: "" }));
 // PageLayout's own dependencies are not what is under test here.
 vi.mock("@/core/debug/use-report", () => ({ useReport: () => vi.fn() }));

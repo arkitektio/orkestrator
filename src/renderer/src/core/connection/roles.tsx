@@ -1,8 +1,8 @@
-import { useLayoutEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
-import { useActiveProfile } from "@/core/connection/arkitekt/hooks";
+import { useActiveProfileRoles } from "@/core/connection/arkitekt/hooks";
 
 /**
  * Role gates: what the signed-in user may SEE, by their roles in the active
@@ -47,31 +47,27 @@ export const describeRoles = (requirement: RoleRequirement): string => {
   return anyOf.join(" or ");
 };
 
-type RoleState = {
-  /** The real roles, mirrored from the active profile by `RolesBridge`; null = unknown. */
-  real: readonly string[] | null;
-  /** Developer "view as": replaces the real roles for this window, this session. */
-  override: readonly string[] | null;
-};
-
-const roleStore = createStore<RoleState>(() => ({ real: null, override: null }));
+/**
+ * Developer "view as": replaces the real roles for this window, this session.
+ * Not profile data (never persisted), so it lives here, not in the profile book.
+ */
+const overrideStore = createStore<{ override: readonly string[] | null }>(() => ({ override: null }));
 
 /** Set (or, with `null`, clear) the "view as" override. Never persisted. */
 export const setRoleOverride = (roles: readonly string[] | null) =>
-  roleStore.setState({ override: roles ? [...roles] : null });
+  overrideStore.setState({ override: roles ? [...roles] : null });
 
-export const useRoleOverride = () => useStore(roleStore, (state) => state.override);
+export const useRoleOverride = () => useStore(overrideStore, (state) => state.override);
 
 const NO_ROLES: readonly string[] = [];
 
 /**
- * The real roles: the active profile's cached label, as `RolesBridge` mirrors
- * it. Read from the role store, not the connection, so gated UI renders (as
- * "unknown") outside the Arkitekt provider too.
+ * The real roles: the active profile's cached label, read straight from the
+ * profile store. `known` is false while the profile has none cached yet.
  */
 export const useRealRoles = (): { roles: readonly string[]; known: boolean } => {
-  const real = useStore(roleStore, (state) => state.real);
-  return { roles: real ?? NO_ROLES, known: real !== null };
+  const roles = useActiveProfileRoles();
+  return { roles: roles ?? NO_ROLES, known: roles !== undefined };
 };
 
 /**
@@ -93,33 +89,8 @@ export const useHasRoles = (requirement?: RoleRequirement): boolean => {
   return known && satisfiesRoles(roles, requirement);
 };
 
-/**
- * The effective roles outside React (drop targets resolving actions). Empty
- * until `RolesBridge` has run, so a gated action is simply not offered.
- */
-export const currentRoles = (): readonly string[] => {
-  const { real, override } = roleStore.getState();
-  return override ?? real ?? NO_ROLES;
-};
-
-/**
- * Mirrors the active profile's roles into the role store. Mount once, inside
- * the Arkitekt provider and before the app's children: a layout effect, so a
- * warm boot's cached roles land before the first paint (no gated-UI flash).
- */
-export const RolesBridge = () => {
-  const roles = useActiveProfile()?.label.roles;
-  const key = roles?.join("\u0000");
-  useLayoutEffect(() => {
-    roleStore.setState({ real: roles ? [...roles] : null });
-    // `key` stands in for the array: the label is re-read on every book write.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return null;
-};
-
-/** Resets the role store (tests). */
-export const resetRoles = () => roleStore.setState({ real: null, override: null });
+/** Clears the "view as" override (tests). */
+export const resetRoleOverride = () => overrideStore.setState({ override: null });
 
 export type RoleGuardProps = {
   require?: RoleRequirement;

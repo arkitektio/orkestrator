@@ -1,7 +1,7 @@
 import { Blocks, Home, LayoutDashboard } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
-import { currentRoles, satisfiesRoles } from "@/core/connection/roles";
+import { satisfiesRoles } from "@/core/connection/roles";
 import { isModuleAllowed, moduleNavLinks } from "@/core/modules/registries";
 import { derived } from "@/core/modules/host/lazy";
 import { rankByFilter } from "../filter";
@@ -32,7 +32,7 @@ export const routeCatalog = derived((): CatalogRoute[] => [...moduleNavLinks(), 
 /** The pages a user with `roles` may be offered: the link's own `roles` and its module's. */
 export const allowedRoutes = (
   catalog: readonly CatalogRoute[],
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): CatalogRoute[] =>
   catalog.filter((r) => satisfiesRoles(roles, r.roles) && isModuleAllowed(r.module, roles));
 
@@ -40,7 +40,7 @@ export const allowedRoutes = (
 export const routesOfModule = (
   catalog: readonly CatalogRoute[],
   module: string,
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): CatalogRoute[] => allowedRoutes(catalog, roles).filter((r) => r.module === module);
 
 /**
@@ -57,7 +57,7 @@ export const searchRoutes = (
   readyModules: readonly { key: string; label?: string }[],
   filter: string | undefined,
   limit = 10,
-  roles: readonly string[] = currentRoles(),
+  roles: readonly string[],
 ): CatalogRoute[] => {
   const term = filter?.trim();
   if (!term) return [];

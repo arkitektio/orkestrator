@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import {
-  AttributePlanBlock as BaseAttributePlanBlock,
   FollowReferenceContext,
   HopBlocks as BaseHopBlocks,
   formatCell,
@@ -28,12 +27,6 @@ const SceneFollow = ({ children }: { children: React.ReactNode }) => {
   const follow = useViewerStore((s) => s.followAttributeReference);
   return <FollowReferenceContext.Provider value={follow}>{children}</FollowReferenceContext.Provider>;
 };
-
-export const AttributePlanBlock = (props: React.ComponentProps<typeof BaseAttributePlanBlock>) => (
-  <SceneFollow>
-    <BaseAttributePlanBlock {...props} />
-  </SceneFollow>
-);
 
 export const HopBlocks = (props: React.ComponentProps<typeof BaseHopBlocks>) => (
   <SceneFollow>

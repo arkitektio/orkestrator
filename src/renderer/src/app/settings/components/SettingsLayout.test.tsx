@@ -4,6 +4,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 // Spring-loaded drop targets need the DnD runtime; the nav only needs links.
+// Role-gated UI reads the active profile's roles; unknown here.
+vi.mock("@/core/connection/arkitekt/hooks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/hooks")>()),
+  useActiveProfileRoles: () => undefined,
+}));
 vi.mock("@/core/dnd/react", () => ({
   useSpringLoaded: () => ({ ref: () => undefined, isOver: false }),
 }));

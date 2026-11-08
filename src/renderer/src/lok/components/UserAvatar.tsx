@@ -23,8 +23,6 @@ export const UserAvatar = (props: { sub: string, className?: string }) => {
   );
 };
 
-
-
 /**
  * Small hover-only badge naming the device an agent runs on.
  *
@@ -55,22 +53,6 @@ export const DeviceImprint = (props: { deviceId: string, className?: string }) =
   if (!device) return badge;
 
   return <LokDevice.DetailLink object={device}>{badge}</LokDevice.DetailLink>;
-};
-
-export const UserUsername = (props: { sub: string }) => {
-  const user = useUserChip(props.sub);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <LokUser.DetailLink object={{ id: props.sub }}>
-          <span className="cursor-pointer">{user?.username}</span>
-        </LokUser.DetailLink>
-      </TooltipTrigger>
-
-      <TooltipContent>{user?.username}</TooltipContent>
-    </Tooltip>
-  );
 };
 
 export const JustUsername = (props: { sub: string }) => {

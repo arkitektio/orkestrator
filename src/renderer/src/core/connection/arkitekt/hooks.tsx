@@ -39,6 +39,9 @@ export const useArkitektActions = (): AppFunctions => useArkitektContext().actio
 /** The raw store, for imperative reads and subscriptions outside React. */
 export const useArkitektStoreApi = () => useArkitektContext().store;
 
+/** The port widgets' wards, one per `wardKey`, stable for the provider's life. */
+export const useConnectionWards = () => useArkitektContext().wards;
+
 /**
  * The connection status fields a guard needs, shallow-compared so token
  * refreshes and service health ticks do not rerender the guarded tree.
@@ -193,6 +196,14 @@ export const useActiveProfileId = (): string | null =>
 
 export const useActiveProfile = (): StoredProfile | null =>
   useArkitektStore((state) => getActiveProfile(state.profileBook));
+
+/**
+ * The active profile's cached organization roles (`undefined` = not known
+ * yet). Shallow-compared: a book write (a token refresh) re-reads the label
+ * but must not rerender every role-gated component.
+ */
+export const useActiveProfileRoles = (): readonly string[] | undefined =>
+  useArkitektStore(useShallow((state) => getActiveProfile(state.profileBook)?.label.roles));
 
 /** The profile a switch is currently proving, if any. */
 export const useSwitchingProfileId = (): string | null =>

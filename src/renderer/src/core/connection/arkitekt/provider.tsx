@@ -5,6 +5,7 @@ import type { Alias } from "./fakts/faktsSchema";
 import { resolveServiceAlias } from "./alias/serviceAlias";
 import { isMeshRouted, NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
 import { ArkitektContext } from "./context";
+import { buildConnectionWards } from "./ward";
 import { useConnectionStatus } from "./hooks";
 import { requestMeshKey } from "@/core/connection/mesh/meshKey";
 import {
@@ -1553,7 +1554,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     return () => window.removeEventListener("keydown", handler);
   }, [clearAllServiceCaches]);
 
-  const contextValue = useMemo(() => ({ store, actions }), [store, actions]);
+  // The service map is fixed for this provider, and each ward reads the store when called.
+  const [wards] = useState(() => buildConnectionWards(serviceBuilderMap, store.getState as () => AppContext));
+
+  const contextValue = useMemo(() => ({ store, actions, wards }), [store, actions, wards]);
 
   return <ArkitektContext.Provider value={contextValue}>{children}</ArkitektContext.Provider>;
 };

@@ -21,7 +21,7 @@ describe("ROUTE_CATALOG", () => {
 
   it("marks at most one home page per module", () => {
     for (const module of new Set(ROUTE_CATALOG.map((r) => r.module))) {
-      const homes = routesOfModule(ROUTE_CATALOG, module).filter((r) => r.home);
+      const homes = routesOfModule(ROUTE_CATALOG, module, ["admin"]).filter((r) => r.home);
       expect(homes.length, module).toBeLessThanOrEqual(1);
     }
   });
@@ -51,46 +51,46 @@ describe("searchRoutes", () => {
   const ready = [{ key: "rekuest", label: "Rekuest" }, { key: "mikro", label: "Mikro" }];
 
   it("offers nothing until something is typed", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "")).toEqual([]);
-    expect(searchRoutes(ROUTE_CATALOG, ready, "   ")).toEqual([]);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "", 10, [])).toEqual([]);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "   ", 10, [])).toEqual([]);
   });
 
   it("finds a page by name, keyword, or module name", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "tasks").map((r) => r.route)).toContain("/rekuest/tasks");
-    expect(searchRoutes(ROUTE_CATALOG, ready, "rois").map((r) => r.route)).toContain("/mikro/annotations");
-    expect(searchRoutes(ROUTE_CATALOG, ready, "rekuest").length).toBeGreaterThan(0);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "tasks", 10, []).map((r) => r.route)).toContain("/rekuest/tasks");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "rois", 10, []).map((r) => r.route)).toContain("/mikro/annotations");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "rekuest", 10, []).length).toBeGreaterThan(0);
   });
 
   it("never offers a page in a module that is down", () => {
     // Kraph is not in `ready`: its pages would be dead ends.
-    expect(searchRoutes(ROUTE_CATALOG, ready, "graphs")).toEqual([]);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "graphs", 10, [])).toEqual([]);
   });
 
   it("caps the list", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "a", 3)).toHaveLength(3);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "a", 3, [])).toHaveLength(3);
   });
 
   it("finds a page by a subsequence of its name", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "arrdat")[0]?.route).toBe("/mikro/arraydatasets");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "arrdat", 10, [])[0]?.route).toBe("/mikro/arraydatasets");
   });
 
   it("forgives a typo", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "taks")[0]?.route).toBe("/rekuest/tasks");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "taks", 10, [])[0]?.route).toBe("/rekuest/tasks");
   });
 
   it("puts the best match first", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "tasks").map((r) => r.route).slice(0, 2)).toEqual([
+    expect(searchRoutes(ROUTE_CATALOG, ready, "tasks", 10, []).map((r) => r.route).slice(0, 2)).toEqual([
       "/rekuest/tasks",
       "/rekuest/org-tasks",
     ]);
     // Rekuest's page is literally "Home"; Mikro's only has it as a keyword.
-    expect(searchRoutes(ROUTE_CATALOG, ready, "home")[0]?.route).toBe("/rekuest/home");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "home", 10, [])[0]?.route).toBe("/rekuest/home");
   });
 
   it("offers every array-dataset spec page, from the same data as the pages", () => {
-    expect(searchRoutes(ROUTE_CATALOG, ready, "images")[0]?.route).toBe("/mikro/arraydatasets/spec/image");
-    expect(searchRoutes(ROUTE_CATALOG, ready, "volumes")[0]?.route).toBe("/mikro/arraydatasets/spec/volume");
-    expect(searchRoutes(ROUTE_CATALOG, ready, "flim")[0]?.route).toBe("/mikro/arraydatasets/spec/flim");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "images", 10, [])[0]?.route).toBe("/mikro/arraydatasets/spec/image");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "volumes", 10, [])[0]?.route).toBe("/mikro/arraydatasets/spec/volume");
+    expect(searchRoutes(ROUTE_CATALOG, ready, "flim", 10, [])[0]?.route).toBe("/mikro/arraydatasets/spec/flim");
     // Every spec, not a hand-picked few.
     for (const spec of ADATASET_SPECS) {
       expect(ROUTE_CATALOG.map((r) => r.route)).toContain(arrayDatasetSpecLink(spec.slug));
@@ -99,6 +99,6 @@ describe("searchRoutes", () => {
 
   it("caps after ranking, not before", () => {
     // Insertion order would have returned Mikro's Dashboard.
-    expect(searchRoutes(ROUTE_CATALOG, ready, "home", 1).map((r) => r.route)).toEqual(["/rekuest/home"]);
+    expect(searchRoutes(ROUTE_CATALOG, ready, "home", 1, []).map((r) => r.route)).toEqual(["/rekuest/home"]);
   });
 });

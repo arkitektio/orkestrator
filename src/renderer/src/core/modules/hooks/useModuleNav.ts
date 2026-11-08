@@ -51,5 +51,5 @@ export const useModuleNav = (moduleKey: string): ModuleNavLayout => {
  * `fallback` (the module's root). Not a hook — for a palette row or any other
  * one-off navigation; components that render it use `useModuleNav`.
  */
-export const moduleHomeRoute = (moduleKey: string, fallback: string): string =>
-  routesOfModule(routeCatalog(), moduleKey).find((link) => link.home)?.route ?? fallback;
+export const moduleHomeRoute = (moduleKey: string, fallback: string, roles: readonly string[]): string =>
+  routesOfModule(routeCatalog(), moduleKey, roles).find((link) => link.home)?.route ?? fallback;

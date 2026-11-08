@@ -62,7 +62,7 @@ describe("a module registered at runtime", () => {
     expect("bankkcategorize" in DIALOGS).toBe(true);
     expect("bankk-categorize" in ACTIONS).toBe(true);
     expect(modulePages().map((page) => page.namespace)).toEqual(["bankk"]);
-    expect(pageSectionsFor("@dokuments/document", { placement: "main", slot: null }, false).map((s) => s.id)).toEqual([
+    expect(pageSectionsFor("@dokuments/document", { placement: "main", slot: null }, false, []).map((s) => s.id)).toEqual([
       "bankk.receipts",
     ]);
 
@@ -76,7 +76,7 @@ describe("a module registered at runtime", () => {
     // What PageSections, AppRoutes and the palette do: subscribe, then derive.
     const { result } = renderHook(() => {
       useModuleHostVersion();
-      return pageSectionsFor("@dokuments/document", { placement: "main", slot: null }, false).length;
+      return pageSectionsFor("@dokuments/document", { placement: "main", slot: null }, false, []).length;
     });
     expect(result.current).toBe(0);
 

@@ -43,81 +43,81 @@ const state = (over: Partial<ActionState> = {}): ActionState => ({
 describe("getActionsForState — single conditions", () => {
   it("identifier matches when a left structure has that identifier", () => {
     const registry = { a: action([{ type: "identifier", identifier: "@x/a" }]) };
-    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(1);
-    expect(getActionsForState(registry, state({ left: [structure("@x/b")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [structure("@x/b")] }), [])).toHaveLength(0);
   });
 
   it("mixture matches when any listed identifier is present on the left", () => {
     const registry = { a: action([{ type: "mixture", identifiers: ["@x/a", "@x/b"] }]) };
-    expect(getActionsForState(registry, state({ left: [structure("@x/b")] }))).toHaveLength(1);
-    expect(getActionsForState(registry, state({ left: [structure("@x/c")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/b")] }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [structure("@x/c")] }), [])).toHaveLength(0);
   });
 
   it("homogenous matches when all left structures share an identifier (or none)", () => {
     const registry = { a: action([{ type: "homogenous" }]) };
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/a", "2")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/a", "2")] }), []),
     ).toHaveLength(1);
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/b")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/b")] }), []),
     ).toHaveLength(0);
     // Empty selection is vacuously homogenous.
-    expect(getActionsForState(registry, state({ left: [] }))).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [] }), [])).toHaveLength(1);
   });
 
   it("pidentifier matches against the partner (right) selection", () => {
     const registry = { a: action([{ type: "pidentifier", identifier: "@x/p" }]) };
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/p")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/p")] }), []),
     ).toHaveLength(1);
-    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }), [])).toHaveLength(0);
   });
 
   it("nopartner matches only when there is no right selection", () => {
     const registry = { a: action([{ type: "nopartner" }]) };
-    expect(getActionsForState(registry, state())).toHaveLength(1);
-    expect(getActionsForState(registry, state({ right: [] }))).toHaveLength(1);
-    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state(), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ right: [] }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }), [])).toHaveLength(0);
   });
 
   it("haspartner matches only when there is a right selection", () => {
     const registry = { a: action([{ type: "haspartner" }]) };
-    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }))).toHaveLength(1);
-    expect(getActionsForState(registry, state())).toHaveLength(0);
+    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state(), [])).toHaveLength(0);
   });
 
   it("partner matches a specific partner identifier", () => {
     const registry = { a: action([{ type: "partner", partner: "@x/p" }]) };
-    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }))).toHaveLength(1);
-    expect(getActionsForState(registry, state({ right: [structure("@x/q")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ right: [structure("@x/p")] }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ right: [structure("@x/q")] }), [])).toHaveLength(0);
   });
 
   it("datum matches when any left structure is a registered datum", () => {
     const registry = { a: action([{ type: "datum" }]) };
-    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }), [])).toHaveLength(1);
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/datum", "2")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/datum", "2")] }), []),
     ).toHaveLength(1);
-    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(0);
-    expect(getActionsForState(registry, state({ left: [] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }), [])).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [] }), [])).toHaveLength(0);
   });
 
   it("pdatum matches only when the partner selection holds a datum", () => {
     const registry = { a: action([{ type: "pdatum" }]) };
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/datum")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/datum")] }), []),
     ).toHaveLength(1);
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/b")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/b")] }), []),
     ).toHaveLength(0);
     // No partner at all is not a partner datum.
-    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }), [])).toHaveLength(0);
   });
 
   it("command matches the isCommand flag", () => {
     const registry = { a: action([{ type: "command", command: true }]) };
-    expect(getActionsForState(registry, state({ isCommand: true }))).toHaveLength(1);
-    expect(getActionsForState(registry, state({ isCommand: false }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ isCommand: true }), [])).toHaveLength(1);
+    expect(getActionsForState(registry, state({ isCommand: false }), [])).toHaveLength(0);
   });
 });
 
@@ -129,13 +129,13 @@ describe("getActionsForState — onroute (reads window.location)", () => {
   it("matches when the current pathname includes the route", () => {
     const registry = { a: action([{ type: "onroute", route: "graph" }]) };
     window.history.pushState({}, "", "/kraph/graph/123");
-    expect(getActionsForState(registry, state())).toHaveLength(1);
+    expect(getActionsForState(registry, state(), [])).toHaveLength(1);
   });
 
   it("does not match a route absent from the pathname", () => {
     const registry = { a: action([{ type: "onroute", route: "graph" }]) };
     window.history.pushState({}, "", "/mikro/folders");
-    expect(getActionsForState(registry, state())).toHaveLength(0);
+    expect(getActionsForState(registry, state(), [])).toHaveLength(0);
   });
 });
 
@@ -148,15 +148,15 @@ describe("getActionsForState — combined conditions (AND semantics)", () => {
       ]),
     };
     expect(
-      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/p")] })),
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/p")] }), []),
     ).toHaveLength(1);
     // identifier holds but no partner → excluded
-    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }), [])).toHaveLength(0);
   });
 
   it("an action with no conditions always matches", () => {
     const registry = { a: action([]) };
-    expect(getActionsForState(registry, state())).toHaveLength(1);
+    expect(getActionsForState(registry, state(), [])).toHaveLength(1);
   });
 });
 
@@ -166,7 +166,7 @@ describe("getActionEntriesForState", () => {
       onA: action([{ type: "identifier", identifier: "@x/a" }]),
       onB: action([{ type: "identifier", identifier: "@x/b" }]),
     };
-    const entries = getActionEntriesForState(registry, state({ left: [structure("@x/a")] }));
+    const entries = getActionEntriesForState(registry, state({ left: [structure("@x/a")] }), []);
     expect(entries.map((e) => e.id)).toEqual(["onA"]);
     expect(entries[0].action).toBe(registry.onA);
   });

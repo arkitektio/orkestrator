@@ -25,12 +25,11 @@ import { SmartProvider } from "@/core/smart/provider";
 import { SmartPrefetchProvider } from "@/core/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/core/smart/SmartSurface";
 import { ExportHost } from "@/core/modules/export/ExportHost";
-import { WidgetRegistryProvider } from "@arkitektio/bsx/ports/engine/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
 import { DisplayProvider } from "../core/smart/display/displays";
-import { THE_WIDGET_REGISTRY } from "./shadCnWidgetRegistry";
+import { AppWidgetRegistryProvider } from "./shadCnWidgetRegistry";
 
 
 /** A render that threw: say so, with the stack to copy and a way back. */
@@ -96,7 +95,6 @@ import { DownloadProvider } from "@/core/modules/download/DownloadProvider";
 // It wraps the Easy Provider, which allows for the configuration of an Easy App through Arkitekt,
 // Additionally, it wraps the DisplayProvider, which allows for the configuration of the display registry.
 import { AgentProvider } from "../core/agent/AgentProvider";
-import { WardRegistrar } from "@/core/connection/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/app/hooks/use-refetch-on-reactivate";
 import { GcOnNavigate } from "@/app/hooks/use-gc-on-navigate";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
@@ -109,7 +107,6 @@ import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/core/tabs/TabsProvider";
 import { VoiceInput } from "@/core/voice";
 import type { WindowRole } from "@/core/util/windowRole";
-import { RolesBridge } from "@/core/connection/roles";
 
 /** The quick bar's navigation goes to the main window, as a tab. Module-level: stable. */
 const forwardToMain = (path: string) => window.api?.palette?.openInMain?.(path);
@@ -167,7 +164,7 @@ export const AppProvider = ({
                     <LocalActionProvider>
                       <TooltipProvider>
                         <DisplayProvider>
-                          <WidgetRegistryProvider registry={THE_WIDGET_REGISTRY}>
+                          <AppWidgetRegistryProvider>
                             <ProfileScope>
                             <SmartProvider>
                               <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
@@ -176,7 +173,6 @@ export const AppProvider = ({
                                   {/* One window is this app's agent: the main one. */}
                                   <AgentProvider disabled={role !== "app"}>
                                     <CommandPaletteProvider>
-                                    <WardRegistrar />
                                     <MeshSync />
                                     {!quick && <MeshFirewallPrompt />}
                                     {/* The cached brand, from the first frame — not after lok answers. */}
@@ -205,8 +201,6 @@ export const AppProvider = ({
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
-                                    {/* The roles, for readers outside React (drop targets). */}
-                                    <RolesBridge />
                                     {/* A failed request nobody caught still reaches the toast island. */}
                                     <UnhandledErrorNet />
                                     {/* One subscription to the app updater, for
@@ -222,7 +216,7 @@ export const AppProvider = ({
                               </DialogProvider>
                             </SmartProvider>
                             </ProfileScope>
-                          </WidgetRegistryProvider>
+                          </AppWidgetRegistryProvider>
                         </DisplayProvider>
                       </TooltipProvider>
                     </LocalActionProvider>
