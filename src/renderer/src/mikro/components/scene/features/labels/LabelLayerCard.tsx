@@ -353,20 +353,15 @@ export const LabelLayerCard = memo(
         icon={<Puzzle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
         tile="bg-emerald-400/15"
         // The same name rule as the image rows: its own name, then the lens',
-        // then the dataset — and the name is the rename, as it is there.
+        // then the dataset. The whole title bar folds the card; the rename is
+        // the pencil among the actions.
         title={layerDisplayLabel(layer)}
-        titleNode={
-          <LayerNamePopover
-            layer={layer}
-            label={layerDisplayLabel(layer)}
-            className="text-[11px] font-medium text-foreground/90"
-          />
-        }
         hidden={hidden}
         expanded={expanded}
         onToggle={() => onSelect(layerId, expanded)}
         actions={
           <>
+            <LayerNamePopover layer={layer} label={layerDisplayLabel(layer)} trigger="icon" />
             <LensButton lens={layer.lens} className={LENS_BUTTON} />
             {/* The one server write — same affordance as the image layer card's
                 graph save: visible only while there is something to save. */}

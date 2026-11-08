@@ -1,4 +1,5 @@
 import type { ApolloClient } from "@apollo/client";
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/core/ui/button";
@@ -19,6 +20,7 @@ import {
 import { pinSummary, slicePins, type LensPin } from "@/mikro/lenses";
 import type { LayerState } from "../model/layerModel";
 import { useSceneStoreApi } from "../stores/sceneStore";
+import { HEADER_BUTTON } from "./headerButton";
 
 /**
  * The layer's name, as a button: click it to set the anchor the name comes from.
@@ -39,32 +41,51 @@ import { useSceneStoreApi } from "../stores/sceneStore";
  * Every click is kept inside: the row and the card header it sits in toggle on
  * click, and the content is portalled, but React bubbles its events through
  * the tree.
+ *
+ * `trigger="icon"` draws a pencil instead of the name, for a header whose
+ * name is the fold toggle (the label card): the rename sits with the other
+ * header buttons.
  */
 export const LayerNamePopover = ({
   layer,
   label,
   className,
+  trigger = "name",
 }: {
   layer: LayerState;
   /** What the row shows now (`layerDisplayLabel(layer)`). */
   label: string;
   className?: string;
+  /** The name itself (default), or a pencil button beside it. */
+  trigger?: "name" | "icon";
 }) => {
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "min-w-0 flex-1 truncate rounded-sm text-left hover:underline hover:decoration-foreground/30 hover:underline-offset-2",
-            className,
-          )}
-          title={`${label} (click to set its anchor label)`}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {label}
-        </button>
+        {trigger === "icon" ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(HEADER_BUTTON, className)}
+            title="Set the anchor label this layer is named by"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "min-w-0 flex-1 truncate rounded-sm text-left hover:underline hover:decoration-foreground/30 hover:underline-offset-2",
+              className,
+            )}
+            title={`${label} (click to set its anchor label)`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {label}
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="start"
