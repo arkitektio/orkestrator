@@ -97,7 +97,8 @@ const FocusBody = ({ annotation }: { annotation: DetailAnnotationFragment }) => 
       // interaction — a fit issued in that same commit would be reframed away.
       // This makes the annotation the last word on the camera.
       frame = requestAnimationFrame(() => {
-        if (!cancelled) navigateToAnnotation(current, layer);
+        // Framed, not panned: landing ON the annotation is this page's point.
+        if (!cancelled) navigateToAnnotation(current, layer, { frame: true });
       });
     };
 

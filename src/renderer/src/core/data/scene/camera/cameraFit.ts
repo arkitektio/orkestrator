@@ -59,12 +59,13 @@ export function applyFitToCamera(box: THREE.Box3, canvas: FitCanvasContext): voi
     }
   } else {
     const persp = camera as THREE.PerspectiveCamera;
-    const center = box.getCenter(new THREE.Vector3());
     const pose = computeFitPose(box, {
       kind: "perspective",
       fov: persp.fov,
-      // Preserve the current viewing angle; only the distance changes.
-      viewDirection: camera.position.clone().sub(center),
+      // Preserve the current viewing angle; only the distance changes. The
+      // angle is the line of sight (camera → orbit target), NOT camera → box:
+      // for a box off that line the latter turns the view toward it.
+      viewDirection: currentViewOffset(camera, controls),
     });
     camera.position.copy(pose.position);
     camera.lookAt(pose.target);
@@ -72,6 +73,45 @@ export function applyFitToCamera(box: THREE.Box3, canvas: FitCanvasContext): voi
       controls.target.copy(pose.target);
       controls.update();
     }
+  }
+  invalidate();
+}
+
+/** Camera minus what it looks at: the orbit target, else one unit ahead. */
+function currentViewOffset(
+  camera: THREE.Camera,
+  controls: FitCanvasContext["controls"],
+): THREE.Vector3 {
+  if (controls && controls.target.distanceToSquared(camera.position) > 0) {
+    return camera.position.clone().sub(controls.target);
+  }
+  return camera.getWorldDirection(new THREE.Vector3()).negate();
+}
+
+/**
+ * Bring `point` to the center of the view without turning or zooming: the
+ * camera (and the orbit target with it) slides so `point` lands on the line
+ * of sight, at the depth the target had. A pan, not a fit — the go-to of the
+ * 3D view, where reframing would change the angle the user chose.
+ */
+export function panCameraTo(point: THREE.Vector3, canvas: FitCanvasContext): void {
+  const { camera, controls, invalidate } = canvas;
+  const delta = new THREE.Vector3();
+  if (controls) {
+    delta.copy(point).sub(controls.target);
+  } else {
+    // No target: move by the part of camera → point across the line of sight.
+    const ahead = camera.getWorldDirection(new THREE.Vector3());
+    const toPoint = point.clone().sub(camera.position);
+    delta.copy(toPoint).addScaledVector(ahead, -toPoint.dot(ahead));
+  }
+  if (delta.lengthSq() === 0) return;
+  camera.position.add(delta);
+  if (controls) {
+    controls.target.add(delta);
+    controls.update();
+  } else {
+    camera.updateMatrixWorld();
   }
   invalidate();
 }

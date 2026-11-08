@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import * as THREE from "three";
 import type { SceneAnnotationFragment } from "@/mikro/api/graphql";
 import {
   getWorldExtent,
@@ -6,14 +7,16 @@ import {
   worldExtentToBox3,
   type AnnotationLayerVariant,
 } from "./annotationBounds";
-import { applyFitToCamera } from "@/core/data/scene/camera/cameraFit";
+import { applyFitToCamera, panCameraTo } from "@/core/data/scene/camera/cameraFit";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 
 /**
- * Jump the camera to an annotation — an instant reframe, the same move as
- * "fit camera to layer". In the flat view the annotation may live on another
+ * Jump the camera to an annotation, instantly. In 3D a PAN: the annotation's
+ * center comes to the middle of the view, the angle and distance the user
+ * chose stay (`panCameraTo`). In 2D, and with `frame` (a page landing ON the
+ * annotation), a reframe — the same move as "fit camera to layer". In the flat view the annotation may live on another
  * slice, so navigation also moves `currentZ` and the non-z dim selections to
  * the annotation's pins (the pairing `AnimationPlayer` uses); framing alone
  * would center an empty patch.
@@ -27,7 +30,11 @@ export const useNavigateToAnnotation = () => {
   const modeStoreApi = useModeStoreApi();
 
   return useCallback(
-    (annotation: SceneAnnotationFragment, layer: AnnotationLayerVariant) => {
+    (
+      annotation: SceneAnnotationFragment,
+      layer: AnnotationLayerVariant,
+      options: { frame?: boolean } = {},
+    ) => {
       if (!layer.annotationCollection) return;
       const { transformContext, layers } = sceneStoreApi.getState();
       const matrix = resolveCollectionMatrix(
@@ -39,8 +46,9 @@ export const useNavigateToAnnotation = () => {
       if (!extent) return;
 
       const viewer = viewerStoreApi.getState();
+      const flat = modeStoreApi.getState().displayMode !== "3D";
 
-      if (modeStoreApi.getState().displayMode !== "3D") {
+      if (flat) {
         viewer.setCurrentZ((extent.zSpan.min + extent.zSpan.max) / 2);
         // Pins named after an image z axis are resolved from `currentZ`, not
         // `dimSelections` — the store's contract (`viewerStore.dimSelections`
@@ -58,7 +66,9 @@ export const useNavigateToAnnotation = () => {
       // A POINT (or flat shape) has zero extent on some axis; pad so it frames
       // to roughly 80 px at the current zoom instead of a degenerate fit.
       const minHalfExtent = Math.max(viewer.worldUnitsPerPixel * 40, 1e-3);
-      applyFitToCamera(worldExtentToBox3(extent, minHalfExtent), canvas);
+      const box = worldExtentToBox3(extent, minHalfExtent);
+      if (!flat && !options.frame) panCameraTo(box.getCenter(new THREE.Vector3()), canvas);
+      else applyFitToCamera(box, canvas);
     },
     [sceneStoreApi, viewerStoreApi, modeStoreApi],
   );

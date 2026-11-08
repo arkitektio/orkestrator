@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import * as THREE from "three";
-import { applyFitToCamera, padDegenerateAxes } from "@/core/data/scene/camera/cameraFit";
+import { applyFitToCamera, padDegenerateAxes, panCameraTo } from "@/core/data/scene/camera/cameraFit";
 import type { FabriksObjectEntry } from "./fabriks/fabriksCatalogs";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
@@ -44,7 +44,8 @@ export const useNavigateToMeshBox = () => {
       if (box.isEmpty()) return;
       const viewer = viewerStoreApi.getState();
 
-      if (modeStoreApi.getState().displayMode !== "3D") {
+      const flat = modeStoreApi.getState().displayMode !== "3D";
+      if (flat) {
         viewer.setCurrentZ((box.min.z + box.max.z) / 2);
       }
 
@@ -52,6 +53,12 @@ export const useNavigateToMeshBox = () => {
       if (!canvas) return;
       // A one-voxel-thick object has near-zero extent on some axis; pad so it
       // frames to roughly 80 px at the current zoom instead of a degenerate fit.
+      // 3D pans — the object to the middle, the user's angle and distance kept
+      // (`panCameraTo`, as the annotation go-to). 2D reframes.
+      if (!flat) {
+        panCameraTo(box.getCenter(new THREE.Vector3()), canvas);
+        return;
+      }
       const minHalfExtent = Math.max(viewer.worldUnitsPerPixel * 40, 1e-3);
       applyFitToCamera(padDegenerateAxes(box.clone(), minHalfExtent), canvas);
     },
