@@ -47,6 +47,57 @@ const Row = ({ label, children, title }: { label: string; children: ReactNode; t
   </div>
 );
 
+/** A MiB count as people read it: GiB from 1024 MiB on, one decimal while it helps. */
+const formatMib = (mib: number): string => {
+  if (mib < 1024) return `${mib} MiB`;
+  const gib = mib / 1024;
+  return `${gib >= 100 || Number.isInteger(gib) ? gib.toFixed(0) : gib.toFixed(1)} GiB`;
+};
+
+/**
+ * What the agent's machine has, as it stated on its last registration: the
+ * values `Fits` formulas and runtime estimates read as `agent/<hardware>`.
+ * Self-declared, and a container's limits count; unknown values are left out.
+ */
+const HardwareSection = ({ hardware }: { hardware: AgentFragment["hardware"] }) => (
+  <Section title="Hardware">
+    {!hardware ? (
+      <div className="text-xs text-muted-foreground">Not reported by this agent</div>
+    ) : (
+      <>
+        {hardware.cpuCount != null && (
+          <Row label="CPUs" title="The CPUs its process may use: a container's limit counts">
+            {hardware.cpuCount}
+          </Row>
+        )}
+        {hardware.memoryMib != null && (
+          <Row label="Memory" title="The memory its process may use: a container's limit counts">
+            {formatMib(hardware.memoryMib)}
+          </Row>
+        )}
+        {hardware.gpus.length === 0 ? (
+          <Row label="GPUs">
+            <span className="text-muted-foreground">None</span>
+          </Row>
+        ) : (
+          hardware.gpus.map((gpu, index) => (
+            <Row
+              key={`${gpu.name}-${index}`}
+              label={hardware.gpus.length > 1 ? `GPU ${index}` : "GPU"}
+              title={gpu.name}
+            >
+              {gpu.name}
+              {gpu.memoryMib != null && (
+                <span className="text-muted-foreground"> · {formatMib(gpu.memoryMib)}</span>
+              )}
+            </Row>
+          ))
+        )}
+      </>
+    )}
+  </Section>
+);
+
 /**
  * What the agent IS: who declared it, whether it is reachable, which app and
  * client it runs as, whose it is and what it holds. All from the page's own
@@ -150,6 +201,8 @@ export const AgentFacts = ({ agent }: { agent: AgentFragment }) => {
           </Row>
         )}
       </Section>
+
+      <HardwareSection hardware={agent.hardware} />
 
       <Section title="Owner">
         <Row label="User">

@@ -1,8 +1,12 @@
+import { AssignWidgetKind } from '@arkitektio/bsx/ports/rekuest';
+import { DescriptorOperator } from '@arkitektio/bsx/ports/rekuest';
+import { EffectKind } from '@arkitektio/bsx/ports/rekuest';
+import { OptionKey } from '@arkitektio/bsx/ports/rekuest';
+import { PortKind } from '@arkitektio/bsx/ports/rekuest';
+import { ReturnWidgetKind } from '@arkitektio/bsx/ports/rekuest';
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/rekuest/api/hooks';
-import { AssignWidgetKind, DescriptorOperator, EffectKind, OptionKey, PortKind, ReturnWidgetKind } from '@arkitektio/bsx/ports/rekuest';
-export { AssignWidgetKind, DescriptorOperator, EffectKind, OptionKey, PortKind, ReturnWidgetKind };
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -543,6 +547,8 @@ export type Agent = {
   schedules: Array<Schedule>;
   /** Sessions associated with this agent. */
   sessions: Array<Session>;
+  /** The arkitekt-spec this agent said on its last registration it runs (e.g. '8.0.0'). Null for an agent that sends no REGISTER, such as a hook agent. What may be sent to it is decided by its features, not by this. */
+  specVersion?: Maybe<Scalars['String']['output']>;
   /** Current and historical states associated with the agent. */
   states: Array<State>;
   /** The app this agent says controls its lifecycle (e.g. 'plugin_engine'), as stated on its last registration. Self-declared: a hint for pickers (descriptor @rekuest/supervisor), never authority. */
@@ -1057,6 +1063,8 @@ export type AssignWidget = {
 export type AssignWidgetInput = {
   /** (STRING) Render as a multi-line paragraph. */
   asParagraph?: InputMaybe<Scalars['Boolean']['input']>;
+  /** (CUSTOM) The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has. */
+  children?: InputMaybe<Array<ComponentNodeInput>>;
   /** (CUSTOM) The catalog component to render. The port value is in scope as the reserved root `value`. */
   component?: InputMaybe<Scalars['String']['input']>;
   /** (SEARCH, CUSTOM, STATE_CHOICE) The other ports (port paths, `..` traverses children) whose values the query may reference. */
@@ -1098,6 +1106,8 @@ export type AssignWidgetInput = {
   /** (SEARCH) The ward (service) that executes the query. */
   ward?: InputMaybe<Scalars['String']['input']>;
 };
+
+export { AssignWidgetKind };
 
 export type AutoResolveInput = {
   implementation: Scalars['ID']['input'];
@@ -2083,6 +2093,7 @@ export type CreateTriggerInput = {
 /** A catalog component rendered as the port's widget. */
 export type CustomAssignWidget = AssignWidget & {
   __typename?: 'CustomAssignWidget';
+  children?: Maybe<Scalars['AnyDefault']['output']>;
   component: Scalars['String']['output'];
   dependencies?: Maybe<Array<Scalars['String']['output']>>;
   fallback?: Maybe<AssignWidget>;
@@ -2093,6 +2104,8 @@ export type CustomAssignWidget = AssignWidget & {
 
 /** A catalog component rendered as the port's widget. */
 export type CustomAssignWidgetInput = {
+  /** The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has. */
+  children?: InputMaybe<Array<ComponentNodeInput>>;
   /** The catalog component to render. The port value is in scope as the reserved root `value`. */
   component: Scalars['String']['input'];
   /** The other ports (port paths, `..` traverses children) whose values the props may reference. */
@@ -2364,6 +2377,8 @@ export type DescriptorInput = {
   value: Scalars['Arg']['input'];
 };
 
+export { DescriptorOperator };
+
 /** Represents a device assigned to users within an organization. */
 export type Device = {
   __typename?: 'Device';
@@ -2478,6 +2493,8 @@ export type EffectInput = {
   /** The authoring expression the call was compiled from (informational; never parsed or validated by the server). */
   source?: InputMaybe<Scalars['String']['input']>;
 };
+
+export { EffectKind };
 
 /** What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task. */
 export enum Effects {
@@ -4099,6 +4116,8 @@ export type OptimisticInput = {
   state: Scalars['String']['input'];
 };
 
+export { OptionKey };
+
 export enum Ordering {
   Asc = 'ASC',
   AscNullsFirst = 'ASC_NULLS_FIRST',
@@ -4252,6 +4271,8 @@ export type PortGroupInput = {
   /** The title of the port group, displayed in the UI */
   title?: InputMaybe<Scalars['String']['input']>;
 };
+
+export { PortKind };
 
 export type PortMatch = {
   __typename?: 'PortMatch';
@@ -5415,6 +5436,8 @@ export type ReturnWidgetInput = {
   /** (CUSTOM) Props of the component; value_paths may only reference `value`, agent calls are not allowed. */
   props?: InputMaybe<Array<ComponentPropInput>>;
 };
+
+export { ReturnWidgetKind };
 
 /** Make an earlier revision's content a blok's head again. */
 export type RevertBlokInput = {
@@ -7563,7 +7586,10 @@ export type AgentFragment = (
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
     { __typename?: 'State' }
     & StateFragment
-  )>, client: { __typename?: 'Client', clientId: string, release?: { __typename?: 'Release', version: string, app: { __typename?: 'App', identifier: string } } | null, device?: { __typename?: 'Device', deviceId: string } | null }, user: { __typename?: 'User', sub: string }, tasks: Array<(
+  )>, client: { __typename?: 'Client', clientId: string, release?: { __typename?: 'Release', version: string, app: { __typename?: 'App', identifier: string } } | null, device?: { __typename?: 'Device', deviceId: string } | null }, user: { __typename?: 'User', sub: string }, hardware?: (
+    { __typename?: 'AgentHardware' }
+    & AgentHardwareFragment
+  ) | null, tasks: Array<(
     { __typename?: 'Task' }
     & ListTaskFragment
   )>, placements: Array<(
@@ -11895,6 +11921,16 @@ export const ListImplementationFragmentDoc = gql`
   }
 }
     ${BlokLogoFragmentDoc}`;
+export const AgentHardwareFragmentDoc = gql`
+    fragment AgentHardware on AgentHardware {
+  cpuCount
+  memoryMib
+  gpus {
+    name
+    memoryMib
+  }
+}
+    `;
 export const ListTaskFragmentDoc = gql`
     fragment ListTask on Task {
   id
@@ -11975,6 +12011,9 @@ export const AgentFragmentDoc = gql`
   connected
   lastSeen
   supervisor
+  hardware {
+    ...AgentHardware
+  }
   tasks(pagination: {limit: 5}, ordering: {createdAt: DESC}) {
     ...ListTask
   }
@@ -11985,6 +12024,7 @@ export const AgentFragmentDoc = gql`
     ${AgentLogoFragmentDoc}
 ${ListImplementationFragmentDoc}
 ${StateFragmentDoc}
+${AgentHardwareFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
 export const SearchAgentFragmentDoc = gql`
@@ -13394,16 +13434,6 @@ export const GraphNodeActionFragmentDoc = gql`
   }
 }
     ${PortsFragmentDoc}`;
-export const AgentHardwareFragmentDoc = gql`
-    fragment AgentHardware on AgentHardware {
-  cpuCount
-  memoryMib
-  gpus {
-    name
-    memoryMib
-  }
-}
-    `;
 export const MinimalImplementationFragmentDoc = gql`
     fragment MinimalImplementation on Implementation {
   id

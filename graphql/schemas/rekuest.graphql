@@ -620,6 +620,11 @@ type Agent {
   """Sessions associated with this agent."""
   sessions(filters: SessionFilter, ordering: [SessionOrder!]! = [], pagination: OffsetPaginationInput): [Session!]!
 
+  """
+  The arkitekt-spec this agent said on its last registration it runs (e.g. '8.0.0'). Null for an agent that sends no REGISTER, such as a hook agent. What may be sent to it is decided by its features, not by this.
+  """
+  specVersion: String
+
   """Current and historical states associated with the agent."""
   states: [State!]!
 
@@ -1307,6 +1312,11 @@ An assign widget: the UI element used to assign a value to a port, as a discrimi
 input AssignWidgetInput {
   """(STRING) Render as a multi-line paragraph."""
   asParagraph: Boolean = null
+
+  """
+  (CUSTOM) The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has.
+  """
+  children: [ComponentNodeInput!] = null
 
   """
   (CUSTOM) The catalog component to render. The port value is in scope as the reserved root `value`.

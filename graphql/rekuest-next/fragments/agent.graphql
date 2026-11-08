@@ -77,6 +77,10 @@ fragment Agent on Agent {
   lastSeen
   # The app the agent says controls its lifecycle (descriptor @rekuest/supervisor).
   supervisor
+  # What its machine has, as stated on its last registration (null if never said).
+  hardware {
+    ...AgentHardware
+  }
   tasks(pagination: { limit: 5 }, ordering: { createdAt: DESC }) {
     ...ListTask
   }
