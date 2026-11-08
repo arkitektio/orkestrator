@@ -1,3 +1,10 @@
+# [5.16.0](https://github.com/arkitektio/orkestrator/compare/v5.15.0...v5.16.0) (2026-11-07)
+
+
+### Features
+
+* **chart:** layouts and value panels, a probe that plots and shows the mesh ([56bf7aa](https://github.com/arkitektio/orkestrator/commit/56bf7aa4eddb6b759bfc27ffd1e6bbd0a2398eab))
+
 # [5.15.0](https://github.com/arkitektio/orkestrator/compare/v5.14.0...v5.15.0) (2026-11-07)
 
 
