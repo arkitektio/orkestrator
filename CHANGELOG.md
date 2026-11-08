@@ -1,3 +1,20 @@
+# [5.17.0](https://github.com/arkitektio/orkestrator/compare/v5.16.0...v5.17.0) (2026-11-08)
+
+
+### Bug Fixes
+
+* **kraph:** comment mentions can be typed again, and sit inline ([7c619f7](https://github.com/arkitektio/orkestrator/commit/7c619f7ade8528be09c8a60b3c9dcef670679d47))
+* **scene:** release GPU attributes and caches the renderer kept for its lifetime ([9899360](https://github.com/arkitektio/orkestrator/commit/989936002c61817b8eb108b868fb31bddcc232ec))
+
+
+### Features
+
+* **rekuest:** the agent sidebar shows the hardware its machine reported ([0ce2193](https://github.com/arkitektio/orkestrator/commit/0ce219312cb88f47062a76da25c067a4ccf0fc91))
+* **scene:** 2D crops in two clicks and centers, a clearer 2D/3D switch, renames by pencil ([355869f](https://github.com/arkitektio/orkestrator/commit/355869ffe011e2db6a1db562cfe3bbb214a78aca))
+* **scene:** go-to pans in 3D, keeping the angle and distance ([f79f71d](https://github.com/arkitektio/orkestrator/commit/f79f71d762c9527453e6e0853cbdad9d7524b70e))
+* **scene:** the crop box pivots the view, works in every mode, and Esc removes it ([ca7ef4e](https://github.com/arkitektio/orkestrator/commit/ca7ef4ede087fb3caaf368ba85ed4a753fcbc651))
+* **scene:** the label card unfolds from its title bar, renamed by a pencil ([4b73464](https://github.com/arkitektio/orkestrator/commit/4b7346423248f7fd6a043bb9c9bd4ffc0a3a1a38))
+
 # [5.16.0](https://github.com/arkitektio/orkestrator/compare/v5.15.0...v5.16.0) (2026-11-07)
 
 
