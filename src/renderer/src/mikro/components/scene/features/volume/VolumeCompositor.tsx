@@ -44,6 +44,8 @@ import {
   createSettledRenderMeter,
   decideSettleRefine,
   decideVolumeFrame,
+  STREAM_RENDER_CADENCE_SHARE,
+  streamRenderDue,
   needsTargetResize,
   resolveVolumeScale,
   resolveVolumeTargetSize,
@@ -383,6 +385,16 @@ export const VolumeCompositor = () => {
   const hasContentRef = useRef(false);
 
   // --- Settle refinement ladder (sole driver) ------------------------------
+  /** When the volume target was last re-rendered (`streamRenderDue`). */
+  const lastVolumeRenderAtRef = useRef(Number.NEGATIVE_INFINITY);
+  /** The frame owed after a not-yet-due streaming frame was served cached. */
+  const streamFrameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (streamFrameTimerRef.current !== null) clearTimeout(streamFrameTimerRef.current);
+    },
+    [],
+  );
   const refineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearRefineTimer = () => {
     if (refineTimerRef.current !== null) {
@@ -539,14 +551,40 @@ export const VolumeCompositor = () => {
       targetWidth: nextSize.width,
       targetHeight: nextSize.height,
     };
+    const frameAt = performance.now();
+    const streamDue = streamRenderDue(
+      frameAt,
+      lastVolumeRenderAtRef.current,
+      profile.residencyBumpMs,
+    );
     const decision = decideVolumeFrame({
       cacheEnabled: true,
       hasTargetContent: hasContentRef.current,
       streaming,
+      streamRenderDue: streamDue,
       key,
       trackerReason: viewer.volumeInputs.lastReason,
       previous: previousKeyRef.current,
     });
+    if (decision.render) {
+      lastVolumeRenderAtRef.current = frameAt;
+    } else if (streaming && !streamDue && streamFrameTimerRef.current === null) {
+      // Bricks may have landed that this cached frame does not show. Owe the
+      // frame that will: nothing else is guaranteed to ask for one once the
+      // cadence elapses (the residency gate's own invalidate may have been
+      // this very frame).
+      streamFrameTimerRef.current = setTimeout(
+        () => {
+          streamFrameTimerRef.current = null;
+          invalidate();
+        },
+        Math.max(
+          0,
+          STREAM_RENDER_CADENCE_SHARE * profile.residencyBumpMs -
+            (frameAt - lastVolumeRenderAtRef.current),
+        ),
+      );
+    }
     stats.onFrame(decision);
     perfMonitor.markVolumeFrame(decision.render ? decision.reason : "cached"); // no-op unless recording
     // The RESOLVED key, not the thunk-bearing input: it carries structureKey

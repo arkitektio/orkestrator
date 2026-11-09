@@ -10,6 +10,7 @@ import {
   decideSettleRefine,
   decideVolumeFrame,
   ladderFeedforwardPassCount,
+  streamRenderDue,
   needsTargetResize,
   resolveVolumeScale,
   resolveVolumeTargetSize,
@@ -50,6 +51,7 @@ const decideFull = (
     cacheEnabled: boolean;
     hasTargetContent: boolean;
     streaming: boolean;
+    streamRenderDue: boolean;
     trackerReason: string;
   }> = {},
 ) => {
@@ -58,6 +60,7 @@ const decideFull = (
     cacheEnabled: overrides.cacheEnabled ?? true,
     hasTargetContent: overrides.hasTargetContent ?? true,
     streaming: overrides.streaming ?? false,
+    streamRenderDue: overrides.streamRenderDue,
     key: {
       ...key,
       structureKey: () => {
@@ -293,6 +296,33 @@ describe("decideVolumeFrame", () => {
 
   it("skips when nothing changed", () => {
     expect(decide(baseKey(), baseKey())).toEqual({ render: false, reason: "cached" });
+  });
+
+  it("while streaming but not yet due, a frame is decided like any other", () => {
+    // Whatever asked for this frame, the camera did not move and nothing the
+    // key tracks changed: the cached composite is the right answer, and what
+    // landed in the atlas since shows when the cadence comes due.
+    const quiet = { streaming: true, streamRenderDue: false };
+    expect(decide(baseKey(), baseKey(), quiet)).toEqual({ render: false, reason: "cached" });
+    // A real change still renders at once.
+    const moved = baseKey({ cameraElements: [...IDENTITY.slice(0, 12), 9, 9, 9, 1] });
+    expect(decide(moved, baseKey(), quiet).render).toBe(true);
+    expect(decide({ ...baseKey(), residencyVersion: 99 }, baseKey(), quiet)).toEqual({
+      render: true,
+      reason: "residency",
+    });
+    // Due: the streaming rule, verbatim.
+    expect(decide(baseKey(), baseKey(), { streaming: true, streamRenderDue: true })).toEqual({
+      render: true,
+      reason: "streaming",
+    });
+  });
+
+  it("comes due a little before the residency cadence, so its frames are not skipped", () => {
+    expect(streamRenderDue(1000, 1000 - 224, 300)).toBe(false);
+    expect(streamRenderDue(1000, 1000 - 225, 300)).toBe(true);
+    // Never rendered yet: due.
+    expect(streamRenderDue(0, Number.NEGATIVE_INFINITY, 300)).toBe(true);
   });
 
   it("always renders while bricks stream, even with an unchanged key", () => {

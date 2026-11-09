@@ -2532,6 +2532,21 @@ the GPU. So no planner worker. What it did show:
   per pool and placement, typed arrays, at most once a second. Recordings
   taken with debug on before this date overstate React time by that much.
 
+*From the second recording (same scene, same day)* — main thread clean
+(0.9 ms per frame, no stall over 15 ms outside one 44 ms off-frame drain
+slice), frame period 42 ms on average and never above 73 ms. Every one of the
+506 frames re-raymarched with reason `streaming`, 199 of them with the camera
+at rest: `decideVolumeFrame` rendered on EVERY frame while bricks streamed,
+and far more frames are requested than the residency gate's own. It now
+renders for streaming alone only when the cadence is due
+(`streamRenderDue`, 0.75 × `residencyBumpMs`), and the compositor owes itself
+the frame that comes due. A still camera over a loading volume should show
+cached composites with a volume render every 225 ms (LOW) or 112 ms.
+*Check:* `volumeFrames.cached` during a still load; bricks keep appearing;
+the last bricks of a load are never left unshown. Still open from it: the
+HTTP pool was saturated (24 of 24 requests in flight, 545 ms per brick), and
+a moving camera costs ~50 ms of GPU per frame on this machine at LOW.
+
 *Found, not done*
 - Konnektion: serial row-group fetch, main-thread decode, no decoded-cell
   cache (`network/konnektionManager.ts`).

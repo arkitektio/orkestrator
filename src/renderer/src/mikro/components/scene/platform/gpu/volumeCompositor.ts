@@ -211,6 +211,21 @@ export function decideVolumeFrame(input: {
    * is throttled on a SEPARATE timer, so keying on the version alone lets a
    * streamed frame arrive with an unchanged version and show stale bricks. */
   streaming: boolean;
+  /**
+   * While streaming: has the streaming cadence elapsed since the last volume
+   * render (`streamRenderDue`)? Absent ⇒ true, the rule above verbatim.
+   *
+   * "EVERY invalidated frame" turned out to be far more frames than the ones
+   * the residency manager asks for. Anything that requests a frame while
+   * bricks stream — an overlay, a hover, a store write — got a full raymarch
+   * of an unchanged camera, and a still camera over a loading volume ran at
+   * the raymarch's rate (≈18 fps of 50 ms frames on an M2) instead of the
+   * cadence it was designed for. Not due ⇒ the frame is decided by the exact
+   * compares below like any other: a camera move, a uniform or a version
+   * still renders at once, and what merely landed in the atlas waits for the
+   * cadence. The CALLER owes a frame when it comes due.
+   */
+  streamRenderDue?: boolean;
   /** `structureKey` is a THUNK: only called if the cheaper checks all pass. */
   key: Omit<VolumeFrameKey, "structureKey"> & { structureKey: () => string };
   trackerReason: string;
@@ -221,6 +236,7 @@ export function decideVolumeFrame(input: {
   resolved: VolumeFrameKey;
 } {
   const { cacheEnabled, hasTargetContent, streaming, key, trackerReason, previous } = input;
+  const streamRenderDue = input.streamRenderDue ?? true;
   // ONE object per frame (it becomes next frame's `previous`); the thunk
   // result lands in it lazily. `cameraElements` is kept by reference — the
   // caller owns that buffer and must not overwrite it while it is `previous`.
@@ -243,7 +259,7 @@ export function decideVolumeFrame(input: {
   if (!cacheEnabled) return out({ render: true, reason: "cache-off" });
   if (!hasTargetContent) return out({ render: true, reason: "no-content" });
   if (previous === null) return out({ render: true, reason: "no-previous" });
-  if (streaming) return out({ render: true, reason: "streaming" });
+  if (streaming && streamRenderDue) return out({ render: true, reason: "streaming" });
   if (key.targetWidth !== previous.targetWidth || key.targetHeight !== previous.targetHeight)
     return out({ render: true, reason: "resize" });
   if (!key.cameraElements.every(Number.isFinite))
@@ -445,3 +461,17 @@ export const createCompositorStats = (): VolumeCompositorStats => {
     lastRenderReason: () => lastRenderReason,
   };
 };
+
+/**
+ * Share of the streaming cadence (`residencyBumpMs`) after which the volume
+ * may re-render for streamed bricks alone. Below 1 on purpose: the residency
+ * manager's own frames arrive ON the cadence, measured on its clock, and a
+ * compositor that waited the full interval on a slightly later clock would
+ * skip every other one of them.
+ */
+export const STREAM_RENDER_CADENCE_SHARE = 0.75;
+
+/** See `decideVolumeFrame`'s `streamRenderDue`. */
+export function streamRenderDue(nowMs: number, lastVolumeRenderAtMs: number, cadenceMs: number): boolean {
+  return nowMs - lastVolumeRenderAtMs >= STREAM_RENDER_CADENCE_SHARE * cadenceMs;
+}
