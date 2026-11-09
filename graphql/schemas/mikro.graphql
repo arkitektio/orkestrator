@@ -1023,6 +1023,11 @@ type ArrayDataset {
   descriptors: JSON!
 
   """
+  The descriptors `createLens(input: {dataset: <this>, slices:})` would give the lens it returns, without making it: what that selection provides to an action's port (one plane of a stack is an IMAGE, a pinned frame or channel counts one). The slices are dataset indices, spelled as `createLens` takes them. Null where the cut would be refused -- an axis the dataset lacks, an axis sliced twice, a window that selects nothing
+  """
+  descriptorsSliced(slices: [SliceInput!]!): JSON
+
+  """
   This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
   """
   embedding: Embedding

@@ -837,6 +837,8 @@ export type ArrayDataset = {
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** The descriptors `createLens(input: {dataset: <this>, slices:})` would give the lens it returns, without making it: what that selection provides to an action's port (one plane of a stack is an IMAGE, a pinned frame or channel counts one). The slices are dataset indices, spelled as `createLens` takes them. Null where the cut would be refused -- an axis the dataset lacks, an axis sliced twice, a window that selects nothing */
+  descriptorsSliced?: Maybe<Scalars['JSON']['output']>;
   /** This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -882,6 +884,12 @@ export type ArrayDatasetDataArraysArgs = {
   filters?: InputMaybe<DataArrayFilter>;
   ordering?: Array<DataArrayOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
+export type ArrayDatasetDescriptorsSlicedArgs = {
+  slices: Array<SliceInput>;
 };
 
 
@@ -14809,7 +14817,7 @@ export type GetAnnotationInfoQueryVariables = Exact<{
 }>;
 
 
-export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, kind: AnnotationKind, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string, fullLens?: { __typename?: 'ArrayLens', id: string } | null } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection', id: string, label: string, fullLens?: { __typename?: 'MeshLens', id: string } | null } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens' }>, derivedFrom: Array<{ __typename?: 'AnnotationDerivation', id: string, relation: AnnotationRelation, reason?: string | null, source: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind } }>, derivedAnnotations: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> } };
+export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, kind: AnnotationKind, descriptors: any, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string, fullLens?: { __typename?: 'ArrayLens', id: string } | null } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection', id: string, label: string, fullLens?: { __typename?: 'MeshLens', id: string } | null } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens' }>, derivedFrom: Array<{ __typename?: 'AnnotationDerivation', id: string, relation: AnnotationRelation, reason?: string | null, source: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind } }>, derivedAnnotations: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> } };
 
 export type AnnotationActionDescriptorsFragment = { __typename?: 'Annotation', id: any, descriptors: any, descriptorsUnder?: any | null };
 
@@ -15420,6 +15428,14 @@ export type GetLensContainersQueryVariables = Exact<{
 
 
 export type GetLensContainersQuery = { __typename?: 'Query', lenses: Array<{ __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }> };
+
+export type GetSlicedDescriptorsQueryVariables = Exact<{
+  dataset: Scalars['ID']['input'];
+  slices: Array<SliceInput> | SliceInput;
+}>;
+
+
+export type GetSlicedDescriptorsQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, descriptorsSliced?: any | null } };
 
 export type GetLineageQueryVariables = Exact<{
   start: LineageRootInput;
@@ -20277,6 +20293,7 @@ export const GetAnnotationInfoDocument = gql`
   annotation(id: $id) {
     id
     kind
+    descriptors
     description
     creator {
       sub
@@ -21306,6 +21323,14 @@ export const GetLensContainersDocument = gql`
   }
 }
     ${LensSubjectFragmentDoc}`;
+export const GetSlicedDescriptorsDocument = gql`
+    query GetSlicedDescriptors($dataset: ID!, $slices: [SliceInput!]!) {
+  arrayDataset(id: $dataset) {
+    id
+    descriptorsSliced(slices: $slices)
+  }
+}
+    `;
 export const GetLineageDocument = gql`
     query GetLineage($start: LineageRootInput!, $up: Int! = 1, $down: Int! = 3, $limit: Int! = 300, $fanout: Int! = 50) {
   lineage(start: $start, up: $up, down: $down, limit: $limit, fanout: $fanout) {
@@ -22446,6 +22471,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetLensContainers(variables: GetLensContainersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetLensContainersQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetLensContainersQuery>({ document: GetLensContainersDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetLensContainers', 'query', variables);
+    },
+    GetSlicedDescriptors(variables: GetSlicedDescriptorsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetSlicedDescriptorsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetSlicedDescriptorsQuery>({ document: GetSlicedDescriptorsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetSlicedDescriptors', 'query', variables);
     },
     GetLineage(variables: GetLineageQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetLineageQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetLineageQuery>({ document: GetLineageDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetLineage', 'query', variables);

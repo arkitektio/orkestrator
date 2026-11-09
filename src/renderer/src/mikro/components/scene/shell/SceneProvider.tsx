@@ -59,6 +59,7 @@ import { SceneEventsContext, createSceneEvents } from "../platform/events/sceneE
 import { createBrickSlice } from "../features/bricks/store/brickSlice";
 import { createMeshSlice } from "../features/meshes/store/meshSlice";
 import { createNetworkSlice } from "../features/network/store/networkSlice";
+import { createLayerRunSlice } from "../features/layerRun/layerRunSlice";
 import { SceneBrandTheme } from "./theme/SceneBrandTheme";
 import { coldOpenTimeline } from "../platform/perf/coldOpenTimeline";
 import {
@@ -341,6 +342,7 @@ export const SceneProvider = (props: {
             createBrickSlice,
             createMeshSlice,
             createNetworkSlice,
+            createLayerRunSlice,
           ]),
           selectionStore: createSelectionStore(),
           sceneStore,

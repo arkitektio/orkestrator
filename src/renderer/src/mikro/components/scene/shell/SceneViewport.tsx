@@ -73,6 +73,7 @@ import { CropOrbitPivot } from "../features/crop/CropOrbitPivot";
 import { ScrollGestureNavigation } from "../platform/camera/ScrollGestureNavigation";
 import { LeftPressArbiter } from "./pointer/LeftPressArbiter";
 import { CropChip } from "../features/crop/CropChip";
+import { LayerRunFloat } from "../features/layerRun/LayerRunFloat";
 
 /**
  * R3F's default event manager raycasts the ENTIRE interaction set for every
@@ -482,6 +483,10 @@ export const SceneViewport = (props: {
           <LayerCardSlotContext.Provider value={SingleLayerCard}>
             {props.annotationCards !== false && <AnnotationHoverCard />}
             {props.annotationCards !== false && <MeshFloat />}
+            {/* A right-click on the image (`SceneContextMenu`): what runs on
+                the slice (2D) or the selection (3D) on screen, made when it
+                runs. Always: `SceneContextMenu` is. */}
+            <LayerRunFloat />
           </LayerCardSlotContext.Provider>
           <VisibilityManager />
           <AttributeProbeTracker />

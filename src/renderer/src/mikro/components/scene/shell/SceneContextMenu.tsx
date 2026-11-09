@@ -1,18 +1,27 @@
 import { useEffect } from "react";
+import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 
 import { registerSmartNode, unregisterSmartNode } from "@/core/smart/nodeRegistry";
 import type { Structure } from "@/core/types";
 import { exceedsDragThreshold } from "../features/annotations/drawGesture";
 import { useRoiSelectionStoreApi } from "../features/annotations/roiSelectionStore";
+import { useLayerRunStoreApi, type LayerRunAnchor } from "../features/layerRun/layerRunSlice";
+import { runnableLayers, type LayerRunSnapshot } from "../features/layerRun/layerRunSnapshot";
+import { useOptionalSceneFloatStoreApi } from "../platform/float/floatStore";
 import { useGpuPicker } from "../platform/draw/useGpuPicker";
+import { effectiveDataLayerId } from "../platform/probe/probeTargeting";
+import { readControlsTarget } from "../platform/probe/probeWorld";
+import { useModeStoreApi } from "../platform/stores/modeStore";
 import { useSceneStoreApi } from "../platform/stores/sceneStore";
-import { sceneContextTarget } from "./sceneContextTarget";
+import { sceneContextTarget, type SceneContextHit } from "./sceneContextTarget";
 
 /**
  * Right-click in the viewport → the smart context menu of what is under the
  * pointer: the hovered annotation, or the mesh collection of the mesh that
- * was clicked. The menu itself is the app's ONE context menu
+ * was clicked. Anywhere else, the image layer the scene runs on: its float
+ * (`features/layerRun/LayerRunFloat`) runs on the slice on screen (2D) or the
+ * volume / crop box (3D), cut when an action runs. The menu itself is the app's ONE context menu
  * (`core/smart/SmartSurface`): it opens for any registered smart node a
  * `contextmenu` event reaches, at the event's coordinates. The canvas has no
  * DOM node per shape, so this component keeps one invisible stand-in, points
@@ -39,6 +48,9 @@ export const SceneContextMenu = () => {
   const picker = useGpuPicker();
   const selectionApi = useRoiSelectionStoreApi();
   const sceneApi = useSceneStoreApi();
+  const viewerApi = useLayerRunStoreApi();
+  const modeApi = useModeStoreApi();
+  const floatApi = useOptionalSceneFloatStoreApi();
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -81,23 +93,87 @@ export const SceneContextMenu = () => {
       if (event.button !== 2 || !start) return;
       const { clientX, clientY } = event;
       if (exceedsDragThreshold(start, { x: clientX, y: clientY })) return; // a pan / orbit
-      const layers = sceneApi.getState().sceneLayers;
+      // Read at resolve time: the pick answers a frame later.
+      const resolve = (hoveredRoi: Parameters<typeof sceneContextTarget>[0]["hoveredRoi"], pickedLayerId: string | null) =>
+        sceneContextTarget({
+          hoveredRoi,
+          pickedLayerId,
+          layers: sceneApi.getState().sceneLayers,
+          dataLayerId: effectiveDataLayerId(viewerApi.getState().dataLayerId, sceneApi.getState().layers),
+        });
+      const act = (target: SceneContextHit | null) => {
+        if (!target) return;
+        if (target.kind === "structure") open(target.structure, clientX, clientY);
+        else openLayerMenu(target.layerId, clientX, clientY);
+      };
       const hoveredRoi = selectionApi.getState().hoveredRoi;
-      const immediate = sceneContextTarget({ hoveredRoi, pickedLayerId: null, layers });
-      if (immediate) {
-        open(immediate, clientX, clientY);
+      if (hoveredRoi) {
+        act(resolve(hoveredRoi, null));
         return;
       }
-      picker?.pick("click", { clientX, clientY, camera: get().camera }, (hit) => {
-        const target = sceneContextTarget({
-          hoveredRoi: null,
-          pickedLayerId: hit?.key ?? null,
-          // Re-read: the pick answers a frame later.
-          layers: sceneApi.getState().sceneLayers,
-        });
-        if (target) open(target, clientX, clientY);
+      // Without the GPU picker a mesh cannot be told apart: the layer menu
+      // still opens.
+      if (!picker) {
+        act(resolve(null, null));
+        return;
+      }
+      picker.pick("click", { clientX, clientY, camera: get().camera }, (hit) =>
+        act(resolve(null, hit?.key ?? null)),
+      );
+    };
+
+    // The view is SNAPSHOT here, at the click: the float runs on what was on
+    // screen when it opened. Nothing opens where no shown layer has a cut (a
+    // plane past every stack, a crop box they all lie outside of).
+    const openLayerMenu = (dataLayerId: string, clientX: number, clientY: number) => {
+      const viewer = viewerApi.getState();
+      // Mid-gesture the crop box is half drawn: not a selection to run on.
+      if (viewer.cropPhase !== "idle") return;
+      const snapshot: LayerRunSnapshot = {
+        displayMode: modeApi.getState().displayMode,
+        currentZ: viewer.currentZ,
+        cropBox: viewer.cropBox,
+        dimSelections: viewer.dimSelections,
+        worldSelections: viewer.worldSelections,
+        layerAxisInstants: viewer.layerAxisInstants,
+      };
+      const [layer] = runnableLayers(sceneApi.getState().layers, dataLayerId, snapshot);
+      if (!layer) return;
+      // One float at a time: the layer's replaces a shape's card or a mesh's.
+      selectionApi.getState().closeRoiMenu();
+      floatApi?.getState().close();
+      viewer.openLayerRunMenu({
+        layerId: layer.id,
+        snapshot,
+        anchor: clickAnchor(clientX, clientY, snapshot),
       });
     };
+
+    // The world point under the click, so the float follows the camera like a
+    // shape's card: on the plane shown in 2D; in 3D on the plane through the
+    // orbit pivot, facing the eye. The click's pixel when the ray meets neither.
+    const clickAnchor = (clientX: number, clientY: number, snapshot: LayerRunSnapshot): LayerRunAnchor => {
+      const rect = canvas.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const { camera, controls } = get();
+      raycaster.setFromCamera(
+        new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1),
+        camera,
+      );
+      if (snapshot.displayMode === "2D") {
+        plane.set(new THREE.Vector3(0, 0, 1), -snapshot.currentZ);
+      } else {
+        const pivot = readControlsTarget(controls) ?? new THREE.Vector3();
+        const facing = camera.getWorldDirection(new THREE.Vector3()).negate();
+        plane.setFromNormalAndCoplanarPoint(facing, pivot);
+      }
+      const hit = raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+      return hit ? { kind: "world", point: [hit.x, hit.y, hit.z] } : { kind: "screen", point: { x, y } };
+    };
+    const raycaster = new THREE.Raycaster();
+    const plane = new THREE.Plane();
+
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointerup", onPointerUp);
     return () => {
@@ -106,7 +182,7 @@ export const SceneContextMenu = () => {
       unregisterSmartNode(anchor);
       anchor.remove();
     };
-  }, [gl, get, picker, selectionApi, sceneApi]);
+  }, [gl, get, picker, selectionApi, sceneApi, viewerApi, modeApi, floatApi]);
 
   return null;
 };

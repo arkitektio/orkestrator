@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createBrickSlice } from "../features/bricks/store/brickSlice";
 import { createMeshSlice } from "../features/meshes/store/meshSlice";
+import { createLayerRunSlice } from "../features/layerRun/layerRunSlice";
 import { createViewerStore } from "../platform/stores/viewerStore";
 
 /** Exactly what SceneProvider composes — that is what makes this a real check. */
 const build = () =>
-  createViewerStore(new Map(), [createBrickSlice, createMeshSlice]);
+  createViewerStore(new Map(), [createBrickSlice, createMeshSlice, createLayerRunSlice]);
 
 /**
  * The composed viewer store's shape, pinned.
@@ -56,7 +57,8 @@ const EXPECTED_KEYS = [
   "volumeCompositorReport", "volumeInputs", "worldUnitsPerPixel",
   "cropBox", "cropPhase", "cropBoxBefore", "beginCrop", "anchorCrop", "fixCropRect",
   "setCropBox", "commitCrop", "cancelCrop", "clearCrop",
-  "cropNotice", "refuseCrop", "clearCropNotice",] as const;
+  "cropNotice", "refuseCrop", "clearCropNotice",
+  "layerRunMenu", "openLayerRunMenu", "closeLayerRunMenu",] as const;
 
 describe("viewerStore shape", () => {
   it("exposes exactly the expected members", () => {

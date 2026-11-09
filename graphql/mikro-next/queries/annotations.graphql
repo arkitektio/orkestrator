@@ -27,6 +27,9 @@ query GetAnnotationInfo($id: ID!) {
   annotation(id: $id) {
     id
     kind
+    # What the shape provides to an action's port, for the card's "Run on
+    # <shape>" row: the shape alone needs no image to ask with.
+    descriptors
     description
     creator {
       sub

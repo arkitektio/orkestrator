@@ -41,41 +41,9 @@ vi.mock("../../../platform/stores/sceneStore", () => ({
   useSceneStore: (selector: (s: unknown) => unknown) => selector({ layers }),
   useSceneStoreApi: () => ({ getState: () => ({ layers }) }),
 }));
-vi.mock("../../../platform/stores/viewerStore", () => ({
-  useViewerStore: (selector: (s: unknown) => unknown) => selector({ dataLayerId: null }),
-}));
 vi.mock("../../../platform/layerui/layerIdentity", () => ({
   layerDisplayLabel: (layer: { name: string }) => layer.name,
 }));
-// The dropdown, flat: every layer a button that picks it.
-let pick: (value: string) => void = () => {};
-vi.mock("@/core/ui/dropdown-menu", () => {
-  const Pass = ({ children }: { children?: ReactNode }) => <>{children}</>;
-  return {
-    DropdownMenu: Pass,
-    DropdownMenuTrigger: Pass,
-    DropdownMenuContent: Pass,
-    DropdownMenuLabel: () => null,
-    DropdownMenuRadioGroup: ({
-      children,
-      value,
-      onValueChange,
-    }: {
-      children: ReactNode;
-      value?: string;
-      onValueChange: (value: string) => void;
-    }) => {
-      pick = onValueChange;
-      return <div data-testid="layers" data-value={value}>{children}</div>;
-    },
-    DropdownMenuRadioItem: ({ children, value }: { children: ReactNode; value: string }) => (
-      <button type="button" data-testid={`layer:${value}`} onClick={() => pick(value)}>
-        {children}
-      </button>
-    ),
-  };
-});
-
 import { AnnotationPairActions } from "./AnnotationPairActions";
 import type { SelectedRoi } from "../roiSelectionStore";
 
@@ -115,7 +83,7 @@ describe("AnnotationPairActions", () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({ "@mikro/annotation_kind": "RECTANGLE" }));
 
-    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
 
     expect(screen.getByTestId("menu").dataset.skin).toBe("tiles");
     const { objects, partners, sections } = pairMenu();
@@ -130,12 +98,13 @@ describe("AnnotationPairActions", () => {
     expect(sections).toEqual({ only: ["rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"] });
   });
 
-  it("names the image and keeps the search behind a magnifier — open at once on a click", () => {
+  it("keeps the search behind a magnifier — open at once on a click — with no line naming the image", () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({}));
 
-    const { unmount } = render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
-    expect(screen.getByLabelText("Image to run with").textContent).toBe("Run with:DAPI");
+    const { unmount } = render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
+    // The pane's title names the layer: no "Run with:" picker.
+    expect(screen.queryByText(/Run with:/)).toBeNull();
     expect(screen.queryByLabelText("search")).toBeNull();
     fireEvent.click(screen.getByLabelText("Search actions"));
     expect(screen.getByLabelText("search").getAttribute("placeholder")).toBe("Run with DAPI…");
@@ -143,39 +112,29 @@ describe("AnnotationPairActions", () => {
     expect(screen.queryByLabelText("search")).toBeNull();
     unmount();
 
-    render(<AnnotationPairActions roi={roi} autoFocus onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus onDone={() => {}} />);
     expect(screen.getByLabelText("search")).toBeTruthy();
   });
 
-  it("runs with another layer's lens once picked — hidden ones too — and back", () => {
+  it("pairs with the layer it is given — a hidden one too", () => {
     const hidden = { id: "layer:gfp", name: "GFP", visible: false, lens: { id: "9", descriptors: {} } };
     layers = [image, hidden];
     actionQuery.mockReturnValue(answer({}));
-    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:gfp" autoFocus={false} onDone={() => {}} />);
 
-    expect(screen.getByTestId("layers").dataset.value).toBe("layer:image");
-    expect(screen.getByTestId("layer:layer:image").textContent).toBe("DAPIdata");
-    expect(screen.getByTestId("layer:layer:gfp").textContent).toBe("GFPhidden");
-
-    fireEvent.click(screen.getByTestId("layer:layer:gfp"));
-    expect(pairMenu().partners).toEqual([
-      { identifier: "@mikro/arraylens", id: "9", label: "GFP" },
-    ]);
-    expect(screen.getByLabelText("Image to run with").textContent).toBe("Run with:GFP");
-
-    fireEvent.click(screen.getByTestId("layer:layer:image"));
-    expect(pairMenu().partners[0].id).toBe("7");
+    expect(pairMenu().partners).toEqual([{ identifier: "@mikro/arraylens", id: "9", label: "GFP" }]);
+    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "9" }, skip: false });
   });
 
   it("waits for the descriptors, and says so when there is no image to run on", () => {
     layers = [image];
     actionQuery.mockReturnValue({ data: undefined });
-    const { rerender } = render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    const { rerender } = render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
     expect(screen.getByText("Loading…")).toBeTruthy();
 
     layers = [];
-    rerender(<AnnotationPairActions roi={{ ...roi }} autoFocus={false} onDone={() => {}} />);
-    expect(screen.getByText(/No image layer to run with/)).toBeTruthy();
+    rerender(<AnnotationPairActions roi={{ ...roi }} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
+    expect(screen.getByText(/no longer in the scene/)).toBeTruthy();
     expect(screen.queryByTestId("menu")).toBeNull();
   });
 
@@ -183,7 +142,7 @@ describe("AnnotationPairActions", () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({}, { "@mikro/spec": ["IMAGE"], "@mikro/is_whole": false }));
 
-    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
 
     expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "7" }, skip: false });
     expect(screen.getByText("On the crop to this shape")).toBeTruthy();
@@ -208,7 +167,7 @@ describe("AnnotationPairActions", () => {
   it("makes the crop when something runs on it, once, and asks again after a failure", async () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({}, { "@mikro/spec": ["IMAGE"] }));
-    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
     const { materialize } = cropMenu();
 
     ensureLens.mockRejectedValueOnce(new Error("The box lies outside the lens"));
@@ -227,7 +186,7 @@ describe("AnnotationPairActions", () => {
   it("says when the shape misses the image, and lists nothing on a crop that cannot be made", () => {
     layers = [image];
     actionQuery.mockReturnValue(answer({}, null));
-    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
 
     expect(screen.getByText("This shape lies outside DAPI.")).toBeTruthy();
     expect(cropMenu()).toBeUndefined();

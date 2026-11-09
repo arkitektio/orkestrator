@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { ChevronDownIcon, SearchIcon, TriangleAlert, XIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TriangleAlert } from "lucide-react";
 
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { classifyError } from "@/core/layout/fallbacks/classifyError";
@@ -9,31 +9,20 @@ import type { SmartSectionSelection } from "@/core/smart/extensions/section";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { structure } from "@/core/smart/structure";
 import type { Structure } from "@/core/types";
-import { Button } from "@/core/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/core/ui/dropdown-menu";
 import {
   useEnsureArrayLensMutation,
   useGetAnnotationActionDescriptorsQuery,
 } from "@/mikro/api/graphql";
 
+import { FloatRunMenu } from "../../../platform/float/FloatRunMenu";
 import { layerDisplayLabel } from "../../../platform/layerui/layerIdentity";
-import { effectiveDataLayerId } from "../../../platform/probe/probeTargeting";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
-import { useViewerStore } from "../../../platform/stores/viewerStore";
 import type { SelectedRoi } from "../roiSelectionStore";
 import {
   ARRAY_LENS_IDENTIFIER,
   annotationObject,
   cropLensObject,
   layerLensPartner,
-  pairLayerId,
 } from "./annotationActionTarget";
 
 /**
@@ -43,46 +32,45 @@ import {
  * none of it — each brings its own guard, so a deployment without them shows
  * an empty menu, not an error.
  */
-const PAIR_SECTIONS: SmartSectionSelection = {
+export const PAIR_SECTIONS: SmartSectionSelection = {
   only: ["rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"],
 };
 
 /**
- * The actions of the annotation card (`AnnotationHoverCard`): the ones that
- * take this annotation and the image under it — `f(Annotation, ArrayLens,
+ * The actions of the annotation card's "Run on layer" → <layer> pane: the ones
+ * that take this annotation and that layer's image — `f(Annotation, ArrayLens,
  * ...)`, in that order, whatever they are called. (The Run and Shortcuts
  * sections match the two leading ports and let an action carry further
- * arguments, as on every drop.) Both sides
- * go out with the descriptors they provide (`annotationActionTarget`), so a
- * port's `Requires` narrows the list: an action wanting a rectangle is not
- * offered on a point, one wanting a single-channel image not against a stack.
+ * arguments, as on every drop.) Both sides go out with the descriptors they
+ * provide (`annotationActionTarget`), so a port's `Requires` narrows the list:
+ * an action wanting a rectangle is not offered on a point, one wanting a
+ * single-channel image not against a stack.
  *
- * "The image under it" starts as the data layer's lens — the one picked in
- * the control bar, else the first visible layer. The "Run with" picker swaps
- * it for any other layer's lens, hidden ones too, for this card only: it does
- * not move the data layer. Either way it is a SUGGESTION (`askPartner`): a run
- * opens the assign form with the shape filled in and the channel's selector
- * shown, set to what the action last ran with, else to this lens.
+ * The layer is the one picked from the card's layer list — hidden ones too:
+ * an action reads the lens, not the pixels on screen. The image is still a
+ * SUGGESTION (`askPartner`): a run opens the assign form with the shape filled
+ * in and the channel's selector shown, set to what the action last ran with,
+ * else to this lens.
  *
- * Drawn for the card, not as the right-click menu: the actions are tiles
- * (`TILE_SKIN`), the image they run with is the picker's one muted line, and the
- * search waits behind a magnifier — open at once when the card was opened by
- * a click (`autoFocus`), where typing is meant for it.
+ * Drawn for the card: the actions are tiles (`TILE_SKIN`) and the search waits
+ * behind a magnifier — open at once when the card was opened by a click
+ * (`autoFocus`), where typing is meant for it. The pane's title names the
+ * layer, so there is no line saying it again.
  *
  * Below them, "On the crop": the actions that take the crop of that image to
  * the shape — `f(ArrayLens, ...)` on the lens `createLens(lens:, annotation:)`
  * would return (`CropActions`).
- *
- * The shape's FULL menu (delete, open, ..., no partner) is the card header's
- * ellipsis and the viewport's right-click.
  */
 export const AnnotationPairActions = ({
   roi,
+  layerId,
   autoFocus,
   initialSearch,
   onDone,
 }: {
   roi: SelectedRoi;
+  /** The layer whose image the shape is paired with. */
+  layerId: string;
   /** Whether the search takes focus: not while a key may still be held (a
    * draw), and not on a hover, where typing belongs to the scene. */
   autoFocus: boolean;
@@ -90,24 +78,21 @@ export const AnnotationPairActions = ({
   initialSearch?: string;
   onDone: () => void;
 }) => {
-  const dataLayerId = useViewerStore((s) => s.dataLayerId);
-  const [pickedLayerId, setPickedLayerId] = useState<string | null>(null);
-  // A scalar subscription (the target's id), then a `getState()` read: a
-  // whole-array subscription would re-render on every layer edit.
+  // A scalar subscription (whether the layer is there), then a `getState()`
+  // read: a whole-array subscription would re-render on every layer edit.
   const sceneApi = useSceneStoreApi();
-  const defaultLayerId = useSceneStore((s) => effectiveDataLayerId(dataLayerId, s.layers));
-  const targetLayerId = useSceneStore((s) => pairLayerId(pickedLayerId, dataLayerId, s.layers));
+  const present = useSceneStore((s) => s.layers.some((layer) => layer.id === layerId));
   const lens = useMemo(() => {
+    if (!present) return null;
     const layers = sceneApi.getState().layers;
-    return layerLensPartner(targetLayerId, layers, (layerId) => {
-      const layer = layers.find((candidate) => candidate.id === layerId);
+    return layerLensPartner(layerId, layers, (id) => {
+      const layer = layers.find((candidate) => candidate.id === id);
       return layer ? layerDisplayLabel(layer) : undefined;
     });
-  }, [targetLayerId, sceneApi]);
+  }, [present, layerId, sceneApi]);
   // One request for both groups: what the shape provides, and what its crop of
   // the lens would. A draw asked it already and left it in the cache
-  // (`useCreateSceneAnnotation`). Picking another lens asks again; the shape's
-  // own descriptors stay on screen meanwhile.
+  // (`useCreateSceneAnnotation`).
   const { data, previousData, error, refetch } = useGetAnnotationActionDescriptorsQuery({
     variables: { id: roi.id, lens: lens?.id ?? "" },
     skip: !lens,
@@ -135,11 +120,7 @@ export const AnnotationPairActions = ({
     );
   }
   if (!lens) {
-    return (
-      <p className="px-2 py-1 text-xs text-muted-foreground">
-        No image layer to run with. Show one, or pin it as the probe target.
-      </p>
-    );
+    return <p className="px-2 py-1 text-xs text-muted-foreground">This layer is no longer in the scene.</p>;
   }
   if (descriptors === undefined) {
     return <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>;
@@ -150,14 +131,6 @@ export const AnnotationPairActions = ({
         objects={objects}
         partners={partners}
         imageLabel={lens.label ?? "this image"}
-        picker={
-          <LensPicker
-            layerId={targetLayerId}
-            defaultLayerId={defaultLayerId}
-            label={lens.label ?? "this image"}
-            onPick={setPickedLayerId}
-          />
-        }
         autoFocus={autoFocus || !!initialSearch}
         initialSearch={initialSearch}
         onFilterChange={setFilter}
@@ -172,7 +145,6 @@ const PairMenu = ({
   objects,
   partners,
   imageLabel,
-  picker,
   autoFocus,
   initialSearch,
   onFilterChange,
@@ -181,78 +153,28 @@ const PairMenu = ({
   objects: Structure[];
   partners: Structure[];
   imageLabel: string;
-  picker: ReactNode;
   autoFocus: boolean;
   initialSearch?: string;
   onFilterChange: (filter: string | undefined) => void;
   onDone: () => void;
-}) => {
-  // `askPartner`: the image under the shape is a guess, so a run opens the
-  // form with its channel shown — defaulting to what the action last ran
-  // with, else this one.
-  const menu = useSmartMenu({ objects, partners, sections: PAIR_SECTIONS, autoFocus, onDone, askPartner: true });
-  // Once, on mount: what was typed before this menu existed.
-  const { setFilter } = menu;
-  useEffect(() => {
-    if (initialSearch) setFilter(initialSearch);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => onFilterChange(menu.filter), [menu.filter, onFilterChange]);
-  const [searching, setSearching] = useState(autoFocus);
-  const stopSearching = () => {
-    setSearching(false);
-    menu.setFilter(undefined);
-  };
-
-  return (
-    <SmartMenu.Root menu={menu} skin={TILE_SKIN}>
-      <SmartMenu.Body className="rounded-none bg-transparent p-0">
-        <div
-          className="flex min-h-6 items-center gap-1 pl-1"
-          // Escape folds the search first; the card's own Escape is the next one.
-          onKeyDown={(event) => {
-            if (event.key !== "Escape" || !searching) return;
-            event.preventDefault();
-            stopSearching();
-          }}
-        >
-          {searching ? (
-            <>
-              <div className="min-w-0 flex-1">
-                <SmartMenu.Search
-                  placeholder={`Run with ${imageLabel}…`}
-                  className="h-7 text-xs"
-                  autoFocus
-                />
-              </div>
-              <Button variant="ghost" size="icon-xs" aria-label="Close search" onClick={stopSearching}>
-                <XIcon />
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="min-w-0 flex-1">{picker}</div>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Search actions"
-                onClick={() => setSearching(true)}
-              >
-                <SearchIcon />
-              </Button>
-            </>
-          )}
-        </div>
-        <SmartMenu.Progress />
-        <SmartMenu.List className="mt-1 max-h-64 p-0.5">
-          <SmartMenu.Pinned />
-          <SmartMenu.Sections />
-          <SmartMenu.Empty>Nothing runs on this shape with this image</SmartMenu.Empty>
-        </SmartMenu.List>
-      </SmartMenu.Body>
-    </SmartMenu.Root>
-  );
-};
+}) => (
+  <FloatRunMenu
+    objects={objects}
+    partners={partners}
+    sections={PAIR_SECTIONS}
+    // `askPartner`: the image under the shape is a guess, so a run opens the
+    // form with its channel shown — defaulting to what the action last ran
+    // with, else this one.
+    askPartner
+    line={null}
+    searchPlaceholder={`Run with ${imageLabel}…`}
+    emptyText="Nothing runs on this shape with this image"
+    autoFocus={autoFocus}
+    initialSearch={initialSearch}
+    onFilterChange={onFilterChange}
+    onDone={onDone}
+  />
+);
 
 /**
  * "On the crop": the actions that take the crop of `lens` to the shape, before
@@ -364,78 +286,5 @@ const CropMenu = ({
         </SmartMenu.List>
       </SmartMenu.Body>
     </SmartMenu.Root>
-  );
-};
-
-/**
- * "Run with: <lens>", a dropdown of every image layer of the scene. Listed
- * when it opens (a `getState()` read, like the lens above), so a layer edit
- * does not re-render a closed card. Hidden layers are offered too: an action
- * reads the lens, not what is on screen.
- *
- * It sits inside the action list's `Command`, whose keys travel React's tree,
- * portals included: Enter on a layer would also run the highlighted tile, so
- * the picker's keys stop here.
- */
-const LensPicker = ({
-  layerId,
-  defaultLayerId,
-  label,
-  onPick,
-}: {
-  layerId: string | null;
-  defaultLayerId: string | null;
-  label: string;
-  onPick: (layerId: string) => void;
-}) => {
-  const keepKeys = (event: KeyboardEvent) => {
-    if (event.key !== "Escape") event.stopPropagation();
-  };
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild onKeyDown={keepKeys}>
-        <button
-          type="button"
-          className="flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[11px] text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Image to run with"
-        >
-          <span className="shrink-0">Run with:</span>
-          <span className="min-w-0 truncate font-medium text-foreground">{label}</span>
-          <ChevronDownIcon className="h-3 w-3 shrink-0" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-w-72" onKeyDown={keepKeys}>
-        <DropdownMenuLabel className="text-xs">Run with</DropdownMenuLabel>
-        <LayerOptions layerId={layerId} defaultLayerId={defaultLayerId} onPick={onPick} />
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
-const LayerOptions = ({
-  layerId,
-  defaultLayerId,
-  onPick,
-}: {
-  layerId: string | null;
-  defaultLayerId: string | null;
-  onPick: (layerId: string) => void;
-}) => {
-  const sceneApi = useSceneStoreApi();
-  // Mounted when the dropdown opens: the list as it is now.
-  const [layers] = useState(() => sceneApi.getState().layers);
-  return (
-    <DropdownMenuRadioGroup value={layerId ?? undefined} onValueChange={onPick}>
-      {layers.map((layer) => (
-        <DropdownMenuRadioItem key={layer.id} value={layer.id} className="text-xs">
-          <span className="min-w-0 flex-1 truncate">{layerDisplayLabel(layer)}</span>
-          {layer.id === defaultLayerId ? (
-            <span className="shrink-0 text-muted-foreground">data</span>
-          ) : layer.visible === false ? (
-            <span className="shrink-0 text-muted-foreground">hidden</span>
-          ) : null}
-        </DropdownMenuRadioItem>
-      ))}
-    </DropdownMenuRadioGroup>
   );
 };

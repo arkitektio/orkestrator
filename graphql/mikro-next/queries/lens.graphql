@@ -93,3 +93,14 @@ query GetLensContainers($ids: [ID!]!) {
     ...LensSubject
   }
 }
+
+# What `createLens(dataset:, slices:)` would provide, before it is made: the
+# scene's "Run on this slice / selection" menu lists the actions that fit the
+# plane or box on screen with these, and makes the lens only when one runs.
+# Null where the cut would be refused.
+query GetSlicedDescriptors($dataset: ID!, $slices: [SliceInput!]!) {
+  arrayDataset(id: $dataset) {
+    id
+    descriptorsSliced(slices: $slices)
+  }
+}

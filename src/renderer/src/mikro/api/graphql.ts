@@ -842,6 +842,8 @@ export type ArrayDataset = {
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** The descriptors `createLens(input: {dataset: <this>, slices:})` would give the lens it returns, without making it: what that selection provides to an action's port (one plane of a stack is an IMAGE, a pinned frame or channel counts one). The slices are dataset indices, spelled as `createLens` takes them. Null where the cut would be refused -- an axis the dataset lacks, an axis sliced twice, a window that selects nothing */
+  descriptorsSliced?: Maybe<Scalars['JSON']['output']>;
   /** This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -887,6 +889,12 @@ export type ArrayDatasetDataArraysArgs = {
   filters?: InputMaybe<DataArrayFilter>;
   ordering?: Array<DataArrayOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
+export type ArrayDatasetDescriptorsSlicedArgs = {
+  slices: Array<SliceInput>;
 };
 
 
@@ -17841,7 +17849,7 @@ export type GetAnnotationInfoQueryVariables = Exact<{
 
 
 export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: (
-    { __typename?: 'Annotation', id: any, kind: AnnotationKind, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<(
+    { __typename?: 'Annotation', id: any, kind: AnnotationKind, descriptors: any, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<(
       { __typename?: 'AnnotationCollection' }
       & DerivedResident_AnnotationCollection_Fragment
     ) | (
@@ -19267,6 +19275,14 @@ export type GetLensContainersQuery = { __typename?: 'Query', lenses: Array<(
     { __typename?: 'TableLens', id: string }
     & LensSubject_TableLens_Fragment
   )> };
+
+export type GetSlicedDescriptorsQueryVariables = Exact<{
+  dataset: Scalars['ID']['input'];
+  slices: Array<SliceInput> | SliceInput;
+}>;
+
+
+export type GetSlicedDescriptorsQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, descriptorsSliced?: any | null } };
 
 export type GetLineageQueryVariables = Exact<{
   start: LineageRootInput;
@@ -28126,6 +28142,7 @@ export const GetAnnotationInfoDocument = gql`
   annotation(id: $id) {
     id
     kind
+    descriptors
     description
     creator {
       sub
@@ -31367,6 +31384,43 @@ export function useGetLensContainersLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetLensContainersQueryHookResult = ReturnType<typeof useGetLensContainersQuery>;
 export type GetLensContainersLazyQueryHookResult = ReturnType<typeof useGetLensContainersLazyQuery>;
 export type GetLensContainersQueryResult = Apollo.QueryResult<GetLensContainersQuery, GetLensContainersQueryVariables>;
+export const GetSlicedDescriptorsDocument = gql`
+    query GetSlicedDescriptors($dataset: ID!, $slices: [SliceInput!]!) {
+  arrayDataset(id: $dataset) {
+    id
+    descriptorsSliced(slices: $slices)
+  }
+}
+    `;
+
+/**
+ * __useGetSlicedDescriptorsQuery__
+ *
+ * To run a query within a React component, call `useGetSlicedDescriptorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSlicedDescriptorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSlicedDescriptorsQuery({
+ *   variables: {
+ *      dataset: // value for 'dataset'
+ *      slices: // value for 'slices'
+ *   },
+ * });
+ */
+export function useGetSlicedDescriptorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>(GetSlicedDescriptorsDocument, options);
+      }
+export function useGetSlicedDescriptorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>(GetSlicedDescriptorsDocument, options);
+        }
+export type GetSlicedDescriptorsQueryHookResult = ReturnType<typeof useGetSlicedDescriptorsQuery>;
+export type GetSlicedDescriptorsLazyQueryHookResult = ReturnType<typeof useGetSlicedDescriptorsLazyQuery>;
+export type GetSlicedDescriptorsQueryResult = Apollo.QueryResult<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>;
 export const GetLineageDocument = gql`
     query GetLineage($start: LineageRootInput!, $up: Int! = 1, $down: Int! = 3, $limit: Int! = 300, $fanout: Int! = 50) {
   lineage(start: $start, up: $up, down: $down, limit: $limit, fanout: $fanout) {

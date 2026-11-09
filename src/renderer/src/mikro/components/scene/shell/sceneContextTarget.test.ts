@@ -25,13 +25,13 @@ describe("sceneContextTarget", () => {
   it("the annotation under the pointer wins over a mesh behind it", () => {
     expect(
       sceneContextTarget({ hoveredRoi: { id: "ann:1", name: undefined }, pickedLayerId: "layer:mesh", layers }),
-    ).toEqual({ identifier: "@mikro/annotation", id: "ann:1" });
+    ).toEqual({ kind: "structure", structure: { identifier: "@mikro/annotation", id: "ann:1" } });
   });
 
   it("a picked mesh layer opens its collection", () => {
     expect(sceneContextTarget({ hoveredRoi: null, pickedLayerId: "layer:mesh", layers })).toEqual({
-      identifier: "@mikro/meshcollection",
-      id: "42",
+      kind: "structure",
+      structure: { identifier: "@mikro/meshcollection", id: "42" },
     });
   });
 
@@ -41,5 +41,25 @@ describe("sceneContextTarget", () => {
     expect(meshCollectionStructure("layer:network", layers)).toBeNull();
     expect(meshCollectionStructure("layer:annotations", layers)).toBeNull();
     expect(meshCollectionStructure("layer:gone", layers)).toBeNull();
+  });
+
+  it("else the image layer the scene runs on, behind any annotation or mesh", () => {
+    const dataLayerId = "layer:image";
+    expect(sceneContextTarget({ hoveredRoi: null, pickedLayerId: null, layers, dataLayerId })).toEqual({
+      kind: "layer",
+      layerId: "layer:image",
+    });
+    // A pick that hit something with no menu of its own falls through to it.
+    expect(sceneContextTarget({ hoveredRoi: null, pickedLayerId: "layer:network", layers, dataLayerId })).toEqual({
+      kind: "layer",
+      layerId: "layer:image",
+    });
+    expect(
+      sceneContextTarget({ hoveredRoi: null, pickedLayerId: "layer:mesh", layers, dataLayerId })?.kind,
+    ).toBe("structure");
+    expect(
+      sceneContextTarget({ hoveredRoi: { id: "ann:1", name: null }, pickedLayerId: null, layers, dataLayerId })?.kind,
+    ).toBe("structure");
+    expect(sceneContextTarget({ hoveredRoi: null, pickedLayerId: null, layers, dataLayerId: null })).toBeNull();
   });
 });
