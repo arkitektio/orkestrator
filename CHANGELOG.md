@@ -1,3 +1,10 @@
+# [5.18.0](https://github.com/arkitektio/orkestrator/compare/v5.17.0...v5.18.0) (2026-11-09)
+
+
+### Features
+
+* **scene:** right-click the image to run on the slice, its channel or everything visible; annotation card runs on the shape, a layer or everything ([18e7014](https://github.com/arkitektio/orkestrator/commit/18e7014299e3dcf045e2f19a7c8df2bac4acc8bc))
+
 # [5.17.0](https://github.com/arkitektio/orkestrator/compare/v5.16.0...v5.17.0) (2026-11-08)
 
 
