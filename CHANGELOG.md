@@ -1,3 +1,19 @@
+## [5.18.1](https://github.com/arkitektio/orkestrator/compare/v5.18.0...v5.18.1) (2026-11-09)
+
+
+### Performance Improvements
+
+* **scene:** charge the plan for core chunks, refine halos only where the plan covers them ([34cf659](https://github.com/arkitektio/orkestrator/commit/34cf65923fe2e33d8ff283e818d1bb1fe21f78d7))
+* **scene:** fixes from the first perf recording ([0956ba1](https://github.com/arkitektio/orkestrator/commit/0956ba192057b19e3d25a42365e5e73d0f277a28))
+* **scene:** keep the cached volume image across label and mesh colour edits ([552c36d](https://github.com/arkitektio/orkestrator/commit/552c36ddcbe71c88662951191d7c4fd3a4dac705))
+* **scene:** move per-brick work out of the raymarch step ([0d06666](https://github.com/arkitektio/orkestrator/commit/0d066663fc3ae12c2ebc19b1c6532d359f9c54e2))
+* **scene:** one RGBA atlas sample per step for all fixed-shape members ([a3e01cd](https://github.com/arkitektio/orkestrator/commit/a3e01cd3e9988cf0a7a2cdaf020662469689b4bc))
+* **scene:** re-render the volume for streamed bricks at the streaming cadence, not every frame ([04bb73e](https://github.com/arkitektio/orkestrator/commit/04bb73e2bcbee2190d045392d5c5ad00e6fdbf53))
+* **scene:** run the replan and the reconcile between frames ([bdc4ef4](https://github.com/arkitektio/orkestrator/commit/bdc4ef4b94b858ce2b0bb907ea059948097dbafc))
+* **scene:** stop the probe marker and stale subscriptions from costing frames ([655c10c](https://github.com/arkitektio/orkestrator/commit/655c10c89835699ec93f5f477ad9823a28e6afe1))
+* **zarr,scene:** raise shared fetches to their most urgent waiter, warm the cold path ([e19a6bd](https://github.com/arkitektio/orkestrator/commit/e19a6bdfa816b66afd0868928af554906a7c9c90))
+* **zarr:** allow 8 requests per codec worker in the shared pool ([d01d011](https://github.com/arkitektio/orkestrator/commit/d01d01167bc204841908243e470a2eaa9bf85491))
+
 # [5.18.0](https://github.com/arkitektio/orkestrator/compare/v5.17.0...v5.18.0) (2026-11-09)
 
 
