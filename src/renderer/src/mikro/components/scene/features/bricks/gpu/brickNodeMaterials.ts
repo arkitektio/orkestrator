@@ -630,6 +630,18 @@ export function emitResolveBrickResidency(
  */
 const BRICK_BOUND_CACHE = true;
 
+/**
+ * R11 kill switch (compile-time). On an RGBA8 atlas every channel of a pool
+ * lives in ONE texel (`atlasChannelsPerTexel === 4`; such a pool has 3 or 4
+ * channels, so every slab is in slab group 0 and no slab z-offset applies —
+ * the invariant `emitRgbTaps` already rests on). A merged pass of several
+ * fixed-shape members — the four channels of one image as four layers —
+ * nevertheless sampled that same texel once PER MEMBER per step. On: one
+ * sample per step, each member selects its lane. Identical coordinates,
+ * identical filtering, so identical values.
+ */
+const SHARED_RGBA_TAP = true;
+
 /** Faces of the cache's validity box are pulled in by this many base voxels
  * (mirror: `CELL_BOX_EPSILON` in shaderspec/residencyCache.ts). */
 const CELL_BOX_EPSILON = 1e-3;
@@ -768,6 +780,10 @@ export function emitChannelTap(
    * when true at runtime, the resident tap is tricubic instead of trilinear.
    * Only the INTENSITY tap passes this — phasor g/s stay single-tap. */
   smooth: any = null,
+  /** RGBA8 atlases only: the texel at `resolved.texelBase`, already sampled
+   * this step (see `SHARED_RGBA_TAP`). The single tap then selects its lane
+   * from it instead of sampling again. */
+  shared: any = null,
 ): any {
   const raw = float(0.0).toVar(`${name}Raw`);
   If(resolved.status.greaterThan(1.5), () => {
@@ -779,6 +795,10 @@ export function emitChannelTap(
     const address = slabAddress(t, slabIndex);
     texel.z.addAssign(address.zOffset);
     const singleTap = () => {
+      if (shared) {
+        raw.assign(selectLane(shared, address.mask).mul(t.uAtlasScale));
+        return;
+      }
       const tap = texture3D(t.brickAtlas, texel.div(t.uAtlasTexels));
       // Fast path: explicit-LOD tap (textureSampleLevel). The atlas has no
       // mips, so level 0 is the same texel data — but the implicit-derivative
@@ -817,6 +837,8 @@ export function emitRgbTaps(
   slabs: readonly [any, any, any],
   name: string,
   smooth: any = null,
+  /** The step's shared RGBA texel — see `emitChannelTap`. */
+  shared: any = null,
 ): { r: any; g: any; b: any } {
   const cpt: number = t.atlasChannelsPerTexel ?? 1;
   if (cpt === 1) {
@@ -840,7 +862,7 @@ export function emitRgbTaps(
     const texel = vec3(resolved.texelBase).toVar(`${name}Texel`);
     texel.z.addAssign(a0.zOffset);
     const singleTap = () => {
-      const tap = texture3D(t.brickAtlas, texel.div(t.uAtlasTexels)).level(0);
+      const tap = shared ?? texture3D(t.brickAtlas, texel.div(t.uAtlasTexels)).level(0);
       r.assign(selectLane(tap, a0.mask).mul(t.uAtlasScale));
       g.assign(selectLane(tap, a1.mask).mul(t.uAtlasScale));
       b.assign(selectLane(tap, a2.mask).mul(t.uAtlasScale));
@@ -2504,6 +2526,28 @@ export function createVolumeNodeMaterial(
           .toVar("smoothActive");
       }
 
+      // ONE atlas sample for every fixed-shape member (`SHARED_RGBA_TAP`).
+      // Not under tricubic: that filter takes its own eight taps per lane.
+      let sharedTap: any = null;
+      if (
+        SHARED_RGBA_TAP &&
+        (t.atlasChannelsPerTexel ?? 1) === 4 &&
+        memberFns.filter((fns) => fns.emitSimple || fns.emitRgb).length >= 2
+      ) {
+        sharedTap = vec4(0.0).toVar("sharedTap");
+        If(
+          resolved.status
+            .greaterThanEqual(0.5)
+            .and(resolved.status.lessThan(1.5))
+            .and(smoothActive.not()),
+          () => {
+            sharedTap.assign(
+              texture3D(t.brickAtlas, vec3(resolved.texelBase).div(t.uAtlasTexels)).level(0),
+            );
+          },
+        );
+      }
+
       // Per-sample composite, per member (ChunkPlane semantics).
       const samples = memberNodes.map((mem, m) => {
         // A SIMPLE member seeds to zero unconditionally: its blend cannot be
@@ -2525,7 +2569,14 @@ export function createVolumeNodeMaterial(
           // and FOUR `chParamsA/B.element()` reads (the member's window,
           // gamma, slab and LUT row are plain uniforms — `fixed`).
           If(resolved.status.greaterThanEqual(0.5), () => {
-            const raw = emitChannelTap(t, resolved, mem.fixed.uSlab0, nm("fxI"), smoothActive);
+            const raw = emitChannelTap(
+              t,
+              resolved,
+              mem.fixed.uSlab0,
+              nm("fxI"),
+              smoothActive,
+              sharedTap,
+            );
             const norm = float(fixedNormalize(m, raw)).toVar(nm("fxNorm"));
             sampleNorm.assign(norm);
             // color × weight with opacity 1: additive (or normal) onto a zero
@@ -2560,6 +2611,7 @@ export function createVolumeNodeMaterial(
               [mem.fixed.uSlab0, mem.fixed.uSlab1, mem.fixed.uSlab2],
               nm("fx"),
               smoothActive,
+              sharedTap,
             );
             const nR = float(fixedNormalize(m, raw.r)).toVar(nm("fxNr"));
             const nG = float(fixedNormalize(m, raw.g)).toVar(nm("fxNg"));

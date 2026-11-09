@@ -4,6 +4,7 @@ import type { LayerLevelGeometry } from "../../../../platform/coords/levelGeomet
 import type { LayerBrickPool } from "../../residency/brickResidency";
 import { resolveBrickSpec } from "../../octree/brickSpec";
 import { buildPageTableLayout } from "../../octree/pageTableLayout";
+import type { AtlasKind } from "../../octree/atlasFormat";
 import { createBrickAtlas } from "../brickAtlas";
 import { createPageTableTexture } from "../pageTableTexture";
 
@@ -29,7 +30,12 @@ export const testGeometry = (channelCount: number): LayerLevelGeometry =>
     ],
   }) as unknown as LayerLevelGeometry;
 
-export const makeTestPool = (channelCount: number, dtype = "float32"): LayerBrickPool => {
+export const makeTestPool = (
+  channelCount: number,
+  dtype = "float32",
+  /** Force the atlas kind (the app derives it from the geometry). */
+  kind?: AtlasKind,
+): LayerBrickPool => {
   const geo = testGeometry(channelCount);
   const spec = resolveBrickSpec(geo, "3D");
   const layout = buildPageTableLayout(geo, spec.payload)!;
@@ -39,6 +45,7 @@ export const makeTestPool = (channelCount: number, dtype = "float32"): LayerBric
     desiredSlots: 8,
     maxExtent: 2048,
     filter: "linear",
+    kind,
   });
   return {
     geometry: geo,

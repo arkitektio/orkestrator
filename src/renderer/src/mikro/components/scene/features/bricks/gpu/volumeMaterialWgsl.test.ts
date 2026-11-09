@@ -103,6 +103,26 @@ describe("volume raymarcher WGSL", () => {
     expect(fragmentWgsl(material)).toContain("fn main");
   });
 
+  it("samples an RGBA atlas once per step for all four single-channel layers (R11)", () => {
+    // The four channels of one uint8 image as four layers: one pool, one
+    // rgba8 atlas, one merged pass of four fixed-shape members.
+    const pool = makePool(4, "uint8", "rgba8");
+    expect(pool.atlas.channelsPerTexel).toBe(4);
+    const members = [0, 1, 2, 3].map((index) => ({
+      layerId: `l${index}`,
+      layer: { ...layer([channel({ intensityIndex: index })]), renderKind: "intensity" } as LayerState,
+      slotOffset: index,
+    }));
+    const merged = buildMergedChannelUniformData(members, 4, 0, 255, undefined, () => 0);
+    expect(merged.members?.every((member) => member.isSimpleIntensity)).toBe(true);
+    const { material } = createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, merged, 4);
+    const wgsl = fragmentWgsl(material);
+    expect(wgsl).toContain("fn main");
+    // One sample into the shared texel, and each member reads a lane of it.
+    expect(wgsl.match(/sharedTap = /g)?.length).toBe(2); // init + the one sample
+    expect(wgsl.match(/dot\( sharedTap, /g)?.length).toBe(4);
+  });
+
   it("builds the SAME material twice (a second render target is a second node build)", () => {
     // The compositor renders volumes into its colour target AND, for the depth
     // view, into `depthTarget`: three builds the node graph once per render
