@@ -23,6 +23,7 @@ import {
   nodeBaseBox,
   nodeKey,
   totalBrickCount,
+  type FetchPhase,
   type VoxelBox,
 } from "./nodeAddress";
 
@@ -262,6 +263,12 @@ export type PlanLayerNodesInput = {
    * Explicit `decodeFloorBytes` / `decodeAllowanceBytes` override it.
    */
   decodeCacheShareBytes?: number;
+  /**
+   * The fetch phase the chunk ledgers charge a brick in — what its FIRST
+   * fetch requests (`residency/twoPhase.ts` `planChargePhase`). `"full"`
+   * (default) also charges the ±1 border's chunks, the pre-R11 ledger.
+   */
+  chargePhase?: FetchPhase;
   /** Decoded-chunk byte allowance for refinement BELOW the budget floor.
    * 0 (default) disables sub-floor refinement — the legacy all-or-nothing
    * floor. See `resolveDecodeAllowanceBytes` (poolBudget.ts). */
@@ -488,6 +495,7 @@ export function planLayerNodes({
   decodeCacheShareBytes,
   decodeAllowanceBytes,
   decodeBudgetBytes,
+  chargePhase = "full",
   anisoLod = false,
   previousBudgetMinLevel,
   previousKeepKeys,
@@ -977,7 +985,7 @@ export function planLayerNodes({
     const radix = chunkKeyRadix[levelIndex];
     const fresh = new Set<number>();
     for (const brick of bricks) {
-      const range = chunkRangeTouchingBrick(geometry, spec, levelIndex, brick);
+      const range = chunkRangeTouchingBrick(geometry, spec, levelIndex, brick, chargePhase);
       if (range === null) continue;
       const { lo, hi } = range;
       for (let z = lo[2]; z < hi[2]; z++)

@@ -41,6 +41,7 @@ import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";
 import type { BrickSlice, UnplannableLayerInfo } from "../store/brickSlice";
 import type { ViewState } from "../../../platform/stores/viewStore";
+import { planChargePhase } from "./twoPhase";
 
 /** Value equality for the unplannable-layers map (skip no-op store writes). */
 const sameUnplannable = (
@@ -464,6 +465,7 @@ export function startNodePlanTracking({
         // else the plan holds, and a slab that waited for an interaction to
         // sharpen read as stuck.
         decodeBudgetBytes: mode === "3D" && prevRepresentative?.mode !== "3D" ? 0 : undefined,
+        chargePhase: planChargePhase(spec.border),
         anisoLod: true,
         previousBudgetMinLevel: prevCompatible ? prevRepresentative.budgetMinLevel : undefined,
         previousKeepKeys: prevCompatible ? keepKeysOf(prevRepresentative) : undefined,

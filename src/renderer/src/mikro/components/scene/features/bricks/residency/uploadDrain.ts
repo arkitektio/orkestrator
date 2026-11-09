@@ -14,14 +14,19 @@ import type { GpuRepacker } from "../gpu/computeRepack";
 import { setPageEntry } from "../gpu/pageTableTexture";
 import { encodeEmptyTexel, encodeOccupancyTexel } from "../octree/brickEncoding";
 import type { ProtectedKeys } from "../octree/brickPoolState";
-import { brickFetchBox, nodeVoxelBox, parseNodeKey } from "../octree/nodeAddress";
+import {
+  brickFetchBox,
+  brickGridForLevel,
+  nodeVoxelBox,
+  parseNodeKey,
+} from "../octree/nodeAddress";
 import {
   PAGE_FLAG_EMPTY,
   PAGE_FLAG_RESIDENT,
   PAGE_FLAG_UNMAPPED,
 } from "../octree/pageTableLayout";
 import type { RepackDispatcher } from "../octree/repackDispatcher";
-import { needsHaloRefine } from "./twoPhase";
+import { haloCoveredByPlan, needsHaloRefine } from "./twoPhase";
 import {
   accumulateOccRange,
   occEncodeRangeOf,
@@ -266,15 +271,27 @@ export function drainEntry(
   // queues its halo refine; a full upload (primary or refine) settles it.
   if (needsHaloRefine({ phase: pending.phase, uniform: false })) {
     pool.provisionalKeys.add(pending.key);
-    pool.pendingHalo.push({
-      key: pending.key,
-      level: pending.level,
-      coords: pending.coords,
-      role: "target",
-      priority: 0,
-      fetchScore: 0,
-      fetchBand: 2,
-    });
+    // Queued only where the plan covers the border; a brick on the plan's
+    // edge stays provisional and is picked up by the next reconcile if its
+    // neighbours join the plan (`haloCoveredByPlan`, reconcilePool).
+    if (
+      haloCoveredByPlan(
+        pending.level,
+        pending.coords,
+        brickGridForLevel(pool.geometry, pool.spec, pending.level),
+        (key) => pool.protectedKeys.has(key),
+      )
+    ) {
+      pool.pendingHalo.push({
+        key: pending.key,
+        level: pending.level,
+        coords: pending.coords,
+        role: "target",
+        priority: 0,
+        fetchScore: 0,
+        fetchBand: 2,
+      });
+    }
   } else {
     if (pool.provisionalKeys.delete(pending.key)) deps.stats.haloRefines += 1;
     coldOpenTimeline.stamp("firstBrickFull");

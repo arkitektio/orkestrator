@@ -2485,6 +2485,37 @@ describe("planLayerNodes chunk budget in 3D (64³-chunked volume)", () => {
     expect(after.decodeBytesPlanned).toBeLessThanOrEqual(after.decodeBudgetBytes);
   });
 
+  it("charged by CORE chunks, the same budgets hold more bricks (R11)", () => {
+    // What the first fetch of a two-phase brick requests is its payload's
+    // chunks. Charging the ±1 border too bills a compact region of k³ bricks
+    // for (k+2)³ chunks, so a cache-bound plan stopped far short.
+    const coreBytesOf = (volume: ReturnType<typeof deepVolume>, plan: LayerNodePlan, channels: number) => {
+      const keys = new Set<string>();
+      for (const node of plan.nodes)
+        for (const chunk of chunksTouchingBrick(volume.geometry, volume.spec, node.level, node.coords, "core"))
+          keys.add(`${node.level}:${chunk[0]}:${chunk[1]}:${chunk[2]}`);
+      return keys.size * 64 * 64 * 64 * 2 * channels;
+    };
+    let improved = 0;
+    for (const pose of Object.keys(DEEP_POSES) as (keyof typeof DEEP_POSES)[]) {
+      // A big card and a small cache: the chunk budget is what binds.
+      const { volume, maxPlanBytes, inputs } = setup(4, pose, [6141, 1024]);
+      const full = planLayerNodes(inputs);
+      const core = planLayerNodes({ ...inputs, chargePhase: "core" });
+      // The ledger is exact in its own currency…
+      expect(core.decodeBytesPlanned, pose).toBe(coreBytesOf(volume, core, 4));
+// …and inside the budget, give or take the one purchase the allowance
+      // may still make past it (the allowance arm does not consult the chunk
+      // budget — true of the full-phase ledger as well).
+      expect(core.decodeBytesPlanned, pose).toBeLessThanOrEqual(1.05 * core.decodeBudgetBytes);
+      expect(core.planBytes, pose).toBeLessThanOrEqual(maxPlanBytes);
+      expect(core.nodes.length, pose).toBeGreaterThanOrEqual(full.nodes.length);
+      expect(core.targetLevel, pose).toBeLessThanOrEqual(full.targetLevel);
+      if (core.nodes.length > 1.3 * full.nodes.length) improved += 1;
+    }
+    expect(improved).toBeGreaterThan(0);
+  });
+
   it("never plans fewer visible bricks than the allowance alone, within both budgets", () => {
     let improved = 0;
     for (const channels of [1, 4])

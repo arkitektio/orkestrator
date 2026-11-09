@@ -24,6 +24,7 @@ import {
 } from "../../../platform/coords/levelGeometry";
 import {
   brickFetchBox,
+  brickGridForLevel,
   type FetchPhase,
   nodeVoxelBox,
   parseNodeKey,
@@ -31,7 +32,12 @@ import {
 import { scheduleBackgroundTask } from "./pumpScheduler";
 import { selectionsFor } from "../../../platform/model/worldSelections";
 import { gpuRepackIsCheaper } from "./repackRouting";
-import { haloStillWanted, initialFetchPhase } from "./twoPhase";
+import {
+  haloCoveredByPlan,
+  haloStillWanted,
+  initialFetchPhase,
+  TWO_PHASE_BRICKS,
+} from "./twoPhase";
 import {
   compareFetchOrder,
   type LayerNodePlan,
@@ -254,7 +260,7 @@ export class BrickResidencyManager {
    * — what `reconcilePool` raises to the new generation for survivors. */
   private readonly inFlightChunkKeys = new WeakMap<AbortController, string[]>();
   /** Two-phase bricks kill switch, read once per manager (see twoPhase.ts). */
-  private readonly twoPhaseBricks = true;
+  private readonly twoPhaseBricks = TWO_PHASE_BRICKS;
   /** Trailing hysteresis for the governor's streaming flag (drainUploads). */
   private lastStreamingTrueAt = 0;
   private streamingClearTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1007,10 +1013,36 @@ export class BrickResidencyManager {
     // fetchScore units are each member layer's base voxels, so cross-layer
     // ordering is approximate (already true of the per-plan emission index).
     pool.pendingFetch = pending.sort(compareFetchOrder).reverse();
-    // Halo refines of bricks that left the plan are moot (dispatch re-checks
-    // too; this just keeps the queue bounded by the plan).
-    if (pool.pendingHalo.length > 0) {
-      pool.pendingHalo = pool.pendingHalo.filter((node) => protectedKeys.has(node.key));
+    // The halo queue is DERIVED from the plan: every planned brick that is
+    // still provisional and whose border the plan covers
+    // (`haloCoveredByPlan`), in fetch order. Derived rather than filtered,
+    // because coverage moves with the plan — a brick whose neighbours were
+    // out of plan when it uploaded becomes refinable when they join it, and
+    // nothing else would ever queue it. Bricks that left the plan drop out
+    // (their refine is moot), as before.
+    if (pool.provisionalKeys.size > 0) {
+      const halos: PlannedNode[] = [];
+      const queuedHalo = new Set<string>();
+      for (const plan of plans) {
+        for (const node of plan.nodes) {
+          if (!pool.provisionalKeys.has(node.key) || queuedHalo.has(node.key)) continue;
+          if (
+            !haloCoveredByPlan(
+              node.level,
+              node.coords,
+              brickGridForLevel(pool.geometry, pool.spec, node.level),
+              (key) => protectedKeys.has(key),
+            )
+          ) {
+            continue;
+          }
+          queuedHalo.add(node.key);
+          halos.push(node);
+        }
+      }
+      pool.pendingHalo = halos.sort(compareFetchOrder);
+    } else {
+      pool.pendingHalo = [];
     }
     // Sharded levels: warm the shard indexes the first fetches will need, so
     // the index round trip overlaps the queue wait instead of preceding the
