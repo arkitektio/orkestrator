@@ -262,6 +262,8 @@ export class FabriksCollectionManager extends CollectionManagerBase<
       collection: FabriksCollection;
       loadDecoder: () => Promise<MeshoptDecoderLike | null>;
       onInvalidate: () => void;
+      /** Colour-only frame request — `CollectionManagerHooks.onRepaint`. */
+      onRepaint?: () => void;
       /** Streaming-cadence stats signal for debug consumers; throttle at the
        * subscriber, not here (the manager stays render-cadence-blind). */
       onStatsChanged?: () => void;
@@ -272,7 +274,11 @@ export class FabriksCollectionManager extends CollectionManagerBase<
       decodeDispatcher?: FabriksDecodeDispatcher;
     },
   ) {
-    super({ onInvalidate: opts.onInvalidate, onStatsChanged: opts.onStatsChanged });
+    super({
+      onInvalidate: opts.onInvalidate,
+      onRepaint: opts.onRepaint,
+      onStatsChanged: opts.onStatsChanged,
+    });
     this.decodeDispatcher = opts.decodeDispatcher ?? sharedFabriksDecodeDispatcher();
     this.planConfig = {
       // The layer's "balanced" preset (DETAIL_BUDGETS); the card's effect
@@ -370,8 +376,12 @@ export class FabriksCollectionManager extends CollectionManagerBase<
       this.appliedLut?.dispose();
       this.appliedLut = lut?.texture ?? null;
     }
+    // A filter rule discards fragments, so with one active (before or after)
+    // the table decides the mesh's DEPTH; a colouring alone does not.
+    const filtered = this.materialHandle.uniforms.lutFilter.value > 0.5;
     setColorLut(this.materialHandle, lut, modes);
-    this.invalidate();
+    if (filtered || this.materialHandle.uniforms.lutFilter.value > 0.5) this.invalidate();
+    else this.repaint();
   }
 
   /**
@@ -386,8 +396,11 @@ export class FabriksCollectionManager extends CollectionManagerBase<
     climMax: number;
   }): void {
     setColorAppearance(this.materialHandle, style);
-    this.invalidate();
+    // Colour only: the filter discard reads the code's sentinel, never the
+    // clims or the palette.
+    this.repaint();
   }
+
 
   /**
    * Highlight (and optionally isolate) one instance. Uniform writes only —
@@ -395,11 +408,25 @@ export class FabriksCollectionManager extends CollectionManagerBase<
    * pipeline.
    */
   setSelection(selection: FabriksSelection | null): void {
+    const previous = this.selection;
+    // Every mesh layer hears every selection change; all but one of them go
+    // from "not mine" to "not mine".
+    if (
+      previous?.ordinal === selection?.ordinal &&
+      (previous?.isolate ?? false) === (selection?.isolate ?? false) &&
+      (previous === null) === (selection === null)
+    ) {
+      return;
+    }
+    // Isolation DISCARDS every other instance, so it moves depth; a plain
+    // highlight is a tint.
+    const movesDepth = (previous?.isolate ?? false) || (selection?.isolate ?? false);
     this.selection = selection ? { ...selection } : null;
     this.materialHandle.uniforms.selectedOrdinal.value = selection?.ordinal ?? -1;
     this.materialHandle.uniforms.isolate.value = selection?.isolate ? 1 : 0;
     this.updateSelectionHull();
-    this.invalidate();
+    if (movesDepth) this.invalidate();
+    else this.repaint();
     this.notifyStats();
   }
 
@@ -421,7 +448,8 @@ export class FabriksCollectionManager extends CollectionManagerBase<
         // Latest-wins: the selection may have moved while the catalog loaded.
         if (this.disposed || this.selection?.ordinal !== ordinal) return;
         this.buildSelectionHull(ordinal, entry);
-        this.invalidate();
+        // Transparent, depth-free furniture: never an occluder.
+        this.repaint();
       })
       .catch(() => {
         // No catalog, no hull — the shader highlight still marks the object.

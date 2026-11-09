@@ -39,6 +39,14 @@ export type SlabClip = { z: number; thickness: number } | null;
 
 export type CollectionManagerHooks = {
   onInvalidate: () => void;
+  /**
+   * A frame request for changes that move NO depth (a highlight, a clim, a
+   * palette). `onInvalidate` also moves the volume compositor's cache key —
+   * an opaque collection is a depth occluder in its offscreen target — and
+   * that re-raymarches every image volume. Anything that changes which
+   * fragments are DRAWN stays on `onInvalidate`. Defaults to `onInvalidate`.
+   */
+  onRepaint?: () => void;
   /** Streaming-cadence stats signal; throttled at the subscriber. */
   onStatsChanged?: () => void;
 };
@@ -102,6 +110,11 @@ export abstract class CollectionManagerBase<Row, Index> {
 
   protected invalidate(): void {
     this.hooks.onInvalidate();
+  }
+
+  /** A frame without moving the volume cache key — see `onRepaint`. */
+  protected repaint(): void {
+    (this.hooks.onRepaint ?? this.hooks.onInvalidate)();
   }
 
   protected notifyStats(): void {

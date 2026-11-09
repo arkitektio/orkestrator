@@ -107,3 +107,50 @@ describe("KonnektionCollectionManager lifecycle", () => {
     manager.dispose();
   });
 });
+
+/**
+ * Selection is hover-cadence, and `onInvalidate` moves the volume
+ * compositor's cache key (a full re-raymarch of every image volume). Only a
+ * selection that changes what is DRAWN — isolation — may take that path.
+ */
+describe("KonnektionCollectionManager selection invalidation", () => {
+  const open = async () => {
+    const collection = await KonnektionCollection.open(fixtureTransport("arbor"));
+    const onInvalidate = vi.fn();
+    const onRepaint = vi.fn();
+    const manager = new KonnektionCollectionManager({
+      collection,
+      onInvalidate,
+      onRepaint,
+      onStatsChanged: () => {},
+    });
+    return { manager, onInvalidate, onRepaint };
+  };
+
+  it("a highlight repaints without touching the occluder path", async () => {
+    const { manager, onInvalidate, onRepaint } = await open();
+    manager.setSelection(3);
+    expect(onRepaint).toHaveBeenCalledTimes(1);
+    expect(onInvalidate).not.toHaveBeenCalled();
+    manager.dispose();
+  });
+
+  it("an unchanged selection asks for nothing", async () => {
+    const { manager, onInvalidate, onRepaint } = await open();
+    manager.setSelection(null);
+    manager.setSelection(3);
+    manager.setSelection(3);
+    expect(onRepaint).toHaveBeenCalledTimes(1);
+    expect(onInvalidate).not.toHaveBeenCalled();
+    manager.dispose();
+  });
+
+  it("entering, moving within and leaving isolation all invalidate", async () => {
+    const { manager, onInvalidate } = await open();
+    manager.setSelection(3, true);
+    manager.setSelection(4, true);
+    manager.setSelection(null);
+    expect(onInvalidate).toHaveBeenCalledTimes(3);
+    manager.dispose();
+  });
+});

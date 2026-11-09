@@ -143,7 +143,9 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   useEffect(() => {
     if (!bundle) return;
     updateLabelVolumeNodes(bundle.nodes, labelData);
-    viewerStoreApi.getState().volumeInputs.bump("label-uniforms");
+    // A frame, and deliberately NOT a `volumeInputs` bump: this mesh is not
+    // in the compositor's offscreen target (see the note on the mesh below),
+    // so a label edit must not re-raymarch the image volumes.
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, labelSignature, invalidate]);

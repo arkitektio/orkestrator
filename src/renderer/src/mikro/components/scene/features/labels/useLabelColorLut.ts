@@ -14,7 +14,6 @@ import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServi
 import { level0StoreIdOf, systemIdOf } from "../../platform/model/layerLevel0";
 import type { LayerState } from "../../platform/model/layerModel";
 import { setLabelColorLut, setLabelColorStyle, type LabelLutNodes } from "./labelNodeMaterials";
-import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { buildLabelColorLut } from "./labelColorLut";
 import {
   DEFAULT_MEASURE_COLORMAP,
@@ -46,7 +45,6 @@ export const useLabelColorLut = (
 ): void => {
   const attributeService = useAttributeServiceOrNull();
   const invalidate = useThree((state) => state.invalidate);
-  const viewerStoreApi = useViewerStoreApi();
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
 
@@ -109,8 +107,11 @@ export const useLabelColorLut = (
     // gone with it. Holding the reference would offer a destroyed
     // `GPUTexture` to the next build.
     arenaRef.current = null;
-    viewerStoreApi.getState().volumeInputs.bump("label-lut");
-  }, [nodes, viewerStoreApi]);
+    // No `volumeInputs` bump, here or in `apply`: the label raymarch draws
+    // live in the canvas pass and is not in the compositor's cached target,
+    // so recolouring a mask must not re-raymarch the image volumes.
+    invalidate();
+  }, [nodes, invalidate]);
 
   const ready =
     nodes && attributeService && systemId && storeId &&
@@ -159,7 +160,6 @@ export const useLabelColorLut = (
           colorize: activeColorBy !== null,
           filter: activeRules.length > 0,
         });
-        viewerStoreApi.getState().volumeInputs.bump("label-lut");
         invalidate();
       },
       // The one it must NOT free is the reused arena's: that texture is still

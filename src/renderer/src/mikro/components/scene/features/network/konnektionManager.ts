@@ -170,6 +170,8 @@ type KonnektionPlanView = Omit<
 type Options = {
   collection: KonnektionCollection;
   onInvalidate: () => void;
+  /** Colour-only frame request — `CollectionManagerHooks.onRepaint`. */
+  onRepaint?: () => void;
   onStatsChanged: () => void;
   /** The canvas renderer's `storageAttributeReleaser`, so `dispose` can free
    *  the bundle's storage buffers (three never does on its own). */
@@ -248,7 +250,11 @@ export class KonnektionCollectionManager extends CollectionManagerBase<
   private readonly releaseAttribute: ReleaseAttribute | undefined;
 
   constructor(options: Options) {
-    super({ onInvalidate: options.onInvalidate, onStatsChanged: options.onStatsChanged });
+    super({
+      onInvalidate: options.onInvalidate,
+      onRepaint: options.onRepaint,
+      onStatsChanged: options.onStatsChanged,
+    });
     this.collection = options.collection;
     this.releaseAttribute = options.releaseAttribute;
   }
@@ -360,9 +366,22 @@ export class KonnektionCollectionManager extends CollectionManagerBase<
 
   /** Selection is a uniform write. Never a pipeline rebuild, never a replan. */
   setSelection(ordinal: number | null, isolate = false): void {
-    this.uniforms.selectedOrdinal.value = ordinal ?? -1;
-    this.uniforms.isolate.value = isolate ? 1 : 0;
-    this.invalidate();
+    const nextOrdinal = ordinal ?? -1;
+    const nextIsolate = isolate ? 1 : 0;
+    const wasIsolated = this.uniforms.isolate.value > 0.5;
+    // Every collection hears every selection change; most go from "not mine"
+    // to "not mine".
+    if (
+      this.uniforms.selectedOrdinal.value === nextOrdinal &&
+      this.uniforms.isolate.value === nextIsolate
+    ) {
+      return;
+    }
+    this.uniforms.selectedOrdinal.value = nextOrdinal;
+    this.uniforms.isolate.value = nextIsolate;
+    // Isolation hides everything else, so it moves depth; a highlight is a tint.
+    if (wasIsolated || isolate) this.invalidate();
+    else this.repaint();
   }
 
   /**

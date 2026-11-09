@@ -195,10 +195,11 @@ const NetworkCollectionGroup = ({
     return new KonnektionCollectionManager({
       collection: opened,
       onInvalidate: invalidate,
+      onRepaint: rawInvalidate,
       onStatsChanged,
       releaseAttribute: storageAttributeReleaser(renderer),
     });
-  }, [opened, invalidate, onStatsChanged, renderer]);
+  }, [opened, invalidate, rawInvalidate, onStatsChanged, renderer]);
 
   useEffect(() => () => manager?.dispose(), [manager]);
 
@@ -461,13 +462,14 @@ const NetworkCollectionGroup = ({
       } else {
         manager.setSelection(null);
       }
-      invalidate();
+      // The manager requests its own frame (and moves the volume cache key
+      // only when isolation changed what is drawn).
     };
     apply();
     return viewerApi.subscribe((state, prev) => {
       if (state.meshSelection !== prev.meshSelection) apply();
     });
-  }, [manager, viewerApi, layer.id, invalidate]);
+  }, [manager, viewerApi, layer.id]);
 
   /** ordinal → objectId, loaded once on the first pick. */
   const objectIdsRef = useRef<Map<number, number> | null>(null);

@@ -189,9 +189,10 @@ const FabriksCollectionGroup = ({
         return MeshoptDecoder;
       },
       onInvalidate: invalidate,
+      onRepaint: rawInvalidate,
       onStatsChanged,
     });
-  }, [opened, invalidate, onStatsChanged]);
+  }, [opened, invalidate, rawInvalidate, onStatsChanged]);
 
   useEffect(() => () => manager?.dispose(), [manager]);
 
@@ -381,13 +382,14 @@ const FabriksCollectionGroup = ({
           ? { ordinal: selection.ordinal, isolate: selection.isolate }
           : null,
       );
-      invalidate();
+      // The manager requests its own frame, and moves the volume cache key
+      // only when isolation changed what is drawn.
     };
     apply();
     return viewerApi.subscribe((state, prev) => {
       if (state.meshSelection !== prev.meshSelection) apply();
     });
-  }, [manager, viewerApi, layer.id, invalidate]);
+  }, [manager, viewerApi, layer.id]);
 
   // 2D slab: clip the collection to one z-step around the displayed slice
   // (the annotation layer's slab convention). Thickness comes from the finest
