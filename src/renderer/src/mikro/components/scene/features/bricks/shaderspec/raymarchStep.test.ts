@@ -7,6 +7,7 @@ import {
   attenuatedMipDone,
   attenuationAt,
   desiredLevelForDistance,
+  desiredLevelFrom,
   directionProjectedPitch,
   emptyCellSkippable,
   emptyStepMaxNorm,
@@ -538,5 +539,116 @@ describe("emptyCellSkippable", () => {
         member({ projectionMode: 2, upperNorm: 0.4, done: true }),
       ]),
     ).toBe(true);
+  });
+});
+
+// R11 — the two per-step savings whose exactness is an argument, not a
+// measurement. Both are property tests against the unoptimised form.
+describe("desiredLevelFrom (scan started at the previous step's level)", () => {
+  /** Deterministic LCG — no Math.random in tests. */
+  const rng = (seed: number) => () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+
+  it("matches the full scan along any forward ray", () => {
+    const next = rng(7);
+    for (let trial = 0; trial < 300; trial++) {
+      const levels = 1 + Math.floor(next() * 9);
+      // Non-decreasing per-level factors, including flat runs ([2ⁿ,2ⁿ,1]).
+      const scales: number[] = [1];
+      for (let l = 1; l < levels; l++) scales.push(scales[l - 1] * (next() < 0.25 ? 1 : 1 + next() * 2));
+      const px = next() < 0.1 ? 0 : 10 ** (next() * 6 - 1);
+      const bias = 0.25 + next() * 3;
+      const floor = Math.floor(next() * levels);
+      let distance = next() * 5;
+      let previous = 0;
+      for (let step = 0; step < 60; step++) {
+        const expected = desiredLevelForDistance(distance, px, scales, bias, floor);
+        const got = desiredLevelFrom(previous, distance, px, scales, bias, floor);
+        expect(got).toBe(expected);
+        previous = got;
+        // Forward only, with the occasional long hop an empty cell takes.
+        distance += next() < 0.1 ? next() * 5000 : next() * 40;
+      }
+    }
+  });
+
+  it("is NOT valid for a start above the answer — the contract is the caller's", () => {
+    const scales = [1, 2, 4, 8];
+    expect(desiredLevelForDistance(1, 100, scales, 1, 0)).toBe(0);
+    expect(desiredLevelFrom(2, 1, 100, scales, 1, 0)).toBe(2);
+  });
+});
+
+describe("attenuated MIP maximum culling", () => {
+  const amip = (overrides: Partial<MemberSkipState>): MemberSkipState => ({
+    projectionMode: 1,
+    upperNorm: 0.5,
+    bestNorm: 0,
+    isoThreshold: 0.5,
+    done: false,
+    ...overrides,
+  });
+
+  it("without the attenuated state the clause never fires", () => {
+    expect(residentBrickSkippable([amip({ upperNorm: 0.5 })])).toBe(false);
+  });
+
+  it("skips a brick whose attenuated ceiling cannot beat the accumulated max", () => {
+    const attenuation = attenuationAt(0.5);
+    expect(
+      residentBrickSkippable([amip({ upperNorm: 0.5, attenuation, attenuatedMax: 0.5 * attenuation })]),
+    ).toBe(true);
+    expect(
+      residentBrickSkippable([
+        amip({ upperNorm: 0.5, attenuation, attenuatedMax: 0.5 * attenuation - 1e-6 }),
+      ]),
+    ).toBe(false);
+  });
+
+  it("never changes what the ray shows", () => {
+    let seed = 11;
+    const next = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+    for (let trial = 0; trial < 200; trial++) {
+      // A ray of bricks, each a run of samples with a true upper bound.
+      const bricks = Array.from({ length: 1 + Math.floor(next() * 12) }, () => {
+        const ceiling = next() < 0.3 ? next() * 0.05 : next();
+        const samples = Array.from({ length: 1 + Math.floor(next() * 8) }, () => next() * ceiling);
+        // The sidecar bound is conservative: at or above the true max.
+        return { samples, upperNorm: Math.min(1, Math.max(...samples) + next() * 0.1) };
+      });
+      const total = bricks.reduce((n, b) => n + b.samples.length, 0);
+      const march = (cull: boolean) => {
+        let max = 0;
+        let winner = -1;
+        let index = 0;
+        for (const brick of bricks) {
+          const attenuation = attenuationAt(index / total);
+          if (
+            cull &&
+            residentBrickSkippable([
+              amip({ upperNorm: brick.upperNorm, attenuation, attenuatedMax: max }),
+            ])
+          ) {
+            index += brick.samples.length;
+            continue;
+          }
+          for (const norm of brick.samples) {
+            const av = norm * attenuationAt(index / total);
+            if (av > max) {
+              max = av;
+              winner = index;
+            }
+            index += 1;
+          }
+        }
+        return { max, winner };
+      };
+      expect(march(true)).toEqual(march(false));
+    }
   });
 });

@@ -621,6 +621,15 @@ export function emitResolveBrickResidency(
   return { status, emptyValue, texelBase, hopLevel, residentLevel, slotOriginTexel, pageTexel, cell };
 }
 
+/**
+ * R11 kill switch (compile-time; flip to false to get the per-step emission
+ * back). On: a member's occupancy / EMPTY / aggregate upper bound is computed
+ * once per residency-cache entry (resp. per aggregate cell) instead of on
+ * every ray step — the sidecar loads and the normalizes (a `pow` each) move
+ * out of the step. Same predicates, same inputs, evaluated less often.
+ */
+const BRICK_BOUND_CACHE = true;
+
 /** Faces of the cache's validity box are pulled in by this many base voxels
  * (mirror: `CELL_BOX_EPSILON` in shaderspec/residencyCache.ts). */
 const CELL_BOX_EPSILON = 1e-3;
@@ -650,6 +659,9 @@ export type ResidencyCache = {
   brickOrigin: any;
   levelScale: any;
   levelShape: any;
+  /** Set on every refresh: whatever a caller derived from this entry (the
+   * per-member occupancy bounds, R11) is stale. The caller clears it. */
+  boundsStale: any;
 };
 
 /** Declare the cache vars. Call OUTSIDE the ray loop, once per material. */
@@ -668,6 +680,7 @@ export function makeResidencyCache(prefix = "rc"): ResidencyCache {
     brickOrigin: vec3(0.0).toVar(`${prefix}BrickOrigin`),
     levelScale: vec3(1.0).toVar(`${prefix}ResScale`),
     levelShape: vec3(1.0).toVar(`${prefix}ResShape`),
+    boundsStale: bool(true).toVar(`${prefix}BoundsStale`),
   };
 }
 
@@ -711,6 +724,7 @@ export function emitCachedResidency(
     cache.brickOrigin.assign(cell.brickOrigin);
     cache.levelScale.assign(cell.levelScale);
     cache.levelShape.assign(cell.levelShape);
+    cache.boundsStale.assign(true);
   });
   // Same expression as the walk's RESIDENT branch, from cached placement.
   const levelVoxel = clamp(p.div(cache.levelScale), vec3(0.0), cache.levelShape.sub(0.5001));
@@ -979,7 +993,7 @@ function emitSourceSample(
   const weight = float(0.0).toVar(nm("srcWeight"));
 
   if (!emitPhasor) {
-    color.assign(c.colormapAtlas.sample(vec2(norm, paramsB.w)).rgb);
+    color.assign(c.colormapAtlas.sample(vec2(norm, paramsB.w)).level(0).rgb);
     weight.assign(paramsB.x.mul(norm));
     return { color, weight, norm };
   }
@@ -999,7 +1013,7 @@ function emitSourceSample(
       0.0,
       0.999,
     ).toVar(nm("srcValueNorm"));
-    color.assign(c.colormapAtlas.sample(vec2(valueNorm, paramsB.w)).rgb);
+    color.assign(c.colormapAtlas.sample(vec2(valueNorm, paramsB.w)).level(0).rgb);
 
     // A cursor repaints the pixels of phasor space it covers. Test against the
     // CALIBRATED phasor — the same (g, s) the plot draws the cursor in.
@@ -1015,7 +1029,7 @@ function emitSourceSample(
     const gate = select(norm.greaterThan(0.0), float(1.0), float(0.0));
     weight.assign(paramsB.x.mul(select(p2.z.greaterThan(0.5), norm, gate)));
   }).Else(() => {
-    color.assign(c.colormapAtlas.sample(vec2(norm, paramsB.w)).rgb);
+    color.assign(c.colormapAtlas.sample(vec2(norm, paramsB.w)).level(0).rgb);
     weight.assign(paramsB.x.mul(norm));
   });
 
@@ -1942,8 +1956,15 @@ export function createVolumeNodeMaterial(
 
   // The ray, the base-voxel map, the per-sample LOD pick and the empty-space hop
   // — shared with the label raymarcher (`volumeRayNodes.ts`).
-  const { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel } =
-    makeVolumeRayNodes(t, rayUniforms);
+  const {
+    clippedPosition,
+    vOrigin,
+    vDirection,
+    toBaseVoxel,
+    desiredLevelAt,
+    desiredLevelFrom,
+    brickExitRel,
+  } = makeVolumeRayNodes(t, rayUniforms);
   // The proxy box is drawn at the crop box, not at the whole volume.
   material.positionNode = clippedPosition;
   material.userData.depthCodeUniform = depth.uDepthCode;
@@ -1959,7 +1980,15 @@ export function createVolumeNodeMaterial(
     nameScope.reset();
     // Ray ∩ [0, baseShape]; discards the fragment when the ray misses.
     const { originB, dirB, invD, boundsX, boundsY, rayLen, fullRayLen } = emitVolumeRayBounds(
-      { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel },
+      {
+        clippedPosition,
+        vOrigin,
+        vDirection,
+        toBaseVoxel,
+        desiredLevelAt,
+        desiredLevelFrom,
+        brickExitRel,
+      },
       rayUniforms,
     );
     // Termination guarantee: uMaxSteps steps of at least this size always
@@ -2039,6 +2068,55 @@ export function createVolumeNodeMaterial(
     // march, so it survives from step to step.
     const residencyCache = makeResidencyCache();
 
+    // R11 per-ray state, declared outside the march so it survives a step.
+    // UNNAMED per-member vars, for the reason the accumulators are.
+    /** The previous step's desired level — where `desiredLevelFrom` scans from. */
+    const prevLvl = int(0).toVar("prevLvl");
+    /** `levelPitch` of `pitchLvl`; recomputed only when the level changes. */
+    const pitchLvl = int(-1).toVar("pitchLvl");
+    const pitchNow = float(0.0).toVar("pitchNow");
+    /** Per member: the upper norm of the CURRENT residency-cache entry — the
+     * occupancy bound of a resident brick, or the exact norm of an EMPTY
+     * fill. Valid while `residencyCache.boundsStale` is false. */
+    const cellUpper = memberNodes.map(() => float(0.0).toVar());
+    /** Per member: the upper norm of the aggregate cell `aggKey` at level
+     * `aggKeyLevel`; `aggKnown` false = the aggregate is unwritten (never hop). */
+    const aggUpper = memberNodes.map(() => float(0.0).toVar());
+    const aggKey = ivec3(-1).toVar("aggKey");
+    const aggKeyLevel = int(-1).toVar("aggKeyLevel");
+    const aggKnown = bool(false).toVar("aggKnown");
+    /** `If(stale) body` under the cache, `body` on every step without it. */
+    const whenStale = (stale: any, body: () => void) => {
+      if (BRICK_BOUND_CACHE) If(stale, body);
+      else body();
+    };
+    // Any ATTENUATED_MIP member (a uniform test): only then is the depth
+    // weight needed BEFORE sampling, for the maximum-culling clause.
+    let anyAttenuated: any = int(memberNodes[0].projectionMode).equal(int(1));
+    for (let m = 1; m < memberNodes.length; m++) {
+      anyAttenuated = anyAttenuated.or(int(memberNodes[m].projectionMode).equal(int(1)));
+    }
+    /**
+     * A member's verdict on a cell whose norm is at most `upper` (CPU mirror:
+     * `residentBrickSkippable`): invisible, a MIP it cannot beat, an
+     * ATTENUATED MIP it cannot beat even at this step's depth weight, an ISO
+     * it never reaches, or already done.
+     */
+    const memberSkips = (m: number, upper: any, attenNow: any): any => {
+      const mem = memberNodes[m];
+      const invisible = upper.lessThanEqual(0.001);
+      const mipBeaten = int(mem.projectionMode)
+        .equal(int(0))
+        .and(upper.lessThanEqual(acc[m].bestNorm));
+      const amipBeaten = int(mem.projectionMode)
+        .equal(int(1))
+        .and(upper.mul(attenNow).lessThanEqual(acc[m].attenuatedMax));
+      const isoMiss = int(mem.projectionMode)
+        .equal(int(3))
+        .and(upper.lessThan(mem.isoThreshold));
+      return acc[m].done.or(invisible).or(mipBeaten).or(amipBeaten).or(isoMiss);
+    };
+
     Loop({ start: int(0), end: int(MAX_RAY_STEPS_CEILING), type: "int", condition: "<" }, ({ i }: any) => {
       // Tier cap: the uniform can't feed the compile-constant loop bound, so
       // it breaks here. floorDelta above guarantees full-ray coverage in
@@ -2059,13 +2137,28 @@ export function createVolumeNodeMaterial(
       });
 
       const pB = originB.add(rayT.mul(dirB)).toVar();
-      const lvl = int(desiredLevelAt(pB, originB)).toVar();
+      // Scanned from the previous step's level (exact — `desiredLevelFrom`).
+      const lvl = int(desiredLevelFrom(pB, originB, prevLvl)).toVar();
+      prevLvl.assign(lvl);
 
       // LOD-adaptive step (P14): fine pitch where fine data is sampled.
-      // floorDelta keeps the uMaxSteps termination guarantee.
-      const stepLen = max(floorDelta, levelPitch(lvl))
+      // floorDelta keeps the uMaxSteps termination guarantee. The pitch is a
+      // function of the level alone (and the ray), so it is recomputed only
+      // when the level moves — a handful of times per ray.
+      If(lvl.notEqual(pitchLvl), () => {
+        pitchLvl.assign(lvl);
+        pitchNow.assign(levelPitch(lvl));
+      });
+      const stepLen = max(floorDelta, pitchNow)
         .mul(max(float(uStepScale), 1.0))
         .toVar();
+
+      // ATTENUATED_MIP's depth weight at this step — the same expression its
+      // accumulator arm evaluates below. 1 when no member needs it.
+      const attenNow = float(1.0).toVar("attenNow");
+      If(anyAttenuated, () => {
+        attenNow.assign(exp(float(-1.5).mul(rayT.sub(boundsX).div(rayLen))));
+      });
 
       // Residency is channel- AND member-independent: resolve ONCE per step.
       // This is the whole point of merging — N members used to pay N level
@@ -2106,9 +2199,12 @@ export function createVolumeNodeMaterial(
         // invisible for EVERY member, so a bright uniform background under
         // MIP was marched step by step long after it could change nothing.
         If(resolved.status.greaterThan(1.5), () => {
-          const esSkipAll = bool(true).toVar("esSkipAll");
+          // The fill's norm is a property of the cache entry: once per cell.
+          whenStale(residencyCache.boundsStale, () => {
+            residencyCache.boundsStale.assign(false);
           memberNodes.forEach((mem, m) => {
-            const emptyNorm = float(0.0).toVar();
+            const emptyNorm = cellUpper[m];
+            emptyNorm.assign(0.0);
             if (memberFns[m].emitSimple || memberFns[m].emitRgb) {
               // Same collapse as the sampling arm: known-visible slot(s) over
               // ONE window, so one normalize of the fill value is the norm.
@@ -2134,16 +2230,11 @@ export function createVolumeNodeMaterial(
                 },
               );
             }
-            const invisible = emptyNorm.lessThanEqual(0.001);
-            const mipBeaten = int(mem.projectionMode)
-              .equal(int(0))
-              .and(emptyNorm.lessThanEqual(acc[m].bestNorm));
-            const isoMiss = int(mem.projectionMode)
-              .equal(int(3))
-              .and(emptyNorm.lessThan(mem.isoThreshold));
-            esSkipAll.assign(
-              esSkipAll.and(acc[m].done.or(invisible).or(mipBeaten).or(isoMiss)),
-            );
+          });
+          });
+          const esSkipAll = bool(true).toVar("esSkipAll");
+          memberNodes.forEach((_mem, m) => {
+            esSkipAll.assign(esSkipAll.and(memberSkips(m, cellUpper[m], attenNow)));
           });
           If(esSkipAll, () => {
             hopPastCell();
@@ -2193,8 +2284,19 @@ export function createVolumeNodeMaterial(
                   // aggregates are written for every plane at once, and a
                   // per-slab plane that happens to encode as all-zero decodes
                   // to the full range below — never a hop, always safe.
+                  // The cell's bounds are a property of (aggLevel, aggBase):
+                  // loaded and normalized when the ray enters a new cell.
+                  const aggMoved = aggLevel
+                    .notEqual(aggKeyLevel)
+                    .or(aggBase.x.notEqual(aggKey.x))
+                    .or(aggBase.y.notEqual(aggKey.y))
+                    .or(aggBase.z.notEqual(aggKey.z));
+                  whenStale(aggMoved, () => {
+                  aggKeyLevel.assign(aggLevel);
+                  aggKey.assign(aggBase);
                   const aggTexel = vec4(texture3DLoad(t.aggregate, aggBase)).toVar("aggTexel");
-                  If(aggTexel.r.add(aggTexel.g).greaterThan(0.001), () => {
+                  aggKnown.assign(aggTexel.r.add(aggTexel.g).greaterThan(0.001));
+                  If(aggKnown, () => {
                     const aggRange = max(float(t.uOccDecodeRange), 0.00001);
                     const aggMin = select(
                       aggTexel.r.lessThan(0.002),
@@ -2207,9 +2309,9 @@ export function createVolumeNodeMaterial(
                       float(t.uOccDecodeMin).add(oneMinus(aggTexel.g).mul(aggRange)),
                     ).toVar("aggMax");
                     const aggUnion = { min: aggMin, max: aggMax };
-                    const aggSkipAll = bool(true).toVar("aggSkipAll");
                     memberNodes.forEach((mem, m) => {
-                      const upper = float(0.0).toVar();
+                      const upper = aggUpper[m];
+                      upper.assign(0.0);
                       if (memberFns[m].emitSimple || memberFns[m].emitRgb) {
                         // Straight-line: no loop header, no Break, no
                         // visibility Continue, no array reads.
@@ -2251,16 +2353,13 @@ export function createVolumeNodeMaterial(
                         },
                       );
                       }
-                      const invisible = upper.lessThanEqual(0.001);
-                      const mipBeaten = int(mem.projectionMode)
-                        .equal(int(0))
-                        .and(upper.lessThanEqual(acc[m].bestNorm));
-                      const isoMiss = int(mem.projectionMode)
-                        .equal(int(3))
-                        .and(upper.lessThan(mem.isoThreshold));
-                      aggSkipAll.assign(
-                        aggSkipAll.and(acc[m].done.or(invisible).or(mipBeaten).or(isoMiss)),
-                      );
+                    });
+                  });
+                  });
+                  If(aggKnown, () => {
+                    const aggSkipAll = bool(true).toVar("aggSkipAll");
+                    memberNodes.forEach((_mem, m) => {
+                      aggSkipAll.assign(aggSkipAll.and(memberSkips(m, aggUpper[m], attenNow)));
                     });
                     If(aggSkipAll, () => {
                       rayT.addAssign(
@@ -2305,10 +2404,14 @@ export function createVolumeNodeMaterial(
           // Union plane (= plane 0): what every slot reads on a single-plane
           // page table, and the per-slab fallback (see emitOccBounds for the
           // sentinel decode).
+          // The brick's bounds are a property of the cache entry (its
+          // `pageTexel`): loaded and normalized once per brick.
+          whenStale(residencyCache.boundsStale, () => {
+            residencyCache.boundsStale.assign(false);
           const occUnion = emitOccBounds(t.occupancy, resolved.pageTexel, "occ");
-          const occSkipAll = bool(true).toVar("occSkipAll");
           memberNodes.forEach((mem, m) => {
-            const upper = float(0.0).toVar();
+            const upper = cellUpper[m];
+            upper.assign(0.0);
             if (memberFns[m].emitSimple || memberFns[m].emitRgb) {
               // Straight-line form of the loop below (CPU mirror:
               // rgbComposite.ts `rgbOccupancyUpperNorm` ≡ occupancyUpperNorm).
@@ -2352,16 +2455,11 @@ export function createVolumeNodeMaterial(
               },
             );
             }
-            const invisible = upper.lessThanEqual(0.001);
-            const mipBeaten = int(mem.projectionMode)
-              .equal(int(0))
-              .and(upper.lessThanEqual(acc[m].bestNorm));
-            const isoMiss = int(mem.projectionMode)
-              .equal(int(3))
-              .and(upper.lessThan(mem.isoThreshold));
-            occSkipAll.assign(
-              occSkipAll.and(acc[m].done.or(invisible).or(mipBeaten).or(isoMiss)),
-            );
+          });
+          });
+          const occSkipAll = bool(true).toVar("occSkipAll");
+          memberNodes.forEach((_mem, m) => {
+            occSkipAll.assign(occSkipAll.and(memberSkips(m, cellUpper[m], attenNow)));
           });
           If(occSkipAll, () => {
             // Hop the RESIDENT level's cell — resolved.hopLevel defaults to
@@ -2433,7 +2531,7 @@ export function createVolumeNodeMaterial(
             // color × weight with opacity 1: additive (or normal) onto a zero
             // accumulator IS assignment.
             sampleColor.assign(
-              c.colormapAtlas.sample(vec2(norm, mem.fixed.uRow)).rgb.mul(norm),
+              c.colormapAtlas.sample(vec2(norm, mem.fixed.uRow)).level(0).rgb.mul(norm),
             );
           });
           return {

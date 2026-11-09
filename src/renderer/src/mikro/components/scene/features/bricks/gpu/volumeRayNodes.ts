@@ -155,6 +155,7 @@ export type VolumeRayNodes = {
   toBaseVoxel: any;
   /** The level to sample at a point, given the camera's base-voxel position. */
   desiredLevelAt: any;
+  desiredLevelFrom: any;
   /** Exit distance along the ray (from a point) of a level's brick cell. */
   brickExitRel: any;
 };
@@ -190,8 +191,13 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
     return vec3(q.x.add(0.5), q.y.add(0.5), q.z.add(0.5)).mul(u.uBaseShape);
   });
 
-  const desiredLevelAt = Fn(([baseVoxel, cameraBase]: any[]) => {
-    const out = int(t.uNumLevels).sub(1).toVar("lodOut");
+  /**
+   * The level pick, with the scan started at `scanStart` (an int node).
+   * `desiredLevelAt` starts at 0; `desiredLevelFrom` at the caller's previous
+   * answer — see there for why that is exact.
+   */
+  const emitDesiredLevel = (baseVoxel: any, cameraBase: any, scanStart: any, tag: string) => {
+    const out = int(t.uNumLevels).sub(1).toVar(`lodOut${tag}`);
     If(u.uPxPerVoxelAtUnitDist.lessThanEqual(0.0), () => {
       out.assign(u.uDesiredLevel);
     }).Else(() => {
@@ -208,8 +214,15 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
       // Unique iterator name: this Fn inlines into the ray loop (see the
       // emitResolveBrickResidency shadowing note).
       Loop(
-        { start: int(0), end: int(t.uNumLevels).sub(1), type: "int", condition: "<", name: "dlv" },
-        ({ dlv }: any) => {
+        {
+          start: scanStart,
+          end: int(t.uNumLevels).sub(1),
+          type: "int",
+          condition: "<",
+          name: `dlv${tag}`,
+        },
+        (args: any) => {
+          const dlv = args[`dlv${tag}`];
           // MAX spatial factor — DELIBERATELY stays max-based even when the
           // planner's `wantFiner` runs the anisotropy-aware criterion
           // (`orkestrator.anisoLod`, nodePlanning.ts `anisoEffectiveFactor`):
@@ -237,7 +250,36 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
       );
     });
     return out;
-  });
+  };
+
+  const desiredLevelAt = Fn(([baseVoxel, cameraBase]: any[]) =>
+    emitDesiredLevel(baseVoxel, cameraBase, int(0), ""),
+  );
+
+  /**
+   * `desiredLevelAt` for a RAY STEP, given the previous step's answer on the
+   * same ray (0 before the first). The scan starts at
+   * `max(previous, uDesiredLevel)` instead of 0, so it usually runs ONE
+   * iteration rather than one per level below the answer — per sample, per
+   * fragment.
+   *
+   * Exact, from two monotonicities (CPU mirror + property test:
+   * `shaderspec/raymarchStep.ts` `desiredLevelFrom`):
+   *  - the per-level test is monotone in the level (level scales never
+   *    shrink), so a raw hit below `uDesiredLevel` also hits AT it, and the
+   *    result clamps there either way;
+   *  - the answer is monotone non-finer in the distance from the camera, and
+   *    the ray origin IS the camera, so it never falls along a forward march
+   *    (the property the R4 coarse hop already rests on).
+   */
+  const desiredLevelFrom = Fn(([baseVoxel, cameraBase, previous]: any[]) =>
+    emitDesiredLevel(
+      baseVoxel,
+      cameraBase,
+      max(int(previous), int(u.uDesiredLevel)),
+      "F",
+    ),
+  );
 
   // Exit distance (along the ray, from pB) of the level's brick cell.
   const brickExitRel = Fn(([pB, invD, lvl]: any[]) => {
@@ -249,7 +291,15 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
     return max(min(tf.x, min(tf.y, tf.z)), 0.0);
   });
 
-  return { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel };
+  return {
+    clippedPosition,
+    vOrigin,
+    vDirection,
+    toBaseVoxel,
+    desiredLevelAt,
+    desiredLevelFrom,
+    brickExitRel,
+  };
 };
 
 /** The ray's entry/exit along itself, in base-voxel space. */

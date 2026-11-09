@@ -69,6 +69,14 @@ describe("volume raymarcher WGSL", () => {
     expect(wgsl).toContain("fn main");
     // The residency walk starts at the desired level, not 0.
     expect(wgsl).toMatch(/for \( var \w*[Ll]vl\w* : i32 = max\(/);
+    // R11: the level pick scans from the previous step's level …
+    expect(wgsl).toMatch(/for \( var dlvF : i32 = max\( prevLvl, /);
+    // … the brick's occupancy bound is refreshed with the residency cache,
+    // not per step, and the aggregate's when the ray enters a new cell …
+    expect(wgsl.match(/if \( rcBoundsStale \)/g)?.length).toBe(2);
+    expect(wgsl).toMatch(/aggLevel != aggKeyLevel/);
+    // … and no tap in the divergent ray loop uses implicit derivatives.
+    expect(wgsl).not.toMatch(/textureSample\(/);
     // A crop box shortens the march: the stride floor is the UNCROPPED ray's.
     expect(wgsl).toMatch(/fullRayLen\s*\/\s*max\(/);
     // And the proxy box is drawn at the crop box: the vertex stage reads it.

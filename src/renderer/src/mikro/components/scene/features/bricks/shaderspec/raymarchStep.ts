@@ -80,6 +80,39 @@ export function desiredLevelForDistance(
 }
 
 /**
+ * `desiredLevelForDistance` with the level scan STARTED at `startLevel` —
+ * the shader's `desiredLevelFrom`, which the ray loop feeds its previous
+ * step's answer so the scan usually runs one iteration instead of one per
+ * level below the answer.
+ *
+ * Equal to `desiredLevelForDistance` whenever `startLevel` is not above the
+ * true answer, which the loop guarantees from two facts: the per-level test
+ * is monotone in the level (`levelMaxScales` never decreases), so starting at
+ * the FLOOR loses nothing (a raw hit below it clamps to it either way); and
+ * the answer is monotone non-finer in `distance`, so along a forward ray the
+ * previous step's answer never exceeds this step's.
+ */
+export function desiredLevelFrom(
+  startLevel: number,
+  distance: number,
+  pxPerVoxelAtUnitDistance: number,
+  levelMaxScales: readonly number[],
+  lodBias: number,
+  floorLevel: number,
+  minDistance = 1,
+): number {
+  const coarsest = levelMaxScales.length - 1;
+  if (pxPerVoxelAtUnitDistance <= 0) return Math.min(Math.max(floorLevel, 0), coarsest);
+  const pxPerBaseVoxel = pxPerVoxelAtUnitDistance / Math.max(distance, minDistance);
+  for (let level = Math.max(startLevel, floorLevel, 0); level < coarsest; level++) {
+    if (pxPerBaseVoxel * levelMaxScales[level] * lodBias >= 1) {
+      return Math.min(Math.max(level, floorLevel), coarsest);
+    }
+  }
+  return coarsest;
+}
+
+/**
  * The empty-space skip predicate: an unmapped chain always skips; a uniform
  * EMPTY brick skips when no visible channel would contribute. Residents are
  * NOT decided here — their skip is the occupancy predicate below
@@ -178,6 +211,11 @@ export type MemberSkipState = {
   isoThreshold: number;
   /** The member's early-out flag (saturated / first ISO crossing). */
   done: boolean;
+  /** ATTENUATED_MIP only: the member's accumulator (max `norm · attenuation`
+   * so far) and the depth weight AT THIS STEP (`attenuationAt`). Absent ⇒ the
+   * attenuated clause never fires (the pre-R11 predicate). */
+  attenuatedMax?: number;
+  attenuation?: number;
 };
 
 /**
@@ -187,6 +225,12 @@ export type MemberSkipState = {
  * threshold), a MIP that the brick cannot beat, an ISO the brick never
  * reaches, or already done. Conservative by construction: a skipped brick
  * cannot change any member's accumulator.
+ *
+ * ATTENUATED_MIP (R11): the member ranks samples by `norm · attenuation`, the
+ * attenuation only FALLS along the ray, and the accumulator updates on a
+ * strict `>`. Every sample in the brick is therefore at most
+ * `upperNorm · attenuation_now`, and a brick whose ceiling does not exceed
+ * the accumulated max cannot change it.
  */
 /** NOTE: this predicate is ALSO the hierarchical-occupancy coarse hop's
  * (R4): the aggregate hop feeds the same shape with `upperNorm` computed
@@ -197,6 +241,14 @@ export function residentBrickSkippable(members: readonly MemberSkipState[]): boo
     if (member.done) return true;
     if (member.upperNorm <= 0.001) return true;
     if (member.projectionMode === 0 && member.upperNorm <= member.bestNorm) return true;
+    if (
+      member.projectionMode === 1 &&
+      member.attenuatedMax !== undefined &&
+      member.attenuation !== undefined &&
+      member.upperNorm * member.attenuation <= member.attenuatedMax
+    ) {
+      return true;
+    }
     if (member.projectionMode === 3 && member.upperNorm < member.isoThreshold) return true;
     return false;
   });

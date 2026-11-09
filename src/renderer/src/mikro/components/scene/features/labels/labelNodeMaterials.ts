@@ -675,6 +675,8 @@ export function createLabelVolumeNodeMaterial(
     // Residency cache (see emitCachedResidency): the level walk re-runs once
     // per brick the ray enters, not once per step.
     const residencyCache = makeResidencyCache("lblRc");
+    /** The previous step's level — where `desiredLevelFrom` scans from. */
+    const prevLvl = int(0).toVar("lblPrevLvl");
 
     Loop({ start: int(0), end: int(MAX_RAY_STEPS), type: "int", condition: "<" }, ({ i }: any) => {
       // The uniform cannot feed the compile-constant loop bound, so the tier cap
@@ -690,7 +692,10 @@ export function createLabelVolumeNodeMaterial(
       });
 
       const pB = originB.add(rayT.mul(dirB)).toVar("lblPB");
-      const lvl = int(rays.desiredLevelAt(pB, originB)).toVar("lblLvl");
+      // Scanned from the previous step's level: exact, and usually one
+      // iteration instead of one per level (`volumeRayNodes.desiredLevelFrom`).
+      const lvl = int(rays.desiredLevelFrom(pB, originB, prevLvl)).toVar("lblLvl");
+      prevLvl.assign(lvl);
 
       // LOD-adaptive step: fine pitch where fine data is sampled. The pitch
       // is the direction-projected ellipsoidal voxel-crossing distance (see
