@@ -60,6 +60,20 @@ export type QualityProfile = {
   litVolumeWhileActive: boolean;
 };
 
+/**
+ * Concurrent brick fetches per pool — the SAME on every tier.
+ *
+ * The tier is learned from frame times, i.e. from the GPU. Fetching and
+ * decoding are network and worker-thread work, and what they cost the GPU is
+ * already capped per frame by `uploadBudgetMs`, whatever the arrival rate. The
+ * lower tiers used to cut this to 12 and 6, which only made a slow GPU's
+ * download slow as well — and while bricks stream the volume re-renders
+ * continuously, so the machine that could least afford it stayed in its most
+ * expensive state the longest (an M2 on LOW: 6 in flight, 194 waiting, 25 s
+ * to sharp).
+ */
+const FETCH_CONCURRENCY = 16;
+
 export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
   [TIER_HIGH]: {
     settledDprCap: Number.POSITIVE_INFINITY,
@@ -73,7 +87,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     // each brick fans out to ≥1 chunk task — 12 under-subscribed it on fast
     // machines/networks. Judge against timeToSharpMs; GPU-side cost stays
     // capped by the drain budget regardless of arrival rate.
-    maxInflightBricks: 16,
+    maxInflightBricks: FETCH_CONCURRENCY,
     residencyBumpMs: 150,
     litVolumeWhileActive: true,
   },
@@ -85,7 +99,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     activeStepScale: 2.5,
     maxRaySteps: 384,
     uploadBudgetMs: 3,
-    maxInflightBricks: 12,
+    maxInflightBricks: FETCH_CONCURRENCY,
     residencyBumpMs: 150,
     litVolumeWhileActive: false,
   },
@@ -97,7 +111,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     activeStepScale: 3,
     maxRaySteps: 256,
     uploadBudgetMs: 2,
-    maxInflightBricks: 6,
+    maxInflightBricks: FETCH_CONCURRENCY,
     residencyBumpMs: 300,
     litVolumeWhileActive: false,
   },

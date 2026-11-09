@@ -2510,6 +2510,28 @@ was measured or seen on a GPU; each item says what to look at.
   they always were between replans. *Check:* long tasks under dropped frames
   in a perf recording during an orbit; cold-open `firstPlan` unchanged.
 
+*From the first recording (M2, four channels of one uint8 image as four
+layers, dev build, debug on; 2026-11-09)* — the planner was 1% of the time
+(22 replans, 159 ms in 12 s), in-frame main thread 2.7 ms on average, and
+9.3 s of the 12 s were long animation frames, many with no script in them:
+the GPU. So no planner worker. What it did show:
+- `CanvasHueProbe` blocked the main thread for 111 ms and 244 ms: its
+  readback waits for the queued raymarch. It no longer analyses during a
+  camera gesture or while bricks stream.
+- Fetch concurrency followed the GPU tier (LOW: 6 bricks in flight, 194
+  waiting, 25.6 s to sharp). It is 16 on every tier now
+  (`FETCH_CONCURRENCY`, `qualityGovernor.ts`): the tier is learned from frame
+  times, fetch and decode are not GPU work, and streaming is the expensive
+  state to be in.
+- A merged pass of fixed-shape members over an RGBA8 atlas sampled the same
+  texel once per member per step. One sample per step now
+  (`SHARED_RGBA_TAP`, `sharedTap`). *Check:* identical image; volume frame
+  time on a four-channel uint8 scene.
+- `BrickResidencyOverlay` (debug only) rebuilt every box of every layer in a
+  canvas commit three times a second — 2.2 s of that recording. One wireframe
+  per pool and placement, typed arrays, at most once a second. Recordings
+  taken with debug on before this date overstate React time by that much.
+
 *Found, not done*
 - Konnektion: serial row-group fetch, main-thread decode, no decoded-cell
   cache (`network/konnektionManager.ts`).

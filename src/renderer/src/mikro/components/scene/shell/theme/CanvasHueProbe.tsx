@@ -16,10 +16,14 @@ const SAMPLE_SIZE = 32;
  * the view does, not chase it. */
 const QUIET_MS = 750;
 
-/** During CONTINUOUS rendering (orbit, animation playback) the quiet period
- * never arrives — sample at least this often so the tint still follows,
- * unhurried. */
+/** During CONTINUOUS rendering that is neither a camera gesture nor brick
+ * streaming (a slider drag, a redraw loop) the quiet period never arrives —
+ * sample at least this often so the tint still follows, unhurried. */
 const MAX_WAIT_MS = 4000;
+
+/** How soon to look again when the analysis was put off because the scene
+ * was busy (`sceneBusy`). */
+const BUSY_RECHECK_MS = 500;
 
 /**
  * Minimum gap between CAPTURES while the camera is moving.
@@ -67,7 +71,8 @@ const makeScratch = (options?: CanvasRenderingContext2DSettings): Scratch | null
  *      just rendered, which is why paying it per frame is fine.
  *
  *   2. ANALYSIS — debounced off the frame loop (`QUIET_MS` of stillness,
- *      capped by `MAX_WAIT_MS` so sustained motion still updates). The 32×32
+ *      capped by `MAX_WAIT_MS`), and never during a camera gesture or while
+ *      bricks stream — the tint follows once the scene rests. The 32×32
  *      snapshot canvas is a plain 2D canvas whose contents persist, so the
  *      late read is safe. It is bounced through `createImageBitmap` into a
  *      second, CPU-side scratch before `getImageData`: reading the GPU-backed
@@ -151,6 +156,16 @@ export const CanvasHueProbe = () => {
     const clock = clockRef.current;
     clock.timer = null;
     if (clock.disposed || clock.dirtySince === null) return;
+    // NEVER while the camera moves or bricks stream. The read below has to
+    // wait for the GPU to finish what is queued, and it waits on the main
+    // thread: behind a volume raymarch that was measured at 111 ms and 244 ms
+    // of blocked main thread, mid-gesture, for a tint. `MAX_WAIT_MS` used to
+    // force exactly that every four seconds of an orbit. The snapshot keeps
+    // being refreshed, so the first quiet moment analyses a current frame.
+    if (viewApi.getState().cameraMoving || qualityGovernor.isStreaming()) {
+      clock.timer = setTimeout(check, BUSY_RECHECK_MS);
+      return;
+    }
     const now = performance.now();
     const quietFor = now - clock.lastFrameAt;
     if (quietFor >= QUIET_MS || now - clock.dirtySince >= MAX_WAIT_MS) {
