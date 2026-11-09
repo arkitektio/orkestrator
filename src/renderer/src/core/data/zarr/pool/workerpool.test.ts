@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { TaskPriority } from "./types";
 import WorkerPool from "./workerpool";
 
 /** A stand-in for `Worker` — the pool only stores, hands out and terminates it. */
@@ -196,5 +197,54 @@ describe("WorkerPool", () => {
       await tick();
     }
     expect(results).toEqual(Array.from({ length: n }, (_, i) => i));
+  });
+});
+
+describe("TaskPriority", () => {
+  it("moves a queued task ahead when the request it serves is raised", async () => {
+    const pool = new WorkerPool(1, { maxInFlightPerWorker: 1, factory: fakeWorker });
+    const { started, make } = controlledTasks();
+    const order: string[] = [];
+    const run = (label: string, priority: number) => {
+      const handle = pool.enqueue({ task: make(label), priority });
+      void handle.promise.then((result) => order.push(result as string));
+      return handle;
+    };
+
+    run("running", 5); // occupies the only slot
+    const background = new TaskPriority(-1);
+    background.attach(run("prefetched", background.value));
+    run("planned", 5);
+
+    // An on-screen brick joins the prefetched chunk.
+    background.raise(6);
+    expect(background.value).toBe(6);
+
+    for (let i = 0; i < 3; i++) {
+      await tick();
+      started[i].finish();
+      await tick();
+    }
+    expect(order).toEqual(["running", "prefetched", "planned"]);
+  });
+
+  it("never lowers, and stops following a settled task", async () => {
+    const priority = new TaskPriority(4);
+    const seen: number[] = [];
+    let settle!: () => void;
+    const until = new Promise<void>((resolve) => (settle = resolve));
+    priority.follow((value) => seen.push(value), until);
+
+    priority.raise(2);
+    priority.raise(4);
+    expect(priority.value).toBe(4);
+    expect(seen).toEqual([]);
+
+    priority.raise(7);
+    settle();
+    await tick();
+    priority.raise(9);
+    expect(seen).toEqual([7]);
+    expect(priority.value).toBe(9);
   });
 });

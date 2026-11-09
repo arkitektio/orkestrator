@@ -2,6 +2,7 @@
  * Shared types for the read-only zarr worker runner.
  */
 
+import type { TaskPriority } from '../pool/types'
 import { WorkerPool } from '../pool/workerpool'
 import type { Chunk, CodecMetadata, DataType } from 'zarrita'
 
@@ -54,6 +55,10 @@ export interface GetWorkerOptions<StoreOpts = unknown> {
   pool: WorkerPool
   /** Higher values are scheduled ahead of lower values when the pool is saturated. */
   priority?: number
+  /** A live priority for this request (wins over `priority`): its queued
+   * tasks follow a later `raise`. For callers that share one in-flight
+   * request between waiters of different urgency. */
+  priorityRef?: TaskPriority
   /** Cancel queued work and abort in-flight worker tasks when aborted. */
   signal?: AbortSignal
   /** Pass-through options for the store's `get` method. */

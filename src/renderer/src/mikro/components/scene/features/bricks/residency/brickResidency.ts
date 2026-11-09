@@ -250,6 +250,9 @@ export class BrickResidencyManager {
    * dispatch order. Interactive fetches use INTERACTIVE_FETCH_PRIORITY,
    * above every generation; the slab prefetch stays at −1, below all of it. */
   private fetchGeneration = 1;
+  /** The chunk keys of each in-flight PLANNED brick fetch, by its controller
+   * — what `reconcilePool` raises to the new generation for survivors. */
+  private readonly inFlightChunkKeys = new WeakMap<AbortController, string[]>();
   /** Two-phase bricks kill switch, read once per manager (see twoPhase.ts). */
   private readonly twoPhaseBricks = true;
   /** Trailing hysteresis for the governor's streaming flag (drainUploads). */
@@ -310,8 +313,11 @@ export class BrickResidencyManager {
   /** Decoded-chunk cache, in-flight sharing and referrer cancellation. */
   private readonly chunks = new ChunkService(this.stats, DECODED_CHUNK_CACHE_BYTES);
   /** Idle-edge neighbour warm-up (z±1 slabs, ±1 collapsed-dim selections). */
-  private readonly prefetcher = new AdjacentPrefetcher(this.pools, this.chunks, () =>
-    this.deps.viewerStore.getState(),
+  private readonly prefetcher = new AdjacentPrefetcher(
+    this.pools,
+    this.chunks,
+    () => this.deps.viewerStore.getState(),
+    (pool) => this.initialPhase(pool),
   );
   /** Streaming render-cadence gate (gap 1a — see resolveStreamFrameAction):
    * last actually-issued streaming invalidate, and the off-frame pump timer
@@ -960,6 +966,15 @@ export class BrickResidencyManager {
     for (const [key, controller] of pool.inFlight) {
       if (!protectedKeys.has(key) && parseNodeKey(key).level !== coarsestLevel) {
         controller.abort();
+        continue;
+      }
+      // A brick that SURVIVES the replan was dispatched under an earlier
+      // generation, so its still-queued chunks would now sort behind every
+      // task this plan is about to enqueue — though it was dispatched first
+      // because it ranked higher. Carry it into the new generation.
+      const chunkKeys = this.inFlightChunkKeys.get(controller);
+      if (chunkKeys) {
+        for (const chunkKey of chunkKeys) this.chunks.raisePriority(chunkKey, this.fetchGeneration);
       }
     }
 
@@ -1181,8 +1196,8 @@ export class BrickResidencyManager {
    * Halo refines (two-phase bricks) run only once every pool's planned queue
    * is empty — the loop above `break`s here in exactly that state — and under
    * the band-2 gate (resting camera, no on-screen fetch in flight), so a rind
-   * refine never competes with a brick the user is waiting for. Arrival
-   * order across pools; a refine that no longer matches a provisional
+   * refine never competes with a brick the user is waiting for. Upload
+   * order within a pool, pool order across them; a refine that no longer matches a provisional
    * resident is dropped (the guards mirror `fetchBrick`'s halo checkpoint).
    */
   private dispatchHalos(globalInFlight: number, globalLimit: number, maxInflight: number): void {
@@ -1197,7 +1212,10 @@ export class BrickResidencyManager {
     }
     for (const pool of this.pools.values()) {
       while (globalInFlight < globalLimit && pool.inFlight.size < maxInflight) {
-        const node = pool.pendingHalo.pop();
+        // FIFO: entries are queued in UPLOAD order, which is fetch order —
+        // backdrop, then nearest the view focus. Popping the tail refined
+        // the farthest brick first and the seam under the cursor last.
+        const node = pool.pendingHalo.shift();
         if (!node) break;
         if (
           !haloStillWanted({
@@ -1421,6 +1439,8 @@ export class BrickResidencyManager {
         acquiredChunkKeys.push(chunkKey);
         this.chunks.acquireRef(chunkKey, ownerToken);
       }
+      // Planned work only: a halo refine stays background at any generation.
+      if (!halo) this.inFlightChunkKeys.set(controller, acquiredChunkKeys);
 
       // One grouped call: inner chunks of the same shard that sit close in
       // the object coalesce into one ranged GET (sharded arrays only; the

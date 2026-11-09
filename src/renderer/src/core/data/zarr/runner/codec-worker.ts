@@ -4,7 +4,7 @@
 
 import type { Chunk, DataType } from 'zarrita'
 
-import { create_codec_pipeline } from './internals/codec-pipeline.js'
+import { create_codec_pipeline, warmCommonCodecs } from './internals/codec-pipeline.js'
 import { createBuffer, get_ctr, get_strides } from './internals/util.js'
 import {
   deserializeRequestInit,
@@ -547,6 +547,9 @@ function beginRequest(id: number): AbortSignal {
   inFlight.set(id, controller)
   return controller.signal
 }
+
+// Spend the idle time between spawn and first task on the codec imports.
+warmCommonCodecs()
 
 ctx.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const msg = event.data

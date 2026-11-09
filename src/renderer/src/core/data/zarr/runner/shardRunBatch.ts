@@ -9,6 +9,7 @@
  * macrotask, and a lone contribution pays at most that one macrotask.
  */
 
+import type { TaskPriority } from "../pool/types"
 import {
   coalesceRangesDense,
   DEFAULT_DENSE_COALESCE,
@@ -22,6 +23,9 @@ export interface ShardBatchItem {
   /** Set when the chunk is at the array edge (smaller than the chunk shape). */
   actualChunkShape?: number[]
   priority: number
+  /** The chunk's live priority, when its caller shares it between waiters
+   * (wins over `priority` — see `TaskPriority`). */
+  priorityRef?: TaskPriority
   /** Effective abort for this chunk (per-coord signal ?? the call's signal). */
   signal?: AbortSignal
   /** Run-of-1 fallback — the owning call's single-chunk path. */

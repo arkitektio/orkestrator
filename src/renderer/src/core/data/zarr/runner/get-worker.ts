@@ -10,7 +10,7 @@
  */
 
 import { zarrTimingEnabled, zarrTransportStats } from './timing.js'
-import type { WorkerPoolTaskHandle, WorkerPoolTaskInput } from "../pool/types"
+import type { TaskPriority, WorkerPoolTaskHandle, WorkerPoolTaskInput } from "../pool/types"
 import type {
   Chunk,
   DataType,
@@ -579,6 +579,9 @@ export interface ChunkGroupOptions<StoreOpts = unknown> extends GetWorkerOptions
    * aborted; `opts.signal` still aborts everything at once.
    */
   signals?: (AbortSignal | undefined)[]
+  /** Per-coordinate live priorities, parallel to `coordsList` (each wins
+   * over `priority` for its chunk — see `TaskPriority`). */
+  priorityRefs?: (TaskPriority | undefined)[]
   /**
    * Called with the number of worker tasks enqueued — possibly MORE THAN
    * ONCE per call (additively): range reads dispatch through the cross-call
@@ -660,6 +663,7 @@ function executeShardRun(ctx: ShardRunContext, run: CoalescedRange<ShardBatchIte
   const members = run.items.map((entry) => entry.item)
   const parts = run.items.map((entry) => ({ offset: entry.offset, length: entry.length }))
   const runSignal = whenAllAborted(members.map((member) => member.signal))
+  const runPriority = () => Math.max(...members.map(livePriorityOf))
   const fetched = enqueueWorkerTask(
     ctx.pool,
     ctx.workerUrl,
@@ -684,8 +688,13 @@ function executeShardRun(ctx: ShardRunContext, run: CoalescedRange<ShardBatchIte
         zarrTransportStats.requestsInFlight -= 1
       }
     },
-    Math.max(...members.map((member) => member.priority)),
+    runPriority(),
   )
+  // One GET serves every member, so it is as urgent as the most urgent of
+  // them — and stays so when one is raised while it is still queued.
+  for (const member of members) {
+    member.priorityRef?.follow(() => fetched.updatePriority(runPriority()), fetched.promise)
+  }
   fetched.promise.then(
     (result) => {
       if (result.timings.protocol) zarrTransportStats.protocol = result.timings.protocol
@@ -703,7 +712,7 @@ function executeShardRun(ctx: ShardRunContext, run: CoalescedRange<ShardBatchIte
           member.onChunk(undefined)
           return
         }
-        enqueueWorkerTask(
+        const decode = enqueueWorkerTask(
           ctx.pool,
           ctx.workerUrl,
           member.signal,
@@ -718,14 +727,21 @@ function executeShardRun(ctx: ShardRunContext, run: CoalescedRange<ShardBatchIte
               ctx.useShared,
               signal,
             ),
-          member.priority,
-        ).promise.then(member.onChunk, member.onError)
+          livePriorityOf(member),
+        )
+        member.priorityRef?.attach(decode)
+        decode.promise.then(member.onChunk, member.onError)
       })
     },
     (error) => {
       for (const member of members) member.onError(error)
     },
   )
+}
+
+/** A batch item's priority NOW: its live ref when it has one. */
+function livePriorityOf(item: { priority: number; priorityRef?: TaskPriority }): number {
+  return item.priorityRef?.value ?? item.priority
 }
 
 function edgeShapeOf(arr: { shape: readonly number[] }, chunkShape: number[], coords: readonly number[]): number[] {
@@ -761,7 +777,11 @@ export function getChunkGroupWorker<D extends DataType, Store extends Readable>(
   const deferreds = coordsList.map(() => createDeferred<Chunk<D>>())
   const signals = opts.signals ?? coordsList.map(() => undefined)
   const single = (index: number): void => {
-    getChunkWorker(arr, [...coordsList[index]], { ...opts, signal: signals[index] ?? opts.signal }).then(
+    getChunkWorker(arr, [...coordsList[index]], {
+      ...opts,
+      signal: signals[index] ?? opts.signal,
+      priorityRef: opts.priorityRefs?.[index] ?? opts.priorityRef,
+    }).then(
       deferreds[index].resolve,
       deferreds[index].reject,
     )
@@ -860,6 +880,7 @@ export function getChunkGroupWorker<D extends DataType, Store extends Readable>(
             length,
             actualChunkShape: isEdge ? edge : undefined,
             priority: opts.priority ?? 0,
+            priorityRef: opts.priorityRefs?.[i] ?? opts.priorityRef,
             signal: signals[i] ?? opts.signal,
             dispatchSingle: () => single(i),
             onChunk: (chunk) => {
@@ -1043,7 +1064,7 @@ export async function getChunkWorker<D extends DataType, Store extends Readable>
   }
 
   const enqueuedAt = performance.now()
-  const taskPriority = opts.priority ?? 0
+  const taskPriority = opts.priorityRef?.value ?? opts.priority ?? 0
   const handle = enqueueWorkerTask(
     pool,
     workerUrl,
@@ -1107,6 +1128,7 @@ export async function getChunkWorker<D extends DataType, Store extends Readable>
     },
     taskPriority,
   )
+  opts.priorityRef?.attach(handle)
 
   const [chunk] = await waitForTaskHandles([handle], opts.signal)
 

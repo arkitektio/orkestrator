@@ -10,6 +10,7 @@ import type { BrickSlice } from "../store/brickSlice";
 import { enumerateBrickChunkCoords } from "./brickChunks";
 import type { ChunkService } from "./chunkService";
 import type { LayerBrickPool } from "./residencyTypes";
+import type { FetchPhase } from "../octree/nodeAddress";
 
 /**
  * The residency manager's idle-edge prefetch, split out of it: warms the
@@ -23,6 +24,12 @@ export class AdjacentPrefetcher {
     private readonly pools: ReadonlyMap<string, LayerBrickPool>,
     private readonly chunks: ChunkService,
     private readonly getState: () => ViewerState & BrickSlice,
+    /** The phase a brick's FIRST fetch runs in (`initialFetchPhase`). The
+     * prefetch must enumerate the same chunks that fetch will ask for: with
+     * two-phase bricks that is the payload box alone, and warming the ±1
+     * border's 27 chunks per brick spent the whole budget on one to three
+     * bricks' worth of chunks the post-step fetch does not even request. */
+    private readonly initialPhase: (pool: LayerBrickPool) => FetchPhase = () => "full",
   ) {}
 
   /** One prefetch marker per POOL (key): `sliceSignature|slabZ` last prefetched. */
@@ -175,9 +182,31 @@ export class AdjacentPrefetcher {
       this.dimMarker.set(pool.poolKey, pool.sliceSignature);
 
       const issued = new Set<string>();
+      const phase = this.initialPhase(pool);
+      // Grouped per level, so inner chunks of one shard coalesce into ranged
+      // GETs exactly as the real fetch's do (`fetchChunksShared`).
+      const groups = new Map<
+        string,
+        { arr: ReturnType<typeof state.getArrayForStoreId>; coords: number[][] }
+      >();
+      const dispatch = () => {
+        for (const [storeId, group] of groups) {
+          // Fire-and-forget, exactly like the slab prefetch.
+          for (const promise of this.chunks.fetchChunksShared(group.arr, storeId, group.coords, -1)) {
+            void promise.catch(() => {});
+          }
+        }
+      };
 
-      for (const node of plan.nodes) {
-        if (node.level !== plan.targetLevel) continue;
+      // The BACKDROP first: after a step the pool is flushed and the screen
+      // is blank until the root-level bricks land, so those decide first
+      // pixels. Then the target level, which decides when it is sharp.
+      const ordered = [
+        ...plan.nodes.filter((node) => node.fetchBand === 0),
+        ...plan.nodes.filter((node) => node.fetchBand !== 0 && node.level === plan.targetLevel),
+      ];
+
+      for (const node of ordered) {
         const level = pool.geometry.levels[node.level];
         // Decoded footprint per the worker's representation: uint8 1 B/voxel,
         // uint16 2 B under raw16, everything else widened to f32.
@@ -189,6 +218,11 @@ export class AdjacentPrefetcher {
           arr = state.getArrayForStoreId(level.storeId);
         } catch {
           continue;
+        }
+        let group = groups.get(level.storeId);
+        if (!group) {
+          group = { arr, coords: [] };
+          groups.set(level.storeId, group);
         }
 
         for (const d of collapsedDims) {
@@ -202,25 +236,24 @@ export class AdjacentPrefetcher {
             );
             if (neighborChunk === null) continue;
 
-            for (const spec of enumerateBrickChunkCoords(pool, node.level, node.coords)) {
+            for (const spec of enumerateBrickChunkCoords(pool, node.level, node.coords, phase)) {
               const chunkCoords = [...spec.chunkCoords];
               chunkCoords[d] = neighborChunk;
               const key = `${level.storeId}:${chunkCoords.join(",")}`;
               if (issued.has(key)) continue;
               if (budget.chunks <= 0 || budget.bytes < chunkBytes) {
+                dispatch();
                 return;
               }
               issued.add(key);
               budget.chunks -= 1;
               budget.bytes -= chunkBytes;
-              // Fire-and-forget, exactly like the slab prefetch.
-              void this.chunks
-                .fetchChunkShared(arr, level.storeId, chunkCoords, -1)
-                .catch(() => {});
+              group.coords.push(chunkCoords);
             }
           }
         }
       }
+      dispatch();
     }
   }
 

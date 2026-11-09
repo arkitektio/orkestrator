@@ -7,6 +7,7 @@ import {
   type ArrayMetadata,
 } from "@/core/data/zarr/runner/index";
 import { workerPool } from "@/core/data/zarr/pool/sharedWorkerPool";
+import { TaskPriority } from "@/core/data/zarr/pool/types";
 import { ByteBudgetChunkCache } from "@/core/data/zarr/caches/byteBudgetChunkCache";
 import { chunkFidelityForDtype } from "../octree/atlasFormat";
 import { ChunkRefRegistry } from "../octree/chunkRefRegistry";
@@ -56,6 +57,9 @@ export class ChunkService {
    * is still QUEUED, while a started task ignores it and finishes into the
    * cache. Entries live exactly as long as their inFlightChunks entry. */
   private readonly inFlightChunkAborts = new Map<string, AbortController>();
+  /** Each in-flight chunk's live priority, keyed by its abort controller so
+   * it lives exactly as long as that entry with no bookkeeping of its own. */
+  private readonly chunkPriorities = new WeakMap<AbortController, TaskPriority>();
   /** Which live bricks need which in-flight chunk (`features/bricks/octree/chunkRefRegistry`). */
   private readonly chunkRefs = new ChunkRefRegistry();
   /** Chunk fetches outlive individual brick aborts (shared!); this cancels
@@ -149,6 +153,18 @@ export class ChunkService {
     return chunk;
   }
 
+  /**
+   * `chunkKey` is wanted at `priority` now. A chunk already in flight keeps
+   * the priority of whoever started it — a background halo or t±1 prefetch
+   * (−1), or a plan generations old — and a brick that joins it inherits
+   * that, behind every newer task in the pool. Raising moves its still-queued
+   * tasks up; a no-op for anything not in flight, or already as urgent.
+   */
+  raisePriority(chunkKey: string, priority: number): void {
+    const abort = this.inFlightChunkAborts.get(chunkKey);
+    if (abort) this.chunkPriorities.get(abort)?.raise(priority);
+  }
+
   /** Register `owner` (one fetch INVOCATION) as a referrer of `chunkKey`. */
   acquireRef(chunkKey: string, owner: string): void {
     this.chunkRefs.acquire(chunkKey, owner);
@@ -197,6 +213,7 @@ export class ChunkService {
       if (existing) {
         const existingAbort = this.inFlightChunkAborts.get(key);
         if (!existingAbort || !existingAbort.signal.aborted) {
+          if (existingAbort) this.chunkPriorities.get(existingAbort)?.raise(priority);
           out[i] = existing;
           continue;
         }
@@ -205,6 +222,7 @@ export class ChunkService {
       }
       const abort = new AbortController();
       this.inFlightChunkAborts.set(key, abort);
+      this.chunkPriorities.set(abort, new TaskPriority(priority));
       fresh.push({ index: i, key, abort });
     }
     if (fresh.length === 0) return out;
@@ -217,6 +235,7 @@ export class ChunkService {
         priority,
         signal: this.fetchAbort.signal,
         signals: fresh.map((entry) => entry.abort.signal),
+        priorityRefs: fresh.map((entry) => this.chunkPriorities.get(entry.abort)),
         useSharedArrayBuffer: true,
         cache: this.cache,
         textureFidelity: chunkFidelityForDtype(arr.dtype),
@@ -267,7 +286,10 @@ export class ChunkService {
       // loads seconds later" regression. An aborted entry is cleared here
       // and the fetch re-issued fresh.
       const existingAbort = this.inFlightChunkAborts.get(key);
-      if (!existingAbort || !existingAbort.signal.aborted) return existing;
+      if (!existingAbort || !existingAbort.signal.aborted) {
+        if (existingAbort) this.chunkPriorities.get(existingAbort)?.raise(priority);
+        return existing;
+      }
       this.inFlightChunks.delete(key);
       this.inFlightChunkAborts.delete(key);
     }
@@ -278,9 +300,12 @@ export class ChunkService {
     // task ignores the cancellation and its decode lands in the cache.
     const chunkAbort = new AbortController();
     this.inFlightChunkAborts.set(key, chunkAbort);
+    const livePriority = new TaskPriority(priority);
+    this.chunkPriorities.set(chunkAbort, livePriority);
     const promise = getChunkWorker(arr, chunkCoords, {
       pool: workerPool,
       priority,
+      priorityRef: livePriority,
       signal: AbortSignal.any([this.fetchAbort.signal, chunkAbort.signal]),
       useSharedArrayBuffer: true,
       cache: this.cache,

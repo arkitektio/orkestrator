@@ -118,6 +118,29 @@ function createBytesCodec<D extends DataType>(
 // Load codecs from registry
 // ---------------------------------------------------------------------------
 
+/**
+ * Start loading the compression codecs nearly every pyramid uses, without
+ * waiting for a decode to ask.
+ *
+ * Each is a dynamic import of a several-hundred-kilobyte module with its
+ * wasm inlined, resolved PER WORKER — and the pool hands the first tasks to
+ * the least-loaded workers, i.e. to every cold one in turn, so on a cold open
+ * each of the first bricks used to pay that import on the first-pixel path.
+ * A worker is spawned (prewarmed) well before its first task; this spends
+ * that idle time. The module cache then answers `load_codecs` at once.
+ * Best-effort: a codec that fails to load here fails again, loudly, when a
+ * chunk actually needs it.
+ */
+export function warmCommonCodecs(names: readonly string[] = ['blosc', 'zstd']): void {
+  for (const name of names) {
+    try {
+      void registry.get(name)?.().catch(() => {})
+    } catch {
+      // A synchronous factory failure is the same "not now".
+    }
+  }
+}
+
 async function load_codecs<D extends DataType>(chunk_meta: ChunkMetadata<D>) {
   const promises = chunk_meta.codecs.map(async (meta) => {
     const factory = registry.get(meta.name)
