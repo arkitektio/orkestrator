@@ -41,6 +41,7 @@ import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";
 import type { BrickSlice, UnplannableLayerInfo } from "../store/brickSlice";
 import type { ViewState } from "../../../platform/stores/viewStore";
+import { scheduleIdleTask } from "./pumpScheduler";
 import { planChargePhase } from "./twoPhase";
 
 /** Value equality for the unplannable-layers map (skip no-op store writes). */
@@ -64,8 +65,9 @@ const sameUnplannable = (
 
 /**
  * Store-level driver for the octree node planner (`features/bricks/octree/nodePlanning`):
- * subscribe to the planning inputs, coalesce bursts into one recompute per
- * animation frame (debounced), and write plans back only when they changed
+ * subscribe to the planning inputs, coalesce bursts into one recompute
+ * (debounced, run between frames — `scheduleReplan`), and write plans back
+ * only when they changed
  * (per-layer identity preserved via `sameNodePlan`).
  *
  * There is no rendered-feedback loop — the shader falls back to coarser
@@ -80,10 +82,21 @@ type NodePlanStores = {
   modeStore: StoreApi<ModeState>;
 };
 
-const scheduleFrame: (callback: () => void) => void =
-  typeof requestAnimationFrame !== "undefined"
-    ? (callback) => requestAnimationFrame(callback)
-    : (callback) => setTimeout(callback, 0);
+/**
+ * How long a replan may wait for a gap between frames before it runs
+ * regardless. Well under `MIN_REPLAN_INTERVAL_MS`, so the deadline never
+ * becomes the cadence.
+ */
+const REPLAN_IDLE_DEADLINE_MS = 80;
+
+/**
+ * Off the frame: a replan is a few milliseconds of main-thread work, and in a
+ * `requestAnimationFrame` callback it was charged to that frame — a periodic
+ * dropped frame through every orbit. See `scheduleIdleTask`.
+ */
+const scheduleReplan = (callback: () => void): void => {
+  scheduleIdleTask(callback, REPLAN_IDLE_DEADLINE_MS);
+};
 
 // Scratch objects for the per-class camera derivation (single-threaded; the
 // frustum is consumed synchronously by planLayerNodes and never retained in a
@@ -549,7 +562,7 @@ export function startNodePlanTracking({
       return;
     }
     scheduled = true;
-    scheduleFrame(() => {
+    scheduleReplan(() => {
       scheduled = false;
       if (!stopped) {
         lastRecomputeAt = performance.now();

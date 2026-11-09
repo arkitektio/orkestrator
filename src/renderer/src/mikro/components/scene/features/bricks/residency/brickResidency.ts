@@ -225,6 +225,16 @@ type Deps = {
    * gesture that starts after a timer was armed still drains under the
    * trickle policy. Optional: absent (tests) reads as not interacting. */
   isInteracting?: () => boolean;
+  /**
+   * Schedules the reconcile that follows a new plan; returns its cancel.
+   * Given (the app: `scheduleIdleTask`), the reconcile runs as its OWN task
+   * between frames instead of synchronously inside the store write that
+   * published the plan — so the replan and the reconcile are two slices of
+   * main-thread work rather than one, and neither is charged to a frame.
+   * Coalesced: a second plan before it runs is answered by the one run, which
+   * reads the plans current at that moment. Absent (tests): synchronous.
+   */
+  deferReconcile?: (run: () => void) => () => void;
 };
 
 export class BrickResidencyManager {
@@ -546,14 +556,29 @@ export class BrickResidencyManager {
   start(): () => void {
     const { viewerStore } = this.deps;
     let lastPlans = viewerStore.getState().nodePlans;
+    let cancelPending: (() => void) | null = null;
     const unsubscribe = viewerStore.subscribe((state) => {
       if (state.nodePlans !== lastPlans) {
         lastPlans = state.nodePlans;
-        this.reconcileAll(state.nodePlans);
+        const defer = this.deps.deferReconcile;
+        if (!defer) {
+          this.reconcileAll(state.nodePlans);
+          return;
+        }
+        if (cancelPending !== null) return; // one run answers every plan so far
+        cancelPending = defer(() => {
+          cancelPending = null;
+          // The plans of NOW, not of when this was scheduled.
+          this.reconcileAll(viewerStore.getState().nodePlans);
+        });
       }
     });
     this.reconcileAll(viewerStore.getState().nodePlans);
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      cancelPending?.();
+      cancelPending = null;
+    };
   }
 
   getLayerPool(layerId: string): LayerBrickPool | null {

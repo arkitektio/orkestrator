@@ -2500,12 +2500,22 @@ was measured or seen on a GPU; each item says what to look at.
   replicated rind. *Check:* seams at LOD boundaries and at the screen edge;
   time to sharp; `provisional` in the pool report no longer drains to 0.
 
+*Replan and reconcile off the frame* (`residency/pumpScheduler.ts`
+`scheduleIdleTask`)
+- The replan ran in a `requestAnimationFrame` callback and the reconcile
+  synchronously inside its store write: one task of several milliseconds,
+  charged to a frame, every 500 ms of an orbit. Both are now background tasks
+  with a deadline (replan 80 ms, reconcile 50 ms), and they are two tasks, not
+  one. Between a plan and its reconcile the pools are one plan behind — as
+  they always were between replans. *Check:* long tasks under dropped frames
+  in a perf recording during an orbit; cold-open `firstPlan` unchanged.
+
 *Found, not done*
 - Konnektion: serial row-group fetch, main-thread decode, no decoded-cell
   cache (`network/konnektionManager.ts`).
-- Replan + reconcile run inside a rAF callback, in the same task as a frame;
-  `haloCoveredByPlan` adds up to 26 key lookups per provisional planned brick
-  to it.
+- The planner itself is still main-thread and non-incremental (a worker is
+  the real fix); `haloCoveredByPlan` adds up to 26 key lookups per
+  provisional planned brick to the reconcile.
 - The depth prepass and the volume pass are two renders into one target and
   could be one (opaque list draws first).
 - `CanvasHueProbe` copies the canvas on every still-camera frame.

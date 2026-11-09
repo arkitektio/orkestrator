@@ -5,6 +5,7 @@ import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";
 import type { ViewState } from "../../../platform/stores/viewStore";
 import { BrickResidencyManager } from "./brickResidency";
+import { scheduleIdleTask } from "./pumpScheduler";
 import type { BrickSlice } from "../store/brickSlice";
 
 /**
@@ -24,6 +25,9 @@ export type BrickSystem = {
   manager: BrickResidencyManager;
   dispose: () => void;
 };
+
+/** The longest a reconcile waits for a gap between frames after its plan. */
+const RECONCILE_IDLE_DEADLINE_MS = 50;
 
 /**
  * Build, start and register the brick residency system.
@@ -66,6 +70,8 @@ export function createBrickSystem(stores: {
     // fire time (gestures started after a timer was armed still drain under
     // the trickle policy).
     isInteracting: () => viewStore.getState().cameraMoving,
+    // Between frames, and within a few frames of the plan at the latest.
+    deferReconcile: (run) => scheduleIdleTask(run, RECONCILE_IDLE_DEADLINE_MS),
   });
 
   const stop = manager.start();

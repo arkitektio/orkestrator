@@ -41,3 +41,50 @@ export function scheduleBackgroundTask(
   const handle = host.setTimeout(task, delayMs);
   return () => host.clearTimeout(handle);
 }
+
+/**
+ * Run `task` when the main thread has nothing more urgent — but no later than
+ * `deadlineMs` from now.
+ *
+ * For main-thread work that is owed SOON but belongs to no frame: the replan
+ * and the residency reconcile. Both used to run inside a
+ * `requestAnimationFrame` callback, i.e. in the same task as a frame, before
+ * its paint — several milliseconds of planning charged to whichever frame of
+ * an orbit they happened to fall on, which is a dropped frame at 60 Hz. As a
+ * background task they wait for a gap between frames instead.
+ *
+ * The deadline is what makes that safe: a background task can be held off
+ * for as long as higher-priority work keeps arriving, and a plan that never
+ * runs is a view that never sharpens. Whichever of the two fires first runs
+ * the task; the other is cancelled.
+ */
+export function scheduleIdleTask(
+  task: () => void,
+  deadlineMs: number,
+  host: BackgroundTaskHost = globalThis as unknown as BackgroundTaskHost,
+): () => void {
+  let done = false;
+  let cancelBackground: (() => void) | null = null;
+  let deadlineHandle: unknown = null;
+  const run = () => {
+    if (done) return;
+    done = true;
+    cancelBackground?.();
+    if (deadlineHandle !== null) host.clearTimeout(deadlineHandle);
+    task();
+  };
+  if (typeof host.scheduler?.postTask === "function") {
+    deadlineHandle = host.setTimeout(run, deadlineMs);
+    cancelBackground = scheduleBackgroundTask(run, 0, host);
+  } else {
+    // No prioritized scheduler: the next macrotask is the nearest thing to
+    // "off the frame" there is, and needs no deadline.
+    deadlineHandle = host.setTimeout(run, 0);
+  }
+  return () => {
+    if (done) return;
+    done = true;
+    cancelBackground?.();
+    if (deadlineHandle !== null) host.clearTimeout(deadlineHandle);
+  };
+}
