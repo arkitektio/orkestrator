@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   nextLadderRungDown,
@@ -70,8 +70,6 @@ export const QualityAdapter = () => {
   // run outside React (a useFrame and a store subscription). Subscribing only
   // bought a re-render per flip.
   const viewApi = useViewStoreApi();
-  // Rare notifications: tier / override / streaming flips.
-  useSyncExternalStore(qualityGovernor.subscribe, () => qualityGovernor.getVersion());
 
   const lastFrameAtRef = useRef<number | null>(null);
   const appliedDprRef = useRef<number | null>(null);

@@ -42,7 +42,10 @@ export const createDimsSlice = (
   get: SliceGet<DimsSlice>,
 ): DimsSlice => ({
   currentZ: 0,
-  setCurrentZ: (z) => set({ currentZ: z }),
+  setCurrentZ: (z) => {
+    if (get().currentZ === z) return; // skip no-op writes (a tour sets it per frame)
+    set({ currentZ: z });
+  },
   dimSelections: {},
   setDimSelection: (dim, index) => {
     if (get().dimSelections[dim] === index) return; // skip no-op writes

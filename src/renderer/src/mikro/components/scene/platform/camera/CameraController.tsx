@@ -35,7 +35,13 @@ const ProbeOrbitPivot = () => {
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
   const pivotOnProbe = useModeStore((s) => s.pivotOnProbe);
-  const probedCoordinate = useViewerStore((s) => s.probedCoordinate);
+  // Only a CLICK probe can move the pivot (`shouldRepivot`), and only while
+  // the setting is on — so that is all React subscribes to. The hot field
+  // changes once per hovered voxel; selecting it whole re-rendered this
+  // component per frame of a sweep, setting on or off.
+  const clickProbe = useViewerStore((s) =>
+    pivotOnProbe && s.probedCoordinate?.origin === "click" ? s.probedCoordinate : null,
+  );
   const playingId = useAnimationStore((s) => s.playingId);
   const viewerApi = useViewerStoreApi();
   const sceneApi = useSceneStoreApi();
@@ -46,6 +52,8 @@ const ProbeOrbitPivot = () => {
     // hover-origin one, so the switch has an immediate visible effect.
     const justEnabled = pivotOnProbe && !wasEnabledRef.current;
     wasEnabledRef.current = pivotOnProbe;
+    // Flipping the setting on takes whatever probe is current, hover included.
+    const probedCoordinate = justEnabled ? viewerApi.getState().probedCoordinate : clickProbe;
 
     if (
       !shouldRepivot({
@@ -79,7 +87,7 @@ const ProbeOrbitPivot = () => {
     // to be re-applied then. Camera-setting changes no longer remount it.
   }, [
     pivotOnProbe,
-    probedCoordinate,
+    clickProbe,
     playingId,
     controls,
     camera,

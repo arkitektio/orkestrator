@@ -6,7 +6,7 @@
  * React state instead would mean recompiling the shader on every camera move,
  * which is exactly what the uniform-push contract exists to avoid. */
 import { useThree } from "@react-three/fiber";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 
 import {
   qualityGovernor,
@@ -101,12 +101,9 @@ export const useVolumeRayUniforms = (
   const pxPerVoxelAtUnitDistance = usePxPerVoxelAtUnitDistance();
   const invalidate = useThree((state) => state.invalidate);
   const viewerStoreApi = useViewerStoreApi();
-  // Quality tier / streaming flips are rare (P17-clean); re-runs the push so
-  // `uMaxSteps` tracks the governor's profile.
-  const qualityVersion = useSyncExternalStore(
-    qualityGovernor.subscribe,
-    () => qualityGovernor.getVersion(),
-  );
+  // No governor subscription: none of the uniforms below depends on it
+  // (`uMaxSteps` is the StepScaleDriver's). One used to live here and
+  // re-rendered every volume layer, and bumped the volume cache, per emit.
 
   useEffect(() => {
     if (!nodes || desiredLevel === undefined) return;
@@ -127,7 +124,6 @@ export const useVolumeRayUniforms = (
     lodBias,
     pxPerVoxelAtUnitDistance,
     worldMatrix,
-    qualityVersion,
     invalidate,
     viewerStoreApi,
   ]);

@@ -6,7 +6,7 @@ import { resolveProbeMarkerGeometry } from "../../platform/probe/probeWorld";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { liveProbeWorld } from "../../platform/stores/viewer/probeSlice";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { bindAll } from "@/core/data/scene/stores/bindStore";
+import { bindAll, bindField } from "@/core/data/scene/stores/bindStore";
 
 /**
  * Binds the probe marker to the live probe WITHOUT re-rendering per move.
@@ -84,21 +84,42 @@ export function useProbeMarkerBinding() {
         return;
       }
 
+      // Write-if-changed. This runs on EVERY viewer-store write (residency
+      // bumps, view ranges, world-units-per-pixel — several of them from
+      // inside a frame), so an unconditional `invalidate()` here asked for a
+      // frame per write: with a probe resting on streaming data that roughly
+      // doubled the volume passes, around the streaming cadence gate.
+      const [x, y, z] = geometry.markerPosition;
+      const unchanged =
+        visibleRef.current &&
+        minAxisRef.current === geometry.minAxis &&
+        inner.position.x === x &&
+        inner.position.y === y &&
+        inner.position.z === z &&
+        outer.matrix.equals(geometry.affineMatrix);
+      if (unchanged) return;
+
       outer.matrix.copy(geometry.affineMatrix);
-      inner.position.set(...geometry.markerPosition);
+      inner.position.set(x, y, z);
       minAxisRef.current = geometry.minAxis;
-      baseZRef.current = geometry.markerPosition[2];
+      baseZRef.current = z;
       outer.visible = true;
       visibleRef.current = true;
       invalidate();
     };
 
-    // Re-apply on ANY viewer-store change, not just the probe: the layer's
-    // affine and the marker's slice come from the store too, and a probe that
-    // has not moved still has to follow a layer that has. `bindAll` is the
-    // deliberate blunt option here — a change test would read more of the
-    // state than the apply does.
-    return bindAll(viewerStoreApi, apply);
+    // Re-apply on ANY viewer-store change, not just the probe: the arrays the
+    // geometry reads arrive through that store, and `bindAll` is the
+    // deliberate blunt option — the change test above is what keeps it from
+    // costing frames. The LAYER (affine, visibility, slices) lives in the
+    // scene store, so a probe that has not moved follows a layer that has
+    // through the second binding.
+    const unbindViewer = bindAll(viewerStoreApi, apply);
+    const unbindScene = bindField(sceneStoreApi, (s) => s.layers, apply);
+    return () => {
+      unbindViewer();
+      unbindScene();
+    };
     // `identity` is a dep so the binding re-applies against the newly mounted
     // group refs when the target marker changes.
   }, [identity, viewerStoreApi, sceneStoreApi, invalidate]);

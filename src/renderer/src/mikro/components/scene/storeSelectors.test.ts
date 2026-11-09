@@ -76,6 +76,21 @@ describe("scene store selectors", () => {
     ).toEqual([]);
   });
 
+  it("no component subscribes React to the hot probe fields", () => {
+    // `probedCoordinate` / `probeCursorWorld` change once per hovered voxel —
+    // per frame during a sweep. React reads `probeReadout` (settled), a derived
+    // scalar, or binds imperatively (`bindField`).
+    const HOT_PROBE_SELECTOR =
+      /use\w*Store\(\s*\((\w+)\)\s*=>\s*\1\.(probedCoordinate|probeCursorWorld)\s*,?\s*\)/g;
+    const offenders: string[] = [];
+    for (const file of walk(SCENE)) {
+      const rel = relative(SCENE, file);
+      if (/\.(test|spec)\.tsx?$/.test(rel)) continue;
+      if (readFileSync(file, "utf8").match(HOT_PROBE_SELECTOR)) offenders.push(rel);
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("the allowlist is a ceiling — remove entries whose subscription is gone", () => {
     for (const rel of KNOWN_WHOLE_ARRAY) {
       const src = readFileSync(join(SCENE, rel), "utf8");
