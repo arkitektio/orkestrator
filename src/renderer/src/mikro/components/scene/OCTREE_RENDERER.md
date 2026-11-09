@@ -585,9 +585,12 @@ planned-first drain lanes — index cursors, one splice per pool),
   chunks (`features/bricks/octree/chunkRefRegistry.ts`), and when the LAST referring
   brick aborts, the chunk's per-fetch AbortController fires — the worker pool
   cancels the task if it is still QUEUED (reclaiming the wasted decode during
-  fast navigation; `stats.cancelledDecodes`), while a STARTED task ignores it
-  and finishes into the chunk cache. Never cancel shared in-progress decodes —
-  that direction was the 13× refetch amplification.
+  fast navigation; `stats.cancelledDecodes`), and a STARTED task is cancelled
+  per request: the worker aborts that request's fetch (the `cancel` message,
+  `runner/codec-worker.ts`), while a decode already running finishes into the
+  chunk cache. Only the LAST referrer's release does this — never cancel a
+  decode another brick still waits on; that direction was the 13× refetch
+  amplification.
 - **Byte-bounded decoded-chunk cache** (`@/lib/zarr/caches/byteBudgetChunkCache.ts`,
   512 MB LRU). The runner's default cache is *count*-bounded; 500 entries of
   plane chunks pinned multiple GB (pitfall P6).
@@ -890,9 +893,9 @@ first inner-chunk read of every shard.
 Backend contract that makes this pay off: brick-aligned inner chunks (64³ 3D,
 or 256×256×1 for 2D-only levels), shards written whole at ingest (zarr-python
 ≥ 3.3 / zarrs / zarr-java all read partial shards; only zarrs writes them
-partially). Follow-ups: route SINGLE-coord group calls through the batch too —
-`coordsList.length < 2` still short-circuits to the single path, so aligned
-core-phase bricks (1 chunk each) never merge with a neighbour; per-shard
+partially). Single-coord group calls go through the batch too (done: a
+one-chunk call no longer short-circuits to the single path, so aligned
+core-phase bricks merge with their same-tick neighbours). Follow-up: per-shard
 occupancy sidecar.
 
 ### 2.11b Two-phase bricks (`features/bricks/residency/twoPhase.ts`)
@@ -908,7 +911,9 @@ do not. Two-phase splits the fetch (`FetchPhase` in `octree/nodeAddress.ts`):
   when aligned). Repack with `fetchBox = brickFetchBox(…, "core")`: the CPU
   `replicateEdges` and the kernel's clamp fill the rind from the payload edge,
   exactly as level-edge bricks always have. Upload → RESIDENT and listed in
-  `pool.provisionalKeys`; a halo entry is pushed to `pool.pendingHalo`.
+  `pool.provisionalKeys`; a halo entry is pushed to `pool.pendingHalo` when
+  the plan covers the brick's border (`haloCoveredByPlan`: all in-grid
+  neighbours planned — R11). A brick on the plan's edge stays provisional.
 - **halo** — `fetchBrick(pool, node, "full", halo = true)`: the legacy 27-chunk
   gather, re-repacked into the SAME slot (`BrickPoolState.acquire` on a
   resident key returns its slot). Dispatched by `dispatchHalos` only when every
@@ -921,7 +926,8 @@ do not. Two-phase splits the fetch (`FetchPhase` in `octree/nodeAddress.ts`):
   legacy single pass bit-for-bit.
 
 Bookkeeping: `provisionalKeys` cleared on halo upload, eviction (all four
-release sites), flush; `pendingHalo` pruned to `protectedKeys` per reconcile
+release sites), flush; `pendingHalo` is re-derived per reconcile (planned ∩
+provisional ∩ covered, in fetch order; dispatched FIFO)
 and counted by `anyPipelineWork` (so `timeToSharpMs` and the streaming flag
 include the rind). Stats `coreBricks` / `haloRefines`; per-pool report
 `provisional` / `pendingHalo`; DebugPanel badge `◐N`; cold-open phase
@@ -2091,7 +2097,7 @@ branch from git history at the commit that removed it.
 |---|---|---|
 | `shaderFastPath` | ON | Skippability is decided BEFORE per-slot sampling. The legacy order sampled first, then tested — revert if a skip predicate turns out to need a sampled value. |
 | `fixedShapeFastPath` | ON | Intensity/RGB layers compile specialised compositors. The general 16-slot compositor is pixel-identical by construction, so a difference here is a bug in the specialisation. |
-| `occHierarchy` | **OFF (shipped dark)** | Rays hop whole coarse cells via the RG8 aggregate sidecar. **The least-validated of the three dark flags** and the largest new shader surface — suspect this first for a raymarch artefact. |
+| `occHierarchy` | ON (the code has been `const occHierarchy = true` since this settled; this row said OFF until 2026-11-09) | Rays hop whole coarse cells via the RG8 aggregate sidecar. The least-validated of the occupancy paths and the largest shader surface — suspect this first for a raymarch artefact. |
 | `raw16` | **OFF (shipped dark)** | uint16 chunks stay `Uint16Array` end-to-end (2 B/voxel, not the widened 4). Halves decode-cache and upload bytes, and deliberately moves `budgetMinLevel` FINER on uint16 pyramids — so a plan that now reaches too deep on a big uint16 stack is this. |
 | `occObservedRange`, `occPerSlab` | ON | Occupancy encoded against the observed range, per slab. Suspect for empty-space skipping that skips too much. |
 | `anisoLod`, `anisoStride`, `worldLod` | ON | The world-metric LOD contract. Suspect for wrong refinement on anisotropic (SPIM-like) voxel grids. |
@@ -2375,11 +2381,14 @@ continuous load-proportional control fed by a real cost model —
 `renderCost.ts` is the intended home and is still unwired for layer admission
 (`LayerRenderer` feeds `costBytes: 0`; only the 64-layer backstop culls).
 
-**R6 — Small.** (a) Cross-pool fetch prioritization: order is foveated within
-a pool but arrival-order across pools; Neuroglancer has one global priority
-queue. (b) Prefetch is 2D-adjacent-z only — no 3D margin or temporal (t±1)
-prefetch; band-2 margin prefetch is gated to a resting camera with an empty
-on-screen pipeline (P30). (c) The settle restore lands DPR + tricubic + adaptive depth in one
+**R6 — Small.** (a) Cross-pool fetch prioritization — DONE:
+`startNextFetchesGlobal` is one k-way merge across pools in
+`compareFetchOrder`. (The UPLOAD drain is still pool-sequential,
+`runDrainLanes`.) (b) Prefetch — PARTLY DONE: z±1 slabs in 2D and ±1 along
+every collapsed dim (`residency/adjacentPrefetch.ts`, backdrop first since
+R11), at the streaming→idle edge only, so nothing is warmed DURING a scrub;
+still no 3D margin prefetch beyond band 2, which is gated to a resting camera
+with an empty on-screen pipeline (P30). (c) The settle restore lands DPR + tricubic + adaptive depth in one
 frame — a visible quality pop; staggering them would soften it.
 
 **R10 — Review pass (2026-09-26).** A code-level review of the renderer; all
@@ -2416,6 +2425,96 @@ unconditional (no flags), all awaiting live GPU validation.
   module can no longer ship silently.
 - Not done: `outputBufferType: UnsignedByteType` (halves the forced RGBA16F
   framebuffer's bandwidth) needs a live banding check before it can land.
+
+**R11 — Per-step, per-frame and fetch-path pass (2026-11-09).** Three audits
+(per-frame CPU, shader/GPU, data path) against everything above. Nothing here
+was measured or seen on a GPU; each item says what to look at.
+
+*Frames that should not have been drawn*
+- The probe marker (`features/probe/useProbeMarkerBinding.ts`) re-applied and
+  called `invalidate()` on EVERY viewer-store write — residency bumps, view
+  ranges, world-units-per-pixel, several of them from inside a frame, which
+  R3F answers with an extra frame and which goes around the streaming cadence
+  gate. With a probe resting on streaming data the volume passes roughly
+  doubled. It now invalidates only when matrix, position or visibility moved,
+  and follows the layer through the scene store. *Check:* volume passes per
+  second while streaming, probe up vs none.
+- `useVolumeRayUniforms` no longer subscribes to the governor (none of its
+  uniforms depends on it since `uMaxSteps` moved to the StepScaleDriver);
+  `ProbeOrbitPivot` subscribes to click probes only; `setCurrentZ` skips
+  no-op writes. `storeSelectors.test.ts` now also forbids React selectors on
+  the hot probe fields.
+
+*The volume cache key moves only for what reaches the target*
+- Label uniforms and label LUTs no longer bump `volumeInputs`: the label
+  raymarch is not in the offscreen target.
+- Collection managers (`platform/collections/collectionManagerBase.ts`) have
+  two notifications: `invalidate()` (frame + cache key, for anything that
+  changes which fragments are DRAWN: cells, isolation, a filter rule,
+  visibility) and `repaint()` (frame only: a highlight, a clim, a palette, the
+  selection hull). Selection is skipped outright when it did not change for
+  that layer. **The rule when adding a call: if an opaque fragment can appear,
+  disappear or move, it is `invalidate()`.** *Check:* hovering meshes and
+  dragging a mesh or label colour control leaves the compositor reason at
+  `cached`; isolating an instance still updates the volume behind it.
+
+*Raymarch step* (`gpu/brickNodeMaterials.ts`, compile-time switch
+`BRICK_BOUND_CACHE`)
+- Per-member occupancy bounds are computed when the residency cache
+  refreshes (`ResidencyCache.boundsStale`), and aggregate bounds when the ray
+  enters a new aggregate cell (`aggKey` / `aggKeyLevel`), instead of on every
+  resident step. Per step only the compares against the accumulators remain
+  (`memberSkips`). Same loads, same normalizes, same predicates — evaluated
+  once per brick. The EMPTY fill's norm rides the same cache.
+- `desiredLevelFrom` (`gpu/volumeRayNodes.ts`, both raymarchers) scans from
+  `max(previous step's level, uDesiredLevel)`; exact by level- and
+  ray-monotonicity (mirror + property test `shaderspec/raymarchStep.ts`).
+- The marching pitch is recomputed only when the level changes.
+- ATTENUATED MIP gets maximum culling: a cell skips when
+  `upper · attenuation_now ≤ attenuatedMax` (mirror: `residentBrickSkippable`
+  with `attenuation` / `attenuatedMax`, plus a march simulation).
+- Colormap taps inside the loop use explicit LOD, like the atlas taps.
+- *Check:* identical image with the switch on and off in MIP, attenuated MIP,
+  ISO and multi-channel; frame time orbiting inside dense data.
+
+*Fetch path*
+- `TaskPriority` (`core/data/zarr/pool/types.ts`): a chunk in flight carries a
+  live priority through the runner. A brick joining it raises it
+  (`ChunkService`), and a brick that survives a replan is carried into the new
+  generation (`reconcilePool`) — before, an on-screen brick joining a −1
+  prefetch, or dispatched one generation ago, waited behind every newer task.
+- Codec workers start importing blosc/zstd at spawn (`warmCommonCodecs`); the
+  pool is `min(cores − 2, 12)`, was `min(cores, 24)`.
+- A sharded array of at most 8 shards (a coarse level) has its shard indexes
+  requested at open (`openZarrArray`).
+- The t±1 prefetch warms the backdrop bricks first, in the phase the real
+  fetch uses, through `fetchChunksShared`.
+- **The chunk ledger charges core chunks** (`planLayerNodes` `chargePhase`,
+  `twoPhase.ts` `planChargePhase`; switch `CORE_CHARGED_PLAN`). Charging the
+  ±1 border billed a k³ region for (k+2)³ brick-sized chunks; a cache-bound
+  3D plan now holds about 65% more bricks in the test poses. With it, a halo
+  is refined only where all in-grid neighbours are planned
+  (`haloCoveredByPlan`) — then its border chunks are chunks the plan fetches
+  anyway — and `pendingHalo` is re-derived from the plan at every reconcile,
+  in fetch order, dispatched FIFO. A brick on the plan's edge keeps its
+  replicated rind. *Check:* seams at LOD boundaries and at the screen edge;
+  time to sharp; `provisional` in the pool report no longer drains to 0.
+
+*Found, not done*
+- Konnektion: serial row-group fetch, main-thread decode, no decoded-cell
+  cache (`network/konnektionManager.ts`).
+- Replan + reconcile run inside a rAF callback, in the same task as a frame;
+  `haloCoveredByPlan` adds up to 26 key lookups per provisional planned brick
+  to it.
+- The depth prepass and the volume pass are two renders into one target and
+  could be one (opaque list draws first).
+- `CanvasHueProbe` copies the canvas on every still-camera frame.
+- A t/z step clears the page table before the new backdrop lands.
+- The upload drain is pool-sequential; fetched shard parts re-enter the pool
+  queue behind queued fetches before they decode.
+- Precompile relies on the canvas framebuffer and the volume target sharing a
+  render context (same format, type, samples). `outputBufferType` or MSAA
+  would split them: set the compositor target before `compileAsync` then.
 
 **Non-gaps** (deliberate design differences — do not "fix"): slice-first
 economics and the precomputed/sharded data format are Neuroglancer choices

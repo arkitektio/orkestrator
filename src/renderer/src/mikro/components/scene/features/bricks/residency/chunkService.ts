@@ -173,10 +173,11 @@ export class ChunkService {
   /**
    * Dead-queue cancellation: `owner` no longer needs `chunkKey`. When it was
    * the LAST referrer, the chunk's per-chunk abort fires — a still-QUEUED
-   * decode is cancelled outright (the wasted work this exists to reclaim); a
-   * started one ignores it and finishes into the cache, so flip-backs stay
-   * cheap (never abort shared in-progress decodes — that was the 13×
-   * amplification bug). Happy-path releases are no-ops: the chunk promise
+   * task is cancelled outright (the wasted work this exists to reclaim); a
+   * started one has its fetch cancelled per request, and a decode already
+   * running finishes into the cache. Only the last referrer does this: never
+   * abort a decode another brick still waits on — that was the 13×
+   * amplification bug. Happy-path releases are no-ops: the chunk promise
    * already settled and cleared its entry.
    */
   releaseRef(chunkKey: string, owner: string): void {
