@@ -5,63 +5,29 @@ import { AttributeServiceProvider } from "@/mikro/lib/attributes/AttributeServic
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useStore } from "zustand";
-import { resolveSceneCameraFrame } from "../platform/camera/cameraState";
-import { resolvePreferredDisplayMode } from "../platform/camera/preferredView";
-import { sceneLayerSignature, sceneScopeSignature } from "../platform/model/sceneStructure";
-import { collectSceneLensFacts } from "../platform/model/channelLens";
-import { lensRegistry, type LensRegistry } from "@/mikro/lib/lenses/lensRegistry";
-import {
-  createConfiguredSceneStores,
-  openMissingSceneArrays,
-} from "../platform/sources/zarrSources";
-import { openSceneArrays } from "@/core/data/zarr/openArray";
-import { assertWebGPUSupported } from "@/core/data/scene/gpu/webgpuSupport";
-import {
-  AnimationStoreContext,
-  createAnimationStore,
-} from "../platform/stores/animationStore";
-import {
-  BrushSkeletonStoreContext,
-  createBrushSkeletonStore,
-} from "../features/annotations/enhancers/brushSkeletonStore";
-import { ModeStoreContext, createModeStore } from "../platform/stores/modeStore";
-import {
-  MeshDesignStoreContext,
-  createMeshDesignStore,
-} from "../features/meshDesign/store/meshDesignStore";
-import {
-  RoiDrawSessionStoreContext,
-  createRoiDrawSessionStore,
-} from "../features/annotations/roiDrawSessionStore";
-import {
-  RoiDrawingStoreContext,
-  createRoiDrawingStore,
-} from "../features/annotations/roiDrawingStore";
-import {
-  RoiSelectionStoreContext,
-  createRoiSelectionStore,
-} from "../features/annotations/roiSelectionStore";
-import { SceneStoreContext, createSceneStore } from "../platform/stores/sceneStore";
+import { sceneScopeSignature } from "../platform/model/sceneStructure";
+import { createSceneSession } from "./sceneSession";
+import { buildSceneScope, foldSceneLayers, retryFailedArrays } from "./sceneScopeBuild";
+import { AnimationStoreContext } from "../platform/stores/animationStore";
+import { BrushSkeletonStoreContext } from "../features/annotations/enhancers/brushSkeletonStore";
+import { ModeStoreContext } from "../platform/stores/modeStore";
+import { MeshDesignStoreContext } from "../features/meshDesign/store/meshDesignStore";
+import { RoiDrawSessionStoreContext } from "../features/annotations/roiDrawSessionStore";
+import { RoiDrawingStoreContext } from "../features/annotations/roiDrawingStore";
+import { RoiSelectionStoreContext } from "../features/annotations/roiSelectionStore";
+import { SceneStoreContext } from "../platform/stores/sceneStore";
 import { DisplayRemapSync } from "./DisplayRemapSync";
 import { useSceneViewAxes } from "../platform/stores/sceneViewAxes";
-import {
-  SelectionStoreContext,
-  createSelectionStore,
-} from "../platform/stores/selectionStore";
-import { ViewStoreContext, createViewStore } from "../platform/stores/viewStore";
-import { ViewerStoreContext, createViewerStore } from "../platform/stores/viewerStore";
+import { SelectionStoreContext } from "../platform/stores/selectionStore";
+import { ViewStoreContext } from "../platform/stores/viewStore";
+import { ViewerStoreContext } from "../platform/stores/viewerStore";
 import { SceneEventsContext, createSceneEvents } from "../platform/events/sceneEvents";
-import { createBrickSlice } from "../features/bricks/store/brickSlice";
-import { createMeshSlice } from "../features/meshes/store/meshSlice";
-import { createNetworkSlice } from "../features/network/store/networkSlice";
-import { createLayerRunSlice } from "../features/layerRun/layerRunSlice";
 import { SceneBrandTheme } from "./theme/SceneBrandTheme";
-import { coldOpenTimeline } from "../platform/perf/coldOpenTimeline";
 import {
   SceneScopeStatusContext,
   type SceneScopeStatus,
@@ -78,24 +44,7 @@ export {
   type SceneScopeStatus,
 } from "../platform/stores/sceneScope";
 
-/**
- * The scene's store scope: one vanilla zustand store per concern, all created
- * together for one scene and provided together. Everything under a
- * `SceneProvider` reaches them through the scoped store hooks.
- */
-export type SceneScope = {
-  modeStore: ReturnType<typeof createModeStore>;
-  viewStore: ReturnType<typeof createViewStore>;
-  viewerStore: Awaited<ReturnType<typeof createViewerStore>>;
-  selectionStore: ReturnType<typeof createSelectionStore>;
-  sceneStore: ReturnType<typeof createSceneStore>;
-  animationStore: ReturnType<typeof createAnimationStore>;
-  roiDrawingStore: ReturnType<typeof createRoiDrawingStore>;
-  roiDrawSessionStore: ReturnType<typeof createRoiDrawSessionStore>;
-  roiSelectionStore: ReturnType<typeof createRoiSelectionStore>;
-  brushSkeletonStore: ReturnType<typeof createBrushSkeletonStore>;
-  meshDesignStore: ReturnType<typeof createMeshDesignStore>;
-};
+export type { SceneScope } from "./sceneScopeBuild";
 
 /**
  * Builds the scene's store scope and provides it WITHOUT owning any layout —
@@ -121,9 +70,9 @@ export type SceneScope = {
  *    placed how). The layer set is DYNAMIC — the server mints an
  *    `AnnotationLayer` on a scene's first annotation, layers are added and
  *    deleted, registrations are refined — and none of that may tear the scope
- *    down. The reconcile effect below opens any newly referenced zarr arrays
- *    and folds the new layer set into the LIVE stores while the canvas keeps
- *    rendering.
+ *    down. The scene session (`sceneSession.ts`) opens any newly referenced
+ *    zarr arrays and folds the new layer set into the LIVE stores while the
+ *    canvas keeps rendering.
  * 3. **Ignore** (everything else). Content mutations fold their results into
  *    the stores at their call sites and MUST keep doing so — the provider
  *    deliberately ignores the fragment-identity churn they cause.
@@ -135,67 +84,6 @@ export type SceneScope = {
  * unmounts, and the WebGPU renderer plus every brick atlas are disposed. That
  * full reload on the first annotation is exactly what the split exists to kill.
  */
-/**
- * How long a scene waits for the lenses it names by bare id before it is drawn
- * without them. The lookup overlaps the zarr metadata open, which is slower, so
- * this is normally never reached; when it is, the layers that wanted an id draw
- * at their fallback and `refreshLensSelections` corrects them when it lands.
- */
-const LENS_LOOKUP_BUDGET_MS = 1500;
-
-/**
- * Seed the session's lens registry from a scene payload and START resolving
- * the lenses it names by id alone (a render-graph node's channel, a sparse
- * colouring's position).
- *
- * Returns null — nothing to wait for, nothing sent — for every scene whose
- * layers carry their lenses as objects, which is every scene of intensity, rgb,
- * phasor and label layers, and for any scene whose ids the session already
- * knows. The returned promise never rejects.
- */
-const startLensLookup = (
-  registry: LensRegistry,
-  layers: SceneFragment["layers"],
-): { ids: string[]; settled: Promise<void> } | null => {
-  const facts = collectSceneLensFacts(layers);
-  for (const selection of facts.known) registry.seed(selection);
-  const ids = registry.missing(facts.bareIds);
-  return ids.length > 0 ? { ids, settled: registry.resolveMany(ids) } : null;
-};
-
-/** How long after a failed lens lookup the one retry is sent. */
-const LENS_LOOKUP_RETRY_MS = 2000;
-
-/**
- * What happens to a lookup the scene did not wait out, or that came back
- * short: once it settles — after one retry, if ids are still unknown — the
- * layers that were drawn at a fallback are re-derived. Nothing else would ask
- * again: a layer that changed only in content is never re-normalized.
- */
-const followUpLensLookup = (
-  registry: LensRegistry,
-  lookup: { ids: string[]; settled: Promise<void> },
-  refresh: () => void,
-): void => {
-  void lookup.settled.then(async () => {
-    if (registry.missing(lookup.ids).length > 0) {
-      await new Promise((resolve) => window.setTimeout(resolve, LENS_LOOKUP_RETRY_MS));
-      await registry.resolveMany(lookup.ids);
-    }
-    refresh();
-  });
-};
-
-/** True when `lookup` settled inside the budget. */
-const settledInBudget = (lookup: Promise<void>): Promise<boolean> =>
-  new Promise((resolve) => {
-    const timer = window.setTimeout(() => resolve(false), LENS_LOOKUP_BUDGET_MS);
-    void lookup.then(() => {
-      window.clearTimeout(timer);
-      resolve(true);
-    });
-  });
-
 export const SceneProvider = (props: {
   scene: SceneFragment | null | undefined;
   children: ReactNode;
@@ -238,155 +126,41 @@ export const SceneProvider = (props: {
     () => (scene ? sceneScopeSignature(scene) : null),
     [scene],
   );
-  // The reconcile key. Never read by `status` — see the invariant above.
-  const layerSignature = useMemo(
-    () => (scene ? sceneLayerSignature(scene) : null),
-    [scene],
-  );
-
-  // The effects key on signatures, not the fragment, so they must read the
-  // CURRENT fragment through a ref — a build or fold uses whatever data is
-  // live when it runs.
-  const sceneRef = useRef(scene);
-  sceneRef.current = scene;
-
   // The plane the scene is looked at in. Every layer's axes and lattice are
   // derived from it (`viewLayer`), so a change rebuilds the scope like a
   // structural change does; it is its own key so the layer fold below, which
   // compares structure signatures, is untouched by it.
   const viewAxes = useSceneViewAxes(scene?.id);
   const viewKey = viewAxes.join("");
-  const viewRef = useRef(viewAxes);
-  viewRef.current = viewAxes;
 
-  // `built` remembers WHICH scope it is, and WHICH layer set is currently
-  // folded into it. Between a structural change and the rebuild effect firing
-  // there is one commit where the old scope still exists — matching signatures
-  // keep the status honest ("initializing", never "ready with the wrong
-  // stores") through that window.
-  //
-  // `layerSignature` lives here rather than in a ref on purpose: deriving the
-  // reconcile trigger from state is what makes a second refetch landing
-  // mid-fold self-heal (the stamp won't match, so the effect simply runs
-  // again) instead of being dropped.
-  const [built, setBuilt] = useState<{
-    scopeSignature: string;
-    viewKey: string;
-    layerSignature: string;
-    scope: SceneScope;
-  } | null>(null);
-  const [failure, setFailure] = useState<{
-    scopeSignature: string;
-    error: Error;
-  } | null>(null);
-
+  // The lifecycle itself — build a scope, fold a changed layer set into it,
+  // retry arrays that would not open — is the scene session's
+  // (`sceneSession.ts`). It is handed the scene as it is on EVERY change and
+  // decides what, if anything, that change means; nothing here keys an effect
+  // on a signature or reads the fragment through a ref.
+  const [session] = useState(() =>
+    createSceneSession({
+      build: buildSceneScope,
+      fold: foldSceneLayers,
+      retry: retryFailedArrays,
+    }),
+  );
   useEffect(() => {
-    let cancelled = false;
-
-    const initializeSceneScope = async () => {
-      setBuilt(null);
-      setFailure(null);
-      const scene = sceneRef.current;
-      if (!scene || !scopeSignature) return;
-      // Stamped from the fragment we are actually building, not the
-      // render-time memo — they can differ if a refetch landed in between.
-      const builtLayerSignature = sceneLayerSignature(scene);
-
-      try {
-        // Gate before anything expensive: a scene without WebGPU cannot render
-        // at all, so fail here rather than mount a Canvas that would silently
-        // downgrade itself to a backend we no longer support.
-        await assertWebGPUSupported();
-        coldOpenTimeline.stamp("webgpuDevice");
-
-        if (!datalayer) {
-          throw new Error("No datalayer endpoint configured");
-        }
-
-        // Started BEFORE the stores open and awaited after, so the one request
-        // it may send rides alongside the credentials and metadata fetches
-        // instead of in front of them. Null for a scene that names no lens by
-        // bare id: nothing is sent and nothing is awaited.
-        const registry = lensRegistry(client);
-        const lensLookup = startLensLookup(registry, scene.layers);
-
-        // Opening the scene's zarr arrays belongs to the provider: the store
-        // is a state container, not a fetcher. Stamped here so the cold-open
-        // timeline still sees the same moment it used to.
-        const storesById = await createConfiguredSceneStores(scene, client, datalayer);
-        const arraysByStoreId = await openSceneArrays(storesById);
-        coldOpenTimeline.stamp("arraysOpen");
-
-        const lensesInTime = lensLookup ? await settledInBudget(lensLookup.settled) : true;
-
-        const sceneStore = createSceneStore({ scene, resolveLens: registry.peek, viewAxes: viewRef.current });
-        if (lensLookup && (!lensesInTime || registry.missing(lensLookup.ids).length > 0)) {
-          followUpLensLookup(registry, lensLookup, () => {
-            if (!cancelled) sceneStore.getState().refreshLensSelections();
-          });
-        }
-        // Both the opening view and the pose frame are facts about the scene AS
-        // LOADED, so they are resolved from the normalized layers the scene
-        // store just built rather than re-derived per consumer.
-        const layers = sceneStore.getState().layers;
-
-        const scope: SceneScope = {
-          modeStore: createModeStore({
-            displayMode: resolvePreferredDisplayMode(scene.preferredView, layers),
-          }),
-          viewStore: createViewStore(),
-          // Feature-owned slices are composed HERE: they name brick and mesh
-          // types, and platform/ may not import a feature. Same store, same
-          // set — this is composition, not a split.
-          viewerStore: createViewerStore(arraysByStoreId, [
-            createBrickSlice,
-            createMeshSlice,
-            createNetworkSlice,
-            createLayerRunSlice,
-          ]),
-          selectionStore: createSelectionStore(),
-          sceneStore,
-          animationStore: createAnimationStore({
-            scene,
-            frame: resolveSceneCameraFrame(scene.worldCoordinateSystem, layers),
-          }),
-          roiDrawingStore: createRoiDrawingStore(),
-          roiDrawSessionStore: createRoiDrawSessionStore(),
-          roiSelectionStore: createRoiSelectionStore(),
-          brushSkeletonStore: createBrushSkeletonStore(),
-          meshDesignStore: createMeshDesignStore(),
-        };
-
-        if (!cancelled) {
-          setBuilt({
-            scopeSignature,
-            viewKey,
-            layerSignature: builtLayerSignature,
-            scope,
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setFailure({
-            scopeSignature,
-            error: error instanceof Error ? error : new Error(String(error)),
-          });
-        }
-      }
-    };
-
-    initializeSceneScope();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [scopeSignature, viewKey, client, datalayer]);
+    session.update({ scene, viewAxes, viewKey, client, datalayer });
+  }, [session, scene, viewAxes, viewKey, client, datalayer]);
+  useEffect(() => () => session.dispose(), [session]);
+  // `built` says WHICH scope it is. Between a structural change and the
+  // session hearing of it there is one commit where the old scope still
+  // exists — the signature compare below keeps the status honest
+  // ("initializing", never "ready with the wrong stores") through it.
+  const { built, failure } = useSyncExternalStore(session.subscribe, session.getSnapshot);
 
   // `status.scene` is always the LIVE fragment: content the viewport reads
   // reactively (backgroundColor, …) keeps updating without a rebuild.
   //
-  // Note what is NOT here: `layerSignature`. A pending layer fold must never
-  // move `phase` off "ready" — see the invariant in the block comment above.
+  // Note what is NOT here: the layer set. A pending layer fold must never
+  // move `phase` off "ready" — see the invariant in the block comment above
+  // (the session does not even publish one).
   const status: SceneScopeStatus = !scene
     ? { phase: "no-scene", scene: null, error: null }
     : failure && failure.scopeSignature === scopeSignature
@@ -396,128 +170,6 @@ export const SceneProvider = (props: {
         : { phase: "initializing", scene, error: null };
 
   const scope = status.phase === "ready" ? built!.scope : null;
-
-  // Fold a changed layer set into the live stores. Only ever runs against a
-  // ready scope for the CURRENT scene; a layer change that arrives while the
-  // scope is still building needs nothing, because the build reads the live
-  // fragment and stamps that fragment's layer signature.
-  const needsReconcile =
-    !!scope && !!built && built.layerSignature !== layerSignature;
-
-  useEffect(() => {
-    if (!needsReconcile || !scope || !built) return;
-    let cancelled = false;
-    let retryTimer: number | undefined;
-
-    const foldLayers = (source: SceneFragment) => {
-      const { removedLayerIds } = scope.sceneStore
-        .getState()
-        .syncSceneLayers(source.layers);
-
-      // Prune what pointed AT a layer that just left. Done here rather than in
-      // the card that deletes, so every removal path is covered — the layer
-      // panel's trash, a server-side delete, a future subscription.
-      if (removedLayerIds.length > 0) {
-        // A pin naming a departed layer would keep naming it. Unpinning the
-        // probe also clears one that no longer resolves (`probeAfterPinChange`).
-        const viewer = scope.viewerStore.getState();
-        if (viewer.probeLayerId && removedLayerIds.includes(viewer.probeLayerId)) {
-          viewer.setProbeLayerId(null);
-        }
-        if (viewer.dataLayerId && removedLayerIds.includes(viewer.dataLayerId)) {
-          viewer.setDataLayerId(null);
-        }
-        // A selection outliving its layer would keep describing a shape that
-        // is no longer in the scene.
-        scope.roiSelectionStore.getState().dropLayerSelections(removedLayerIds);
-      }
-      // Stamp what we actually folded. If a newer fragment arrived meanwhile,
-      // this won't match the render-time signature, `needsReconcile` stays
-      // true, and the effect runs once more against the newest data.
-      setBuilt((prev) =>
-        prev && prev.scope === scope
-          ? { ...prev, layerSignature: sceneLayerSignature(source) }
-          : prev,
-      );
-    };
-
-    const reconcile = async () => {
-      // The fragment we open arrays for and the one we fold must be the SAME
-      // object, or the stamp would describe something that is not in the store.
-      const source = sceneRef.current;
-      if (!source || sceneScopeSignature(source) !== built.scopeSignature) return;
-
-      // As in the scope build: started before the arrays open, awaited after.
-      const registry = lensRegistry(client);
-      const lensLookup = startLensLookup(registry, source.layers);
-
-      let failedStoreIds: string[] = [];
-      if (datalayer) {
-        try {
-          const opened = await openMissingSceneArrays({
-            scene: source,
-            client,
-            datalayer,
-            isOpen: scope.viewerStore.getState().hasArrayForStoreId,
-          });
-          if (cancelled) return;
-          // Arrays BEFORE layers: the fold is what wakes the planner.
-          scope.viewerStore.getState().registerArrays(opened.arrays);
-          failedStoreIds = opened.failedStoreIds;
-        } catch (error) {
-          if (cancelled) return;
-          // Never blanks the scene: fold the layers anyway (see
-          // `openMissingSceneArrays`' partial-tolerance contract).
-          console.warn("[scene] reconcile could not open zarr arrays", error);
-        }
-      }
-
-      if (lensLookup) {
-        const inTime = await settledInBudget(lensLookup.settled);
-        if (cancelled) return;
-        if (!inTime || registry.missing(lensLookup.ids).length > 0) {
-          followUpLensLookup(registry, lensLookup, () => {
-            if (!cancelled) scope.sceneStore.getState().refreshLensSelections();
-          });
-        }
-      }
-
-      foldLayers(source);
-
-      if (failedStoreIds.length > 0) {
-        console.warn("[scene] zarr open failed on reconcile", failedStoreIds);
-        // Nothing else would ever retry these: the planner only replans when
-        // the layers array identity moves. One bounded retry, then republish
-        // the same layers to trigger it.
-        retryTimer = window.setTimeout(() => {
-          void (async () => {
-            const retrySource = sceneRef.current;
-            if (cancelled || !retrySource || !datalayer) return;
-            try {
-              const retried = await openMissingSceneArrays({
-                scene: retrySource,
-                client,
-                datalayer,
-                isOpen: scope.viewerStore.getState().hasArrayForStoreId,
-              });
-              if (cancelled || retried.arrays.size === 0) return;
-              scope.viewerStore.getState().registerArrays(retried.arrays);
-              scope.sceneStore.getState().touchImageLayers();
-            } catch (error) {
-              console.warn("[scene] zarr reopen retry failed", error);
-            }
-          })();
-        }, 2000);
-      }
-    };
-
-    void reconcile();
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(retryTimer);
-    };
-  }, [needsReconcile, scope, built, layerSignature, client, datalayer]);
 
   return (
     <SceneEventsContext.Provider value={events}>
