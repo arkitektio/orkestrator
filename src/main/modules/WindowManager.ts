@@ -6,7 +6,7 @@ import { join } from 'path';
 import { AppModule } from './AppModule';
 import { IpcTransport } from './IpcTransport';
 import type { DialogRequest } from './QuickPaletteWindow';
-import { deepLinkPath } from './deepLinkPath';
+import { createDeepLinkDedupe, deepLinkPath, parseDeepLink } from './deepLinkPath';
 import { APP_ORIGIN } from '../scheme';
 
 import { autoUpdater } from 'electron-updater';
@@ -253,29 +253,26 @@ export class WindowManager implements AppModule {
         this.mainClosedListeners.push(listener);
     }
 
-    handleOrkestratorUrl(url: string) {
-        // (see `deepLinkPath` below for the shape of what comes in)
-        try {
-            const parsedUrl = new URL(url);
-            // Everything after `orkestrator://`, as one app path with exactly
-            // one leading slash. The URL parser splits it into host + path, and
-            // where the split falls depends on the link's shape:
-            //   orkestrator://mikro/x   → host "mikro", path "/x"
-            //   orkestrator:///mikro/x  → host "",      path "/mikro/x"
-            // Joining naively gave "//mikro/x" for the second — a route that
-            // matches nothing.
-            const fullPath = deepLinkPath(parsedUrl);
+    /** Whether a link is new, or the same click handed over twice. */
+    private freshDeepLink = createDeepLinkDedupe();
 
-            // A deep link opens a TAB in the main window, not a new window:
-            // the renderer holds the tabs, so this is one message across.
-            this.openInTab(fullPath);
-        } catch (err) {
-            console.error("Invalid orkestrator URL", url);
-            dialog.showErrorBox(
-                "Invalid Link",
-                `The URL '${url}' could not be processed.`
-            );
+    handleOrkestratorUrl(url: string) {
+        // (see `deepLinkPath` for the shape of what comes in)
+        const parsedUrl = parseDeepLink(url);
+        if (!parsedUrl) {
+            // Never echo the link itself into the dialog: it is arbitrary text
+            // from whoever wrote it, and may be kilobytes long.
+            console.error("Refused orkestrator URL", url.slice(0, 200));
+            dialog.showErrorBox("Invalid Link", "This link could not be opened by Orkestrator.");
+            return;
         }
+        if (!this.freshDeepLink(parsedUrl.href)) return;
+
+        // Everything after `orkestrator://`, as one app path with exactly one
+        // leading slash, however the URL parser split host and path.
+        // A deep link opens a TAB in the main window, not a new window: the
+        // renderer holds the tabs, so this is one message across.
+        this.openInTab(deepLinkPath(parsedUrl));
     }
 
     createMainWindow(iconPath: string): BrowserWindow {
