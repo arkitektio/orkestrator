@@ -1,3 +1,15 @@
+# [5.19.0](https://github.com/arkitektio/orkestrator/compare/v5.18.1...v5.19.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* **links:** refuse foreign or oversized deep links and drop a click handed over twice ([d0c5c0c](https://github.com/arkitektio/orkestrator/commit/d0c5c0ccf4164597af255be6aeee899840ba58f8))
+
+
+### Features
+
+* **links:** intent links for published badges; the install badge imports the app's package ([cf25413](https://github.com/arkitektio/orkestrator/commit/cf25413ee187178f108024535e74e534ea6d6525))
+
 ## [5.18.1](https://github.com/arkitektio/orkestrator/compare/v5.18.0...v5.18.1) (2026-11-09)
 
 
