@@ -6,6 +6,7 @@ import { ShareGatePage } from "./pages/ShareGatePage";
 import { AuthCallbackPage } from "../core/authflow/AuthCallbackPage";
 import { RelayCallbackRedirect } from "../core/authflow/RelayCallbackRedirect";
 import { SmartLinkPage } from "../core/links/SmartLinkPage";
+import { IntentPage } from "../core/links/IntentPage";
 import { ModuleLoadingFallback } from "../core/layout/fallbacks/ModuleLoading";
 import { ModuleRoute } from "../core/modules/ModuleRoute";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
@@ -66,6 +67,10 @@ export const AppRoutes = () => {
           {/* A smartlink (orkestrator://smart/<org>/<hub>/<identifier>/<id>):
               decides which login it belongs to before it becomes a page. */}
           <Route path="smart/*" element={<SmartLinkPage />} />
+          {/* An intent link (orkestrator://do/v1/repo.install?…): a stable,
+              versioned verb for published links (README badges), mapped onto
+              whichever module answers it. Unguarded for the same reason. */}
+          <Route path="do/*" element={<IntentPage />} />
           {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
           {/* A module with `roles` shows "not permitted" to anyone else; one
               whose service is down, why. */}

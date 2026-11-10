@@ -46,14 +46,24 @@ const claims = (builtins: ModuleBuiltins): Record<string, string[]> => ({
   "menu section": (builtins.sections ?? []).map((section) => section.id),
   "profile section": (builtins.profileSections ?? []).map((section) => section.id),
   operation: Object.keys(builtins.operations ?? {}),
+  intent: (builtins.intents ?? []).map((intent) => intent.name),
 });
 
 /**
  * First path segments the host routes itself. `smart` is also the reserved
- * host of a smartlink (`orkestrator://smart/…`, `core/links/LINKS.md`), so no
- * service may ever be called that.
+ * host of a smartlink (`orkestrator://smart/…`) and `do` of an intent link
+ * (`orkestrator://do/v1/…`, `core/links/LINKS.md`), so no service may ever be
+ * called that.
  */
-export const RESERVED_NAMESPACES: ReadonlySet<string> = new Set(["smart", "auth", "open", "new", "settings", "blok"]);
+export const RESERVED_NAMESPACES: ReadonlySet<string> = new Set([
+  "smart",
+  "auth",
+  "open",
+  "new",
+  "settings",
+  "blok",
+  "do",
+]);
 
 /** Why `definition` cannot join `installed`, if anything. */
 export const registrationIssues = (

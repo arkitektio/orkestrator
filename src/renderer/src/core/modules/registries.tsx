@@ -19,6 +19,7 @@ import { installedModules, useModuleHostVersion } from "@/core/modules/host/host
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
 import type { ProfileSection } from "@/core/connection/profile/section";
 import type { AuthFlowHandler } from "@/core/authflow/types";
+import type { IntentDecl } from "@/core/links/intents";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
 import type { SmartContextSection } from "@/core/smart/extensions/section";
 import type { DialogRegistry } from "./types";
@@ -281,6 +282,36 @@ export const MODULE_AUTH_FLOWS = derivedRecord(
       ),
     ),
 );
+
+/**
+ * An intent as the host follows it: the module's declaration with the
+ * module's service, roles and label filled in where it left them out.
+ */
+export type HostIntent = IntentDecl & {
+  namespace: string;
+  /** The module's label ("Kabinet"), to say what is missing. */
+  moduleLabel: string;
+  serviceKey: string;
+  roles?: RoleRequirement;
+};
+
+export const moduleIntents = derived((): HostIntent[] =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+    (definition.builtins.intents ?? []).map(
+      (intent): HostIntent => ({
+        ...intent,
+        namespace: namespaceOf(definition),
+        moduleLabel: definition.manifest.label,
+        serviceKey: intent.serviceKey ?? definition.serviceKey,
+        roles: intent.roles ?? definition.roles,
+      }),
+    ),
+  ),
+);
+
+/** The installed handler of intent `name`, if any. */
+export const findIntent = (name: string): HostIntent | undefined =>
+  moduleIntents().find((intent) => intent.name === name);
 
 export const moduleOptionSources = derived(() => concat((builtins) => builtins.optionSources));
 

@@ -46,14 +46,15 @@ export const KABINET_HELP = {
   ),
   installRepo: (
     <PageHelp
-      intro="You arrive here from an install link someone shared. The page names the GitHub repository the link points to and asks whether to add it to your Kabinet."
+      intro="You arrive here from an install link or an “Open in Arkitekt” badge. The page names the app’s published package and asks whether to import it into your Kabinet."
       steps={[
-        <>Press <b>View on GitHub</b> to look at the repository before you decide.</>,
-        <>Press <b>Add repo</b> to add it. You land on the repository’s page, where its apps are listed.</>,
-        <>Press <b>Open repo</b> instead if the page says the repository is already tracked.</>,
+        <>Press <b>View on GitHub</b> to look at the app’s source before you decide.</>,
+        <>Press <b>Import</b> to import it. You land on the app’s page, or in the app store when the package holds several apps.</>,
+        <>If the import fails because the package is private, ask whoever published the app to make it public: Kabinet reads packages anonymously.</>,
       ]}
       tips={[
-        <>Adding a repository only lets Kabinet read it and offer its apps. Nothing is installed on your machine.</>,
+        <>Importing a package only lets Kabinet read its releases and offer them. Nothing is installed on your machine.</>,
+        <>Importing one you already have reads it again and picks up new releases.</>,
       ]}
     />
   ),
@@ -75,8 +76,6 @@ export const KABINET_HELP = {
         <>Click a flavour card to see what it does, what it needs and where it runs.</>,
         <>Press <b>Rescan</b> after the repository published something new to pick up the new flavours and bloks.</>,
         <>Under <b>Bloks</b>, press <b>Install</b> on a blok to make it a blok of your organization, or <b>Update</b> when the repository changed one you installed.</>,
-        <>Press <b>Copy install link</b> and send the link to a colleague. Opening it asks them to add this repository to their own Kabinet.</>,
-        <>Press <b>Copy README badge</b> to get the same link as a badge for the repository’s README.</>,
         <>Press <b>Open Repo</b> or <b>Issues</b> to go to the repository on GitHub.</>,
       ]}
       tips={[

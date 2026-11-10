@@ -12,6 +12,7 @@ import type {
   SurfaceDecl,
 } from "@/core/modules/spec";
 import type { AuthFlowHandler } from "@/core/authflow/types";
+import type { IntentDecl } from "@/core/links/intents";
 import type { OperationHandler } from "./operations";
 import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/core/connection/profile/section";
@@ -138,6 +139,12 @@ export type ModuleBuiltins = {
    * One per module; its namespace is the relay's callback path.
    */
   authFlow?: AuthFlowHandler;
+  /**
+   * EXTENSION: the intent links it answers (`/do/v1/repo.install?…`,
+   * `core/links/intents.ts`): stable, versioned verbs for links that are
+   * published (README badges) and must outlive its routes.
+   */
+  intents?: readonly IntentDecl[];
   /** EXTENSION: its models as options for pickers in other modules' UI. */
   optionSources?: readonly OptionSource[];
   /** EXTENSION: sections of the smart context menu. */

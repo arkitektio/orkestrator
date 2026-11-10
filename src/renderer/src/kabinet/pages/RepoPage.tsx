@@ -4,14 +4,12 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { KabinetFlavour, KabinetRepo } from "@/core/linkers";
-import { Check, Code2, GitBranch, Github, RefreshCw, Share2, ShieldAlert } from "lucide-react";
+import { GitBranch, Github, RefreshCw, ShieldAlert } from "lucide-react";
 import { reportErrorAs } from "@/core/notify";
-import { useCopyToClipboard } from "@/core/ui/copy-button";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
 import { RepoBlokGrid } from "../components/store/RepoBlokCard";
-import { installBadgeMarkdown, installRepoLink } from "../repoLink";
 import { KABINET_HELP } from "../help";
 
 /**
@@ -29,14 +27,6 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
 
   const rescan = () => scan().catch(reportErrorAs("Couldn't rescan the repository"));
 
-  // What you send a colleague: their Orkestrator opens on the install prompt
-  // for this repository, whichever Kabinet they are on. The badge is the same
-  // link dressed for a README, which is where an app repo advertises itself.
-  // Each button flips to a check once copied.
-  const coordinates = { user: repo.user, repo: repo.repo };
-  const link = useCopyToClipboard();
-  const badge = useCopyToClipboard();
-
   return (
     <KabinetRepo.ModelPage
       title={repo.name}
@@ -50,27 +40,6 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
       defaultSidebar="Info"
       pageActions={
         <>
-          {/* Both hand this repo to someone else, so they go together. */}
-          <PageActionGroup>
-            <PageAction
-              collapse="icon"
-              icon={link.copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-              size="sm"
-              onClick={() => void link.copy(installRepoLink(coordinates))}
-              title="Copy a link that prompts someone else to add this repo"
-            >
-              Copy install link
-            </PageAction>
-            <PageAction
-              collapse="icon"
-              icon={badge.copied ? <Check className="h-4 w-4" /> : <Code2 className="h-4 w-4" />}
-              size="sm"
-              onClick={() => void badge.copy(installBadgeMarkdown(coordinates))}
-              title="Copy the markdown for an 'Open in Arkitekt' README badge"
-            >
-              Copy README badge
-            </PageAction>
-          </PageActionGroup>
           <PageAction
             collapse="icon"
             icon={<RefreshCw className={"h-4 w-4" + (scanning ? " animate-spin" : "")} />}

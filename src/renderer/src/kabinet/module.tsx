@@ -2,6 +2,7 @@ import { defineModule } from "@/core/modules/host/define";
 import { KABINET_ACTIONS } from "./actions";
 import { PodDisplay } from "./displays/PodDisplay";
 import { KABINET_DIALOGS } from "./dialogRegistry";
+import { KABINET_INTENTS } from "./intents";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { KABINET_NAV_LINKS } from "./navLinks";
@@ -19,5 +20,6 @@ export const KABINET_MODULE = defineModule({
     dialogs: KABINET_DIALOGS,
     actions: KABINET_ACTIONS,
     sections: KABINET_SECTIONS,
+    intents: KABINET_INTENTS,
   },
 });
