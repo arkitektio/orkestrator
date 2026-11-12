@@ -2553,8 +2553,9 @@ a moving camera costs ~50 ms of GPU per frame on this machine at LOW.
 - The planner itself is still main-thread and non-incremental (a worker is
   the real fix); `haloCoveredByPlan` adds up to 26 key lookups per
   provisional planned brick to the reconcile.
-- The depth prepass and the volume pass are two renders into one target and
-  could be one (opaque list draws first).
+- ~~The depth prepass and the volume pass are two renders into one target and
+  could be one~~ — superseded by R12: the prepass now feeds a depth texture
+  the volume pass samples, which needs two passes.
 - `CanvasHueProbe` copies the canvas on every still-camera frame.
 - A t/z step clears the page table before the new backdrop lands.
 - The upload drain is pool-sequential; fetched shard parts re-enter the pool
@@ -2562,6 +2563,93 @@ a moving camera costs ~50 ms of GPU per frame on this machine at LOW.
 - Precompile relies on the canvas framebuffer and the volume target sharing a
   render context (same format, type, samples). `outputBufferType` or MSAA
   would split them: set the compositor target before `compileAsync` then.
+
+**R12 — The sampled step, occluded rays and the settled frame (2026-11-12).**
+A read of the ray loop after R11: what is left is paid on every SAMPLED step.
+Nothing here was measured or seen on a GPU; each item says what to look at.
+Compile-time switches: `DEPTH_TERMINATED_RAYS` (`gpu/brickNodeMaterials.ts`),
+`SETTLE_ACCUMULATE` (`platform/gpu/volumeCompositor.ts`).
+
+*Ray loop* (`gpu/brickNodeMaterials.ts`; mirrors in
+`shaderspec/raymarchStep.ts`, tests `raymarchStepR12.test.ts`)
+- **MIP raw gate.** A fixed-shape intensity member in MIP normalizes a sample
+  only when its RAW value exceeds the largest it has normalized on this ray
+  (`bestRaw`, `mipSampleCanWin`). The fixed-shape transfer is monotone with no
+  invert and MIP updates on a strict `>`, so the skipped samples could not
+  have won. The step is one atlas tap and a compare; the `pow` and the
+  colormap sample run on improvements only.
+- **The colormap is sampled for the winner** (`lazyColor`) in MIP, attenuated
+  MIP and ISO of a fixed-shape intensity member. VOLUME still samples it per
+  step: it composites every sample.
+- **The stride follows the level that is READ** (`sampledStepLength`). A
+  sample resolving coarser than the desired level (streaming, a plan that
+  stops short) strides at that level's pitch, cut at the exit of the residency
+  cache's validity box so a finer brick behind it is entered at its face.
+  This is P14's "fine pitch only where fine data is sampled", which the code
+  had keyed on the DESIRED level.
+- **The level pick is per ray segment** (`lvlEndT`, `levelEndDistance`). The
+  ray starts at the camera, so the LOD distance is `rayT · distPerT` and a
+  level holds until a threshold on `rayT`; `desiredLevelFrom` runs when the
+  ray crosses one. The tricubic gate is the same distance, one multiply and a
+  compare. (Image raymarcher only; the label one keeps the per-step pick.)
+- **The projection is baked per member** (`bakedMode`, `modeSwitch`): one
+  accumulator arm and one gradient emission in the WGSL instead of four behind
+  uniform branches (the general single-channel MIP fragment in the WGSL build
+  test went from 2067 to 1453 lines). `BrickVolumeLayer`'s `specializationKey` carries the mode, so a
+  projection edit is a rebuild, precompiled while the old material draws.
+  Without member info the uniform chain is emitted, as before.
+- Attenuated MIP reuses the step's `attenNow` instead of a second `exp`.
+- *Check:* identical image in MIP / attenuated MIP / VOLUME / ISO, single and
+  merged, cinematic on and off; the depth view (Q) unchanged; no banding
+  where a coarse brick meets a fine one while bricks stream; switching a
+  layer's projection shows the old picture until the new material is ready.
+
+*Rays end at opaque geometry* (`DEPTH_TERMINATED_RAYS`)
+- The occluder prepass writes into its own target with a depth TEXTURE
+  (`VolumeCompositor` `occluderTarget`); the image raymarcher loads that texel
+  and cuts `boundsY` at the surface (`material.userData.occluderDepth`: enable
+  flag, `clipToLocal`, texel size, texture — plain uniforms, one sampled
+  texture, no new buffer binding). The cut is applied after `rayLen` /
+  `fullRayLen` are latched, so stride and attenuation are those of the whole
+  ray.
+- Before, the box's back face was depth-TESTED against the prepass, so a mesh
+  anywhere in front of that face removed the whole ray, including the volume
+  in front of the mesh. Now the volume in front of a mesh is drawn and the
+  part behind it is not marched.
+- The placeholder depth texture is owned by a 1×1 render target on purpose:
+  three types a target-less depth texture by the sample count of the target
+  being drawn into.
+- This is why the prepass and the volume pass were NOT merged into one render
+  (R11 "found, not done"): a pass cannot sample the depth it is writing.
+- *Check:* a mesh inside a volume shows the volume in front of it and hides
+  what is behind; a mesh in front of the whole volume still hides it; the
+  depth view and a hidden/shown mesh layer still update without a pan.
+
+*Settle accumulation* (`SETTLE_ACCUMULATE`, `decideSettleAccumulate`)
+- When every volume on screen is a max projection, the settled frame is
+  refined by `SETTLE_ACCUM_FRAMES − 1` further renders at the ORDINARY step
+  budget, each with the jitter moved by a fraction of the pitch
+  (`uJitterPhase`, 0 on every other render), merged into the target by a
+  per-texel max (`accumBlit`, MaxEquation). The max of jittered max
+  projections only ever approaches the true projection. Each frame costs what
+  the settled render cost (gate: cost ≤ `SETTLE_REFINE_FRAME_BUDGET_MS`,
+  where the ladder needed 2 × cost), 30 ms apart, so a gesture waits for one
+  ordinary render at most.
+- Any re-render replaces the target and restarts the count; motion, streaming,
+  a reduced DPR or the depth view forget it. With a VOLUME or ISO member on
+  screen the ladder runs as before. Debug report: `settleAccumFrames`; perf
+  timeline: `volume:accumulate`.
+- *Check:* grain in a settled MIP fades over about 300 ms without a hitch;
+  nothing brightens or shifts hue (cinematic MIP shading is the one to look
+  at); a clim drag while settled never shows a half-accumulated frame.
+
+*Assessed and not done*
+- **Auto-crop to content.** A box of "bricks visible under the window" cannot
+  be made conservative from the data the client holds: coarse levels are
+  mean-downsampled, so a coarse brick below the window says nothing about the
+  fine voxels under it, and the fine levels are loaded only where the camera
+  looks. The shader's own hops are sound because they use same-level
+  aggregates. A content box would have to come from the backend.
 
 **Non-gaps** (deliberate design differences — do not "fix"): slice-first
 economics and the precomputed/sharded data format are Neuroglancer choices

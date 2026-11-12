@@ -123,6 +123,60 @@ describe("volume raymarcher WGSL", () => {
     expect(wgsl.match(/dot\( sharedTap, /g)?.length).toBe(4);
   });
 
+  const simpleMaterial = (projection: ProjectionMode) => {
+    const pool = makePool(1);
+    const only = {
+      ...layer([channel()]),
+      projection,
+      renderKind: "intensity",
+    } as LayerState;
+    const modeOf = (l: LayerState | undefined) =>
+      l?.projection === ProjectionMode.Volume ? 2 : l?.projection === ProjectionMode.Isosurface ? 3 : 0;
+    const data = buildMergedChannelUniformData(
+      [{ layerId: "a", layer: only, slotOffset: 0 }],
+      1,
+      0,
+      255,
+      undefined,
+      modeOf,
+    );
+    expect(data.members?.[0].isSimpleIntensity).toBe(true);
+    return createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, data, 1).material;
+  };
+
+  it("R12: a simple MIP member normalizes only a raw value that can win", async () => {
+    const wgsl = fragmentWgsl(simpleMaterial(ProjectionMode.Maximum));
+    if (process.env.DUMP_WGSL) {
+      const fs = await import("node:fs");
+      fs.writeFileSync(`${process.env.DUMP_WGSL}.simple`, wgsl);
+    }
+    // The transfer sits behind the raw compare …
+    expect(wgsl).toMatch(/if \( \( fxIRaw > nodeVar\d+ \) \)/);
+    // … the colormap is sampled for the WINNER only (one site, not per step) …
+    expect(wgsl.match(/textureSampleLevel\( nodeUniform\d+, nodeUniform\d+_sampler, vec2/g)?.length).toBe(1);
+    // … and the baked projection leaves one accumulator arm: no VOLUME
+    // opacity correction, no ISO threshold test, no attenuation weight.
+    expect(wgsl).not.toMatch(/exp\(/);
+    expect(wgsl).not.toMatch(/volGrad0/);
+    expect(wgsl).not.toMatch(/isoGrad0/);
+    expect(wgsl).toMatch(/mipGrad0/);
+  });
+
+  it("R12: a VOLUME member keeps its per-step transfer and colour", () => {
+    const wgsl = fragmentWgsl(simpleMaterial(ProjectionMode.Volume));
+    expect(wgsl).toMatch(/volGrad0/);
+    expect(wgsl).not.toMatch(/mipGrad0/);
+    expect(wgsl).not.toMatch(/if \( \( fxIRaw > nodeVar\d+ \) \)/);
+  });
+
+  it("R12: the level pick and the coarse stride are per ray segment, not per step", () => {
+    const wgsl = fragmentWgsl(simpleMaterial(ProjectionMode.Maximum));
+    expect(wgsl).toMatch(/if \( \( rayT > lvlEndT \) \)/);
+    expect(wgsl).toMatch(/if \( \( sampledLevel > prevLvl \) \)/);
+    // The smoothing gate measures distance along the ray: no second length().
+    expect(wgsl).toMatch(/rayT \* distPerT/);
+  });
+
   it("builds the SAME material twice (a second render target is a second node build)", () => {
     // The compositor renders volumes into its colour target AND, for the depth
     // view, into `depthTarget`: three builds the node graph once per render

@@ -7,7 +7,10 @@ import {
   createCompositorStats,
   createSettledRenderMeter,
   createVolumeInputsTracker,
+  decideSettleAccumulate,
   decideSettleRefine,
+  SETTLE_ACCUM_FRAMES,
+  settleAccumPhase,
   decideVolumeFrame,
   ladderFeedforwardPassCount,
   streamRenderDue,
@@ -527,5 +530,44 @@ describe("decideVolumeFrame — lazy structure key", () => {
       render: false,
       reason: "cached",
     });
+  });
+});
+
+describe("decideSettleAccumulate (R12 settle accumulation)", () => {
+  const base = { enabled: true, quiet: true, rendered: false, due: false, done: -1 };
+
+  it("a settled render is the base; nothing accumulates before one exists", () => {
+    expect(decideSettleAccumulate({ ...base, due: true })).toBe("hold");
+    expect(decideSettleAccumulate({ ...base, rendered: true })).toBe("base");
+  });
+
+  it("accumulates only when due, and stops after frames − 1 extras", () => {
+    expect(decideSettleAccumulate({ ...base, done: 0 })).toBe("hold");
+    expect(decideSettleAccumulate({ ...base, done: 0, due: true })).toBe("accumulate");
+    expect(decideSettleAccumulate({ ...base, done: SETTLE_ACCUM_FRAMES - 2, due: true })).toBe(
+      "accumulate",
+    );
+    expect(decideSettleAccumulate({ ...base, done: SETTLE_ACCUM_FRAMES - 1, due: true })).toBe("hold");
+  });
+
+  it("a re-render always replaces: it is never merged onto the old frame", () => {
+    expect(decideSettleAccumulate({ ...base, done: 2, due: true, rendered: true })).toBe("base");
+  });
+
+  it("leaving the quiet state forgets the base, even on a rendered frame", () => {
+    expect(decideSettleAccumulate({ ...base, done: 2, quiet: false })).toBe("reset");
+    expect(decideSettleAccumulate({ ...base, done: 2, quiet: false, rendered: true })).toBe("reset");
+    expect(decideSettleAccumulate({ ...base, done: -1, quiet: false, due: true })).toBe("hold");
+    expect(decideSettleAccumulate({ ...base, done: 1, enabled: false, due: true })).toBe("reset");
+  });
+
+  it("phases: 0 for the settled render, distinct fractions of the pitch after", () => {
+    expect(settleAccumPhase(0)).toBe(0);
+    const phases = Array.from({ length: SETTLE_ACCUM_FRAMES }, (_, i) => settleAccumPhase(i));
+    expect(new Set(phases).size).toBe(SETTLE_ACCUM_FRAMES);
+    for (const phase of phases) {
+      expect(phase).toBeGreaterThanOrEqual(0);
+      expect(phase).toBeLessThan(1);
+    }
   });
 });

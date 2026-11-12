@@ -314,3 +314,67 @@ export function occupancyUpperNormPerSlab(
   }
   return upper;
 }
+
+// ---------------------------------------------------------------------------
+// R12 — per-segment level pick, resolved-level stride, MIP raw gate
+// ---------------------------------------------------------------------------
+
+/**
+ * How far (LOD distance from the camera) the level `desiredLevelFrom` just
+ * returned stays the answer — the shader's `lvlEndT · distPerT`. The ray loop
+ * re-picks only once a sample lies beyond it.
+ *
+ * The returned level passes its own footprint test unless it is the coarsest
+ * (a raw hit below the floor also hits AT the floor, level scales never
+ * shrink), i.e. `distance ≤ px · maxScale[level] · lodBias`; the answer is
+ * monotone non-finer in distance, so it holds exactly until that bound. The
+ * coarsest level and ortho hold forever.
+ */
+export function levelEndDistance(
+  level: number,
+  pxPerVoxelAtUnitDistance: number,
+  levelMaxScales: readonly number[],
+  lodBias: number,
+): number {
+  if (pxPerVoxelAtUnitDistance <= 0 || level >= levelMaxScales.length - 1) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return pxPerVoxelAtUnitDistance * levelMaxScales[level] * lodBias;
+}
+
+/**
+ * The stride of a SAMPLED step (shader: the `sampledLevel > lvl` block). A
+ * sample that resolves to a level coarser than the desired one strides at
+ * that level's pitch — but never past the exit of the region that resolves to
+ * this brick (`boxExit`, the residency cache's validity box), so the first
+ * sample of a finer brick behind it is not stepped over. Never shorter than
+ * the desired level's stride.
+ */
+export function sampledStepLength(input: {
+  /** `max(floorDelta, pitch(desired)) · stepScale` — the step as it was. */
+  desiredStep: number;
+  /** `max(floorDelta, pitch(sampled)) · stepScale`. */
+  sampledStep: number;
+  desiredLevel: number;
+  sampledLevel: number;
+  /** Distance along the ray to the validity box's exit (≥ 0). */
+  boxExit: number;
+}): number {
+  if (input.sampledLevel <= input.desiredLevel) return input.desiredStep;
+  return Math.max(
+    input.desiredStep,
+    Math.min(input.sampledStep, Math.max(input.boxExit, 0) + 0.01),
+  );
+}
+
+/**
+ * The MIP raw gate of a fixed-shape intensity member: a sample is normalized
+ * (and can update the accumulator) only when its raw value exceeds the
+ * largest raw value normalized so far on this ray. Sound because the
+ * fixed-shape transfer (`normalizeSlotValue` with `invert: false`) is
+ * monotone non-decreasing in the raw value and MIP updates on a strict `>`:
+ * a raw value at or below `bestRaw` maps at or below `bestNorm`.
+ */
+export function mipSampleCanWin(raw: number, bestRaw: number): boolean {
+  return raw > bestRaw;
+}

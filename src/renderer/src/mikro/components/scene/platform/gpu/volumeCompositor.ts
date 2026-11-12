@@ -341,6 +341,72 @@ export function decideSettleRefine(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Settle accumulation (R12): refine a settled frame over several cheap frames
+// ---------------------------------------------------------------------------
+
+/**
+ * Kill switch (compile-time). On: a settled frame whose volumes are all MAX
+ * projections is refined by ACCUMULATION instead of by the ladder's one
+ * double-cost render — the compositor re-marches it `SETTLE_ACCUM_FRAMES − 1`
+ * more times at the ORDINARY step budget, each with the jitter moved by a
+ * fraction of the pitch, and keeps the per-texel max. Every frame costs what
+ * the settled render cost, so a gesture never queues behind a heavier one,
+ * and scenes the ladder had to refuse (2 × cost over budget) still refine.
+ * Off, or with any VOLUME / ISO member on screen: the ladder, as before.
+ */
+export const SETTLE_ACCUMULATE = true;
+
+/** Renders that make up one refined frame: the settled one plus the extras.
+ * Four phases of the pitch ≈ the sample density of a 4× step budget. */
+export const SETTLE_ACCUM_FRAMES = 4;
+
+/** Pause between two accumulation renders — long enough for an input event
+ * to land in between, so a new gesture waits for ONE ordinary render. */
+export const SETTLE_ACCUM_INTERVAL_MS = 30;
+
+/** Jitter phase of accumulation render `index` (1-based; 0 is the settled
+ * render itself, which keeps the unshifted, motion-invariant jitter). */
+export const settleAccumPhase = (index: number, frames = SETTLE_ACCUM_FRAMES): number =>
+  (((index % frames) + frames) % frames) / frames;
+
+export type SettleAccumAction =
+  /** A fresh settled render is in the target: start counting from it. */
+  | "base"
+  /** Whatever was accumulated no longer describes the frame: forget it. */
+  | "reset"
+  /** Render one more jittered frame and max it into the target. */
+  | "accumulate"
+  | "hold";
+
+/**
+ * Per-frame accumulation decision, evaluated AFTER the volume-frame decision.
+ *
+ *  - `quiet`: settled, full resolution, at the settled DPR, not streaming, no
+ *    depth view, every volume a max projection — the only state in which the
+ *    target may be refined at all.
+ *  - `rendered`: this frame re-rendered the target (anything changed). The
+ *    render REPLACED it, so it is the new base when quiet, and nothing when
+ *    not. It always wins over `due`: an accumulation frame is only ever added
+ *    to the exact frame it was scheduled for.
+ *  - `due`: the shell's timer asked for the next accumulation frame.
+ *  - `done`: extra frames already merged onto the base; −1 = no base.
+ */
+export function decideSettleAccumulate(input: {
+  enabled: boolean;
+  quiet: boolean;
+  rendered: boolean;
+  due: boolean;
+  done: number;
+  frames?: number;
+}): SettleAccumAction {
+  const frames = input.frames ?? SETTLE_ACCUM_FRAMES;
+  if (!input.enabled || !input.quiet) return input.done >= 0 ? "reset" : "hold";
+  if (input.rendered) return "base";
+  if (input.due && input.done >= 0 && input.done < frames - 1) return "accumulate";
+  return "hold";
+}
+
+// ---------------------------------------------------------------------------
 // Settled-render cost: is a ladder stage affordable?
 // ---------------------------------------------------------------------------
 
@@ -434,6 +500,9 @@ export type VolumeCompositorReport = {
   /** Measured cost of the latest settled render (`createSettledRenderMeter`);
    * null until one completed. What the ladder gate reads. */
   settledRenderMs: number | null;
+  /** Settle accumulation (R12): jittered frames merged onto the settled
+   * render now in the target; −1 = none (moving, streaming, or not eligible). */
+  settleAccumFrames?: number;
 };
 
 export type VolumeCompositorStats = {

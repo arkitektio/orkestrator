@@ -439,7 +439,12 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     ? channelData.members
         .map(
           (m) =>
-            `${m.hasPhasorSources ? "p" : "-"}${m.isSimpleIntensity ? "s" : "-"}${m.isRgb ? "r" : "-"}`,
+            // The projection is BAKED per member (R12, `bakedMode` in
+            // `createVolumeNodeMaterial`): one accumulator arm in the WGSL
+            // instead of four behind uniform branches. A projection edit is
+            // therefore a rebuild — compiled off the frame, the previous
+            // material draws meanwhile (`usePrecompiledBundle`).
+            `${m.hasPhasorSources ? "p" : "-"}${m.isSimpleIntensity ? "s" : "-"}${m.isRgb ? "r" : "-"}${m.projectionMode}`,
         )
         .join("")
     : "";

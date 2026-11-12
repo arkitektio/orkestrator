@@ -642,6 +642,45 @@ const BRICK_BOUND_CACHE = true;
  */
 const SHARED_RGBA_TAP = true;
 
+/**
+ * R12 kill switch (compile-time). On: the image raymarcher ends each ray at
+ * the opaque geometry in front of it, read from the depth the compositor's
+ * occluder prepass wrote into its OWN target (`material.userData
+ * .occluderDepth`, driven per pass by `VolumeCompositor`). Off: the handles
+ * still exist but nothing reads them, and the compositor keeps writing the
+ * prepass into the volume target's depth (the depth-TEST path, where a mesh
+ * anywhere in front of the box's back face removes the whole ray — including
+ * the volume in front of the mesh).
+ */
+export const DEPTH_TERMINATED_RAYS = true;
+
+/** Bound to every image volume material until a compositor hands it the
+ * occluder depth of the frame. Never rendered into, never read (the enable
+ * uniform is 0 while it is bound).
+ *
+ * OWNED BY A RENDER TARGET on purpose: three declares a depth texture that
+ * has no `renderTarget` with the sample count of whatever target is being
+ * drawn INTO (`WebGPUUtils.getTextureSampleData`), so a bare placeholder
+ * would compile as `texture_depth_multisampled_2d` on an MSAA canvas and
+ * mismatch the single-sample texture bound to it. The compositor's real
+ * depth texture is target-owned the same way. */
+const PLACEHOLDER_OCCLUDER_TARGET = new THREE.RenderTarget(1, 1, {
+  depthBuffer: true,
+  depthTexture: new THREE.DepthTexture(1, 1),
+});
+export const PLACEHOLDER_OCCLUDER_DEPTH = PLACEHOLDER_OCCLUDER_TARGET.depthTexture as THREE.DepthTexture;
+
+/** What `VolumeCompositor` drives on an image volume material per pass. */
+export type OccluderDepthHandles = {
+  /** 1 = `texture` holds this pass's occluder depth, at the pass's size. */
+  enabled: { value: number };
+  /** clip space → the mesh's local unit box: `world⁻¹ · cameraWorld · proj⁻¹`. */
+  clipToLocal: { value: THREE.Matrix4 };
+  /** `1 / size` of the pass's target. */
+  texel: { value: THREE.Vector2 };
+  texture: { value: THREE.Texture };
+};
+
 /** Faces of the cache's validity box are pulled in by this many base voxels
  * (mirror: `CELL_BOX_EPSILON` in shaderspec/residencyCache.ts). */
 const CELL_BOX_EPSILON = 1e-3;
@@ -1817,6 +1856,44 @@ export function createVolumeNodeMaterial(
     };
   });
 
+  // COMPILE-TIME projection (R12): with member info present each member's
+  // projection is baked, so its WGSL holds ONE accumulator arm (and one
+  // gradient emission) instead of four behind uniform branches. The caller
+  // keys its material memo on the modes (`BrickVolumeLayer`
+  // `specializationKey`), so a projection edit is a REBUILD, compiled off the
+  // frame while the previous material keeps drawing. Absent member info →
+  // null → the runtime chain on the `projectionMode` uniform, as before.
+  // 0 MIP (and anything unknown), 1 ATTENUATED_MIP, 2 VOLUME, 3 ISO.
+  const bakedMode: (number | null)[] = memberNodes.map((_, m) => {
+    const mode = channelData.members?.[m]?.projectionMode;
+    if (mode === undefined) return null;
+    return mode === 1 || mode === 2 || mode === 3 ? mode : 0;
+  });
+  type ModeArms = { 0: () => void; 1: () => void; 2: () => void; 3: () => void };
+  /** Emit the arm of member `m`'s projection: one arm when baked, the
+   * uniform chain (MIP as the `Else`, exactly the old order) otherwise. */
+  const modeSwitch = (m: number, arms: ModeArms): void => {
+    const baked = bakedMode[m];
+    if (baked !== null) {
+      arms[baked as 0 | 1 | 2 | 3]();
+      return;
+    }
+    const mode = int(memberNodes[m].projectionMode);
+    If(mode.equal(int(1)), arms[1])
+      .ElseIf(mode.equal(int(2)), arms[2])
+      .ElseIf(mode.equal(int(3)), arms[3])
+      .Else(arms[0]);
+  };
+  /** `mode == k` for member `m`: a JS constant when baked, a node otherwise. */
+  const modeIs = (m: number, k: number): any => {
+    const baked = bakedMode[m];
+    if (baked !== null) return bool(baked === k);
+    return int(memberNodes[m].projectionMode).equal(int(k));
+  };
+  /** True when member `m` is KNOWN (at build) not to be in mode `k`. */
+  const modeNever = (m: number, k: number): boolean =>
+    bakedMode[m] !== null && bakedMode[m] !== k;
+
   /**
    * The fixed-shape transfer for member `m`, straight-line: the SHARED
    * `emitScalarNormalize` over the member's plain uniforms. rgb has gamma 1 by
@@ -1948,6 +2025,24 @@ export function createVolumeNodeMaterial(
   // which is why it is reachable from the material itself.
   const depth: any = makeDepthCodeUniforms();
 
+  // Occluder depth (see `DEPTH_TERMINATED_RAYS`). Plain uniforms (the shared
+  // object UBO, no binding) plus ONE sampled texture, read with textureLoad
+  // at the fragment's own texel — the prepass target has the size of the
+  // target this pass draws into.
+  const occluder: any = {
+    uEnabled: uniform(0, "float"),
+    uClipToLocal: uniform(new THREE.Matrix4(), "mat4"),
+    uTexel: uniform(new THREE.Vector2(1, 1), "vec2"),
+    depthTexel: TSL.texture(PLACEHOLDER_OCCLUDER_DEPTH, ivec2(screenCoordinate.xy)).setSampler(
+      false,
+    ),
+  };
+  // Settle accumulation (R12, `VolumeCompositor`): the compositor re-renders a
+  // settled frame a few times with the jitter moved by this fraction of the
+  // pitch and keeps the per-texel MAX. 0 on every ordinary render, where
+  // `fract(rand + 0)` is `rand` — the motion-invariant jitter of P14.
+  const uJitterPhase = uniform(0, "float");
+
   // Back-compat aliases: the single-layer call site writes `projectionMode` /
   // `isoThreshold` directly, which is member 0.
   const projectionMode = memberNodes[0].projectionMode;
@@ -1993,6 +2088,17 @@ export function createVolumeNodeMaterial(
   // The scene box the depth pass normalises against — the compositor needs
   // the same range to turn depth-per-texel back into a world slope.
   material.userData.depthBox = { min: depth.uDepthBoxMin, max: depth.uDepthBoxMax };
+  material.userData.occluderDepth = {
+    enabled: occluder.uEnabled,
+    clipToLocal: occluder.uClipToLocal,
+    texel: occluder.uTexel,
+    texture: occluder.depthTexel,
+  } satisfies OccluderDepthHandles;
+  material.userData.jitterPhaseUniform = uJitterPhase;
+  // Every member a MAX projection (MIP / attenuated MIP): the per-texel max
+  // over jittered renders then only ever approaches the true projection. A
+  // VOLUME or ISO member composites, and a max over its renders would not.
+  material.userData.maxProjectionOnly = bakedMode.every((mode) => mode === 0 || mode === 1);
 
   material.fragmentNode = Fn(() => {
     // A fresh scope per BUILD: three builds this material once per render
@@ -2001,7 +2107,15 @@ export function createVolumeNodeMaterial(
     // happens inside this body, so per-build uniqueness is the whole check.
     nameScope.reset();
     // Ray ∩ [0, baseShape]; discards the fragment when the ray misses.
-    const { originB, dirB, invD, boundsX, boundsY, rayLen, fullRayLen } = emitVolumeRayBounds(
+    const {
+      originB,
+      dirB,
+      invD,
+      boundsX,
+      boundsY,
+      rayLen: rayLenExpr,
+      fullRayLen,
+    } = emitVolumeRayBounds(
       {
         clippedPosition,
         vOrigin,
@@ -2019,6 +2133,30 @@ export function createVolumeNodeMaterial(
     // UNCROPPED ray, which the marched one is never longer than: a crop box
     // then shortens the march instead of tightening the stride.
     const floorDelta = fullRayLen.div(max(float(uMaxSteps), 1.0));
+    // Latched HERE: `rayLenExpr` is an expression over `boundsY`, which the
+    // occluder cut below moves.
+    const rayLen = float(rayLenExpr).toVar("rayLenWhole");
+
+    if (DEPTH_TERMINATED_RAYS) {
+      // End the ray at the opaque surface in front of it. AFTER `rayLen` /
+      // `fullRayLen` were taken: the stride floor and the attenuated MIP's
+      // depth fraction stay those of the whole ray, so a mesh in the volume
+      // cuts the image and changes nothing in front of the cut. A ray that
+      // ends before it starts breaks out of the march at once and discards.
+      If(float(occluder.uEnabled).greaterThan(0.5), () => {
+        const sceneDepth = float(occluder.depthTexel).toVar("occDepth");
+        // 1 = the cleared far plane: nothing in front of this fragment.
+        If(sceneDepth.lessThan(1.0), () => {
+          const ndc = vec2(
+            screenCoordinate.x.mul(occluder.uTexel.x).mul(2.0).sub(1.0),
+            float(1.0).sub(screenCoordinate.y.mul(occluder.uTexel.y).mul(2.0)),
+          );
+          const h = vec4(occluder.uClipToLocal.mul(vec4(ndc, sceneDepth, 1.0))).toVar("occLocalH");
+          const occB = vec3(toBaseVoxel(h.xyz.div(h.w)));
+          boundsY.assign(min(boundsY, TSL.dot(occB.sub(originB), dirB)));
+        });
+      });
+    }
 
     // Marching pitch per level (CPU mirror:
     // features/bricks/shaderspec/raymarchStep.ts `directionProjectedPitch` —
@@ -2055,7 +2193,9 @@ export function createVolumeNodeMaterial(
     // P14 forbids in the amplitude — motion frames are deliberately
     // under-dithered rather than flickery.
     const jitterAmp = levelPitch(uDesiredLevel);
-    const rayT = boundsX.add(float(rand2(screenCoordinate.xy)).mul(jitterAmp)).toVar("rayT");
+    const rayT = boundsX
+      .add(TSL.fract(float(rand2(screenCoordinate.xy)).add(uJitterPhase)).mul(jitterAmp))
+      .toVar("rayT");
 
     // The cinematic view vector is LOOP-INVARIANT (rayT > 0 always), so it is
     // hoisted here: zero per-sample cost, still per-fragment correct under
@@ -2092,8 +2232,28 @@ export function createVolumeNodeMaterial(
 
     // R11 per-ray state, declared outside the march so it survives a step.
     // UNNAMED per-member vars, for the reason the accumulators are.
-    /** The previous step's desired level — where `desiredLevelFrom` scans from. */
+    /** The desired level of the current ray segment — and where
+     * `desiredLevelFrom` scans from when the segment ends. */
     const prevLvl = int(0).toVar("prevLvl");
+    /** R12: `prevLvl` holds up to this ray distance; −1 = not picked yet.
+     * The ray origin IS the camera, so the LOD distance of a sample is
+     * `rayT · distPerT` and each level's footprint test becomes a threshold
+     * on `rayT` — the pick (a `length`, a divide and a level scan) runs when
+     * the ray crosses one, not on every step. CPU mirror:
+     * `shaderspec/raymarchStep.ts` `levelEndDistance`. */
+    const lvlEndT = float(-1.0).toVar("lvlEndT");
+    const lodWorld = vec3(rayUniforms.uVoxelWorldSize);
+    const lodMinWorld = max(lodWorld.x, max(lodWorld.y, lodWorld.z));
+    /** World LOD distance per unit of `rayT` (dirB is unit in base voxels). */
+    const distPerT = max(float(TSL.length(dirB.mul(lodWorld))), 1e-6).toVar("distPerT");
+    /** Max world factor of the level the smoothing gate last looked at. */
+    const smoothLvl = int(-1).toVar("smoothLvl");
+    const smoothMaxScale = float(1.0).toVar("smoothMaxScale");
+    /** R12: the pitch of a RESOLVED level coarser than the desired one. */
+    const coarsePitchLvl = int(-1).toVar("coarsePitchLvl");
+    const coarsePitch = float(0.0).toVar("coarsePitch");
+    /** R12: per SIMPLE member, the largest raw value a MIP has normalized. */
+    const bestRaw = memberNodes.map(() => float(-1e30).toVar());
     /** `levelPitch` of `pitchLvl`; recomputed only when the level changes. */
     const pitchLvl = int(-1).toVar("pitchLvl");
     const pitchNow = float(0.0).toVar("pitchNow");
@@ -2114,9 +2274,13 @@ export function createVolumeNodeMaterial(
     };
     // Any ATTENUATED_MIP member (a uniform test): only then is the depth
     // weight needed BEFORE sampling, for the maximum-culling clause.
-    let anyAttenuated: any = int(memberNodes[0].projectionMode).equal(int(1));
-    for (let m = 1; m < memberNodes.length; m++) {
-      anyAttenuated = anyAttenuated.or(int(memberNodes[m].projectionMode).equal(int(1)));
+    // Baked modes fold this to a build-time constant: null = no member can
+    // be attenuated, and the weight is never emitted.
+    let anyAttenuated: any = null;
+    for (let m = 0; m < memberNodes.length; m++) {
+      if (modeNever(m, 1)) continue;
+      const is = modeIs(m, 1);
+      anyAttenuated = anyAttenuated ? anyAttenuated.or(is) : is;
     }
     /**
      * A member's verdict on a cell whose norm is at most `upper` (CPU mirror:
@@ -2126,17 +2290,20 @@ export function createVolumeNodeMaterial(
      */
     const memberSkips = (m: number, upper: any, attenNow: any): any => {
       const mem = memberNodes[m];
-      const invisible = upper.lessThanEqual(0.001);
-      const mipBeaten = int(mem.projectionMode)
-        .equal(int(0))
-        .and(upper.lessThanEqual(acc[m].bestNorm));
-      const amipBeaten = int(mem.projectionMode)
-        .equal(int(1))
-        .and(upper.mul(attenNow).lessThanEqual(acc[m].attenuatedMax));
-      const isoMiss = int(mem.projectionMode)
-        .equal(int(3))
-        .and(upper.lessThan(mem.isoThreshold));
-      return acc[m].done.or(invisible).or(mipBeaten).or(amipBeaten).or(isoMiss);
+      let skips: any = acc[m].done.or(upper.lessThanEqual(0.001));
+      // A clause for a mode the member is known not to be in is not emitted.
+      if (!modeNever(m, 0)) {
+        skips = skips.or(modeIs(m, 0).and(upper.lessThanEqual(acc[m].bestNorm)));
+      }
+      if (!modeNever(m, 1)) {
+        skips = skips.or(
+          modeIs(m, 1).and(upper.mul(attenNow).lessThanEqual(acc[m].attenuatedMax)),
+        );
+      }
+      if (!modeNever(m, 3)) {
+        skips = skips.or(modeIs(m, 3).and(upper.lessThan(mem.isoThreshold)));
+      }
+      return skips;
     };
 
     Loop({ start: int(0), end: int(MAX_RAY_STEPS_CEILING), type: "int", condition: "<" }, ({ i }: any) => {
@@ -2159,9 +2326,31 @@ export function createVolumeNodeMaterial(
       });
 
       const pB = originB.add(rayT.mul(dirB)).toVar();
-      // Scanned from the previous step's level (exact — `desiredLevelFrom`).
-      const lvl = int(desiredLevelFrom(pB, originB, prevLvl)).toVar();
-      prevLvl.assign(lvl);
+      // The level pick, only when the ray leaves the segment the last one
+      // holds for. Scanned from that level (exact — `desiredLevelFrom`).
+      If(rayT.greaterThan(lvlEndT), () => {
+        prevLvl.assign(int(desiredLevelFrom(pB, originB, prevLvl)));
+        // Ortho (constant level) and the coarsest level hold to the ray's end.
+        lvlEndT.assign(1e30);
+        If(
+          uPxPerVoxelAtUnitDist
+            .greaterThan(0.0)
+            .and(prevLvl.lessThan(int(t.uNumLevels).sub(1))),
+          () => {
+            // The picked level passes its own test (a raw hit below the floor
+            // also hits AT the floor — level scales never shrink), i.e.
+            // dist ≤ px · maxScale · bias; it holds until `dist` exceeds that.
+            const s = vec3(t.uLevelScale.element(prevLvl)).mul(lodWorld);
+            lvlEndT.assign(
+              float(uPxPerVoxelAtUnitDist)
+                .mul(max(s.x, max(s.y, s.z)))
+                .mul(uLodBias)
+                .div(distPerT),
+            );
+          },
+        );
+      });
+      const lvl = prevLvl;
 
       // LOD-adaptive step (P14): fine pitch where fine data is sampled.
       // floorDelta keeps the uMaxSteps termination guarantee. The pitch is a
@@ -2178,9 +2367,11 @@ export function createVolumeNodeMaterial(
       // ATTENUATED_MIP's depth weight at this step — the same expression its
       // accumulator arm evaluates below. 1 when no member needs it.
       const attenNow = float(1.0).toVar("attenNow");
-      If(anyAttenuated, () => {
-        attenNow.assign(exp(float(-1.5).mul(rayT.sub(boundsX).div(rayLen))));
-      });
+      if (anyAttenuated) {
+        If(anyAttenuated, () => {
+          attenNow.assign(exp(float(-1.5).mul(rayT.sub(boundsX).div(rayLen))));
+        });
+      }
 
       // Residency is channel- AND member-independent: resolve ONCE per step.
       // This is the whole point of merging — N members used to pay N level
@@ -2504,25 +2695,66 @@ export function createVolumeNodeMaterial(
       // DELIBERATELY max-axis, unlike the direction-projected stride: this is
       // a screen-footprint question ("how magnified is this level"), not a
       // marching-density one.
+      // R12: a SAMPLED step strides at the pitch of the level it actually
+      // reads. While bricks stream (or the plan stops short of the desired
+      // level) a sample resolves coarser than desired, and stepping such a
+      // brick at the fine desired pitch takes 2ᵏ× the samples its data holds
+      // — in exactly the frames that are re-marched on a cadence. The longer
+      // stride stops at the exit of the cache's validity box (the region
+      // that resolves to this brick), so the first sample of a finer brick
+      // behind it is never stepped over. VOLUME's opacity correction already
+      // follows `stepLen`. CPU mirror: raymarchStep.ts `sampledStepLength`.
+      {
+        const sampledLevel = int(
+          select(
+            resolved.status.greaterThan(1.5),
+            int(resolved.hopLevel),
+            int(resolved.residentLevel),
+          ),
+        ).toVar("sampledLevel");
+        If(sampledLevel.greaterThan(lvl), () => {
+          If(sampledLevel.notEqual(coarsePitchLvl), () => {
+            coarsePitchLvl.assign(sampledLevel);
+            coarsePitch.assign(levelPitch(sampledLevel));
+          });
+          const far = max(
+            vec3(residencyCache.boxMin).sub(pB).mul(invD),
+            vec3(residencyCache.boxMax).sub(pB).mul(invD),
+          );
+          const boxExit = max(min(far.x, min(far.y, far.z)), 0.0).add(0.01);
+          stepLen.assign(
+            max(
+              stepLen,
+              min(max(floorDelta, coarsePitch).mul(max(float(uStepScale), 1.0)), boxExit),
+            ),
+          );
+        });
+      }
+
       let smoothActive: any = null;
       {
         // World metric, same uniform contract as desiredLevelAt: identity
         // uVoxelWorldSize reduces to the legacy voxel expressions exactly.
-        const w = vec3(rayUniforms.uVoxelWorldSize);
-        const stepDist = max(
-          TSL.length(vec3(pB).sub(originB).mul(w)),
-          max(w.x, max(w.y, w.z)),
-        );
-        const smoothScale = vec3(t.uLevelScale.element(resolved.residentLevel)).mul(w);
-        const resolvedPxPerVoxel = float(uPxPerVoxelAtUnitDist)
-          .div(stepDist)
-          .mul(max(smoothScale.x, max(smoothScale.y, smoothScale.z)));
+        // R12: the sample's LOD distance is `rayT · distPerT` (the ray starts
+        // at the camera) and the resolved level's factor changes only with
+        // the level, so the gate is one multiply and a compare per step:
+        // px / dist · scale ≥ threshold  ⇔  dist · threshold ≤ px · scale.
+        If(int(resolved.residentLevel).notEqual(smoothLvl), () => {
+          smoothLvl.assign(int(resolved.residentLevel));
+          const smoothScale = vec3(t.uLevelScale.element(resolved.residentLevel)).mul(lodWorld);
+          smoothMaxScale.assign(max(smoothScale.x, max(smoothScale.y, smoothScale.z)));
+        });
+        const stepDist = max(rayT.mul(distPerT), lodMinWorld);
         smoothActive = uPxPerVoxelAtUnitDist
           .greaterThan(0.0)
           .and(uSmoothThreshold.greaterThan(0.0))
           .and(resolved.status.greaterThanEqual(0.5))
           .and(resolved.status.lessThan(1.5))
-          .and(resolvedPxPerVoxel.greaterThanEqual(uSmoothThreshold))
+          .and(
+            stepDist
+              .mul(uSmoothThreshold)
+              .lessThanEqual(float(uPxPerVoxelAtUnitDist).mul(smoothMaxScale)),
+          )
           .toVar("smoothActive");
       }
 
@@ -2577,19 +2809,54 @@ export function createVolumeNodeMaterial(
               smoothActive,
               sharedTap,
             );
-            const norm = float(fixedNormalize(m, raw)).toVar(nm("fxNorm"));
-            sampleNorm.assign(norm);
+            // R12 — MIP normalizes only a raw value that BEATS the largest it
+            // has normalized. The fixed-shape transfer is monotone
+            // non-decreasing in the raw value (two clamps, a `pow` with a
+            // positive exponent, no invert), so a sample at or below that raw
+            // maps at or below `bestNorm` and could not have won the strict
+            // `>` below: skipping its normalize (a `pow`) and its LUT sample
+            // changes nothing. The step is then ONE atlas tap and a compare.
+            // CPU mirror: raymarchStep.ts `mipSampleCanWin`.
+            const emitTransfer = () => {
+              sampleNorm.assign(float(fixedNormalize(m, raw)));
+            };
+            if (bakedMode[m] === 0) {
+              If(raw.greaterThan(bestRaw[m]), () => {
+                bestRaw[m].assign(raw);
+                emitTransfer();
+              });
+            } else if (bakedMode[m] === null) {
+              If(modeIs(m, 0).not().or(raw.greaterThan(bestRaw[m])), () => {
+                bestRaw[m].assign(max(bestRaw[m], raw));
+                emitTransfer();
+              });
+            } else {
+              emitTransfer();
+            }
             // color × weight with opacity 1: additive (or normal) onto a zero
-            // accumulator IS assignment.
-            sampleColor.assign(
-              c.colormapAtlas.sample(vec2(norm, mem.fixed.uRow)).level(0).rgb.mul(norm),
-            );
+            // accumulator IS assignment. VOLUME composites every sample's
+            // colour, so only it pays the LUT per step; the max projections
+            // and ISO fetch the WINNER's colour (`lazyColor`).
+            if (!modeNever(m, 2)) {
+              If(modeIs(m, 2), () => {
+                sampleColor.assign(
+                  c.colormapAtlas.sample(vec2(sampleNorm, mem.fixed.uRow)).level(0).rgb.mul(sampleNorm),
+                );
+              });
+            }
           });
           return {
             sampleColor,
             sampleNorm,
             gradSlab: int(mem.fixed.uSlab0),
             gradNormalize: (raw: any) => fixedNormalize(m, raw),
+            /** Emitted inside a winner branch (MIP / AMIP / ISO), before the
+             * colour is read: the LUT sample for THIS sample's norm. */
+            lazyColor: () => {
+              sampleColor.assign(
+                c.colormapAtlas.sample(vec2(sampleNorm, mem.fixed.uRow)).level(0).rgb.mul(sampleNorm),
+              );
+            },
           };
         }
 
@@ -2722,6 +2989,10 @@ export function createVolumeNodeMaterial(
       memberNodes.forEach((mem, m) => {
         const a = acc[m];
         const { sampleColor, sampleNorm, gradSlab, gradNormalize } = samples[m];
+        /** A fixed-shape intensity member fetches its colour only here, for
+         * the sample that won (R12); every other shape already has it. */
+        const lazyColor: () => void =
+          (samples[m] as { lazyColor?: () => void }).lazyColor ?? (() => {});
         /**
          * Shade this sample's colour, for the VOLUME and ISOSURFACE arms only.
          *
@@ -2764,9 +3035,10 @@ export function createVolumeNodeMaterial(
         };
         // A finished member contributes nothing further; the others march on.
         If(a.done.not(), () => {
-          If(int(mem.projectionMode).equal(1), () => {
-            const depthFrac = rayT.sub(boundsX).div(rayLen);
-            const atten = exp(float(-1.5).mul(depthFrac)).toVar();
+          const attenuatedArm = () => {
+            // `attenNow` IS this step's weight (computed above whenever any
+            // member is attenuated — which this arm running implies).
+            const atten = attenNow;
             // The winner is chosen on the UNSHADED norm × attenuation (C1);
             // only the colour stored for it is lit. The exp() depth fade is
             // deliberately kept — it composes with shading as a depth cue,
@@ -2775,6 +3047,7 @@ export function createVolumeNodeMaterial(
             If(av.greaterThan(a.attenuatedMax), () => {
               a.attenuatedMax.assign(av);
               a.hitT.assign(rayT);
+              lazyColor();
               a.attenuatedColor.assign(shadeColor(`amipFastGrad${m}`, null, cine.uMipShading));
             });
             // Early ray termination (CPU mirror: attenuatedMipDone). atten
@@ -2785,8 +3058,8 @@ export function createVolumeNodeMaterial(
             If(a.attenuatedMax.greaterThanEqual(atten), () => {
               a.done.assign(true);
             });
-          })
-            .ElseIf(int(mem.projectionMode).equal(2), () => {
+          };
+          const volumeArm = () => {
               // Step-size (opacity) correction — mirrors features/bricks/shaderspec/opacityCorrection.ts.
               const av = oneMinus(
                 pow(max(oneMinus(sampleNorm), 0.0), stepLen.div(max(refStep, 1e-5))),
@@ -2802,19 +3075,20 @@ export function createVolumeNodeMaterial(
               If(a.volAlpha.greaterThanEqual(0.98), () => {
                 a.done.assign(true);
               });
-            })
-            .ElseIf(int(mem.projectionMode).equal(3), () => {
+          };
+          const isoArm = () => {
               // The hit test reads the UNSHADED norm (C1); only the colour
               // that is stored is lit. One gradient per RAY — the ray is done
               // here — which is why the iso path costs ~2-5% and not 1.5×.
               If(sampleNorm.greaterThanEqual(mem.isoThreshold), () => {
                 a.isoHit.assign(true);
                 a.hitT.assign(rayT);
+                lazyColor();
                 a.isoColor.assign(shadeColor(`isoGrad${m}`));
                 a.done.assign(true);
               });
-            })
-            .Else(() => {
+          };
+          const mipArm = () => {
               // The max is still selected on the UNSHADED norm (C1) — so the
               // probe, the shaderspec mirrors and the 0.995 early-out below are
               // all unchanged. Only the colour stored for the winner is lit.
@@ -2825,6 +3099,7 @@ export function createVolumeNodeMaterial(
               If(sampleNorm.greaterThan(a.bestNorm), () => {
                 a.bestNorm.assign(sampleNorm);
                 a.hitT.assign(rayT);
+                lazyColor();
                 a.bestColor.assign(shadeColor(`mipGrad${m}`, null, cine.uMipShading));
               });
               // Early ray termination: the normalize clamps to [0, 0.999] before
@@ -2836,7 +3111,8 @@ export function createVolumeNodeMaterial(
               If(a.bestNorm.greaterThanEqual(0.995), () => {
                 a.done.assign(true);
               });
-            });
+          };
+          modeSwitch(m, { 0: mipArm, 1: attenuatedArm, 2: volumeArm, 3: isoArm });
         });
       });
 
@@ -2855,19 +3131,18 @@ export function createVolumeNodeMaterial(
     If(float(depth.uDepthCode).greaterThan(0.5), () => {
       const bestStrength = float(0.0).toVar("depthStrength");
       const bestT = float(0.0).toVar("depthHitT");
-      memberNodes.forEach((mem, m) => {
+      memberNodes.forEach((_mem, m) => {
         const a = acc[m];
-        const mode = int(mem.projectionMode);
         const strength = select(
-          mode.equal(2),
+          modeIs(m, 2),
           a.volAlpha,
           select(
-            mode.equal(3),
+            modeIs(m, 3),
             select(a.isoHit, float(1.0), float(0.0)),
-            select(mode.equal(1), a.attenuatedMax, a.bestNorm),
+            select(modeIs(m, 1), a.attenuatedMax, a.bestNorm),
           ),
         );
-        const tHit = select(mode.equal(2), a.volDepth.div(max(a.volAlpha, 1e-5)), a.hitT);
+        const tHit = select(modeIs(m, 2), a.volDepth.div(max(a.volAlpha, 1e-5)), a.hitT);
         If(strength.greaterThan(bestStrength), () => {
           bestStrength.assign(strength);
           bestT.assign(tHit);
@@ -2885,34 +3160,31 @@ export function createVolumeNodeMaterial(
       // its own slots), and addition is associative — so summing here is exactly
       // what the framebuffer did across the separate passes. For one member the
       // addAssign onto a zeroed var is the old plain assign.
-      memberNodes.forEach((mem, m) => {
+      memberNodes.forEach((_mem, m) => {
         const a = acc[m];
-        If(int(mem.projectionMode).equal(2), () => {
-          If(a.volAlpha.greaterThanEqual(0.01), () => {
-            outColor.addAssign(a.volColor);
+        // MIP / ATTENUATED_MIP: premultiplied additive output.
+        const maxOut = (norm: any, color: any) => () => {
+          If(norm.greaterThanEqual(0.01), () => {
+            outColor.addAssign(color);
             keep.assign(true);
           });
-        })
-          .ElseIf(int(mem.projectionMode).equal(3), () => {
+        };
+        modeSwitch(m, {
+          0: maxOut(a.bestNorm, a.bestColor),
+          1: maxOut(a.attenuatedMax, a.attenuatedColor),
+          2: () => {
+            If(a.volAlpha.greaterThanEqual(0.01), () => {
+              outColor.addAssign(a.volColor);
+              keep.assign(true);
+            });
+          },
+          3: () => {
             If(a.isoHit, () => {
               outColor.addAssign(a.isoColor);
               keep.assign(true);
             });
-          })
-          .Else(() => {
-            // MIP / ATTENUATED_MIP: premultiplied additive output.
-            const outNorm = select(
-              int(mem.projectionMode).equal(1),
-              a.attenuatedMax,
-              a.bestNorm,
-            );
-            If(outNorm.greaterThanEqual(0.01), () => {
-              outColor.addAssign(
-                select(int(mem.projectionMode).equal(1), a.attenuatedColor, a.bestColor),
-              );
-              keep.assign(true);
-            });
-          });
+          },
+        });
       });
     });
 

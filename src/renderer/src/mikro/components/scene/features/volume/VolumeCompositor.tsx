@@ -7,7 +7,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { NodeMaterial } from "three/webgpu";
+import { NodeMaterial, QuadMesh } from "three/webgpu";
 import * as TSLTyped from "three/tsl";
 import {
   DEPTH_VIEW_CODE,
@@ -15,6 +15,11 @@ import {
   makeDepthCompositeUniforms,
   type DepthCompositeUniforms,
 } from "../bricks/gpu/depthCodeNodes";
+import {
+  DEPTH_TERMINATED_RAYS,
+  PLACEHOLDER_OCCLUDER_DEPTH,
+  type OccluderDepthHandles,
+} from "../bricks/gpu/brickNodeMaterials";
 import { boxViewDepthRange } from "../bricks/shaderspec/depthCode";
 import {
   buildVolumeCompositeNode,
@@ -38,12 +43,17 @@ import {
   resolveDpr,
 } from "../../platform/quality/qualityGovernor";
 import {
+  SETTLE_ACCUMULATE,
+  SETTLE_ACCUM_FRAMES,
+  SETTLE_ACCUM_INTERVAL_MS,
   SETTLE_REFINE_DELAY_MS,
   buildVolumeStructureKey,
   createCompositorStats,
   createSettledRenderMeter,
+  decideSettleAccumulate,
   decideSettleRefine,
   decideVolumeFrame,
+  settleAccumPhase,
   STREAM_RENDER_CADENCE_SHARE,
   streamRenderDue,
   needsTargetResize,
@@ -148,6 +158,70 @@ const setDepthEncoding = (meshes: readonly THREE.Object3D[], on: boolean): void 
   }
 };
 
+/** Every material of the given meshes (a mesh may carry an array). */
+const forEachMaterial = (
+  meshes: readonly THREE.Object3D[],
+  visit: (material: THREE.Material, mesh: THREE.Object3D) => void,
+): void => {
+  for (const mesh of meshes) {
+    const material = (mesh as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    if (Array.isArray(material)) for (const m of material) visit(m, mesh);
+    else if (material) visit(material, mesh);
+  }
+};
+
+/**
+ * Hand the image volume materials the occluder depth of THIS pass (or turn
+ * the read off with `depth === null`). `driven` collects every handle set
+ * touched, so unmount can point them back at the placeholder — a material
+ * outlives the compositor across a 2D↔3D switch and must not keep a disposed
+ * depth texture bound.
+ */
+const setOccluderDepth = (
+  meshes: readonly THREE.Object3D[],
+  depth: THREE.Texture | null,
+  camera: THREE.Camera,
+  width: number,
+  height: number,
+  driven: Set<OccluderDepthHandles>,
+): void => {
+  forEachMaterial(meshes, (material, mesh) => {
+    const handles = material.userData?.occluderDepth as OccluderDepthHandles | undefined;
+    if (!handles) return;
+    if (depth === null) {
+      handles.enabled.value = 0;
+      return;
+    }
+    driven.add(handles);
+    handles.texture.value = depth;
+    handles.texel.value.set(1 / Math.max(width, 1), 1 / Math.max(height, 1));
+    // clip → the mesh's local unit box, the frame the ray is built in.
+    handles.clipToLocal.value
+      .copy(mesh.matrixWorld)
+      .invert()
+      .multiply(camera.matrixWorld)
+      .multiply(camera.projectionMatrixInverse);
+    handles.enabled.value = 1;
+  });
+};
+
+/** The settle-accumulation jitter phase (`uJitterPhase`), 0 = ordinary. */
+const setJitterPhase = (meshes: readonly THREE.Object3D[], phase: number): void => {
+  forEachMaterial(meshes, (material) => {
+    const uniform = material.userData?.jitterPhaseUniform as { value: number } | undefined;
+    if (uniform) uniform.value = phase;
+  });
+};
+
+/** Every volume in the pass is a max projection (`maxProjectionOnly`). */
+const allMaxProjections = (meshes: readonly THREE.Object3D[]): boolean => {
+  let all = meshes.length > 0;
+  forEachMaterial(meshes, (material) => {
+    if (material.userData?.maxProjectionOnly !== true) all = false;
+  });
+  return all;
+};
+
 /**
  * Fit the composite quad's WORLD matrix to exactly fill the camera frustum
  * just past the near plane. The quad then rides the standard MVP vertex path
@@ -214,6 +288,72 @@ export const VolumeCompositor = () => {
       }),
     [],
   );
+  // DEPTH-TERMINATED RAYS: the occluder prepass writes HERE, into a depth
+  // TEXTURE the volume shader reads to end each ray at the surface in front
+  // of it. (It cannot stay in the volume target's own depth buffer: a pass
+  // cannot sample the attachment it is drawing into.) 2×2 until a frame has
+  // occluders.
+  const occluderTarget = useMemo(() => {
+    const created = new THREE.RenderTarget(2, 2, {
+      depthBuffer: true,
+      depthTexture: new THREE.DepthTexture(2, 2),
+      generateMipmaps: false,
+    });
+    return created;
+  }, []);
+  const drivenOccludersRef = useRef(new Set<OccluderDepthHandles>());
+
+  // SETTLE ACCUMULATION: one jittered re-render lands here, then is merged
+  // into `target` with a per-texel MAX (`accumBlit`). 2×2 until first used.
+  const accumTarget = useMemo(
+    () =>
+      new THREE.RenderTarget(2, 2, {
+        depthBuffer: true,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+        generateMipmaps: false,
+      }),
+    [],
+  );
+  const accumBlit = useMemo(() => {
+    const material = new NodeMaterial();
+    // Texel for texel (both targets have one size): no sampler, no uv
+    // convention to get wrong.
+    material.colorNode = TSL.texture(
+      accumTarget.texture,
+      TSL.ivec2(TSL.screenCoordinate.xy),
+    ).setSampler(false);
+    material.transparent = true;
+    material.blending = THREE.CustomBlending;
+    // WebGPU requires both factors to be One for a max equation.
+    material.blendEquation = THREE.MaxEquation;
+    material.blendSrc = THREE.OneFactor;
+    material.blendDst = THREE.OneFactor;
+    material.blendEquationAlpha = THREE.MaxEquation;
+    material.blendSrcAlpha = THREE.OneFactor;
+    material.blendDstAlpha = THREE.OneFactor;
+    material.depthTest = false;
+    material.depthWrite = false;
+    material.fog = false;
+    material.lights = false;
+    return new QuadMesh(material);
+  }, [accumTarget]);
+  useEffect(
+    () => () => {
+      for (const handles of drivenOccludersRef.current) {
+        handles.enabled.value = 0;
+        handles.texture.value = PLACEHOLDER_OCCLUDER_DEPTH;
+      }
+      drivenOccludersRef.current.clear();
+      occluderTarget.depthTexture?.dispose();
+      occluderTarget.dispose();
+      accumTarget.dispose();
+      (accumBlit.material as THREE.Material).dispose();
+    },
+    [occluderTarget, accumTarget, accumBlit],
+  );
+
   // Stable across quad rebuilds: the frame loop writes these every frame.
   const depthUniforms = useMemo(
     () => makeDepthCompositeUniforms() as DepthCompositeUniforms & Record<string, any>,
@@ -361,6 +501,7 @@ export const VolumeCompositor = () => {
       lastRenderReason: stats.lastRenderReason(),
       settleRefineStage: qualityGovernor.getSettleRefineStage(),
       settledRenderMs: meter.costMs(),
+      settleAccumFrames: accumDoneRef.current,
     }));
     return () => viewerStoreApi.getState().registerVolumeCompositor(null);
   }, [viewerStoreApi, target, stats, meter]);
@@ -433,6 +574,34 @@ export const VolumeCompositor = () => {
     [],
   );
 
+  // --- Settle accumulation (R12) --------------------------------------------
+  /** Extra frames merged onto the settled render in the target; −1 = none. */
+  const accumDoneRef = useRef(-1);
+  /** The timer asked for the next accumulation frame. */
+  const accumDueRef = useRef(false);
+  const accumTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearAccumTimer = () => {
+    if (accumTimerRef.current !== null) {
+      clearTimeout(accumTimerRef.current);
+      accumTimerRef.current = null;
+    }
+    accumDueRef.current = false;
+  };
+  const scheduleAccum = (delayMs: number) => {
+    clearAccumTimer();
+    accumTimerRef.current = setTimeout(() => {
+      accumTimerRef.current = null;
+      const view = viewStoreApi.getState();
+      if (view.cameraMoving || view.interacting || qualityGovernor.isStreaming()) return;
+      // One accumulation frame costs what the settled render cost: spend it
+      // only when that fits the budget of one ladder stage. Unmeasured = no.
+      if (!settleRefineAffordable({ settledRenderMs: meter.costMs(), nextStage: 0 })) return;
+      accumDueRef.current = true;
+      invalidate();
+    }, delayMs);
+  };
+  useEffect(() => clearAccumTimer, []);
+
   useFrame((state) => {
     const gl = state.gl as unknown as CompositorRenderer;
     const { scene, camera } = state;
@@ -450,6 +619,7 @@ export const VolumeCompositor = () => {
       lastErrorRef.current = String(error);
       console.warn("[scene] volume compositor disabled after error:", error);
       clearRefineTimer();
+      clearAccumTimer();
       qualityGovernor.setSettleRefineStage(0);
       quad.visible = false;
       try {
@@ -618,7 +788,42 @@ export const VolumeCompositor = () => {
         sceneWithBackground.background = null;
         gl.setClearColor(0x000000, 0);
         gl.setRenderTarget(into);
-        if (sets.occluders.length > 0) {
+        if (sets.occluders.length > 0 && DEPTH_TERMINATED_RAYS) {
+          // Occluders alone, with their OWN materials and colorWrite off
+          // (never scene.overrideMaterial — a plain override corrupts
+          // BatchedMesh multi-draw ranges), into the occluder target's depth
+          // TEXTURE; then the volumes alone, each ray ending at that depth.
+          if (
+            needsTargetResize(
+              { width: occluderTarget.width, height: occluderTarget.height },
+              { width: into.width, height: into.height },
+            )
+          ) {
+            occluderTarget.setSize(into.width, into.height);
+          }
+          hideObjectsInto(sets.volumeMeshes, hideScratch.volumesPrepass);
+          disableColorWriteInto(sets.occluders, hideScratch.colorWrite);
+          gl.setRenderTarget(occluderTarget);
+          gl.autoClear = true;
+          try {
+            gl.render(scene, camera);
+          } finally {
+            restoreColorWrite(hideScratch.colorWrite);
+            restoreHidden(hideScratch.volumesPrepass);
+          }
+          hideObjectsInto(sets.occluders, hideScratch.occluders);
+          setOccluderDepth(
+            sets.volumeMeshes,
+            occluderTarget.depthTexture,
+            camera,
+            into.width,
+            into.height,
+            drivenOccludersRef.current,
+          );
+          gl.setRenderTarget(into);
+          gl.autoClear = true;
+          gl.render(scene, camera);
+        } else if (sets.occluders.length > 0) {
           // Depth-only prepass: occluders alone with their OWN materials and
           // colorWrite off (never scene.overrideMaterial — a plain override
           // corrupts BatchedMesh multi-draw ranges), then volumes on top of
@@ -643,6 +848,9 @@ export const VolumeCompositor = () => {
         hasContentRef.current = true;
         bloomDirtyRef.current = true;
       } finally {
+        // The canvas pass (labels, a direct render) must never read a depth
+        // texture that belongs to another pass.
+        setOccluderDepth(sets.volumeMeshes, null, camera, 1, 1, drivenOccludersRef.current);
         // `restoreHidden` is a no-op on an empty (never filled) list.
         restoreHidden(hideScratch.occluders);
         restoreHidden(hideScratch.others);
@@ -672,6 +880,56 @@ export const VolumeCompositor = () => {
     depthUniforms.uDepthView.value = depthInTargetRef.current;
     depthUniforms.uDepthTexel.value.set(1 / depthTarget.width, 1 / depthTarget.height);
 
+    // --- Settle accumulation (R12) -----------------------------------------
+    // Refine a settled max-projection frame over a few ORDINARY-cost renders
+    // (jitter moved by a fraction of the pitch, per-texel max into the
+    // target) instead of the ladder's one double-cost render.
+    const settledDpr = resolveDpr(profile, state.viewport.initialDpr, false);
+    const accumEligible =
+      SETTLE_ACCUMULATE && !depthView && allMaxProjections(sets.volumeMeshes);
+    const accumAction = decideSettleAccumulate({
+      enabled: accumEligible,
+      quiet: !interacting && !streaming && scale === 1 && dpr >= settledDpr - 1e-6,
+      rendered: decision.render,
+      due: accumDueRef.current,
+      done: accumDoneRef.current,
+    });
+    if (accumAction === "base") {
+      accumDoneRef.current = 0;
+      // 200 ms of quiet first — the ladder's own delay, and long enough for
+      // the settled-render meter's probe frames to have read its cost.
+      scheduleAccum(SETTLE_REFINE_DELAY_MS);
+    } else if (accumAction === "reset") {
+      accumDoneRef.current = -1;
+      clearAccumTimer();
+    } else if (accumAction === "accumulate") {
+      accumDueRef.current = false;
+      const index = accumDoneRef.current + 1;
+      if (needsTargetResize({ width: accumTarget.width, height: accumTarget.height }, nextSize)) {
+        accumTarget.setSize(nextSize.width, nextSize.height);
+      }
+      setJitterPhase(sets.volumeMeshes, settleAccumPhase(index));
+      try {
+        renderVolumePass(accumTarget, false);
+      } finally {
+        setJitterPhase(sets.volumeMeshes, 0);
+      }
+      const prevTarget = gl.getRenderTarget();
+      const prevAutoClear = gl.autoClear;
+      try {
+        gl.autoClear = false;
+        gl.setRenderTarget(target);
+        accumBlit.render(gl as unknown as Parameters<typeof accumBlit.render>[0]);
+      } finally {
+        gl.autoClear = prevAutoClear;
+        gl.setRenderTarget(prevTarget);
+      }
+      bloomDirtyRef.current = true;
+      accumDoneRef.current = index;
+      perfMonitor.markEvent("volume:accumulate", { info: String(index) }); // no-op unless recording
+      if (index < SETTLE_ACCUM_FRAMES - 1) scheduleAccum(SETTLE_ACCUM_INTERVAL_MS);
+    }
+
     // --- Settled-render cost ---------------------------------------------------
     // The meter needs the frames AFTER a settled render to see what it cost
     // (the GPU is still on it when gl.render returns); it asks for them here
@@ -690,14 +948,15 @@ export const VolumeCompositor = () => {
       // exactly as camera motion does, and its falling edge advances it.
       cameraMoving: interacting,
       streaming,
-      enabled: true,
+      // Accumulation replaces the ladder where it applies; the ladder keeps
+      // the frames it cannot refine (a VOLUME or ISO member on screen).
+      enabled: !accumEligible,
       cacheEnabled: true,
       renderedThisFrame: decision.render,
       scale,
       // Wait for QualityAdapter's DPR restore before spending boosted
       // renders — see decideSettleRefine's atSettledDpr doc.
-      atSettledDpr:
-        dpr >= resolveDpr(profile, state.viewport.initialDpr, false) - 1e-6,
+      atSettledDpr: dpr >= settledDpr - 1e-6,
       stage: qualityGovernor.getSettleRefineStage(),
       maxStages: MAX_SETTLE_REFINE_STAGES,
     });
