@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/arkitektio/orkestrator/compare/v6.0.0...v6.0.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **rekuest:** an action's Space renders on its own (@arkitektio/bsx 4.0.1) ([22838b1](https://github.com/arkitektio/orkestrator/commit/22838b1f2d0244888c8bd85d5e7cfc897468e22d))
+
 # [6.0.0](https://github.com/arkitektio/orkestrator/compare/v5.19.0...v6.0.0) (2026-11-13)
 
 
