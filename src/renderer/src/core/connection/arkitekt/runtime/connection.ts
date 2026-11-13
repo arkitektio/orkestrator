@@ -86,12 +86,19 @@ export const instantiateConnection = <
   serviceBuilderMap: T,
   selfServiceBuilder: S,
   getToken: GetToken,
+  /**
+   * `false` brings up lok alone: no service gets a client until its address
+   * has answered in this session (`controller/link.ts`). The stored alias map
+   * is then only where each check starts, not where anything is sent.
+   */
+  { services = true }: { services?: boolean } = {},
 ): ConnectedContext<T, S> => {
   const token = normalizeToken(storedSession.token);
+  const aliasMap = services ? storedSession.aliasMap.aliasMap : {};
   const serviceMap = buildServiceMap({
     map: serviceBuilderMap,
     manifest,
-    aliasMap: storedSession.aliasMap.aliasMap,
+    aliasMap,
     fakts: storedSession.fakts,
     getToken,
   }) as ConnectedContext<T, S>["serviceMap"];
@@ -108,7 +115,7 @@ export const instantiateConnection = <
     fakts: storedSession.fakts,
     manifest,
     serviceMap,
-    aliasMap: storedSession.aliasMap.aliasMap as ConnectedContext<T, S>["aliasMap"],
+    aliasMap: aliasMap as ConnectedContext<T, S>["aliasMap"],
     serviceInstanceMap: storedSession.fakts.instances,
     serviceBuilderMap,
     selfService: selfService as ReturnType<S>,

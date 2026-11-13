@@ -9,6 +9,15 @@ export const AliasSchema = z.object({
   path: z.string().optional().nullable(),
   challenge: z.string(),
   public: z.boolean().optional(),
+  /**
+   * How lok says the address is reached. `reach` is where it works
+   * (`mesh` = only over the organisation's mesh); `kind` is its older, coarser
+   * form. Read by `controller/route.ts`, the one place that decides a route.
+   * Absent on fakts stored before they were kept, and a value this build does
+   * not know reads as absent rather than failing the whole envelope.
+   */
+  kind: z.enum(["absolute", "mesh", "docker"]).optional().catch(undefined),
+  reach: z.enum(["loopback", "internal", "lan", "mesh", "public"]).optional().catch(undefined),
 });
 
 // Ed25519 public key for verifying signed alias challenges.

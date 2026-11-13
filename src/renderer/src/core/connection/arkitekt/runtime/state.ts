@@ -68,11 +68,14 @@ export const buildServiceStates = (
         } else {
           status = "ready";
         }
-      } else if (alias) {
-        status = previous?.status === "invalid" ? "invalid" : "configured";
       } else {
-        status = previous?.status === "invalid" ? "invalid" : "configured";
-        if (!errors.length) {
+        // No client: a check that is running or has failed keeps saying so.
+        // Falling back to "configured" here turned a service that was still
+        // being checked into a broken one every time ANOTHER service's state
+        // was written — and a service has no client until its check lands.
+        status =
+          previous?.status === "invalid" ? "invalid" : previous?.status === "checking" ? "checking" : "configured";
+        if (!alias && status === "configured" && !errors.length) {
           errors = [`No alias resolved for '${definition.key}'.`];
         }
       }

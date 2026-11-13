@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import type { MeshEvent, MeshNodeStatus, MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import type { MeshBridge } from "./bridge";
-import { isMeshRouted, watchMesh } from "./meshGate";
+import { watchMesh } from "./meshGate";
 
 const MESH: ProfileMesh = { id: "lab", label: "Lab", controlUrl: "https://mesh.lab", hosts: ["data.lab"], enabled: true };
 
@@ -118,28 +118,5 @@ describe("watchMesh", () => {
     gate.dispose();
     expect(listeners.size).toBe(0);
     expect(await gate.ready).toBe("none");
-  });
-});
-
-describe("isMeshRouted", () => {
-  it("knows pinned hosts, the cached suffix and mesh-shaped addresses", () => {
-    const mesh = { ...MESH, magicDnsSuffix: "lab.mesh.arkitekt.live" };
-    expect(isMeshRouted("data.lab", mesh)).toBe(true);
-    expect(isMeshRouted("mikro.lab.mesh.arkitekt.live", mesh)).toBe(true);
-    expect(isMeshRouted("100.64.0.7", mesh)).toBe(true);
-    // Tailscale Inc's MagicDNS: the system Tailscale's tailnet, not this mesh.
-    expect(isMeshRouted("mikro.tailnet-cafe.ts.net", mesh)).toBe(false);
-    expect(isMeshRouted("go.arkitekt.live", mesh)).toBe(false);
-  });
-
-  it("counts every subdomain of the control server, but not the control server itself", () => {
-    const mesh = { ...MESH, controlUrl: "https://mesh.arkitekt.live" };
-    expect(isMeshRouted("mikro.lab.mesh.arkitekt.live", mesh)).toBe(true);
-    expect(isMeshRouted("mesh.arkitekt.live", mesh)).toBe(false);
-  });
-
-  it("routes nothing without an enabled mesh", () => {
-    expect(isMeshRouted("100.64.0.7", undefined)).toBe(false);
-    expect(isMeshRouted("100.64.0.7", { ...MESH, enabled: false })).toBe(false);
   });
 });

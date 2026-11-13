@@ -2,7 +2,7 @@
 import { render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { checkAliasHealth, resolveWorkingAlias } from "./alias/resolve";
+import { checkAliasHealth } from "./alias/resolve";
 import {
   createProfileFromSession,
   emptyProfileBook,
@@ -11,13 +11,15 @@ import {
   upsertProfile,
   writeStoredProfileBook,
 } from "./fakts/profileStorageSchema";
-import { useArkitektStore } from "./hooks";
+import { useArkitektActions, useArkitektStore } from "./hooks";
 import { ArkitektProvider } from "./provider";
 
 /**
- * A re-check of a service that is already up must be invisible: no trip
- * through `checking` (which unmounts every guarded subtree), no new client
- * when the alias did not move, and no book write for nothing.
+ * A service is up only on an address that answered in THIS session: at boot
+ * it reads `checking` and has no client until one does. Once up, a re-check
+ * must be invisible: no trip through `checking` (which unmounts every guarded
+ * subtree), no new client when the alias did not move, and no book write for
+ * nothing.
  */
 
 vi.mock("./alias/resolve", () => ({
@@ -74,8 +76,11 @@ const selfServiceBuilder = (() => ({ client: {}, dispose: () => {} })) as never;
 
 /** Every status the lok service rendered with, in order. */
 let statuses: string[] = [];
+let retry: () => Promise<void> = async () => {};
 const Probe = () => {
   const status = useArkitektStore((s) => s.serviceStates.lok?.status);
+  const { retryService } = useArkitektActions();
+  retry = () => retryService("lok");
   if (status && statuses[statuses.length - 1] !== status) statuses.push(status);
   return null;
 };
@@ -94,6 +99,7 @@ const renderProvider = () =>
 let bookWrites = 0;
 
 beforeEach(() => {
+  vi.mocked(checkAliasHealth).mockClear();
   built = 0;
   statuses = [];
   bookWrites = 0;
@@ -125,17 +131,24 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.mocked(checkAliasHealth).mockImplementation(async () => true);
 });
 
-describe("re-checking a service at boot", () => {
-  it("stays ready, keeps its client and writes nothing when the alias did not move", async () => {
+describe("checking a service at boot", () => {
+  it("has no client until the stored alias answered, then one, and writes nothing", async () => {
+    let answer: (ok: boolean) => void = () => {};
+    vi.mocked(checkAliasHealth).mockImplementationOnce(() => new Promise<boolean>((resolve) => (answer = resolve)));
     renderProvider();
 
     await waitFor(() => expect(checkAliasHealth).toHaveBeenCalled());
+    // Not ready on last session's word: nothing may be sent there yet.
+    expect(statuses[statuses.length - 1]).toBe("checking");
+    expect(built).toBe(0);
+
+    answer(true);
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(statuses).not.toContain("checking");
-    expect(statuses[statuses.length - 1]).toBe("ready");
     expect(built).toBe(1);
     // A fresh token is used as it is and the alias did not move: a boot that
     // changes nothing writes nothing.
@@ -143,19 +156,78 @@ describe("re-checking a service at boot", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("rebuilds the one client, and writes once, when the alias moved", async () => {
-    vi.mocked(checkAliasHealth).mockResolvedValueOnce(false);
-    vi.mocked(resolveWorkingAlias).mockResolvedValueOnce(MOVED);
+  it("builds the one client on the alias that answers, and writes once, when it moved", async () => {
+    vi.mocked(checkAliasHealth).mockImplementation(async (alias) => alias.id === MOVED.id);
 
     renderProvider();
 
-    await waitFor(() => expect(built).toBe(2));
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(statuses).not.toContain("checking");
+    // Never one on the address that no longer answers.
+    expect(built).toBe(1);
     // One write: the moved alias.
     expect(bookWrites).toBe(1);
     const stored = JSON.parse(localStorage.getItem(PROFILE_BOOK_STORAGE_KEY)!);
     expect(stored.profiles["id-alpha"].session.aliasMap.aliasMap.lok.id).toBe("a2");
+  });
+});
+
+describe("re-checking a service that is up", () => {
+  it("stays ready, keeps its client and writes nothing when the alias did not move", async () => {
+    renderProvider();
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
+    statuses = ["ready"];
+
+    await retry();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(statuses).toEqual(["ready"]);
+    expect(built).toBe(1);
+    expect(bookWrites).toBe(0);
+  });
+
+  it("goes invalid without its client when nothing answers any more, and comes back on a retry", async () => {
+    renderProvider();
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
+
+    vi.mocked(checkAliasHealth).mockImplementation(async () => false);
+    await retry();
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("invalid"));
+
+    vi.mocked(checkAliasHealth).mockImplementation(async () => true);
+    await retry();
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
+    expect(built).toBe(2);
+  });
+});
+
+describe("a check overtaken by new fakts", () => {
+  it("checks the new addresses instead of staying in `checking`", async () => {
+    let answer: (ok: boolean) => void = () => {};
+    vi.mocked(checkAliasHealth).mockImplementationOnce(() => new Promise<boolean>((resolve) => (answer = resolve)));
+    renderProvider();
+    await waitFor(() => expect(checkAliasHealth).toHaveBeenCalledTimes(1));
+
+    // Another window rotated the token, and the refresh brought other addresses.
+    const rotated = {
+      ...session,
+      token: { ...session.token, refresh_token: "rt2" },
+      fakts: { ...session.fakts, instances: { lok: { ...session.fakts.instances.lok, aliases: [MOVED] } } },
+    };
+    writeStoredProfileBook(
+      setActiveProfile(upsertProfile(emptyProfileBook(), createProfileFromSession(rotated, 1, "id-alpha")), "id-alpha", 10),
+      localStorage,
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key: PROFILE_BOOK_STORAGE_KEY }));
+    await waitFor(() => expect(checkAliasHealth).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // The old address answers, but it is no longer one of the service's.
+    answer(true);
+
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
+    expect(vi.mocked(checkAliasHealth).mock.calls.at(-1)?.[0]).toMatchObject({ id: "a2" });
+    expect(built).toBe(1);
   });
 });

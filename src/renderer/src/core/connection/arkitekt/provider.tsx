@@ -1,9 +1,11 @@
 import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { sameAlias } from "./alias/helpers";
-import type { Alias } from "./fakts/faktsSchema";
-import { resolveServiceAlias } from "./alias/serviceAlias";
-import { isMeshRouted, NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
+import type { Alias, Instance } from "./fakts/faktsSchema";
+import { IDLE, reduceLink, runtimeOf, type Link, type LinkEvent } from "./controller/link";
+import { probeService } from "./controller/probe";
+import { NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
+import { viaMesh } from "./controller/route";
 import { ArkitektContext } from "./context";
 import { buildConnectionWards } from "./ward";
 import { useConnectionStatus } from "./hooks";
@@ -122,6 +124,10 @@ const dlog = (...args: unknown[]) => {
 };
 
 type StoredSession = StoredArkitektSession | null;
+
+/** The same instance, whether or not a refresh re-rendered it into a new object. */
+const sameInstance = (a: Instance | undefined, b: Instance | undefined): boolean =>
+  a === b || (!!a && !!b && JSON.stringify(a) === JSON.stringify(b));
 type StorageProvider = () => Promise<Storage>;
 
 /**
@@ -460,6 +466,17 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     [store, deriveRuntimeState],
   );
 
+  /**
+   * Each service's link (`controller/link.ts`), for the session that is live.
+   * `runtimeOf` turns one into the service state the guards read.
+   */
+  const linksRef = useRef<Record<string, Link>>({});
+  const dispatchLink = useCallback((serviceKey: string, event: LinkEvent): Link => {
+    const next = reduceLink(linksRef.current[serviceKey] ?? IDLE, event);
+    linksRef.current = { ...linksRef.current, [serviceKey]: next };
+    return next;
+  }, []);
+
   const hydrateConnection = useCallback(
     (
       session: StoredSession,
@@ -472,9 +489,26 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // The previous connection is fully superseded here (connect / reconnect /
       // disconnect-with-null), so tear down its clients/sockets instead of orphaning them.
       const previousConnection = store.getState().connection;
+      // A session going live brings up lok alone: no service is given a
+      // client, or called ready, on an address that has not answered in THIS
+      // session. Every configured one starts out being checked.
       const connection = session
-        ? instantiateConnection(session, activeManifest, serviceBuilderMap, selfServiceBuilder, (options) => refreshTokenRef.current(options))
+        ? instantiateConnection(
+            session,
+            activeManifest,
+            serviceBuilderMap,
+            selfServiceBuilder,
+            (options) => refreshTokenRef.current(options),
+            { services: !resetServiceStates },
+          )
         : undefined;
+      let serviceStateOverrides: Record<string, Partial<ServiceRuntimeState>> | undefined;
+      if (resetServiceStates) {
+        const at = Date.now();
+        const configured = session ? Object.keys(serviceBuilderMap).filter((key) => session.fakts.instances[key]) : [];
+        linksRef.current = Object.fromEntries(configured.map((key) => [key, reduceLink(IDLE, { type: "check", at })]));
+        serviceStateOverrides = Object.fromEntries(configured.map((key) => [key, runtimeOf(linksRef.current[key])]));
+      }
       dlog("[ArkitektProvider] hydrateConnection result, services:", connection ? Object.keys(connection.serviceMap) : "none");
 
       if (previousConnection) {
@@ -485,7 +519,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         storedSession: session,
         connection,
         manifest: activeManifest,
-        ...recompute({ storedSession: session, connection, resetServiceStates }),
+        ...recompute({ storedSession: session, connection, resetServiceStates, serviceStateOverrides }),
         ...extras,
       });
     },
@@ -653,13 +687,16 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
    * all of them at once (`validateServices`), so a login is one alias write,
    * not one per service.
    *
-   * A service that is already `ready` stays ready while it is re-checked, and
-   * keeps its client when the alias it answers on has not changed: flipping
-   * it to `checking` unmounted every guarded subtree on each boot, and
-   * rebuilding the client threw away its cache for nothing.
+   * A service that is up stays ready while it is re-checked, and keeps its
+   * client when the alias it answers on has not changed: flipping it to
+   * `checking` would unmount every guarded subtree, and rebuilding the client
+   * would throw away its cache for nothing. One that has not answered in this
+   * session has no client yet and reads `checking` until an address does.
    */
+  type AliasChange = { profileId: string; serviceKey: string; alias: Alias };
+  const checkServiceRef = useRef<(serviceKey: string) => Promise<AliasChange | undefined>>(async () => undefined);
   const checkService = useCallback(
-    async (serviceKey: string): Promise<{ profileId: string; serviceKey: string; alias: Alias } | undefined> => {
+    async (serviceKey: string): Promise<AliasChange | undefined> => {
       dlog("[ArkitektProvider] checkService started:", serviceKey);
       const runId = (validationRunIdsRef.current[serviceKey] || 0) + 1;
       validationRunIdsRef.current[serviceKey] = runId;
@@ -678,33 +715,42 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         return undefined;
       }
 
-      const wasReady = serviceState.status === "ready" && !!serviceState.service;
       const controller = probeControllerRef.current;
       startServiceCheck(serviceKey, runId);
+      // Up stays up while it is re-checked (and keeps its client); anything
+      // else is being checked, with nothing mounted on it meanwhile.
+      const checking = dispatchLink(serviceKey, { type: "check", at: Date.now() });
       store.setState((current) => ({
-        ...deriveRuntimeState(current, {
-          serviceStateOverrides: {
-            [serviceKey]: wasReady ? { revalidating: true } : { status: "checking", errors: [] },
-          },
-        }),
+        ...deriveRuntimeState(current, { serviceStateOverrides: { [serviceKey]: runtimeOf(checking) } }),
       }));
 
+      /** Still the newest check of this service, in the profile it started in. */
+      const newest = (current: AppContext<T, S>) =>
+        validationRunIdsRef.current[serviceKey] === runId && current.profileBook.activeProfileId === profileId;
       /** Our result, unless a newer check, profile or fakts has taken over. */
       const stillOurs = (current: AppContext<T, S>) =>
-        validationRunIdsRef.current[serviceKey] === runId &&
-        current.storedSession?.fakts.instances[serviceKey] === instance &&
-        current.profileBook.activeProfileId === profileId;
+        newest(current) && sameInstance(current.storedSession?.fakts.instances[serviceKey], instance);
+      /**
+       * The instance itself changed under the check (a refresh brought other
+       * addresses): this result is void, and nothing else would check the new
+       * ones — the service used to be left "checking" for good. Check again.
+       */
+      let outdated = false;
+      const drop = (current: AppContext<T, S>) => {
+        outdated = newest(current) && !!current.storedSession?.fakts.instances[serviceKey];
+        return current;
+      };
 
       try {
-        // Aliases behind the profile's mesh are tried last, and only then is
-        // the mesh started (`demandMesh`); the rest are checked at once
-        // (`resolveServiceAlias`). A hub with no real address on the mesh
-        // treats every alias as direct — bare labels included.
+        // A race (`controller/probe.ts`): the last alias first, then every
+        // direct one at once, and the mesh asked for (`demandMesh`) as soon
+        // as no direct one has answered. Which alias is behind the mesh is
+        // `viaMesh`'s call (`controller/route.ts`), from what lok says of it.
         const profileMesh = profileId ? state.profileBook.profiles[profileId]?.mesh : undefined;
         const mesh = meshNeeded(session.fakts, profileMesh) ? profileMesh : undefined;
-        const routed = (alias: Alias) => isMeshRouted(alias.host, mesh);
+        const routed = (alias: Alias) => viaMesh(alias, mesh);
         await allowSessionHosts(session);
-        const resolved = await resolveServiceAlias({
+        const resolved = await probeService({
           instance,
           cached: session.aliasMap.aliasMap[serviceKey],
           timeout: serviceBuilderMap[serviceKey]?.timeout ?? 5000,
@@ -730,16 +776,17 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         let supersededService: Service | undefined;
 
         store.setState((current) => {
-          if (!stillOurs(current) || !current.storedSession) return current;
+          if (!stillOurs(current) || !current.storedSession) return drop(current);
           const currentSession = current.storedSession;
           const liveService = current.connection?.serviceMap[serviceKey] as Service | undefined;
+          const up = runtimeOf(dispatchLink(serviceKey, { type: "answered", alias: resolved, at: Date.now() }));
 
           // Same place as before and a client already talking to it: nothing
           // to rebuild, nothing to write — just say it is healthy.
           if (liveService && sameAlias(currentSession.aliasMap.aliasMap[serviceKey], resolved)) {
             return deriveRuntimeState(current, {
               serviceStateOverrides: {
-                [serviceKey]: { status: "ready", errors: [], revalidating: false, lastCheckedAt: Date.now() },
+                [serviceKey]: up,
               },
             });
           }
@@ -791,12 +838,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
               connection: nextConnection,
               serviceStateOverrides: {
                 [serviceKey]: {
+                  ...up,
                   alias: resolved,
                   service: nextConnection.serviceMap[serviceKey] as Service | undefined,
-                  status: "ready",
-                  errors: [],
-                  revalidating: false,
-                  lastCheckedAt: Date.now(),
                 },
               },
             }),
@@ -804,6 +848,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         });
 
         supersededService?.dispose?.();
+        if (outdated) return checkServiceRef.current(serviceKey);
         // Answered directly: this service no longer needs the mesh. One that
         // lives on the mesh keeps its demand, and so keeps the mesh up.
         if (mesh && !routed(resolved) && validationRunIdsRef.current[serviceKey] === runId) {
@@ -823,9 +868,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         let removedService: Service | undefined;
 
         store.setState((current) => {
-          if (!stillOurs(current)) return current;
+          if (!stillOurs(current)) return drop(current);
 
           removedService = current.connection?.serviceMap[serviceKey] as Service | undefined;
+          const down = runtimeOf(dispatchLink(serviceKey, { type: "unanswered", reason: message, at: Date.now() }));
 
           const patchedConn = current.connection
             ? {
@@ -841,13 +887,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
             ...deriveRuntimeState(current, {
               connection: patchedConn,
               serviceStateOverrides: {
-                [serviceKey]: {
-                  service: undefined,
-                  status: "invalid",
-                  errors: [message],
-                  revalidating: false,
-                  lastCheckedAt: Date.now(),
-                },
+                [serviceKey]: { ...down, service: undefined },
               },
             }),
           };
@@ -855,11 +895,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
         // Tear down the client/socket of the service we dropped from the map.
         removedService?.dispose?.();
+        if (outdated) return checkServiceRef.current(serviceKey);
         return undefined;
       }
     },
-    [store, serviceBuilderMap, selfServiceBuilder, deriveRuntimeState, meshGateFor],
+    [store, serviceBuilderMap, selfServiceBuilder, deriveRuntimeState, meshGateFor, dispatchLink],
   );
+  checkServiceRef.current = checkService;
 
   /**
    * Check services in parallel, then write every alias that moved in ONE
@@ -914,7 +956,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         meshGateRef.current.dispose();
         meshGateRef.current = NO_MESH_GATE;
       }
-      if (mesh?.enabled && isMeshRouted(session.fakts.self.alias.host, mesh)) demandMesh(mesh.id, "self");
+      if (mesh?.enabled && viaMesh(session.fakts.self.alias, mesh)) demandMesh(mesh.id, "self");
       else if (mesh) releaseMesh(mesh.id, "self");
       // The previous session's probes have nobody left to answer to.
       probeControllerRef.current.abort();

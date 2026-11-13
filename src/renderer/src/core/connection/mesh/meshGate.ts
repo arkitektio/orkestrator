@@ -1,6 +1,5 @@
 import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
-import { classifyHost } from "@/core/connection/arkitekt/doctor/classify";
-import { controlDomain, type MeshNodeStatus, type MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import type { MeshNodeStatus, MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import type { MeshBridge } from "./bridge";
 import { createMeshStatusStore, meshStatusStore, type MeshStatusStore } from "./meshStatusStore";
 
@@ -150,28 +149,4 @@ export const watchMesh = (
       settle("none");
     },
   };
-};
-
-const norm = (host: string): string => host.trim().toLowerCase().replace(/\.$/, "");
-
-/**
- * Does this host go through the profile's mesh? A pinned host, a name under
- * the mesh's MagicDNS suffix (cached from the last time the node ran, so it is
- * known before the node is up), a subdomain of the mesh's control server, or
- * an address shaped like one on it — a CGNAT / mesh-IPv6 literal or a bare
- * label. Never a `*.ts.net` name: that is Tailscale Inc's own MagicDNS
- * domain, so the host is on the system Tailscale's tailnet, and ionscale names
- * its machines under its control domain instead.
- */
-export const isMeshRouted = (rawHost: string, mesh: ProfileMesh | undefined): boolean => {
-  if (!mesh?.enabled) return false;
-  const host = norm(rawHost);
-  if (mesh.hosts.map(norm).includes(host)) return true;
-  const suffix = mesh.magicDnsSuffix ? norm(mesh.magicDnsSuffix) : undefined;
-  if (suffix && (host === suffix || host.endsWith(`.${suffix}`))) return true;
-  // Under the control server's domain: routed with no pinning (main's pac.ts, rule 5).
-  const domain = controlDomain(mesh.controlUrl);
-  if (domain && host.endsWith(`.${domain}`)) return true;
-  const shape = classifyHost(host).class;
-  return shape === "mesh-ip" || shape === "mesh-bare";
 };
