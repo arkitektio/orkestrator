@@ -1,3 +1,10 @@
+# [6.1.0](https://github.com/arkitektio/orkestrator/compare/v6.0.1...v6.1.0) (2026-11-13)
+
+
+### Features
+
+* **rekuest:** an action's assign bloks start a run, on @arkitektio/bsx 4.1 ([55b9de8](https://github.com/arkitektio/orkestrator/commit/55b9de8abcdefdf00c4dbae3d925600b7503329f))
+
 ## [6.0.1](https://github.com/arkitektio/orkestrator/compare/v6.0.0...v6.0.1) (2026-11-13)
 
 
