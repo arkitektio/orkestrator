@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
 
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
@@ -18,9 +18,6 @@ const NOTICE_MS = 1800;
 export const LoadingClickChip = () => {
   const click = useViewerStore((s) => s.loadingClick);
   const clear = useViewerStore((s) => s.clearLoadingClick);
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
-
   useEffect(() => {
     if (!click) return;
     const timer = setTimeout(clear, NOTICE_MS);
@@ -29,22 +26,26 @@ export const LoadingClickChip = () => {
 
   // The click is in client px; the chip is placed in its own positioned
   // parent (the viewport), so it follows the canvas wherever the page put it.
-  useLayoutEffect(() => {
-    const parent = ref.current?.offsetParent;
-    if (!click || !parent) {
-      setAt(null);
-      return;
-    }
-    const rect = parent.getBoundingClientRect();
-    setAt({ left: click.x - rect.left, top: click.y - rect.top });
-  }, [click]);
+  // Placed as the element attaches (a ref callback, re-run per click) rather
+  // than in a layout effect: this is DOM chrome outside the canvas, so there
+  // is no frame to ask for (`useDrawEffect` is for drawn objects).
+  const place = useCallback(
+    (el: HTMLDivElement | null) => {
+      const parent = el?.offsetParent;
+      if (!el || !click || !parent) return;
+      const rect = parent.getBoundingClientRect();
+      el.style.left = `${click.x - rect.left + 12}px`;
+      el.style.top = `${click.y - rect.top + 12}px`;
+      el.style.visibility = "visible";
+    },
+    [click],
+  );
 
   if (!click) return null;
   return (
     <div
-      ref={ref}
-      style={at ? { left: at.left + 12, top: at.top + 12 } : { visibility: "hidden" }}
-      className="pointer-events-none absolute z-30 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/80 backdrop-blur-sm"
+      ref={place}
+      className="pointer-events-none invisible absolute z-30 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/80 backdrop-blur-sm"
     >
       Still loading here
     </div>
