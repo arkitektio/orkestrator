@@ -85,3 +85,58 @@ export const splitReplyers = <T extends { id: string }>(
   const ids = new Set(specific.map((action) => action.id));
   return { specific: [...specific], rest: generic.filter((action) => !ids.has(action.id)) };
 };
+
+type ReplyerImplementation = {
+  id: string;
+  agent: { id: string; name?: string | null; connected?: boolean | null };
+};
+
+type ListedReplyer = {
+  id: string;
+  name: string;
+  implementations?: readonly ReplyerImplementation[] | null;
+};
+
+/**
+ * One entry of the replyer picker: an action, and the agent that runs it when
+ * the choice is that specific.
+ */
+export type ReplyerOption<T> = {
+  /** Unique in the picker: the action's id, with the implementation's when one is pinned. */
+  id: string;
+  action: T;
+  /** The implementation the reply is assigned to, when several agents offer the action. Unset: rekuest picks one. */
+  implementationId?: string;
+  /** The agent behind it, whose state the arguments read their choices from. */
+  agentId?: string;
+  /** Shown beside the action's name when several agents offer it. */
+  agentName?: string;
+};
+
+export const NO_REPLYER = "none";
+
+/**
+ * The picker's entries for `actions`. The same app running on two machines is
+ * one action with two implementations, and which machine answers matters (its
+ * models, its GPU): such an action is listed once per connected agent, and the
+ * reply is assigned to that one. An action a single agent offers stays one
+ * entry, bound to that agent so its arguments can read the agent's state.
+ */
+export const replyerOptions = <T extends ListedReplyer>(actions: readonly T[]): ReplyerOption<T>[] =>
+  actions.flatMap((action): ReplyerOption<T>[] => {
+    const connected = (action.implementations ?? []).filter(
+      (implementation) => implementation.agent.connected,
+    );
+    if (connected.length === 0) return [{ id: action.id, action }];
+    if (connected.length === 1) {
+      const [only] = connected;
+      return [{ id: action.id, action, agentId: only.agent.id }];
+    }
+    return connected.map((implementation) => ({
+      id: `${action.id}@${implementation.id}`,
+      action,
+      implementationId: implementation.id,
+      agentId: implementation.agent.id,
+      agentName: implementation.agent.name ?? `agent ${implementation.agent.id}`,
+    }));
+  });

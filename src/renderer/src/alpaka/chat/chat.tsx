@@ -86,6 +86,7 @@ import { assignErrorMessage } from "@/rekuest/lib/assignError";
 import { AutoModeToggle, useAutoMode } from "@/rekuest/components/AutoModeToggle";
 import {
   GENERIC_REPLYER_FILTER,
+  replyerOptions,
   replyerSubject,
   specificReplyerFilter,
   splitReplyers,
@@ -230,7 +231,17 @@ const InstallReplyerSection = (props: {
   );
 };
 
-type ReplyerAction = { id: string; name: string };
+/** A picker entry: an action, and the agent that runs it when several offer it. */
+type ReplyerAction = { id: string; name: string; agentName?: string };
+
+const toPickerEntry = (option: {
+  id: string;
+  action: { name: string };
+  agentName?: string;
+}): ReplyerAction => ({ id: option.id, name: option.action.name, agentName: option.agentName });
+
+const replyerLabel = (act: ReplyerAction) =>
+  act.agentName ? `${act.name} · ${act.agentName}` : act.name;
 
 const ReplyerControl = (props: {
   /** Replyers that also take the structure the room is about, listed first. */
@@ -245,6 +256,8 @@ const ReplyerControl = (props: {
   registry: any;
   hiddenArgs: Record<string, boolean>;
   hasPriorTask: boolean;
+  /** The agent the selected replyer runs on: its state feeds the arguments' choices. */
+  boundAgent?: string;
 }) => {
   const {
     specificActions,
@@ -257,6 +270,7 @@ const ReplyerControl = (props: {
     registry,
     hiddenArgs,
     hasPriorTask,
+    boundAgent,
   } = props;
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -267,7 +281,7 @@ const ReplyerControl = (props: {
     specificActions.find((a) => a.id === selectedActionId) ??
     actions.find((a) => a.id === selectedActionId);
   const matching = (list: ReplyerAction[]) =>
-    search ? list.filter((a) => a.name.toLowerCase().includes(search.toLowerCase())) : list;
+    search ? list.filter((a) => replyerLabel(a).toLowerCase().includes(search.toLowerCase())) : list;
   const filtered = matching(actions);
   const filteredSpecific = matching(specificActions);
   const replyerItem = (act: ReplyerAction) => (
@@ -281,7 +295,10 @@ const ReplyerControl = (props: {
       className="flex items-center gap-2"
     >
       <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1 truncate text-sm">{act.name}</span>
+      <span className="flex-1 truncate text-sm">
+        {act.name}
+        {act.agentName && <span className="text-muted-foreground"> · {act.agentName}</span>}
+      </span>
       {selectedActionId === act.id && <Check className="h-4 w-4 shrink-0" />}
     </CommandItem>
   );
@@ -318,7 +335,7 @@ const ReplyerControl = (props: {
           >
             <Bot className="h-4 w-4 shrink-0" />
             <span className="max-w-[120px] truncate">
-              {selected ? selected.name : "No replyer"}
+              {selected ? replyerLabel(selected) : "No replyer"}
             </span>
             <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
           </Button>
@@ -380,7 +397,7 @@ const ReplyerControl = (props: {
           </PopoverTrigger>
           <PopoverContent className="w-80 p-3" align="start" side="top">
             <div className="mb-2 text-xs font-medium text-muted-foreground">
-              {selected?.name ?? "Replyer"} arguments
+              {selected ? replyerLabel(selected) : "Replyer"} arguments
             </div>
             <Form {...form}>
               <div className="flex flex-col gap-2">
@@ -390,6 +407,7 @@ const ReplyerControl = (props: {
                   ports={action?.args || []}
                   hidden={hiddenArgs}
                   path={[]}
+                  bound={boundAgent}
                 />
               </div>
             </Form>
@@ -521,14 +539,14 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     variables: { filters: specificReplyerFilter(subjectIdentifier ?? "") },
     skip: !subjectIdentifier,
   });
-  const replyers = useMemo(
-    () =>
-      splitReplyers(
-        actionsData?.actions ?? [],
-        subjectIdentifier ? (specificData?.actions ?? []) : [],
-      ),
-    [actionsData, specificData, subjectIdentifier],
-  );
+  // One entry per action, or per connected agent when several run the same one.
+  const replyers = useMemo(() => {
+    const split = splitReplyers(
+      actionsData?.actions ?? [],
+      subjectIdentifier ? (specificData?.actions ?? []) : [],
+    );
+    return { specific: replyerOptions(split.specific), rest: replyerOptions(split.rest) };
+  }, [actionsData, specificData, subjectIdentifier]);
 
   // The most specific replyer is chosen for the user: again whenever the
   // subject changes kind, until they pick one themselves.
@@ -545,11 +563,19 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     setSelectedActionId(first.id);
   }, [replyers, subjectIdentifier, specificData, pickedByHand]);
 
+  // The picked entry: an action, and the agent it is pinned to when several offer it.
+  const selectedOption = useMemo(
+    () =>
+      replyers.specific.find((option) => option.id === selectedActionId) ??
+      replyers.rest.find((option) => option.id === selectedActionId),
+    [replyers, selectedActionId],
+  );
+
   const { data: actionDetailData } = useDetailActionQuery({
     variables: {
-      id: selectedActionId,
+      id: selectedOption?.action.id ?? "",
     },
-    skip: !selectedActionId || selectedActionId === "none",
+    skip: !selectedOption,
   });
   const action = actionDetailData?.action;
 
@@ -651,7 +677,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
    * replyer that takes the structure the message is about is handed it.
    */
   const runReplyer = async (messageId: string, about: StructureInput | undefined) => {
-    if (!selectedActionId || selectedActionId === "none" || !messageKey || !action) {
+    if (!selectedOption || !messageKey || !action) {
       return;
     }
 
@@ -675,7 +701,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
 
     try {
       const task = await assign(buildAssignInput({
-        action: selectedActionId,
+        // Several agents offer it: the reply goes to the one that was picked.
+        ...(selectedOption.implementationId
+          ? { implementation: selectedOption.implementationId }
+          : { action: selectedOption.action.id }),
         args: assignArgs,
         reference,
         policy: autoMode.policy,
@@ -690,7 +719,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   };
 
   const handleRereply = async (messageId: string) => {
-    if (selectedActionId && selectedActionId !== "none" && messageKey && action) {
+    if (selectedOption && messageKey && action) {
       const isValid = await form.trigger();
       if (!isValid) {
         toast.error("Please fill in all required arguments for the selected replyer.");
@@ -704,15 +733,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
 
   const { registry } = useWidgetRegistry();
 
-  const selectedAction = useMemo(() => {
-    if (!selectedActionId || selectedActionId === "none") {
-      return undefined;
-    }
-    return (
-      replyers.specific.find((act) => act.id === selectedActionId) ??
-      replyers.rest.find((act) => act.id === selectedActionId)
-    );
-  }, [replyers, selectedActionId]);
+  const selectedAction = selectedOption?.action;
 
   const latestTask = selectedAction?.latestTask;
 
@@ -882,9 +903,9 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         replyerControl={
           <>
           <ReplyerControl
-            specificActions={replyers.specific}
+            specificActions={replyers.specific.map(toPickerEntry)}
             subjectIdentifier={subjectIdentifier}
-            actions={replyers.rest}
+            actions={replyers.rest.map(toPickerEntry)}
             selectedActionId={selectedActionId}
             onSelect={(id) => {
               setPickedByHand(true);
@@ -895,6 +916,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
             registry={registry}
             hiddenArgs={hiddenArgs}
             hasPriorTask={!!latestTask}
+            boundAgent={selectedOption?.agentId}
           />
           {selectedActionId !== "none" && (
             <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} />

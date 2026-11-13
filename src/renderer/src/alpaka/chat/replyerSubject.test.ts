@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DemandKind, PortKind } from "@/rekuest/api/graphql";
 import {
   GENERIC_REPLYER_FILTER,
+  replyerOptions,
   replyerSubject,
   specificReplyerFilter,
   splitReplyers,
@@ -89,5 +90,39 @@ describe("splitting the replyers", () => {
     const b = { id: "b" };
     const c = { id: "c" };
     expect(splitReplyers([a, b, c], [c, a])).toEqual({ specific: [c, a], rest: [b] });
+  });
+});
+
+describe("the picker's entries", () => {
+  const impl = (id: string, agent: string, connected = true) => ({
+    id,
+    agent: { id: `agent-${agent}`, name: agent, connected },
+  });
+
+  it("lists an action once per connected agent when several offer it", () => {
+    const assign = { id: "7", name: "assign", implementations: [impl("56", "gh200"), impl("57", "2080ti")] };
+
+    expect(replyerOptions([assign])).toEqual([
+      { id: "7@56", action: assign, implementationId: "56", agentId: "agent-gh200", agentName: "gh200" },
+      { id: "7@57", action: assign, implementationId: "57", agentId: "agent-2080ti", agentName: "2080ti" },
+    ]);
+  });
+
+  it("keeps an action of one connected agent as one entry, bound to that agent", () => {
+    const assign = { id: "7", name: "assign", implementations: [impl("56", "gh200", false), impl("57", "2080ti")] };
+
+    expect(replyerOptions([assign])).toEqual([
+      { id: "7", action: assign, agentId: "agent-2080ti" },
+    ]);
+  });
+
+  it("leaves the choice to rekuest when no agent is connected", () => {
+    const assign = { id: "7", name: "assign", implementations: [impl("56", "gh200", false)] };
+    const bare = { id: "8", name: "other" };
+
+    expect(replyerOptions([assign, bare])).toEqual([
+      { id: "7", action: assign },
+      { id: "8", action: bare },
+    ]);
   });
 });
