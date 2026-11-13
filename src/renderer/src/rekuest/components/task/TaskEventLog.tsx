@@ -1,20 +1,15 @@
 import { cn } from "@/core/util/utils";
-import { Badge } from "@/core/ui/badge";
-import { Progress } from "@/core/ui/progress";
+import { RekuestTask } from "@/core/linkers";
 import { ReturnsContainer } from "@arkitektio/bsx/ports/widgets/returns/ReturnsContainer";
-import { RekuestTask, RekuestImplementation, RekuestAgent } from "@/core/linkers";
 import {
   TaskEventFragment,
   TaskEventKind,
   DetailTaskFragment,
-  Execution,
   PortKind,
   ReturnPortFragment,
 } from "@/rekuest/api/graphql";
 import { UnknownReturnWidget } from "@arkitektio/bsx/ports/engine/WidgetsProvider";
-import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
-import Timestamp from "@/core/ui/timestamp";
 import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { isTerminalEvent } from "../../lib/taskTracker";
@@ -344,9 +339,10 @@ const ElapsedTime = ({ since }: { since: string }) => {
 };
 
 /**
- * The task's status as one compact band above the lane: status, reference and
- * lineage on the left, timing on the right, a thin progress bar while it runs,
- * and one line for whatever needs a person (LOST, a hold, an error).
+ * The task's status as one slim line: where it stands, the latest thing it
+ * said, how far it is and how long it has taken, with the progress along the
+ * line's foot while it runs. A second line only for what needs a person (LOST,
+ * a hold, an error). What it ran and where is the Info sidebar's.
  */
 export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
   const { task } = props;
@@ -354,7 +350,6 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
   const theme = statusTheme(task);
   const running = !task.isDone && !isTerminalEvent(task.latestEventKind);
   const walltime = formatWalltime(task);
-  const agent = task.implementation?.agent;
   const lostEvent =
     task.latestEventKind === TaskEventKind.Lost
       ? findLostEvent(task.events)
@@ -365,97 +360,54 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
       : null;
 
   return (
-    <div className={cn("rounded-lg px-3 py-2 ring-1", theme.ring, theme.bg)}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="relative border-b px-4 py-2">
+      <div className="flex min-w-0 items-center gap-2">
         <TaskStatusIcon
           kind={task.latestEventKind}
           isDone={task.isDone}
-          className="h-5 w-5 shrink-0"
+          className="h-4 w-4 shrink-0"
         />
-        <span className={cn("text-sm font-semibold", theme.text)}>
+        <span className={cn("shrink-0 text-sm font-semibold", theme.text)}>
           {theme.label}
         </span>
-        {task.reference && (
-          <span className="max-w-48 truncate font-mono text-[11px] text-muted-foreground">
-            {task.reference}
+        <span
+          className="min-w-0 flex-1 truncate text-sm text-muted-foreground"
+          title={live.message ?? undefined}
+        >
+          {!live.error && live.message}
+        </span>
+        {running && live.progress != null && (
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {live.progress}%
           </span>
         )}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          {task.implementation ? (
-            <RekuestImplementation.DetailLink object={task.implementation}>
-              <Badge variant="outline" className="cursor-pointer font-mono">
-                {task.implementation.interface}
-              </Badge>
-            </RekuestImplementation.DetailLink>
-          ) : (
-            <Badge variant="outline" className="font-mono text-muted-foreground">
-              Unassigned
-            </Badge>
-          )}
-          {agent && (
-            <RekuestAgent.DetailLink object={agent}>
-              <Badge variant="secondary" className="cursor-pointer">
-                {agent.name}
-              </Badge>
-            </RekuestAgent.DetailLink>
-          )}
-          {task.implementation?.execution === Execution.Workflow && (
-            <Badge variant="outline">Workflow</Badge>
-          )}
-          {task.parent && (
-            <RekuestTask.DetailLink object={task.parent}>
-              <Badge variant="outline" className="cursor-pointer">
-                ← Parent task
-              </Badge>
-            </RekuestTask.DetailLink>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-3 w-3" />
-            <Timestamp date={task.createdAt} relative />
+        {walltime && (
+          <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+            {walltime}
           </span>
-          {walltime && (
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {walltime}
-            </span>
-          )}
-          {running && <ElapsedTime since={task.createdAt} />}
-        </div>
+        )}
+        {running && <ElapsedTime since={task.createdAt} />}
       </div>
-
-      {running && (
-        <div className="mt-2">
-          {live.progress != null ? (
-            <div className="flex items-center gap-2">
-              <Progress value={live.progress} className="h-1 flex-1" />
-              <span className="w-9 text-right text-[11px] text-muted-foreground">
-                {live.progress}%
-              </span>
-            </div>
-          ) : (
-            <div className="h-1 w-full animate-pulse rounded-full bg-primary/30" />
-          )}
-        </div>
-      )}
 
       {lostEvent && <LostSummary value={lostEvent.value} />}
       {holdMessage && (
-        <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">
-          {holdMessage}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{holdMessage}</p>
       )}
-      {live.error ? (
-        <p className="mt-1.5 truncate text-sm text-destructive" title={live.error}>
+      {live.error && (
+        <p className="mt-1 truncate text-sm text-destructive" title={live.error}>
           {live.error}
         </p>
-      ) : (
-        live.message && (
-          <p className="mt-1.5 truncate text-sm text-muted-foreground" title={live.message}>
-            {live.message}
-          </p>
-        )
       )}
+
+      {running &&
+        (live.progress != null ? (
+          <div
+            className="absolute bottom-0 left-0 h-0.5 bg-primary transition-[width] duration-300"
+            style={{ width: `${live.progress}%` }}
+          />
+        ) : (
+          <div className="absolute inset-x-0 bottom-0 h-0.5 animate-pulse bg-primary/40" />
+        ))}
     </div>
   );
 };

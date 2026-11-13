@@ -3,7 +3,6 @@ import { PageSections } from "@/core/layout/PageSections";
 import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
 import { TaskRunScene } from "@/rekuest/run/TaskRun";
 import { LiveTicker } from "@/rekuest/components/spaces/task/LiveTicker";
-import { LiveStatusStrip } from "@/rekuest/components/spaces/task/panels/LiveStatusStrip";
 import { TimeSlider } from "@/rekuest/components/spaces/task/panels/TimeSlider";
 import {
   createSpaceViewStore,
@@ -54,6 +53,7 @@ export const stageTabs = (task: DetailTaskFragment, hasScene = false): StageTab[
 const SpaceStage = (props: {
   task: DetailTaskFragment;
   focusTime: number | null;
+  showAsk: boolean;
 }) => {
   const { task, focusTime } = props;
   const [store] = useState(() => createSpaceViewStore(task));
@@ -69,11 +69,10 @@ const SpaceStage = (props: {
   return (
     <SpaceViewStoreContext.Provider value={store}>
       <LiveTicker />
-      <div className="flex h-full min-h-0 flex-col gap-1">
-        <LiveStatusStrip />
+      <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1">
           <TaskTravel>
-            <TaskRunScene taskId={task.id} />
+            <TaskRunScene taskId={task.id} showAsk={props.showAsk} />
           </TaskTravel>
         </div>
         <TimeSlider />
@@ -95,6 +94,8 @@ export const TaskStage = (props: {
   onTab: (tab: StageTab) => void;
   focusTime: number | null;
   selectedYield: LaneTaskEvent | null;
+  /** Whether the Space's `<ask />` shows the run's open ask; off where the page shows a card for it. */
+  showAsk?: boolean;
 }) => {
   const { task, tabs, tab, onTab } = props;
 
@@ -128,7 +129,7 @@ export const TaskStage = (props: {
           />
         )}
         {tab === "space" && (
-          <SpaceStage task={task} focusTime={props.focusTime} />
+          <SpaceStage task={task} focusTime={props.focusTime} showAsk={props.showAsk ?? true} />
         )}
         {tab === "result" && (
           <TaskResultSection

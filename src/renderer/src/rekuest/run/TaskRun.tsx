@@ -30,9 +30,10 @@ export const TaskRunPanel = ({taskId, showAsk = false, className}: {taskId: stri
 /**
  * The run in 3D: the scene blok its action declared (a `<Space>` places the
  * run's devices in their room), drawn for this run. Nothing for an action
- * without one. It takes the whole box it is given.
+ * without one. It takes the whole box it is given. `showAsk: false` leaves its
+ * `<ask />` empty where the page shows the run's asks already.
  */
-export const TaskRunScene = ({taskId, className}: {taskId: string; className?: string}) => {
+export const TaskRunScene = ({taskId, showAsk = true, className}: {taskId: string; showAsk?: boolean; className?: string}) => {
   const {task} = useRunTask(taskId);
   const shown = useTaskActionBlok(task, ComponentContext.Scene);
   if (!shown) return null;
@@ -44,6 +45,7 @@ export const TaskRunScene = ({taskId, className}: {taskId: string; className?: s
         sizing="fill"
         actionBlok={shown.actionBlok}
         run={shown.run}
+        showAsk={showAsk}
       />
     </div>
   );
