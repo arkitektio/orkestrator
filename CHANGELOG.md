@@ -1,3 +1,27 @@
+# [6.0.0](https://github.com/arkitektio/orkestrator/compare/v5.19.0...v6.0.0) (2026-11-13)
+
+
+* feat(rekuest)!: an action's Space draws its run in 3D, on @arkitektio/bsx 4 ([48bf3c6](https://github.com/arkitektio/orkestrator/commit/48bf3c6b20ddb59bd8ef46eae513729f5527ff02))
+
+
+### Bug Fixes
+
+* **trust:** main's Node requests trust a hub's registered certificate, and the renderer chains to a registered CA ([f4e3ee7](https://github.com/arkitektio/orkestrator/commit/f4e3ee7bc154556025844c1431e102247241fd08))
+
+
+### Performance Improvements
+
+* **scene:** cheaper sampled ray steps, rays that end at meshes, and settle accumulation ([fea8406](https://github.com/arkitektio/orkestrator/commit/fea8406f8b26a175d59d2cc6992ea562117dfe8f))
+
+
+### BREAKING CHANGES
+
+* needs rekuest-server with savePlacement/spaceByReference (arkitekt-spec 9
+bloks). The 3D space editor, the agent space page, "Open in space" and run overlays drawn
+into a space are gone, with the Delete Space and Delete Placement actions.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 # [5.19.0](https://github.com/arkitektio/orkestrator/compare/v5.18.1...v5.19.0) (2026-11-10)
 
 
