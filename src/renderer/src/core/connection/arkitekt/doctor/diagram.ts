@@ -6,7 +6,6 @@ import { aliasToHttpPath } from "../alias/helpers";
 import type { Alias } from "../fakts/faktsSchema";
 import type { ServiceHealthStatus, ServiceRuntimeState } from "../types";
 import type { DoctorReport, Finding } from "./findings";
-import { classifyHost, isMeshClass } from "./classify";
 import { compareService, type HubHealthFacts } from "./hubHealth";
 import { buildConnectionPath, serviceKeyOf, type PathHop } from "./path";
 import { failureLine, stageOf, STAGES } from "./stages";
@@ -103,8 +102,8 @@ export type AliasPath = {
   inUse?: boolean;
   standby?: boolean;
   /**
-   * A mesh-looking address nothing here can vouch for: no built-in mesh
-   * routes it.
+   * An address on the organisation's mesh that no running mesh routes: the
+   * mesh is not up on this computer.
    */
   unrouted?: boolean;
   /** What this one attempt ran into: "TCP: ETIMEDOUT 4000ms". */
@@ -196,7 +195,8 @@ const NETWORK_WORDS: Record<Extract<ServiceRoute, { kind: "direct" }>["network"]
   public: "over the internet",
   local: "on the local network",
   "this-computer": "on this computer",
-  "mesh-looking": "a mesh address, but no running mesh routes it",
+  vpn: "over a VPN of this computer's own",
+  "mesh-down": "on the organisation's mesh, which is not running here",
 };
 
 type Travel = Pick<AliasPath, "lane" | "network" | "relay" | "tunnel" | "travel" | "unrouted" | "peerOffline">;
@@ -222,23 +222,21 @@ export const describeRoute = (route: ServiceRoute): Travel => {
 };
 
 /**
- * How a request to this host travels. The built-in mesh routes it (the app's
- * own table says so), or the address merely LOOKS like a mesh's and nothing
- * here can say more, or it is any other road: whatever the OS does with it,
- * a VPN or a Tailscale of its own included, is not the app's to know.
+ * How a request to this address travels. The organisation's mesh routes it
+ * (the app's own table says so); or it is on that mesh — lok says so, or it is
+ * named under it — and the mesh is not running here, so it is a mesh road
+ * nothing carries; or it is any other road. Whatever the OS does with that
+ * one, a VPN or a Tailscale of its own included, is a direct road: never
+ * drawn as the mesh.
  */
-const routeOf = (host: string, mesh: MeshStatusPayload | undefined): Partial<Travel> => {
-  const builtIn = mesh ? serviceRoute(host, mesh) : undefined;
-  if (builtIn?.kind === "mesh") return describeRoute(builtIn);
-
-  if (isMeshClass(classifyHost(host))) {
-    return {
-      lane: "mesh",
-      unrouted: true,
-      travel: "a mesh address; nothing here can say how it is routed",
-    };
+const routeOf = (alias: Alias, mesh: MeshStatusPayload | undefined): Partial<Travel> => {
+  const route = serviceRoute(alias, mesh);
+  if (route.kind === "mesh") return describeRoute(route);
+  if (route.network === "mesh-down") {
+    return { lane: "mesh", unrouted: true, travel: NETWORK_WORDS["mesh-down"] };
   }
-  return builtIn ? describeRoute(builtIn) : {};
+  // Without the mesh's status nothing is said of a direct road.
+  return mesh ? describeRoute(route) : {};
 };
 
 /** Direct roads first, then the mesh ones: the two lanes, in the order they are drawn. */
@@ -252,7 +250,7 @@ const livePaths = (input: ConnectionDiagramInput): AliasPath[] => {
   const aliases = input.aliases?.length ? input.aliases : chosenAlias ? [chosenAlias] : [];
   return byLane(distinct(aliases.map((alias, index) => {
     const chosen = !!chosenAlias && sameAddress(alias, chosenAlias);
-    const travel = routeOf(alias.host, input.mesh);
+    const travel = routeOf(alias, input.mesh);
     // A machine the mesh reports offline is a road that leads nowhere, whatever
     // the service's own state: red, unless this very address is the one in use.
     const offline = !!travel.peerOffline && !(status === "ready" && chosen);

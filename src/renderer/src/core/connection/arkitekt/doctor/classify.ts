@@ -1,30 +1,29 @@
 /**
- * What KIND of address is this alias, judged from the string alone?
+ * What KIND of address is this, judged from the string alone?
  *
- * This is the guess the whole doctor hangs off: an alias that is a tailnet
- * address fails for completely different reasons than a public hostname, and
- * the remedy ("this computer has not joined the mesh") only makes sense for
- * the former. Pure, no network, no I/O — so every case below is a cheap test.
+ * Only what the string can honestly say: where the address would be looked
+ * for. It does NOT say whether an address is on the organisation's mesh.
+ * That is never readable off the string — it is what lok says of the alias
+ * and what the app's own routing table holds (`controller/route.ts`,
+ * `mesh/route.ts`). An address in the range VPNs hand out is `vpn-ip`: a
+ * private network this computer may or may not be on (a Tailscale of its own,
+ * for one), reached like any other, and not the mesh.
+ *
+ * Pure, no network, no I/O — so every case below is a cheap test.
  */
 
 export type HostClass =
   | "loopback"
   | "lan"
-  | "mesh-ip"
-  | "mesh-bare"
+  /** 100.64.0.0/10 or Tailscale's IPv6 range: an address on some VPN. */
+  | "vpn-ip"
+  /** A single label: a docker service, a LAN hostname, a short name. */
+  | "bare"
   | "public-dns"
   | "public-ip";
 
-export type MeshVendor = "tailscale";
-
 export type HostClassification = {
   class: HostClass;
-  /**
-   * Which mesh this looks like, when it looks like one. The extension point:
-   * a second vendor adds a value here and a branch in `diagnose`, and every
-   * call site keeps working.
-   */
-  meshVendor?: MeshVendor;
 };
 
 const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
@@ -56,10 +55,9 @@ export const classifyHost = (rawHost: string): HostClassification => {
   // ── literal IPv6 ──────────────────────────────────────────────────────────
   if (isIpv6(host)) {
     if (host === "::1") return { class: "loopback" };
-    // Tailscale's ULA range. Everything in fd7a:115c:a1e0::/48 is a tailnet.
-    if (host.startsWith("fd7a:115c:a1e0")) {
-      return { class: "mesh-ip", meshVendor: "tailscale" };
-    }
+    // Tailscale's ULA range (fd7a:115c:a1e0::/48): an address on a tailnet —
+    // this computer's own or the mesh's, the string cannot say which.
+    if (host.startsWith("fd7a:115c:a1e0")) return { class: "vpn-ip" };
     if (host.startsWith("fe80:")) return { class: "lan" };
     // fc00::/7 — unique local, i.e. somebody's private network.
     if (host.startsWith("fc") || host.startsWith("fd")) return { class: "lan" };
@@ -71,10 +69,9 @@ export const classifyHost = (rawHost: string): HostClassification => {
   if (octets) {
     const [a, b] = octets;
     if (a === 127) return { class: "loopback" };
-    // 100.64.0.0/10 is CGNAT, which in practice means Tailscale.
-    if (a === 100 && b >= 64 && b <= 127) {
-      return { class: "mesh-ip", meshVendor: "tailscale" };
-    }
+    // 100.64.0.0/10 is carrier-grade NAT space, which VPNs (Tailscale among
+    // them) hand out.
+    if (a === 100 && b >= 64 && b <= 127) return { class: "vpn-ip" };
     if (a === 10) return { class: "lan" };
     if (a === 192 && b === 168) return { class: "lan" };
     if (a === 172 && b >= 16 && b <= 31) return { class: "lan" };
@@ -89,17 +86,19 @@ export const classifyHost = (rawHost: string): HostClassification => {
   if (host.endsWith(".local") || host.endsWith(".lan") || host.endsWith(".home.arpa")) {
     return { class: "lan" };
   }
-  // A single label with no dot is a bare machine name: MagicDNS short form, a
-  // LAN hostname, or a docker service. Treated as mesh-capable because that is
-  // the case the user can actually be helped with.
-  if (!host.includes(".")) {
-    return { class: "mesh-bare", meshVendor: "tailscale" };
-  }
+  // A single label with no dot is a bare machine name: a docker service, a
+  // LAN hostname, some network's short name.
+  if (!host.includes(".")) return { class: "bare" };
 
   return { class: "public-dns" };
 };
 
-const MESH_CLASSES: readonly HostClass[] = ["mesh-ip", "mesh-bare"];
-
-export const isMeshClass = (classification: HostClassification): boolean =>
-  MESH_CLASSES.includes(classification.class);
+/**
+ * An address on a VPN of the computer's own, as far as the string tells: a
+ * `vpn-ip`, or a name under Tailscale Inc's MagicDNS domain. Used only to
+ * word a failure ("is that VPN connected?"), never to route anything.
+ */
+export const looksLikeVpn = (rawHost: string): boolean => {
+  const host = normalizeHost(rawHost);
+  return classifyHost(host).class === "vpn-ip" || host.endsWith(".ts.net");
+};

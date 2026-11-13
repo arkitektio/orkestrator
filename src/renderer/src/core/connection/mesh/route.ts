@@ -1,4 +1,4 @@
-import { classifyHost } from "@/core/connection/arkitekt/doctor/classify";
+import { classifyHost, looksLikeVpn } from "@/core/connection/arkitekt/doctor/classify";
 import { coveringMesh, peerFor } from "@/core/connection/arkitekt/doctor/diagnose";
 import { controlDomain, type MeshStatusPayload } from "../../../../../main/mesh/protocol";
 
@@ -10,6 +10,10 @@ import { controlDomain, type MeshStatusPayload } from "../../../../../main/mesh/
  * server's domain) with the live mesh status — so "through the mesh" here
  * means the request really goes through it, not that the name looks like it
  * might.
+ *
+ * "The mesh" is only the organisation's: the one the coordination server
+ * runs and the app's own node joins. An address on a VPN of the computer's
+ * own (a system Tailscale, say) is a direct route like any other — `vpn`.
  */
 export type ServiceRoute =
   | {
@@ -25,11 +29,22 @@ export type ServiceRoute =
     }
   | {
       kind: "direct";
-      /** Where the address points, as far as its shape tells. */
-      network: "public" | "local" | "this-computer" | "mesh-looking";
+      /**
+       * Where the address points, as far as its shape tells — except
+       * `mesh-down`, which is known: the address is on the organisation's
+       * mesh (lok says so, or it is named under a mesh this window knows),
+       * and that mesh is not running here, so the request goes out directly
+       * and will not arrive.
+       */
+      network: "public" | "local" | "this-computer" | "vpn" | "mesh-down";
     };
 
-export const serviceRoute = (host: string, mesh: MeshStatusPayload | undefined): ServiceRoute => {
+/** A host, or an alias with what lok says of it. */
+export type RoutedAddress = string | { host: string; reach?: string | null; kind?: string | null };
+
+export const serviceRoute = (address: RoutedAddress, mesh: MeshStatusPayload | undefined): ServiceRoute => {
+  const host = typeof address === "string" ? address : address.host;
+  const saidOnMesh = typeof address !== "string" && (address.reach === "mesh" || address.kind === "mesh");
   const covering = coveringMesh(mesh, host);
   if (covering) {
     const peer = peerFor(covering, host);
@@ -56,24 +71,25 @@ export const serviceRoute = (host: string, mesh: MeshStatusPayload | undefined):
     };
   }
 
-  const shape = classifyHost(host).class;
-  // Under a known mesh's control domain, but that mesh is not up: it would
-  // route there if it ran, so a direct attempt is the suspicious case.
+  // On the mesh, but no running mesh routes it: under a known mesh's control
+  // domain, or lok says so. It would route there if the mesh ran.
   const name = host.trim().toLowerCase().replace(/\.$/, "");
   const underKnownMesh = (mesh?.meshes ?? []).some((snapshot) => {
     const domain = controlDomain(snapshot.config.controlUrl);
     return !!domain && name.endsWith(`.${domain}`);
   });
-  if (underKnownMesh) return { kind: "direct", network: "mesh-looking" };
+  if (saidOnMesh || underKnownMesh) return { kind: "direct", network: "mesh-down" };
+
+  if (looksLikeVpn(host)) return { kind: "direct", network: "vpn" };
+  const shape = classifyHost(host).class;
   return {
     kind: "direct",
     network:
       shape === "loopback"
         ? "this-computer"
-        : shape === "lan"
+        : // A bare label is a name on a network this computer is on (docker, the LAN).
+          shape === "lan" || shape === "bare"
           ? "local"
-          : shape === "public-dns" || shape === "public-ip"
-            ? "public"
-            : "mesh-looking",
+          : "public",
   };
 };

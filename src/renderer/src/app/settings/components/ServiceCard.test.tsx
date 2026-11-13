@@ -50,13 +50,13 @@ describe("ServiceCard", () => {
     expect(screen.getByText(/2 minutes ago/)).toBeInTheDocument();
   });
 
-  it("flags a mesh-looking address that no running mesh routes", () => {
+  it("flags an address on the mesh that no running mesh routes", () => {
     const stopped = {
       ...mesh,
       meshes: mesh.meshes.map((snapshot) => ({ ...snapshot, status: { ...snapshot.status, state: "stopped" } })),
     } as MeshStatusPayload;
     render(<ServiceCard service={service("hub.lab.mesh.arkitekt.live")} mesh={stopped} />);
-    expect(screen.getByText(/looks like a mesh address/i)).toBeInTheDocument();
+    expect(screen.getByText(/on the organisation's mesh, which is not running here/i)).toBeInTheDocument();
   });
 
   it("says when no alias answered", () => {

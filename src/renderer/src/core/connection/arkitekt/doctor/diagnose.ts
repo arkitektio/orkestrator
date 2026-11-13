@@ -5,7 +5,7 @@ import type {
 import { MESH_DIAL_FAILED_CODE, MESH_PROXY_DOWN_CODE } from "../../../../../../main/doctor/networkErrors";
 import { isStrictHost, normalizeHost } from "../../../../../../main/trust/policy";
 import { controlDomain, type MeshPeer, type MeshSnapshot, type MeshStatusPayload } from "../../../../../../main/mesh/protocol";
-import { classifyHost, isMeshClass } from "./classify";
+import { classifyHost, looksLikeVpn } from "./classify";
 import type { DiagnoseInput, Finding } from "./findings";
 import { rankFindings } from "./findings";
 import type { HubHealthFacts } from "./hubHealth";
@@ -23,6 +23,17 @@ import { isUpstream } from "./targets";
  * mesh would otherwise be shown six identical connection timeouts above the
  * one sentence that explains all of them, so mesh causes are found
  * first and their symptoms are demoted (see `demoteSymptoms`).
+ *
+ * Two things the rules never mix up:
+ *
+ *  - "The mesh" is the organisation's: the tailnet the coordination server
+ *    runs (through ionscale) and the app's own node joins. Whether an address
+ *    is on it is KNOWN — lok says so on the alias (`target.mesh`), or the
+ *    app's routing table holds it — never read off the address. An address
+ *    that merely looks like Tailscale (100.64/10, `*.ts.net`) is on a VPN of
+ *    the computer's own: a direct route like a LAN, with no mesh remedy.
+ *  - The coordination server is never on the mesh. It hands out the mesh's
+ *    keys, so it is always reached over a network the computer already has.
  */
 
 const MESH_SETTINGS = "/settings/mesh";
@@ -30,31 +41,37 @@ const ARKITEKT_DOCS = "https://arkitekt.live/docs/introduction/basics";
 
 const targetsOf = (input: DiagnoseInput): ProbeTarget[] => input.targets;
 
-const meshTargets = (targets: ProbeTarget[]): ProbeTarget[] =>
-  targets.filter((target) => isMeshClass(classifyHost(target.host)));
-
 const labelOf = (target: ProbeTarget): string => target.label || target.host;
 
 /**
- * The targets the BUILT-IN mesh is responsible for: mesh-shaped addresses,
- * plus anything under the deployment's mesh control domain — which the
+ * The targets the organisation's mesh is responsible for: those known to be
+ * on it (`target.mesh`: lok says so, or pinned to or named under the profile's
+ * mesh), anything under the deployment's mesh control domain — which the
  * sidecar routes with no pinning (`pac.ts` rule 5) even though the name
- * itself looks public — plus anything a running mesh already covers.
+ * itself looks public — and anything a running mesh already covers.
+ *
+ * Not: an address that only looks like one. 100.64/10 is where any VPN lives.
  */
 const builtInMeshTargets = (input: DiagnoseInput, targets: ProbeTarget[]): ProbeTarget[] => {
   const domain = typeof input.context.meshCoordUrl === "string" ? controlDomain(input.context.meshCoordUrl) : undefined;
-  return targets.filter((target) => {
-    const shape = classifyHost(target.host).class;
-    return (
-      // A bare single label is usually a docker/LAN name; it is only the
-      // mesh's business when a running mesh actually routes it.
-      (isMeshClass(classifyHost(target.host)) && shape !== "mesh-bare") ||
-      (!!domain && norm(target.host).endsWith(`.${domain}`)) ||
-      !!coveringMesh(input.sidecar, target.host) ||
-      ownedByDeploymentMesh(input, target.host)
-    );
-  });
+  return targets.filter(
+    (target) =>
+      !isUpstream(target) &&
+      (!!target.mesh ||
+        (!!domain && norm(target.host).endsWith(`.${domain}`)) ||
+        !!coveringMesh(input.sidecar, target.host) ||
+        ownedByDeploymentMesh(input, target.host)),
+  );
 };
+
+/** Not the mesh's, and on a VPN of the computer's own as far as the address tells. */
+const onOwnVpn = (input: DiagnoseInput | undefined, target: ProbeTarget): boolean =>
+  looksLikeVpn(target.host) && !(input && builtInMeshTargets(input, [target]).length > 0);
+
+const VPN_NOTE =
+  " This address is on a VPN or private network of this computer's own, not on " +
+  "the deployment's mesh, so it only answers while that network is connected here.";
+const VPN_STEP = "Check that the VPN or private network this address is on is connected on this computer.";
 
 /** Pinned to the deployment's mesh or under its name space, whether or not its node is up right now. */
 const ownedByDeploymentMesh = (input: DiagnoseInput, rawHost: string): boolean => {
@@ -148,7 +165,8 @@ const ASK_FOR_MESH_KEY = "Ask the deployment's administrator to let this compute
  * The app's own mesh node, one verdict per way it can be wrong. Membership
  * comes with the login and nothing else, so every remedy here is either
  * "sign in again", "ask an administrator" or "pin the address" — never a
- * sign-in flow of the mesh's own. Only raised for mesh-looking addresses.
+ * sign-in flow of the mesh's own. Only raised for addresses that are the
+ * mesh's (`builtInMeshTargets`).
  */
 const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[] => {
   const sidecar = input.sidecar;
@@ -168,7 +186,7 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
       severity: "blocker",
       title: "This profile's mesh is switched off",
       detail:
-        "The addresses below are on a private mesh, and the mesh of the profile " +
+        "The addresses below are on the deployment's mesh, and the mesh of the profile " +
         "you are signed in to is turned off, so nothing routes to them.",
       evidence: hosts,
       remedy: { kind: "navigate", label: "Open mesh settings", path: MESH_SETTINGS },
@@ -189,12 +207,12 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
             : "Orkestrator's mesh client could not be started",
       detail:
         (sidecar.sidecar.reason === "binary-missing"
-          ? "The addresses below are on a private mesh, and this build ships without " +
+          ? "The addresses below are on the deployment's mesh, and this build ships without " +
             "the built-in client that joins one, so they cannot be reached from it."
           : sidecar.sidecar.reason === "outdated"
-            ? "The addresses below are on a private mesh, and the built-in client that " +
+            ? "The addresses below are on the deployment's mesh, and the built-in client that " +
               "joins one is older than this version of Orkestrator expects."
-            : "The addresses below are on a private mesh, and the built-in client that " +
+            : "The addresses below are on the deployment's mesh, and the built-in client that " +
               "joins one failed to start on this computer.") +
         (sidecar.sidecar.detail ? ` (${sidecar.sidecar.detail})` : ""),
       evidence: hosts,
@@ -393,9 +411,9 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
     findings.push({
       id: "mesh.sidecar.not-advertised",
       severity: "blocker",
-      title: "This deployment uses private mesh addresses but does not say which mesh",
+      title: "This deployment has addresses on a mesh but does not say which mesh",
       detail:
-        `The address ${uncoveredHosts[0]} is a private mesh address, yet the deployment's ` +
+        `The deployment lists ${uncoveredHosts[0]} as an address on its mesh, yet its ` +
         "discovery document names no mesh control server, so Orkestrator has no " +
         "way to join it. Whoever runs the deployment has to advertise its mesh " +
         "(the mesh_coord_url in .well-known/fakts).",
@@ -408,7 +426,7 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
       severity: "blocker",
       title: "This computer was not let into the deployment's mesh when you signed in",
       detail:
-        `The deployment runs on a private mesh at ${meshCoordUrl}. Orkestrator asks to ` +
+        `The deployment has addresses on its mesh at ${meshCoordUrl}. Orkestrator asks to ` +
         "join it with every sign-in; this time no membership came back — the " +
         "approver declined it, or the deployment could not issue one. Signing in " +
         "again asks once more; if it keeps being declined, ask an administrator.",
@@ -420,9 +438,9 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
     findings.push({
       id: "mesh.sidecar.not-joined",
       severity: "blocker",
-      title: "This deployment is on a private mesh this computer has not joined",
+      title: "This deployment has addresses on a mesh this computer has not joined",
       detail:
-        `The address ${uncoveredHosts[0]} lives on a private mesh. Orkestrator joins a ` +
+        `The deployment lists ${uncoveredHosts[0]} as an address on its mesh. Orkestrator joins a ` +
         "deployment's mesh by itself when you sign in and the deployment allows " +
         "it — this login did not include that.",
       evidence: uncoveredHosts,
@@ -436,10 +454,11 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
 
 /* ──────────────────────────── network rules ───────────────────────────── */
 
-const dnsFindings = (probe: NetworkProbeResult): Finding[] => {
+const dnsFindings = (probe: NetworkProbeResult, input?: DiagnoseInput): Finding[] => {
   const { dns } = probe;
   const label = labelOf(probe.target);
   const host = probe.target.host;
+  const vpn = onOwnVpn(input, probe.target);
   if (dns.skipped) return [];
 
   const lookupOk = dns.lookupAddresses.length > 0;
@@ -452,13 +471,14 @@ const dnsFindings = (probe: NetworkProbeResult): Finding[] => {
         severity: "blocker",
         title: `${host} does not resolve to an address`,
         steps: [
-          "If the address is on a private network or VPN, connect to it first.",
+          vpn ? VPN_STEP : "If the address is on a private network or VPN, connect to it first.",
           "Otherwise the deployment's configuration may name it wrong: tell its admin.",
         ],
         detail:
           "Neither this computer's resolver nor the public DNS servers know " +
           "this name. Either it is misspelled in the deployment's configuration, " +
-          "or it only exists inside a private network this computer is not on.",
+          "or it only exists inside a private network this computer is not on." +
+          (vpn ? VPN_NOTE : ""),
         evidence: [
           probe.url,
           dns.lookupError ? `lookup: ${dns.lookupError}` : "lookup: no addresses",
@@ -508,10 +528,11 @@ const dnsFindings = (probe: NetworkProbeResult): Finding[] => {
   return [];
 };
 
-const tcpFindings = (probe: NetworkProbeResult): Finding[] => {
+const tcpFindings = (probe: NetworkProbeResult, input?: DiagnoseInput): Finding[] => {
   const { tcp } = probe;
   const label = labelOf(probe.target);
   const host = probe.target.host;
+  const vpn = onOwnVpn(input, probe.target);
   if (!tcp.attempted || tcp.ok) return [];
 
   const port = probe.target.port ?? (probe.target.ssl ? 443 : 80);
@@ -540,14 +561,15 @@ const tcpFindings = (probe: NetworkProbeResult): Finding[] => {
         severity: "blocker",
         title: `${host} did not answer on port ${port}`,
         steps: [
-          "Check that you are on the network (or VPN) the deployment is on.",
+          vpn ? VPN_STEP : "Check that you are on the network (or VPN) the deployment is on.",
           "Check that the machine is switched on.",
           "A firewall may be dropping the connection: ask the network's admin.",
         ],
         detail:
           "The connection was neither accepted nor refused, it was simply " +
           "ignored. That is what a firewall dropping traffic looks like, or a " +
-          "machine that is not on this network at all.",
+          "machine that is not on this network at all." +
+          (vpn ? VPN_NOTE : ""),
         evidence: [probe.url, `no answer after ${tcp.ms}ms`],
         targetLabel: label,
       },
@@ -600,7 +622,9 @@ const tcpFindings = (probe: NetworkProbeResult): Finding[] => {
         detail:
           "This computer has no way to send traffic to that address at all — " +
           "typically a VPN that is switched off, or a network that has to be " +
-          "joined first.",
+          "joined first." +
+          (vpn ? VPN_NOTE : ""),
+        ...(vpn ? { steps: [VPN_STEP] } : {}),
         evidence: [probe.url, tcp.code],
         targetLabel: label,
       },
@@ -913,7 +937,7 @@ const hubFindings = (input: DiagnoseInput): Finding[] => {
       severity: "blocker",
       title: `${hub.name} reports that it is not on the mesh`,
       detail:
-        "The addresses below are on a private mesh, and the hub says its own " +
+        "The addresses below are on the deployment's mesh, and the hub says its own " +
         "node is not connected to it, so nothing can reach it there — from any " +
         "computer. This has to be fixed on the hub.",
       evidence: [...evidence, ...builtInMeshTargets(input, targetsOf(input)).map((target) => target.host)],
@@ -1059,7 +1083,8 @@ const diagnoseServices = (input: DiagnoseInput): Finding[] => {
   const findings: Finding[] = [];
 
   if (input.probesAvailable === false) {
-    const relevant = meshTargets(targets);
+    const relevant = builtInMeshTargets(input, targets);
+    const ownVpn = targets.filter((target) => onOwnVpn(input, target));
     findings.push({
       id: "doctor.unavailable",
       severity: "info",
@@ -1068,9 +1093,12 @@ const diagnoseServices = (input: DiagnoseInput): Finding[] => {
         "This build cannot inspect DNS, certificates or your network software, " +
         "so only the address itself could be examined." +
         (relevant.length > 0
-          ? ` The address ${relevant[0].host} looks like a private mesh address, ` +
-            "which usually means you have to be connected to that network first."
-          : ""),
+          ? ` The address ${relevant[0].host} is on the deployment's mesh, ` +
+            "which only the desktop app can join."
+          : ownVpn.length > 0
+            ? ` The address ${ownVpn[0].host} is on a VPN or private network, ` +
+              "so it only answers while that network is connected on this computer."
+            : ""),
       evidence: targets.map((target) => target.host),
     });
     findings.push(...hubFindings(input));
@@ -1087,8 +1115,8 @@ const diagnoseServices = (input: DiagnoseInput): Finding[] => {
 
   for (const probe of input.network) {
     if (isCovered(probe.target.host) && !probe.viaMeshProxy) continue;
-    findings.push(...dnsFindings(probe));
-    findings.push(...tcpFindings(probe));
+    findings.push(...dnsFindings(probe, input));
+    findings.push(...tcpFindings(probe, input));
     findings.push(...tlsFindings(probe));
     findings.push(...httpFindings(probe, input.context));
   }
@@ -1225,16 +1253,23 @@ const upstreamFindings = (
   if (control.length > 0 && !control.some((probe) => probe.http.status !== undefined)) {
     const host = control[0].target.host;
     const meshRunning = (input.sidecar ? deploymentMeshes(input, input.sidecar) : []).some((mesh) => mesh.status.state === "running");
+    // It only stands in the way when something has to be reached THROUGH the
+    // mesh. A deployment whose addresses are all direct works without it.
+    const needed = builtInMeshTargets(input, [...input.targets, ...input.network.map((probe) => probe.target)]).length > 0;
     findings.push({
       id: "upstream.mesh-control.unreachable",
-      severity: meshRunning ? "info" : "blocker",
+      severity: meshRunning || !needed ? "info" : "blocker",
       title: `The mesh control server ${host} does not answer`,
-      detail: meshRunning
-        ? "The mesh is already up, and a running node does not need its control " +
-          "server moment to moment — but a new sign-in, or a peer that changed " +
-          "address, will not get through until it is back."
-        : "Joining the mesh goes through this server, and it does not answer from " +
-          "here, so the private addresses below cannot be reached yet.",
+      detail: !needed
+        ? "None of the addresses checked here are on the deployment's mesh, so this " +
+          "is not what stands in the way. It matters once a service is only " +
+          "reachable through the mesh."
+        : meshRunning
+          ? "The mesh is already up, and a running node does not need its control " +
+            "server moment to moment — but a new sign-in, or a peer that changed " +
+            "address, will not get through until it is back."
+          : "Joining the mesh goes through this server, and it does not answer from " +
+            "here, so the addresses on the mesh cannot be reached yet.",
       evidence: failures(control),
       targetLabel: host,
     });

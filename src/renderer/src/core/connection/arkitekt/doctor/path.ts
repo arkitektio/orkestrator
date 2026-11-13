@@ -1,6 +1,5 @@
 import { formatDistanceStrict } from "date-fns";
 import type { NetworkProbeResult, ProbeTarget } from "../../../../../../main/doctor/protocol";
-import { classifyHost, isMeshClass } from "./classify";
 import { coveringMesh, deploymentMeshes, peerFor } from "./diagnose";
 import type { DoctorReport, Finding } from "./findings";
 import { CLIENT_SIDE_LABEL, HUB_SIDE_LABEL, compareService } from "./hubHealth";
@@ -11,6 +10,9 @@ import { isUpstream } from "./targets";
  * The connection as the hops it actually takes:
  *
  *   this computer → coordination server → mesh → hub → each service
+ *
+ * The coordination server is never behind the mesh (it hands out its keys);
+ * the mesh hop is there only when a service address is on it.
  *
  * The verdict says WHY; this says WHERE. Somebody reading it can see the
  * first hop that broke, and that everything before it worked — which is the
@@ -66,7 +68,7 @@ export const hopIdForFinding = (report: DoctorReport, finding: Finding): string 
   if (id === "net.all-clear") return undefined;
   if (id === "doctor.unavailable" || id === "net.ok.renderer-failed" || id.startsWith("net.internet.")) return "computer";
   if (id.startsWith("upstream.coordination") || id.startsWith("discovery.")) return "coordination";
-  if (id.startsWith("upstream.mesh-control") || id.startsWith("mesh.") || id.startsWith("tailscale.")) return "mesh";
+  if (id.startsWith("upstream.mesh-control") || id.startsWith("mesh.")) return "mesh";
   if (id.startsWith("hub.")) return targetLabel ? `service:${targetLabel}` : "hub";
 
   if (targetLabel) {
@@ -134,10 +136,13 @@ const coordinationHop = (report: DoctorReport, probes: NetworkProbeResult[]): Pa
   };
 };
 
+/**
+ * Is the mesh a hop of THIS connection? Only when an address is known to be
+ * on it, or the profile has one. That the deployment names a mesh is not
+ * enough: with every address direct, the mesh is not on the way.
+ */
 const meshInPlay = (report: DoctorReport, serviceTargets: ProbeTarget[]): boolean =>
-  serviceTargets.some((target) => isMeshClass(classifyHost(target.host))) ||
-  !!report.context.profileMesh ||
-  typeof report.context.meshCoordUrl === "string";
+  serviceTargets.some((target) => target.mesh || !!coveringMesh(report.sidecar, target.host)) || !!report.context.profileMesh;
 
 const meshHop = (report: DoctorReport, control: NetworkProbeResult[]): PathHop => {
   const ours = report.sidecar

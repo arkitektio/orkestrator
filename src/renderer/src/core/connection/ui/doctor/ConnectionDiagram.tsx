@@ -455,7 +455,7 @@ const Link = ({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<LinkEd
  * The name is on hover; on the line it would only crowd the address out.
  */
 const MeshMark = ({ path }: { path: AliasPath }) => {
-  const name = path.unrouted ? "a mesh nothing here routes" : `mesh ${path.network ?? ""}`.trim();
+  const name = path.unrouted ? "the organisation's mesh, not running here" : `mesh ${path.network ?? ""}`.trim();
   return (
     <span className="inline-flex shrink-0 items-center text-muted-foreground" data-mesh={path.network ?? "unknown"}>
       <Network className={cn("size-3", path.unrouted && "opacity-50")} aria-hidden />

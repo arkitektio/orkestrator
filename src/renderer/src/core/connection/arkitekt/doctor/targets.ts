@@ -1,13 +1,15 @@
 import type { ProbeTarget } from "../../../../../../main/doctor/protocol";
 import { aliasToHttpPath } from "../alias/helpers";
+import { onMesh } from "../controller/route";
 import type { Alias, Instance } from "../fakts/faktsSchema";
+import type { ProfileMesh } from "../fakts/profileStorageSchema";
 import type { DoctorContext } from "./findings";
 
 /**
  * Turn the things that failed into things main can probe.
  *
  * The rule here is that the doctor must probe the EXACT url the app tried —
- * `resolveWorkingAlias` GETs `aliasToHttpPath(alias, alias.challenge)`, so the
+ * the health check GETs `aliasToHttpPath(alias, alias.challenge)`, so the
  * probe url is built with the same helper rather than re-derived in main. A
  * doctor that quietly probes a different address is worse than none.
  */
@@ -18,6 +20,8 @@ export const aliasToProbeTarget = (
   alias: Alias,
   label: string,
   serviceKey?: string,
+  /** The active profile's mesh, to know its pins and its names. */
+  mesh?: ProfileMesh,
 ): ProbeTarget => ({
   host: alias.host,
   port: alias.port ?? null,
@@ -27,12 +31,19 @@ export const aliasToProbeTarget = (
   label,
   role: "service",
   ...(serviceKey ? { serviceKey } : {}),
+  // Known, not guessed: what lok says of the alias, or the profile's mesh.
+  ...(onMesh(alias, mesh) ? { mesh: true } : {}),
 });
 
-/** Every alias of one service, labelled the way the report will show them. */
+/**
+ * Every alias of one service, labelled the way the report will show them.
+ * Pass the active profile's mesh, so an address pinned to it or named under
+ * it counts as the mesh's — lok's own word (`reach`) counts either way.
+ */
 export const instanceToProbeTargets = (
   serviceKey: string,
   instance: Instance,
+  mesh?: ProfileMesh,
 ): ProbeTarget[] =>
   instance.aliases.map((alias, index) =>
     aliasToProbeTarget(
@@ -41,6 +52,7 @@ export const instanceToProbeTargets = (
         ? `${serviceKey} alias ${index + 1} of ${instance.aliases.length}`
         : serviceKey,
       serviceKey,
+      mesh,
     ),
   );
 

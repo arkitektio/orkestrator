@@ -57,6 +57,30 @@ describe("a *.ts.net address", () => {
     expect(JSON.stringify(findings)).not.toMatch(/tailscale/i);
   });
 
+  it("says it is a network of the computer's own, not the deployment's mesh", () => {
+    const timeout = byId(run({ network: [timedOut] }), "net.tcp.timeout");
+    expect(timeout?.detail).toContain("not on the deployment's mesh");
+    expect(timeout?.steps?.[0]).toMatch(/VPN or private network/);
+  });
+
+  it("a 100.x address is the same: a VPN of the computer's own unless lok says it is the mesh", () => {
+    const vpnIp = target({ host: "100.64.0.9" });
+    const dead = { ...timedOut, target: vpnIp };
+    const context = { kind: "service" as const, serviceKey: "mikro", meshCoordUrl: "https://mesh.arkitekt.live" };
+    const sidecar = { sidecar: { state: "ready" as const, version: "t" }, meshes: [] };
+
+    const plain = run({ context, sidecar, targets: [vpnIp], network: [dead] });
+    expect(ids(plain).filter((id) => id.startsWith("mesh."))).toEqual([]);
+    expect(byId(plain, "net.tcp.timeout")).toMatchObject({ severity: "blocker" });
+    expect(byId(plain, "net.tcp.timeout")?.detail).toContain("not on the deployment's mesh");
+
+    // The very same address, once lok says it is on the mesh, is the mesh's business.
+    const said = { ...vpnIp, mesh: true };
+    const meshed = run({ context, sidecar, targets: [said], network: [{ ...dead, target: said }] });
+    expect(meshed[0].id).toBe("mesh.sidecar.not-granted");
+    expect(byId(meshed, "net.tcp.timeout")?.detail).not.toContain("not on the deployment's mesh");
+  });
+
   it("is not held against the built-in mesh when its node is down", () => {
     const findings = run({
       context: { kind: "service", serviceKey: "mikro", meshCoordUrl: "https://mesh.arkitekt.live" },
@@ -240,7 +264,7 @@ describe("discovery findings", () => {
 
 describe("assembly", () => {
   it("demotes symptoms that a mesh blocker already explains", () => {
-    const onMesh = target({ host: "100.64.0.2" });
+    const onMesh = target({ host: "100.64.0.2", mesh: true });
     const findings = run({
       targets: [onMesh],
       sidecar: { sidecar: { state: "unavailable", reason: "binary-missing" }, meshes: [] } as never,
@@ -286,9 +310,13 @@ describe("assembly", () => {
   });
 
   it("degrades to address-only advice when the probes are unavailable", () => {
-    const findings = run({ probesAvailable: false, network: [], targets: [target({ host: "100.64.0.2" })] });
+    const findings = run({ probesAvailable: false, network: [], targets: [target({ host: "100.64.0.2", mesh: true })] });
     expect(ids(findings)).toEqual(["doctor.unavailable"]);
-    expect(findings[0].detail).toContain("mesh address");
+    expect(findings[0].detail).toContain("is on the deployment's mesh");
+    // Not said to be on the mesh: a network of the computer's own.
+    const own = run({ probesAvailable: false, network: [], targets: [target({ host: "100.64.0.2" })] });
+    expect(own[0].detail).toContain("VPN or private network");
+    expect(own[0].detail).not.toContain("mesh");
   });
 
   it("deduplicates identical findings raised for the same target", () => {
@@ -323,7 +351,8 @@ describe("built-in mesh findings", () => {
   type NodeStatus = import("../../../../../../main/mesh/protocol").MeshNodeStatus;
 
   const CONTROL = "https://mesh.example.org";
-  const meshIp = target({ host: "100.64.0.9" });
+  // An address lok lists as on the mesh (MagicDNS off, so by IP).
+  const meshIp = target({ host: "100.64.0.9", mesh: true });
   const meshWith = (state: NodeStatus["state"], extra: Partial<NodeStatus> = {}): Sidecar["meshes"][number] => ({
     config: { id: "lab", label: "Lab", controlUrl: CONTROL, hosts: [] },
     status: {
@@ -675,7 +704,7 @@ describe("the hub's own report", () => {
   });
 
   it("the hub is off the mesh and the addresses are mesh addresses", () => {
-    const onMesh = target({ host: "100.64.0.2", serviceKey: "mikro" });
+    const onMesh = target({ host: "100.64.0.2", serviceKey: "mikro", mesh: true });
     const findings = run({ targets: [onMesh], network: [{ ...down, target: onMesh }], hub: hub({ meshConnected: false }) });
     expect(findings[0]).toMatchObject({ id: "hub.mesh-disconnected", severity: "blocker" });
   });
@@ -745,9 +774,17 @@ describe("upstream hops", () => {
     expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("info");
   });
 
-  it("mesh control down and no mesh up blocks joining", () => {
-    const findings = all([answers(coord), dead(control), dead(mikro)]);
+  it("mesh control down and no mesh up blocks joining, when an address is on the mesh", () => {
+    const onMesh = { ...mikro, mesh: true };
+    const findings = all([answers(coord), dead(control), dead(onMesh)]);
     expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("blocker");
+  });
+
+  it("mesh control down is only a note when no address is on the mesh", () => {
+    const findings = all([answers(coord), dead(control), dead(mikro)]);
+    const note = byId(findings, "upstream.mesh-control.unreachable");
+    expect(note?.severity).toBe("info");
+    expect(note?.detail).toContain("not what stands in the way");
   });
 
   it("the upstream probes do not count as service addresses for the hub comparison", () => {

@@ -132,8 +132,8 @@ export const useConnectionDoctor = () => {
       setStatus("done");
     };
 
-    // No bridge: the address itself can still be classified, and saying "that
-    // is a tailnet address" is worth more than saying nothing.
+    // No bridge: what is known of the addresses (on the mesh, on a VPN) can
+    // still be said, which is worth more than saying nothing.
     const lokOutcome = fetchHubSafely(input.fetchHub);
 
     if (!bridge) {

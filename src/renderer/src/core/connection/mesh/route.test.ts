@@ -70,7 +70,19 @@ describe("serviceRoute", () => {
     expect(serviceRoute("go.arkitekt.live", payload())).toEqual({ kind: "direct", network: "public" });
     expect(serviceRoute("192.168.1.20", payload())).toEqual({ kind: "direct", network: "local" });
     expect(serviceRoute("localhost", undefined)).toEqual({ kind: "direct", network: "this-computer" });
-    // A stopped mesh routes nothing: this is the suspicious case.
-    expect(serviceRoute("hub.lab.mesh.arkitekt.live", payload({ state: "stopped" }))).toEqual({ kind: "direct", network: "mesh-looking" });
+    // A bare label is a name on a network this computer is on (docker, the LAN).
+    expect(serviceRoute("mikro", payload())).toEqual({ kind: "direct", network: "local" });
+  });
+
+  it("takes an address that looks like Tailscale for a VPN of the computer's own, not the mesh", () => {
+    // Not one of the running mesh's machines: an address in the same range is not on it.
+    expect(serviceRoute("100.99.0.1", payload())).toEqual({ kind: "direct", network: "vpn" });
+    expect(serviceRoute("lab.hyena-sole.ts.net", payload())).toEqual({ kind: "direct", network: "vpn" });
+  });
+
+  it("knows an address is on the mesh while the mesh is down: named under it, or lok says so", () => {
+    // A stopped mesh routes nothing: the request goes out directly and will not arrive.
+    expect(serviceRoute("hub.lab.mesh.arkitekt.live", payload({ state: "stopped" }))).toEqual({ kind: "direct", network: "mesh-down" });
+    expect(serviceRoute({ host: "100.64.0.9", reach: "mesh" }, undefined)).toEqual({ kind: "direct", network: "mesh-down" });
   });
 });

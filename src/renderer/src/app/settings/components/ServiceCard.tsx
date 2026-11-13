@@ -21,7 +21,8 @@ const NETWORK_LABEL: Record<Extract<ServiceRoute, { kind: "direct" }>["network"]
   public: "over the internet",
   local: "on the local network",
   "this-computer": "on this computer",
-  "mesh-looking": "— looks like a mesh address, but no running mesh routes it",
+  vpn: "over a VPN of this computer's own",
+  "mesh-down": "— the address is on the organisation's mesh, which is not running here",
 };
 
 /** One line on how requests reach the service: through the mesh, or straight there. */
@@ -50,7 +51,7 @@ const RouteLine = ({ route, ssl }: { route: ServiceRoute; ssl: boolean }) => {
       </span>
     );
   }
-  const suspicious = route.network === "mesh-looking";
+  const suspicious = route.network === "mesh-down";
   const Encryption = ssl ? Lock : LockOpen;
   return (
     <span className={cn("flex min-w-0 items-center gap-1.5", suspicious && "text-amber-600 dark:text-amber-400")}>
@@ -122,7 +123,7 @@ export const ServiceCard: React.FC<{
   const alias = service.alias;
   const aliases = service.instance?.aliases ?? [];
   const aliasIndex = alias ? aliases.findIndex((candidate) => candidate.id === alias.id) : -1;
-  const route = alias ? serviceRoute(alias.host, mesh) : undefined;
+  const route = alias ? serviceRoute(alias, mesh) : undefined;
   const description = typeof service.definition.description === "string" ? service.definition.description : undefined;
 
   return (

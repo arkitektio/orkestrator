@@ -9,8 +9,9 @@ import { breakingHop, buildConnectionPath, type PathHop } from "./path";
 const NOW = Date.parse("2026-09-23T10:20:00Z");
 
 const coord: ProbeTarget = { host: "go.arkitekt.live", ssl: true, probePath: ".well-known/fakts", label: "https://go.arkitekt.live", role: "coordination" };
-const mikro: ProbeTarget = { host: "100.64.0.2", ssl: true, label: "mikro", serviceKey: "mikro", role: "service" };
-const rekuest: ProbeTarget = { host: "100.64.0.3", ssl: true, label: "rekuest", serviceKey: "rekuest", role: "service" };
+// Addresses lok lists as on the deployment's mesh (by IP: MagicDNS off).
+const mikro: ProbeTarget = { host: "100.64.0.2", ssl: true, label: "mikro", serviceKey: "mikro", role: "service", mesh: true };
+const rekuest: ProbeTarget = { host: "100.64.0.3", ssl: true, label: "rekuest", serviceKey: "rekuest", role: "service", mesh: true };
 
 const ok = (target: ProbeTarget): NetworkProbeResult => ({
   target,

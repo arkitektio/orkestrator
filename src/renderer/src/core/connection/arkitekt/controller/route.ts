@@ -55,11 +55,12 @@ const namedOnMesh = (host: string, mesh: ProfileMesh): boolean => {
  * lists and what decides whether the hub needs the mesh at all.
  */
 export const onMesh = (alias: Addressed, mesh: ProfileMesh | undefined): boolean => {
+  // lok's word stands even where this profile was given no mesh: the address
+  // is on one all the same, which is exactly what the doctor has to say then.
+  if (alias.reach === "mesh" || alias.kind === "mesh") return true;
   if (!mesh) return false;
   const host = norm(alias.host);
-  if (mesh.hosts.map(norm).includes(host)) return true;
-  if (alias.reach === "mesh" || alias.kind === "mesh") return true;
-  return namedOnMesh(host, mesh);
+  return mesh.hosts.map(norm).includes(host) || namedOnMesh(host, mesh);
 };
 
 /** Is a request to this address sent through the profile's mesh? Never through one that is switched off. */

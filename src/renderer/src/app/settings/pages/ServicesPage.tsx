@@ -112,7 +112,7 @@ export const ServicesPage = () => {
    */
   const buildTargets = (): ProbeTarget[] =>
     Object.entries(fakts?.instances ?? {}).flatMap(([key, instance]) =>
-      instanceToProbeTargets(key, instance),
+      instanceToProbeTargets(key, instance, activeProfile?.mesh),
     );
 
   return (

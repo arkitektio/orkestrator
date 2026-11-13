@@ -577,7 +577,7 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
         profileMesh: activeProfile?.mesh,
         coordinationAlias: activeProfile?.session.fakts.self.alias,
       }}
-      buildTargets={() => (instance ? instanceToProbeTargets(serviceKey, instance) : [])}
+      buildTargets={() => (instance ? instanceToProbeTargets(serviceKey, instance, activeProfile?.mesh) : [])}
       originalError={state?.errors[0]}
       subject={state?.definition.name ?? serviceKey}
     >

@@ -72,7 +72,8 @@ describe("meshHosts", () => {
     } as unknown as ActiveFakts;
     // The coordination server is never on the mesh it coordinates.
     expect(meshHosts(fakts, MESH)).toEqual(["hub.example.org"]);
-    expect(meshHosts(fakts, undefined)).toEqual([]);
+    // lok's word stands even where the profile was given no mesh.
+    expect(meshHosts(fakts, undefined)).toEqual(["hub.example.org"]);
   });
 });
 

@@ -403,9 +403,16 @@ describe("buildConnectionDiagram, a route the app does not run", () => {
     expect(path.network).toBeUndefined();
   });
 
-  it("a mesh address no mesh here routes is its own case", () => {
-    const [path] = build({ aliases: [{ ...meshName, host: "100.64.0.9" }] }).serviceLink.aliases;
+  it("an address lok lists on the mesh that no mesh here routes is its own case", () => {
+    const [path] = build({ aliases: [{ ...meshName, host: "100.64.0.9", reach: "mesh" }] }).serviceLink.aliases;
     expect(path).toMatchObject({ lane: "mesh", unrouted: true });
+    expect(path.travel).toContain("not running here");
+  });
+
+  it("an address that only looks like Tailscale is a direct road, never the mesh", () => {
+    const [path] = build({ aliases: [{ ...meshName, host: "100.64.0.9" }] }).serviceLink.aliases;
+    expect(path.lane).toBe("direct");
+    expect(path.unrouted).toBeUndefined();
   });
 });
 

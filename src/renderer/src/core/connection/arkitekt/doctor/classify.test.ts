@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyHost, isMeshClass } from "./classify";
+import { classifyHost, looksLikeVpn } from "./classify";
 
 describe("classifyHost", () => {
   it.each([
@@ -29,14 +29,12 @@ describe("classifyHost", () => {
   });
 
   it.each([
-    ["100.64.0.1", "mesh-ip"],
-    ["100.101.102.103", "mesh-ip"],
-    ["100.127.255.255", "mesh-ip"],
-    ["fd7a:115c:a1e0::1", "mesh-ip"],
-  ])("%s is a tailnet IP", (host, expected) => {
-    const result = classifyHost(host);
-    expect(result.class).toBe(expected);
-    expect(result.meshVendor).toBe("tailscale");
+    ["100.64.0.1", "vpn-ip"],
+    ["100.101.102.103", "vpn-ip"],
+    ["100.127.255.255", "vpn-ip"],
+    ["fd7a:115c:a1e0::1", "vpn-ip"],
+  ])("%s is an address on some VPN, which the string cannot tell from the mesh", (host, expected) => {
+    expect(classifyHost(host).class).toBe(expected);
   });
 
   it("does not treat 100.63 or 100.128 as CGNAT", () => {
@@ -47,13 +45,10 @@ describe("classifyHost", () => {
   it("takes a MagicDNS name for any other name", () => {
     const result = classifyHost("mikro.tailnet-cafe.ts.net");
     expect(result.class).toBe("public-dns");
-    expect(result.meshVendor).toBeUndefined();
   });
 
-  it("treats a single label as a bare mesh name", () => {
-    const result = classifyHost("bigmachine");
-    expect(result.class).toBe("mesh-bare");
-    expect(result.meshVendor).toBe("tailscale");
+  it("treats a single label as a bare name: docker, the LAN, some short name", () => {
+    expect(classifyHost("bigmachine").class).toBe("bare");
   });
 
   it.each([
@@ -63,7 +58,6 @@ describe("classifyHost", () => {
     ["2606:4700::1111", "public-ip"],
   ])("%s is public", (host, expected) => {
     expect(classifyHost(host).class).toBe(expected);
-    expect(classifyHost(host).meshVendor).toBeUndefined();
   });
 
   it("normalises case, trailing dots and brackets", () => {
@@ -77,15 +71,15 @@ describe("classifyHost", () => {
   });
 });
 
-describe("isMeshClass", () => {
-  it("only the mesh classes count", () => {
-    expect(isMeshClass(classifyHost("100.64.0.1"))).toBe(true);
-    // A system Tailscale may carry it, but that is the OS's route, not a mesh of ours.
-    expect(isMeshClass(classifyHost("host.ts.net"))).toBe(false);
-    expect(isMeshClass(classifyHost("bare"))).toBe(true);
-    expect(isMeshClass(classifyHost("10.0.0.1"))).toBe(false);
-    expect(isMeshClass(classifyHost("localhost"))).toBe(false);
-    expect(isMeshClass(classifyHost("go.arkitekt.live"))).toBe(false);
+describe("looksLikeVpn", () => {
+  it("is a VPN-range address or a *.ts.net name: a network of the computer's own, never the mesh", () => {
+    expect(looksLikeVpn("100.64.0.1")).toBe(true);
+    expect(looksLikeVpn("fd7a:115c:a1e0::1")).toBe(true);
+    expect(looksLikeVpn("Host.TS.net.")).toBe(true);
+    expect(looksLikeVpn("bare")).toBe(false);
+    expect(looksLikeVpn("10.0.0.1")).toBe(false);
+    expect(looksLikeVpn("localhost")).toBe(false);
+    expect(looksLikeVpn("go.arkitekt.live")).toBe(false);
   });
 
 });

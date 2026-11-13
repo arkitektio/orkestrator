@@ -7,7 +7,7 @@
  *   renderer ──ipc invoke──► main : (nothing)          ("doctor:probeInterfaces")
  *
  * Main answers with STAGE-SHAPED results and no opinions. Every judgement —
- * "this is a mesh address", "the name does not resolve" — is made by the pure `diagnose()` in the renderer, so it can be tested without a socket.
+ * "the mesh does not route this", "the name does not resolve" — is made by the pure `diagnose()` in the renderer, so it can be tested without a socket.
  *
  * PRIVACY: a probe result carries hostnames, IP addresses and the tailnet name.
  * Nothing here may be attached to `src/main/issue-reporter.ts` without a
@@ -55,15 +55,22 @@ export type ProbeTarget = {
   serviceKey?: string;
   /** Which hop this is; absent means a service alias. Never in argv. */
   role?: ProbeRole;
+  /**
+   * The address is on the organisation's mesh: lok says so, or it is pinned
+   * to or named under the profile's mesh. Set by the renderer from the alias
+   * (`controller/route.ts`), never guessed from the address. Never in argv.
+   */
+  mesh?: boolean;
 };
 
 /**
  * DNS is resolved TWICE, and the disagreement is the point.
  *
- * `dns.lookup` goes through the OS resolver, so it sees MagicDNS; `dns.resolve`
- * talks to the configured nameservers directly and does not. lookup OK +
- * resolve NXDOMAIN means "this name only exists inside the tailnet" — which is
- * exactly how we tell a mesh address apart from a typo.
+ * `dns.lookup` goes through the OS resolver, so it sees the names of whatever
+ * private network or VPN the computer is on; `dns.resolve` talks to the
+ * configured nameservers directly and does not. lookup OK + resolve NXDOMAIN
+ * means "this name only exists on a private network" — which is how a private
+ * name is told apart from a typo.
  */
 export type DnsStage = {
   ok: boolean;
