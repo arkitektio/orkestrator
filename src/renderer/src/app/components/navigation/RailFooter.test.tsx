@@ -5,16 +5,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import type { ConnectionPath } from "@/core/connection/mesh/connectionPath";
+import type { Directness } from "@/core/connection/mesh/directness";
 
 const activeProfile = vi.fn();
 const autoLoggingIn = vi.fn(() => false);
 const parkSession = vi.fn();
 const connectionPath = vi.fn((): ConnectionPath => ({ kind: "direct" }));
+const NO_DIRECTNESS: Directness = { state: "unknown", machines: [], relays: [] };
+const directness = vi.fn((): Directness => NO_DIRECTNESS);
+const checkDirectness = vi.fn();
 
 // The path hook reads live mesh status and asks main about the network; here
 // only what the footer makes of its answer matters.
 vi.mock("@/core/connection/mesh/useConnectionPath", () => ({
   useConnectionPath: () => connectionPath(),
+}));
+
+// The ping itself is the hook's (and main's); here only what the note shows.
+vi.mock("@/core/connection/mesh/useMeshDirectness", () => ({
+  useMeshDirectness: () => ({ ...directness(), check: checkDirectness }),
 }));
 
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
@@ -60,6 +69,8 @@ describe("RailFooter", () => {
     autoLoggingIn.mockReturnValue(false);
     parkSession.mockClear();
     connectionPath.mockReturnValue({ kind: "direct" });
+    directness.mockReturnValue(NO_DIRECTNESS);
+    checkDirectness.mockClear();
   });
 
   it("is the only sign that a launch is still proving its token", () => {
@@ -204,6 +215,55 @@ describe("RailFooter", () => {
       const note = screen.getByTestId("rail-footer-path-note");
       expect(note).toHaveTextContent("Arkitekt mesh · Lab");
       expect(screen.getByText("Connected through Arkitekt mesh · Lab")).toBeInTheDocument();
+    });
+
+    const onMesh: ConnectionPath = { kind: "arkitekt-mesh", meshLabel: "Lab", viaMesh: 2, total: 2, relayed: 0, offlinePeers: 0 };
+
+    it("warns next to the mesh symbol when the tunnel is relayed, and names the relay", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue(onMesh);
+      directness.mockReturnValue({
+        state: "relayed",
+        relays: ["fra"],
+        machines: [
+          { name: "hub", path: "direct", measured: true },
+          { name: "gpu", path: "relayed", relay: "fra", measured: true },
+        ],
+      });
+      renderFooter();
+
+      expect(screen.getByTestId("rail-footer-path-warning")).toBeInTheDocument();
+      const line = screen.getByTestId("rail-footer-path-directness");
+      expect(line).toHaveTextContent("relayed via fra");
+      expect(line).toHaveAttribute("title", "gpu: relayed via fra");
+      expect(screen.getByText("Connected through Arkitekt mesh · Lab, relayed via fra")).toBeInTheDocument();
+    });
+
+    it("says the tunnel is direct, without a warning", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue(onMesh);
+      directness.mockReturnValue({ state: "direct", relays: [], machines: [{ name: "hub", path: "direct", measured: true }] });
+      renderFooter();
+
+      expect(screen.queryByTestId("rail-footer-path-warning")).toBeNull();
+      expect(screen.getByTestId("rail-footer-path-directness")).toHaveTextContent("direct tunnel");
+    });
+
+    it("asks again when the pointer comes to the switcher, on the mesh only", async () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue(onMesh);
+      const { unmount } = renderFooter();
+      await userEvent.hover(frame());
+      expect(checkDirectness).toHaveBeenCalledTimes(1);
+      unmount();
+
+      checkDirectness.mockClear();
+      connectionPath.mockReturnValue({ kind: "vpn", interfaces: ["wg0"] });
+      renderFooter();
+      await userEvent.hover(frame());
+      expect(checkDirectness).not.toHaveBeenCalled();
+      // Another VPN's tunnel is the OS's: nothing is said of how it runs.
+      expect(screen.queryByTestId("rail-footer-path-directness")).toBeNull();
     });
 
     it("names another VPN by its interface", () => {

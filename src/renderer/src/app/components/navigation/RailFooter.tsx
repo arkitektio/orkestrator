@@ -12,12 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
 import { cn } from "@/core/util/utils";
-import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { AlertTriangle, ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { pathTitle, type TunnelPath } from "@/core/connection/mesh/connectionPath";
+import { directnessLine, type Directness } from "@/core/connection/mesh/directness";
 import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
+import { useMeshDirectness } from "@/core/connection/mesh/useMeshDirectness";
 
 import { useRailSwitcherRequests } from "@/core/connection/profile/ui/railSwitcher";
 
@@ -38,27 +40,55 @@ const Wire = () => <span className="h-px flex-1 border-t border-dashed border-mu
 
 /**
  * The note the switcher folds out on hover: this computer → the tunnel →
- * the server, drawn, and a caption naming the tunnel. Nothing more.
+ * the server, drawn, and a caption naming the tunnel.
+ *
+ * For the app's own mesh it also says how the tunnel runs, from a ping of the
+ * machines the services live on (`useMeshDirectness`): machine to machine, or
+ * through a relay — which works, but slower, so a warning sign sits next to
+ * the mesh symbol. A machine that does not answer gets the same sign.
  */
-const PathNote = ({ path }: { path: TunnelPath }) => {
+const PathNote = ({ path, directness }: { path: TunnelPath; directness?: Directness }) => {
   const { Icon, glyph } = PATH_STYLE[path.kind];
+  const line = directness && directnessLine(directness);
+  const warn = directness?.state === "relayed" || directness?.state === "unreachable";
+  const slow = (directness?.machines ?? []).filter((machine) => machine.path === "relayed" || machine.path === "unreachable");
   return (
     <div className="flex flex-col items-center gap-1 px-2 pb-1 pt-2">
       <div className="flex w-full max-w-40 items-center gap-1.5 text-muted-foreground [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
         <Laptop />
         <Wire />
-        <span
-          className={cn(
-            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-popover",
-            glyph,
+        <span className="relative shrink-0">
+          <span
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded-full border border-border bg-popover",
+              glyph,
+            )}
+          >
+            <Icon className="h-3 w-3" />
+          </span>
+          {warn && (
+            <AlertTriangle
+              data-testid="rail-footer-path-warning"
+              aria-hidden
+              className="absolute -right-2 -top-1.5 h-3 w-3 fill-popover text-amber-500"
+            />
           )}
-        >
-          <Icon className="h-3 w-3" />
         </span>
         <Wire />
         <Server />
       </div>
       <span className="max-w-full truncate text-[11px] text-muted-foreground">{pathTitle(path)}</span>
+      {line && (
+        <span
+          data-testid="rail-footer-path-directness"
+          data-directness={directness?.state}
+          className={cn("max-w-full truncate text-[10px]", warn ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/70")}
+          // Which machines, when it is not all of them at a glance.
+          title={slow.map((machine) => `${machine.name}: ${machine.path === "relayed" ? `relayed${machine.relay ? ` via ${machine.relay}` : ""}` : "no answer"}`).join("\n") || undefined}
+        >
+          {line}
+        </span>
+      )}
     </div>
   );
 };
@@ -82,6 +112,9 @@ export const RailFooter = () => {
   const autoLoggingIn = Arkitekt.useIsAutoLoggingIn();
   const parkSession = Arkitekt.useDisconnect();
   const path = useConnectionPath();
+  // Direct or relayed: asked when the mesh's machines are first known, and
+  // again (at most every half minute) when the pointer comes to rest here.
+  const directness = useMeshDirectness();
   const agent = useAgentEngage();
   const navigate = useNavigate();
   const tunnel = path.kind === "direct" ? undefined : path;
@@ -118,6 +151,7 @@ export const RailFooter = () => {
       <div
         data-path={path.kind}
         className="group/path flex min-w-0 flex-1 flex-col rounded-lg"
+        onMouseEnter={path.kind === "arkitekt-mesh" ? directness.check : undefined}
       >
         {tunnel && !open && (
           <div
@@ -125,7 +159,7 @@ export const RailFooter = () => {
             className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 group-hover/path:grid-rows-[1fr] group-hover/path:delay-300"
           >
             <div className="min-h-0 overflow-hidden">
-              <PathNote path={tunnel} />
+              <PathNote path={tunnel} directness={tunnel.kind === "arkitekt-mesh" ? directness : undefined} />
             </div>
           </div>
         )}
@@ -176,7 +210,12 @@ export const RailFooter = () => {
             <span className="truncate text-xs font-medium text-foreground">
               {name}
             </span>
-            {tunnel && <span className="sr-only">{`Connected through ${pathTitle(tunnel)}`}</span>}
+            {tunnel && (
+              <span className="sr-only">
+                {`Connected through ${pathTitle(tunnel)}`}
+                {tunnel.kind === "arkitekt-mesh" && directness.state === "relayed" ? `, ${directnessLine(directness)}` : ""}
+              </span>
+            )}
             {detail && (
               <span
                 className={cn(
