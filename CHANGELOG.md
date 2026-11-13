@@ -1,3 +1,20 @@
+# [6.2.0](https://github.com/arkitektio/orkestrator/compare/v6.1.0...v6.2.0) (2026-11-13)
+
+
+### Bug Fixes
+
+* **connection:** a service is ready only on an address that answered, found by a race ([50cbccf](https://github.com/arkitektio/orkestrator/commit/50cbccf42f7db65adbe3c86a3e618634dd201640))
+* **connection:** a Tailscale-looking address is not the mesh ([1f906e4](https://github.com/arkitektio/orkestrator/commit/1f906e4d5eaddd60de46f58b9a464e9cbc8dc704))
+* **connection:** the coordination server is never behind the mesh it coordinates ([71ac9f6](https://github.com/arkitektio/orkestrator/commit/71ac9f67a2297935e6655ffcd5e1cac26a26133a))
+* **doctor:** the mesh is what lok says is on it, not what looks like Tailscale ([940a461](https://github.com/arkitektio/orkestrator/commit/940a461bb0162c4aafb3f0ffe5a1a5f1c9046fc9))
+
+
+### Features
+
+* **connection:** services are checked again when the network changes, and while they are down ([63830a1](https://github.com/arkitektio/orkestrator/commit/63830a1ec6fc50e9ad275ab24fd41c7dfc26669a))
+* **debug:** bug reports carry what the app recorded, and go to the organization ([6e689d0](https://github.com/arkitektio/orkestrator/commit/6e689d01c92fcd0c22962ac35406a63c9a53d710))
+* **mesh:** the rail says whether the mesh tunnel is direct or relayed ([f99e40b](https://github.com/arkitektio/orkestrator/commit/f99e40b725505f13d9f3f8fa774a237c5f030ff6))
+
 # [6.1.0](https://github.com/arkitektio/orkestrator/compare/v6.0.1...v6.1.0) (2026-11-13)
 
 
