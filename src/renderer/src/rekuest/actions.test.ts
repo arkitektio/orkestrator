@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
-import { CleanupActionsDocument } from "@/rekuest/api/graphql";
+import { AllowActionDocument, CleanupActionsDocument, RevokeAllowanceDocument } from "@/rekuest/api/graphql";
 import type { ActionState, Structure } from "@/core/smart/localactions/LocalActionProvider";
 import { REKUEST_ACTIONS } from "./actions";
 
@@ -157,5 +157,42 @@ describe("Clean Up Action", () => {
     );
     expect(confirm).not.toHaveBeenCalled();
     expect(client.mutate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Run Without Asking (the auto list)", () => {
+  const withRules = (rules: { id: string; askerKey: string | null }[]) => {
+    const client = makeClient();
+    client.query.mockResolvedValue({ data: { myAllowances: rules } } as never);
+    return Object.assign(client, { refetchQueries: vi.fn(async () => []) });
+  };
+
+  it("applies to a lone action, like the other action entries", () => {
+    expect(REKUEST_ACTIONS["rekuest-auto-list-action"].conditions).toEqual([
+      { type: "identifier", identifier: "@rekuest/action" },
+      { type: "nopartner" },
+    ]);
+  });
+
+  it("allows an action that still asks, for whoever asks", async () => {
+    const client = withRules([{ id: "7", askerKey: "workflow" }]);
+    await run("rekuest-auto-list-action", [structure("@rekuest/action", "42")], { client });
+    expect(client.mutate).toHaveBeenCalledTimes(1);
+    expect(client.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ mutation: AllowActionDocument, variables: { input: { action: "42" } } }),
+    );
+  });
+
+  it("takes every rule for it off once it is allowed for whoever asks", async () => {
+    const client = withRules([
+      { id: "7", askerKey: "workflow" },
+      { id: "8", askerKey: null },
+    ]);
+    await run("rekuest-auto-list-action", [structure("@rekuest/action", "42")], { client });
+    expect(client.mutate.mock.calls.map(([options]) => (options as { mutation: unknown; variables: unknown }))).toEqual([
+      expect.objectContaining({ mutation: RevokeAllowanceDocument, variables: { input: { id: "7" } } }),
+      expect.objectContaining({ mutation: RevokeAllowanceDocument, variables: { input: { id: "8" } } }),
+    ]);
+    expect(client.refetchQueries).toHaveBeenCalled();
   });
 });

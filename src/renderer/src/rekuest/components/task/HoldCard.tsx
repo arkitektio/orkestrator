@@ -2,11 +2,18 @@ import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Textarea } from "@/core/ui/textarea";
 import { cn } from "@/core/util/utils";
-import { ArgPortFragment, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/core/ui/dropdown-menu";
+import { ArgPortFragment, HoldRemember, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
 import { AskClosed, askClosedText, HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
-import { Check, CheckCircle2, Hand, Loader2, MessageSquarePlus, X, XCircle, Zap } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, Hand, Loader2, MessageSquarePlus, X, XCircle, Zap } from "lucide-react";
 import { useState } from "react";
 import { PortValue } from "./PortValue";
 import { MaterializedBlokEmbedById } from "../MaterializedBlokEmbed";
@@ -67,8 +74,10 @@ const HoldBadge = ({ hold, logo }: { hold: HoldRequest; logo?: Parameters<typeof
  * task's own hold. The title and description are the agent's own words, so
  * they are labelled as theirs; what the server knows for certain (the action,
  * the agent, the arguments) is shown beside them, the arguments as what they
- * are. Approve / Deny answer the held task with `decide`. `closed`: the task
- * is being stopped (or ended), so the card is grayed and takes no answer.
+ * are. Approve / Deny answer the held task with `decide`. Beside Approve, a
+ * call an agent asked for can be approved for good: for the rest of the run,
+ * or always (the user's auto list), so it is not asked for again. `closed`:
+ * the task is being stopped (or ended), so the card is grayed and takes no answer.
  */
 export const HoldCard = ({
   hold,
@@ -90,12 +99,12 @@ export const HoldCard = ({
   });
   const action = data?.action;
 
-  const send = (approved: boolean, values?: Record<string, unknown>) => {
+  const send = (approved: boolean, values?: Record<string, unknown>, remember?: HoldRemember) => {
     setSending(approved ? "approve" : "deny");
     // Sent, the card stays busy: it goes when the decision comes back as an event.
     // Only a refusal hands the buttons back.
     return decide({
-      variables: { input: { task: hold.task, approved, answer: answer.trim() || null, values: values ?? null } },
+      variables: { input: { task: hold.task, approved, answer: answer.trim() || null, values: values ?? null, remember: remember ?? null } },
     }).catch((error: unknown) => {
       setSending(null);
       reportErrorAs(approved ? (values ? "Couldn't send your answer" : "Couldn't approve it") : "Couldn't deny it")(error);
@@ -217,9 +226,44 @@ export const HoldCard = ({
         {asksThroughBlok ? (
           sending === "approve" && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
         ) : (
-          <Button size="sm" className="h-8 text-xs" disabled={sending !== null} onClick={() => send(true)}>
-            {sending === "approve" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />} Approve
-          </Button>
+          <div className="flex items-center">
+            <Button
+              size="sm"
+              className={cn("h-8 text-xs", hold.kind === "assign" && "rounded-r-none")}
+              disabled={sending !== null}
+              onClick={() => send(true)}
+            >
+              {sending === "approve" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />} Approve
+            </Button>
+            {hold.kind === "assign" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    aria-label="Approve and don't ask again"
+                    className="h-8 rounded-l-none border-l border-primary-foreground/20 px-1.5"
+                    disabled={sending !== null}
+                  >
+                    <ChevronDown className="size-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-w-72">
+                  <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+                    Approve, and don't ask again for {action?.name ?? hold.action?.name ?? "this action"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => void send(true, undefined, HoldRemember.Run)}>
+                    For the rest of this run
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void send(true, undefined, HoldRemember.Asker)}>
+                    Always, when {hold.callerAction?.name ?? "this action"} asks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void send(true, undefined, HoldRemember.Always)}>
+                    Always, whoever asks
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         )}
       </div>
       </>
@@ -242,7 +286,19 @@ export const HoldDecisionLine = ({
   className?: string;
 }) => {
   const Icon = decision.auto ? Zap : decision.approved ? CheckCircle2 : XCircle;
-  const verb = decision.auto ? "Ran without asking" : decision.approved ? "You approved" : "You declined";
+  const verb = decision.allowance
+    ? decision.allowance === "run"
+      ? "Ran without asking, allowed for this run"
+      : "Ran without asking, always allowed"
+    : decision.auto
+      ? "Ran without asking"
+      : !decision.approved
+        ? "You declined"
+        : decision.remember === HoldRemember.Run
+          ? "You allowed for this run"
+          : decision.remember
+            ? "You always allow"
+            : "You approved";
   if (hold.blok) {
     // An ask through a blok stays as the blok, frozen, with what was answered in it.
     return (

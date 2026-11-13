@@ -80,3 +80,21 @@ describe("askClosed", () => {
     expect(askClosed({ events: [held, { kind: TaskEventKind.Cancelling }, { kind: TaskEventKind.Cancelled }] })).toBe("ended");
   });
 });
+
+describe("the auto list", () => {
+  it("reads the action that asks, for an allowance bound to it", () => {
+    const hold = holdFromEvent(ev(TaskEventKind.Held, { held: "c1", caller_action: { id: "9", name: "Workflow" } }, "1"));
+    expect(hold?.callerAction).toEqual({ id: "9", name: "Workflow" });
+  });
+
+  it("reads a call nobody was asked for, and an approval that was remembered", () => {
+    const unasked = { held: "c2", approved: true, auto: true, allowance: { id: "4", scope: "always" } };
+    expect(decisionFromEvent(ev(TaskEventKind.Decided, unasked, "1"))).toMatchObject({ auto: true, allowance: "always" });
+    const remembered = { held: "c1", approved: true, auto: false, remember: "RUN" };
+    expect(decisionFromEvent(ev(TaskEventKind.Decided, remembered, "1"))).toMatchObject({ auto: false, remember: "RUN" });
+    // What this client does not know is left out, not passed on.
+    const unknown = decisionFromEvent(ev(TaskEventKind.Decided, { approved: true, remember: "FOREVER", allowance: {} }, "1"));
+    expect(unknown).not.toHaveProperty("remember");
+    expect(unknown).not.toHaveProperty("allowance");
+  });
+});

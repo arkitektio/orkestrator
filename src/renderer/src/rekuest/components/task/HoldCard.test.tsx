@@ -32,7 +32,7 @@ vi.mock("../MaterializedBlokEmbed", () => ({
   ),
 }));
 
-import { PortKind } from "@/rekuest/api/graphql";
+import { HoldRemember, PortKind } from "@/rekuest/api/graphql";
 import { HoldCard, HoldDecisionLine } from "./HoldCard";
 
 const hold = {
@@ -90,7 +90,7 @@ describe("HoldCard", () => {
     detailAction.current = undefined;
     const { unmount } = render(<HoldCard hold={hold} />);
     fireEvent.click(screen.getByText("Approve"));
-    expect(decide).toHaveBeenLastCalledWith({ variables: { input: { task: "c7", approved: true, answer: null, values: null } } });
+    expect(decide).toHaveBeenLastCalledWith({ variables: { input: { task: "c7", approved: true, answer: null, values: null, remember: null } } });
     unmount();
 
     render(<HoldCard hold={hold} />);
@@ -98,12 +98,45 @@ describe("HoldCard", () => {
     fireEvent.change(screen.getByPlaceholderText(/Anything to tell it/), { target: { value: " use plate 2 " } });
     fireEvent.click(screen.getByText("Deny"));
     expect(decide).toHaveBeenLastCalledWith({
-      variables: { input: { task: "c7", approved: false, answer: "use plate 2", values: null } },
+      variables: { input: { task: "c7", approved: false, answer: "use plate 2", values: null, remember: null } },
     });
+  });
+
+  it("approves for good from the menu beside Approve: the run, this asker, or anyone", async () => {
+    detailAction.current = undefined;
+    const asked = { ...hold, callerAction: { id: "a0", name: "Assistant reply" } };
+    for (const [label, remember] of [
+      ["For the rest of this run", "RUN"],
+      ["Always, when Assistant reply asks", "ASKER"],
+      ["Always, whoever asks", "ALWAYS"],
+    ] as const) {
+      const { unmount } = render(<HoldCard hold={asked} />);
+      fireEvent.keyDown(screen.getByLabelText("Approve and don't ask again"), { key: "Enter" });
+      fireEvent.click(await screen.findByText(label));
+      expect(decide).toHaveBeenLastCalledWith({
+        variables: { input: { task: "c7", approved: true, answer: null, values: null, remember } },
+      });
+      unmount();
+    }
+  });
+
+  it("offers no auto list for a task's own hold: only a call an agent asked for is remembered", () => {
+    render(<HoldCard hold={{ task: "t1", kind: "self", title: "Shall I go on?" }} />);
+    expect(screen.getByText("Approve")).toBeTruthy();
+    expect(screen.queryByLabelText("Approve and don't ask again")).toBeNull();
   });
 });
 
 describe("HoldDecisionLine", () => {
+  it("says when nobody was asked because it is on the auto list, and when an approval was remembered", () => {
+    const { rerender } = render(
+      <HoldDecisionLine hold={hold} decision={{ task: "c7", approved: true, auto: true, allowance: "always" }} />,
+    );
+    expect(screen.getByText(/Ran without asking, always allowed/)).toBeTruthy();
+    rerender(<HoldDecisionLine hold={hold} decision={{ task: "c7", approved: true, auto: false, remember: HoldRemember.Run }} />);
+    expect(screen.getByText(/You allowed for this run/)).toBeTruthy();
+  });
+
   it("says how it was answered", () => {
     const { rerender } = render(
       <HoldDecisionLine hold={hold} decision={{ task: "c7", approved: false, auto: false, answer: "not now" }} />,
@@ -126,7 +159,7 @@ describe("a hold through a blok", () => {
     fireEvent.click(screen.getByTestId("blok"));
     expect(decide).toHaveBeenLastCalledWith({
       variables: {
-        input: { task: "t9", approved: true, answer: null, values: { image: { __identifier: "@mikro/image", object: "8" } } },
+        input: { task: "t9", approved: true, answer: null, values: { image: { __identifier: "@mikro/image", object: "8" } }, remember: null },
       },
     });
   });

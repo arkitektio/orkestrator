@@ -5,8 +5,9 @@ import type { ProfileContext, ProfileSection } from "@/core/connection/profile/s
 import { cn } from "@/core/util/utils";
 import { RekuestAgent } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
-import { Bot } from "lucide-react";
-import { AgentOrder, Ordering, useAgentsQuery } from "../api/graphql";
+import { Bot, Zap } from "lucide-react";
+import { AgentOrder, Ordering, useAgentsQuery, useMyAllowancesQuery } from "../api/graphql";
+import { AllowanceRow } from "../components/action/ActionAllowances";
 
 const LAST_SEEN: AgentOrder[] = [{ lastSeen: Ordering.Desc }];
 
@@ -56,6 +57,25 @@ const Agents = ({ sub }: ProfileContext) => {
   );
 };
 
+/**
+ * Their auto list: the actions an agent gets under their runs without a hold.
+ * Only on one's own profile: the server lists the caller's rules, nobody else's.
+ */
+const AutoList = (_: ProfileContext) => {
+  const { data } = useMyAllowancesQuery({ fetchPolicy: "cache-and-network" });
+  const allowances = data?.myAllowances ?? [];
+  if (allowances.length === 0) return null;
+  return (
+    <ProfileSectionFrame>
+      <ProfileRows>
+        {allowances.map((allowance) => (
+          <AllowanceRow key={allowance.id} allowance={allowance} />
+        ))}
+      </ProfileRows>
+    </ProfileSectionFrame>
+  );
+};
+
 export const REKUEST_PROFILE_SECTIONS: ProfileSection[] = [
   {
     id: "rekuest.agents",
@@ -65,5 +85,15 @@ export const REKUEST_PROFILE_SECTIONS: ProfileSection[] = [
     priority: 30,
     Guard: RekuestGuard,
     Component: Agents,
+  },
+  {
+    id: "rekuest.autolist",
+    module: "rekuest",
+    title: "Runs without asking",
+    icon: Zap,
+    priority: 40,
+    Guard: RekuestGuard,
+    applies: (ctx) => ctx.isMe,
+    Component: AutoList,
   },
 ];

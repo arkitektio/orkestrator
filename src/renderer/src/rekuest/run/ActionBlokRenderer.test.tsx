@@ -121,7 +121,7 @@ describe('an action\'s html blok drawn for a run', () => {
     await frame();
     expect(screen.getByText('Is the slide in place?')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', {name: /Approve/}));
-    expect(decide).toHaveBeenCalledWith({variables: {input: {task: 't1', approved: true, answer: null, values: null}}});
+    expect(decide).toHaveBeenCalledWith({variables: {input: {task: 't1', approved: true, answer: null, values: null, remember: null}}});
   });
 
   it("answers the ask task.ask shows with task.answer, and nothing while none is open", async () => {

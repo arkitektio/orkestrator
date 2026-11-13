@@ -5,6 +5,7 @@ import {
   useActionOverviewQuery,
   useDetailActionQuery,
 } from "@/rekuest/api/graphql";
+import { ActionAllowances } from "../components/action/ActionAllowances";
 import { ActionHeader } from "../components/action/ActionHeader";
 import { ActionSignature } from "../components/action/ActionSignature";
 import { ActionTaskHistory } from "../components/action/ActionTaskHistory";
@@ -43,6 +44,8 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
     >
       <div className="p-6 space-y-6">
         <ActionHeader action={data.action} overview={overview} />
+
+        <ActionAllowances action={data.action.id} />
 
         <ActionSignature action={data.action} />
 

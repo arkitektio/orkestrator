@@ -76,6 +76,15 @@ import {
   UpdateTriggerDocument,
   UpdateTriggerMutation,
   UpdateTriggerMutationVariables,
+  AllowActionDocument,
+  AllowActionMutation,
+  AllowActionMutationVariables,
+  MyAllowancesDocument,
+  MyAllowancesQuery,
+  MyAllowancesQueryVariables,
+  RevokeAllowanceDocument,
+  RevokeAllowanceMutation,
+  RevokeAllowanceMutationVariables,
   WiregramDocument,
   WiregramQuery,
   WiregramQueryVariables
@@ -676,6 +685,44 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     conditions: ACTION_CONDITIONS,
     execute: async ({ state, dialog }) => {
       dialog.openDialog('createautomation', { kind: 'signal', action: selected(state, ACTION_IDENTIFIER) })
+    },
+    collections: ['io'],
+  },
+  'rekuest-auto-list-action': {
+    title: 'Run Without Asking',
+    description: 'Put this action on your auto list, or take it off: under your runs an agent that asks for it gets it without a hold',
+    icon: Zap,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const client = services.rekuest.client
+      const action = selected(state, ACTION_IDENTIFIER)
+      const { data } = await client.query<MyAllowancesQuery, MyAllowancesQueryVariables>({
+        query: MyAllowancesDocument,
+        variables: { action },
+        fetchPolicy: 'network-only',
+      })
+      const rules = data.myAllowances
+      // Allowed for whoever asks: this takes it off, with the narrower rules for it.
+      if (rules.some((rule) => !rule.askerKey)) {
+        for (const rule of rules) {
+          await client.mutate<RevokeAllowanceMutation, RevokeAllowanceMutationVariables>({
+            mutation: RevokeAllowanceDocument,
+            variables: { input: { id: rule.id } },
+          })
+        }
+        await client.refetchQueries({ include: ['MyAllowances'] })
+        toast.success('You are asked again before it runs')
+        return
+      }
+      await client.mutate<AllowActionMutation, AllowActionMutationVariables>({
+        mutation: AllowActionDocument,
+        variables: { input: { action } },
+        refetchQueries: ['MyAllowances'],
+      })
+      toast.success('It now runs without asking you')
     },
     collections: ['io'],
   },

@@ -1,0 +1,9 @@
+mutation AllowAction($input: AllowActionInput!) {
+  allowAction(input: $input) {
+    ...ActionAllowance
+  }
+}
+
+mutation RevokeAllowance($input: RevokeAllowanceInput!) {
+  revokeAllowance(input: $input)
+}

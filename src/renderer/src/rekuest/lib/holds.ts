@@ -1,4 +1,4 @@
-import { TaskEventKind } from "../api/graphql";
+import { HoldRemember, TaskEventKind } from "../api/graphql";
 
 /**
  * What waits for a person's decision, read off a HELD event.
@@ -20,6 +20,8 @@ export interface HoldRequest {
   action?: { id: string; name: string; hash?: string | null } | null;
   agent?: { id: string; name: string } | null;
   callerAgent?: { id: string; name: string } | null;
+  /** The action that asks: what an "always allow" can be bound to. */
+  callerAction?: { id: string; name: string } | null;
   args?: unknown;
   /** A task's hold through a blok (an ask): the materialization the person answers in. */
   blok?: string | null;
@@ -67,6 +69,7 @@ export const holdFromEvent = (event: HoldEvent): HoldRequest | null => {
     action: action && { ...action, hash: (record(value.action)?.hash as string) ?? null },
     agent: named(value.agent),
     callerAgent,
+    callerAction: named(value.caller_action),
     args: value.args,
     ...(value.blok != null ? { blok: String(value.blok) } : {}),
   };
@@ -104,7 +107,21 @@ export interface HoldDecision {
   values?: Record<string, unknown> | null;
   /** Who decided (their sub); none in auto-mode. */
   user?: string | null;
+  /** Nobody was asked because the user's auto list covers it: for this run, or always. */
+  allowance?: AllowanceScope | null;
+  /** What the person had their approval remembered as, if anything. */
+  remember?: HoldRemember | null;
 }
+
+/** How far an auto-list rule reaches. */
+export type AllowanceScope = "run" | "always";
+
+const scopeOf = (value: unknown): AllowanceScope | null => {
+  const scope = record(value)?.scope;
+  return scope === "run" || scope === "always" ? scope : null;
+};
+
+const REMEMBERED: readonly string[] = Object.values(HoldRemember);
 
 /** The decision a DECIDED event carries (`{approved, answer, auto, user}`), or null. */
 export const decisionFromEvent = (event: HoldEvent): HoldDecision | null => {
@@ -118,6 +135,10 @@ export const decisionFromEvent = (event: HoldEvent): HoldDecision | null => {
     answer: typeof value.answer === "string" && value.answer.trim() ? value.answer : null,
     ...(record(value.values) ? { values: record(value.values) } : {}),
     ...(typeof value.user === "string" ? { user: value.user } : {}),
+    ...(scopeOf(value.allowance) ? { allowance: scopeOf(value.allowance) } : {}),
+    ...(typeof value.remember === "string" && REMEMBERED.includes(value.remember)
+      ? { remember: value.remember as HoldRemember }
+      : {}),
   };
 };
 

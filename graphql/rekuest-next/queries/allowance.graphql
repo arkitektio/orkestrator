@@ -1,0 +1,25 @@
+fragment ActionAllowance on ActionAllowance {
+  id
+  key
+  askerKey
+  createdAt
+  app {
+    id
+    identifier
+  }
+  action {
+    id
+    name
+  }
+  asker {
+    id
+    name
+  }
+}
+
+# The caller's auto list: the actions that run under their runs without asking.
+query MyAllowances($action: ID) {
+  myAllowances(action: $action) {
+    ...ActionAllowance
+  }
+}
