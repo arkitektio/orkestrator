@@ -62,12 +62,15 @@ const session = {
 };
 
 let built = 0;
+/** What the service's client calls when a request got no answer. */
+let networkError: () => void = () => {};
 const serviceBuilderMap = {
   lok: {
     key: "lok",
     service: "live.arkitekt.lok",
-    builder: () => {
+    builder: (options: { onNetworkError?: () => void }) => {
       built += 1;
+      networkError = options.onNetworkError ?? (() => {});
       return { client: { n: built }, dispose: () => {} };
     },
   },
@@ -229,5 +232,48 @@ describe("a check overtaken by new fakts", () => {
     await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
     expect(vi.mocked(checkAliasHealth).mock.calls.at(-1)?.[0]).toMatchObject({ id: "a2" });
     expect(built).toBe(1);
+  });
+});
+
+describe("after the first check", () => {
+  const ready = async () => {
+    renderProvider();
+    await waitFor(() => expect(statuses[statuses.length - 1]).toBe("ready"));
+    statuses = ["ready"];
+    vi.mocked(checkAliasHealth).mockClear();
+  };
+
+  it("checks again when the network changed, without leaving ready", async () => {
+    await ready();
+
+    window.dispatchEvent(new Event("online"));
+    await waitFor(() => expect(checkAliasHealth).toHaveBeenCalledTimes(1), { timeout: 3000 });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(statuses).toEqual(["ready"]);
+    expect(built).toBe(1);
+  });
+
+  it("moves to the address that answers now when the network changed under it", async () => {
+    await ready();
+    vi.mocked(checkAliasHealth).mockImplementation(async (alias) => alias.id === MOVED.id);
+
+    window.dispatchEvent(new Event("online"));
+    await waitFor(() => expect(built).toBe(2), { timeout: 5000 });
+
+    // Never through "checking" or "invalid": the page stays up while it moves.
+    expect(statuses).toEqual(["ready"]);
+  });
+
+  it("checks a service whose client keeps failing to reach it", async () => {
+    await ready();
+
+    networkError();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(checkAliasHealth).not.toHaveBeenCalled();
+
+    networkError();
+    await waitFor(() => expect(checkAliasHealth).toHaveBeenCalledTimes(1));
+    expect(statuses).toEqual(["ready"]);
   });
 });

@@ -59,6 +59,13 @@ export type ServiceBuilder<T extends Service = Service> = (options: {
   alias: Alias;
   fakts: ActiveFakts;
   getToken: GetToken;
+  /**
+   * Tell the connection that a request never got an answer (not: got an
+   * error answer). It checks the service's address again once that keeps
+   * happening. Optional: a builder that does not call it is simply never
+   * checked on that ground.
+   */
+  onNetworkError?: () => void;
 }) => T;
 
 export type ServiceDefinition<T extends Service = Service> = {

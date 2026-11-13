@@ -74,6 +74,7 @@ import {
   type MeshPingResult,
   type MeshStatusPayload,
 } from "../main/mesh/protocol";
+import { NETWORK_CHANGED_CHANNEL, type NetworkChange } from "../main/network/protocol";
 import { TRUST_DISCOVERY_HOSTS_CHANNEL, TRUST_FAKTS_HOSTS_CHANNEL, TRUST_SEED_HOSTS_CHANNEL } from "../main/trust/protocol";
 import { PROFILE_BOOK_STORAGE_KEY, trustOfProfileBook, type TrustPayload } from "../main/trust/hosts";
 
@@ -314,6 +315,10 @@ const api = {
     restart: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_RESTART_CHANNEL),
     firewall: (): Promise<MeshFirewallState> => ipcRenderer.invoke(MESH_FIREWALL_CHANNEL),
     onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
+  },
+  /** The computer's network may have changed: an address came or went, or it woke from sleep. */
+  network: {
+    onChange: (cb: (change: NetworkChange) => void) => subscribe<NetworkChange>(NETWORK_CHANGED_CHANNEL, cb),
   },
   /**
    * Bluetooth Low Energy through main (a native btleplug addon): GATT

@@ -1,9 +1,12 @@
 import { sameAlias } from "../alias/helpers";
 import type { Alias, Instance } from "../fakts/faktsSchema";
-import { IDLE, reduceLink, runtimeOf, type Link, type LinkEvent } from "../controller/link";
-import { probeService } from "../controller/probe";
+import { IDLE, reduceLink, runtimeOf, type Link, type LinkEvent } from "./link";
+import { probeService } from "./probe";
+import { watchNetwork } from "./reachability";
+import { createSupervisor, type Supervisor } from "./supervisor";
 import { NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
-import { viaMesh } from "../controller/route";
+import { meshStatusStore } from "@/core/connection/mesh/meshStatusStore";
+import { viaMesh } from "./route";
 import { requestMeshKey } from "@/core/connection/mesh/meshKey";
 import {
   asksForMeshKey,
@@ -170,6 +173,10 @@ export type ConnectionControllerOptions<
  * check. `ArkitektProvider` creates one and hands its store and actions to the
  * tree; nothing here needs a component to be mounted, or re-rendered, to run.
  *
+ * After the first check of a service it keeps watching: `supervisor.ts` says
+ * when to check again (the network changed, the mesh came or went, a client
+ * keeps failing, a service is down), and the checks it asks for are quiet.
+ *
  * One per provider. `mount` / `boot` / `followBook` are the provider's three
  * effects; everything else is reached through `actions`.
  */
@@ -288,6 +295,15 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
             }
           : connection,
       });
+      // A refresh re-renders the fakts: a service whose addresses changed (a
+      // hub that just joined the mesh, an alias added) is checked against the
+      // new ones now, not at the next launch.
+      const changed = Object.keys(serviceBuilderMap).filter(
+        (key) => !sameInstance(live.fakts.instances[key], nextSession.fakts.instances[key]),
+      );
+      if (changed.length === 0) return;
+      store.setState(recomputeRef.current());
+      void superviseRef.current(changed);
     };
 
   // Wire up the locked refreshToken now that store exists
@@ -424,6 +440,8 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
       };
     };
 
+  const recomputeRef = ref<() => Partial<AppContext<T, S>>>(() => ({}));
+  const superviseRef = ref<(serviceKeys: string[]) => Promise<void>>(async () => {});
   const recompute = (overrides: {
       storedSession?: StoredSession;
       connection?: ConnectedContext<T, S>;
@@ -436,9 +454,12 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
    * `runtimeOf` turns one into the service state the guards read.
    */
   const linksRef = ref<Record<string, Link>>({});
+  /** Decides when a link is checked again (`supervisor.ts`); there while the window is mounted. */
+  const supervisorRef = ref<Supervisor | undefined>(undefined);
   const dispatchLink = (serviceKey: string, event: LinkEvent): Link => {
     const next = reduceLink(linksRef.current[serviceKey] ?? IDLE, event);
     linksRef.current = { ...linksRef.current, [serviceKey]: next };
+    supervisorRef.current?.linksChanged();
     return next;
   };
 
@@ -472,6 +493,7 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
         const configured = session ? Object.keys(serviceBuilderMap).filter((key) => session.fakts.instances[key]) : [];
         linksRef.current = Object.fromEntries(configured.map((key) => [key, reduceLink(IDLE, { type: "check", at })]));
         serviceStateOverrides = Object.fromEntries(configured.map((key) => [key, runtimeOf(linksRef.current[key])]));
+        supervisorRef.current?.linksChanged();
       }
       dlog("[arkitekt] hydrateConnection result, services:", connection ? Object.keys(connection.serviceMap) : "none");
 
@@ -579,7 +601,6 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
    * suffix on the profile and re-checks every service that failed meanwhile.
    */
   const meshGateRef = ref<MeshGate>(NO_MESH_GATE);
-  const validateServicesRef = ref<(keys: string[]) => Promise<void>>(async () => {});
   const meshGateFor = (mesh: ProfileMesh | undefined): MeshGate => {
       const wanted = mesh?.enabled ? mesh : undefined;
       const current = meshGateRef.current;
@@ -591,23 +612,6 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
 
       // The claim waits for Windows' firewall explainer; so does the clock.
       const gate = watchMesh(wanted, { clockStarts: meshFirewallGate(true) ?? Promise.resolve() });
-      if (wanted) {
-        gate.onRunning((status) => {
-          const suffix = status.magicDnsSuffix;
-          if (suffix && suffix !== wanted.magicDnsSuffix) {
-            void persistBook((book) => {
-              const owner = Object.values(book.profiles).find((profile) => profile.mesh?.id === wanted.id);
-              return owner
-                ? updateProfileMesh(book, owner.id, (m) => (m ? { ...m, magicDnsSuffix: suffix } : m))
-                : book;
-            });
-          }
-          const failed = Object.values(store.getState().serviceStates)
-            .filter((service) => service.status === "invalid" && service.instance)
-            .map((service) => service.key);
-          if (failed.length > 0) void validateServicesRef.current(failed);
-        });
-      }
       meshGateRef.current = gate;
       return gate;
     };
@@ -624,8 +628,14 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
    * session has no client yet and reads `checking` until an address does.
    */
   type AliasChange = { profileId: string; serviceKey: string; alias: Alias };
-  const checkServiceRef = ref<(serviceKey: string) => Promise<AliasChange | undefined>>(async () => undefined);
-  const checkService = async (serviceKey: string): Promise<AliasChange | undefined> => {
+  type CheckOptions = {
+    /** Nobody asked for this check: a service that is down stays down, not "checking", while it runs. */
+    quiet?: boolean;
+  };
+  const checkServiceRef = ref<(serviceKey: string, options?: CheckOptions) => Promise<AliasChange | undefined>>(
+    async () => undefined,
+  );
+  const checkService = async (serviceKey: string, { quiet = false }: CheckOptions = {}): Promise<AliasChange | undefined> => {
       dlog("[arkitekt] checkService started:", serviceKey);
       const runId = (validationRunIdsRef.current[serviceKey] || 0) + 1;
       validationRunIdsRef.current[serviceKey] = runId;
@@ -648,7 +658,7 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
       startServiceCheck(serviceKey, runId);
       // Up stays up while it is re-checked (and keeps its client); anything
       // else is being checked, with nothing mounted on it meanwhile.
-      const checking = dispatchLink(serviceKey, { type: "check", at: Date.now() });
+      const checking = dispatchLink(serviceKey, { type: "check", at: Date.now(), quiet });
       store.setState((current) => ({
         ...deriveRuntimeState(current, { serviceStateOverrides: { [serviceKey]: runtimeOf(checking) } }),
       }));
@@ -729,35 +739,36 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
           // Rebuild only this service, keeping every other one (and
           // selfService) intact; the superseded client is disposed after the
           // commit below.
-          let nextConnection: ConnectedContext<T, S>;
-          if (current.connection) {
-            const newService = serviceBuilderMap[serviceKey].builder({
-              manifest: current.manifest,
-              alias: resolved,
-              fakts: nextSession.fakts,
-              getToken: (options) => refreshTokenRef.current(options),
-            });
-            supersededService = liveService;
-            nextConnection = {
-              ...current.connection,
-              serviceMap: {
-                ...current.connection.serviceMap,
-                [serviceKey]: newService,
-              } as ConnectedContext<T, S>["serviceMap"],
-              aliasMap: {
-                ...current.connection.aliasMap,
-                [serviceKey]: resolved,
-              } as ConnectedContext<T, S>["aliasMap"],
-            };
-          } else {
-            nextConnection = instantiateConnection(
+          const base =
+            current.connection ??
+            instantiateConnection(
               nextSession,
               current.manifest,
               serviceBuilderMap,
               selfServiceBuilder,
               (options) => refreshTokenRef.current(options),
+              { services: false },
             );
-          }
+          // The one place a service gets its client: on an address that just answered.
+          const newService = serviceBuilderMap[serviceKey].builder({
+            manifest: current.manifest,
+            alias: resolved,
+            fakts: nextSession.fakts,
+            getToken: (options) => refreshTokenRef.current(options),
+            onNetworkError: () => noteNetworkError(serviceKey),
+          });
+          supersededService = liveService;
+          const nextConnection: ConnectedContext<T, S> = {
+            ...base,
+            serviceMap: {
+              ...base.serviceMap,
+              [serviceKey]: newService,
+            } as ConnectedContext<T, S>["serviceMap"],
+            aliasMap: {
+              ...base.aliasMap,
+              [serviceKey]: resolved,
+            } as ConnectedContext<T, S>["aliasMap"],
+          };
 
           return {
             storedSession: nextSession,
@@ -777,7 +788,7 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
         });
 
         supersededService?.dispose?.();
-        if (outdated) return checkServiceRef.current(serviceKey);
+        if (outdated) return checkServiceRef.current(serviceKey, { quiet });
         // Answered directly: this service no longer needs the mesh. One that
         // lives on the mesh keeps its demand, and so keeps the mesh up.
         if (mesh && !routed(resolved) && validationRunIdsRef.current[serviceKey] === runId) {
@@ -824,7 +835,7 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
 
         // Tear down the client/socket of the service we dropped from the map.
         removedService?.dispose?.();
-        if (outdated) return checkServiceRef.current(serviceKey);
+        if (outdated) return checkServiceRef.current(serviceKey, { quiet });
         return undefined;
       }
     };
@@ -837,8 +848,8 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
    * or an alias fix landing after another window's refresh would put the
    * spent token back.
    */
-  const validateServices = async (serviceKeys: string[]) => {
-      const changes = (await Promise.all(serviceKeys.map((key) => checkService(key)))).filter(
+  const validateServices = async (serviceKeys: string[], options?: CheckOptions) => {
+      const changes = (await Promise.all(serviceKeys.map((key) => checkService(key, options)))).filter(
         (change): change is NonNullable<typeof change> => !!change,
       );
       if (changes.length === 0) return;
@@ -855,9 +866,93 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
       );
     };
 
-  validateServicesRef.current = validateServices;
-
   const validateService = (serviceKey: string) => validateServices([serviceKey]);
+
+  // ── supervision: checking again when there is a reason to ──
+
+  const activeMesh = (): ProfileMesh | undefined => {
+    const book = store.getState().profileBook;
+    const mesh = book.activeProfileId ? book.profiles[book.activeProfileId]?.mesh : undefined;
+    return mesh?.enabled ? mesh : undefined;
+  };
+
+  /** How long a service must have been down before lok is asked for fresh fakts on its account. */
+  const FAKTS_STALE_AFTER_MS = 2 * 60_000;
+  const FAKTS_REFRESH_EVERY_MS = 5 * 60_000;
+  const lastFaktsRefreshRef = ref(0);
+
+  /**
+   * lok leaves a mesh address out of the fakts while it cannot resolve the
+   * hub's node, and nothing brings it back before the next token refresh, up
+   * to an hour later. So a service that stays down in a profile with a mesh,
+   * with no mesh address to try, asks for fresh fakts — rarely. What they
+   * change is checked through `adoptLiveSession`.
+   */
+  const refreshStaleFakts = async (serviceKeys: string[]) => {
+    const mesh = activeMesh();
+    const session = store.getState().storedSession;
+    const now = Date.now();
+    if (!mesh || !session || now - lastFaktsRefreshRef.current < FAKTS_REFRESH_EVERY_MS) return;
+    const stuck = serviceKeys.some((key) => {
+      const link = linksRef.current[key];
+      const aliases = session.fakts.instances[key]?.aliases ?? [];
+      return link?.phase === "down" && now - link.since >= FAKTS_STALE_AFTER_MS && !aliases.some((alias) => viaMesh(alias, mesh));
+    });
+    if (!stuck) return;
+    lastFaktsRefreshRef.current = now;
+    await refreshTokenRef.current({ forceRefresh: true }).catch((error) =>
+      console.warn("[arkitekt] could not refresh the fakts of a service that stays down:", error),
+    );
+  };
+
+  /** A check the supervisor asked for: quiet, and only of a session that is live. */
+  const supervise = async (serviceKeys: string[]) => {
+    if (!store.getState().storedSession) return;
+    await refreshStaleFakts(serviceKeys);
+    await validateServices(serviceKeys, { quiet: true });
+  };
+  superviseRef.current = supervise;
+  recomputeRef.current = () => recompute();
+
+  /** A service's client could not reach it: count it, and check the service once it keeps happening. */
+  const noteNetworkError = (serviceKey: string) => {
+    dispatchLink(serviceKey, { type: "network-error" });
+    supervisorRef.current?.networkError(serviceKey);
+  };
+
+  /**
+   * Follow the active profile's mesh node. When it comes up, its MagicDNS
+   * suffix is cached on the profile (so its names are known before the node
+   * runs next time) and whatever was down is checked again; when it stops,
+   * whatever was reached through it is.
+   */
+  const watchActiveMesh = (supervisor: Supervisor): (() => void) => {
+    const meshes = meshStatusStore();
+    if (!meshes.available) return () => {};
+    let seen: { id: string; running: boolean } | undefined;
+    const look = () => {
+      const payload = meshes.getSnapshot().payload;
+      const mesh = activeMesh();
+      if (!payload || !mesh) return;
+      const status = payload.meshes.find((snapshot) => snapshot.config.id === mesh.id)?.status;
+      const running = status?.state === "running" && !!status.proxyPort;
+      const suffix = running ? status?.magicDnsSuffix : undefined;
+      if (suffix && suffix !== mesh.magicDnsSuffix) {
+        void persistBook((book) => {
+          const owner = Object.values(book.profiles).find((profile) => profile.mesh?.id === mesh.id);
+          return owner ? updateProfileMesh(book, owner.id, (m) => (m ? { ...m, magicDnsSuffix: suffix } : m)) : book;
+        });
+      }
+      const before = seen?.id === mesh.id ? seen.running : false;
+      seen = { id: mesh.id, running };
+      if (before === running) return;
+      if (running) supervisor.meshUp();
+      else supervisor.meshDown();
+    };
+    const unsubscribe = meshes.subscribe(look);
+    look();
+    return unsubscribe;
+  };
 
   /**
    * Make a session the live one: hydrate every client, settle, and start the
@@ -1365,8 +1460,24 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
     const unsubscribe = store.subscribe((next, previous) => {
       if (next.activity.kind === "settled" && previous.activity.kind !== "settled") endSession();
     });
+    const supervisor = createSupervisor({
+      links: () => linksRef.current,
+      check: (serviceKeys) => void supervise(serviceKeys),
+      onMesh: (serviceKey) => {
+        const link = linksRef.current[serviceKey];
+        return link?.phase === "up" && viaMesh(link.alias, activeMesh());
+      },
+    });
+    supervisorRef.current = supervisor;
+    supervisor.linksChanged();
+    const stopNetwork = watchNetwork(() => supervisor.networkChanged());
+    const stopMesh = watchActiveMesh(supervisor);
     return () => {
       unsubscribe();
+      stopNetwork();
+      stopMesh();
+      supervisor.dispose();
+      if (supervisorRef.current === supervisor) supervisorRef.current = undefined;
       // Cancel first: disposing the gate releases every check waiting on it.
       probeControllerRef.current.abort();
       meshGateRef.current.dispose();

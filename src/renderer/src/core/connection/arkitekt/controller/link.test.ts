@@ -26,15 +26,25 @@ describe("reduceLink", () => {
 
   it("goes down with the reason, and counts the failed checks in a row", () => {
     const down = run([{ type: "check", at: 1 }, { type: "unanswered", reason: "nobody home", at: 6 }]);
-    expect(down).toEqual({ phase: "down", reason: "nobody home", since: 6, at: 6, attempts: 1 });
+    expect(down).toEqual({ phase: "down", reason: "nobody home", since: 6, at: 6, attempts: 1, rechecking: false });
     expect(runtimeOf(down)).toEqual({ status: "invalid", errors: ["nobody home"], revalidating: false, lastCheckedAt: 6 });
     const again = run([{ type: "check", at: 20 }, { type: "unanswered", reason: "still nobody", at: 25 }], down);
-    expect(again).toEqual({ phase: "down", reason: "still nobody", since: 6, at: 25, attempts: 2 });
+    expect(again).toEqual({ phase: "down", reason: "still nobody", since: 6, at: 25, attempts: 2, rechecking: false });
     // Answering clears the count.
     expect(run([{ type: "check", at: 30 }, { type: "answered", alias: A, at: 31 }, { type: "unanswered", reason: "gone", at: 40 }], again)).toMatchObject({
       since: 40,
       attempts: 1,
     });
+  });
+
+  it("stays down, without flipping to checking, through a check nobody asked for", () => {
+    const down = run([{ type: "check", at: 1 }, { type: "unanswered", reason: "nobody home", at: 6 }]);
+    const quiet = run([{ type: "check", at: 20, quiet: true }], down);
+    expect(runtimeOf(quiet)).toEqual({ status: "invalid", errors: ["nobody home"], revalidating: true, lastCheckedAt: 6 });
+    expect(run([{ type: "unanswered", reason: "still nobody", at: 25 }], quiet)).toMatchObject({ since: 6, attempts: 2, rechecking: false });
+    expect(run([{ type: "answered", alias: A, at: 25 }], quiet)).toMatchObject({ phase: "up" });
+    // One the user asked for shows that it is being checked.
+    expect(runtimeOf(run([{ type: "check", at: 20 }], down))).toMatchObject({ status: "checking" });
   });
 
   it("forgets everything for a new session", () => {
@@ -56,7 +66,10 @@ describe("suspicion and retries", () => {
 
   it("retries a down link after 5 s, doubling, a minute at most", () => {
     expect([1, 2, 3, 4, 5, 9].map(retryDelay)).toEqual([5_000, 10_000, 20_000, 40_000, 60_000, 60_000]);
-    expect(retryAt({ phase: "down", reason: "x", since: 0, at: 100, attempts: 2 })).toBe(10_100);
+    const down: Link = { phase: "down", reason: "x", since: 0, at: 100, attempts: 2, rechecking: false };
+    expect(retryAt(down)).toBe(10_100);
+    // Not while a check of it is already running.
+    expect(retryAt({ ...down, rechecking: true })).toBeUndefined();
     expect(retryAt(IDLE)).toBeUndefined();
   });
 });

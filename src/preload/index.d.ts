@@ -41,6 +41,7 @@ import type {
   MeshPingResult,
   MeshStatusPayload,
 } from "../main/mesh/protocol";
+import type { NetworkChange } from "../main/network/protocol";
 
 /**
  * Organisation meshes (the built-in userspace Tailscale node per mesh).
@@ -225,6 +226,8 @@ declare global {
       voice: VoiceApi;
       doctor: DoctorApi;
       mesh: MeshApi;
+      /** The computer's network may have changed (an address came or went, it woke from sleep). */
+      network: { onChange: (cb: (change: NetworkChange) => void) => () => void };
       bluetooth: BluetoothApi;
       wifi: WifiApi;
       executeElectron: (task: Assign) => Promise<void>;

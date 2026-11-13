@@ -9,6 +9,7 @@ import type { ServiceRuntimeState } from "../types";
  *                  unanswered          unanswered
  *                      ▼                   ▼
  *                    down ──check──▶ probing (attempts kept)
+ *                      └──quiet check──▶ down (rechecking)
  *
  * The rule it exists for: a service is `up` only on an address that answered
  * in THIS session. It used to start out "ready" on whatever address was
@@ -29,12 +30,19 @@ export type Link =
    * `failures`: network errors its client reported since it last answered.
    */
   | { phase: "up"; alias: Alias; verifiedAt: number; rechecking: boolean; failures: number }
-  /** No address answered. `since` is when it went down, `at` the last failed check. */
-  | { phase: "down"; reason: string; since: number; at: number; attempts: number };
+  /**
+   * No address answered. `since` is when it went down, `at` the last failed
+   * check. `rechecking` while a quiet check runs: it stays down meanwhile.
+   */
+  | { phase: "down"; reason: string; since: number; at: number; attempts: number; rechecking: boolean };
 
 export type LinkEvent =
-  /** A check starts. */
-  | { type: "check"; at: number }
+  /**
+   * A check starts. `quiet` is one nobody asked for (a retry, a network
+   * change): a link that is down stays down while it runs, so the page that
+   * says so does not flip to "connecting" and back every time.
+   */
+  | { type: "check"; at: number; quiet?: boolean }
   /** An address answered its challenge. */
   | { type: "answered"; alias: Alias; at: number }
   /** Every address said no. */
@@ -53,6 +61,7 @@ export const reduceLink = (link: Link, event: LinkEvent): Link => {
     case "check":
       if (link.phase === "up") return link.rechecking ? link : { ...link, rechecking: true };
       if (link.phase === "probing") return link;
+      if (link.phase === "down" && event.quiet) return link.rechecking ? link : { ...link, rechecking: true };
       // A check of a link that is down remembers how long it has been.
       return link.phase === "down"
         ? { phase: "probing", since: event.at, attempts: link.attempts, downSince: link.since }
@@ -66,6 +75,7 @@ export const reduceLink = (link: Link, event: LinkEvent): Link => {
         since: link.phase === "down" ? link.since : link.phase === "probing" ? (link.downSince ?? event.at) : event.at,
         at: event.at,
         attempts: (link.phase === "down" || link.phase === "probing" ? link.attempts : 0) + 1,
+        rechecking: false,
       };
     case "network-error":
       return link.phase === "up" ? { ...link, failures: link.failures + 1 } : link;
@@ -86,9 +96,9 @@ const RETRY_CAP_MS = 60_000;
 export const retryDelay = (attempts: number): number =>
   Math.min(RETRY_CAP_MS, RETRY_BASE_MS * 2 ** Math.max(0, attempts - 1));
 
-/** When a `down` link is due for its next check; undefined for any other. */
+/** When a `down` link is due for its next check; undefined for any other, and while one runs. */
 export const retryAt = (link: Link): number | undefined =>
-  link.phase === "down" ? link.at + retryDelay(link.attempts) : undefined;
+  link.phase === "down" && !link.rechecking ? link.at + retryDelay(link.attempts) : undefined;
 
 /** A link, in the fields the guards and pages read. Nothing for one never checked. */
 export const runtimeOf = (link: Link): Partial<ServiceRuntimeState> => {
@@ -100,6 +110,6 @@ export const runtimeOf = (link: Link): Partial<ServiceRuntimeState> => {
     case "up":
       return { status: "ready", errors: [], revalidating: link.rechecking, lastCheckedAt: link.verifiedAt };
     case "down":
-      return { status: "invalid", errors: [link.reason], revalidating: false, lastCheckedAt: link.at };
+      return { status: "invalid", errors: [link.reason], revalidating: link.rechecking, lastCheckedAt: link.at };
   }
 };

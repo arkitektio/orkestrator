@@ -1,5 +1,5 @@
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { app, shell, IpcMainEvent, MessageChannelMain, net, safeStorage, systemPreferences, utilityProcess } from "electron";
+import { app, shell, IpcMainEvent, MessageChannelMain, net, powerMonitor, safeStorage, systemPreferences, utilityProcess } from "electron";
 import { resolve, join } from "path";
 import icon from "../../resources/icon.png?asset";
 import { machineId } from "node-machine-id";
@@ -33,6 +33,7 @@ import { FactoryResetService, finishFactoryReset } from "./modules/FactoryReset"
 import { DoctorService, defaultDoctorDeps } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
 import { ModelStore } from "./voice/ModelStore";
+import { NetworkWatch } from "./network/NetworkWatch";
 import { MeshService } from "./mesh/MeshService";
 import { meshdBinaryPath } from "./mesh/meshdLocate";
 import { windowsFirewallState } from "./mesh/firewall";
@@ -250,6 +251,13 @@ appManager.register(factoryResetService);
 appManager.register(doctorService);
 appManager.register(voiceService);
 appManager.register(meshService);
+// Tells every window when the network may have changed (an address came or
+// went, the computer woke up), so the connection checks its services again.
+appManager.register(
+  new NetworkWatch(transport, windowManager, {
+    onResume: (listener) => void app.whenReady().then(() => powerMonitor.on("resume", listener)),
+  }),
+);
 
 let electronAgent: AgentGateway | null = null;
 

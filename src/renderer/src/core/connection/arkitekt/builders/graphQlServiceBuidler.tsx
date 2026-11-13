@@ -7,6 +7,7 @@ import {
   split,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
+import { onError } from "@apollo/client/link/error";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { aliasToHttpPath, aliasToWsPath } from "../alias/helpers";
@@ -29,7 +30,7 @@ export type GraphQLServiceBuilderOptions = {
 export const createGraphQLServiceBuilder =
   (possibleTypes: any, builderOptions?: GraphQLServiceBuilderOptions): ServiceBuilder<Service<ApolloClient<any>>> =>
     (options) => {
-      const { alias, getToken } = options;
+      const { alias, getToken, onNetworkError } = options;
 
       const httpLink = createHttpLink({
         uri: aliasToHttpPath(alias, "graphql"),
@@ -48,6 +49,15 @@ export const createGraphQLServiceBuilder =
 
       const wsClient = createClient({
         url: aliasToWsPath(alias, "graphql"),
+        // The socket keeps trying for as long as the client lives. Giving up
+        // after five attempts (the library's default) left every subscription
+        // dead for good after half a minute without a network; whether this
+        // ADDRESS is dead is the connection's call, and it disposes the
+        // client when it is. Fatal close codes (4401 and friends) still end it.
+        retryAttempts: Infinity,
+        shouldRetry: () => true,
+        retryWait: (retries) =>
+          new Promise((resolve) => setTimeout(resolve, Math.min(30_000, 1_000 * 2 ** retries) + Math.random() * 1_000)),
         connectionParams: async () => {
           // Re-evaluated on every (re)connect, so a socket that comes back for
           // any reason authenticates with a current token.
@@ -85,8 +95,17 @@ export const createGraphQLServiceBuilder =
         },
       });
 
+      // A request that never got an answer — not one answered with an error,
+      // not one this app cancelled — says something about the address, so the
+      // connection hears of it (`controller/supervisor.ts`).
+      const reachLink = onError(({ networkError, operation }) => {
+        if (!networkError || isSubscriptionQuery(operation.query)) return;
+        if ("statusCode" in networkError || networkError.name === "AbortError") return;
+        onNetworkError?.();
+      });
+
       const client = new ApolloClient({
-        link: authRetryLink.concat(splitLink),
+        link: authRetryLink.concat(reachLink).concat(splitLink),
         cache: new InMemoryCache({
           possibleTypes,
           typePolicies: builderOptions?.typePolicies,
