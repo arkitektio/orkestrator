@@ -1,5 +1,6 @@
 import { splitRefreshResponse, type RefreshResult } from "../fakts/pollToken";
 import { TokenResponse } from "../fakts/tokenSchema";
+import { toast } from "@/core/notify";
 
 const TOKEN_REFRESH_SKEW_MS = 60_000;
 
@@ -54,6 +55,48 @@ export const isAbortLikeError = (error: unknown): boolean => {
 };
 
 /**
+ * What this app is NOW, sent along with every refresh.
+ *
+ * lok compares it with the manifest that was approved. After an update it
+ * differs: if it asks for nothing more, lok moves this installation to the new
+ * release by itself (same session, same `client_id` here); if it asks for
+ * more, lok changes nothing and answers `manifest_status: "approval_required"`.
+ *
+ * Only ever the ENHANCED manifest (with this machine's node id): one without
+ * it reads to lok as another device. The controller sets it once it has one.
+ */
+let offeredManifest: (() => unknown | undefined) | null = null;
+/** Starts a new approval for the live profile, when it is `tokenEndpoint`'s (the controller's `reconnect`). */
+let approve: ((tokenEndpoint: string) => (() => void) | undefined) | null = null;
+
+export const offerManifestOnRefresh = (
+  get: (() => unknown | undefined) | null,
+  approveFor: ((tokenEndpoint: string) => (() => void) | undefined) | null = null,
+): void => {
+  offeredManifest = get;
+  approve = approveFor;
+  approvalAsked.clear();
+};
+
+/** Deployments already told about, by token endpoint: a parked profile's must not use up the live one's. */
+const approvalAsked = new Set<string>();
+
+/** Tell the user, once per deployment and window, that this version needs approving again. */
+const askForApproval = (tokenEndpoint: string) => {
+  if (approvalAsked.has(tokenEndpoint)) return;
+  approvalAsked.add(tokenEndpoint);
+  const start = approve?.(tokenEndpoint);
+  toast.info("This version of Orkestrator needs your approval", {
+    id: `manifest-approval:${tokenEndpoint}`,
+    description: start
+      ? "It asks for more than you approved before, and keeps working with what was approved until you approve the rest."
+      : "It asks for more than you approved before on one of your accounts. It keeps working there with what was approved; sign in to that account again to approve the rest.",
+    duration: Infinity,
+    action: start ? { label: "Approve", onClick: start } : undefined,
+  });
+};
+
+/**
  * Refresh as a public client: `client_id` only, no secret.
  *
  * The refresh token rotates on every use, so the returned one must always be
@@ -72,6 +115,7 @@ export const refreshAccessToken = async (
     throw new Error("No refresh token available – cannot refresh");
   }
 
+  const manifest = offeredManifest?.();
   const response = await fetch(tokenEndpoint, {
     method: "POST",
     headers: {
@@ -81,6 +125,7 @@ export const refreshAccessToken = async (
       grant_type: "refresh_token",
       refresh_token: currentToken.refresh_token,
       client_id: currentToken.client_id,
+      ...(manifest ? { manifest: JSON.stringify(manifest) } : {}),
     }),
     signal: controller?.signal,
   });
@@ -93,6 +138,8 @@ export const refreshAccessToken = async (
       typeof json?.error === "string" ? json.error : undefined,
     );
   }
+
+  if (json?.manifest_status === "approval_required") askForApproval(tokenEndpoint);
 
   return splitRefreshResponse(json);
 };

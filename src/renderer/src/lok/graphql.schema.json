@@ -1028,7 +1028,7 @@
         "fields": [
           {
             "name": "clientId",
-            "description": "The OAuth2 client id this client authenticates as.",
+            "description": "The id the services know this client by: the `client_id` claim of its tokens. It is the client's own OAuth2 client id until the client has run more than one release of its app, and from then on one per release, so that what it did as an earlier version stays that version's. A client can still be looked up by any id it has had.",
             "args": [],
             "type": {
               "kind": "NON_NULL",

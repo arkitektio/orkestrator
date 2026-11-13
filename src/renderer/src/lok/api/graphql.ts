@@ -184,7 +184,7 @@ export type CancelInviteInput = {
  */
 export type Client = {
   __typename?: 'Client';
-  /** The OAuth2 client id this client authenticates as. */
+  /** The id the services know this client by: the `client_id` claim of its tokens. It is the client's own OAuth2 client id until the client has run more than one release of its app, and from then on one per release, so that what it did as an earlier version stays that version's. A client can still be looked up by any id it has had. */
   clientId: Scalars['String']['output'];
   /** Is this client functional? A functional client is a client that is able to authenticate users. If a client is not functional, it will not be able to authenticate users. */
   functional: Scalars['Boolean']['output'];

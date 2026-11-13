@@ -94,18 +94,53 @@ export const TelemetryPage = () => (
             Bug reports
           </CardTitle>
           <CardDescription>
-            Reporting a bug opens a GitHub issue in your browser with the text already filled
-            in. With this on, that text includes the detected hardware, which makes rendering
-            problems far easier to reproduce. These details are not anonymous: they describe
-            your computer, and an issue is public once you submit it. You can read and edit the
-            text before you do.
+            “Report a bug” asks one thing, what is wrong, and sends your answer to the admins of
+            your organization together with the parts switched on here. To look at a part before
+            it goes, or to change this for a single report, press “Debug yourself” in the report.
+            The version of Orkestrator, your operating system and the page you are on always go
+            along.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <SwitchField
+            name="telemetryReportScreenshot"
+            label="Screenshot"
+            description="A picture of the window as it is when you ask to report."
+          />
+          <SwitchField
+            name="telemetryReportErrors"
+            label="Recent errors"
+            description="The last errors this window showed or ran into, with their technical text."
+          />
+          <SwitchField
+            name="telemetryReportRequests"
+            label="Failed requests"
+            description="Which requests to the server failed and what it answered. Never what it returned."
+          />
+          <SwitchField
+            name="telemetryReportSteps"
+            label="Steps before the report"
+            description="The pages you opened and the dialogs and actions you used, by name."
+          />
+          <SwitchField
+            name="telemetryReportConsole"
+            label="Console warnings and errors"
+            description="The last warnings and errors the app logged."
+          />
+          <SwitchField
+            name="telemetryReportVariables"
+            label="Request variables"
+            description="The ids and inputs of the failed requests and of the page's queries."
+          />
+          <SwitchField
+            name="telemetryReportData"
+            label="What the page loaded"
+            description="The data the page's queries returned. This is your own data (names, metadata), so it is off unless you switch it on."
+          />
+          <SwitchField
             name="telemetryAttachHardware"
             label="Attach hardware details to bug reports"
-            description="Applies to reports filed from now on."
+            description="Makes rendering problems far easier to reproduce. Applies to reports filed from now on."
           />
           <ReportPreview />
         </CardContent>

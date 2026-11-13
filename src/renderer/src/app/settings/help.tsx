@@ -64,11 +64,12 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       intro="What Orkestrator learns about this computer, and what a bug report you file says about it. Nothing is sent by itself."
       steps={[
         <>Leave <b>Detect this computer's hardware</b> on to let Orkestrator size 3D scenes to your graphics card. Switch it off to forget what was detected.</>,
-        <>Leave <b>Attach hardware details to bug reports</b> on to include those details in the text of a report. The list below the switch shows exactly what would be included.</>,
+        <>Under “Bug reports”, switch each part a report may carry on or off: <b>Screenshot</b>, <b>Recent errors</b>, <b>Failed requests</b>, <b>Steps before the report</b>, <b>Console warnings and errors</b>, <b>Request variables</b> and <b>What the page loaded</b>.</>,
+        <>Leave <b>Attach hardware details to bug reports</b> on to include those details in a report. The list below the switch shows exactly what would be included.</>,
       ]}
       tips={[
-        <>Both are on until you switch them off.</>,
-        <>A bug report opens as a GitHub issue in your browser. You can edit its text before submitting, and it is public afterwards.</>,
+        <>Everything is on until you switch it off, except <b>What the page loaded</b>, which is off.</>,
+        <>A bug report goes to the admins of your organization. Press <b>Debug yourself</b> in the report to see each part and change it for that one report.</>,
       ]}
     />
   ),

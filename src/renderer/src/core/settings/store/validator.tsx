@@ -206,6 +206,20 @@ export const settingsValidator = zod.object({
   telemetryDetectHardware: zod.boolean(),
   /** Add the hardware snapshot to the text of a bug report the user files. */
   telemetryAttachHardware: zod.boolean(),
+  /**
+   * What a bug report carries by default, part by part
+   * (`core/diagnostics/reportSettings.ts`). The report dialog's "Debug
+   * yourself" can still change them for one report.
+   */
+  telemetryReportScreenshot: zod.boolean(),
+  telemetryReportErrors: zod.boolean(),
+  telemetryReportRequests: zod.boolean(),
+  telemetryReportSteps: zod.boolean(),
+  telemetryReportConsole: zod.boolean(),
+  /** The ids and inputs of failed requests and of the page's queries. */
+  telemetryReportVariables: zod.boolean(),
+  /** What the page's queries returned: the user's own data, so off unless asked for. */
+  telemetryReportData: zod.boolean(),
 });
 
 export const defaultSettings: Settings = {
@@ -253,6 +267,13 @@ export const defaultSettings: Settings = {
   rendererDecodeCacheMB: null,
   telemetryDetectHardware: true,
   telemetryAttachHardware: true,
+  telemetryReportScreenshot: true,
+  telemetryReportErrors: true,
+  telemetryReportRequests: true,
+  telemetryReportSteps: true,
+  telemetryReportConsole: true,
+  telemetryReportVariables: true,
+  telemetryReportData: false,
 };
 
 export type Settings = zod.infer<typeof settingsValidator>;

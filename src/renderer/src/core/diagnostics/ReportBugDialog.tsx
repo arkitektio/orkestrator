@@ -14,10 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
+import { useSettings } from "@/core/settings/store/SettingsContext";
+import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { Textarea } from "@/core/ui/textarea";
 import { isElectron } from "@/core/util/platform";
-import { Check, ChevronRight, Download, Github, Send } from "lucide-react";
+import { Check, ChevronRight, Download, Github, Send, Wrench } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import type { RecordedError } from "./recorder";
 import {
@@ -29,6 +31,7 @@ import {
   type BugReport,
   type ReportSelection,
 } from "./report";
+import { describeSelection, selectionFromSettings } from "./reportSettings";
 import { useReportSources } from "./useReportSources";
 
 /** The operation a module offers to take a report (lok: the organization's admins read it). */
@@ -97,10 +100,12 @@ const errorText = (errors: readonly RecordedError[]) =>
     .join("\n\n");
 
 /**
- * "Report a bug". The user says what happened; below, every part of what the
- * app recorded is listed with a tick box and can be opened to see exactly
- * what would go. The report is built once from the ticks (`buildReport`), and
- * that one object is what is previewed, sent, saved or turned into an issue.
+ * "Report a bug". Plain by default: one line, "What's wrong?", and Send. What
+ * goes along is what Settings → Telemetry says, named in one sentence.
+ * "Debug yourself" opens the rest: every part of what the app recorded, with
+ * a tick box, and what it holds. The report is built once from the ticks
+ * (`buildReport`), and that one object is what is shown, sent, saved or
+ * turned into an issue.
  *
  * Sent to the user's own deployment (`lok.fileBugReport`), where its admins
  * read it. Signed out, or the server away: saved as a file, or opened as a
@@ -118,7 +123,11 @@ export const ReportBugDialog = ({
   const sources = useReportSources({ screenshot, pinned });
   const [description, setDescription] = useState("");
   const [expected, setExpected] = useState("");
-  const [selection, setSelection] = useState<ReportSelection>(DEFAULT_SELECTION);
+  const { settings } = useSettings();
+  // What goes unless the user opens it up: the switches in Settings → Telemetry.
+  const [selection, setSelection] = useState<ReportSelection>(() => selectionFromSettings(settings));
+  // "Debug yourself": the parts, each with what it holds, and a tick box.
+  const [advanced, setAdvanced] = useState(false);
   const [saved, setSaved] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
   const descriptionId = useId();
@@ -217,6 +226,15 @@ export const ReportBugDialog = ({
     (all.requests?.filter((request) => request.variables !== undefined).length ?? 0) +
     (all.queries?.filter((query) => query.variables !== undefined).length ?? 0);
   const withData = all.queries?.filter((query) => query.data !== undefined) ?? [];
+  const included = describeSelection(selection, {
+    screenshot: !!sources.screenshot,
+    errors: !!all.errors?.length,
+    requests: !!all.requests?.length,
+    steps: !!all.steps?.length,
+    console: consoleLines > 0,
+    hardware: !!all.hardware?.length,
+    data: withData.length > 0,
+  });
 
   return (
     <>
@@ -224,34 +242,53 @@ export const ReportBugDialog = ({
         <DialogTitle>Report a bug</DialogTitle>
         <DialogDescription>
           {canSend
-            ? "Goes to the admins of your organization, on your own server. Below is everything the report would carry; untick what should stay here."
+            ? "Goes to the admins of your organization, on your own server."
             : "You are not signed in to a server that takes reports, so this one is saved as a file you can send, or opened as an issue on GitHub."}
         </DialogDescription>
       </DialogHeader>
       <DialogForm onSubmit={onSubmit}>
         <DialogBody>
           <div className="space-y-1.5">
-            <Label htmlFor={descriptionId}>What happened?</Label>
-            <Textarea
-              id={descriptionId}
-              autoFocus
-              required
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="What you did, and what went wrong"
-              className="min-h-20"
-            />
+            <Label htmlFor={descriptionId}>What's wrong?</Label>
+            {advanced ? (
+              <Textarea
+                id={descriptionId}
+                autoFocus
+                required
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="What you did, and what went wrong"
+                className="min-h-20"
+              />
+            ) : (
+              <Input
+                id={descriptionId}
+                autoFocus
+                required
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="One sentence is enough"
+              />
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={expectedId}>What did you expect instead?</Label>
-            <Textarea
-              id={expectedId}
-              value={expected}
-              onChange={(event) => setExpected(event.target.value)}
-              placeholder="Optional"
-              className="min-h-10"
-            />
-          </div>
+          {advanced && (
+            <div className="space-y-1.5">
+              <Label htmlFor={expectedId}>What did you expect instead?</Label>
+              <Textarea
+                id={expectedId}
+                value={expected}
+                onChange={(event) => setExpected(event.target.value)}
+                placeholder="Optional"
+                className="min-h-10"
+              />
+            </div>
+          )}
+          {!advanced && (
+            <p className="text-xs text-muted-foreground">
+              {included ? `Sent with it: ${included}, and which version and page you are on.` : "Sent with it: only which version and page you are on."}{" "}
+              Settings → Telemetry decides what goes along.
+            </p>
+          )}
 
           {all.pinned && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
@@ -263,6 +300,7 @@ export const ReportBugDialog = ({
             </div>
           )}
 
+          {advanced && (
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sent with it</p>
             <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
@@ -371,23 +409,36 @@ export const ReportBugDialog = ({
               />
             )}
           </div>
+          )}
         </DialogBody>
         <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            className="mr-auto"
+            aria-expanded={advanced}
+            onClick={() => setAdvanced((value) => !value)}
+          >
+            <Wrench />
+            {advanced ? "Keep it simple" : "Debug yourself"}
+          </Button>
           {isElectron() && (!canSend || sendFailed) && (
             <Button type="button" variant="outline" disabled={!described} onClick={openIssue}>
               <Github />
               Open GitHub issue
             </Button>
           )}
-          <Button
-            type={canSend ? "button" : "submit"}
-            variant={canSend ? "outline" : "default"}
-            disabled={!described}
-            onClick={canSend ? () => void save() : undefined}
-          >
-            {saved ? <Check /> : <Download />}
-            {saved ? "Saved" : "Save as file"}
-          </Button>
+          {(advanced || !canSend || sendFailed) && (
+            <Button
+              type={canSend ? "button" : "submit"}
+              variant={canSend ? "outline" : "default"}
+              disabled={!described}
+              onClick={canSend ? () => void save() : undefined}
+            >
+              {saved ? <Check /> : <Download />}
+              {saved ? "Saved" : "Save as file"}
+            </Button>
+          )}
           {canSend && (
             <Button type="submit" disabled={!described || submitting}>
               <Send />

@@ -77,6 +77,7 @@ import {
   normalizeToken,
   RefreshTokenError,
   shouldRefreshToken,
+  offerManifestOnRefresh,
 } from "../runtime/auth";
 import { disposeConnection, instantiateConnection, type ServiceMap } from "../runtime/connection";
 import {
@@ -554,6 +555,23 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
     }
 
     const enhancedManifest = await enhanceManifest(manifest);
+    // From here on every refresh says what this app is now, so an update is
+    // adopted by lok without a new approval (`runtime/auth.ts`).
+    // Not without the node id where there should be one (the IPC failed): to
+    // lok that would be another device.
+    offerManifestOnRefresh(
+      () => {
+        const current = store.getState().manifest;
+        return typeof window !== "undefined" && window.api && !current.node_id ? undefined : current;
+      },
+      // When lok wants a person to approve the new version: one click starts a
+      // fresh grant for the live profile, which stays up until it lands. Only
+      // for the live profile; a parked one is approved when it is signed in to.
+      (tokenEndpoint) =>
+        store.getState().storedSession?.endpoint.token_endpoint === tokenEndpoint
+          ? () => void reconnect().catch(() => {})
+          : undefined,
+    );
     store.setState((state) => ({
       manifest: enhancedManifest,
       connection: state.connection

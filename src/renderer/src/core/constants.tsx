@@ -40,10 +40,21 @@ export const ALL_SCOPES = [
   "rekuest_all",
 ];
 
+/** package.json's version; a fixed one where no build set it (tests). */
+export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "0.0.0";
+
 export const manifest: Manifest = {
-  version: "0.0.1",
+  // The app's real version. lok keeps one client per installation and gives
+  // it an identity per release in its tokens, so what this app did as an
+  // earlier version stays that version's. A new version is sent along with the
+  // next token refresh and adopted without re-approval, unless it asks for
+  // more than was approved (`runtime/auth.ts`).
+  version: APP_VERSION,
   identifier: "live.arkitekt.orkestrator",
   scopes: ALL_SCOPES,
+  // lok builds a client's issue tracker from the `github` source: it is where
+  // an admin forwards a bug report filed from this app (lok → Bug reports).
+  public_sources: [{ kind: "github", url: "https://github.com/arkitektio/orkestrator" }],
   requirements: [
     {
       key: "lok",
