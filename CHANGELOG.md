@@ -1,3 +1,10 @@
+# [6.3.0](https://github.com/arkitektio/orkestrator/compare/v6.2.0...v6.3.0) (2026-11-13)
+
+
+### Features
+
+* the app registers under its real version, and a bug report asks one thing ([50b74de](https://github.com/arkitektio/orkestrator/commit/50b74de67ed5a976febf09ea8bb6e2f5a2fd9ba0))
+
 # [6.2.0](https://github.com/arkitektio/orkestrator/compare/v6.1.0...v6.2.0) (2026-11-13)
 
 
