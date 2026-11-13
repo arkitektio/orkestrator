@@ -17,10 +17,12 @@ import {
   MyTasksQuery,
 } from "../api/graphql";
 import {
+  deliverToCallback,
   isTerminalEvent,
   referenceForId,
   takeBufferedEvents,
   taskEventChangeToEvent,
+  trackedTasks,
 } from "./taskTracker";
 
 /**
@@ -206,6 +208,28 @@ export const hydrateFullTask = (
   id: string,
 ): Promise<PostmanTaskFragment | undefined> =>
   fetchTask<FullTaskQuery>(client, FullTaskDocument, id);
+
+/**
+ * The subscription socket came back: whatever the locally tracked tasks
+ * reported while it was down was never sent. Read each one again and hand its
+ * tracker what it has not seen, oldest first, so a form waiting for a task
+ * that ended in the gap hears of it. What a tracker already has is skipped
+ * (`deliverToCallback`); the read also brings the cached task up to date.
+ */
+export const catchUpTrackedTasks = async (client: RekuestClient) => {
+  await Promise.all(
+    trackedTasks().map(async ({ id, reference }) => {
+      const task = await hydrateTask(client, id);
+      if (!task) return;
+      const oldestFirst = [...task.events].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
+          Number(a.id) - Number(b.id),
+      );
+      for (const event of oldestFirst) deliverToCallback(reference, event);
+    }),
+  );
+};
 
 /**
  * A thin `create` carries only ids, so fetch the full task once and insert it

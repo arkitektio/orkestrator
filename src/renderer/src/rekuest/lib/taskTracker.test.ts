@@ -12,6 +12,7 @@ import {
   referenceForId,
   registeredCallbacks,
   taskEventChangeToEvent,
+  trackedTasks,
   trackTask,
 } from "./taskTracker";
 
@@ -102,5 +103,49 @@ describe("delivering task events to a local tracker", () => {
     deliverHeldEvents("c"); // the assign response
 
     expect(callback).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("an event that comes twice", () => {
+  it("reaches a tracker once: off the subscription, or off the task's history", () => {
+    const seen: string[] = [];
+    trackTask("ref-twice", (event) => seen.push(event.id));
+    const started = taskEventChangeToEvent(change("t-twice", TaskEventKind.Started), "ref-twice");
+    const done = taskEventChangeToEvent(change("t-twice", TaskEventKind.Completed), "ref-twice");
+
+    deliverToCallback("ref-twice", started);
+    deliverToCallback("ref-twice", started);
+    deliverToCallback("ref-twice", done);
+    deliverToCallback("ref-twice", done);
+
+    expect(seen).toEqual([started.id, done.id]);
+    expect(registeredCallbacks.has("ref-twice")).toBe(false);
+  });
+
+  it("is told again to a tracker that registers anew for the reference", () => {
+    const first: string[] = [];
+    const stop = trackTask("ref-anew", (event) => first.push(event.id));
+    const started = taskEventChangeToEvent(change("t-anew", TaskEventKind.Started), "ref-anew");
+    deliverToCallback("ref-anew", started);
+    stop();
+
+    const second: string[] = [];
+    trackTask("ref-anew", (event) => second.push(event.id));
+    deliverToCallback("ref-anew", started);
+
+    expect([first, second]).toEqual([[started.id], [started.id]]);
+  });
+});
+
+describe("trackedTasks", () => {
+  it("lists the tasks a component still tracks and whose id is known", () => {
+    trackTask("ref-known", () => {});
+    trackTask("ref-unknown", () => {});
+    mapReference("t-known", "ref-known");
+    mapReference("t-untracked", "ref-nobody");
+
+    expect(trackedTasks()).toContainEqual({ id: "t-known", reference: "ref-known" });
+    expect(trackedTasks().map((task) => task.reference)).not.toContain("ref-nobody");
+    expect(trackedTasks().map((task) => task.reference)).not.toContain("ref-unknown");
   });
 });

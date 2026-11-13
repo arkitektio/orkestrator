@@ -143,3 +143,46 @@ describe("websocket re-authentication", () => {
     client.dispose();
   });
 });
+
+/**
+ * What the service builder hangs its refetch on: graphql-ws says `connected`
+ * with `wasRetry` only for a socket that REPLACES one that dropped under a
+ * running subscription. The first socket is not a reconnect.
+ */
+describe("a socket that comes back", () => {
+  it("says so once it replaces a dropped one, and not for the first", async () => {
+    const connections: boolean[] = [];
+    const client = createClient({
+      url: "ws://localhost/graphql",
+      webSocketImpl: FakeWebSocket,
+      retryAttempts: 5,
+      on: { connected: (_socket, _payload, wasRetry) => connections.push(wasRetry) },
+    });
+    client.subscribe(
+      { query: "subscription { __typename }" },
+      { next: () => {}, error: () => {}, complete: () => {} },
+    );
+    await flush();
+    sockets[0].open();
+    await flush();
+    sockets[0].ack();
+    await flush();
+    expect(connections).toEqual([false]);
+
+    // The network drops under the running subscription.
+    sockets[0].readyState = FakeWebSocket.CLOSED;
+    sockets[0].onclose?.({ code: 1006, reason: "", wasClean: false });
+    await flush();
+
+    expect(sockets).toHaveLength(2);
+    sockets[1].open();
+    await flush();
+    sockets[1].ack();
+    await flush();
+    expect(connections).toEqual([false, true]);
+    // ... and the subscription is asked for again on the new socket.
+    expect(sockets[1].sent.some((frame) => frame.type === "subscribe")).toBe(true);
+
+    client.dispose();
+  });
+});

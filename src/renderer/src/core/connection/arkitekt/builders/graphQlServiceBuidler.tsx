@@ -1,3 +1,4 @@
+import { emitSocketReconnect } from "@/core/connection/graphql/reconnects";
 import {
   ApolloClient,
   ApolloLink,
@@ -58,8 +59,18 @@ export const createGraphQLServiceBuilder =
         };
       }).concat(httpLink);
 
+      // Set once the Apollo client exists (it is built on top of this socket).
+      let onSocketBack: (() => void) | undefined;
+
       const wsClient = createClient({
         url: aliasToWsPath(alias, "graphql"),
+        on: {
+          // `wasRetry`: this socket replaces one that dropped. Its subscriptions
+          // are subscribed again, but nothing published in between is resent.
+          connected: (_socket, _payload, wasRetry) => {
+            if (wasRetry) onSocketBack?.();
+          },
+        },
         // The socket keeps trying for as long as the client lives. Giving up
         // after five attempts (the library's default) left every subscription
         // dead for good after half a minute without a network; whether this
@@ -148,6 +159,15 @@ export const createGraphQLServiceBuilder =
         }),
         devtools: { enabled: import.meta.env.DEV },
       });
+
+      onSocketBack = () => {
+        // What the subscriptions would have kept current is read again; a module
+        // with state of its own beside the cache hears of it too.
+        client
+          .refetchQueries({ include: "active" })
+          .catch((e) => console.warn("[arkitekt] refetch after a socket reconnect failed:", e));
+        emitSocketReconnect(client);
+      };
 
       const ward = buildGraphQlWard(client, { describe: builderOptions?.describe });
 

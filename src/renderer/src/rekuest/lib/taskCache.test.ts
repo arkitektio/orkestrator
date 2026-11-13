@@ -1,12 +1,12 @@
 import { ApolloClient, ApolloLink, InMemoryCache, Observable, gql } from "@apollo/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { REKUEST_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import rekuestResult from "../api/fragments";
 import { MyTasksDocument, TaskEventKind, type MyTasksQuery, type TaskEventChangeFragment } from "../api/graphql";
-import { eventWindowOf, writeTaskEventToCache } from "./taskCache";
+import { catchUpTrackedTasks, eventWindowOf, writeTaskEventToCache } from "./taskCache";
 import { shouldAutoDismiss, taskRank } from "./taskIsland";
-import { taskEventChangeToEvent } from "./taskTracker";
+import { mapReference, registeredCallbacks, taskEventChangeToEvent, trackTask } from "./taskTracker";
 
 /** One running task, in the `LiveTask` shape the server answers `myTasks` with. */
 const runningTask = (id: string) => ({
@@ -172,5 +172,66 @@ describe("writeTaskEventToCache", () => {
     const { apply, close } = await setup();
     expect(apply({ ...change(TaskEventKind.Progress, "p1"), task: "unknown" })).toBe(false);
     close();
+  });
+});
+
+describe("catchUpTrackedTasks", () => {
+  /** A task as the server has it now: it went on and ended while the socket was down. */
+  const endedMeanwhile = (id: string, reference: string) => {
+    const task = runningTask(id);
+    const event = (eventId: string, kind: TaskEventKind, createdAt: string) => ({
+      ...task.events[0],
+      id: eventId,
+      kind,
+      createdAt,
+      task: { __typename: "Task", id, reference },
+    });
+    return {
+      ...task,
+      reference,
+      latestEventKind: TaskEventKind.Completed,
+      // Newest first, as `LiveTask` selects them.
+      events: [
+        event("13", TaskEventKind.Completed, "2026-10-13T10:00:09Z"),
+        event("12", TaskEventKind.Yield, "2026-10-13T10:00:09Z"),
+        event("11", TaskEventKind.Started, "2026-10-13T10:00:01Z"),
+      ],
+    };
+  };
+
+  it("hands a tracker what its task reported while the socket was down, oldest first and once", async () => {
+    registeredCallbacks.clear();
+    const seen: string[] = [];
+    trackTask("ref-gap", (event) => seen.push(`${event.id}:${event.kind}`));
+    mapReference("7", "ref-gap");
+    const task = endedMeanwhile("7", "ref-gap");
+    // The tracker had the start off the subscription before the socket dropped.
+    const { deliverToCallback } = await import("./taskTracker");
+    deliverToCallback("ref-gap", task.events[2] as never);
+
+    const query = vi.fn(async () => ({ data: { task } }));
+    await catchUpTrackedTasks({ query } as never);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(["11:STARTED", "12:YIELD", "13:COMPLETED"]);
+    expect(registeredCallbacks.has("ref-gap")).toBe(false);
+
+    // Nothing is tracked any more: the next reconnect reads nothing.
+    await catchUpTrackedTasks({ query } as never);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a tracker alone when its task cannot be read", async () => {
+    registeredCallbacks.clear();
+    const seen: string[] = [];
+    trackTask("ref-unread", (event) => seen.push(event.id));
+    mapReference("8", "ref-unread");
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await catchUpTrackedTasks({ query: vi.fn(async () => Promise.reject(new Error("offline"))) } as never);
+
+    expect(seen).toEqual([]);
+    expect(registeredCallbacks.has("ref-unread")).toBe(true);
+    error.mockRestore();
   });
 });

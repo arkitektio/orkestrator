@@ -22,10 +22,12 @@ import {
   taskEventChangeToEvent,
 } from "../../lib/taskTracker";
 import {
+  catchUpTrackedTasks,
   createTaskEventQueue,
   flushBufferedEvents,
   hydrateAndInsertMyTask,
 } from "../../lib/taskCache";
+import { onSocketReconnect } from "@/core/connection/graphql/reconnects";
 import {
   notify as notifyTask,
   notifyMany as notifyTasks,
@@ -134,7 +136,17 @@ export const TaskUpdater = () => {
         }
       });
 
+    // A socket that dropped and came back sends nothing of what happened in
+    // between. The lists are refetched by the connection; the tasks a
+    // component tracks locally are told here what they missed.
+    const stopCatchingUp = onSocketReconnect(client, () => {
+      void catchUpTrackedTasks(client).catch((e) =>
+        console.warn("[rekuest] catching up tracked tasks failed:", e),
+      );
+    });
+
     return () => {
+      stopCatchingUp();
       subscription.unsubscribe();
       events.flush();
     };

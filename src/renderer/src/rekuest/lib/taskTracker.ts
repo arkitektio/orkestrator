@@ -86,8 +86,16 @@ export const trackTask = (
   return () => {
     registeredCallbacks.delete(reference);
     globallyNotified.delete(reference);
+    deliveredEvents.delete(reference);
   };
 };
+
+/**
+ * The events a tracker was already handed, by reference. An event can come
+ * twice: from the subscription, and from the task's own history when the
+ * socket came back and what it missed is read (`catchUpTrackedTasks`).
+ */
+const deliveredEvents = new Map<string, Set<string>>();
 
 /**
  * References whose task wants the rail island ANYWAY.
@@ -159,13 +167,30 @@ export const deliverToCallback = (
   reference: string,
   event: TaskEventFragment,
 ) => {
-  registeredCallbacks.get(reference)?.(event);
+  const callback = registeredCallbacks.get(reference);
+  if (callback) {
+    let delivered = deliveredEvents.get(reference);
+    if (!delivered) {
+      delivered = new Set();
+      deliveredEvents.set(reference, delivered);
+    }
+    if (delivered.has(event.id)) return;
+    delivered.add(event.id);
+    callback(event);
+  }
   if (isTerminalEvent(event.kind)) {
     registeredCallbacks.delete(reference);
     globallyNotified.delete(reference);
+    deliveredEvents.delete(reference);
     forgetId(event.task.id);
   }
 };
+
+/** The tasks a component still tracks locally and whose id is known. */
+export const trackedTasks = (): { id: string; reference: string }[] =>
+  [...idToReference]
+    .filter(([, reference]) => registeredCallbacks.has(reference))
+    .map(([id, reference]) => ({ id, reference }));
 
 /**
  * Synthesize a cache-shaped `TaskEvent` from the thin `TaskEventChange` delta.
