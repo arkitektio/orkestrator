@@ -6,6 +6,8 @@
 fragment ActionBlok on ActionBlok {
   id
   context
+  # RUN for a run of the action, ASSIGN before one, to start it.
+  phase
   blok {
     id
     context

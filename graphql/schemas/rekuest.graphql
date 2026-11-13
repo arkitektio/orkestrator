@@ -16,6 +16,11 @@ type Action {
   args: [ArgPort!]!
 
   """
+  The action's own bloks for starting a run of it, at most one per context (phase ASSIGN): shown before there is a task, with the arguments being filled in as `args` and the agents a run would get as `deps`.
+  """
+  assignBloks: [ActionBlok!]!
+
+  """
   Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`.
   """
   assignable: Boolean!
@@ -141,6 +146,42 @@ type Action {
   version: String!
 }
 
+"""
+An entry of a user's auto list: an action that runs under their runs without asking them. It names the action by app and key, so every version of it; optionally the action that may ask for it; and optionally the one run it holds under.
+"""
+type ActionAllowance {
+  """
+  The action that runs without asking: its newest version. Null once no version of it is registered.
+  """
+  action: Action
+
+  """The app of the action that runs without asking."""
+  app: App!
+
+  """
+  The action that may ask for it: its newest version. Null for whoever asks.
+  """
+  asker: Action
+
+  """The app of the action that may ask for it; null for whoever asks."""
+  askerApp: App
+
+  """The key of the action that may ask for it; null for whoever asks."""
+  askerKey: String
+
+  """When it was allowed."""
+  createdAt: DateTime!
+
+  """Allowance ID."""
+  id: ID!
+
+  """The key of the action that runs without asking, in its app."""
+  key: String!
+
+  """The root task it holds under; null for every run of the user."""
+  run: Task
+}
+
 """A JSON-serializable argument entry for a multi-agent action trigger."""
 type ActionArgument {
   agentCall: AgentCall
@@ -199,6 +240,11 @@ type ActionBlok {
   """
   context: ComponentContext!
   id: ID!
+
+  """
+  When a client shows it: RUN for a run of the action, ASSIGN before one, to start it.
+  """
+  phase: ActionBlokPhase!
 }
 
 """
@@ -230,6 +276,11 @@ input ActionBlokInput {
   """
   module: String = null
 
+  """
+  When a client shows it: RUN for a run of the action, ASSIGN before one, to start it. One blok per context and phase.
+  """
+  phase: ActionBlokPhase! = RUN
+
   """Its declared reads."""
   queries: [BlokQueryInput!]! = []
 
@@ -243,6 +294,14 @@ input ActionBlokInput {
 
   """The blok language version the blok speaks; 2 is the only one."""
   vocab: Int!
+}
+
+"""
+When a client shows an action's own blok: RUN for a run of the action (it reads the run as `task`), ASSIGN before one, to start it (no `task`; `<args />` places the argument form, `assign.start()` starts the run).
+"""
+enum ActionBlokPhase {
+  ASSIGN
+  RUN
 }
 
 """
@@ -953,6 +1012,19 @@ type AgentWithValues {
 
   """The state value, indexed by state_interface"""
   values: JSON!
+}
+
+"""
+Put an action on your auto list: under your runs an agent that asks for it gets it without a hold.
+"""
+input AllowActionInput {
+  """The action that runs without asking, in every version of it"""
+  action: ID!
+
+  """
+  The action that may ask for it, in every version of it; none for whoever asks
+  """
+  asker: ID = null
 }
 
 """
@@ -2903,6 +2975,11 @@ input DecideInput {
   """
   approved: Boolean!
 
+  """
+  Keep the approval as an allowance on the user's auto list, so the action is not asked for again: for the rest of this run (RUN), whenever the same action asks (ASKER), or whoever asks (ALWAYS). Only the approval of a child an agent asked for takes it. What else of the run waits for the same answer is released.
+  """
+  remember: HoldRemember = null
+
   """The held task: a child an agent asked for, or a task that holds itself"""
   task: ID!
 
@@ -3564,6 +3641,15 @@ type HideEffect implements Effect {
   fade: Boolean!
   kind: EffectKind!
   source: String
+}
+
+"""
+What an approval is remembered as: the allowance it leaves on the user's auto list. RUN: this action, whoever asks, for the rest of this run. ASKER: this action whenever the action that asked now asks again, in every run of the user. ALWAYS: this action, whoever asks, in every run of the user.
+"""
+enum HoldRemember {
+  ALWAYS
+  ASKER
+  RUN
 }
 
 """
@@ -4788,6 +4874,11 @@ type Module {
 
 """Root mutation type for executing write operations on the API."""
 type Mutation {
+  """
+  Put an action on your auto list: under your runs an agent that asks for it gets it without a hold. Optionally only when one action asks. Yours alone: it changes nothing for anyone else.
+  """
+  allowAction(input: AllowActionInput!): ActionAllowance!
+
   """Assign a task to an agent."""
   assign(input: AssignInput!): Task!
 
@@ -4855,7 +4946,7 @@ type Mutation {
   createTrigger(input: CreateTriggerInput!): Trigger!
 
   """
-  Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked.
+  Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked. With `remember`, the approval of a child is kept as an allowance on their auto list.
   """
   decide(input: DecideInput!): Task!
 
@@ -4990,6 +5081,9 @@ type Mutation {
   Make an earlier revision's content a custom blok's head again, as a new revision.
   """
   revertBlok(input: RevertBlokInput!): BlokRevision!
+
+  """Take an allowance off your auto list: the action is asked for again."""
+  revokeAllowance(input: RevokeAllowanceInput!): ID!
 
   """
   Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet.
@@ -5689,6 +5783,11 @@ type Query {
   """
   modules: [Module!]!
 
+  """
+  Your auto list in this organization: the actions that run under your runs without asking you, newest first. With `action`, the entries for that action. An allowance of a single run is not listed.
+  """
+  myAllowances(action: ID = null): [ActionAllowance!]!
+
   """Find your implementation at a specific interface."""
   myImplementationAt(actionId: ID = null, interface: String = null): Implementation!
 
@@ -6256,6 +6355,12 @@ type RevisionDependency {
 
   """Only agents of this version may be bound to it."""
   version: String
+}
+
+"""Take an allowance off your auto list: the action is asked for again."""
+input RevokeAllowanceInput {
+  """The allowance to remove"""
+  id: ID!
 }
 
 """Slim snapshot of a schedule or trigger for the change feeds."""

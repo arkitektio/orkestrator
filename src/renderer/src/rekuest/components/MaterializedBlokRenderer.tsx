@@ -98,6 +98,8 @@ type MaterializedBlokRendererProps = Omit<
   task?: BlokTaskRecord | null;
   /** Answers the open ask of `task`: what `task.answer(values)` calls. */
   onAnswer?: (values: Record<string, unknown>) => unknown;
+  /** Starts the run an assign blok prepares (`assign.start()`); what it returns keeps the control busy. */
+  onStart?: () => unknown;
   /** What else writes into the blok's runtime, rendered inside it. */
   syncs?: React.ReactNode;
 };
@@ -335,7 +337,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
 };
 
 const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
-  const {materializedBlok, args, onArgsChange, task, onAnswer, persistence, syncs, ...rendererProps} = props;
+  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, persistence, syncs, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelAt = useBlokTravelMoment();
   const travelling = useBlokTravelSource() !== null;
@@ -420,6 +422,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         subscriptions={subscriptions}
         readExecutor={readExecutor}
         answerTask={onAnswer}
+        startRun={onStart}
         componentState={componentState}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}

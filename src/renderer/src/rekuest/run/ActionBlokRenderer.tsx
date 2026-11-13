@@ -2,7 +2,7 @@ import * as React from 'react';
 import {dependencyKeysRead} from '@arkitektio/bsx/bsx/infer';
 import {normalizeBlokArgument, normalizeBlokComponentTree, type BlokActionArgument, type BlokComponentNode} from '@arkitektio/bsx/renderer/runtime/index';
 import {BlokRunHostProvider, type BlokRunHost} from '@arkitektio/bsx/renderer/bloks/run/index';
-import {TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
+import {ActionBlokPhase, TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer} from '../components/MaterializedBlokRenderer';
 import {HoldCard} from '../components/task/HoldCard';
@@ -64,22 +64,44 @@ const AskPlaceholder = () => (
  * The run host the run components (`Placed`, `Route`, `ask`) read, for `run`.
  * `showAsk: false` leaves `ask` empty where the page shows the run's asks already.
  */
-export const useRunHost = (run: ActionBlokRun, showAsk = true): BlokRunHost => {
+export const useRunHost = (run: ActionBlokRun, showAsk = true, renderArgs?: () => React.ReactNode): BlokRunHost => {
   const byKey = React.useMemo(() => agentsByKey(run.binding, run.self), [run.binding, run.self]);
   const task = run.task;
   return React.useMemo<BlokRunHost>(
     () => ({
       agentsFor: key => byKey.get(key) ?? [],
       renderAsk: () => (!showAsk ? null : task ? <RunAsk task={task} /> : <AskPlaceholder />),
+      renderArgs,
     }),
-    [byKey, showAsk, task],
+    [byKey, renderArgs, showAsk, task],
   );
 };
 
 /** Provides the run to what is below: an action's Space (its `Placed` devices) or an html blok. */
-export const RunHost = ({run, showAsk, children}: {run: ActionBlokRun; showAsk?: boolean; children: React.ReactNode}) => (
-  <BlokRunHostProvider value={useRunHost(run, showAsk)}>{children}</BlokRunHostProvider>
-);
+export const RunHost = ({
+  run,
+  showAsk,
+  renderArgs,
+  children,
+}: {
+  run: ActionBlokRun;
+  showAsk?: boolean;
+  /** The argument form an assign blok places with `<args />`. */
+  renderArgs?: () => React.ReactNode;
+  children: React.ReactNode;
+}) => <BlokRunHostProvider value={useRunHost(run, showAsk, renderArgs)}>{children}</BlokRunHostProvider>;
+
+/** Whether `actionBlok`'s tree holds a `component` anywhere (`args`), or calls an effect (`assign.start`). */
+export const blokHolds = (actionBlok: ActionBlokFragment, component: string | null, effect: string | null = null): boolean => {
+  const {roots} = normalizeBlokComponentTree(actionBlok.blok.componentTree as unknown[] | null);
+  const visit = (node: unknown): boolean => {
+    if (!isComponentNode(node)) return false;
+    if (component !== null && node.component === component) return true;
+    if (effect !== null && (node.props ?? []).some(prop => prop.util_call?.operation === effect)) return true;
+    return Array.isArray(node.children) && node.children.some(visit);
+  };
+  return roots.some(visit);
+};
 
 /** A normalized root that is a node (the normalizer passes anything else through, for preflight to refuse). */
 const isComponentNode = (value: unknown): value is BlokComponentNode =>
@@ -120,15 +142,22 @@ const useAnswerShownAsk = (task: RunTaskFragment | null): ((values: Record<strin
 
 type ActionBlokRendererProps = Omit<
   React.ComponentProps<typeof MaterializedBlokRenderer>,
-  'materializedBlok' | 'args' | 'onArgsChange' | 'task' | 'onAnswer' | 'syncs'
+  'materializedBlok' | 'args' | 'onArgsChange' | 'task' | 'onAnswer' | 'onStart' | 'syncs'
 > & {
   actionBlok: ActionBlokFragment;
   run: ActionBlokRun;
   /** Whether `ask` shows the run's open ask; off where the page shows it already. */
   showAsk?: boolean;
+  /** An assign blok: the arguments as they are being filled in (`args.<key>`), before there is a task. */
+  args?: BlokArgs;
+  /** An assign blok: what `<args />` draws, the form of the run's arguments. */
+  renderArgs?: () => React.ReactNode;
+  /** An assign blok: starts the run (`assign.start()`). */
+  onStart?: () => unknown;
 };
 
-export const ActionBlokRenderer = ({actionBlok, run, showAsk, ...rendererProps}: ActionBlokRendererProps) => {
+export const ActionBlokRenderer = ({actionBlok, run, showAsk, args: filling, renderArgs, onStart, ...rendererProps}: ActionBlokRendererProps) => {
+  const assigning = actionBlok.phase === ActionBlokPhase.Assign;
   const materializedBlok = React.useMemo(
     () => ({
       // Its kept locals are its own, never those of a materialization with the same number.
@@ -150,21 +179,23 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, ...rendererProps}:
     [actionBlok, run.binding, run.self, run.task],
   );
   const args = React.useMemo<BlokArgs | undefined>(
-    () => (run.task && isRecord(run.task.args) ? run.task.args : undefined),
-    [run.task],
+    () => (run.task && isRecord(run.task.args) ? run.task.args : filling),
+    [filling, run.task],
   );
   const moment = useBlokTravelMoment();
   const task = React.useMemo(() => {
+    // Before a run there is no task at all: an assign blok has no `task` root.
+    if (assigning) return null;
     if (!run.task) {
       const demo = isRecord(actionBlok.blok.demo) && isRecord(actionBlok.blok.demo.task) ? actionBlok.blok.demo.task : null;
       return demo ? {...taskRecordOf({id: '', latestEventKind: TaskEventKind.Queued, isDone: false, events: []}), ...demo} : null;
     }
     const at = moment === null ? undefined : parseTimestamp(moment);
     return taskRecordOf(run.task, at);
-  }, [actionBlok.blok.demo, moment, run.task]);
+  }, [actionBlok.blok.demo, assigning, moment, run.task]);
   const answer = useAnswerShownAsk(run.task);
   return (
-    <RunHost run={run} showAsk={showAsk}>
+    <RunHost run={run} showAsk={showAsk} renderArgs={renderArgs}>
       {/* A Space's plain `room` key is the declaring app's. */}
       <RoomHost app={actionBlok.blok.app?.identifier}>
         <MaterializedBlokRenderer
@@ -174,6 +205,7 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, ...rendererProps}:
           task={task}
           // `task.answer` answers the ask `task.ask` shows; the past is not answered.
           onAnswer={moment === null ? answer : undefined}
+          onStart={onStart}
         />
       </RoomHost>
     </RunHost>

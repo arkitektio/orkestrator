@@ -58,6 +58,8 @@ export type Action = {
   app: App;
   /** Input arguments (ports) for the action. */
   args: Array<ArgPort>;
+  /** The action's own bloks for starting a run of it, at most one per context (phase ASSIGN): shown before there is a task, with the arguments being filled in as `args` and the agents a run would get as `deps`. */
+  assignBloks: Array<ActionBlok>;
   /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
   assignable: Scalars['Boolean']['output'];
   /** The action's own bloks, at most one per context (HTML for a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies): declared with the action, the latest registration's. Not part of its hash. */
@@ -201,6 +203,29 @@ export type ActionTriggersArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** An entry of a user's auto list: an action that runs under their runs without asking them. It names the action by app and key, so every version of it; optionally the action that may ask for it; and optionally the one run it holds under. */
+export type ActionAllowance = {
+  __typename?: 'ActionAllowance';
+  /** The action that runs without asking: its newest version. Null once no version of it is registered. */
+  action?: Maybe<Action>;
+  /** The app of the action that runs without asking. */
+  app: App;
+  /** The action that may ask for it: its newest version. Null for whoever asks. */
+  asker?: Maybe<Action>;
+  /** The app of the action that may ask for it; null for whoever asks. */
+  askerApp?: Maybe<App>;
+  /** The key of the action that may ask for it; null for whoever asks. */
+  askerKey?: Maybe<Scalars['String']['output']>;
+  /** When it was allowed. */
+  createdAt: Scalars['DateTime']['output'];
+  /** Allowance ID. */
+  id: Scalars['ID']['output'];
+  /** The key of the action that runs without asking, in its app. */
+  key: Scalars['String']['output'];
+  /** The root task it holds under; null for every run of the user. */
+  run?: Maybe<Task>;
+};
+
 /** A JSON-serializable argument entry for a multi-agent action trigger. */
 export type ActionArgument = {
   __typename?: 'ActionArgument';
@@ -241,6 +266,8 @@ export type ActionBlok = {
   /** Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view (a `Space` places the run's dependencies in a room whose layout is shared). */
   context: ComponentContext;
   id: Scalars['ID']['output'];
+  /** When a client shows it: RUN for a run of the action, ASSIGN before one, to start it. */
+  phase: ActionBlokPhase;
 };
 
 /** An action's own blok (blok language v2): how a client shows a run of it in one context, naming devices by the action's dependency keys. */
@@ -259,6 +286,8 @@ export type ActionBlokInput = {
   locals?: Array<BlokLocalInput>;
   /** The module the blok renders against besides its catalogs; the Orkestrator's when absent. */
   module?: InputMaybe<Scalars['String']['input']>;
+  /** When a client shows it: RUN for a run of the action, ASSIGN before one, to start it. One blok per context and phase. */
+  phase?: ActionBlokPhase;
   /** Its declared reads. */
   queries?: Array<BlokQueryInput>;
   /** The blok as v2 BSX, parsed by the server into its component tree. Exactly one of `components` and `source` is sent. */
@@ -268,6 +297,12 @@ export type ActionBlokInput = {
   /** The blok language version the blok speaks; 2 is the only one. */
   vocab: Scalars['Int']['input'];
 };
+
+/** When a client shows an action's own blok: RUN for a run of the action (it reads the run as `task`), ASSIGN before one, to start it (no `task`; `<args />` places the argument form, `assign.start()` starts the run). */
+export enum ActionBlokPhase {
+  Assign = 'ASSIGN',
+  Run = 'RUN'
+}
 
 /** Pure matching criteria for an action (app/key preferred; matches loosen). */
 export type ActionDemand = {
@@ -837,6 +872,14 @@ export type AgentWithValues = {
   globalRevision: Scalars['Int']['output'];
   /** The state value, indexed by state_interface */
   values: Scalars['JSON']['output'];
+};
+
+/** Put an action on your auto list: under your runs an agent that asks for it gets it without a hold. */
+export type AllowActionInput = {
+  /** The action that runs without asking, in every version of it */
+  action: Scalars['ID']['input'];
+  /** The action that may ask for it, in every version of it; none for whoever asks */
+  asker?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Profile information for a user. */
@@ -2162,6 +2205,8 @@ export type DecideInput = {
   answer?: InputMaybe<Scalars['String']['input']>;
   /** Approve (the child runs; a task's own hold carries on approved) or deny (the child ends DENIED without running; a task's own hold carries on denied) */
   approved: Scalars['Boolean']['input'];
+  /** Keep the approval as an allowance on the user's auto list, so the action is not asked for again: for the rest of this run (RUN), whenever the same action asks (ASKER), or whoever asks (ALWAYS). Only the approval of a child an agent asked for takes it. What else of the run waits for the same answer is released. */
+  remember?: InputMaybe<HoldRemember>;
   /** The held task: a child an agent asked for, or a task that holds itself */
   task: Scalars['ID']['input'];
   /** The answer through the blok a task asks with (a hold on a blok), by the blok's returns, and checked against them. Only an approved ask takes them. */
@@ -2596,6 +2641,13 @@ export type HideEffect = Effect & {
   kind: EffectKind;
   source?: Maybe<Scalars['String']['output']>;
 };
+
+/** What an approval is remembered as: the allowance it leaves on the user's auto list. RUN: this action, whoever asks, for the rest of this run. ASKER: this action whenever the action that asked now asks again, in every run of the user. ALWAYS: this action, whoever asks, in every run of the user. */
+export enum HoldRemember {
+  Always = 'ALWAYS',
+  Asker = 'ASKER',
+  Run = 'RUN'
+}
 
 /** A hook is a function that is called when a action has reached a specific lifecycle point. Hooks are jsut actions that take a task as input and return a value. */
 export type HookInput = {
@@ -3444,6 +3496,8 @@ export type ModuleBloksArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put an action on your auto list: under your runs an agent that asks for it gets it without a hold. Optionally only when one action asks. Yours alone: it changes nothing for anyone else. */
+  allowAction: ActionAllowance;
   /** Assign a task to an agent. */
   assign: Task;
   /** Automatically resolve dependencies for an implementation. */
@@ -3480,7 +3534,7 @@ export type Mutation = {
   createTestResult: TestResult;
   /** Create a trigger: run an action when a service signals a matching object. */
   createTrigger: Trigger;
-  /** Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked. */
+  /** Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked. With `remember`, the approval of a child is kept as an allowance on their auto list. */
   decide: Task;
   /** Delete an agent record. */
   deleteAgent: Scalars['ID']['output'];
@@ -3550,6 +3604,8 @@ export type Mutation = {
   resumeProbe: Probe;
   /** Make an earlier revision's content a custom blok's head again, as a new revision. */
   revertBlok: BlokRevision;
+  /** Take an allowance off your auto list: the action is asked for again. */
+  revokeAllowance: Scalars['ID']['output'];
   /** Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet. */
   savePlacement: Placement;
   /** Shelve data into a memory drawer. */
@@ -3574,6 +3630,12 @@ export type Mutation = {
   updateSchedule: Schedule;
   /** Change a trigger. */
   updateTrigger: Trigger;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationAllowActionArgs = {
+  input: AllowActionInput;
 };
 
 
@@ -3892,6 +3954,12 @@ export type MutationResumeProbeArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationRevertBlokArgs = {
   input: RevertBlokInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationRevokeAllowanceArgs = {
+  input: RevokeAllowanceInput;
 };
 
 
@@ -4405,6 +4473,8 @@ export type Query = {
   module: Module;
   /** Modules registered in the caller's organization: the components and operations UI apps can render and evaluate beyond the spec's catalogs. */
   modules: Array<Module>;
+  /** Your auto list in this organization: the actions that run under your runs without asking you, newest first. With `action`, the entries for that action. An allowance of a single run is not listed. */
+  myAllowances: Array<ActionAllowance>;
   /** Find your implementation at a specific interface. */
   myImplementationAt: Implementation;
   /** Fetch the root tasks this client created (caller-scoped). */
@@ -4738,6 +4808,11 @@ export type QueryMemoryShelvesArgs = {
 
 export type QueryModuleArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryMyAllowancesArgs = {
+  action?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -5316,6 +5391,12 @@ export type RevisionDependency = {
   optional: Scalars['Boolean']['output'];
   /** Only agents of this version may be bound to it. */
   version?: Maybe<Scalars['String']['output']>;
+};
+
+/** Take an allowance off your auto list: the action is asked for again. */
+export type RevokeAllowanceInput = {
+  /** The allowance to remove */
+  id: Scalars['ID']['input'];
 };
 
 /** Slim snapshot of a schedule or trigger for the change feeds. */
@@ -7324,7 +7405,7 @@ export type HoverActionFragment = { __typename?: 'Action', id: string, name: str
     & BlokLogoFragment
   ) | null, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
-export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, app?: { __typename?: 'App', id: string, identifier: string } | null, resolvedLocals: Array<(
+export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, phase: ActionBlokPhase, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, app?: { __typename?: 'App', id: string, identifier: string } | null, resolvedLocals: Array<(
       { __typename?: 'ResolvedBlokLocal' }
       & ResolvedBlokLocalFragment
     )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
@@ -8630,6 +8711,23 @@ export type UnblockMutation = { __typename?: 'Mutation', unblock: (
     & AgentFragment
   ) };
 
+export type AllowActionMutationVariables = Exact<{
+  input: AllowActionInput;
+}>;
+
+
+export type AllowActionMutation = { __typename?: 'Mutation', allowAction: (
+    { __typename?: 'ActionAllowance' }
+    & ActionAllowanceFragment
+  ) };
+
+export type RevokeAllowanceMutationVariables = Exact<{
+  input: RevokeAllowanceInput;
+}>;
+
+
+export type RevokeAllowanceMutation = { __typename?: 'Mutation', revokeAllowance: string };
+
 export type RequestAssetUploadMutationVariables = Exact<{
   input: RequestAssetUploadInput;
 }>;
@@ -9324,6 +9422,9 @@ export type ActionBloksQueryVariables = Exact<{
 export type ActionBloksQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, bloks: Array<(
       { __typename?: 'ActionBlok' }
       & ActionBlokFragment
+    )>, assignBloks: Array<(
+      { __typename?: 'ActionBlok' }
+      & ActionBlokFragment
     )> } };
 
 export type AgentsQueryVariables = Exact<{
@@ -9400,6 +9501,18 @@ export type HoverAgentQuery = { __typename?: 'Query', agent: (
     { __typename?: 'Agent' }
     & HoverAgentFragment
   ) };
+
+export type ActionAllowanceFragment = { __typename?: 'ActionAllowance', id: string, key: string, askerKey?: string | null, createdAt: any, app: { __typename?: 'App', id: string, identifier: string }, action?: { __typename?: 'Action', id: string, name: string } | null, asker?: { __typename?: 'Action', id: string, name: string } | null };
+
+export type MyAllowancesQueryVariables = Exact<{
+  action?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type MyAllowancesQuery = { __typename?: 'Query', myAllowances: Array<(
+    { __typename?: 'ActionAllowance' }
+    & ActionAllowanceFragment
+  )> };
 
 export type AgentAssetsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10890,6 +11003,7 @@ export const ActionBlokFragmentDoc = gql`
     fragment ActionBlok on ActionBlok {
   id
   context
+  phase
   blok {
     id
     context
@@ -14115,6 +14229,26 @@ export const ListModuleFragmentDoc = gql`
   isRegistered
 }
     `;
+export const ActionAllowanceFragmentDoc = gql`
+    fragment ActionAllowance on ActionAllowance {
+  id
+  key
+  askerKey
+  createdAt
+  app {
+    id
+    identifier
+  }
+  action {
+    id
+    name
+  }
+  asker {
+    id
+    name
+  }
+}
+    `;
 export const ImplementationStatsDocument = gql`
     query ImplementationStats($id: ID!) {
   taskStats(filters: {implementation: $id}) {
@@ -14476,6 +14610,70 @@ export function useUnblockMutation(baseOptions?: ApolloReactHooks.MutationHookOp
 export type UnblockMutationHookResult = ReturnType<typeof useUnblockMutation>;
 export type UnblockMutationResult = Apollo.MutationResult<UnblockMutation>;
 export type UnblockMutationOptions = Apollo.BaseMutationOptions<UnblockMutation, UnblockMutationVariables>;
+export const AllowActionDocument = gql`
+    mutation AllowAction($input: AllowActionInput!) {
+  allowAction(input: $input) {
+    ...ActionAllowance
+  }
+}
+    ${ActionAllowanceFragmentDoc}`;
+export type AllowActionMutationFn = Apollo.MutationFunction<AllowActionMutation, AllowActionMutationVariables>;
+
+/**
+ * __useAllowActionMutation__
+ *
+ * To run a mutation, you first call `useAllowActionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAllowActionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [allowActionMutation, { data, loading, error }] = useAllowActionMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAllowActionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AllowActionMutation, AllowActionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AllowActionMutation, AllowActionMutationVariables>(AllowActionDocument, options);
+      }
+export type AllowActionMutationHookResult = ReturnType<typeof useAllowActionMutation>;
+export type AllowActionMutationResult = Apollo.MutationResult<AllowActionMutation>;
+export type AllowActionMutationOptions = Apollo.BaseMutationOptions<AllowActionMutation, AllowActionMutationVariables>;
+export const RevokeAllowanceDocument = gql`
+    mutation RevokeAllowance($input: RevokeAllowanceInput!) {
+  revokeAllowance(input: $input)
+}
+    `;
+export type RevokeAllowanceMutationFn = Apollo.MutationFunction<RevokeAllowanceMutation, RevokeAllowanceMutationVariables>;
+
+/**
+ * __useRevokeAllowanceMutation__
+ *
+ * To run a mutation, you first call `useRevokeAllowanceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevokeAllowanceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revokeAllowanceMutation, { data, loading, error }] = useRevokeAllowanceMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRevokeAllowanceMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevokeAllowanceMutation, RevokeAllowanceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevokeAllowanceMutation, RevokeAllowanceMutationVariables>(RevokeAllowanceDocument, options);
+      }
+export type RevokeAllowanceMutationHookResult = ReturnType<typeof useRevokeAllowanceMutation>;
+export type RevokeAllowanceMutationResult = Apollo.MutationResult<RevokeAllowanceMutation>;
+export type RevokeAllowanceMutationOptions = Apollo.BaseMutationOptions<RevokeAllowanceMutation, RevokeAllowanceMutationVariables>;
 export const RequestAssetUploadDocument = gql`
     mutation RequestAssetUpload($input: RequestAssetUploadInput!) {
   requestAssetUpload(input: $input) {
@@ -16872,6 +17070,9 @@ export const ActionBloksDocument = gql`
     bloks {
       ...ActionBlok
     }
+    assignBloks {
+      ...ActionBlok
+    }
   }
 }
     ${ActionBlokFragmentDoc}`;
@@ -17163,6 +17364,41 @@ export function useHoverAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type HoverAgentQueryHookResult = ReturnType<typeof useHoverAgentQuery>;
 export type HoverAgentLazyQueryHookResult = ReturnType<typeof useHoverAgentLazyQuery>;
 export type HoverAgentQueryResult = Apollo.QueryResult<HoverAgentQuery, HoverAgentQueryVariables>;
+export const MyAllowancesDocument = gql`
+    query MyAllowances($action: ID) {
+  myAllowances(action: $action) {
+    ...ActionAllowance
+  }
+}
+    ${ActionAllowanceFragmentDoc}`;
+
+/**
+ * __useMyAllowancesQuery__
+ *
+ * To run a query within a React component, call `useMyAllowancesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyAllowancesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyAllowancesQuery({
+ *   variables: {
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useMyAllowancesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MyAllowancesQuery, MyAllowancesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MyAllowancesQuery, MyAllowancesQueryVariables>(MyAllowancesDocument, options);
+      }
+export function useMyAllowancesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MyAllowancesQuery, MyAllowancesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MyAllowancesQuery, MyAllowancesQueryVariables>(MyAllowancesDocument, options);
+        }
+export type MyAllowancesQueryHookResult = ReturnType<typeof useMyAllowancesQuery>;
+export type MyAllowancesLazyQueryHookResult = ReturnType<typeof useMyAllowancesLazyQuery>;
+export type MyAllowancesQueryResult = Apollo.QueryResult<MyAllowancesQuery, MyAllowancesQueryVariables>;
 export const AgentAssetsDocument = gql`
     query AgentAssets($id: ID!) {
   agent(id: $id) {

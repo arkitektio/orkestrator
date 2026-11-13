@@ -21,7 +21,9 @@ import {
 } from "@/rekuest/api/graphql";
 import { DependenciesContainer } from "@arkitektio/bsx/ports/dependencies/DependenciesContainer";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { ReactNode, useMemo, useRef, useState } from "react";
+import { ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { useWatch } from "react-hook-form";
+import { AssignBloks, useAssignBloks } from "../../run/AssignBloks";
 import { v4 as uuidv4 } from "uuid";
 import { AssignErrorNote } from "../../components/AssignErrorNote";
 import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/AutoModeToggle";
@@ -134,6 +136,20 @@ export const AssignForm = ({
   // Counts refusals: keys the reason so it slides in again on a repeat.
   const [refusals, setRefusals] = useState(0);
 
+  // The action's own interface for starting a run (its assign bloks), bound as a run on the
+  // implementation it would go to: the target's, the one that fits, else the first that can take work.
+  const chosen = useMemo(() => {
+    if (target.resolution) return undefined;
+    const pick = implementation ?? candidates?.find((c) => c.id === fit.pin) ?? candidates?.find((c) => c.agent.active) ?? candidates?.[0];
+    return pick
+      ? { id: pick.id, agent: { id: pick.agent.id, name: pick.agent.name ?? pick.agent.id, connected: pick.agent.active } }
+      : undefined;
+  }, [candidates, fit.pin, implementation, target.resolution]);
+  const watchedPins = useWatch({ control: fieldsControl, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
+  const filling = useWatch({ control: fieldsControl, name: "args" }) as Record<string, unknown> | undefined;
+  const setup = useAssignBloks(action?.id, chosen, pinning ? watchedPins : undefined);
+  const assignBloks = setup.bloks.length > 0;
+
   const onSubmit = async (data: {
     args: Record<string, unknown>;
     dependencies: ResolvedDependencyInput[];
@@ -149,12 +165,17 @@ export const AssignForm = ({
       untrack = track?.(reference);
       const task = await assign({
         args: assignArgs,
-        dependencies: pinning ? data.dependencies : undefined,
+        // An assign blok was shown agents (and may have prepared them): the run gets exactly those.
+        dependencies: assignBloks && setup.pins ? setup.pins : pinning ? data.dependencies : undefined,
         reference,
         hooks: [],
         policy: autoMode.policy,
         // A resolution has bound its agents already.
-        ...(fit.pin && !target.resolution ? { implementation: fit.pin } : {}),
+        ...(assignBloks && chosen && !implementation
+          ? { implementation: chosen.id }
+          : fit.pin && !target.resolution
+            ? { implementation: fit.pin }
+            : {}),
       });
       onAssigned?.(task, reference);
       if (layout === "dialog" && !keepOpen) closeDialog();
@@ -166,6 +187,37 @@ export const AssignForm = ({
       onError?.(e);
     }
   };
+
+  // The generated argument form: on its own, or where an assign blok places it (`<args />`).
+  const portGroups = action?.portGroups;
+  const boundAgent = implementation?.agent.id;
+  const renderArgsForm = useCallback(
+    () => (
+      <>
+        {formPorts && formPorts.length == 0 && (
+          <div className="text-sm text-muted-foreground">No arguments needed</div>
+        )}
+        <ArgsContainer
+          registry={registry}
+          groups={portGroups || []}
+          ports={formPorts || []}
+          hidden={hiddenKeys}
+          bound={boundAgent}
+          options={{ layout: "stack" }}
+          path={["args"]}
+        />
+      </>
+    ),
+    [boundAgent, formPorts, hiddenKeys, portGroups, registry],
+  );
+  // `assign.start()`: the form's own submit, with its validation; nothing while it may not start.
+  const submitRef = useRef(onSubmit);
+  submitRef.current = onSubmit;
+  const startDisabledRef = useRef(false);
+  const startRun = useCallback(
+    () => (startDisabledRef.current ? undefined : form.handleSubmit((data) => submitRef.current(data))()),
+    [form],
+  );
 
   if (error && !action) {
     return (
@@ -181,6 +233,10 @@ export const AssignForm = ({
 
   const isSubmitting = form.formState.isSubmitting;
 
+  const argsForm = renderArgsForm();
+  const startDisabled = isSubmitting || tree.satisfied === false || Boolean(fit.refused);
+  startDisabledRef.current = startDisabled;
+
   return (
     <Form {...form}>
       <form
@@ -188,7 +244,14 @@ export const AssignForm = ({
         onKeyDownCapture={(e) => {
           if (e.key === "Enter") keepOpenRef.current = e.ctrlKey || e.metaKey;
         }}
-        className={cn("flex flex-col gap-4 @container", className)}
+        className={cn(
+          "flex flex-col gap-4 @container",
+          // `@container` contains the form's inline size, so its rows give a
+          // fitted dialog no width to fit: it would open at the floor. The
+          // dialog gets its width here instead (the page still caps it).
+          layout === "dialog" && "w-[40rem] max-w-full",
+          className,
+        )}
       >
         {layout === "dialog" && (
           <DialogHeader>
@@ -208,18 +271,17 @@ export const AssignForm = ({
 
         <PortFitsContext.Provider value={portFits}>
         <DependencyDefinitionsProvider dependencies={pinning?.dependencies || []}>
-          {formPorts && formPorts.length == 0 && (
-            <div className="text-sm text-muted-foreground">No arguments needed</div>
+          {assignBloks && (
+            <AssignBloks
+              setup={setup}
+              surface={`${action?.id ?? "action"}-${chosen?.id ?? "any"}`}
+              args={filling}
+              renderArgs={renderArgsForm}
+              onStart={startRun}
+            />
           )}
-          <ArgsContainer
-            registry={registry}
-            groups={action?.portGroups || []}
-            ports={formPorts || []}
-            hidden={hiddenKeys}
-            bound={implementation?.agent.id}
-            options={{ layout: "stack" }}
-            path={["args"]}
-          />
+          {/* An assign blok that places the form (`<args />`) leaves none to show here. */}
+          {!(assignBloks && setup.placesArgs) && argsForm}
           {pinning && pinning.dependencies.length > 0 && (
             <DependenciesContainer
               dependencies={pinning.dependencies}
@@ -258,11 +320,12 @@ export const AssignForm = ({
             className="shrink-0"
           />
           <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" />
-          <Button
+          {/* An assign blok that starts the run itself (`assign.start()`) is the start button. */}
+          {!(assignBloks && setup.starts) && <Button
             type="submit"
             // Red while it shakes, then back to the plain button.
             variant={refused ? "destructive" : "outline"}
-            disabled={isSubmitting || tree.satisfied === false || Boolean(fit.refused)}
+            disabled={startDisabled}
             className={cn("shrink-0 gap-2", refused && "animate-refuse-shake")}
             onAnimationEnd={() => setRefused(false)}
             onClick={(e) => {
@@ -271,7 +334,7 @@ export const AssignForm = ({
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {submitLabel}
-          </Button>
+          </Button>}
         </DialogFooter>
       </form>
     </Form>

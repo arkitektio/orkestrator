@@ -10,5 +10,9 @@ query ActionBloks($id: ID!) {
     bloks {
       ...ActionBlok
     }
+    # What starts a run: shown before there is a task (`<args />`, `assign.start()`).
+    assignBloks {
+      ...ActionBlok
+    }
   }
 }
