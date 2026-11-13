@@ -240,7 +240,7 @@ appManager.register(downloadManager);
 appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
-appManager.register(new AssetFetchService());
+appManager.register(new AssetFetchService(certificateTrust));
 appManager.register(shellService);
 appManager.register(hardwareService);
 appManager.register(new GpuChecksService(transport, gpuChecks));
@@ -420,7 +420,7 @@ if (!gotTheLock) {
       // NOTE: AgentGateway assumes ipcMain is available, we could refactor it too,
       // but for now we leave it as is or pass standard ipcMain (which it imports directly).
       const { ipcMain } = require('electron');
-      electronAgent = new AgentGateway(ipcMain, meshProxyPort);
+      electronAgent = new AgentGateway(ipcMain, meshProxyPort, certificateTrust);
     }
 
     // Handle deep link on Windows/Linux when app starts

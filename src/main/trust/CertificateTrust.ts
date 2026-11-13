@@ -33,14 +33,16 @@ const merged = (...sets: Map<string, string[]>[]): Map<string, string[]> => {
 /**
  * Which certificates the app accepts beyond Chromium's own verdict:
  *
- *  - a strict host — a TLS alias of a hub that registered its certificate — is
- *    trusted with exactly that certificate and nothing else (`pins.ts`);
+ *  - a strict host — a TLS alias of a hub that registered its certificates — is
+ *    trusted only with one of them, or a certificate a registered CA issued
+ *    (`pins.ts`);
  *  - any other host the user's fakts name may present a self-signed certificate
  *    (`policy.ts`), as before; every other host gets Chromium's verdict.
  *
  * Chromium's requests are checked through the default session's verify proc —
- * fetch, WebSockets and workers alike; Node's (the S3 transfers) ask `allows` and
- * `pinsFor` for their agents.
+ * fetch, WebSockets and workers alike; Node's (the S3 transfers, the Electron
+ * agent's GraphQL clients and the asset fetch, see `nodeFetch.ts`) ask `allows`
+ * and `pinsFor` for their agents.
  *
  * The proc reads the current sets on every call, so a change applies to the next
  * verification. It does NOT revisit a verdict Chromium already cached, which is

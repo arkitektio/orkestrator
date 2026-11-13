@@ -9,6 +9,7 @@ import { TLSSocket } from 'tls';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { NO_TRUST, pinnedTls, type NodeTrust } from '../trust/nodeFetch';
 import { BigFileUploadGrant } from '../schemas/mikro'; // or whatever the type is, I can use any here
 
 // The AWS SDK talks over Node's TLS stack, which the session's certificate
@@ -46,17 +47,8 @@ const httpsAgents = {
     lenient: new LenientHttpsAgent({ keepAlive: true, maxSockets: 50, rejectUnauthorized: false }),
 };
 
-/**
- * What the datalayer agents ask of `src/main/trust`: whether a host may present a
- * certificate that fails verification, and which certificates a strict host is
- * pinned to (then those, and only those, are its trust roots).
- */
-export type DatalayerTrust = {
-    allows: (host: string) => boolean;
-    pinsFor: (host: string) => readonly string[] | undefined;
-};
-
-const NO_TRUST: DatalayerTrust = { allows: () => false, pinsFor: () => undefined };
+/** What the datalayer agents ask of `src/main/trust` (shared with main's other Node requests). */
+export type DatalayerTrust = NodeTrust;
 
 /** One pinned agent per set of certificates: keepAlive is only worth anything if it is reused. */
 const pinnedAgents = new Map<string, https.Agent>();
@@ -65,7 +57,7 @@ const pinnedAgent = (pems: readonly string[]): https.Agent => {
     let agent = pinnedAgents.get(key);
     if (!agent) {
         // Node verifies the chain and the name against these alone; no public roots.
-        agent = new https.Agent({ keepAlive: true, maxSockets: 50, ca: [...pems] });
+        agent = new https.Agent({ keepAlive: true, maxSockets: 50, ...pinnedTls(pems) });
         pinnedAgents.set(key, agent);
     }
     return agent;
@@ -117,7 +109,7 @@ class PinnedSocksProxyAgent extends SocksProxyAgent {
     }
 
     connect(req: Parameters<SocksProxyAgent["connect"]>[0], opts: Parameters<SocksProxyAgent["connect"]>[1]) {
-        return super.connect(req, { ...opts, ca: [...this.pins], rejectUnauthorized: true } as typeof opts);
+        return super.connect(req, { ...opts, ...pinnedTls(this.pins) } as typeof opts);
     }
 }
 

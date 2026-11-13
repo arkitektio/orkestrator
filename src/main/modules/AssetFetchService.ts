@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import {AppModule} from './AppModule';
 import {checkSource, SourceRefused} from './assetSource';
+import {NO_TRUST, trustedFetch, type NodeFetch, type NodeTrust} from '../trust/nodeFetch';
 
 const MAX_REDIRECTS = 5;
 const FETCH_TIMEOUT_MS = 120_000;
@@ -19,11 +20,17 @@ export type FetchedAsset =
  * Runs in main so that the source host needs no CORS headers. The file is
  * hashed while it downloads and kept in a temporary file the datalayer upload
  * reads from; nothing is uploaded here.
+ *
+ * `trust` is the certificate policy (`src/main/trust`): a source on the user's
+ * own hub may present a self-signed certificate, any other host is verified as usual.
  */
 export class AssetFetchService implements AppModule {
   private readonly directory = path.join(app.getPath('temp'), 'orkestrator-assets');
 
-  constructor() {
+  private readonly request: NodeFetch;
+
+  constructor(trust: NodeTrust = NO_TRUST) {
+    this.request = trustedFetch(trust);
     ipcMain.handle('asset:fetch', (_event, args: {url: string; maxSize: number; allowPrivate?: boolean}) =>
       this.fetch(args).catch(
         (error: Error): FetchedAsset => ({
@@ -58,7 +65,7 @@ export class AssetFetchService implements AppModule {
       for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
         const parsed = checkSource(location, [], true);
         const url = checkSource(location, await this.resolved(parsed), args.allowPrivate ?? false);
-        response = await fetch(url, {redirect: 'manual', credentials: 'omit', signal: abort.signal});
+        response = await this.request(url, {redirect: 'manual', credentials: 'omit', signal: abort.signal});
         const next = response.status >= 300 && response.status < 400 ? response.headers.get('location') : null;
         if (!next) break;
         location = new URL(next, url).href;

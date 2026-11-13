@@ -4,7 +4,7 @@ import { Assign } from "./message";
 import { registerWatcher } from "./watcher";
 import { registerDirectoryChooser } from "./directoryChooser";
 import { GraphQLClient } from 'graphql-request';
-import { ProxyAgent, fetch as undiciFetch } from 'undici';
+import { NO_TRUST, trustedFetch, type NodeFetch, type NodeTrust } from './trust/nodeFetch';
 import { ImplementationInput as SchemaImplementationInput } from './schemas/rekuest'; // Generated file
 
 type Alias = {
@@ -32,38 +32,26 @@ const aliasToUrl = (alias: Alias) => {
     return url;
 }
 
-/**
- * Main's own requests do not go through the renderer session's proxy, so a
- * service behind an organisation mesh is only reachable here through the
- * sidecar's HTTP CONNECT port. `proxyPortForHost` is the MeshService's
- * routing table; `undefined` means a direct connection, exactly as before.
- */
-const meshAwareFetch = (proxyPortForHost?: (host: string) => number | undefined) => {
-  const agents = new Map<number, ProxyAgent>();
-  return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const port = proxyPortForHost?.(new URL(url).hostname);
-    if (!port) return fetch(input, init);
-    let agent = agents.get(port);
-    if (!agent) {
-      agent = new ProxyAgent(`http://127.0.0.1:${port}`);
-      agents.set(port, agent);
-    }
-    return undiciFetch(url, { ...(init as any), dispatcher: agent }) as unknown as Promise<Response>;
-  };
-};
-
 export class AgentGateway {
   private ipc: IpcMain;
   private token: string | null = null;
   private implementations: SchemaImplementationInput[] = [];
   private cancelControllers: Map<string, AbortController> = new Map();
   private services: Map<string, GraphQLClient> = new Map();
-  private readonly fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  private readonly fetch: NodeFetch;
 
-  constructor(ipc: IpcMain, proxyPortForHost?: (host: string) => number | undefined) {
+  /**
+   * `proxyPortForHost` routes a service behind an organisation mesh; `trust` is
+   * the certificate policy (`src/main/trust`), so a hub with a self-signed
+   * certificate or its own CA is reachable from the agent's functions too.
+   */
+  constructor(
+    ipc: IpcMain,
+    proxyPortForHost?: (host: string) => number | undefined,
+    trust: NodeTrust = NO_TRUST,
+  ) {
     this.ipc = ipc;
-    this.fetch = meshAwareFetch(proxyPortForHost);
+    this.fetch = trustedFetch(trust, proxyPortForHost);
 
     registerWatcher();
     registerDirectoryChooser();
