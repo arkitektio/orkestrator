@@ -18,19 +18,26 @@ describe("viaMesh", () => {
     expect(viaMesh(at("data.lab", { reach: "lan" }), MESH)).toBe(true);
   });
 
-  it("routes what main will route once the node runs: control domain, cached suffix, tailnet IPs", () => {
+  it("routes what main will route once the node runs: control domain and cached suffix", () => {
     expect(viaMesh(at("mikro.lab.mesh.arkitekt.live"), MESH)).toBe(true);
     expect(viaMesh(at("mikro.lab.example"), { ...MESH, magicDnsSuffix: "lab.example" })).toBe(true);
-    expect(viaMesh(at("100.64.0.7"), MESH)).toBe(true);
     // Registered as a plain absolute alias, but living on the mesh all the same.
     expect(viaMesh(at("mikro.lab.mesh.arkitekt.live", { reach: "internal" }), MESH)).toBe(true);
   });
 
-  it("does not route the control server, public names, LAN addresses or *.ts.net", () => {
+  it("does not route the control server, public names or LAN addresses", () => {
     expect(viaMesh(at("mesh.arkitekt.live"), MESH)).toBe(false);
     expect(viaMesh(at("go.arkitekt.live"), MESH)).toBe(false);
     expect(viaMesh(at("192.168.1.4"), MESH)).toBe(false);
+  });
+
+  it("does not take a Tailscale-looking address for the mesh: that is the system's own Tailscale", () => {
+    expect(viaMesh(at("100.64.0.7"), MESH)).toBe(false);
+    expect(viaMesh(at("fd7a:115c:a1e0::7"), MESH)).toBe(false);
     expect(viaMesh(at("mikro.tailnet-cafe.ts.net"), MESH)).toBe(false);
+    expect(viaMesh(at("100.64.0.7", { reach: "lan" }), MESH)).toBe(false);
+    // The mesh's own node by IP (MagicDNS off) is one because lok says so.
+    expect(viaMesh(at("100.64.0.7", { reach: "mesh" }), MESH)).toBe(true);
   });
 
   it("does not take a bare label for a mesh address: that is a docker or LAN name", () => {
@@ -48,7 +55,7 @@ describe("viaMesh", () => {
 
 describe("routeOf", () => {
   it("names the mesh an address goes through", () => {
-    expect(routeOf(at("100.64.0.7"), MESH)).toEqual({ kind: "mesh", meshId: "lab" });
+    expect(routeOf(at("100.64.0.7", { reach: "mesh" }), MESH)).toEqual({ kind: "mesh", meshId: "lab" });
     expect(routeOf(at("go.arkitekt.live"), MESH)).toBe(DIRECT);
   });
 });

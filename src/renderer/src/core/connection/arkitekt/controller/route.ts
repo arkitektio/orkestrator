@@ -1,6 +1,5 @@
 import type { ActiveFakts, Alias } from "../fakts/faktsSchema";
 import type { ProfileMesh } from "../fakts/profileStorageSchema";
-import { classifyHost } from "../doctor/classify";
 import { controlDomain } from "../../../../../../main/mesh/protocol";
 
 /**
@@ -15,16 +14,23 @@ import { controlDomain } from "../../../../../../main/mesh/protocol";
  *  1. a host the user pinned to the mesh — their explicit choice;
  *  2. the server's word that it is a mesh address (`reach` / `kind`);
  *  3. a name main WILL route through the mesh once the node runs, whatever
- *     the server called it: under the control server's domain, under the
- *     node's cached MagicDNS suffix, or a tailnet IP literal. This mirrors
- *     main's `pac.ts` (rules 3–5), so an address registered as a plain
- *     absolute alias but living on the mesh is still waited for.
+ *     the server called it: under the control server's domain, or under the
+ *     node's cached MagicDNS suffix. This mirrors main's `pac.ts` (rules 3
+ *     and 5), so an address registered as a plain absolute alias but living
+ *     on the mesh is still waited for.
  *
- * A bare single label is NOT a mesh address by itself: in practice it is a
+ * "The mesh" is one thing only: the tailnet the coordination server runs
+ * through ionscale, joined by the app's own node. An address that merely
+ * LOOKS like Tailscale is not it. A `100.64.0.0/10` literal or a `*.ts.net`
+ * name is, unless lok says otherwise, an address on the system's own
+ * Tailscale (or any other VPN): a network the computer already has, reached
+ * directly like a LAN address, and never a reason to start the mesh. A mesh
+ * address given as an IP (MagicDNS off) is known as one because lok says so
+ * (`reach`), not because of its range.
+ *
+ * Nor is a bare single label a mesh address by itself: in practice it is a
  * docker or LAN hostname, and treating it as one made a compose deployment's
- * aliases wait on the mesh. Nor is a `*.ts.net` name: that domain is
- * Tailscale Inc's, so the host is on the system Tailscale's tailnet (ionscale
- * names machines under its control domain).
+ * aliases wait on the mesh.
  */
 
 export type Route = { kind: "direct" } | { kind: "mesh"; meshId: string };
@@ -41,8 +47,7 @@ const namedOnMesh = (host: string, mesh: ProfileMesh): boolean => {
   // Strict subdomains only: the control server itself is reached directly.
   if (domain && host.endsWith(`.${domain}`)) return true;
   const suffix = mesh.magicDnsSuffix ? norm(mesh.magicDnsSuffix) : undefined;
-  if (suffix && (host === suffix || host.endsWith(`.${suffix}`))) return true;
-  return classifyHost(host).class === "mesh-ip";
+  return !!suffix && (host === suffix || host.endsWith(`.${suffix}`));
 };
 
 /**

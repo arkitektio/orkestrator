@@ -15,11 +15,12 @@ const fakts = (hosts: string[], self = "go.arkitekt.live"): ActiveFakts =>
   }) as ActiveFakts;
 
 describe("meshAliases", () => {
-  it("finds addresses under the control domain, the suffix, pinned, and mesh literals", () => {
+  it("finds addresses under the control domain, the suffix and pinned ones", () => {
     expect(meshAliases(fakts(["hub.lab.mesh.arkitekt.live"]), MESH)).toEqual(["hub.lab.mesh.arkitekt.live"]);
     expect(meshAliases(fakts(["hub.lab.example"]), { ...MESH, magicDnsSuffix: "lab.example" })).toEqual(["hub.lab.example"]);
     expect(meshAliases(fakts(["data.internal"]), { ...MESH, hosts: ["data.internal"] })).toEqual(["data.internal"]);
-    expect(meshAliases(fakts(["100.64.0.9"]), MESH)).toEqual(["100.64.0.9"]);
+    // A Tailscale-range address is the system's Tailscale unless lok calls it the mesh.
+    expect(meshAliases(fakts(["100.64.0.9"]), MESH)).toEqual([]);
   });
 
   it("does not count a *.ts.net name: that is the system Tailscale's tailnet", () => {
