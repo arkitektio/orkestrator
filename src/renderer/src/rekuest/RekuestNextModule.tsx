@@ -45,12 +45,10 @@ import TasksPage from "./pages/TasksPage";
 import OrgTasksPage from "./pages/OrgTasksPage";
 import ImplementationsPage from "./pages/ImplementationsPage";
 import { ResolutionPage } from "./pages/ResolutionPage";
-import AgentSpacePage from "./pages/agent/AgentSpacePage";
 import AgentStatesPage from "./pages/agent/AgentStatesPage";
 import AgentTasksPage from "./pages/agent/AgentTasksPage";
 import AgentBloksPage from "./pages/agent/AgentBloksPage";
 import StatePage from "./pages/StatePage";
-import SpaceEditPage from "./pages/SpaceEditPage";
 import SpacePage from "./pages/SpacePage";
 import SpacesPage from "./pages/SpacesPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
@@ -116,12 +114,10 @@ const Module: React.FC = () => {
         <Route path="implementations" element={<ImplementationsPage />} />
         <Route path="implementations/:id" element={<Implementation />} />
         <Route path="agents/:id" element={<AgentPage />} />
-        <Route path="agents/:id/space" element={<AgentSpacePage />} />
         <Route path="agents/:id/states" element={<AgentStatesPage />} />
         <Route path="agents/:id/tasks" element={<AgentTasksPage />} />
         <Route path="agents/:id/bloks" element={<AgentBloksPage />} />
         <Route path="spaces" element={<SpacesPage />} />
-        <Route path="spaces/:id/edit" element={<SpaceEditPage />} />
         <Route path="spaces/:id" element={<SpacePage />} />
         <Route path="states/:id" element={<StatePage />} />
         <Route path="tasks" element={<TasksPage />} />

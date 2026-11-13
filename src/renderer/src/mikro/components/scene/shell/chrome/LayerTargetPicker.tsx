@@ -13,6 +13,7 @@ import type { LayerState } from "../../platform/model/layerModel";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { BarTooltip } from "../../platform/layerui/BarTooltip";
+import { Name } from "@/core/ui/name";
 
 /**
  * Which layers the scene's pointer work involves, as one control-bar button
@@ -66,7 +67,7 @@ export const LayerTargetPicker = () => {
             disabled={data === null}
           >
             {probed && <LayerProbeMark layer={probed} className="h-3.5 w-3.5" />}
-            {data && <span className="max-w-32 truncate text-xs">{layerDisplayLabel(data)}</span>}
+            {data && <Name className="max-w-32 text-xs">{layerDisplayLabel(data)}</Name>}
           </Button>
         </PopoverTrigger>
       </BarTooltip>
@@ -119,7 +120,7 @@ const Row = ({
 const LayerName = ({ layer, note }: { layer: LayerState; note?: string }) => (
   <>
     <LayerGlyph layer={layer} className="h-3.5 w-3.5 shrink-0" />
-    <span className="min-w-0 truncate">{layerDisplayLabel(layer)}</span>
+    <Name>{layerDisplayLabel(layer)}</Name>
     {note && <span className="shrink-0 text-[10px] text-muted-foreground">{note}</span>}
   </>
 );

@@ -60,7 +60,7 @@ export type Action = {
   args: Array<ArgPort>;
   /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
   assignable: Scalars['Boolean']['output'];
-  /** The action's own bloks, at most one per context (HTML for a task panel, OVERLAY drawn into the space that hosts a run): declared with the action, the latest registration's. Not part of its hash. */
+  /** The action's own bloks, at most one per context (HTML for a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies): declared with the action, the latest registration's. Not part of its hash. */
   bloks: Array<ActionBlok>;
   /** Collections to which this action belongs. */
   collections: Array<Collection>;
@@ -238,7 +238,7 @@ export type ActionBlok = {
   action: Action;
   /** What it draws: a blok held by its actions only (`heldByAction`), shared by every action of the app declaring the same. */
   blok: Blok;
-  /** Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run, over the agents placed there. */
+  /** Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view (a `Space` places the run's dependencies in a room whose layout is shared). */
   context: ComponentContext;
   id: Scalars['ID']['output'];
 };
@@ -249,7 +249,7 @@ export type ActionBlokInput = {
   catalogs?: Array<Scalars['String']['input']>;
   /** The UI component tree, unless the blok is sent as its `source`. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`). */
+  /** Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view (its root a `Scene`, or a `Space` placing the run's dependencies in a room whose layout is shared). */
   context?: ComponentContext;
   /** What a preview renders it with. */
   demo?: InputMaybe<BlokDemoInput>;
@@ -1837,12 +1837,11 @@ export type CollectionActionsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run. */
+/** The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO is a blok context only. */
 export enum ComponentContext {
   ActionLogo = 'ACTION_LOGO',
   Html = 'HTML',
   Logo = 'LOGO',
-  Overlay = 'OVERLAY',
   Scene = 'SCENE'
 }
 
@@ -1962,20 +1961,6 @@ export type CreateHigherOrderImplementationInput = {
   lower: Scalars['ID']['input'];
 };
 
-/** The input for creating a placement. */
-export type CreatePlacementInput = {
-  /** The affine matrix for the placement. This is used to identify the placement in the system. */
-  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** The agent ID for the placement. This is used to identify the agent in the system. */
-  agent?: InputMaybe<Scalars['ID']['input']>;
-  /** A specific blok that should be used to visualize the state of the placement. */
-  materializedBlok?: InputMaybe<Scalars['ID']['input']>;
-  /** The role of the placement. This is used to identify the placement in the system. */
-  role?: InputMaybe<Scalars['String']['input']>;
-  /** The ID of the space to create the placement in. */
-  space: Scalars['String']['input'];
-};
-
 /** Create a schedule. Give exactly one of intervalSeconds or cron; pin an agent with agent + interface, or leave both empty to resolve one per run. */
 export type CreateScheduleInput = {
   action: Scalars['ID']['input'];
@@ -2021,26 +2006,6 @@ export type CreateShortcutInput = {
   toolbox?: InputMaybe<Scalars['ID']['input']>;
   /** Whether when running the short the returns should be used further. Allows to create mini pipelines */
   useReturns?: Scalars['Boolean']['input'];
-};
-
-/** The input for creating a space. */
-export type CreateSpaceInput = {
-  /** The name of the space. This is used to identify the space in the system. */
-  name: Scalars['String']['input'];
-  /** The placements to create in the space. This is used to identify the placements in the system. */
-  placements?: InputMaybe<Array<PlacementInput>>;
-};
-
-/** Place a 3D blok in a space at an affine transform. */
-export type CreateSpacePlacementInput = {
-  /** Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Omitted is the identity. */
-  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** The materialized 3D blok to place. */
-  blok: Scalars['ID']['input'];
-  /** What the placement is called in its space. */
-  name?: InputMaybe<Scalars['String']['input']>;
-  /** The space to place the blok in. */
-  space: Scalars['ID']['input'];
 };
 
 /** Declare that one action tests another. */
@@ -2221,7 +2186,7 @@ export type DefinitionInput = {
   allowProbe?: Scalars['Boolean']['input'];
   /** The args of the definition. This is the input ports of the definition */
   args?: Array<ArgPortInput>;
-  /** The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash. */
+  /** The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies). They name devices only by the action's dependency keys. Not part of the action's hash. */
   bloks?: Array<ActionBlokInput>;
   /** Names of the UI catalogs that extend the base catalog (`base@1`, always applied) for this definition's effect and validator calls. Unknown names yield an unknown_catalog warning; conflicting operation definitions across catalogs are a registration error. */
   catalogs?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -2284,27 +2249,9 @@ export type DeleteMaterializedBlokInput = {
   id: Scalars['ID']['input'];
 };
 
-/** The input for deleting a placement. */
-export type DeletePlacementInput = {
-  /** The ID of the placement to delete. */
-  id: Scalars['ID']['input'];
-};
-
 /** The input for deleting a shortcut. */
 export type DeleteShortcutInput = {
   /** The shortcut ID to delete. This is used to identify the shortcut in the system. */
-  id: Scalars['ID']['input'];
-};
-
-/** The input for deleting a space. */
-export type DeleteSpaceInput = {
-  /** The ID of the space to delete. */
-  id: Scalars['ID']['input'];
-};
-
-/** Remove a placed 3D blok from its space. */
-export type DeleteSpacePlacementInput = {
-  /** The blok placement to remove. */
   id: Scalars['ID']['input'];
 };
 
@@ -3272,14 +3219,10 @@ export type MaterializedBlok = {
   name?: Maybe<Scalars['String']['output']>;
   /** The revision this materialization stays at; null when it follows its blok's head. */
   pinnedRevision?: Maybe<BlokRevision>;
-  /** Placements of this materialized blok. */
-  placements: Array<Placement>;
   /** The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none. */
   revision?: Maybe<BlokRevision>;
   /** Where it lives: DASHBOARD, MESSAGE when it was made for one chat message to show inline, or TASK when a task showed it. */
   scope: MaterializationScope;
-  /** Where this 3D blok is placed in spaces, each at its affine transform. */
-  spacePlacements: Array<SpacePlacement>;
   /** Why its task showed it (scope TASK): ASK holds the task until a person answers through it, INFORM shows it while the task carries on. Null for any other. */
   taskRole?: Maybe<TaskBlokRole>;
   /** The required dependencies of the revision shown that no agent is bound to here. An edit made elsewhere can add one: bind it with updateMaterializedBlok. */
@@ -3292,22 +3235,6 @@ export type MaterializedBlok = {
 export type MaterializedBlokDashboardPlacementsArgs = {
   filters?: InputMaybe<DashboardPlacementFilter>;
   ordering?: Array<DashboardPlacementOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-/** A materialized instance of a Blok that can be placed on dashboards and linked to agent states. */
-export type MaterializedBlokPlacementsArgs = {
-  filters?: InputMaybe<PlacementFilter>;
-  ordering?: Array<PlacementOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-/** A materialized instance of a Blok that can be placed on dashboards and linked to agent states. */
-export type MaterializedBlokSpacePlacementsArgs = {
-  filters?: InputMaybe<SpacePlacementFilter>;
-  ordering?: Array<SpacePlacementOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -3543,16 +3470,10 @@ export type Mutation = {
   createDashboard: Dashboard;
   /** Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it. */
   createHigherOrderImplementation: Implementation;
-  /** Create a new placement for an agent in a space. */
-  createPlacement: Placement;
   /** Create a recurring assignment of an action. Its next run is planned immediately. */
   createSchedule: Schedule;
   /** Create a shortcut to an action. */
   createShortcut: Shortcut;
-  /** Create a new space. */
-  createSpace: Space;
-  /** Place a 3D blok (a Model or Robot over a kulisse asset) in a space at an affine transform. */
-  createSpacePlacement: SpacePlacement;
   /** Create a new test case. */
   createTestCase: TestCase;
   /** Create a test result record. */
@@ -3571,16 +3492,10 @@ export type Mutation = {
   deleteImplementation: Scalars['String']['output'];
   /** Delete a materialized blok by ID. */
   deleteMaterializedBlok: Scalars['Boolean']['output'];
-  /** Delete a placement. */
-  deletePlacement: Scalars['ID']['output'];
   /** Delete a schedule. Its waiting run is cancelled; history is kept. */
   deleteSchedule: Scalars['ID']['output'];
   /** Delete a shortcut. */
   deleteShortcut: Scalars['ID']['output'];
-  /** Delete a space. */
-  deleteSpace: Scalars['ID']['output'];
-  /** Remove a placed 3D blok from its space. */
-  deleteSpacePlacement: Scalars['ID']['output'];
   /** Delete a trigger; its runs are kept. */
   deleteTrigger: Scalars['ID']['output'];
   /** Delete a wiregram and the rules it owns. */
@@ -3627,12 +3542,16 @@ export type Mutation = {
   requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
   requestMediaUpload: MediaUploadGrant;
+  /** Forget where an agent was left in a space, so the blok that places it decides again. */
+  resetPlacement?: Maybe<Scalars['ID']['output']>;
   /** Resume a paused task. */
   resume: Task;
   /** Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state. */
   resumeProbe: Probe;
   /** Make an earlier revision's content a custom blok's head again, as a new revision. */
   revertBlok: BlokRevision;
+  /** Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet. */
+  savePlacement: Placement;
   /** Shelve data into a memory drawer. */
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
@@ -3651,14 +3570,8 @@ export type Mutation = {
   updateDashboard: Dashboard;
   /** Update properties of a materialized blok such as its agent mappings. */
   updateMaterializedBlok: MaterializedBlok;
-  /** Update an existing placement. */
-  updatePlacement: Placement;
   /** Change a schedule; a waiting run is re-planned. */
   updateSchedule: Schedule;
-  /** Update an existing space. */
-  updateSpace: Space;
-  /** Move or rename a placed 3D blok. */
-  updateSpacePlacement: SpacePlacement;
   /** Change a trigger. */
   updateTrigger: Trigger;
 };
@@ -3743,12 +3656,6 @@ export type MutationCreateHigherOrderImplementationArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationCreatePlacementArgs = {
-  input: CreatePlacementInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
 export type MutationCreateScheduleArgs = {
   input: CreateScheduleInput;
 };
@@ -3757,18 +3664,6 @@ export type MutationCreateScheduleArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateShortcutArgs = {
   input: CreateShortcutInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateSpaceArgs = {
-  input: CreateSpaceInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateSpacePlacementArgs = {
-  input: CreateSpacePlacementInput;
 };
 
 
@@ -3827,12 +3722,6 @@ export type MutationDeleteMaterializedBlokArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationDeletePlacementArgs = {
-  input: DeletePlacementInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
 export type MutationDeleteScheduleArgs = {
   input: ScheduleIdInput;
 };
@@ -3841,18 +3730,6 @@ export type MutationDeleteScheduleArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationDeleteShortcutArgs = {
   input: DeleteShortcutInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationDeleteSpaceArgs = {
-  input: DeleteSpaceInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationDeleteSpacePlacementArgs = {
-  input: DeleteSpacePlacementInput;
 };
 
 
@@ -3995,6 +3872,12 @@ export type MutationRequestMediaUploadArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationResetPlacementArgs = {
+  input: ResetPlacementInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationResumeArgs = {
   input: ResumeInput;
 };
@@ -4009,6 +3892,12 @@ export type MutationResumeProbeArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationRevertBlokArgs = {
   input: RevertBlokInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationSavePlacementArgs = {
+  input: SavePlacementInput;
 };
 
 
@@ -4067,26 +3956,8 @@ export type MutationUpdateMaterializedBlokArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationUpdatePlacementArgs = {
-  input: UpdatePlacementInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
 export type MutationUpdateScheduleArgs = {
   input: UpdateScheduleInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationUpdateSpaceArgs = {
-  input: UpdateSpaceInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationUpdateSpacePlacementArgs = {
-  input: UpdateSpacePlacementInput;
 };
 
 
@@ -4190,17 +4061,19 @@ export type PinMaterializedBlokInput = {
   revision?: InputMaybe<Scalars['ID']['input']>;
 };
 
-/** A placement of an agent in a space. */
+/** Where someone left an agent in a space: its pose, the same for every viewer. */
 export type Placement = {
   __typename?: 'Placement';
+  /** Where the agent stands: a 4x4 affine matrix, row-major, in meters with Y up. */
   affineMatrix?: Maybe<Scalars['Args']['output']>;
   agent: Agent;
-  blok?: Maybe<MaterializedBlok>;
   id: Scalars['ID']['output'];
   /** Get the agent associated with this placement. */
   name: Scalars['String']['output'];
+  /** The dependency key the agent was placed under when its pose was kept. */
   role: Scalars['String']['output'];
   space: Space;
+  updatedAt: Scalars['DateTime']['output'];
 };
 
 /** A way to filter placements (space memberships) */
@@ -4213,22 +4086,10 @@ export type PlacementFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Search by name */
+  /** Search by the agent's name */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by space */
   space?: InputMaybe<Scalars['ID']['input']>;
-};
-
-/** The input for creating or updating a placement. */
-export type PlacementInput = {
-  /** The affine matrix for the placement. This is used to identify the placement in the system. */
-  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** The agent ID for the placement. This is used to identify the agent in the system. */
-  agent?: InputMaybe<Scalars['ID']['input']>;
-  /** A specific blok that should be used to visualize the state of the placement. */
-  blok?: InputMaybe<Scalars['ID']['input']>;
-  /** The role of the placement. This is used to identify the placement in the system. */
-  role?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type PlacementOrder =
@@ -4598,14 +4459,10 @@ export type Query = {
   snapshotsAroundRev: Array<Snapshot>;
   /** Fetch a specific space by ID. */
   space: Space;
-  /** Fetch one placed 3D blok by ID. */
-  spacePlacement: SpacePlacement;
-  /** List the 3D bloks placed in spaces. */
-  spacePlacements: Array<SpacePlacement>;
+  /** The space a blok's `room` names: where someone left each agent in it. Null until someone kept a pose there. */
+  spaceByReference?: Maybe<Space>;
   /** List all spaces. */
   spaces: Array<Space>;
-  /** The spaces that place any of these agents (e.g. the ones a dependencyTree dry run binds), those placing the most first, then the most recently changed: where to run a workflow over them. */
-  spacesForAgents: Array<SpaceForAgents>;
   /** Get a specific state by ID. */
   state: State;
   /** Get state at global revision. */
@@ -5038,15 +4895,8 @@ export type QuerySpaceArgs = {
 };
 
 
-export type QuerySpacePlacementArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QuerySpacePlacementsArgs = {
-  filters?: InputMaybe<SpacePlacementFilter>;
-  ordering?: Array<SpacePlacementOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
+export type QuerySpaceByReferenceArgs = {
+  room: Scalars['String']['input'];
 };
 
 
@@ -5054,11 +4904,6 @@ export type QuerySpacesArgs = {
   filters?: InputMaybe<SpaceFilter>;
   ordering?: Array<SpaceOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QuerySpacesForAgentsArgs = {
-  agents: Array<Scalars['ID']['input']>;
 };
 
 
@@ -5242,6 +5087,14 @@ export type RequiresInput = {
   operator: DescriptorOperator;
   /** The value of the requirement. This can be any JSON serializable value; IN/NOT_IN take a list, LTE/GTE a number, EXISTS none */
   value?: InputMaybe<Scalars['Arg']['input']>;
+};
+
+/** Forget where an agent was left in a space, so the blok that places it decides again. */
+export type ResetPlacementInput = {
+  /** The agent whose kept pose is forgotten. */
+  agent: Scalars['ID']['input'];
+  /** The space's reference. */
+  room: Scalars['String']['input'];
 };
 
 /** Represents a resolution for a blok. */
@@ -5484,6 +5337,18 @@ export type RuleChangeEvent = {
   create?: Maybe<RuleChange>;
   delete?: Maybe<Scalars['ID']['output']>;
   update?: Maybe<RuleChange>;
+};
+
+/** Keep where an agent stands in a space, for everyone. */
+export type SavePlacementInput = {
+  /** Where it stands: a 4x4 affine matrix, row-major, in meters with Y up, from the agent's model into the space. */
+  affineMatrix: Array<Array<Scalars['Float']['input']>>;
+  /** The agent whose pose is kept. */
+  agent: Scalars['ID']['input'];
+  /** The dependency key it was placed under (`robot`). */
+  role: Scalars['String']['input'];
+  /** The space's reference: a blok's `room` (a URI such as `room:helsinki-lab`, or `app/<identifier>/<key>`). The space is made when none has it yet. */
+  room: Scalars['String']['input'];
 };
 
 /** A recurring assignment of one action. It owns at most one waiting run at a time: the next one, a delayed task. */
@@ -5932,30 +5797,23 @@ export type Snapshot = {
   value: Scalars['Args']['output'];
 };
 
-/** A space where agents can interact. */
+/** A room: where the organization keeps its devices. What a 3D view shows is the action's `<Space room=...>` blok; where each device stands is kept here, the same for everyone. */
 export type Space = {
   __typename?: 'Space';
-  /** The 3D bloks placed in this space, each at its affine transform. */
-  blokPlacements: Array<SpacePlacement>;
   createdAt: Scalars['DateTime']['output'];
   creator: User;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  /** Where someone left each agent in this room. */
   placements: Array<Placement>;
+  /** What finds the room again: a blok's `room`. */
+  reference?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
 
 
-/** A space where agents can interact. */
-export type SpaceBlokPlacementsArgs = {
-  filters?: InputMaybe<SpacePlacementFilter>;
-  ordering?: Array<SpacePlacementOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-/** A space where agents can interact. */
+/** A room: where the organization keeps its devices. What a 3D view shows is the action's `<Space room=...>` blok; where each device stands is kept here, the same for everyone. */
 export type SpacePlacementsArgs = {
   filters?: InputMaybe<PlacementFilter>;
   ordering?: Array<PlacementOrder>;
@@ -5970,52 +5828,16 @@ export type SpaceFilter = {
   OR?: InputMaybe<SpaceFilter>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by reference (a blok's `room`) */
+  reference?: InputMaybe<Scalars['String']['input']>;
   /** Search by name */
   search?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** A space and how many of the agents asked about it places. */
-export type SpaceForAgents = {
-  __typename?: 'SpaceForAgents';
-  /** How many of the agents asked about this space places. */
-  placed: Scalars['Int']['output'];
-  /** The space. */
-  space: Space;
 };
 
 export type SpaceOrder =
   { createdAt: Ordering; name?: never; updatedAt?: never; }
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
   |  { createdAt?: never; name?: never; updatedAt: Ordering; };
-
-/** A 3D blok placed in a space at an affine transform: a Model or Robot blok over a kulisse asset, with no agent of its own. */
-export type SpacePlacement = {
-  __typename?: 'SpacePlacement';
-  /** Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Null is the identity. */
-  affineMatrix?: Maybe<Scalars['Args']['output']>;
-  blok: MaterializedBlok;
-  createdAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-  name?: Maybe<Scalars['String']['output']>;
-  space: Space;
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-/** A way to filter blok placements in spaces */
-export type SpacePlacementFilter = {
-  AND?: InputMaybe<SpacePlacementFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<SpacePlacementFilter>;
-  OR?: InputMaybe<SpacePlacementFilter>;
-  /** Filter by IDs */
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Filter by space */
-  space?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type SpacePlacementOrder =
-  { createdAt: Ordering; name?: never; }
-  |  { createdAt?: never; name: Ordering; };
 
 export type State = {
   __typename?: 'State';
@@ -7195,16 +7017,6 @@ export type UpdateMaterializedBlokInput = {
   id: Scalars['ID']['input'];
 };
 
-/** The input for updating a placement. */
-export type UpdatePlacementInput = {
-  /** The affine matrix for the placement. This is used to identify the placement in the system. */
-  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** The ID of the placement to update. */
-  id: Scalars['ID']['input'];
-  /** The role of the placement. This is used to identify the placement in the system. */
-  role?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Change a schedule. Giving intervalSeconds clears cron and vice versa. Give `agent: null` (with `interface: null`) to unpin it; give `endsAt` or `maxRuns` as null to lift it. A waiting run is re-planned; an executing one finishes first. */
 export type UpdateScheduleInput = {
   action?: InputMaybe<Scalars['ID']['input']>;
@@ -7225,26 +7037,6 @@ export type UpdateScheduleInput = {
   /** The policy of every run it creates: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. A waiting run is re-planned with it. */
   policy?: InputMaybe<TaskPolicy>;
   timezone?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** The input for updating a space. */
-export type UpdateSpaceInput = {
-  /** The new description of the space. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** The ID of the space to update. */
-  id: Scalars['ID']['input'];
-  /** The new name of the space. */
-  name?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** Move or rename a placed 3D blok. */
-export type UpdateSpacePlacementInput = {
-  /** A new 4x4 affine matrix, row-major. */
-  affineMatrix?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** The blok placement to change. */
-  id: Scalars['ID']['input'];
-  /** A new name. */
-  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Change a trigger. Omitted fields stay as they are; the result is checked as a whole, like a new trigger. Give `agent: null` (with `interface: null`) to unpin it; give a policy as null to lift it. */
@@ -7532,7 +7324,7 @@ export type HoverActionFragment = { __typename?: 'Action', id: string, name: str
     & BlokLogoFragment
   ) | null, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
-export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, resolvedLocals: Array<(
+export type ActionBlokFragment = { __typename?: 'ActionBlok', id: string, context: ComponentContext, blok: { __typename?: 'Blok', id: string, context: ComponentContext, heldByAction: boolean, componentTree: any, vocab: number, catalogs: Array<string>, app?: { __typename?: 'App', id: string, identifier: string } | null, resolvedLocals: Array<(
       { __typename?: 'ResolvedBlokLocal' }
       & ResolvedBlokLocalFragment
     )>, demo?: { __typename?: 'BlokDemo', deps?: any | null, args?: any | null, task?: any | null, queries?: any | null, subscriptions?: any | null } | null, queries: Array<{ __typename?: 'BlokQuery', key: string, service: string, document: string, poll?: number | null, more?: string | null, variables: Array<(
@@ -7555,11 +7347,6 @@ export type RunTaskFragment = { __typename?: 'Task', id: string, args: any, late
     { __typename?: 'TaskDependencyAgent' }
     & TaskDependencyAgentFragment
   )>, space?: { __typename?: 'Space', id: string, name: string } | null };
-
-export type SpaceForAgentsFragment = { __typename?: 'SpaceForAgents', placed: number, space: (
-    { __typename?: 'Space' }
-    & ListSpaceFragment
-  ) };
 
 export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: string, app: { __typename?: 'App', identifier: string }, states: Array<(
     { __typename?: 'State' }
@@ -8053,7 +7840,7 @@ export type ListMemoryShelveFragment = { __typename?: 'MemoryShelve', id: string
 
 export type PlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string } };
 
-export type SpacePlacementFragment = { __typename?: 'Placement', id: string, name: string, role: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean }, blok?: { __typename?: 'MaterializedBlok', id: string, name?: string | null, blok: { __typename?: 'Blok', id: string, name: string, context: ComponentContext } } | null };
+export type SpacePlacementFragment = { __typename?: 'Placement', id: string, name: string, role: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } };
 
 export type AgentPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, space: { __typename?: 'Space', id: string, name: string } };
 
@@ -8558,17 +8345,12 @@ export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: 
 
 export type ShortcutPinFragment = { __typename?: 'Shortcut', id: string, pinned: boolean };
 
-export type SpaceFragment = { __typename?: 'Space', id: string, name: string, placements: Array<(
+export type SpaceFragment = { __typename?: 'Space', id: string, name: string, reference?: string | null, placements: Array<(
     { __typename?: 'Placement' }
     & SpacePlacementFragment
-  )>, blokPlacements: Array<(
-    { __typename?: 'SpacePlacement' }
-    & SpaceBlokPlacementFragment
   )> };
 
-export type SpaceBlokPlacementFragment = { __typename?: 'SpacePlacement', id: string, name?: string | null, affineMatrix?: any | null, blok: { __typename?: 'MaterializedBlok', id: string, name?: string | null, blok: { __typename?: 'Blok', id: string, name: string, context: ComponentContext } } };
-
-export type ListSpaceFragment = { __typename?: 'Space', id: string, name: string };
+export type ListSpaceFragment = { __typename?: 'Space', id: string, name: string, reference?: string | null };
 
 export type StateFragment = { __typename?: 'State', id: string, interface: string, updatedAt: any, definition: { __typename?: 'StateDefinition', hash: string, name: string, ports: Array<(
       { __typename?: 'ReturnPort' }
@@ -9300,86 +9082,22 @@ export type UnbindShortcutMutationVariables = Exact<{
 
 export type UnbindShortcutMutation = { __typename?: 'Mutation', unbindShortcut: string };
 
-export type CreateSpaceMutationVariables = Exact<{
-  input: CreateSpaceInput;
+export type SavePlacementMutationVariables = Exact<{
+  input: SavePlacementInput;
 }>;
 
 
-export type CreateSpaceMutation = { __typename?: 'Mutation', createSpace: (
-    { __typename?: 'Space' }
-    & SpaceFragment
-  ) };
-
-export type UpdateSpaceMutationVariables = Exact<{
-  input: UpdateSpaceInput;
-}>;
-
-
-export type UpdateSpaceMutation = { __typename?: 'Mutation', updateSpace: (
-    { __typename?: 'Space' }
-    & SpaceFragment
-  ) };
-
-export type DeleteSpaceMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DeleteSpaceMutation = { __typename?: 'Mutation', deleteSpace: string };
-
-export type CreatePlacementMutationVariables = Exact<{
-  input: CreatePlacementInput;
-}>;
-
-
-export type CreatePlacementMutation = { __typename?: 'Mutation', createPlacement: (
+export type SavePlacementMutation = { __typename?: 'Mutation', savePlacement: (
     { __typename?: 'Placement' }
     & SpacePlacementFragment
   ) };
 
-export type UpdatePlacementMutationVariables = Exact<{
-  input: UpdatePlacementInput;
+export type ResetPlacementMutationVariables = Exact<{
+  input: ResetPlacementInput;
 }>;
 
 
-export type UpdatePlacementMutation = { __typename?: 'Mutation', updatePlacement: (
-    { __typename?: 'Placement' }
-    & SpacePlacementFragment
-  ) };
-
-export type DeletePlacementMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DeletePlacementMutation = { __typename?: 'Mutation', deletePlacement: string };
-
-export type CreateSpacePlacementMutationVariables = Exact<{
-  input: CreateSpacePlacementInput;
-}>;
-
-
-export type CreateSpacePlacementMutation = { __typename?: 'Mutation', createSpacePlacement: (
-    { __typename?: 'SpacePlacement' }
-    & SpaceBlokPlacementFragment
-  ) };
-
-export type UpdateSpacePlacementMutationVariables = Exact<{
-  input: UpdateSpacePlacementInput;
-}>;
-
-
-export type UpdateSpacePlacementMutation = { __typename?: 'Mutation', updateSpacePlacement: (
-    { __typename?: 'SpacePlacement' }
-    & SpaceBlokPlacementFragment
-  ) };
-
-export type DeleteSpacePlacementMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DeleteSpacePlacementMutation = { __typename?: 'Mutation', deleteSpacePlacement: string };
+export type ResetPlacementMutation = { __typename?: 'Mutation', resetPlacement?: string | null };
 
 export type DeleteImplementationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -9607,16 +9325,6 @@ export type ActionBloksQuery = { __typename?: 'Query', action: { __typename?: 'A
       { __typename?: 'ActionBlok' }
       & ActionBlokFragment
     )> } };
-
-export type SpacesForAgentsQueryVariables = Exact<{
-  agents: Array<Scalars['ID']['input']>;
-}>;
-
-
-export type SpacesForAgentsQuery = { __typename?: 'Query', spacesForAgents: Array<(
-    { __typename?: 'SpaceForAgents' }
-    & SpaceForAgentsFragment
-  )> };
 
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10382,6 +10090,16 @@ export type SpaceQuery = { __typename?: 'Query', space: (
     { __typename?: 'Space' }
     & SpaceFragment
   ) };
+
+export type SpaceByReferenceQueryVariables = Exact<{
+  room: Scalars['String']['input'];
+}>;
+
+
+export type SpaceByReferenceQuery = { __typename?: 'Query', spaceByReference?: (
+    { __typename?: 'Space' }
+    & SpaceFragment
+  ) | null };
 
 export type SpaceOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -11176,6 +10894,10 @@ export const ActionBlokFragmentDoc = gql`
     id
     context
     heldByAction
+    app {
+      id
+      identifier
+    }
     componentTree
     vocab
     catalogs
@@ -11261,20 +10983,6 @@ export const RunTaskFragmentDoc = gql`
     ${TaskEventFragmentDoc}
 ${ActionBlokFragmentDoc}
 ${TaskDependencyAgentFragmentDoc}`;
-export const ListSpaceFragmentDoc = gql`
-    fragment ListSpace on Space {
-  id
-  name
-}
-    `;
-export const SpaceForAgentsFragmentDoc = gql`
-    fragment SpaceForAgents on SpaceForAgents {
-  placed
-  space {
-    ...ListSpace
-  }
-}
-    ${ListSpaceFragmentDoc}`;
 export const PortCallInnerFragmentDoc = gql`
     fragment PortCallInner on UtilCall {
   operation
@@ -13796,47 +13504,26 @@ export const SpacePlacementFragmentDoc = gql`
     name
     connected
   }
-  blok {
-    id
-    name
-    blok {
-      id
-      name
-      context
-    }
-  }
   affineMatrix
-}
-    `;
-export const SpaceBlokPlacementFragmentDoc = gql`
-    fragment SpaceBlokPlacement on SpacePlacement {
-  id
-  name
-  affineMatrix
-  blok {
-    id
-    name
-    blok {
-      id
-      name
-      context
-    }
-  }
 }
     `;
 export const SpaceFragmentDoc = gql`
     fragment Space on Space {
   id
   name
+  reference
   placements {
     ...SpacePlacement
   }
-  blokPlacements {
-    ...SpaceBlokPlacement
-  }
 }
-    ${SpacePlacementFragmentDoc}
-${SpaceBlokPlacementFragmentDoc}`;
+    ${SpacePlacementFragmentDoc}`;
+export const ListSpaceFragmentDoc = gql`
+    fragment ListSpace on Space {
+  id
+  name
+  reference
+}
+    `;
 export const StateEventFragmentDoc = gql`
     fragment StateEvent on State {
   id
@@ -16341,297 +16028,70 @@ export function useUnbindShortcutMutation(baseOptions?: ApolloReactHooks.Mutatio
 export type UnbindShortcutMutationHookResult = ReturnType<typeof useUnbindShortcutMutation>;
 export type UnbindShortcutMutationResult = Apollo.MutationResult<UnbindShortcutMutation>;
 export type UnbindShortcutMutationOptions = Apollo.BaseMutationOptions<UnbindShortcutMutation, UnbindShortcutMutationVariables>;
-export const CreateSpaceDocument = gql`
-    mutation CreateSpace($input: CreateSpaceInput!) {
-  createSpace(input: $input) {
-    ...Space
-  }
-}
-    ${SpaceFragmentDoc}`;
-export type CreateSpaceMutationFn = Apollo.MutationFunction<CreateSpaceMutation, CreateSpaceMutationVariables>;
-
-/**
- * __useCreateSpaceMutation__
- *
- * To run a mutation, you first call `useCreateSpaceMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateSpaceMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createSpaceMutation, { data, loading, error }] = useCreateSpaceMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useCreateSpaceMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSpaceMutation, CreateSpaceMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateSpaceMutation, CreateSpaceMutationVariables>(CreateSpaceDocument, options);
-      }
-export type CreateSpaceMutationHookResult = ReturnType<typeof useCreateSpaceMutation>;
-export type CreateSpaceMutationResult = Apollo.MutationResult<CreateSpaceMutation>;
-export type CreateSpaceMutationOptions = Apollo.BaseMutationOptions<CreateSpaceMutation, CreateSpaceMutationVariables>;
-export const UpdateSpaceDocument = gql`
-    mutation UpdateSpace($input: UpdateSpaceInput!) {
-  updateSpace(input: $input) {
-    ...Space
-  }
-}
-    ${SpaceFragmentDoc}`;
-export type UpdateSpaceMutationFn = Apollo.MutationFunction<UpdateSpaceMutation, UpdateSpaceMutationVariables>;
-
-/**
- * __useUpdateSpaceMutation__
- *
- * To run a mutation, you first call `useUpdateSpaceMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUpdateSpaceMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [updateSpaceMutation, { data, loading, error }] = useUpdateSpaceMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUpdateSpaceMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateSpaceMutation, UpdateSpaceMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<UpdateSpaceMutation, UpdateSpaceMutationVariables>(UpdateSpaceDocument, options);
-      }
-export type UpdateSpaceMutationHookResult = ReturnType<typeof useUpdateSpaceMutation>;
-export type UpdateSpaceMutationResult = Apollo.MutationResult<UpdateSpaceMutation>;
-export type UpdateSpaceMutationOptions = Apollo.BaseMutationOptions<UpdateSpaceMutation, UpdateSpaceMutationVariables>;
-export const DeleteSpaceDocument = gql`
-    mutation DeleteSpace($id: ID!) {
-  deleteSpace(input: {id: $id})
-}
-    `;
-export type DeleteSpaceMutationFn = Apollo.MutationFunction<DeleteSpaceMutation, DeleteSpaceMutationVariables>;
-
-/**
- * __useDeleteSpaceMutation__
- *
- * To run a mutation, you first call `useDeleteSpaceMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteSpaceMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteSpaceMutation, { data, loading, error }] = useDeleteSpaceMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeleteSpaceMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteSpaceMutation, DeleteSpaceMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteSpaceMutation, DeleteSpaceMutationVariables>(DeleteSpaceDocument, options);
-      }
-export type DeleteSpaceMutationHookResult = ReturnType<typeof useDeleteSpaceMutation>;
-export type DeleteSpaceMutationResult = Apollo.MutationResult<DeleteSpaceMutation>;
-export type DeleteSpaceMutationOptions = Apollo.BaseMutationOptions<DeleteSpaceMutation, DeleteSpaceMutationVariables>;
-export const CreatePlacementDocument = gql`
-    mutation CreatePlacement($input: CreatePlacementInput!) {
-  createPlacement(input: $input) {
+export const SavePlacementDocument = gql`
+    mutation SavePlacement($input: SavePlacementInput!) {
+  savePlacement(input: $input) {
     ...SpacePlacement
   }
 }
     ${SpacePlacementFragmentDoc}`;
-export type CreatePlacementMutationFn = Apollo.MutationFunction<CreatePlacementMutation, CreatePlacementMutationVariables>;
+export type SavePlacementMutationFn = Apollo.MutationFunction<SavePlacementMutation, SavePlacementMutationVariables>;
 
 /**
- * __useCreatePlacementMutation__
+ * __useSavePlacementMutation__
  *
- * To run a mutation, you first call `useCreatePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreatePlacementMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useSavePlacementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSavePlacementMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [createPlacementMutation, { data, loading, error }] = useCreatePlacementMutation({
+ * const [savePlacementMutation, { data, loading, error }] = useSavePlacementMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useCreatePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreatePlacementMutation, CreatePlacementMutationVariables>) {
+export function useSavePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SavePlacementMutation, SavePlacementMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreatePlacementMutation, CreatePlacementMutationVariables>(CreatePlacementDocument, options);
+        return ApolloReactHooks.useMutation<SavePlacementMutation, SavePlacementMutationVariables>(SavePlacementDocument, options);
       }
-export type CreatePlacementMutationHookResult = ReturnType<typeof useCreatePlacementMutation>;
-export type CreatePlacementMutationResult = Apollo.MutationResult<CreatePlacementMutation>;
-export type CreatePlacementMutationOptions = Apollo.BaseMutationOptions<CreatePlacementMutation, CreatePlacementMutationVariables>;
-export const UpdatePlacementDocument = gql`
-    mutation UpdatePlacement($input: UpdatePlacementInput!) {
-  updatePlacement(input: $input) {
-    ...SpacePlacement
-  }
-}
-    ${SpacePlacementFragmentDoc}`;
-export type UpdatePlacementMutationFn = Apollo.MutationFunction<UpdatePlacementMutation, UpdatePlacementMutationVariables>;
-
-/**
- * __useUpdatePlacementMutation__
- *
- * To run a mutation, you first call `useUpdatePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUpdatePlacementMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [updatePlacementMutation, { data, loading, error }] = useUpdatePlacementMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUpdatePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdatePlacementMutation, UpdatePlacementMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<UpdatePlacementMutation, UpdatePlacementMutationVariables>(UpdatePlacementDocument, options);
-      }
-export type UpdatePlacementMutationHookResult = ReturnType<typeof useUpdatePlacementMutation>;
-export type UpdatePlacementMutationResult = Apollo.MutationResult<UpdatePlacementMutation>;
-export type UpdatePlacementMutationOptions = Apollo.BaseMutationOptions<UpdatePlacementMutation, UpdatePlacementMutationVariables>;
-export const DeletePlacementDocument = gql`
-    mutation DeletePlacement($id: ID!) {
-  deletePlacement(input: {id: $id})
+export type SavePlacementMutationHookResult = ReturnType<typeof useSavePlacementMutation>;
+export type SavePlacementMutationResult = Apollo.MutationResult<SavePlacementMutation>;
+export type SavePlacementMutationOptions = Apollo.BaseMutationOptions<SavePlacementMutation, SavePlacementMutationVariables>;
+export const ResetPlacementDocument = gql`
+    mutation ResetPlacement($input: ResetPlacementInput!) {
+  resetPlacement(input: $input)
 }
     `;
-export type DeletePlacementMutationFn = Apollo.MutationFunction<DeletePlacementMutation, DeletePlacementMutationVariables>;
+export type ResetPlacementMutationFn = Apollo.MutationFunction<ResetPlacementMutation, ResetPlacementMutationVariables>;
 
 /**
- * __useDeletePlacementMutation__
+ * __useResetPlacementMutation__
  *
- * To run a mutation, you first call `useDeletePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeletePlacementMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useResetPlacementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResetPlacementMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [deletePlacementMutation, { data, loading, error }] = useDeletePlacementMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeletePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeletePlacementMutation, DeletePlacementMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeletePlacementMutation, DeletePlacementMutationVariables>(DeletePlacementDocument, options);
-      }
-export type DeletePlacementMutationHookResult = ReturnType<typeof useDeletePlacementMutation>;
-export type DeletePlacementMutationResult = Apollo.MutationResult<DeletePlacementMutation>;
-export type DeletePlacementMutationOptions = Apollo.BaseMutationOptions<DeletePlacementMutation, DeletePlacementMutationVariables>;
-export const CreateSpacePlacementDocument = gql`
-    mutation CreateSpacePlacement($input: CreateSpacePlacementInput!) {
-  createSpacePlacement(input: $input) {
-    ...SpaceBlokPlacement
-  }
-}
-    ${SpaceBlokPlacementFragmentDoc}`;
-export type CreateSpacePlacementMutationFn = Apollo.MutationFunction<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>;
-
-/**
- * __useCreateSpacePlacementMutation__
- *
- * To run a mutation, you first call `useCreateSpacePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateSpacePlacementMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createSpacePlacementMutation, { data, loading, error }] = useCreateSpacePlacementMutation({
+ * const [resetPlacementMutation, { data, loading, error }] = useResetPlacementMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useCreateSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>) {
+export function useResetPlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ResetPlacementMutation, ResetPlacementMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>(CreateSpacePlacementDocument, options);
+        return ApolloReactHooks.useMutation<ResetPlacementMutation, ResetPlacementMutationVariables>(ResetPlacementDocument, options);
       }
-export type CreateSpacePlacementMutationHookResult = ReturnType<typeof useCreateSpacePlacementMutation>;
-export type CreateSpacePlacementMutationResult = Apollo.MutationResult<CreateSpacePlacementMutation>;
-export type CreateSpacePlacementMutationOptions = Apollo.BaseMutationOptions<CreateSpacePlacementMutation, CreateSpacePlacementMutationVariables>;
-export const UpdateSpacePlacementDocument = gql`
-    mutation UpdateSpacePlacement($input: UpdateSpacePlacementInput!) {
-  updateSpacePlacement(input: $input) {
-    ...SpaceBlokPlacement
-  }
-}
-    ${SpaceBlokPlacementFragmentDoc}`;
-export type UpdateSpacePlacementMutationFn = Apollo.MutationFunction<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>;
-
-/**
- * __useUpdateSpacePlacementMutation__
- *
- * To run a mutation, you first call `useUpdateSpacePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUpdateSpacePlacementMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [updateSpacePlacementMutation, { data, loading, error }] = useUpdateSpacePlacementMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUpdateSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>(UpdateSpacePlacementDocument, options);
-      }
-export type UpdateSpacePlacementMutationHookResult = ReturnType<typeof useUpdateSpacePlacementMutation>;
-export type UpdateSpacePlacementMutationResult = Apollo.MutationResult<UpdateSpacePlacementMutation>;
-export type UpdateSpacePlacementMutationOptions = Apollo.BaseMutationOptions<UpdateSpacePlacementMutation, UpdateSpacePlacementMutationVariables>;
-export const DeleteSpacePlacementDocument = gql`
-    mutation DeleteSpacePlacement($id: ID!) {
-  deleteSpacePlacement(input: {id: $id})
-}
-    `;
-export type DeleteSpacePlacementMutationFn = Apollo.MutationFunction<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>;
-
-/**
- * __useDeleteSpacePlacementMutation__
- *
- * To run a mutation, you first call `useDeleteSpacePlacementMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteSpacePlacementMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteSpacePlacementMutation, { data, loading, error }] = useDeleteSpacePlacementMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeleteSpacePlacementMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>(DeleteSpacePlacementDocument, options);
-      }
-export type DeleteSpacePlacementMutationHookResult = ReturnType<typeof useDeleteSpacePlacementMutation>;
-export type DeleteSpacePlacementMutationResult = Apollo.MutationResult<DeleteSpacePlacementMutation>;
-export type DeleteSpacePlacementMutationOptions = Apollo.BaseMutationOptions<DeleteSpacePlacementMutation, DeleteSpacePlacementMutationVariables>;
+export type ResetPlacementMutationHookResult = ReturnType<typeof useResetPlacementMutation>;
+export type ResetPlacementMutationResult = Apollo.MutationResult<ResetPlacementMutation>;
+export type ResetPlacementMutationOptions = Apollo.BaseMutationOptions<ResetPlacementMutation, ResetPlacementMutationVariables>;
 export const DeleteImplementationDocument = gql`
     mutation DeleteImplementation($id: ID!) {
   deleteImplementation(input: {implementation: $id})
@@ -17443,41 +16903,6 @@ export function useActionBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type ActionBloksQueryHookResult = ReturnType<typeof useActionBloksQuery>;
 export type ActionBloksLazyQueryHookResult = ReturnType<typeof useActionBloksLazyQuery>;
 export type ActionBloksQueryResult = Apollo.QueryResult<ActionBloksQuery, ActionBloksQueryVariables>;
-export const SpacesForAgentsDocument = gql`
-    query SpacesForAgents($agents: [ID!]!) {
-  spacesForAgents(agents: $agents) {
-    ...SpaceForAgents
-  }
-}
-    ${SpaceForAgentsFragmentDoc}`;
-
-/**
- * __useSpacesForAgentsQuery__
- *
- * To run a query within a React component, call `useSpacesForAgentsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSpacesForAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSpacesForAgentsQuery({
- *   variables: {
- *      agents: // value for 'agents'
- *   },
- * });
- */
-export function useSpacesForAgentsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
-      }
-export function useSpacesForAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>(SpacesForAgentsDocument, options);
-        }
-export type SpacesForAgentsQueryHookResult = ReturnType<typeof useSpacesForAgentsQuery>;
-export type SpacesForAgentsLazyQueryHookResult = ReturnType<typeof useSpacesForAgentsLazyQuery>;
-export type SpacesForAgentsQueryResult = Apollo.QueryResult<SpacesForAgentsQuery, SpacesForAgentsQueryVariables>;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -20333,6 +19758,41 @@ export function useSpaceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOp
 export type SpaceQueryHookResult = ReturnType<typeof useSpaceQuery>;
 export type SpaceLazyQueryHookResult = ReturnType<typeof useSpaceLazyQuery>;
 export type SpaceQueryResult = Apollo.QueryResult<SpaceQuery, SpaceQueryVariables>;
+export const SpaceByReferenceDocument = gql`
+    query SpaceByReference($room: String!) {
+  spaceByReference(room: $room) {
+    ...Space
+  }
+}
+    ${SpaceFragmentDoc}`;
+
+/**
+ * __useSpaceByReferenceQuery__
+ *
+ * To run a query within a React component, call `useSpaceByReferenceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSpaceByReferenceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSpaceByReferenceQuery({
+ *   variables: {
+ *      room: // value for 'room'
+ *   },
+ * });
+ */
+export function useSpaceByReferenceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SpaceByReferenceQuery, SpaceByReferenceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SpaceByReferenceQuery, SpaceByReferenceQueryVariables>(SpaceByReferenceDocument, options);
+      }
+export function useSpaceByReferenceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SpaceByReferenceQuery, SpaceByReferenceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SpaceByReferenceQuery, SpaceByReferenceQueryVariables>(SpaceByReferenceDocument, options);
+        }
+export type SpaceByReferenceQueryHookResult = ReturnType<typeof useSpaceByReferenceQuery>;
+export type SpaceByReferenceLazyQueryHookResult = ReturnType<typeof useSpaceByReferenceLazyQuery>;
+export type SpaceByReferenceQueryResult = Apollo.QueryResult<SpaceByReferenceQuery, SpaceByReferenceQueryVariables>;
 export const SpaceOptionsDocument = gql`
     query SpaceOptions($search: String, $values: [ID!]) {
   options: spaces(

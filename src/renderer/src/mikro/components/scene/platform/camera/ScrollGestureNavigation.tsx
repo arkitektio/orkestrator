@@ -7,7 +7,8 @@ import { ZOOM_STEP, worldUnitsPerPixelAt } from "@/core/data/scene/camera/sceneN
 import { asNavControls, zoomCameraBy } from "@/core/data/scene/camera/keyboardNavigation";
 import { createScrollClassifier } from "../input/scrollGesture";
 import { useModeStoreApi } from "../stores/modeStore";
-import { cameraInteraction } from "./cameraMotion";
+import { useViewerStoreApi } from "../stores/viewerStore";
+import { useCameraInteraction } from "../input/sceneInput";
 
 /**
  * The trackpad half of the movement grammar (`platform/input/navigationBindings`):
@@ -37,6 +38,8 @@ export const ScrollGestureNavigation = () => {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const modeApi = useModeStoreApi();
+  const cameraInteraction = useCameraInteraction();
+  const viewerApi = useViewerStoreApi();
   const { settings } = useSettings();
   const setting = settings.sceneScrollGesture;
   const classify = useMemo(() => createScrollClassifier(), []);
@@ -53,6 +56,8 @@ export const ScrollGestureNavigation = () => {
     const onWheel = (event: WheelEvent) => {
       if (event.target !== element) return;
       if (event.shiftKey) return; // z, or the controls' own zoom in 3D
+      // The crop box's depth is being set with the wheel (`CropBoxGesture`).
+      if (viewerApi.getState().cropPhase === "depth") return;
       // `wheelDeltaX/Y` are Chromium's legacy tick fields, not in lib.dom.
       const legacy = event as WheelEvent & { wheelDeltaX?: number; wheelDeltaY?: number };
       const intent = classify(
@@ -117,7 +122,7 @@ export const ScrollGestureNavigation = () => {
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     return () => window.removeEventListener("wheel", onWheel, { capture: true });
-  }, [camera, controls, gl, invalidate, modeApi, classify, setting]);
+  }, [camera, controls, gl, invalidate, modeApi, classify, setting, cameraInteraction, viewerApi]);
 
   return null;
 };

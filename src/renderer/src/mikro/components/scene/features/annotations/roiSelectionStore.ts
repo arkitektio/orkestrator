@@ -118,7 +118,7 @@ interface RoiSelectionState {
    * half of the double-click that starts a NEW shape — which must not pick
    * anything. Nothing at that press can tell the two apart, so the pick waits
    * out the double-click window; the double-click's second press cancels it
-   * (`cancelPendingPick`, from `shell/pointer/LeftPressArbiter`). A newer
+   * (`cancelPendingPick`, from `shell/pointer/PressLedgerDriver`). A newer
    * deferred pick replaces an older one.
    */
   deferPick: (pick: () => void, delayMs: number) => void;

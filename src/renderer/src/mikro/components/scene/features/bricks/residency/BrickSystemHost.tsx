@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useSceneStoreApi } from "../../../platform/stores/sceneStore";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
+import { toolPressOpen, usePressLedger } from "../../../platform/input/sceneInput";
 import { createBrickSystem } from "./brickSystem";
 import { useBrickStoreApi } from "../store/brickSlice";
 
@@ -31,6 +32,7 @@ export function BrickSystemHost() {
   const viewerStore = useBrickStoreApi();
   const sceneStore = useSceneStoreApi();
   const viewStore = useViewStoreApi();
+  const ledger = usePressLedger();
 
   // Read once per mount, not per render: a mid-session toggle must not tear
   // down a running system (and the DebugPanel tooltip says "next scene open").
@@ -39,9 +41,14 @@ export function BrickSystemHost() {
 
   useEffect(() => {
     if (!enabledRef.current) return;
-    const system = createBrickSystem({ viewerStore, sceneStore, viewStore });
+    const system = createBrickSystem({
+      viewerStore,
+      sceneStore,
+      viewStore,
+      isInputBusy: () => toolPressOpen(ledger),
+    });
     return () => system.dispose();
-  }, [viewerStore, sceneStore, viewStore]);
+  }, [viewerStore, sceneStore, viewStore, ledger]);
 
   return null;
 }

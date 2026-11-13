@@ -58,6 +58,8 @@ const EXPECTED_KEYS = [
   "cropBox", "cropPhase", "cropBoxBefore", "beginCrop", "anchorCrop", "fixCropRect",
   "setCropBox", "commitCrop", "cancelCrop", "clearCrop",
   "cropNotice", "refuseCrop", "clearCropNotice",
+  // click on data not loaded yet (probe slice)
+  "loadingClick", "noteLoadingClick", "clearLoadingClick",
   "layerRunMenu", "openLayerRunMenu", "closeLayerRunMenu",] as const;
 
 describe("viewerStore shape", () => {

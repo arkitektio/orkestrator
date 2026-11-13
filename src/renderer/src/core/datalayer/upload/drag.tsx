@@ -2,6 +2,7 @@ import { UploadOptions } from "@/core/datalayer/hooks/useUpload";
 import { acceptsFiles } from "@/core/dnd/files";
 import { useCanDrop, useDropTarget } from "@/core/dnd/react";
 import { reportError } from "@/core/notify";
+import { Name } from "@/core/ui/name";
 import { useState } from "react";
 
 export type UploadFunc = (
@@ -94,10 +95,8 @@ export const DragZone: React.FC<{
               }% ${future.progress && Math.floor((1 - future.progress) * 100)}%)`,
           }}
         >
-          <div className="truncate p-5">
-            <div className="flex-grow cursor-pointer font-semibold">
-              {future.file.name}
-            </div>
+          <div className="min-w-0 p-5">
+            <Name className="cursor-pointer font-semibold">{future.file.name}</Name>
           </div>
           <button
             type="button"

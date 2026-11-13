@@ -14,6 +14,13 @@ query Space($id: ID!) {
   }
 }
 
+# The room a Space blok's `room` names: null until someone kept a pose in it.
+query SpaceByReference($room: String!) {
+  spaceByReference(room: $room) {
+    ...Space
+  }
+}
+
 
 query SpaceOptions($search: String, $values: [ID!]) {
   options: spaces(

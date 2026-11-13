@@ -9,6 +9,7 @@ import { LensButton } from "../../platform/layerui/LensButton";
 import { RemoveLayerButton } from "../../platform/layerui/LayerCardActions";
 import { useLayerCardHeaderActions } from "../../platform/layerui/layerCardSlot";
 import { LayerNamePopover } from "../../platform/layerui/LayerNamePopover";
+import { Name } from "@/core/ui/name";
 
 /**
  * A single compact layer row for the right-hand Layers panel. Displays a
@@ -95,12 +96,9 @@ export const LayerRow = ({
       </LayerTile>
       {/* The name folds the card like the rest of the row; renaming is the
           pencil among the actions. */}
-      <span
-        className={`min-w-0 flex-1 truncate font-medium text-foreground/90 ${compact ? "text-[11px]" : "text-xs"}`}
-        title={label}
-      >
+      <Name className={`flex-1 font-medium text-foreground/90 ${compact ? "text-[11px]" : "text-xs"}`}>
         {label}
-      </span>
+      </Name>
       {graphDirty && onSaveGraph && (
         <button
           className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"

@@ -25,7 +25,8 @@ import {
 } from "../../../platform/probe/probeGating";
 import { useBrushSkeletonStoreApi } from "../../annotations/enhancers/brushSkeletonStore";
 import { useCreateSceneAnnotation } from "../../annotations/useCreateSceneAnnotation";
-import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../platform/stores/modeStore";
+import { usePressLedger } from "../../../platform/input/sceneInput";
 import { useSceneStore, useSceneStoreApi, type LayerState } from "../../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../../platform/stores/viewerStore";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
@@ -127,7 +128,7 @@ export const useBrickPlaneProbe = ({
 
   // Event-time resolution — fresh pins and layer list, no render
   // subscription: exactly one layer (the effective hit target) answers.
-  const modeStoreApi = useModeStoreApi();
+  const ledger = usePressLedger();
   const answersProbe = useCallback(
     () =>
       layerAnswersProbe(
@@ -412,7 +413,7 @@ export const useBrickPlaneProbe = ({
       ? undefined
       : (event) => {
           // The camera's press (Space held): no probe, no design click.
-          if (event.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
+          if (event.button === 0 && ledger.owner() === "camera") return;
           if (!answersProbe()) return;
           const group = groupRef.current;
           if (!group) return;

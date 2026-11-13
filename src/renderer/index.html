@@ -8,6 +8,8 @@
 
   <body>
     <div id="root"></div>
+    <!-- Must stay before main.tsx: it has to run before React is evaluated. -->
+    <script type="module" src="/src/core/debug/reactDevInstrumentation.ts"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

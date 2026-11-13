@@ -4,6 +4,7 @@ import type { SceneRenderer } from "../../../platform/gpu/sceneRenderer";
 import { useSceneStoreApi } from "../../../platform/stores/sceneStore";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
+import { toolPressOpen, usePressLedger } from "../../../platform/input/sceneInput";
 import type { BrickResidencyManager } from "./brickResidency";
 import { createBrickSystem } from "./brickSystem";
 import { useBrickStoreApi } from "../store/brickSlice";
@@ -26,6 +27,7 @@ export function BrickSystemProvider() {
   const viewerStore = useBrickStoreApi();
   const sceneStore = useSceneStoreApi();
   const viewStore = useViewStoreApi();
+  const ledger = usePressLedger();
   const managerRef = useRef<BrickResidencyManager | null>(null);
 
   // Must match the host's decision for this mount — read once, same as there.
@@ -41,7 +43,12 @@ export function BrickSystemProvider() {
     // as a safety net if the host somehow did not register. Falling back is the
     // difference between "slightly later than optimal" and "a blank scene".
     const existing = earlyRef.current ? viewerStore.getState().brickSystem : null;
-    const owned = existing ? null : createBrickSystem({ viewerStore, sceneStore, viewStore });
+    const owned = existing ? null : createBrickSystem({
+          viewerStore,
+          sceneStore,
+          viewStore,
+          isInputBusy: () => toolPressOpen(ledger),
+        });
     const manager = existing ?? owned!.manager;
 
     managerRef.current = manager;
@@ -56,14 +63,17 @@ export function BrickSystemProvider() {
       managerRef.current = null;
       owned?.dispose();
     };
-  }, [gl, invalidate, viewerStore, sceneStore, viewStore]);
+  }, [gl, invalidate, viewerStore, sceneStore, viewStore, ledger]);
 
   useFrame(() => {
     // Mid-gesture frames use the trickle drain policy (no free pass, no GPU
     // dispatch) so uploads never collide with the interaction; the trailing
     // cameraMoving debounce flips false on settle and the backlog drains at
-    // full budget.
-    managerRef.current?.drainUploads(viewStore.getState().cameraMoving);
+    // full budget. A TOOL's press counts too (a shape dragged, a stroke
+    // painted): the load behind it must not take the frames it draws in.
+    managerRef.current?.drainUploads(
+      viewStore.getState().cameraMoving || toolPressOpen(ledger),
+    );
   });
 
   return null;

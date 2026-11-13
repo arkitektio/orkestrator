@@ -649,49 +649,18 @@ export const REKUEST_HELP = {
   ),
   spaces: (
     <PageHelp
-      intro="A space is a 3D room in which your agents are placed, so a setup can be seen the way it stands in the lab."
+      intro="A space is a room: where people left each device of the lab, the same for everyone. An action's 3D view places its devices in a room it names."
       steps={[
-        <>Press <b>Create</b>. The new space appears as “New Space” followed by a number.</>,
-        <>Click a space to open its 3D scene.</>,
-        <>Right-click a space and choose <b>Delete Space</b> to remove it.</>,
+        <>Open a run of an action that draws the lab in 3D, press <b>Arrange</b> and move a device. The room is made then, and lists here.</>,
+        <>Click a space to see which devices were moved in it, and where they stand.</>,
       ]}
     />
   ),
   space: (
     <PageHelp
-      intro="The 3D scene of one space: every app placed in it is shown by its 3D view, live, where it stands."
+      intro="One room: the devices people moved in it, and where they stand. A device nobody moved stands where its action's 3D view places it."
       steps={[
-        <>Drag in the scene to move the view, hold Shift while dragging to turn it, and scroll to move closer or further away.</>,
-        <>Press <b>Iso</b>, <b>Front</b>, <b>Side</b> or <b>Top</b> at the bottom right to look from that direction and frame everything.</>,
-        <>Click a part of a device to use it, where its view offers that.</>,
-        <>Press <b>History</b> in the header to see the space as it was earlier. In the bar over the scene, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Press <b>Go live</b> to return to the present.</>,
-        <>Press <b>Edit</b> in the header to add 3D views or move them.</>,
-        <>Open the menu button at the right end of the header and choose <b>Delete Space</b> to remove the space.</>,
-      ]}
-      tips={[
-        <>A grey box marked <b>No 3D view</b> is an app that was placed without one. Give it a view in the editor.</>,
-        <>While the bar says <b>PAST</b> every device stands where it stood then, and nothing can be run. The devices are shown where they are placed today.</>,
-      ]}
-    />
-  ),
-  spaceEdit: (
-    <PageHelp
-      intro="The editor of a space. Here you add the 3D views of your apps to the scene and move them to where the devices stand."
-      steps={[
-        <>Click a view under <b>Add a 3D view</b> to place it. It is put down on a free spot and selected.</>,
-        <>Click a view in the scene, or its row under <b>In this space</b>, to select it.</>,
-        <>With <b>Move</b> chosen, drag the arrows to move the selected view. With <b>Turn</b> chosen, drag the ring to turn it.</>,
-        <>Type into <b>X</b>, <b>Y</b>, <b>Z</b> or <b>Turn</b> in the selected row to place it exactly, in meters and degrees.</>,
-        <>With <b>Scale</b> chosen, drag a handle to make the selected view larger or smaller. Type into <b>Scale</b> in its row to set it exactly, or press <b>Fit</b> to size it like a device on a bench.</>,
-        <>Press <b>Remove</b> in the selected row to take the view out of the space.</>,
-        <>Press <b>View</b> in the header to go back to the live scene.</>,
-      ]}
-      tips={[
-        <>Changes are saved automatically; there is no save button.</>,
-        <><b>Snap</b> moves in steps of 5 cm and turns in steps of 15°. Switch it off to place freely.</>,
-        <>A view whose model is ten times too large or too small (one drawn in millimeters, say) is fitted when you place it. Set <b>Scale</b> to 1 to show it as it was made.</>,
-        <>An app stands in a space once. Clicking another view of an app that is already placed shows it with that view instead, on the same spot.</>,
-        <>While editing, clicks select and never reach a device. You can also drop an agent card onto the scene to add its 3D view.</>,
+        <>Press <b>Reset</b> on a row to forget where that device was left: its action's 3D view places it again, for everyone.</>,
       ]}
     />
   ),

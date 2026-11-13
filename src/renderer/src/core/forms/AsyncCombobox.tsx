@@ -16,6 +16,7 @@ import { cn, notEmpty } from "@/core/util/utils";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Option, SearchFunction } from "@arkitektio/bsx/ports/forms/SearchField";
+import { Name } from "@/core/ui/name";
 
 /**
  * `SearchField` without the form context — a plain value/onChange combobox over
@@ -105,9 +106,9 @@ export const AsyncCombobox = (props: {
           disabled={props.disabled}
           className={cn("w-full justify-between font-normal", props.className)}
         >
-          <span className={cn("truncate", !props.value && "text-muted-foreground")}>
-            {selected?.label ?? props.value ?? props.placeholder ?? "Select…"}
-          </span>
+          <Name className={cn(!props.value && "text-muted-foreground")}>
+            {String(selected?.label ?? props.value ?? props.placeholder ?? "Select…")}
+          </Name>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -142,7 +143,7 @@ export const AsyncCombobox = (props: {
                       option.value === props.value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  {option.label}
+                  <Name>{String(option.label)}</Name>
                 </CommandItem>
               ))}
             </CommandGroup>

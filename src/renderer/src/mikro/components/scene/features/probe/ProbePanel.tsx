@@ -7,6 +7,7 @@ import { ProbeChannelValues, useProbedLayer } from "./ProbeChannelValues";
 import { ProbePointList } from "./ProbePointList";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
+import { Name } from "@/core/ui/name";
 
 /**
  * The probe panel — the "Probe" tab of the page sidebar: the probed voxel
@@ -35,9 +36,7 @@ const ReadingBlock = ({ reading, named }: { reading: ProbeResult; named: boolean
   return (
     <div className="space-y-1.5">
       {named && layer && (
-        <div className="truncate text-[10px] font-medium text-foreground/60">
-          {layerDisplayLabel(layer)}
-        </div>
+        <Name className="text-[10px] font-medium text-foreground/60">{layerDisplayLabel(layer)}</Name>
       )}
       <ProbeChannelValues probe={reading} layer={layer} />
       <AttributeRowsSection probe={reading} />

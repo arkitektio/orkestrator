@@ -1,5 +1,8 @@
 import type * as THREE from "three";
 
+import { DOUBLE_PRESS_SLOP_PX } from "../../platform/input/navigationBindings";
+import { CLICK_SLOP_PX } from "../../platform/input/pressLedger";
+
 /**
  * Gesture arithmetic for the scene's drawing tools: telling a click from a drag,
  * and turning a pointer ray into a point on the plane being drawn on.
@@ -12,8 +15,9 @@ import type * as THREE from "three";
  * magnitude between scenes (nm to px), so no single world constant exists, and
  * the same physical hand movement must mean the same thing at every zoom. R3F
  * measures its own `event.delta` the same way, so the two stay commensurate.
+ * The press ledger's click rule, by another name (`platform/input/pressLedger.ts`).
  */
-export const DRAG_THRESHOLD_PX = 4;
+export const DRAG_THRESHOLD_PX = CLICK_SLOP_PX;
 
 /**
  * How far a second click may land from the first and still count as a
@@ -22,7 +26,7 @@ export const DRAG_THRESHOLD_PX = 4;
  * apart they are — so placing two polygon vertices quickly would otherwise
  * finish the polygon.
  */
-export const DOUBLE_CLICK_SLOP_PX = 6;
+export const DOUBLE_CLICK_SLOP_PX = DOUBLE_PRESS_SLOP_PX;
 
 export interface ScreenPoint {
   x: number;

@@ -169,7 +169,32 @@ describe("useLabelColorLut", () => {
     expect(buildLabelColorLut).toHaveBeenCalledTimes(1); // the table is untouched
     expect(setLabelColorStyle).toHaveBeenLastCalledWith(
       NODES,
-      expect.objectContaining({ climMin: 2, climMax: 8 }),
+      expect.objectContaining({ climMin: 2, climMax: 8, hideBottom: false }),
+    );
+
+    // Hiding the bottom of the window is appearance too: one more uniform.
+    const cut = layerWith({
+      colorBys: [
+        {
+          table: "t",
+          column: "area",
+          joinPath: [],
+          colormap: "MAGMA",
+          min: 2,
+          max: 8,
+          hideBelowMin: true,
+        },
+      ],
+      activeColorBy: 0,
+      filterBys: [],
+      activeFilterBys: [],
+    });
+    rerender(<Harness layer={cut} />);
+    await waitFor(() => expect(setLabelColorStyle).toHaveBeenCalledTimes(3));
+    expect(buildLabelColorLut).toHaveBeenCalledTimes(1);
+    expect(setLabelColorStyle).toHaveBeenLastCalledWith(
+      NODES,
+      expect.objectContaining({ hideBottom: true }),
     );
   });
 

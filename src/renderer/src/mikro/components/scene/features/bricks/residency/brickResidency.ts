@@ -226,6 +226,13 @@ type Deps = {
    * trickle policy. Optional: absent (tests) reads as not interacting. */
   isInteracting?: () => boolean;
   /**
+   * A tool press is in flight (`platform/input/sceneInput.toolPressOpen`):
+   * the off-frame pump drains under the trickle policy meanwhile, as it does
+   * for a camera gesture. Only the drain reads it — it is not a camera
+   * gesture, and must not make the streaming gate render more often.
+   */
+  isInputBusy?: () => boolean;
+  /**
    * Schedules the reconcile that follows a new plan; returns its cancel.
    * Given (the app: `scheduleIdleTask`), the reconcile runs as its OWN task
    * between frames instead of synchronously inside the store write that
@@ -771,7 +778,10 @@ export class BrickResidencyManager {
     this.cancelDrainPump = scheduleBackgroundTask(() => {
       this.cancelDrainPump = null;
       if (this.disposed) return;
-      this.drainUploads(this.deps.isInteracting?.() ?? false, true);
+      this.drainUploads(
+        (this.deps.isInteracting?.() ?? false) || (this.deps.isInputBusy?.() ?? false),
+        true,
+      );
       // The drain re-enters this gate itself when it uploaded or left work
       // queued. If it did neither (queue drained mid-window, fetches still in
       // flight) the coalesced batches still owe a frame — keep knocking until

@@ -64,10 +64,26 @@ export const cameraButtonsFor = ({
       : TOOL_BUTTONS_2D;
 
 /**
+ * Whether the left button is the hand's BETWEEN presses — the map the
+ * controls rest on. NAVIGATE's tool is the hand, so is DESIGN's until a tool
+ * is armed, and Space makes it so anywhere. `CameraController` renders this,
+ * and the press driver returns to it when a press ends, so the map a single
+ * press was given never outlives that press.
+ */
+export const restingLeftIsHand = (input: {
+  interactionMode: LeftPressInput["interactionMode"];
+  designArmed: boolean;
+  handHeld: boolean;
+}): boolean =>
+  input.handHeld ||
+  input.interactionMode === "NAVIGATE" ||
+  (input.interactionMode === "DESIGN" && !input.designArmed);
+
+/**
  * Who a left press belongs to — decided once, at press time
- * (`shell/pointer/LeftPressArbiter`), and read by both sides: the camera
+ * (`shell/pointer/PressLedgerDriver`), and read by both sides: the camera
  * gets the matching button map, and the tools ignore a press that is the
- * camera's (`modeStore.leftPress`).
+ * camera's (`pressLedger`'s `owner()`).
  *
  * ANNOTATE is navigable without a modifier: until a shape is under way a
  * left-drag moves the view, and only the SECOND press of a double-click

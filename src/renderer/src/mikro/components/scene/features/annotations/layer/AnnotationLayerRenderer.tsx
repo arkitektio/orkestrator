@@ -8,6 +8,7 @@ import { finestLayerZStep } from "../../../platform/coords/worldTransform";
 import { layersPlanKey } from "../../../platform/model/layerPlanKey";
 import { annotationHoverEnabled, annotationSelectEnabled } from "../../../platform/probe/probeGating";
 import { useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
+import { usePressLedger } from "../../../platform/input/sceneInput";
 import { DOUBLE_PRESS_MS } from "../../../platform/input/navigationBindings";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
@@ -371,6 +372,7 @@ const AnnotationCollectionGroup = ({
   );
 
   const modeStoreApi = useModeStoreApi();
+  const ledger = usePressLedger();
   const roiDrawingApi = useRoiDrawingStoreApi();
   // Identity-stable so the memoized shapes actually skip. Answers whether the
   // click was taken; the pick surfaces stop propagation only when it was, so a
@@ -386,7 +388,7 @@ const AnnotationCollectionGroup = ({
         modeStoreApi.getState().interactionMode === "ANNOTATE" &&
         tool !== null &&
         tool !== "SELECT";
-      if (underShapeTool && modeStoreApi.getState().leftPress === "tool") return false;
+      if (underShapeTool && ledger.owner() === "tool") return false;
       const pick = () => {
         if (appendSelection) {
           toggleSelectedRoi(roi);
@@ -405,7 +407,7 @@ const AnnotationCollectionGroup = ({
       else pick();
       return true;
     },
-    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, modeStoreApi, roiDrawingApi, roiSelectionApi],
+    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, modeStoreApi, ledger, roiDrawingApi, roiSelectionApi],
   );
 
   // Called per pointer move over a shape; the store dedupes by id, so the

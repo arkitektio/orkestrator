@@ -90,7 +90,6 @@ const CONTEXT_LABEL: Record<ComponentContext, string> = {
   [ComponentContext.Scene]: "3D scene",
   [ComponentContext.Logo]: "Agent logo",
   [ComponentContext.ActionLogo]: "Action logo",
-  [ComponentContext.Overlay]: "Run overlay",
 };
 
 /** A starter under the root component that names `context` (`<Html>`, `<Scene>`, `<AgentLogo>`, ...). */
@@ -109,7 +108,6 @@ const STARTER: Record<ComponentContext, string> = {
   [ComponentContext.Scene]: starter(ComponentContext.Scene, ' height="24rem"', ""),
   [ComponentContext.Logo]: starter(ComponentContext.Logo, ' viewBox="0 0 24 24" title="Logo"', ""),
   [ComponentContext.ActionLogo]: starter(ComponentContext.ActionLogo, ' viewBox="0 0 24 24" title="Logo"', ""),
-  [ComponentContext.Overlay]: starter(ComponentContext.Overlay, "", ""),
 };
 
 /** The first tag of a source: its root component, read without parsing the rest. */
@@ -122,8 +120,8 @@ const rootContext = (source: string): ComponentContext | null => {
   return context && (EDITABLE_CONTEXTS as string[]).includes(context) ? (context as ComponentContext) : null;
 };
 
-/** An overlay is an action's own blok, declared with the action: never made here. */
-const EDITABLE_CONTEXTS = Object.values(ComponentContext).filter((context) => context !== ComponentContext.Overlay);
+/** Every context a blok made here can have (an action's Space is declared with the action, and refused here). */
+const EDITABLE_CONTEXTS = Object.values(ComponentContext);
 
 const bsxContext = (context: ComponentContext): string => String(context);
 

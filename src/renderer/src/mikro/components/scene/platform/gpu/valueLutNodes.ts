@@ -19,7 +19,10 @@ import * as TSLTyped from "three/tsl";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const TSL = TSLTyped as any;
-const { clamp, float, max, mix, step, vec2 } = TSL;
+const { clamp, float, max, mix, select, step, vec2 } = TSL;
+
+/** Beyond this magnitude a window end is OPEN (±Infinity on the CPU side). */
+const OPEN_END = 1e30;
 
 /** The shader-side threshold above which a code is a sentinel (65534, 65535). */
 export const VALUE_LUT_SENTINEL_EDGE = 65533.5;
@@ -52,6 +55,12 @@ export const identityValueLutTexture = (): THREE.DataTexture => {
  * `base` is what a slot with no value keeps (the id-hash hue, the material
  * colour); the mix weight is `uLutColorize · hasValue`, so the two sentinels
  * never decode as data.
+ *
+ * `atBottom` is 1 where a real value sits at or below the window's lower bound
+ * — the texels the colormap's first colour paints. A caller that offers "do
+ * not draw the bottom" (`hideBelowMin`, labels) discards on it; it is already
+ * zero for the sentinels and while nothing colourises, so it cannot hide an
+ * object the colouring never saw.
  */
 export const emitValueLutColor = (
   lutTexel: any,
@@ -66,7 +75,7 @@ export const emitValueLutColor = (
     uLutClimMin: any;
     uLutClimMax: any;
   },
-): { code: any; rgb: any } => {
+): { code: any; rgb: any; atBottom: any } => {
   const code = lutTexel.g
     .mul(255)
     .round()
@@ -77,9 +86,28 @@ export const emitValueLutColor = (
   // read covered keeps its base instead of decoding a sentinel as data.
   const hasValue = step(code, float(VALUE_LUT_SENTINEL_EDGE));
   const raw = mix(uniforms.uLutValueMin, uniforms.uLutValueMax, code.div(float(65533.0)));
-  const span = max(uniforms.uLutClimMax.sub(uniforms.uLutClimMin), float(1e-9));
-  const t = clamp(raw.sub(uniforms.uLutClimMin).div(span), 0.0, 1.0);
+  // An OPEN end of the window arrives as ±Infinity (a stored `min`/`max` of
+  // null: "stretch over what you read") and resolves to the table's own range
+  // here. Left as infinities the quotient below is inf/inf, and "at or below
+  // the bottom" has no bottom to compare against.
+  const lo = select(
+    uniforms.uLutClimMin.greaterThan(float(-OPEN_END)),
+    uniforms.uLutClimMin,
+    uniforms.uLutValueMin,
+  );
+  const hi = select(
+    uniforms.uLutClimMax.lessThan(float(OPEN_END)),
+    uniforms.uLutClimMax,
+    uniforms.uLutValueMax,
+  );
+  const span = max(hi.sub(lo), float(1e-9));
+  const t = clamp(raw.sub(lo).div(span), 0.0, 1.0);
   // A 256-entry row; the sample lands on a texel centre.
   const mapped = palette.sample(vec2(t, 0.5)).rgb;
-  return { code, rgb: mix(base, mapped, uniforms.uLutColorize.mul(hasValue)) };
+  const weight = uniforms.uLutColorize.mul(hasValue);
+  // `raw <= climMin`, not `t <= 0`: the same test, read off the value rather
+  // than off a quotient. Exact for the case that matters — a sparse slice's
+  // zeros are code 0, which decodes to `uLutValueMin` bit for bit.
+  const atBottom = weight.mul(step(raw, lo));
+  return { code, rgb: mix(base, mapped, weight), atBottom };
 };

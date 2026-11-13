@@ -21,7 +21,7 @@ type Action {
   assignable: Boolean!
 
   """
-  The action's own bloks, at most one per context (HTML for a task panel, OVERLAY drawn into the space that hosts a run): declared with the action, the latest registration's. Not part of its hash.
+  The action's own bloks, at most one per context (HTML for a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies): declared with the action, the latest registration's. Not part of its hash.
   """
   bloks: [ActionBlok!]!
 
@@ -195,7 +195,7 @@ type ActionBlok {
   blok: Blok!
 
   """
-  Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run, over the agents placed there.
+  Where a client shows a run with it: HTML in a task panel, SCENE as a 3D view (a `Space` places the run's dependencies in a room whose layout is shared).
   """
   context: ComponentContext!
   id: ID!
@@ -212,7 +212,7 @@ input ActionBlokInput {
   components: [ComponentNodeInput!] = null
 
   """
-  Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view of its own, OVERLAY drawn into the space that hosts the run (its root an `Overlay`).
+  Where a client shows the run with it: HTML in a task panel, SCENE as a 3D view (its root a `Scene`, or a `Space` placing the run's dependencies in a room whose layout is shared).
   """
   context: ComponentContext! = HTML
 
@@ -2434,13 +2434,12 @@ type Collection {
 }
 
 """
-The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO and OVERLAY are blok contexts only: an OVERLAY blok is an action's own, drawn into the space that hosts its run.
+The renderer a catalog component lives in. A component may only be placed where its context is in force. ACTION_LOGO is a blok context only.
 """
 enum ComponentContext {
   ACTION_LOGO
   HTML
   LOGO
-  OVERLAY
   SCENE
 }
 
@@ -2630,32 +2629,6 @@ input CreateHigherOrderImplementationInput {
   lower: ID!
 }
 
-"""The input for creating a placement."""
-input CreatePlacementInput {
-  """
-  The affine matrix for the placement. This is used to identify the placement in the system.
-  """
-  affineMatrix: [[Float!]!] = null
-
-  """
-  The agent ID for the placement. This is used to identify the agent in the system.
-  """
-  agent: ID = null
-
-  """
-  A specific blok that should be used to visualize the state of the placement.
-  """
-  materializedBlok: ID = null
-
-  """
-  The role of the placement. This is used to identify the placement in the system.
-  """
-  role: String = null
-
-  """The ID of the space to create the placement in."""
-  space: String!
-}
-
 """
 Create a schedule. Give exactly one of intervalSeconds or cron; pin an agent with agent + interface, or leave both empty to resolve one per run.
 """
@@ -2734,36 +2707,6 @@ input CreateShortcutInput {
   Whether when running the short the returns should be used further. Allows to create mini pipelines
   """
   useReturns: Boolean! = false
-}
-
-"""The input for creating a space."""
-input CreateSpaceInput {
-  """
-  The name of the space. This is used to identify the space in the system.
-  """
-  name: String!
-
-  """
-  The placements to create in the space. This is used to identify the placements in the system.
-  """
-  placements: [PlacementInput!] = null
-}
-
-"""Place a 3D blok in a space at an affine transform."""
-input CreateSpacePlacementInput {
-  """
-  Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Omitted is the identity.
-  """
-  affineMatrix: [[Float!]!] = null
-
-  """The materialized 3D blok to place."""
-  blok: ID!
-
-  """What the placement is called in its space."""
-  name: String = null
-
-  """The space to place the blok in."""
-  space: ID!
 }
 
 """Declare that one action tests another."""
@@ -2980,7 +2923,7 @@ input DefinitionInput {
   args: [ArgPortInput!]! = []
 
   """
-  The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, OVERLAY drawn into the space that hosts the run). They name devices only by the action's dependency keys. Not part of the action's hash.
+  The action's own bloks, at most one per context: how a client shows a run of it (HTML in a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies). They name devices only by the action's dependency keys. Not part of the action's hash.
   """
   bloks: [ActionBlokInput!]! = []
 
@@ -3099,29 +3042,11 @@ input DeleteMaterializedBlokInput {
   id: ID!
 }
 
-"""The input for deleting a placement."""
-input DeletePlacementInput {
-  """The ID of the placement to delete."""
-  id: ID!
-}
-
 """The input for deleting a shortcut."""
 input DeleteShortcutInput {
   """
   The shortcut ID to delete. This is used to identify the shortcut in the system.
   """
-  id: ID!
-}
-
-"""The input for deleting a space."""
-input DeleteSpaceInput {
-  """The ID of the space to delete."""
-  id: ID!
-}
-
-"""Remove a placed 3D blok from its space."""
-input DeleteSpacePlacementInput {
-  """The blok placement to remove."""
   id: ID!
 }
 
@@ -4598,9 +4523,6 @@ type MaterializedBlok {
   """
   pinnedRevision: BlokRevision
 
-  """Placements of this materialized blok."""
-  placements(filters: PlacementFilter, ordering: [PlacementOrder!]! = [], pagination: OffsetPaginationInput): [Placement!]!
-
   """
   The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none.
   """
@@ -4610,9 +4532,6 @@ type MaterializedBlok {
   Where it lives: DASHBOARD, MESSAGE when it was made for one chat message to show inline, or TASK when a task showed it.
   """
   scope: MaterializationScope!
-
-  """Where this 3D blok is placed in spaces, each at its affine transform."""
-  spacePlacements(filters: SpacePlacementFilter, ordering: [SpacePlacementOrder!]! = [], pagination: OffsetPaginationInput): [SpacePlacement!]!
 
   """
   Why its task showed it (scope TASK): ASK holds the task until a person answers through it, INFORM shows it while the task carries on. Null for any other.
@@ -4916,9 +4835,6 @@ type Mutation {
   """
   createHigherOrderImplementation(input: CreateHigherOrderImplementationInput!): Implementation!
 
-  """Create a new placement for an agent in a space."""
-  createPlacement(input: CreatePlacementInput!): Placement!
-
   """
   Create a recurring assignment of an action. Its next run is planned immediately.
   """
@@ -4926,14 +4842,6 @@ type Mutation {
 
   """Create a shortcut to an action."""
   createShortcut(input: CreateShortcutInput!): Shortcut!
-
-  """Create a new space."""
-  createSpace(input: CreateSpaceInput!): Space!
-
-  """
-  Place a 3D blok (a Model or Robot over a kulisse asset) in a space at an affine transform.
-  """
-  createSpacePlacement(input: CreateSpacePlacementInput!): SpacePlacement!
 
   """Create a new test case."""
   createTestCase(input: CreateTestCaseInput!): TestCase!
@@ -4966,20 +4874,11 @@ type Mutation {
   """Delete a materialized blok by ID."""
   deleteMaterializedBlok(input: DeleteMaterializedBlokInput!): Boolean!
 
-  """Delete a placement."""
-  deletePlacement(input: DeletePlacementInput!): ID!
-
   """Delete a schedule. Its waiting run is cancelled; history is kept."""
   deleteSchedule(input: ScheduleIdInput!): ID!
 
   """Delete a shortcut."""
   deleteShortcut(input: DeleteShortcutInput!): ID!
-
-  """Delete a space."""
-  deleteSpace(input: DeleteSpaceInput!): ID!
-
-  """Remove a placed 3D blok from its space."""
-  deleteSpacePlacement(input: DeleteSpacePlacementInput!): ID!
 
   """Delete a trigger; its runs are kept."""
   deleteTrigger(input: TriggerIdInput!): ID!
@@ -5074,6 +4973,11 @@ type Mutation {
   """Upload media and return a URL for access"""
   requestMediaUpload(input: RequestMediaUploadInput!): MediaUploadGrant!
 
+  """
+  Forget where an agent was left in a space, so the blok that places it decides again.
+  """
+  resetPlacement(input: ResetPlacementInput!): ID
+
   """Resume a paused task."""
   resume(input: ResumeInput!): Task!
 
@@ -5086,6 +4990,11 @@ type Mutation {
   Make an earlier revision's content a custom blok's head again, as a new revision.
   """
   revertBlok(input: RevertBlokInput!): BlokRevision!
+
+  """
+  Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet.
+  """
+  savePlacement(input: SavePlacementInput!): Placement!
 
   """Shelve data into a memory drawer."""
   shelveInMemoryDrawer(input: ShelveInMemoryDrawerInput!): MemoryDrawer!
@@ -5120,17 +5029,8 @@ type Mutation {
   """Update properties of a materialized blok such as its agent mappings."""
   updateMaterializedBlok(input: UpdateMaterializedBlokInput!): MaterializedBlok!
 
-  """Update an existing placement."""
-  updatePlacement(input: UpdatePlacementInput!): Placement!
-
   """Change a schedule; a waiting run is re-planned."""
   updateSchedule(input: UpdateScheduleInput!): Schedule!
-
-  """Update an existing space."""
-  updateSpace(input: UpdateSpaceInput!): Space!
-
-  """Move or rename a placed 3D blok."""
-  updateSpacePlacement(input: UpdateSpacePlacementInput!): SpacePlacement!
 
   """Change a trigger."""
   updateTrigger(input: UpdateTriggerInput!): Trigger!
@@ -5249,17 +5149,24 @@ input PinMaterializedBlokInput {
   revision: ID = null
 }
 
-"""A placement of an agent in a space."""
+"""
+Where someone left an agent in a space: its pose, the same for every viewer.
+"""
 type Placement {
+  """
+  Where the agent stands: a 4x4 affine matrix, row-major, in meters with Y up.
+  """
   affineMatrix: Args
   agent: Agent!
-  blok: MaterializedBlok
   id: ID!
 
   """Get the agent associated with this placement."""
   name: String!
+
+  """The dependency key the agent was placed under when its pose was kept."""
   role: String!
   space: Space!
+  updatedAt: DateTime!
 }
 
 """A way to filter placements (space memberships)"""
@@ -5275,34 +5182,11 @@ input PlacementFilter {
   """Filter by IDs"""
   ids: [ID!]
 
-  """Search by name"""
+  """Search by the agent's name"""
   search: String
 
   """Filter by space"""
   space: ID
-}
-
-"""The input for creating or updating a placement."""
-input PlacementInput {
-  """
-  The affine matrix for the placement. This is used to identify the placement in the system.
-  """
-  affineMatrix: [[Float!]!] = null
-
-  """
-  The agent ID for the placement. This is used to identify the agent in the system.
-  """
-  agent: ID = null
-
-  """
-  A specific blok that should be used to visualize the state of the placement.
-  """
-  blok: ID = null
-
-  """
-  The role of the placement. This is used to identify the placement in the system.
-  """
-  role: String = null
 }
 
 input PlacementOrder @oneOf {
@@ -5907,19 +5791,13 @@ type Query {
   """Fetch a specific space by ID."""
   space(id: ID!): Space!
 
-  """Fetch one placed 3D blok by ID."""
-  spacePlacement(id: ID!): SpacePlacement!
-
-  """List the 3D bloks placed in spaces."""
-  spacePlacements(filters: SpacePlacementFilter, ordering: [SpacePlacementOrder!]! = [], pagination: OffsetPaginationInput): [SpacePlacement!]!
+  """
+  The space a blok's `room` names: where someone left each agent in it. Null until someone kept a pose there.
+  """
+  spaceByReference(room: String!): Space
 
   """List all spaces."""
   spaces(filters: SpaceFilter, ordering: [SpaceOrder!]! = [], pagination: OffsetPaginationInput): [Space!]!
-
-  """
-  The spaces that place any of these agents (e.g. the ones a dependencyTree dry run binds), those placing the most first, then the most recently changed: where to run a workflow over them.
-  """
-  spacesForAgents(agents: [ID!]!): [SpaceForAgents!]!
 
   """Get a specific state by ID."""
   state(id: ID!): State!
@@ -6080,6 +5958,17 @@ input RequiresInput {
   The value of the requirement. This can be any JSON serializable value; IN/NOT_IN take a list, LTE/GTE a number, EXISTS none
   """
   value: Arg = null
+}
+
+"""
+Forget where an agent was left in a space, so the blok that places it decides again.
+"""
+input ResetPlacementInput {
+  """The agent whose kept pose is forgotten."""
+  agent: ID!
+
+  """The space's reference."""
+  room: String!
 }
 
 """Represents a resolution for a blok."""
@@ -6388,6 +6277,25 @@ type RuleChangeEvent {
   create: RuleChange
   delete: ID
   update: RuleChange
+}
+
+"""Keep where an agent stands in a space, for everyone."""
+input SavePlacementInput {
+  """
+  Where it stands: a 4x4 affine matrix, row-major, in meters with Y up, from the agent's model into the space.
+  """
+  affineMatrix: [[Float!]!]!
+
+  """The agent whose pose is kept."""
+  agent: ID!
+
+  """The dependency key it was placed under (`robot`)."""
+  role: String!
+
+  """
+  The space's reference: a blok's `room` (a URI such as `room:helsinki-lab`, or `app/<identifier>/<key>`). The space is made when none has it yet.
+  """
+  room: String!
 }
 
 """
@@ -7019,16 +6927,21 @@ type Snapshot {
   value: Args!
 }
 
-"""A space where agents can interact."""
+"""
+A room: where the organization keeps its devices. What a 3D view shows is the action's `<Space room=...>` blok; where each device stands is kept here, the same for everyone.
+"""
 type Space {
-  """The 3D bloks placed in this space, each at its affine transform."""
-  blokPlacements(filters: SpacePlacementFilter, ordering: [SpacePlacementOrder!]! = [], pagination: OffsetPaginationInput): [SpacePlacement!]!
   createdAt: DateTime!
   creator: User!
   description: String
   id: ID!
   name: String!
+
+  """Where someone left each agent in this room."""
   placements(filters: PlacementFilter, ordering: [PlacementOrder!]! = [], pagination: OffsetPaginationInput): [Placement!]!
+
+  """What finds the room again: a blok's `room`."""
+  reference: String
   updatedAt: DateTime!
 }
 
@@ -7042,58 +6955,17 @@ input SpaceFilter {
   """Filter by IDs"""
   ids: [ID!]
 
+  """Filter by reference (a blok's `room`)"""
+  reference: String
+
   """Search by name"""
   search: String
-}
-
-"""A space and how many of the agents asked about it places."""
-type SpaceForAgents {
-  """How many of the agents asked about this space places."""
-  placed: Int!
-
-  """The space."""
-  space: Space!
 }
 
 input SpaceOrder @oneOf {
   createdAt: Ordering
   name: Ordering
   updatedAt: Ordering
-}
-
-"""
-A 3D blok placed in a space at an affine transform: a Model or Robot blok over a kulisse asset, with no agent of its own.
-"""
-type SpacePlacement {
-  """
-  Where the blok sits: a 4x4 affine matrix, row-major, from the blok's frame into the space's. Null is the identity.
-  """
-  affineMatrix: Args
-  blok: MaterializedBlok!
-  createdAt: DateTime!
-  id: ID!
-  name: String
-  space: Space!
-  updatedAt: DateTime!
-}
-
-"""A way to filter blok placements in spaces"""
-input SpacePlacementFilter {
-  AND: SpacePlacementFilter
-  DISTINCT: Boolean
-  NOT: SpacePlacementFilter
-  OR: SpacePlacementFilter
-
-  """Filter by IDs"""
-  ids: [ID!]
-
-  """Filter by space"""
-  space: ID
-}
-
-input SpacePlacementOrder @oneOf {
-  createdAt: Ordering
-  name: Ordering
 }
 
 type State {
@@ -8534,22 +8406,6 @@ input UpdateMaterializedBlokInput {
   id: ID!
 }
 
-"""The input for updating a placement."""
-input UpdatePlacementInput {
-  """
-  The affine matrix for the placement. This is used to identify the placement in the system.
-  """
-  affineMatrix: [[Float!]!] = null
-
-  """The ID of the placement to update."""
-  id: ID!
-
-  """
-  The role of the placement. This is used to identify the placement in the system.
-  """
-  role: String = null
-}
-
 """
 Change a schedule. Giving intervalSeconds clears cron and vice versa. Give `agent: null` (with `interface: null`) to unpin it; give `endsAt` or `maxRuns` as null to lift it. A waiting run is re-planned; an executing one finishes first.
 """
@@ -8575,30 +8431,6 @@ input UpdateScheduleInput {
   """
   policy: TaskPolicy = null
   timezone: String = null
-}
-
-"""The input for updating a space."""
-input UpdateSpaceInput {
-  """The new description of the space."""
-  description: String = null
-
-  """The ID of the space to update."""
-  id: ID!
-
-  """The new name of the space."""
-  name: String = null
-}
-
-"""Move or rename a placed 3D blok."""
-input UpdateSpacePlacementInput {
-  """A new 4x4 affine matrix, row-major."""
-  affineMatrix: [[Float!]!] = null
-
-  """The blok placement to change."""
-  id: ID!
-
-  """A new name."""
-  name: String = null
 }
 
 """

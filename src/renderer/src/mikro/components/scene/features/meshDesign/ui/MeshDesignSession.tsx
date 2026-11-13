@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
+import { usePressLedger } from "../../../platform/input/sceneInput";
 import { useBrushSkeletonStoreApi } from "../brush";
 import type { Vec3 } from "../field/stamps";
 import { useMeshDesignStore, useMeshDesignStoreApi, type DesignMesh } from "../store/meshDesignStore";
@@ -127,6 +128,7 @@ const useSurfaceGesture = (): SurfaceGesture | null => {
   const controls = useThree((s) => s.controls);
   const designApi = useMeshDesignStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
+  const ledger = usePressLedger();
   const drag = useRef<{ points: Vec3[]; targetId: string | null; tool: "stamp" | "sculpt" | "split" } | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -216,6 +218,25 @@ const useSurfaceGesture = (): SurfaceGesture | null => {
     if (!gesture && drag.current) finish();
   }, [gesture, finish]);
 
+  // And the press itself always ends (`platform/input/pressLedger.ts`), after
+  // the mesh's own `onPointerUp` had its chance. A drag still open then was
+  // let go where the mesh could not see it: it applies what it collected. A
+  // press with no release at all (a cancelled pointer, a lost window) applies
+  // nothing — either way the drag is over and the camera comes back.
+  useEffect(
+    () =>
+      ledger.onEnd((end) => {
+        if (!drag.current) return;
+        if (end.reason === "released") {
+          finish();
+          return;
+        }
+        drag.current = null;
+        setDragging(false);
+      }),
+    [ledger, finish],
+  );
+
   if (!gesture) return null;
   return { active: dragging, onDown, onMove, onUp: finish };
 };
@@ -229,6 +250,7 @@ const TrimGesture = () => {
   const modeApi = useModeStoreApi();
   const designApi = useMeshDesignStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
+  const ledger = usePressLedger();
 
   useEffect(() => {
     if (heldTool !== "trim") return;
@@ -236,24 +258,29 @@ const TrimGesture = () => {
     const element = gl.domElement;
     let start: THREE.Vector2 | null = null;
 
-    const ndc = (event: PointerEvent): THREE.Vector2 => {
+    const ndc = (point: { x: number; y: number }): THREE.Vector2 => {
       const rect = element.getBoundingClientRect();
       return new THREE.Vector2(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        -(((event.clientY - rect.top) / rect.height) * 2 - 1),
+        ((point.x - rect.left) / rect.width) * 2 - 1,
+        -(((point.y - rect.top) / rect.height) * 2 - 1),
       );
     };
-    const onDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      start = ndc(event);
+    // The press and its end are the ledger's (`platform/input/pressLedger.ts`):
+    // it says whose the press is (Space makes it the hand's, which pans), and
+    // it ends every press — so the camera always comes back, and a press that
+    // was cancelled rather than released cuts nothing.
+    const stopDown = ledger.onDown((press) => {
+      if (press.button !== 0 || press.owner !== "tool") return;
+      start = ndc(press);
       if (ctrl) ctrl.enabled = false;
-    };
-    const onUp = (event: PointerEvent) => {
+    });
+    const stopEnd = ledger.onEnd((end) => {
       const from = start;
       start = null;
       if (ctrl) ctrl.enabled = true;
-      if (!from || modeApi.getState().designTool !== "trim") return;
-      const plane = planeFromScreenDrag(camera, from, ndc(event));
+      if (!from || end.reason !== "released") return;
+      if (modeApi.getState().designTool !== "trim") return;
+      const plane = planeFromScreenDrag(camera, from, ndc(end));
       if (!plane) return;
       const design = designApi.getState();
       const target = targetMesh(design);
@@ -264,15 +291,13 @@ const TrimGesture = () => {
       void applyTrim(design, brushApi.getState(), target, plane).then((ok) => {
         if (!ok) design.setStatus("editing", "The cut missed the mesh");
       });
-    };
-    element.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointerup", onUp);
+    });
     return () => {
-      element.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointerup", onUp);
+      stopDown();
+      stopEnd();
       if (ctrl) ctrl.enabled = true;
     };
-  }, [heldTool, camera, gl, controls, modeApi, designApi, brushApi]);
+  }, [heldTool, camera, gl, controls, modeApi, designApi, brushApi, ledger]);
 
   return null;
 };

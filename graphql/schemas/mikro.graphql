@@ -346,6 +346,11 @@ type Annotation {
   The stroke width of the geometry, in the drawing space's units. One number for every direction, so it is a well-defined length only where that space's axes share a scale
   """
   strokeWidth: Float!
+
+  """
+  The lens the shape was traced on -- the channel or layer the person was looking at, e.g. the marker a neurite was traced in. Metadata only: it neither pins the shape (`coordinates`) nor places it (the collection's own edges). Null when the drawer did not say, or the lens is gone
+  """
+  tracedOn: Lens
   vectors: [[Float!]!]!
 }
 
@@ -784,7 +789,7 @@ type AnnotationLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -894,6 +899,7 @@ input AnnotationSpecInput {
   name: String = null
   strokeColor: [Int!] = null
   strokeWidth: Float = null
+  tracedOn: ID = null
   vectors: [ThreeDVector!]!
 }
 
@@ -1374,7 +1380,7 @@ type ArrayLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -3210,6 +3216,7 @@ input CreateAnnotationInput {
   scene: ID = null
   strokeColor: [Int!] = null
   strokeWidth: Float = null
+  tracedOn: ID = null
   vectors: [ThreeDVector!]!
 }
 
@@ -5143,7 +5150,7 @@ type FileLink {
   """
   Which part of the file this link concerns -- the series of a multi-series LIF or CZI. Empty when the file holds one thing. Part of the link's identity, so a dataset fused from two series of one file has two links
   """
-  seriesIdentifier: String
+  seriesIdentifier: String!
 
   """
   What the conversion did to the values: IDENTICAL for a lossless transcode, TRANSFORMED for a projection or a contrast-stretched export. Null when unstated
@@ -5627,7 +5634,7 @@ type FixtureLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -5707,7 +5714,7 @@ type Folder {
 
   """The assigner of the creating task, if any"""
   createdThroughBy: User
-  creator: User
+  creator: User!
   description: String
 
   """
@@ -6825,6 +6832,7 @@ One entry of a label layer's colour picker: colour the mask's objects by a colum
 type LabelColorBy {
   colormap: ColorMap
   column: String
+  hideBelowMin: Boolean!
   joinPath: [JoinStep!]!
   kind: ColorSourceKind!
   label: String
@@ -6840,6 +6848,7 @@ One entry of a label layer's colour picker: colour objects by a column of the ta
 input LabelColorByInput {
   colormap: ColorMap = null
   column: String = null
+  hideBelowMin: Boolean! = false
   joinPath: [JoinStepInput!]! = []
   kind: ColorSourceKind! = COLUMN
   label: String = null
@@ -7323,7 +7332,7 @@ interface Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -8489,7 +8498,7 @@ type MeshLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -9936,7 +9945,7 @@ type NetworkLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -13213,7 +13222,7 @@ type SparseLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -13777,7 +13786,7 @@ type TableLens implements Lens {
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
-  coordinateSystem: CoordinateSystem
+  coordinateSystem: CoordinateSystem!
 
   """
   When this selection was first asked for; a whole lens, when its container was made
@@ -14594,6 +14603,7 @@ input UpdateAnnotationInput {
   name: String = null
   strokeColor: [Int!] = null
   strokeWidth: Float = null
+  tracedOn: ID = null
   vectors: [ThreeDVector!] = null
 }
 

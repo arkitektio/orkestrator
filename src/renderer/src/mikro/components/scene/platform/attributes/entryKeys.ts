@@ -33,6 +33,9 @@ export type PickerEntryLike = {
   colormap?: string | null;
   min?: number | null;
   max?: number | null;
+  /** Label colourings only: do not draw objects at or below the window's
+   *  bottom. A uniform, so it keys APPEARANCE — never a table rebuild. */
+  hideBelowMin?: boolean | null;
   joinPath?: readonly { table: string; column: string }[] | null;
 };
 
@@ -94,4 +97,11 @@ export const entryDataKeyOf = (
 
 /** The APPEARANCE key: the fields a recompose alone can honour. */
 export const entryAppearanceKeyOf = (colorBy: PickerEntryLike | null): string =>
-  JSON.stringify(colorBy && [colorBy.colormap ?? null, colorBy.min ?? null, colorBy.max ?? null]);
+  JSON.stringify(
+    colorBy && [
+      colorBy.colormap ?? null,
+      colorBy.min ?? null,
+      colorBy.max ?? null,
+      colorBy.hideBelowMin === true,
+    ],
+  );

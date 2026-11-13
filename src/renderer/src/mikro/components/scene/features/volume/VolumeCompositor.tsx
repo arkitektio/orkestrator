@@ -63,6 +63,7 @@ import {
   type VolumeFrameKey,
 } from "../../platform/gpu/volumeCompositor";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
+import { toolPressOpen, usePressLedger } from "../../platform/input/sceneInput";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 
 import { useBrickStoreApi } from "../bricks/store/brickSlice";
@@ -360,6 +361,7 @@ export const VolumeCompositor = () => {
     [],
   );
   const modeStoreApi = useModeStoreApi();
+  const ledger = usePressLedger();
   /** What `depthTarget` currently holds — latched when a pass renders, so
    * the composite never decodes a frame the target does not contain. */
   const depthInTargetRef = useRef<number>(DEPTH_VIEW_CODE.off);
@@ -530,6 +532,10 @@ export const VolumeCompositor = () => {
   const lastVolumeRenderAtRef = useRef(Number.NEGATIVE_INFINITY);
   /** The frame owed after a not-yet-due streaming frame was served cached. */
   const streamFrameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A tool's press holds stream-only renders back (see `streamDue` below);
+  // when it ends, ask for the frame that shows what landed meanwhile — the
+  // load may have finished under the press, and then nothing else would.
+  useEffect(() => ledger.onEnd(() => invalidate()), [ledger, invalidate]);
   useEffect(
     () => () => {
       if (streamFrameTimerRef.current !== null) clearTimeout(streamFrameTimerRef.current);
@@ -722,11 +728,14 @@ export const VolumeCompositor = () => {
       targetHeight: nextSize.height,
     };
     const frameAt = performance.now();
-    const streamDue = streamRenderDue(
-      frameAt,
-      lastVolumeRenderAtRef.current,
-      profile.residencyBumpMs,
-    );
+    // Not while a tool's press is in flight: a re-raymarch only to show
+    // newly landed bricks is the most expensive frame there is (~50 ms of GPU
+    // on a slow machine), and under a drag it is the drag that pays — few,
+    // late pointer moves. The cached composite is shown instead; the owed
+    // frame below keeps knocking and renders once the press is over.
+    const streamDue =
+      !toolPressOpen(ledger) &&
+      streamRenderDue(frameAt, lastVolumeRenderAtRef.current, profile.residencyBumpMs);
     const decision = decideVolumeFrame({
       cacheEnabled: true,
       hasTargetContent: hasContentRef.current,
@@ -749,7 +758,9 @@ export const VolumeCompositor = () => {
           invalidate();
         },
         Math.max(
-          0,
+          // Held back by a press, the cadence has long elapsed: knock at the
+          // cadence, not on every frame.
+          toolPressOpen(ledger) ? STREAM_RENDER_CADENCE_SHARE * profile.residencyBumpMs : 0,
           STREAM_RENDER_CADENCE_SHARE * profile.residencyBumpMs -
             (frameAt - lastVolumeRenderAtRef.current),
         ),

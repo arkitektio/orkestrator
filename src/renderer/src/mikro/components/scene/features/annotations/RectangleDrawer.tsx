@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
-import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
+import { usePressLedger } from "../../platform/input/sceneInput";
+import { useModeStore } from "../../platform/stores/modeStore";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import {
   useRoiSelectionStore,
@@ -39,7 +40,7 @@ function isContained(
 export const RectangleDrawer = () => {
   const interactionMode = useModeStore((s) => s.interactionMode);
   const displayMode = useModeStore((s) => s.displayMode);
-  const modeStoreApi = useModeStoreApi();
+  const ledger = usePressLedger();
   const activeTool = useRoiDrawingStore((s) => s.activeTool);
   const replaceSelectedRois = useRoiSelectionStore((s) => s.replaceSelectedRois);
   const mergeSelectedRois = useRoiSelectionStore((s) => s.mergeSelectedRois);
@@ -79,16 +80,41 @@ export const RectangleDrawer = () => {
     invalidate();
   }, [paintCoalescer, invalidate]);
 
-  // R3F handles `pointercancel` at the canvas and never forwards it to object
-  // handlers, so a cancelled gesture has to be caught here.
-  useEffect(() => {
-    window.addEventListener("pointercancel", endSession);
-    window.addEventListener("blur", endSession);
-    return () => {
-      window.removeEventListener("pointercancel", endSession);
-      window.removeEventListener("blur", endSession);
-    };
-  }, [endSession]);
+  /** Select what the marquee holds, from its start to `end`. */
+  const commitMarquee = useCallback(
+    (end: THREE.Vector3, append: boolean) => {
+      const start = startRef.current;
+      if (!start) return;
+      const selectionBounds = normalizeBounds(start, end);
+      const containedRois = Object.values(selectionApi.getState().visibleRois)
+        .flatMap((layerRois) => [...layerRois.values()])
+        .filter((roi) => isContained(selectionBounds, roi.bounds))
+        .map(({ bounds: _bounds, ...roi }) => roi);
+
+      if (append) mergeSelectedRois(containedRois);
+      else replaceSelectedRois(containedRois);
+      endSession();
+    },
+    [selectionApi, mergeSelectedRois, replaceSelectedRois, endSession],
+  );
+
+  // Every press ends at the ledger (`platform/input/pressLedger.ts`), after
+  // the plane's own `onPointerUp` had its chance. A marquee still open then
+  // was let go where the plane could not see it (outside the canvas, over a
+  // panel): it selects what it held when last seen. A press with no release
+  // at all (a cancelled pointer, a lost window) selects nothing.
+  useEffect(
+    () =>
+      ledger.onEnd((end) => {
+        if (!startRef.current) return;
+        if (end.reason === "released" && cursorRef.current) {
+          commitMarquee(cursorRef.current, end.press.shift);
+          return;
+        }
+        endSession();
+      }),
+    [ledger, commitMarquee, endSession],
+  );
 
   // The marquee is the Select *tool* of ANNOTATE mode, and it is 2D-only — the
   // toolbar hides it in 3D (`features/annotations/modeCompat.ts`), so this is belt and braces.
@@ -114,7 +140,7 @@ export const RectangleDrawer = () => {
         position={[0, 0, 0]}
         onClick={(e) => {
           // A click that ends a camera press (Space + drag) is not a deselect.
-          if (modeStoreApi.getState().leftPress === "camera") return;
+          if (ledger.owner() === "camera") return;
           e.stopPropagation();
           // Only a real click clears the selection. Without the distance gate,
           // the click R3F synthesizes at the end of a marquee drag ran here with
@@ -124,8 +150,9 @@ export const RectangleDrawer = () => {
           }
         }}
         onPointerDown={(e) => {
-          // The camera's press (Space held): the marquee waits.
-          if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
+          // The camera's press (Space held, or the middle or right button):
+          // the marquee waits.
+          if (ledger.owner() === "camera") return;
           const hit = pointOnPlane(e);
           if (!hit) return;
           e.stopPropagation();
@@ -149,20 +176,7 @@ export const RectangleDrawer = () => {
           (e.target as Element).releasePointerCapture?.(e.pointerId);
 
           const hit = pointOnPlane(e);
-          const end = hit ? hit.clone() : (cursorRef.current ?? start);
-          const selectionBounds = normalizeBounds(start, end);
-          const containedRois = Object.values(selectionApi.getState().visibleRois)
-            .flatMap((layerRois) => [...layerRois.values()])
-            .filter((roi) => isContained(selectionBounds, roi.bounds))
-            .map(({ bounds: _bounds, ...roi }) => roi);
-
-          if (e.shiftKey) {
-            mergeSelectedRois(containedRois);
-          } else {
-            replaceSelectedRois(containedRois);
-          }
-
-          endSession();
+          commitMarquee(hit ? hit.clone() : (cursorRef.current ?? start), e.shiftKey);
         }}
       >
         <planeGeometry args={[80000, 80000]} />

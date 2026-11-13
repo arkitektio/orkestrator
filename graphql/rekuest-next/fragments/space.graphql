@@ -1,33 +1,15 @@
+# A room: where people left each agent (`Space.reference` is an action Space blok's `room`).
 fragment Space on Space {
   id
   name
+  reference
   placements {
-   ...SpacePlacement
-  }
-  blokPlacements {
-    ...SpaceBlokPlacement
+    ...SpacePlacement
   }
 }
-
-# A 3D blok standing in a space on its own, with no agent: a bench, a rack, a
-# room's walls. Where it sits is a 4x4 affine, as for an agent's placement.
-fragment SpaceBlokPlacement on SpacePlacement {
-  id
-  name
-  affineMatrix
-  blok {
-    id
-    name
-    blok {
-      id
-      name
-      context
-    }
-  }
-}
-
 
 fragment ListSpace on Space {
   id
   name
+  reference
 }

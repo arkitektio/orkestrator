@@ -45,28 +45,55 @@ export const boxOutline = (box: CropBox): OutlinePoint[] => {
   ];
 };
 
-/** Pointer travel per slice when the stack is short: fine enough to pick one slice by hand. */
-const MAX_PX_PER_STEP = 12;
-/** And when it is long: a pixel is the least a hand moves. */
-const MIN_PX_PER_STEP = 1;
-/** The share of the canvas height that reaches the whole stack. */
-const FULL_DEPTH_TRAVEL = 0.4;
+/**
+ * The depth is set with the WHEEL. It used to follow the pointer's height
+ * above where the rectangle was fixed, which only works while there is canvas
+ * left above the pointer: fix the rectangle near the top edge and the box
+ * could not grow, and past the edge no move arrives at all. A wheel has no
+ * edge to run out of, and it leaves the pointer free.
+ */
+
+/** Wheel travel that makes one notch: a mouse wheel's click, in pixels. */
+export const WHEEL_NOTCH_PX = 100;
+/** A line-mode wheel event (`deltaMode` 1) in pixels: a click is three lines, and one notch. */
+const WHEEL_LINE_PX = 34;
+/** About how many notches take the box from one slice to the whole stack. */
+const FULL_DEPTH_NOTCHES = 60;
 
 /**
- * Pointer pixels per depth step: `FULL_DEPTH_TRAVEL` of the canvas grows the
- * box from one slice to the whole stack (`slices`), so a 600-slice stack does
- * not need three screens of travel and a 10-slice one does not flip per pixel.
+ * Depth steps per wheel notch: one slice while the stack is short enough to
+ * walk a slice at a time, more on a long one, so a 600-slice stack does not
+ * need 600 notches.
  */
-export const depthPixelsPerStep = (canvasHeight: number, slices: number): number => {
-  if (!(slices > 1) || !(canvasHeight > 0)) return MAX_PX_PER_STEP;
-  const perStep = (canvasHeight * FULL_DEPTH_TRAVEL) / slices;
-  return Math.min(MAX_PX_PER_STEP, Math.max(MIN_PX_PER_STEP, perStep));
+export const depthStepsPerNotch = (slices: number): number =>
+  slices > FULL_DEPTH_NOTCHES ? Math.ceil(slices / FULL_DEPTH_NOTCHES) : 1;
+
+/**
+ * Turns wheel events into whole notches. A mouse wheel sends one notch per
+ * click; a trackpad sends a stream of small deltas, which add up here until
+ * they make one. Returns the notches this event completed: positive when the
+ * wheel goes UP (away from the user), which grows the box.
+ */
+export const createWheelNotches = () => {
+  let carried = 0;
+  return (event: { deltaY: number; deltaMode: number }): number => {
+    const pixels = event.deltaMode === 1 ? event.deltaY * WHEEL_LINE_PX : event.deltaY;
+    // A change of direction starts over: the leftover of the other way is not
+    // travel in this one.
+    if (carried !== 0 && Math.sign(pixels) !== Math.sign(carried)) carried = 0;
+    carried += pixels;
+    const notches = Math.trunc(carried / WHEEL_NOTCH_PX);
+    carried -= notches * WHEEL_NOTCH_PX;
+    return notches === 0 ? 0 : -notches;
+  };
 };
 
 /**
- * Depth steps for a pointer at `clientY`, the gesture having entered the depth
- * phase at `fromY`. Moving UP grows the box (screen y runs down, so the sign is
- * flipped); below where it started the box is one slice and stays one.
+ * The depth after `notches` of the wheel: never less than one slice (0 steps),
+ * never more than the stack holds (`slices`; 0 when the scene has no z grid,
+ * and then there is no ceiling to hold it to).
  */
-export const depthSteps = (fromY: number, clientY: number, pixelsPerStep: number): number =>
-  Math.max(0, Math.round((fromY - clientY) / Math.max(pixelsPerStep, 1e-6)));
+export const depthAfterWheel = (steps: number, notches: number, slices: number): number => {
+  const next = Math.max(0, steps + notches * depthStepsPerNotch(slices));
+  return slices > 0 ? Math.min(slices, next) : next;
+};

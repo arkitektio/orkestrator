@@ -22,6 +22,7 @@ import { cn } from "@/core/util/utils";
 import { MikroArrayDataset, MikroFixture, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
 
 import { useTabActions } from "@/core/tabs/TabsProvider";
+import { Name } from "@/core/ui/name";
 import { SmartObjectButtonProps } from "@/core/smart/buildSmartAdapters";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
@@ -432,9 +433,9 @@ const ExplorerListItem = (props: { item: ExplorerItem; detailed?: boolean }) => 
           <div className="min-w-0">
             <ExplorerItemLink
               item={props.item}
-              className="block truncate text-sm font-medium text-foreground"
+              className="block min-w-0 text-sm font-medium text-foreground"
             >
-              {itemName(props.item)}
+              <Name>{itemName(props.item)}</Name>
             </ExplorerItemLink>
             <p className="truncate text-xs text-muted-foreground">
               {getItemMeta(props.item)}

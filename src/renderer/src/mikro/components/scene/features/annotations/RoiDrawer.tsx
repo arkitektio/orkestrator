@@ -5,6 +5,8 @@ import { Line } from "@/core/data/scene/draw/Line";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import { VertexHandles } from "./VertexHandles";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";
+import { usePressLedger } from "../../platform/input/sceneInput";
+import type { PressEnd } from "../../platform/input/pressLedger";
 import { useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import {
   useRoiDrawingStore,
@@ -169,13 +171,6 @@ interface DrawSession {
    * `onClick` places that vertex as before.
    */
   pressWorld: THREE.Vector3 | null;
-  /**
-   * The press in flight is the camera's (`modeStore.leftPress`): Space was
-   * down, or no shape is under way and this is not a double-click's second
-   * press. Its move and release must not touch the shape — an anchored
-   * rectangle would otherwise commit on the pan's release.
-   */
-  cameraPress: boolean;
 }
 
 const freshSession = (): DrawSession => ({
@@ -194,7 +189,6 @@ const freshSession = (): DrawSession => ({
   stroke: null,
   strokePx: null,
   pressWorld: null,
-  cameraPress: false,
 });
 
 const eventPx = (event: ThreeEvent<PointerEvent | MouseEvent>): ScreenPoint => ({
@@ -228,6 +222,9 @@ export const RoiDrawer = () => {
   const currentZ = useViewerStore((s) => s.currentZ);
   const viewerStoreApi = useViewerStoreApi();
   const modeStoreApi = useModeStoreApi();
+  // WHOSE a press is, whether it was a click, and that it ended come from
+  // here; this plane only says where (`platform/input/pressLedger.ts`).
+  const ledger = usePressLedger();
   const camera = useThree((s) => s.camera);
   const canvas = useThree((s) => s.gl.domElement);
   const invalidate = useThree((s) => s.invalidate);
@@ -652,10 +649,8 @@ export const RoiDrawer = () => {
   // Backspace is `RoiDeleteKeybinding`'s, deleting the selection.
   // Escape discards the shape outright, whatever the tool, and leaves ANNOTATE.
   // Finishing is the double-click's.
-  // `pointercancel` has to be a window listener: R3F handles it at the canvas
-  // and never forwards it to object handlers. (Deliberately NOT
-  // `lostpointercapture`, which fires *before* pointerup and would kill every
-  // gesture before it commits.)
+  // (A cancelled pointer and a lost window are the press ledger's to report:
+  // see `endPress` below.)
   useEffect(() => {
     /** Whether the key was ours: a shape under way to shorten or discard. */
     const onKeyDown = (event: KeyboardEvent): boolean => {
@@ -706,17 +701,11 @@ export const RoiDrawer = () => {
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && onKeyDown(event)) event.stopImmediatePropagation();
     };
-    const onCancel = () => resetSession();
-
     window.addEventListener("keydown", onBackspace);
     window.addEventListener("keydown", onEscape, true);
-    window.addEventListener("pointercancel", onCancel);
-    window.addEventListener("blur", onCancel);
     return () => {
       window.removeEventListener("keydown", onBackspace);
       window.removeEventListener("keydown", onEscape, true);
-      window.removeEventListener("pointercancel", onCancel);
-      window.removeEventListener("blur", onCancel);
     };
   }, [resetSession, growFrom, paintCoalescer, paint, setTraceMessage, modeStoreApi]);
 
@@ -765,6 +754,12 @@ export const RoiDrawer = () => {
       mesh.scale.setScalar(FLAT_CAPTURE_SIZE);
     }
   });
+
+  // The ledger tells every press's end to `endPress`, defined below with the
+  // rest of the gesture; with no tool there is no gesture and nothing to end.
+  const endPressRef = useRef<(end: PressEnd) => void>(() => {});
+  endPressRef.current = () => {};
+  useEffect(() => ledger.onEnd((end) => endPressRef.current(end)), [ledger]);
 
   // ANNOTATE mode + a *shape* tool is the whole condition. The Select tool arms
   // `RectangleDrawer` instead, so the two are mutually exclusive by
@@ -959,6 +954,90 @@ export const RoiDrawer = () => {
     paintCoalescer.schedule(paint);
   };
 
+  /**
+   * The release of a drag-plane press (rectangle, ellipse, line in 2D), from
+   * wherever `session.cursor` last was.
+   *
+   * Commit when this press actually dragged, OR when it is the second press of
+   * the click-move-click flow. A press that only placed the anchor and didn't
+   * move stays anchored, rubber-banding on hover.
+   */
+  const releaseDrag = () => {
+    const session = sessionRef.current;
+    const shouldCommit =
+      session.vertices.length === 1 && (session.movedPastThreshold || !session.anchorPress);
+
+    if (shouldCommit && session.cursor) {
+      const start = session.vertices[0];
+      const end = session.cursor.clone().setZ(session.planeZ);
+      if (tool === "LINE" && enhanceOn) {
+        // A LINE enhances once, at commit — its rubber band stays straight
+        // because A* at pointermove cadence is off the table. Both endpoints
+        // resolve here (the drag flow kept no anchors).
+        finishShape(
+          [start, ...enhanceEdge(session.treeSeed ?? anchorAt(start), anchorAt(end))],
+          "PATH",
+        );
+        return;
+      }
+      finishShape([start, end]);
+      return;
+    }
+
+    session.phase = "anchored";
+    session.downPx = null;
+  };
+
+  /**
+   * Every press ends here, after this plane's own `onPointerUp` had its
+   * chance — which it does not get when the pointer is let go off the plane
+   * (outside the canvas, over a panel) or never let go at all (a cancelled
+   * pointer, a lost window). Whatever the press still has open is closed now,
+   * so the next press starts from a session that says what is on screen.
+   *
+   *  - released: finish what the handler would have, from the last position
+   *    the plane saw;
+   *  - cancelled: drop what THIS press had under way and nothing more — the
+   *    vertices already placed stay, a half-drawn polygon survives an Alt-Tab.
+   */
+  const endPress = (end: PressEnd) => {
+    if (end.press.owner === "camera") return;
+    const session = sessionRef.current;
+    const released = end.reason === "released";
+
+    // A flat PATH press: its stroke, or the click it might still have been.
+    const stroke = session.stroke;
+    if (strokeOn) session.downPx = null;
+    session.pressWorld = null;
+    if (stroke) {
+      if (released) {
+        const rect = canvas.getBoundingClientRect();
+        commitStroke(stroke, { x: end.x - rect.left, y: end.y - rect.top });
+      } else {
+        session.stroke = null;
+        session.strokePx = null;
+        paintCoalescer.schedule(paint);
+      }
+      return;
+    }
+
+    // A drag-plane press still open: its release never reached the plane.
+    if (session.phase !== "pressed" && session.phase !== "dragging") return;
+    if (released) {
+      releaseDrag();
+      return;
+    }
+    if (session.anchorPress) {
+      // The press that placed the anchor was the whole shape so far.
+      resetSession();
+      return;
+    }
+    session.phase = "anchored";
+    session.downPx = null;
+    session.movedPastThreshold = false;
+  };
+  endPressRef.current = endPress;
+
   return (
     <group>
       {/* Invisible interaction plane. It still raycasts — Mesh.raycast never
@@ -972,11 +1051,10 @@ export const RoiDrawer = () => {
         position={[0, 0, 0.01]}
         scale={FLAT_CAPTURE_SIZE}
         onPointerDown={(e) => {
-          // The camera's press: it moves the view, the shape waits.
-          if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") {
-            sessionRef.current.cameraPress = true;
-            return;
-          }
+          // The camera's press (the hand, or the middle or right button):
+          // it moves the view, the shape waits. Nothing is remembered about
+          // it here — its move and release ask the ledger again.
+          if (ledger.owner() === "camera") return;
           // A flat PATH press may turn into a freehand stroke. Nothing is
           // claimed yet — below the drag threshold it is a click, and
           // `onClick` places the vertex exactly as it always has.
@@ -1033,7 +1111,7 @@ export const RoiDrawer = () => {
           const session = sessionRef.current;
           // A pan in progress: the band holds still rather than chasing the
           // pointer across a view that is moving under it.
-          if (session.cameraPress && e.buttons !== 0) return;
+          if (e.buttons !== 0 && ledger.current()?.owner === "camera") return;
           // A primitive tool with no anchor yet: the VOLUME owns the pointer
           // (hover probing, the anchoring click) — the plane must neither
           // consume the ray nor block propagation to it.
@@ -1087,10 +1165,9 @@ export const RoiDrawer = () => {
           paintCoalescer.schedule(paint);
         }}
         onPointerUp={(e) => {
-          if (sessionRef.current.cameraPress) {
-            sessionRef.current.cameraPress = false;
-            return;
-          }
+          // The release of a camera press must not touch the shape — an
+          // anchored rectangle would otherwise commit on the pan's release.
+          if (ledger.owner() === "camera") return;
           if (strokeOn) {
             const session = sessionRef.current;
             const stroke = session.stroke;
@@ -1112,38 +1189,12 @@ export const RoiDrawer = () => {
 
           const hit = pointOnPlane(e);
           if (hit) session.cursor = hit.clone();
-
-          // Commit when this press actually dragged, OR when it is the second
-          // press of the click-move-click flow. A press that only placed the
-          // anchor and didn't move stays anchored, rubber-banding on hover.
-          const shouldCommit =
-            session.vertices.length === 1 &&
-            (session.movedPastThreshold || !session.anchorPress);
-
-          if (shouldCommit && session.cursor) {
-            const start = session.vertices[0];
-            const end = session.cursor.clone().setZ(session.planeZ);
-            if (tool === "LINE" && enhanceOn) {
-              // A LINE enhances once, at commit — its rubber band stays
-              // straight because A* at pointermove cadence is off the table.
-              // Both endpoints resolve here (the drag flow kept no anchors).
-              finishShape(
-                [start, ...enhanceEdge(session.treeSeed ?? anchorAt(start), anchorAt(end))],
-                "PATH",
-              );
-              return;
-            }
-            finishShape([start, end]);
-            return;
-          }
-
-          session.phase = "anchored";
-          session.downPx = null;
+          releaseDrag();
         }}
         onClick={(e) => {
           // A click that ends a camera press places nothing — in ANNOTATE
           // that is every single click until a double-click starts a shape.
-          if (modeStoreApi.getState().leftPress === "camera") return;
+          if (ledger.owner() === "camera") return;
           if (isPrimitive) {
             const session = sessionRef.current;
             // Only a probe-anchored session sizes and commits here. Early
@@ -1187,7 +1238,7 @@ export const RoiDrawer = () => {
               // Counted in ANCHORS: with the enhancer on, one traced edge
               // already yields many vertices, and those are not clicks.
               if (
-                e.detail >= 2 &&
+                ledger.count() >= 2 &&
                 session.anchors.length >= 2 &&
                 (!session.lastClickPx || withinSlop(px, session.lastClickPx))
               ) {
@@ -1246,12 +1297,13 @@ export const RoiDrawer = () => {
             return;
           }
 
-          // Finish on double-click — but only if the second click landed on the
-          // first. `detail` is position-blind, so without this two quick vertex
-          // placements would end the polygon. Counted in ANCHORS: with the
-          // enhancer on, one traced edge already yields many vertices.
+          // Finish on double-click — the ledger's count, the same one that
+          // decided whose the press was, so the two cannot disagree — and only
+          // if the second click landed on the first vertex's click: two quick
+          // vertex placements must not end the polygon. Counted in ANCHORS:
+          // with the enhancer on, one traced edge already yields many vertices.
           const isDoubleClick =
-            e.detail >= 2 &&
+            ledger.count() >= 2 &&
             session.anchors.length >= 2 &&
             (!session.lastClickPx || withinSlop(px, session.lastClickPx));
 

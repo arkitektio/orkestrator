@@ -2,7 +2,8 @@ import { useFrame } from "@react-three/fiber";
 import { useViewStore } from "../stores/viewStore";
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
-import { cameraInteraction, isCameraMoving, matrixRelativeDelta } from "./cameraMotion";
+import { isCameraMoving, matrixRelativeDelta } from "./cameraMotion";
+import { useCameraInteraction } from "../input/sceneInput";
 import { perfMonitor } from "../perf/perfMonitor";
 
 interface CameraMatrixSyncProps {
@@ -40,6 +41,8 @@ export const CameraMatrixSync = ({
   const pendingFovY = useRef(0);
   const pendingCoordinateSystem = useRef<number>(THREE.WebGLCoordinateSystem);
   const lastChangeAtRef = useRef(0);
+  // Stable for the scene's life, so the frame callback may close over it.
+  const cameraInteraction = useCameraInteraction();
   /** The `moving` flag of the last emission — its flips go on the perf timeline. */
   const lastEmittedMovingRef = useRef(false);
 

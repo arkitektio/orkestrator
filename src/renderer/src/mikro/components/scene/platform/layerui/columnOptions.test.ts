@@ -179,6 +179,18 @@ describe("label entries take the same path as mesh ones", () => {
     ).toMatchObject({ min: 0.25, max: 4 });
   });
 
+  // `colorBys` is a whole-array replace, so the flag has to survive the read →
+  // input mapping — and must NOT be sent when off: only `LabelColorByInput` has
+  // the field, and a mesh mutation handed the key is refused whole.
+  it("carries hideBelowMin back when set, and omits the key when not", () => {
+    expect(colorByEntryToInput({ ...labelColouring, hideBelowMin: true })).toMatchObject({
+      hideBelowMin: true,
+    });
+    expect("hideBelowMin" in colorByEntryToInput({ ...labelColouring, hideBelowMin: false })).toBe(
+      false,
+    );
+  });
+
   it("carries a label colouring's joinPath back through a read-modify-write", () => {
     expect(colorByEntryToInput(labelColouring).joinPath).toEqual([
       { table: "t1", column: "track_id" },

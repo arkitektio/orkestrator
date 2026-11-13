@@ -75,6 +75,15 @@ export interface ProbeSlice {
   probeMode: ProbeMode;
   setProbeMode: (mode: ProbeMode) => void
   /**
+   * A click that landed on data that is not loaded yet, where it landed
+   * (client px): the probe answers from resident bricks only, so such a click
+   * can place or read nothing — and used to do so in silence. UI cadence (set
+   * per refused click, cleared by a timer): `LoadingClickChip` shows it.
+   */
+  loadingClick: { x: number; y: number; at: number } | null;
+  noteLoadingClick: (x: number, y: number) => void;
+  clearLoadingClick: () => void;
+  /**
    * The layer tasks and annotations use, or null for the DEFAULT: the first
    * visible layer (see `effectiveDataLayerId`). Session-only.
    */
@@ -207,6 +216,10 @@ export const createProbeSlice = (
       }
       return { probeCursorWorld: world };
     }),
+  loadingClick: null,
+  noteLoadingClick: (x, y) => set({ loadingClick: { x, y, at: performance.now() } }),
+  clearLoadingClick: () =>
+    set((state) => (state.loadingClick === null ? state : { loadingClick: null })),
   probeReadout: null,
   setProbeReadout: (coordinate) =>
     set((state) =>

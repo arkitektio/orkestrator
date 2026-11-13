@@ -1638,7 +1638,7 @@ the settle-edge reschedule lifts it ~150 ms after rest); and
 `shouldDeferPrefetch` in the global dispatcher — band 2 dispatches only with a
 resting camera and zero on-screen bricks in flight (the k-way merge sorts by
 band, so a band-2 winner already means nothing on-screen is pending). A
-wheel-driven zoom also relies on `cameraInteraction`'s wheel hold
+wheel-driven zoom also relies on the camera interaction's wheel hold
 (`platform/camera/cameraMotion.ts`): before it, `cameraMoving` flickered on
 every trackpad tick and each flicker was a settle edge, i.e. 3–5 extra plans
 per zoom.
@@ -1753,6 +1753,40 @@ cleared and wrote everything); a point's size is a uniform, not its matrix;
 `visibleRois` is a frozen Map per layer outside Immer, which would otherwise proxy
 and deep-freeze every shape. A store that publishes outside Immer must freeze
 what it publishes, or the next Immer write walks it.
+
+**P35 — A press must END somewhere that always hears it.** Symptom: "the
+click did not register", then the next one does something odd — a release
+swallowed, a left drag that no longer moves the view, a probe pinned on the
+wrong click, a camera that stays dead after a sculpt. Each tool used to keep
+its own "a press is in flight" flag and wait for the release from its own
+source: its mesh's `onPointerUp` (never fires when the pointer is let go off
+the mesh, outside the canvas or over a panel), R3F's `onClick`, the browser's
+`click` (neither follows a drag), a window `pointerup` (never follows a
+cancelled pointer or an Alt-Tab). The flag outlived the press and the next
+press was read against it. Now ONE object accounts for the pointer,
+`platform/input/pressLedger.ts`, fed by `shell/pointer/PressLedgerDriver`
+(the only press/release listener in the scene): object handlers say WHERE
+(the ray, the hit); the ledger says WHOSE the press is, whether it was a
+CLICK, which press of a multi-click it was, and — the guarantee — that it
+ENDED, as `released` or `cancelled`. Rules:
+
+- Do not keep a per-press flag. Ask `ledger.owner()` / `ledger.current()` in
+  the handler; in `onPointerUp` and `onClick` the press is already over and
+  `owner()` / `count()` answer for the one that just ended.
+- Commit in your own `onPointerUp` as before, and subscribe `ledger.onEnd`
+  for what is still open after it: `released` finishes from the last position
+  you saw, `cancelled` drops what THIS press had under way and nothing more.
+- Never suspend the camera (`controls.enabled = false`) or hand the controls
+  a button map for longer than a press without an `onEnd` that puts it back.
+- One click rule (`CLICK_SLOP_PX`), one multi-click counter (`count`, not
+  `event.detail`, which Chromium reports as 0 on pointerdown and counts
+  position-blind on click).
+- The pointer-move gate (`SceneViewport.sceneEvents`) asks the ledger whose
+  the press is, not `cameraMoving`: that flag is about the camera, and it
+  stays true through the settle after a zoom — a tool drag begun then lost
+  its first moves and read as a click.
+- The camera's "being driven" flag is per scene too
+  (`platform/input/sceneInput.ts`), not a module singleton.
 
 **P20 — Handler ATTACHMENT is the raycast gate, not the handler body.** R3F
 puts an object in `internal.interaction` as soon as it carries any event

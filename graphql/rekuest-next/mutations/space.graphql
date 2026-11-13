@@ -1,49 +1,12 @@
-mutation CreateSpace($input: CreateSpaceInput!) {
-  createSpace(input: $input) {
-    ...Space
-  }
-}
-
-mutation UpdateSpace($input: UpdateSpaceInput!) {
-  updateSpace(input: $input) {
-    ...Space
-  }
-}
-mutation DeleteSpace($id: ID!) {
-  deleteSpace(input: { id: $id })
-}
-
-
-mutation CreatePlacement($input: CreatePlacementInput!) {
-  createPlacement(input: $input) {
+# Keep where an agent stands in the room an action's Space blok names, for everyone:
+# the first pose kept makes the space.
+mutation SavePlacement($input: SavePlacementInput!) {
+  savePlacement(input: $input) {
     ...SpacePlacement
   }
 }
 
-mutation UpdatePlacement($input: UpdatePlacementInput!) {
-  updatePlacement(input: $input) {
-    ...SpacePlacement
-  }
-}
-
-
-mutation DeletePlacement($id: ID!) {
-  deletePlacement(input: { id: $id })
-}
-
-
-mutation CreateSpacePlacement($input: CreateSpacePlacementInput!) {
-  createSpacePlacement(input: $input) {
-    ...SpaceBlokPlacement
-  }
-}
-
-mutation UpdateSpacePlacement($input: UpdateSpacePlacementInput!) {
-  updateSpacePlacement(input: $input) {
-    ...SpaceBlokPlacement
-  }
-}
-
-mutation DeleteSpacePlacement($id: ID!) {
-  deleteSpacePlacement(input: { id: $id })
+# Forget where an agent was left, so the Space blok's `Placed` decides again.
+mutation ResetPlacement($input: ResetPlacementInput!) {
+  resetPlacement(input: $input)
 }

@@ -126,7 +126,32 @@ type Draft = {
   max?: number | null;
   values?: string[] | null;
   exclude?: boolean;
+  hideBelowMin?: boolean;
 };
+
+/**
+ * "Do not draw the bottom of the window" — the switch under a measure
+ * colouring's clims, on layers whose renderer honours it (label masks).
+ *
+ * Why it is a switch on the COLOURING and not a filter rule: it follows the
+ * window. Raise the lower thumb and more of the low end goes with it, and a
+ * gene's zero bins stop covering the image under the mask.
+ */
+const HideBottomRow = ({
+  checked,
+  onCommit,
+}: {
+  checked: boolean;
+  onCommit: (patch: Draft) => void;
+}) => (
+  <label
+    className="flex items-center justify-between gap-2 border-t border-foreground/5 pt-2 text-[10px]"
+    title="Objects whose value is at or below the lower clim are not drawn, instead of taking the colormap's first colour — what is under the mask shows through"
+  >
+    <span className="text-foreground/40">hide values at or below the lower bound</span>
+    <Switch checked={checked} onCheckedChange={(next) => onCommit({ hideBelowMin: next })} />
+  </label>
+);
 
 /** Histogram plot height — shorter than the Levels editor's 64: this sits
  * inline in an unfolded row, not in a dedicated transfer editor. */
@@ -529,10 +554,14 @@ const SparseSliceSettings = ({
 export const ColumnEntrySettings = ({
   entry,
   mode,
+  hidesBottom = false,
   onCommit,
 }: {
   entry: ColorByEntry | FilterByEntry;
   mode: "color" | "filter";
+  /** Whether this layer kind can leave the bottom of a colouring's window
+   *  undrawn (`hideBelowMin`) — label masks only, so the switch is theirs. */
+  hidesBottom?: boolean;
   onCommit: (patch: Draft) => void;
 }) => {
   const service = useAttributeServiceOrNull();
@@ -598,6 +627,8 @@ export const ColumnEntrySettings = ({
   // The clim fields land with the backend; read them structurally until the
   // generated fragment carries them.
   const clims = entry as { min?: number | null; max?: number | null };
+  const hideBottom = (entry as { hideBelowMin?: boolean | null }).hideBelowMin === true;
+  const offersHideBottom = hidesBottom && !isFilter;
   const selected = useMemo(() => new Set(rule.values ?? []), [rule.values]);
 
   const toggleValue = useCallback(
@@ -785,6 +816,7 @@ export const ColumnEntrySettings = ({
           stored={clims}
           onCommit={onCommit}
         />
+        {offersHideBottom && <HideBottomRow checked={hideBottom} onCommit={onCommit} />}
         {isFilter && (
           <label className="flex items-center justify-between gap-2 border-t border-foreground/5 pt-2 text-[10px]">
             <span className="text-foreground/40">invert — drop what matches instead</span>
@@ -849,6 +881,7 @@ export const ColumnEntrySettings = ({
               </div>
             </>
           )}
+          {offersHideBottom && <HideBottomRow checked={hideBottom} onCommit={onCommit} />}
         </div>
       )}
       {!isFilter && control === ColumnControl.Categorical && (

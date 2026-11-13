@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { useSettings } from "@/core/settings/store/SettingsContext";
-import { cameraInteraction } from "../../platform/camera/cameraMotion";
+import { useCameraInteraction } from "../../platform/input/sceneInput";
 import { AUTO_SNAPSHOT_QUIET_MS, decideAutoSnapshot } from "./autoSnapshotGate";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
@@ -40,6 +40,7 @@ export const useAutoSceneSnapshot = (): void => {
   // no brick pipeline will run, so there is no drained edge to wait for.
   const hasVolumetricLayers = useSceneStore((s) => s.layers.length > 0);
   const sceneStoreApi = useSceneStoreApi();
+  const cameraInteraction = useCameraInteraction();
   const sharp = useViewerStore((s) => s.sharp);
   const captureSnapshot = useSceneSnapshot();
 
@@ -93,7 +94,7 @@ export const useAutoSceneSnapshot = (): void => {
     // take whatever is on screen.
     const timer = setTimeout(shoot, AUTO_SNAPSHOT_QUIET_MS);
     return () => clearTimeout(timer);
-  }, [enabled, hasSnapshot, sharp, hasVolumetricLayers, captureSnapshot, sceneStoreApi]);
+  }, [enabled, hasSnapshot, sharp, hasVolumetricLayers, captureSnapshot, sceneStoreApi, cameraInteraction]);
 };
 
 /**

@@ -178,14 +178,6 @@ export interface ModeState {
   depthView: DepthView | null;
   setDepthView: (view: DepthView | null) => void;
   /**
-   * Who the left press in flight belongs to, decided at press time by
-   * `shell/pointer/LeftPressArbiter` (`navigationBindings.leftPressOwner`).
-   * Tools skip a press — and the click it ends in — that is the camera's.
-   * Written per press and read with `getState()`; nothing subscribes.
-   */
-  leftPress: "camera" | "tool";
-  setLeftPress: (owner: "camera" | "tool") => void;
-  /**
    * The presentation/faithful switch. OFF is the SCIENTIFIC look and is the
    * renderer as it has always been, plus `NoToneMapping`; ON adds volume
    * shading, ACES grading and tricubic zoom smoothing.
@@ -276,11 +268,6 @@ export const createModeStore = ({
     selectedDesignTool: "trace",
     designToolHeld: false,
     designTool: null,
-    leftPress: "tool",
-    setLeftPress: (owner) =>
-      set((state) => {
-        if (state.leftPress !== owner) state.leftPress = owner;
-      }),
     handHeld: false,
     setHandHeld: (held) =>
       set((state) => {

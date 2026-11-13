@@ -56,6 +56,14 @@ export type MarchResidentBricksInput = {
   steps?: number;
   /** Hit-selection strategy along the ray; defaults to "first-hit". */
   strategy?: ProbeMarchStrategy;
+  /**
+   * Filled with what the march could NOT read: how many of its samples had
+   * nothing resident (not loaded yet, or evicted). A null answer with a
+   * count here is "the data is not there yet", not "there is nothing there"
+   * — the caller's to tell the user. Caller-owned so the hover path, which
+   * passes none, allocates nothing.
+   */
+  miss?: { unresident: number };
 };
 
 /**
@@ -107,6 +115,7 @@ export function marchResidentBricks({
   sample,
   steps = 256,
   strategy = "first-hit",
+  miss,
 }: MarchResidentBricksInput): ProbeMarchHit | null {
   const [tNear, tFar] = bounds;
   if (tFar <= tNear) return null;
@@ -145,6 +154,7 @@ export function marchResidentBricks({
     const rawValue = sample(baseVoxelScratch, desiredLevel, channel);
     if (rawValue === null) {
       // Unresident: never a hit, and it breaks gradient pair continuity.
+      if (miss) miss.unresident += 1;
       prev = null;
       continue;
     }

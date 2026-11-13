@@ -38,6 +38,10 @@ fragment LabelColorBy on LabelColorBy {
   # and send it back and the server stores nulls over what the card set.
   min
   max
+  # Whether objects at or below the window's bottom are not drawn at all (a gene's
+  # zero bins over an image). Whole-array replace again: read without it and a
+  # re-send switches it off.
+  hideBelowMin
   label
   # The SPARSE arm: `kind` says which of the two an entry is, and a SPARSE one
   # names a sparse LENS instead of a column, leaving `table`/`column` null. The

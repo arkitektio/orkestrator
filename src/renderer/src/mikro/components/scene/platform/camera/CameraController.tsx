@@ -16,13 +16,13 @@ import { gatherLayerWorldBoxes } from "../visibility/layerBoxes";
 import { computeSceneWorldBox } from "./sceneFit";
 import { useViewStoreApi } from "../stores/viewStore";
 
-import { cameraInteraction } from "./cameraMotion";
+import { useCameraInteraction } from "../input/sceneInput";
 import {
   OrbitControls,
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
-import { cameraButtonsFor } from "../input/navigationBindings";
+import { cameraButtonsFor, restingLeftIsHand } from "../input/navigationBindings";
 
 /**
  * Keeps the OrbitControls pivot on the probed point while "Orbit around probe"
@@ -270,13 +270,14 @@ export const CameraController = () => {
   const displayMode = useModeStore((s) => s.displayMode);
   const zoomToCursor = useModeStore((s) => s.zoomToCursor);
   const smoothOrbit = useModeStore((s) => s.smoothOrbit);
+  const cameraInteraction = useCameraInteraction();
 
   // `onEnd` never fires for controls that unmount mid-drag — a 2D↔3D switch
   // remounts them (the key carries the display mode), and a stuck `interacting`
   // would pin `cameraMoving` true, holding the scene at half resolution with
   // nothing moving. Keyed on displayMode so the remount clears it too (the
   // wheel hold along with it).
-  useEffect(() => cameraInteraction.reset, [displayMode]);
+  useEffect(() => cameraInteraction.reset, [displayMode, cameraInteraction]);
 
   // The wheel is the one gesture the controls cannot report as a gesture:
   // three-stdlib's `onMouseWheel` dispatches `start` → dolly → `end`
@@ -292,7 +293,7 @@ export const CameraController = () => {
     const onWheel = () => cameraInteraction.wheel(performance.now());
     element.addEventListener("wheel", onWheel, { passive: true });
     return () => element.removeEventListener("wheel", onWheel);
-  }, [gl]);
+  }, [gl, cameraInteraction]);
   const frustumNear = useViewerStore((s) => s.frustumNear);
   const frustumFar = useViewerStore((s) => s.frustumFar);
   const sceneApi = useSceneStoreApi();
@@ -324,9 +325,17 @@ export const CameraController = () => {
   // no design tool has it (`designTool` is null); a selected tool takes the
   // left button and leaves right/middle. Holding Space hands the left button
   // back to the camera in every mode (`navigationBindings`).
-  const isNavigate =
-    interactionMode === "NAVIGATE" || (interactionMode === "DESIGN" && designTool === null);
-  const mouseButtons = cameraButtonsFor({ displayMode, leftIsHand: isNavigate || handHeld });
+  // This is the map the controls REST on; a single press may be given another
+  // (`shell/pointer/PressLedgerDriver`), which returns to this one when the
+  // press ends.
+  const mouseButtons = cameraButtonsFor({
+    displayMode,
+    leftIsHand: restingLeftIsHand({
+      interactionMode,
+      designArmed: designTool !== null,
+      handHeld,
+    }),
+  });
 
   // The hand says so: the grab cursor while Space is down. The canvas's
   // own style, so it never fights the toolbar's or a panel's cursor.

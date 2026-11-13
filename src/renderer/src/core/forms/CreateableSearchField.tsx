@@ -29,6 +29,7 @@ import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
+import { Name } from "@/core/ui/name";
 
 export type Option = {
   label: string;
@@ -55,7 +56,7 @@ export const ButtonLabel = (props: {
 
   return (
     <>
-      {option?.label}
+      {option?.label && <Name>{String(option.label)}</Name>}
       {error}
     </>
   );
@@ -158,7 +159,7 @@ export const CreateableSearchField = ({
                     variant="outline"
                     role="combobox"
                     className={cn(
-                      "justify-between overflow-hidden truncate ellipsis",
+                      "min-w-0 justify-between overflow-hidden",
                       !field.value && "text-muted-foreground",
                     )}
                   >
@@ -198,7 +199,7 @@ export const CreateableSearchField = ({
                             });
                           }}
                         >
-                          {option.label}
+                          <Name>{String(option.label)}</Name>
                           <CheckIcon
                             className={cn(
                               "ml-auto h-4 w-4",

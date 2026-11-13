@@ -96,25 +96,17 @@ export function isCameraMoving(
  *    lapses `WHEEL_INTERACTION_HOLD_MS` after the last one. `end` never touches
  *    it — it fires right after `start` on every wheel event.
  *
- * A module singleton rather than store state on purpose: it flips on every
+ * One per mounted scene (`platform/input/sceneInput.ts`), not a module
+ * singleton: two scenes on screen (a scene page beside a dashboard scene, a
+ * blok in another tab) are two cameras, and a drag in one must not hold the
+ * other at half resolution — nor may one's teardown clear the other's drag.
+ *
+ * A plain object rather than store state on purpose: it flips on every
  * pointer down/up and wheel event, is read once per frame from
  * `CameraMatrixSync`, and has no React consumers — routing it through a store
  * would publish a render-hot write for something nothing renders from (P17).
  */
 import { perfMonitor } from "../perf/perfMonitor";
-
-let pointerInteracting = false;
-let wheelHoldUntil = Number.NEGATIVE_INFINITY;
-/**
- * How many times the user has taken hold of the camera, ever.
- *
- * `isInteracting` answers "is a gesture happening RIGHT NOW", which cannot
- * answer "has this view been touched at all" — the question the auto-snapshot
- * asks to decide whether it is still looking at the default fit-to-scene rig.
- * A monotonic count answers it without any per-scene bookkeeping: mark it at
- * mount, compare later.
- */
-let interactionCount = 0;
 
 /**
  * How long after the last wheel event the camera still counts as being
@@ -124,47 +116,70 @@ let interactionCount = 0;
  */
 export const WHEEL_INTERACTION_HOLD_MS = 250;
 
-export const cameraInteraction = {
-  begin(): void {
-    perfMonitor.markEvent("gesture:begin"); // no-op unless a perf recording is armed
-    pointerInteracting = true;
-    interactionCount += 1;
-  },
-  end(): void {
-    perfMonitor.markEvent("gesture:end"); // no-op unless a perf recording is armed
-    pointerInteracting = false;
-  },
-  /** A wheel event landed at `nowMs`: (re)arm the hold. */
-  wheel(nowMs: number): void {
-    // Only the hold's START is an edge; every notch inside it just extends it.
-    if (nowMs >= wheelHoldUntil) perfMonitor.markEvent("gesture:wheel");
-    wheelHoldUntil = nowMs + WHEEL_INTERACTION_HOLD_MS;
-    interactionCount += 1;
-  },
-  isInteracting(nowMs: number): boolean {
-    return pointerInteracting || nowMs < wheelHoldUntil;
-  },
-  /** Time left on the wheel hold (0 when none) — lets the settle timer wait it out. */
-  holdRemainingMs(nowMs: number): number {
-    return Math.max(0, wheelHoldUntil - nowMs);
-  },
+export const createCameraInteraction = () => {
+  let pointerInteracting = false;
+  let wheelHoldUntil = Number.NEGATIVE_INFINITY;
   /**
-   * A count of gestures so far, only ever increasing. Compare a mark taken
-   * earlier against a later read: different means the camera was driven in
-   * between.
-   */
-  count(): number {
-    return interactionCount;
-  },
-  /**
-   * Tests and teardown: controls that unmount mid-drag never fire `onEnd`.
+   * How many times the user has taken hold of the camera, ever.
    *
-   * Clears the IN-PROGRESS flags only. `interactionCount` is history, not
-   * state, and zeroing it here would let a display-mode switch (which calls
-   * this) read back as "nobody ever touched the camera".
+   * `isInteracting` answers "is a gesture happening RIGHT NOW", which cannot
+   * answer "has this view been touched at all" — the question the auto-snapshot
+   * asks to decide whether it is still looking at the default fit-to-scene rig.
+   * A monotonic count answers it without any per-scene bookkeeping: mark it at
+   * mount, compare later.
    */
-  reset(): void {
-    pointerInteracting = false;
-    wheelHoldUntil = Number.NEGATIVE_INFINITY;
-  },
+  let interactionCount = 0;
+
+  return {
+    begin(): void {
+      perfMonitor.markEvent("gesture:begin"); // no-op unless a perf recording is armed
+      pointerInteracting = true;
+      interactionCount += 1;
+    },
+    /**
+     * Idempotent: the controls' own `end` and the press ledger's (which ends
+     * every press, including the ones the controls never heard the release
+     * of) both land here.
+     */
+    end(): void {
+      if (!pointerInteracting) return;
+      perfMonitor.markEvent("gesture:end"); // no-op unless a perf recording is armed
+      pointerInteracting = false;
+    },
+    /** A wheel event landed at `nowMs`: (re)arm the hold. */
+    wheel(nowMs: number): void {
+      // Only the hold's START is an edge; every notch inside it just extends it.
+      if (nowMs >= wheelHoldUntil) perfMonitor.markEvent("gesture:wheel");
+      wheelHoldUntil = nowMs + WHEEL_INTERACTION_HOLD_MS;
+      interactionCount += 1;
+    },
+    isInteracting(nowMs: number): boolean {
+      return pointerInteracting || nowMs < wheelHoldUntil;
+    },
+    /** Time left on the wheel hold (0 when none) — lets the settle timer wait it out. */
+    holdRemainingMs(nowMs: number): number {
+      return Math.max(0, wheelHoldUntil - nowMs);
+    },
+    /**
+     * A count of gestures so far, only ever increasing. Compare a mark taken
+     * earlier against a later read: different means the camera was driven in
+     * between.
+     */
+    count(): number {
+      return interactionCount;
+    },
+    /**
+     * Tests and teardown: controls that unmount mid-drag never fire `onEnd`.
+     *
+     * Clears the IN-PROGRESS flags only. `interactionCount` is history, not
+     * state, and zeroing it here would let a display-mode switch (which calls
+     * this) read back as "nobody ever touched the camera".
+     */
+    reset(): void {
+      pointerInteracting = false;
+      wheelHoldUntil = Number.NEGATIVE_INFINITY;
+    },
+  };
 };
+
+export type CameraInteraction = ReturnType<typeof createCameraInteraction>;

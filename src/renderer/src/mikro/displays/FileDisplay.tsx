@@ -1,5 +1,6 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroFile } from "@/core/linkers";
+import { Name } from "@/core/ui/name";
 import { useGetFileQuery } from "@/mikro/api/graphql";
 
 function formatBytes(bytes: number | null | undefined): string {
@@ -25,7 +26,7 @@ export const FileDisplay = (props: DisplayWidgetProps) => {
     return (
       <MikroFile.DetailLink object={data.file}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-medium text-sm truncate">{data.file.name}</span>
+          <Name className="font-medium text-sm">{data.file.name}</Name>
           {data.file.size != null && (
             <span className="text-xs text-muted-foreground shrink-0">
               {formatBytes(data.file.size)}
@@ -44,7 +45,7 @@ export const FileDisplay = (props: DisplayWidgetProps) => {
   return (
     <MikroFile.DetailLink object={data.file}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-2">
-        <div className="font-semibold text-sm truncate">{data.file.name}</div>
+        <Name className="font-semibold text-sm">{data.file.name}</Name>
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
           {data.file.size != null && (
             <span>{formatBytes(data.file.size)}</span>

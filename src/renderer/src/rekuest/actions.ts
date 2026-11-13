@@ -33,10 +33,8 @@ import {
   PinMaterializedBlokMutationVariables,
   DeleteMaterializedBlokMutation,
   DeleteMaterializedBlokMutationVariables,
-  DeletePlacementDocument,
   DeleteScheduleDocument,
   DeleteShortcutDocument,
-  DeleteSpaceDocument,
   DeleteTriggerDocument,
   DeleteWiregramDocument,
   ImplementationDocument,
@@ -425,23 +423,6 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       dialog.openDialog('bindshortcut', { id: selected(state, '@rekuest/shortcut') })
     },
   },
-   'rekuest-delete-space': buildDeleteAction({
-    title: 'Delete Space',
-    identifier: '@rekuest/space',
-    description: 'Delete the space',
-    service: 'rekuest',
-    typename: 'Space',
-    mutation: DeleteSpaceDocument
-  }),
-  'rekuest-delete-placement': buildDeleteAction({
-    title: 'Delete Placement',
-    identifier: '@rekuest/placement',
-    description: 'Delete the placement',
-    service: 'rekuest',
-    typename: 'Placement',
-    mutation: DeletePlacementDocument // You would need to implement this mutation in your GraphQL API
-  }),
-
   'rekuest-pin-agent': {
     title: 'Pin Agent',
     icon: Pin,

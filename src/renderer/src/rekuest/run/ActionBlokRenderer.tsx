@@ -11,6 +11,7 @@ import {agentMappingsOf, agentsByKey, type RunBinding, type RunBoundAgent} from 
 import {useBlokTravelMoment} from '../travel/context';
 import {parseTimestamp} from '../travel/travelSource';
 import {shownAsk, taskRecordOf} from './taskRoot';
+import {RoomHost} from './space/RoomHost';
 
 /**
  * An action's own blok, drawn for one run of it: its dependency keys bound to
@@ -60,7 +61,7 @@ const AskPlaceholder = () => (
 );
 
 /**
- * The run host the run components (`Anchor`, `Route`, `ask`) read, for `run`.
+ * The run host the run components (`Placed`, `Route`, `ask`) read, for `run`.
  * `showAsk: false` leaves `ask` empty where the page shows the run's asks already.
  */
 export const useRunHost = (run: ActionBlokRun, showAsk = true): BlokRunHost => {
@@ -75,7 +76,7 @@ export const useRunHost = (run: ActionBlokRun, showAsk = true): BlokRunHost => {
   );
 };
 
-/** Provides the run to what is below: the scene surface a space draws the overlay into, or an html blok. */
+/** Provides the run to what is below: an action's Space (its `Placed` devices) or an html blok. */
 export const RunHost = ({run, showAsk, children}: {run: ActionBlokRun; showAsk?: boolean; children: React.ReactNode}) => (
   <BlokRunHostProvider value={useRunHost(run, showAsk)}>{children}</BlokRunHostProvider>
 );
@@ -164,14 +165,17 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, ...rendererProps}:
   const answer = useAnswerShownAsk(run.task);
   return (
     <RunHost run={run} showAsk={showAsk}>
-      <MaterializedBlokRenderer
-        {...rendererProps}
-        materializedBlok={materializedBlok}
-        args={args}
-        task={task}
-        // `task.answer` answers the ask `task.ask` shows; the past is not answered.
-        onAnswer={moment === null ? answer : undefined}
-      />
+      {/* A Space's plain `room` key is the declaring app's. */}
+      <RoomHost app={actionBlok.blok.app?.identifier}>
+        <MaterializedBlokRenderer
+          {...rendererProps}
+          materializedBlok={materializedBlok}
+          args={args}
+          task={task}
+          // `task.answer` answers the ask `task.ask` shows; the past is not answered.
+          onAnswer={moment === null ? answer : undefined}
+        />
+      </RoomHost>
     </RunHost>
   );
 };

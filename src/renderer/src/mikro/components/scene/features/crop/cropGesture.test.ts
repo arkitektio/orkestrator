@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { boxOutline, depthPixelsPerStep, depthSteps, rectOutline } from "./cropGesture";
+import {
+  WHEEL_NOTCH_PX,
+  boxOutline,
+  createWheelNotches,
+  depthAfterWheel,
+  depthStepsPerNotch,
+  rectOutline,
+} from "./cropGesture";
 
 describe("crop outline", () => {
   it("closes the rectangle at the given height", () => {
@@ -23,22 +30,36 @@ describe("crop outline", () => {
   });
 });
 
-describe("crop depth from pointer travel", () => {
-  it("grows going up, one slice at where it started and below", () => {
-    expect(depthSteps(500, 500, 10)).toBe(0);
-    expect(depthSteps(500, 470, 10)).toBe(3);
-    expect(depthSteps(500, 620, 10)).toBe(0);
+describe("crop depth from the wheel", () => {
+  it("counts a mouse wheel's click as one notch, up growing the box", () => {
+    const notches = createWheelNotches();
+    expect(notches({ deltaY: -WHEEL_NOTCH_PX, deltaMode: 0 })).toBe(1);
+    expect(notches({ deltaY: WHEEL_NOTCH_PX, deltaMode: 0 })).toBe(-1);
+    expect(notches({ deltaY: -3, deltaMode: 1 })).toBe(1);
   });
 
-  it("reaches the whole stack in a fixed share of the canvas", () => {
-    // 200 slices on a 1000 px canvas: 400 px of travel is all of them.
-    const perStep = depthPixelsPerStep(1000, 200);
-    expect(perStep).toBe(2);
-    expect(depthSteps(800, 400, perStep)).toBe(200);
-    // A short stack is not flipped through per pixel, and no stack is a fixed pace.
-    expect(depthPixelsPerStep(1000, 10)).toBe(12);
-    expect(depthPixelsPerStep(1000, 0)).toBe(12);
-    // A very long one still moves a slice per pixel at least.
-    expect(depthPixelsPerStep(1000, 5000)).toBe(1);
+  it("adds a trackpad's small deltas up to a notch, and starts over on a turn", () => {
+    const notches = createWheelNotches();
+    expect(notches({ deltaY: -40, deltaMode: 0 })).toBe(0);
+    expect(notches({ deltaY: -40, deltaMode: 0 })).toBe(0);
+    expect(notches({ deltaY: -40, deltaMode: 0 })).toBe(1);
+    // 20 px carried upward; turning round does not count it downward.
+    expect(notches({ deltaY: 90, deltaMode: 0 })).toBe(0);
+    expect(notches({ deltaY: 10, deltaMode: 0 })).toBe(-1);
+  });
+
+  it("walks a short stack a slice at a time and a long one in strides", () => {
+    expect(depthStepsPerNotch(0)).toBe(1);
+    expect(depthStepsPerNotch(40)).toBe(1);
+    expect(depthStepsPerNotch(600)).toBe(10);
+  });
+
+  it("keeps the depth between one slice and the whole stack", () => {
+    expect(depthAfterWheel(0, 3, 40)).toBe(3);
+    expect(depthAfterWheel(2, -5, 40)).toBe(0);
+    expect(depthAfterWheel(38, 5, 40)).toBe(40);
+    expect(depthAfterWheel(590, 3, 600)).toBe(600);
+    // No z grid: nothing to stop at.
+    expect(depthAfterWheel(5, 2, 0)).toBe(7);
   });
 });

@@ -2,7 +2,6 @@ import * as React from 'react';
 import {
   ComponentContext,
   useRunTaskQuery,
-  useSpacesForAgentsQuery,
   type ActionBlokFragment,
   type RunTaskFragment,
 } from '../api/graphql';
@@ -19,7 +18,7 @@ export const RUN_POLL_MS = 5_000;
 /**
  * A run as its action's bloks draw it; null until it is read. The viewer's own
  * runs follow every event through the cache. `follow` also polls while the run
- * goes on, for a run that may be someone else's (a space opened on a run):
+ * goes on, for a run that may be someone else's:
  * each poll reads its whole event history, so only one place should ask.
  */
 export const useRunTask = (
@@ -46,8 +45,8 @@ export const actionBlokFor = (
   context: ComponentContext,
 ): ActionBlokFragment | null => bloks?.find(blok => blok.context === context) ?? null;
 
-/** What a space draws for a run: the action's overlay, bound to the run. */
-export type SpaceRun = {actionBlok: ActionBlokFragment; run: ActionBlokRun};
+/** An action's blok for one context, bound to a run (or a preview). */
+export type ShownRun = {actionBlok: ActionBlokFragment; run: ActionBlokRun};
 
 /**
  * A task's run, kept the same object while what it binds stays the same: the
@@ -64,16 +63,8 @@ export const useRunOfTask = (task: RunTaskFragment | null): ActionBlokRun | null
 };
 
 /** The action's blok for `context` bound to the task, once it is read; null for an action without one. */
-export const useTaskActionBlok = (task: RunTaskFragment | null, context: ComponentContext): SpaceRun | null => {
+export const useTaskActionBlok = (task: RunTaskFragment | null, context: ComponentContext): ShownRun | null => {
   const run = useRunOfTask(task);
   const actionBlok = actionBlokFor(task?.actionBloks, context);
   return React.useMemo(() => (run && actionBlok ? {actionBlok, run} : null), [actionBlok, run]);
-};
-
-/** The spaces placing the most of `agents`, best first; empty while there are no agents or it is read. */
-export const useSpacesForAgents = (agents: readonly string[]) => {
-  const key = [...agents].sort().join(',');
-  const sorted = React.useMemo(() => (key ? key.split(',') : []), [key]);
-  const {data, loading, error} = useSpacesForAgentsQuery({variables: {agents: sorted}, skip: sorted.length === 0});
-  return {spaces: data?.spacesForAgents ?? [], loading, error};
 };

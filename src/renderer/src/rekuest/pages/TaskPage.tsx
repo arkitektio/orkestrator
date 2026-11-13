@@ -57,7 +57,7 @@ import { HoldCard } from "../components/task/HoldCard";
 import { askClosed, pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
 import { TaskFacts } from "../sidebars/TaskInfoSidebar";
-import { OpenRunInSpace, TaskRunPanel } from "../run/TaskRun";
+import { TaskRunPanel } from "../run/TaskRun";
 import { TaskBloks } from "../components/TaskBloks";
 import { useRunTask, useTaskActionBlok } from "../run/useRun";
 import { drawsAsk } from "../run/ActionBlokRenderer";
@@ -192,7 +192,8 @@ export const TPage = asDetailQueryRoute(
     );
 
     const stage = useStagePrefs();
-    const tabs = stageTabs(data.task);
+    const scene = useTaskActionBlok(run, ComponentContext.Scene);
+    const tabs = stageTabs(data.task, scene != null);
     const stageTab =
       stage.tab && tabs.includes(stage.tab) ? stage.tab : tabs[0];
     const stageOpen = view === "timeline" && stage.open && stageTab != null;
@@ -317,7 +318,6 @@ export const TPage = asDetailQueryRoute(
                 ))}
               </PageActionGroup>
             )}
-            <OpenRunInSpace taskId={data.task.id} priority={-6} />
             {view === "timeline" && tabs.length > 0 && (
               <PageAction
                 priority={-5}

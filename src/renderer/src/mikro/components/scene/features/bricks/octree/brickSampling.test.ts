@@ -280,3 +280,45 @@ describe("marchResidentBricks (Y axis, shader lockstep)", () => {
     expect(hit!.position[1]).toBeLessThan(0.12);
   });
 });
+
+describe("marchResidentBricks: what it could not read", () => {
+  const marchOver = (sample: (voxel: readonly number[]) => number | null) => {
+    const miss = { unresident: 0 };
+    const hit = marchResidentBricks({
+      origin: [-0.5, 0, 0],
+      direction: [1, 0, 0],
+      bounds: [0, 1],
+      baseShape: [100, 1, 1],
+      desiredLevel: 0,
+      channel: 0,
+      minValue: 0,
+      maxValue: 255,
+      climMin: 0,
+      climMax: 1,
+      threshold: 0.5,
+      sample,
+      steps: 100,
+      miss,
+    });
+    return { hit, miss };
+  };
+
+  it("counts every sample when nothing on the ray is resident", () => {
+    const { hit, miss } = marchOver(() => null);
+    expect(hit).toBeNull();
+    expect(miss.unresident).toBe(100);
+  });
+
+  it("counts none on a ray through loaded background", () => {
+    const { hit, miss } = marchOver(() => 0);
+    expect(hit).toBeNull();
+    expect(miss.unresident).toBe(0);
+  });
+
+  it("counts the gaps of a ray that is loaded in part and shows nothing", () => {
+    const { hit, miss } = marchOver((voxel) => (voxel[0] < 50 ? 0 : null));
+    expect(hit).toBeNull();
+    expect(miss.unresident).toBeGreaterThan(40);
+    expect(miss.unresident).toBeLessThan(60);
+  });
+});

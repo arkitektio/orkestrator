@@ -7,8 +7,8 @@ fragment Placement on Placement {
   affineMatrix
 }
 
-# A placement as a space shows it: the 3D view (a materialized scene blok) that
-# stands in the room, the agent it belongs to, and where it stands.
+# Where someone left an agent in a room: kept per agent, the same for everyone;
+# `role` is the dependency key it was placed under.
 fragment SpacePlacement on Placement {
   id
   name
@@ -17,15 +17,6 @@ fragment SpacePlacement on Placement {
     id
     name
     connected
-  }
-  blok {
-    id
-    name
-    blok {
-      id
-      name
-      context
-    }
   }
   affineMatrix
 }

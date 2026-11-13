@@ -3,11 +3,12 @@ import { selectionsFor } from "../../platform/model/worldSelections";
 
 import { collectionSpatialAxes } from "../../platform/model/collectionPlacement";
 import { probeAxisCoords } from "../../platform/probe/probeCoords";
-import { createProbePinGate } from "../../platform/probe/probePinGate";
+import { PROBE_WAIT_MS, createProbePinGate } from "../../platform/probe/probePinGate";
 import { readInfoLayers } from "../../platform/probe/infoReadings";
 import type { ProbePointLookup, ProbePointReading } from "../../platform/probe/probePoints";
 import { probeSystemIdFor, readableLayerIds } from "../../platform/probe/probeTargeting";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
+import { usePressLedger } from "../../platform/input/sceneInput";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
@@ -20,7 +21,7 @@ import { useBrickStoreApi } from "../bricks/store/brickSlice";
  * their click probe on pointer DOWN — any button, before anyone knows whether
  * a drag follows — so pinning in the emitters would drop a point at the start
  * of every right-drag orbit. The emitters stay as they are; this feeds the
- * probes they publish and the window's pointer events to the gate that
+ * probes they publish and the scene's presses to the gate that
  * decides (`platform/probe/probePinGate.ts`), and resolves what the point
  * keeps: every visible layer's reading at the click and where each one's
  * attribute plans are asked.
@@ -30,6 +31,7 @@ export function ProbePointPinner() {
   const sceneStore = useSceneStoreApi();
   const modeStore = useModeStoreApi();
   const brickStore = useBrickStoreApi();
+  const ledger = usePressLedger();
 
   useEffect(() => {
     /** Where the point's attribute plans are asked — resolved NOW, so the
@@ -106,22 +108,6 @@ export function ProbePointPinner() {
         viewerStore.getState().refreshProbePoint(probe, lookupFor(probe), readingsFor(probe)),
     });
 
-    const onPointerDown = (event: PointerEvent) => {
-      // Space + left button pans: a press of the hand never pins a probe.
-      if (modeStore.getState().handHeld) {
-        gate.cancel();
-        return;
-      }
-      gate.pointerDown({
-        x: event.clientX,
-        y: event.clientY,
-        button: event.button,
-        shift: event.shiftKey,
-        onCanvas: event.target instanceof Element && event.target.closest("canvas") !== null,
-      });
-    };
-    const onClick = (event: MouseEvent) => gate.click({ x: event.clientX, y: event.clientY });
-
     let last = viewerStore.getState().probedCoordinate;
     const unsubscribe = viewerStore.subscribe((state) => {
       if (state.probedCoordinate === last) return;
@@ -129,20 +115,29 @@ export function ProbePointPinner() {
       gate.probe(last);
     });
 
-    // Both on the window's CAPTURE phase, so neither depends on what a handler
-    // further in does with the event: the press is known before the layer
-    // publishes its probe, and `click` — which only ever fires for the primary
-    // button — is seen even if something stops it.
-    window.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("pointercancel", gate.cancel);
-    window.addEventListener("click", onClick, true);
+    // The press and its end come from the scene's ledger
+    // (`platform/input/pressLedger.ts`), not from the window: it has already
+    // said whose the press is (Space + left button pans, and a press of the
+    // hand never pins), and it ends EVERY press — the drag, the cancelled
+    // pointer and the release that landed elsewhere included, none of which
+    // the browser follows with a `click`.
+    const stopDown = ledger.onDown((press) =>
+      gate.pressDown({ pins: press.button === 0 && press.owner === "tool" && !press.shift }),
+    );
+    const stopEnd = ledger.onEnd((end) =>
+      gate.pressEnd({
+        click: end.click,
+        // A click on data still loading waits for it (`BrickVolumeLayer`):
+        // its probe arrives when the bricks do, and is still this click's.
+        lateMs: viewerStore.getState().loadingClick ? PROBE_WAIT_MS + 200 : undefined,
+      }),
+    );
     return () => {
       unsubscribe();
-      window.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("pointercancel", gate.cancel);
-      window.removeEventListener("click", onClick, true);
+      stopDown();
+      stopEnd();
     };
-  }, [viewerStore, sceneStore, modeStore, brickStore]);
+  }, [viewerStore, sceneStore, modeStore, brickStore, ledger]);
 
   return null;
 }

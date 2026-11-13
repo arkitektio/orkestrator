@@ -22,6 +22,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Badge } from "../ui/badge";
 import { FieldProps } from "@arkitektio/bsx/ports/forms/types";
+import { Name } from "@/core/ui/name";
 
 export type Option = {
   label: string;
@@ -61,14 +62,14 @@ export const ListButtonLabel = (props: {
   };
 
   return (
-    <div className="gap-2 flex flex-row p-1">
+    <div className="flex min-w-0 flex-row flex-wrap gap-2 p-1">
       {options.map((l, index) => (
         <Badge
           key={index}
           onClick={() => remove(l.value)}
-          className="cursor-pointer px-1 py-1 bg-muted my-2"
+          className="max-w-full cursor-pointer px-1 py-1 bg-muted my-2"
         >
-          {l.label}
+          <Name>{String(l.label)}</Name>
         </Badge>
       ))}
       {error}
@@ -281,7 +282,7 @@ export const CreatableListSearchField = ({
                                 }
                               }}
                             >
-                              {option.label}
+                              <Name>{String(option.label)}</Name>
                               <CheckIcon
                                 className={cn(
                                   "ml-auto h-4 w-4",

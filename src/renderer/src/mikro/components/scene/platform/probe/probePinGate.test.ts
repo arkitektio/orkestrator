@@ -30,46 +30,62 @@ const build = (probing = true) => {
   return { gate, pinned, refreshed, clock };
 };
 
-const down = { x: 10, y: 10, button: 0, shift: false, onCanvas: true };
+const down = { pins: true };
+const click = { click: true };
+const drag = { click: false };
 
 describe("probe pin gate", () => {
   it("pins the probe a press produced once the press ends as a click", () => {
     const { gate, pinned } = build();
     const p = probe();
-    gate.pointerDown(down);
+    gate.pressDown(down);
     gate.probe(p);
     expect(pinned).toEqual([]);
-    gate.click({ x: 11, y: 10 });
+    gate.pressEnd(click);
     expect(pinned).toEqual([p]);
   });
 
-  it("does not pin a drag, a secondary button, a shift+click or a press off the canvas", () => {
+  it("does not pin a drag, or a press that may not pin", () => {
     const { gate, pinned } = build();
-    gate.pointerDown(down);
+    gate.pressDown(down);
     gate.probe(probe());
-    gate.click({ x: 30, y: 10 });
+    gate.pressEnd(drag);
 
-    // A right-drag orbit: the layer still publishes a click probe on the way down.
-    gate.pointerDown({ ...down, button: 2 });
+    // A right-drag orbit, a shift+click, the hand: the layer still publishes
+    // a click probe on the way down.
+    gate.pressDown({ pins: false });
     gate.probe(probe());
-
-    gate.pointerDown({ ...down, shift: true });
-    gate.probe(probe());
-    gate.click(down);
-
-    gate.pointerDown({ ...down, onCanvas: false });
-    gate.probe(probe());
-    gate.click(down);
+    gate.pressEnd(click);
 
     expect(pinned).toEqual([]);
+  });
+
+  it("holds nothing over from a press that did not end as a click", () => {
+    const { gate, pinned, refreshed } = build();
+    const dragged = probe();
+    gate.pressDown(down);
+    gate.probe(dragged);
+    gate.pressEnd(drag);
+
+    // The press is over: a probe published now is nobody's candidate.
+    const stray = probe();
+    gate.probe(stray);
+    expect(refreshed).toEqual([stray]);
+
+    // And the next click pins its own probe, not the drag's.
+    const mine = probe();
+    gate.pressDown(down);
+    gate.probe(mine);
+    gate.pressEnd(click);
+    expect(pinned).toEqual([mine]);
   });
 
   it("ignores hover and placement probes", () => {
     const { gate, pinned, refreshed } = build();
-    gate.pointerDown(down);
+    gate.pressDown(down);
     gate.probe(probe({ origin: "hover" }));
     gate.probe(probe({ purpose: "placement" }));
-    gate.click(down);
+    gate.pressEnd(click);
     expect(pinned).toEqual([]);
     expect(refreshed).toEqual([]);
   });
@@ -77,8 +93,8 @@ describe("probe pin gate", () => {
   it("accepts a probe that lands just after its click, once", () => {
     const { gate, pinned, refreshed, clock } = build();
     const late = probe();
-    gate.pointerDown(down);
-    gate.click(down);
+    gate.pressDown(down);
+    gate.pressEnd(click);
     clock.now = PIN_LATE_PROBE_MS - 1;
     gate.probe(late);
     expect(pinned).toEqual([late]);
@@ -90,10 +106,20 @@ describe("probe pin gate", () => {
     expect(refreshed).toEqual([again]);
   });
 
+  it("keeps a click on loading data open for as long as it is told to", () => {
+    const { gate, pinned, clock } = build();
+    const late = probe();
+    gate.pressDown(down);
+    gate.pressEnd({ click: true, lateMs: 1500 });
+    clock.now = PIN_LATE_PROBE_MS + 500;
+    gate.probe(late);
+    expect(pinned).toEqual([late]);
+  });
+
   it("only refreshes a probe that belongs to no click", () => {
     const { gate, pinned, refreshed, clock } = build();
-    gate.pointerDown(down);
-    gate.click(down);
+    gate.pressDown(down);
+    gate.pressEnd(click);
     clock.now = PIN_LATE_PROBE_MS + 1;
     const stray = probe();
     gate.probe(stray);
@@ -103,9 +129,9 @@ describe("probe pin gate", () => {
 
   it("pins nothing outside probe mode", () => {
     const { gate, pinned } = build(false);
-    gate.pointerDown(down);
+    gate.pressDown(down);
     gate.probe(probe());
-    gate.click(down);
+    gate.pressEnd(click);
     gate.probe(probe());
     expect(pinned).toEqual([]);
   });

@@ -10,6 +10,11 @@ fragment ActionBlok on ActionBlok {
     id
     context
     heldByAction
+    # The declaring app: a Space blok's plain `room` key is scoped to it.
+    app {
+      id
+      identifier
+    }
     componentTree
     vocab
     catalogs
@@ -93,13 +98,5 @@ fragment RunTask on Task {
   space {
     id
     name
-  }
-}
-
-# A space that places some of the agents asked about, and how many.
-fragment SpaceForAgents on SpaceForAgents {
-  placed
-  space {
-    ...ListSpace
   }
 }

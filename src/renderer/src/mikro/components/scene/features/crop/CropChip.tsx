@@ -30,7 +30,7 @@ export const CropChip = () => {
       : phase === "rect"
         ? "Move to the opposite corner, then click · Esc cancels"
         : phase === "depth"
-          ? "Move up or down to set the depth, then click · Esc cancels"
+          ? "Scroll to set the depth, then click · Esc cancels"
           : notice === "edge-on"
             ? "Tilt the view towards the XY plane to draw a crop box"
             : null;

@@ -48,4 +48,17 @@ describe("label raymarcher WGSL", () => {
     );
     expect(fragmentWgsl(material)).toContain("lblBaseVoxel");
   });
+
+  // `hideBelowMin` is a uniform in BOTH graphs from construction: toggling it
+  // must be a uniform write, never a recompile.
+  it("carries the hide-the-bottom uniform in both materials, off by default", () => {
+    const pool = makeTestPool(1, "uint32");
+    const range = { minValue: 0, maxValue: 65535 };
+    for (const { nodes } of [
+      createLabelPlaneNodeMaterial(pool, range, LABEL_DATA),
+      createLabelVolumeNodeMaterial(pool, range, LABEL_DATA),
+    ]) {
+      expect(nodes.uLutHideBottom.value).toBe(0);
+    }
+  });
 });

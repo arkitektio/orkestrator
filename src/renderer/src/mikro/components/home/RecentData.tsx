@@ -6,6 +6,7 @@ import { MikroArrayDataset, MikroFile } from "@/core/linkers";
 import { BentoGrid, BentoItem, type BentoSpan } from "@/core/ui/bento-grid";
 import { Button } from "@/core/ui/button";
 import { ErrorNote } from "@/core/ui/error-note";
+import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
 import {
   HomeRootDetailsQuery,
@@ -229,8 +230,8 @@ const FileCard = ({ file }: { file: HomeFile }) => {
         tone="file"
         icon={FileIcon}
         title={
-          <MikroFile.DetailLink object={file} className="block min-w-0 truncate hover:underline">
-            {file.name}
+          <MikroFile.DetailLink object={file} className="block min-w-0 hover:underline">
+            <Name>{file.name}</Name>
           </MikroFile.DetailLink>
         }
         facts={facts}
@@ -266,8 +267,8 @@ const ImageCard = ({ dataset }: { dataset: ListArrayDatasetFragment }) => {
       icon={spatial?.icon ?? Grid3x3}
       iconLabel={spatial?.label}
       title={
-        <MikroArrayDataset.DetailLink object={dataset} className="block min-w-0 truncate hover:underline" title={dataset.name}>
-          {dataset.name}
+        <MikroArrayDataset.DetailLink object={dataset} className="block min-w-0 hover:underline">
+          <Name>{dataset.name}</Name>
         </MikroArrayDataset.DetailLink>
       }
       facts={shape ? [shape] : []}

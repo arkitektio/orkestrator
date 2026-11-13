@@ -5,6 +5,7 @@ import { Box } from "lucide-react";
 import { SmartLink } from "@/core/smart/builder";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { smartRegistry } from "@/core/smart/registry";
+import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
 
 /**
@@ -53,7 +54,11 @@ export const DisplayLine = ({
 
   const body =
     variant === "inline" ? (
-      <span className={cn("truncate", className)}>{title}</span>
+      typeof title === "string" ? (
+        <Name inline className={className}>{title}</Name>
+      ) : (
+        <span className={cn("truncate", className)}>{title}</span>
+      )
     ) : variant === "avatar" ? (
       <span className={cn("inline-flex", className)} title={typeof title === "string" ? title : undefined}>
         {picture}
@@ -61,7 +66,7 @@ export const DisplayLine = ({
     ) : variant === "chip" || context === "command" ? (
       <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
         {picture}
-        <span className="truncate text-sm font-medium">{title}</span>
+        {named(title, "text-sm font-medium")}
         {context === "command" && facts.length > 0 && (
           <span className="shrink-0 truncate text-xs text-muted-foreground">{facts[0]}</span>
         )}
@@ -70,7 +75,7 @@ export const DisplayLine = ({
       <span className={cn("flex min-w-0 items-center gap-2", className)}>
         {picture}
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium leading-tight">{title}</span>
+          {named(title, "text-sm font-medium leading-tight")}
           {facts.length > 0 && (
             <span className="truncate text-xs text-muted-foreground">
               {facts.map((fact, index) => (
@@ -93,6 +98,14 @@ export const DisplayLine = ({
     body
   );
 };
+
+/** A string title keeps its start and its end (`Name`); a node is cut as before. */
+const named = (title: React.ReactNode, className: string) =>
+  typeof title === "string" ? (
+    <Name className={className}>{title}</Name>
+  ) : (
+    <span className={cn("truncate", className)}>{title}</span>
+  );
 
 /**
  * What a structure shows while its display is loading, when its display

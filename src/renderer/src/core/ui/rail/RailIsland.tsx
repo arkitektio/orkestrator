@@ -1,3 +1,4 @@
+import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -130,16 +131,16 @@ export const RailIslandName = ({
   /** Replaces the muted colour, e.g. `rainbow-text` on the update island. */
   className?: string;
 }) => (
-  <span
+  <Name
+    keep={6}
     className={cn(
-      "min-w-0 flex-1 truncate text-xs font-medium",
+      "flex-1 text-xs font-medium",
       !working && !className && "text-foreground/70",
       className,
     )}
-    title={name}
   >
     {name}
-  </span>
+  </Name>
 );
 
 /**

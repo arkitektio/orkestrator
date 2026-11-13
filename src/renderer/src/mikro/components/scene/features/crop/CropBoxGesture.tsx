@@ -21,17 +21,17 @@ import { gatherLayerWorldBoxes } from "../../platform/visibility/layerBoxes";
 import {
   rectOutline,
   boxOutline,
-  depthPixelsPerStep,
-  depthSteps,
+  createWheelNotches,
+  depthAfterWheel,
   EDGE_ON_LIMIT,
 } from "./cropGesture";
 
 const OUTLINE_COLOR = "#f5c84c";
 
 /**
- * How long the pointer rests on a depth before the box is applied there. The
- * outline follows every move; the scene behind it replans, and a replan per
- * pointer event is what P9 and P30 are about.
+ * How long the wheel rests on a depth before the box is applied there. The
+ * outline follows every notch; the scene behind it replans, and a replan per
+ * wheel event is what P9 and P30 are about.
  */
 const DEPTH_SETTLE_MS = 90;
 
@@ -41,12 +41,10 @@ type Session = {
   anchor: CropVec3;
   /** The opposite corner under the cursor; null until the pointer has moved. */
   corner: CropVec3 | null;
-  /** Depth steps the pointer stands on in the depth phase. */
+  /** Depth steps the wheel has set in the depth phase. */
   steps: number;
-  /** The pointer's y where the depth is one slice: where the rectangle was fixed. */
-  depthFromY: number;
-  /** Pointer pixels per depth step, fixed when the depth phase starts. */
-  pixelsPerStep: number;
+  /** How many steps the stack holds: the depth's ceiling (0 without a z grid). */
+  slices: number;
   grid: CropZGrid | null;
   /** Where the content is, to keep an oblique 3D ray from running to the horizon. */
   reach: THREE.Box3 | null;
@@ -58,17 +56,20 @@ type Session = {
  * `s` (bound in `KeyboardModeController`) only enters the mode (`cropPhase`
  * `arm`); this component does the rest, in three clicks: the first anchors a
  * corner where it lands, the rectangle then follows the pointer on the world
- * XY plane through it, the second click applies the box, moving the pointer up
- * and down grows and shrinks it through z, and the third click commits.
+ * XY plane through it, the second click applies the box, the WHEEL grows and
+ * shrinks it through z (`cropGesture.ts` says why not the pointer), and the
+ * third click commits.
  *
  * ## Plain DOM listeners, attached only while a gesture runs
  *
  * No R3F pointer props: a handler on an object is what puts it in the raycast
  * set (P20), and this needs no object — the rectangle lives on a mathematical
  * plane. The listeners are capture-phase on `window`, so the gesture's clicks
- * never reach the camera controls, the probe, or a mesh's click handler. The
- * wheel and right and middle drags pass through untouched: the view stays free
- * while the box is being sized, and a drag does not move the depth.
+ * never reach the camera controls, the probe, or a mesh's click handler. Right
+ * and middle drags pass through untouched, so the view stays free while the
+ * box is being sized. The wheel zooms as always until the rectangle is fixed;
+ * in the depth phase it is the depth's, and a pinch (Ctrl + wheel) still
+ * zooms, Shift + wheel still walks z.
  *
  * ## The moving rectangle is not in the store
  *
@@ -182,8 +183,7 @@ export const CropBoxGesture = () => {
         anchor,
         corner: null,
         steps: 0,
-        depthFromY: clientY,
-        pixelsPerStep: depthPixelsPerStep(0, 0),
+        slices: 0,
         grid: sceneZExtent(sceneApi.getState().layers),
         reach,
       };
@@ -202,7 +202,8 @@ export const CropBoxGesture = () => {
       );
     };
 
-    // The depth the pointer stands on reaches the store once it rests there.
+    // The depth the wheel is on reaches the store once it rests there.
+    const wheelNotches = createWheelNotches();
     let settle: ReturnType<typeof setTimeout> | null = null;
     const applyDepth = () => {
       if (settle !== null) {
@@ -232,15 +233,25 @@ export const CropBoxGesture = () => {
       invalidate();
     };
 
-    const followDepth = (session: Session, event: PointerEvent) => {
-      if (!session.corner) return;
-      if (event.buttons !== 0) {
-        // A drag moves the VIEW (right, middle): the depth stays where it is,
-        // and goes on from wherever the drag lets go.
-        session.depthFromY = event.clientY + session.steps * session.pixelsPerStep;
-        return;
-      }
-      const steps = depthSteps(session.depthFromY, event.clientY, session.pixelsPerStep);
+    const onPointerMove = (event: PointerEvent) => {
+      const session = sessionRef.current;
+      if (!session) return;
+      if (viewerApi.getState().cropPhase === "rect") followRect(session, event);
+    };
+
+    /**
+     * The depth phase's wheel: each notch grows or shrinks the box. Stopped
+     * here, in the capture phase, so the controls do not zoom on the same
+     * tick (`ScrollGestureNavigation` steps aside by itself in this phase).
+     */
+    const onWheel = (event: WheelEvent) => {
+      if (viewerApi.getState().cropPhase !== "depth") return;
+      if (!onCanvas(event) || event.ctrlKey || event.shiftKey) return;
+      const session = sessionRef.current;
+      if (!session?.corner) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const steps = depthAfterWheel(session.steps, wheelNotches(event), session.slices);
       if (steps === session.steps) return;
       session.steps = steps;
       const box = boxOf(session, session.corner, steps);
@@ -249,14 +260,6 @@ export const CropBoxGesture = () => {
       invalidate();
       if (settle !== null) clearTimeout(settle);
       settle = setTimeout(applyDepth, DEPTH_SETTLE_MS);
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      const session = sessionRef.current;
-      if (!session) return;
-      const current = viewerApi.getState().cropPhase;
-      if (current === "rect") followRect(session, event);
-      else if (current === "depth") followDepth(session, event);
     };
 
     /**
@@ -281,7 +284,7 @@ export const CropBoxGesture = () => {
       const session = sessionRef.current;
       if (!session) return;
       if (viewer.cropPhase === "depth") {
-        // Where the pointer stands, not where it last rested.
+        // The depth the wheel is on, not the one it last rested on.
         applyDepth();
         viewer.commitCrop();
         return;
@@ -301,8 +304,7 @@ export const CropBoxGesture = () => {
         return;
       }
       session.steps = 0;
-      session.depthFromY = event.clientY;
-      session.pixelsPerStep = depthPixelsPerStep(element.getBoundingClientRect().height, slices);
+      session.slices = slices;
       const box = boxOf(session, corner, 0);
       // From here the outline is the box the pointer's depth gives, drawn here.
       lineRef.current?.setPoints(boxOutline(box));
@@ -313,12 +315,14 @@ export const CropBoxGesture = () => {
     // after annotation, it removes the crop box altogether.
 
     window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     window.addEventListener("pointerdown", swallow, true);
     window.addEventListener("pointerup", swallow, true);
     window.addEventListener("click", onClick, true);
     return () => {
       if (settle !== null) clearTimeout(settle);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("wheel", onWheel, { capture: true });
       window.removeEventListener("pointerdown", swallow, true);
       window.removeEventListener("pointerup", swallow, true);
       window.removeEventListener("click", onClick, true);

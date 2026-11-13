@@ -122,6 +122,7 @@ const ColorByRow = memo(function ColorByRow({
   onRowClick,
   onRemove,
   onUpdate,
+  hidesBottom,
 }: {
   entry: ColorByEntry;
   index: number;
@@ -130,6 +131,8 @@ const ColorByRow = memo(function ColorByRow({
   onRowClick: (index: number) => void;
   onRemove: (index: number) => void;
   onUpdate: (index: number, patch: Partial<ColorByInputLike>) => void;
+  /** See `ColumnEntrySettings.hidesBottom`. */
+  hidesBottom: boolean;
 }) {
   return (
     <EntryRow
@@ -173,6 +176,7 @@ const ColorByRow = memo(function ColorByRow({
       <ColumnEntrySettings
         entry={entry}
         mode="color"
+        hidesBottom={hidesBottom}
         onCommit={(patch) => onUpdate(index, patch)}
       />
     </EntryRow>
@@ -349,6 +353,8 @@ export const ColorBySection = memo(function ColorBySection({
           onRowClick={rowClick}
           onRemove={removeColorBy}
           onUpdate={updateColorBy}
+          // The mask renderer is the one that honours `hideBelowMin`.
+          hidesBottom={source.kind === "label"}
         />
       ))}
     </CardSection>

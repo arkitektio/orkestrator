@@ -600,6 +600,16 @@ const sparseArm = (entry: {
  * `kind` and its position would come back a COLUMN entry naming nothing —
  * the `joinPath` hazard again, one arm further out.
  */
+/**
+ * `hideBelowMin`, only WHEN SET — the `attribute` arm's reasoning, for a label
+ * entry's own field: only `LabelColorByInput` has it, so a mesh or network
+ * mutation handed the key is refused whole by GraphQL validation. Omitting a
+ * false is safe because false is the server's default, and `colorBys` is a
+ * whole-array replace.
+ */
+const hideBottomArm = (entry: object): { hideBelowMin?: boolean } =>
+  (entry as { hideBelowMin?: boolean | null }).hideBelowMin === true ? { hideBelowMin: true } : {};
+
 export const colorByEntryToInput = (entry: ColorByEntry): ColorByInputLike => ({
   kind: entry.kind,
   table: entry.table ?? null,
@@ -624,6 +634,7 @@ export const colorByEntryToInput = (entry: ColorByEntry): ColorByInputLike => ({
   label: entry.label ?? null,
   min: entry.min ?? null,
   max: entry.max ?? null,
+  ...hideBottomArm(entry),
 });
 
 /**
@@ -687,6 +698,7 @@ export const toWireColorBy = (
   label: draft.label ?? null,
   min: draft.min ?? null,
   max: draft.max ?? null,
+  ...hideBottomArm(draft),
 });
 
 /** The same, for a rule. */

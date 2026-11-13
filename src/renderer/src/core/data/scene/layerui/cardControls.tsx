@@ -29,6 +29,7 @@
 import { ChevronDown } from "lucide-react";
 import { memo } from "react";
 import { Collapsible, CollapsibleContent } from "@/core/ui/collapsible";
+import { Name } from "@/core/ui/name";
 import { Slider } from "@/core/ui/slider";
 
 /**
@@ -119,12 +120,7 @@ export const LayerCardShell = ({
     >
       <LayerTile tint={tile}>{icon}</LayerTile>
       {titleNode ?? (
-        <span
-          className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90"
-          title={title}
-        >
-          {title}
-        </span>
+        <Name className="flex-1 text-[11px] font-medium text-foreground/90">{title}</Name>
       )}
       {badges}
       <div

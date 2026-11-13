@@ -117,6 +117,8 @@ export type LabelMaterialNodes = TraversalNodesPublic & ClipUniformNodes & {
   /** The window the user is looking through. Live — moving it is not a rebuild. */
   uLutClimMin: UniformNodeLike<number>;
   uLutClimMax: UniformNodeLike<number>;
+  /** 1 = an object at or below the window's bottom is not drawn (`hideBelowMin`). */
+  uLutHideBottom: UniformNodeLike<number>;
 };
 
 export type LabelMaterialBundle = { material: NodeMaterial; nodes: LabelMaterialNodes };
@@ -292,6 +294,7 @@ export function createLabelPlaneNodeMaterial(
   const uLutValueMax = uniform(1, "float");
   const uLutClimMin = uniform(0, "float");
   const uLutClimMax = uniform(1, "float");
+  const uLutHideBottom = uniform(0, "float");
   const identityPalette = createIdentityPalette();
   const lutPalette = texture(identityPalette);
   const identityLut = identityValueLutTexture();
@@ -376,7 +379,7 @@ export function createLabelPlaneNodeMaterial(
     const hashed = emitHueColor(hue, uSaturation, uValue);
     // A colouring REPLACES the hash rather than tinting it — the mask is showing
     // a measurement now, not object identity.
-    const { code, rgb } = emitLutColor(lutTexel, lutPalette, hashed, {
+    const { code, rgb, atBottom } = emitLutColor(lutTexel, lutPalette, hashed, {
       uLutColorize,
       uLutValueMin,
       uLutValueMax,
@@ -389,6 +392,14 @@ export function createLabelPlaneNodeMaterial(
     // code now rather than an alpha channel, because the table holds a value and
     // has no spare channel — see `valueLut.ts`.
     Discard(uLutFilter.greaterThan(0.5).and(code.greaterThan(float(65534.5))));
+
+    // `hideBelowMin`: the bottom of the window is not painted with the
+    // colormap's first colour, it is not drawn. What lets a gene read over an
+    // H&E image — most bins of a slice are zero, and zero through a black-based
+    // ramp is a black bin covering the tissue. A uniform and a test on the
+    // already-decoded value, so toggling it or dragging the lower clim is never
+    // a table rebuild.
+    Discard(uLutHideBottom.greaterThan(0.5).and(atBottom.greaterThan(0.5)));
 
     return vec4(rgb, uOpacity);
   })();
@@ -417,6 +428,7 @@ export function createLabelPlaneNodeMaterial(
       uLutValueMax,
       uLutClimMin,
       uLutClimMax,
+      uLutHideBottom,
       lutPalette,
       lut,
       // Kept on the handle so `setLabelColorLut` can rebind it when the LUT is
@@ -458,6 +470,8 @@ export type LabelLutNodes = {
   /** The window the user is looking through. Live — moving it is not a rebuild. */
   uLutClimMin: UniformNodeLike<number>;
   uLutClimMax: UniformNodeLike<number>;
+  /** 1 = an object at or below the window's bottom is not drawn (`hideBelowMin`). */
+  uLutHideBottom: UniformNodeLike<number>;
 };
 
 /**
@@ -518,10 +532,17 @@ export function setLabelColorLut(
  */
 export function setLabelColorStyle(
   nodes: LabelLutNodes,
-  style: { palette: THREE.DataTexture | null; climMin: number; climMax: number },
+  style: {
+    palette: THREE.DataTexture | null;
+    climMin: number;
+    climMax: number;
+    /** Do not draw objects at or below `climMin`. Absent = draw them. */
+    hideBottom?: boolean;
+  },
 ): void {
   nodes.uLutClimMin.value = style.climMin;
   nodes.uLutClimMax.value = style.climMax;
+  nodes.uLutHideBottom.value = style.hideBottom ? 1 : 0;
   if (!style.palette) return;
 
   const handle = nodes as unknown as {
@@ -569,6 +590,8 @@ export type LabelVolumeMaterialNodes = TraversalNodesPublic & ClipUniformNodes &
   /** The window the user is looking through. Live — moving it is not a rebuild. */
   uLutClimMin: UniformNodeLike<number>;
   uLutClimMax: UniformNodeLike<number>;
+  /** 1 = an object at or below the window's bottom is not drawn (`hideBelowMin`). */
+  uLutHideBottom: UniformNodeLike<number>;
 };
 
 export type LabelVolumeMaterialBundle = {
@@ -636,6 +659,7 @@ export function createLabelVolumeNodeMaterial(
   const uLutValueMax = uniform(1, "float");
   const uLutClimMin = uniform(0, "float");
   const uLutClimMax = uniform(1, "float");
+  const uLutHideBottom = uniform(0, "float");
   const identityPalette = createIdentityPalette();
   const lutPalette = texture(identityPalette);
   const identityLut = identityValueLutTexture();
@@ -779,7 +803,7 @@ export function createLabelVolumeNodeMaterial(
     const hashed = emitHueColor(hue, uSaturation, uValue);
     // A colouring REPLACES the hash rather than tinting it, and the hash is why
     // this is a uniform and not another LUT channel — `columnLut.ts`'s header.
-    const { code, rgb } = emitLutColor(lutTexel, lutPalette, hashed, {
+    const { code, rgb, atBottom } = emitLutColor(lutTexel, lutPalette, hashed, {
       uLutColorize,
       uLutValueMin,
       uLutValueMax,
@@ -794,6 +818,11 @@ export function createLabelVolumeNodeMaterial(
     // fetch per step. The trade is stated here rather than hidden: a filter in 3D
     // punches holes rather than peeling layers.
     Discard(uLutFilter.greaterThan(0.5).and(code.greaterThan(float(65534.5))));
+
+    // `hideBelowMin`, with the filter's trade exactly: the object at the bottom
+    // of the window is punched out of the picture rather than peeled off it,
+    // because looking through it would need the LUT read inside the march.
+    Discard(uLutHideBottom.greaterThan(0.5).and(atBottom.greaterThan(0.5)));
 
     return vec4(rgb, uOpacity);
   })();
@@ -825,6 +854,7 @@ export function createLabelVolumeNodeMaterial(
       uLutValueMax,
       uLutClimMin,
       uLutClimMax,
+      uLutHideBottom,
       lutPalette,
       lut,
       identityLut,

@@ -27,6 +27,7 @@ import { SelectionStoreContext } from "../platform/stores/selectionStore";
 import { ViewStoreContext } from "../platform/stores/viewStore";
 import { ViewerStoreContext } from "../platform/stores/viewerStore";
 import { SceneEventsContext, createSceneEvents } from "../platform/events/sceneEvents";
+import { SceneInputContext, createSceneInput } from "../platform/input/sceneInput";
 import { SceneBrandTheme } from "./theme/SceneBrandTheme";
 import {
   SceneScopeStatusContext,
@@ -99,6 +100,11 @@ export const SceneProvider = (props: {
   // One per mounted provider, for its whole life: what happens here is told to
   // whoever listens here (`platform/events/sceneEvents.ts`).
   const [events] = useState(createSceneEvents);
+  // Likewise one per mounted provider: the pointer's account of itself — the
+  // press ledger and the camera's "being driven" flag
+  // (`platform/input/sceneInput.ts`). It outlives a scope rebuild on purpose:
+  // a press does not end because the view axes changed under it.
+  const [input] = useState(createSceneInput);
   // The open float and what it staged, for the SCENE's life rather than the
   // scope's: a view switch rebuilds the scope, and neither may vanish with it.
   const sceneId = serverScene?.id ?? null;
@@ -173,6 +179,7 @@ export const SceneProvider = (props: {
 
   return (
     <SceneEventsContext.Provider value={events}>
+    <SceneInputContext.Provider value={input}>
     <SceneFloatStoreContext.Provider value={floatStore}>
     <StagedLayersStoreContext.Provider value={stagedStore}>
     <SceneScopeStatusContext.Provider value={status}>
@@ -214,6 +221,7 @@ export const SceneProvider = (props: {
     </SceneScopeStatusContext.Provider>
     </StagedLayersStoreContext.Provider>
     </SceneFloatStoreContext.Provider>
+    </SceneInputContext.Provider>
     </SceneEventsContext.Provider>
   );
 };

@@ -185,6 +185,9 @@ export const useLabelColorLut = (
       palette,
       climMin: qualitative ? 0 : (activeColorBy.min ?? Number.NEGATIVE_INFINITY),
       climMax: qualitative ? 1 : (activeColorBy.max ?? Number.POSITIVE_INFINITY),
+      // A palette has no bottom to hide; the server refuses the pair, and this
+      // keeps an entry edited locally from hiding its first class meanwhile.
+      hideBottom: !qualitative && activeColorBy.hideBelowMin === true,
     });
     invalidate();
     // `activeColorBy` is read inside; `styleKey` decides whether this re-runs.

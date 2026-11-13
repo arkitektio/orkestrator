@@ -29,7 +29,9 @@ import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
 import { VOLUME_PASS_OBJECT } from "../../../platform/visibility/passVisibility";
 import { DRAG_THRESHOLD_PX } from "../../annotations/drawGesture";
 import { useCreateSceneAnnotation } from "../../annotations/useCreateSceneAnnotation";
-import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../platform/stores/modeStore";
+import { usePressLedger } from "../../../platform/input/sceneInput";
+import { PROBE_WAIT_MS } from "../../../platform/probe/probePinGate";
 import {
   isDrawingTool,
   isProbeDerivedTool,
@@ -124,6 +126,9 @@ const probeScratch = {
 // edit, so identity IS the edit signal): `identityOf`, promoted to
 // `platform/model/objectIdentity.ts` — the P9c/P17 scalar-key idiom this
 // component pioneered, now shared by every bridge that needs it.
+
+/** How often a PROBE click waiting on loading data asks again. */
+const PROBE_WAIT_POLL_MS = 120;
 
 export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   perfMonitor.countRender("BrickVolumeLayer"); // no-op unless a perf recording is armed
@@ -259,7 +264,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
 
   // Event-time resolution — fresh pins and layer list, no render
   // subscription: exactly one layer (the effective hit target) answers.
-  const modeStoreApi = useModeStoreApi();
+  const ledger = usePressLedger();
   const answersProbe = useCallback(
     () =>
       layerAnswersProbe(
@@ -662,12 +667,28 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   useVolumePassRegistration(!!bundle);
 
   // --- Probing: CPU march over the resident bricks (shader lockstep) -------
-  const probeFromRay = (ray: THREE.Ray, origin: ProbeOrigin): ProbeResult | null => {
+  /**
+   * A CLICK that the probe cannot answer because the data is not there yet
+   * (no plan, or nothing resident along the ray) says so at the pointer
+   * instead of doing nothing (`LoadingClickChip`). `quiet` is the retry of a
+   * click already reported.
+   */
+  const reportLoading = (origin: ProbeOrigin, quiet: boolean) => {
+    if (origin !== "click" || quiet) return;
+    perfMonitor.markEvent("probe:unloaded"); // no-op unless a recording is armed
+    const press = ledger.current() ?? ledger.last()?.press;
+    if (press) viewerStoreApi.getState().noteLoadingClick(press.x, press.y);
+  };
+
+  const probeFromRay = (ray: THREE.Ray, origin: ProbeOrigin, quiet = false): ProbeResult | null => {
     const mesh = meshRef.current;
     // Event-time read of the full plan — no render subscription needed for it.
     const state = viewerStoreApi.getState();
     const plan = state.nodePlans[layerId];
-    if (!mesh || !pool || !plan || !brickSystem) return null;
+    if (!mesh || !pool || !plan || !brickSystem) {
+      reportLoading(origin, quiet);
+      return null;
+    }
     const inverseMatrix = probeScratch.inverse.copy(mesh.matrixWorld).invert();
     const localOrigin = probeScratch.origin.copy(ray.origin).applyMatrix4(inverseMatrix);
     const localDirection = probeScratch.direction
@@ -692,7 +713,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
       state.probeThreshold,
     );
     const baseLevel = pool.geometry.levels[0];
+    const miss = origin === "click" ? { unresident: 0 } : undefined;
     const hit = marchResidentBricks({
+      miss,
       origin: [localOrigin.x, localOrigin.y, localOrigin.z],
       direction: [localDirection.x, localDirection.y, localDirection.z],
       bounds: [Math.max(bounds.start, 0), bounds.end],
@@ -711,7 +734,11 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
       sample: (baseVoxel, desiredLevel, channel) =>
         brickSystem.sampleResident(layerId, baseVoxel, desiredLevel, channel),
     });
-    if (!hit) return null;
+    if (!hit) {
+      // Nothing visible on the ray — because some of it could not be read.
+      if (miss && miss.unresident > 0) reportLoading(origin, quiet);
+      return null;
+    }
 
     const localPos = [hit.position[0], hit.position[1], hit.position[2]] as [
       number,
@@ -795,6 +822,52 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   // event's ray in place) and only the newest runs.
   const probeCoalescer = useMemo(() => createLeadingRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => probeCoalescer.cancel(), [probeCoalescer]);
+  // A PROBE click on data still loading: ask again as the bricks land, for a
+  // short while, and publish the first answer as that click's probe (the pin
+  // gate keeps the click open as long: `PROBE_WAIT_MS`). The next press, or
+  // this layer going away, ends the wait.
+  const probeFromRayRef = useRef(probeFromRay);
+  probeFromRayRef.current = probeFromRay;
+  const updateProbeRef = useRef(updateProbe);
+  updateProbeRef.current = updateProbe;
+  const waitRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopWaiting = useCallback(() => {
+    if (waitRef.current === null) return;
+    clearInterval(waitRef.current);
+    waitRef.current = null;
+  }, []);
+  const waitForProbe = (ray: THREE.Ray, save: boolean) => {
+    stopWaiting();
+    const until = performance.now() + PROBE_WAIT_MS;
+    waitRef.current = setInterval(() => {
+      const probe = probeFromRayRef.current(ray, "click", true);
+      if (probe) {
+        stopWaiting();
+        viewerStoreApi.getState().clearLoadingClick();
+        updateProbeRef.current(probe, save);
+        return;
+      }
+      if (performance.now() >= until) stopWaiting();
+    }, PROBE_WAIT_POLL_MS);
+  };
+  useEffect(() => stopWaiting, [stopWaiting]);
+  useEffect(() => ledger.onDown(stopWaiting), [ledger, stopWaiting]);
+
+  // A stroke painting here ends with the press that started it, wherever —
+  // and whether — that press was let go (`platform/input/pressLedger.ts`).
+  // After a release the mesh heard, this is a no-op: `endStroke()` already
+  // moved the status on. Without it a stroke whose release this mesh never
+  // saw kept painting, and kept the camera suspended (`BrushStrokeSession`).
+  useEffect(
+    () =>
+      ledger.onEnd(() => {
+        const brush = brushApi.getState();
+        if (brush.status !== "painting" || brush.strokeLayerId !== layerId) return;
+        probeCoalescer.cancel();
+        brush.endStroke();
+      }),
+    [ledger, brushApi, layerId, probeCoalescer],
+  );
 
   if (layer?.visible === false) return null;
   if (planMode !== "3D" || !pool) return null;
@@ -875,16 +948,22 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
         updateProbe(null, false);
       }}
       onPointerDown={!clickEnabled ? undefined : (e) => {
-        // The camera's press (`modeStore.leftPress`: Space held, or ANNOTATE
-        // before a double-click): no probe, no stroke, no placement.
-        if (e.button === 0 && modeStoreApi.getState().leftPress === "camera") return;
+        // The camera's left press (the ledger's verdict: Space held, or
+        // ANNOTATE before a double-click): no probe, no stroke, no placement.
+        if (e.button === 0 && ledger.owner() === "camera") return;
         if (interactionMode === "PROBE" && !answersProbe()) {
           return;
         }
         if (interactionMode === "PROBE") {
           e.stopPropagation();
           // Synchronous: click latency matters, click storms don't.
-          updateProbe(probeFromRay(e.ray, "click"), e.shiftKey);
+          const probe = probeFromRay(e.ray, "click");
+          updateProbe(probe, e.shiftKey);
+          // On data still loading the click WAITS for it: a readout a moment
+          // late is the readout that was asked for. (A vertex or a stroke
+          // start is not retried: placing one a second after the click, under
+          // a pointer that has moved on, is worse than saying why not.)
+          if (!probe && viewerStoreApi.getState().loadingClick) waitForProbe(e.ray.clone(), e.shiftKey);
           return;
         }
         // DESIGN captures for the selected tool; its GESTURE class says which
@@ -972,7 +1051,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           if (!answersProbe()) return;
           // An orbit-drag release is not an anchor, nor a click that ends a
           // camera press — only a double-click's second click starts a shape.
-          if (e.delta > DRAG_THRESHOLD_PX || modeStoreApi.getState().leftPress === "camera") return;
+          if (e.delta > DRAG_THRESHOLD_PX || ledger.owner() === "camera") return;
           const drawing = roiDrawingApi.getState();
           if (!isProbeDerivedTool(drawing.activeTool)) return;
           const probe = probeFromRay(e.ray, "click");

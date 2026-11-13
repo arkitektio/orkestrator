@@ -5,11 +5,17 @@ import type { ProbeResult } from "./probeTypes";
  *
  * The layers publish their click probe on pointer DOWN — any button, before
  * anyone knows whether a drag follows — so a probe alone is not a click. This
- * pairs it with the browser's own verdict: a primary-button `click` on the
- * canvas that did not travel. Pure (events and the clock come in as
+ * pairs it with the press it came from, as the scene's press ledger accounts
+ * for it (`platform/input/pressLedger.ts`): a primary-button press that was
+ * the tool's and ended as a click. Pure (the presses and the clock come in as
  * arguments), so the gesture rules are testable without a canvas.
  *
  *  - the probe a press produced is HELD until that press ends as a click;
+ *  - a press that ends any other way — a drag, a cancelled pointer, a release
+ *    nobody saw — drops what it held. It used to wait for the browser's
+ *    `click`, which never comes for those: the press stayed open, later
+ *    probes were held as its candidates, and the next click pinned the wrong
+ *    one;
  *  - a probe that arrives just after the click (a mesh pick resolves on the
  *    GPU, a frame or two behind the event) still counts as that click's;
  *  - anything else is a re-publish of a click already handled, and may only
@@ -17,25 +23,26 @@ import type { ProbeResult } from "./probeTypes";
  *  - shift+click is the "drop a point annotation" gesture and pins nothing.
  */
 
-/** Further than this between press and release is a drag — the same
- * screen-pixel threshold the annotation drawers use. */
-export const PIN_CLICK_SLOP_PX = 4;
 /** How long after a click a probe may still arrive and count as its own. */
 export const PIN_LATE_PROBE_MS = 400;
-
-export interface PinPointerEvent {
-  x: number;
-  y: number;
-  button: number;
-  shift: boolean;
-  /** The event landed on the scene canvas (not on a panel over it). */
-  onCanvas: boolean;
-}
+/**
+ * How long a PROBE click on data that is still loading waits for it
+ * (`BrickVolumeLayer.waitForProbe` asks again as the bricks land). The
+ * pinner keeps such a click open this long instead of `PIN_LATE_PROBE_MS`.
+ */
+export const PROBE_WAIT_MS = 1500;
 
 export interface ProbePinGate {
-  pointerDown(event: PinPointerEvent): void;
-  click(event: Pick<PinPointerEvent, "x" | "y">): void;
-  cancel(): void;
+  /**
+   * A press landed on the canvas. `pins` says whether it could become a
+   * point at all: the primary button, the tool's (not the hand's), no shift.
+   */
+  pressDown(press: { pins: boolean }): void;
+  /**
+   * That press ended; `click` is the ledger's verdict. `lateMs` is how long a
+   * probe may still arrive and be this click's (default `PIN_LATE_PROBE_MS`).
+   */
+  pressEnd(end: { click: boolean; lateMs?: number }): void;
   /** A new probe was published. */
   probe(probe: ProbeResult | null): void;
 }
@@ -47,41 +54,31 @@ export function createProbePinGate(deps: {
   pin: (probe: ProbeResult) => void;
   refresh: (probe: ProbeResult) => void;
 }): ProbePinGate {
-  /** The primary-button press on the canvas that is still down. */
-  let press: { x: number; y: number; shift: boolean } | null = null;
+  /** A press that may pin is still down. */
+  let pressed = false;
   /** The click probe that press produced, waiting for the release. */
   let candidate: ProbeResult | null = null;
   let lateUntil = 0;
 
   return {
-    pointerDown(event) {
+    pressDown(press) {
       candidate = null;
       lateUntil = 0;
-      press =
-        event.onCanvas && event.button === 0
-          ? { x: event.x, y: event.y, shift: event.shift }
-          : null;
+      pressed = press.pins;
     },
-    click(event) {
-      const from = press;
+    pressEnd(end) {
+      const was = pressed;
       const held = candidate;
-      press = null;
+      pressed = false;
       candidate = null;
-      if (!from || from.shift) return;
-      const dx = event.x - from.x;
-      const dy = event.y - from.y;
-      if (dx * dx + dy * dy > PIN_CLICK_SLOP_PX * PIN_CLICK_SLOP_PX) return;
+      if (!was || !end.click) return;
       if (held) deps.pin(held);
-      else if (deps.probing()) lateUntil = deps.now() + PIN_LATE_PROBE_MS;
-    },
-    cancel() {
-      press = null;
-      candidate = null;
+      else if (deps.probing()) lateUntil = deps.now() + (end.lateMs ?? PIN_LATE_PROBE_MS);
     },
     probe(probe) {
       // "placement" probes are the annotation cursor, never a measurement.
       if (!probe || probe.origin !== "click" || probe.purpose !== "readout") return;
-      if (press) {
+      if (pressed) {
         if (deps.probing()) candidate = probe;
         return;
       }

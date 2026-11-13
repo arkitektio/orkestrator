@@ -9,7 +9,6 @@ import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
-import { useViewStoreApi } from "../platform/stores/viewStore";
 import {
   createWebGPURendererFactory,
   type DeviceLostInfo,
@@ -71,8 +70,10 @@ import { useViewerStore } from "../platform/stores/viewerStore";
 import { CropBoxGesture } from "../features/crop/CropBoxGesture";
 import { CropOrbitPivot } from "../features/crop/CropOrbitPivot";
 import { ScrollGestureNavigation } from "../platform/camera/ScrollGestureNavigation";
-import { LeftPressArbiter } from "./pointer/LeftPressArbiter";
+import { PressLedgerDriver } from "./pointer/PressLedgerDriver";
+import { usePressLedger } from "../platform/input/sceneInput";
 import { CropChip } from "../features/crop/CropChip";
+import { LoadingClickChip } from "../features/probe/LoadingClickChip";
 import { LayerRunFloat } from "../features/layerRun/LayerRunFloat";
 
 /**
@@ -102,11 +103,15 @@ import { LayerRunFloat } from "../features/layerRun/LayerRunFloat";
  * way, which is why the layers gate their `onClick` / `onPointerDown` props too
  * (`platform/probe/probeGating.ts`).
  *
- * The gate reads `viewStore.cameraMoving`, so it lasts exactly as long as the
- * camera actually moves: drag-drawing tools (RoiDrawer/RectangleDrawer hold a
- * button while the camera is still) and hover probes (no buttons) are
- * untouched. Registered by `PointerMoveGate` below, keyed by the R3F root
- * store so multiple mounted canvases stay independent.
+ * The gate asks the press ledger WHOSE the press in flight is
+ * (`platform/input/pressLedger.ts`), so it covers exactly the camera's drags
+ * — left as the hand, middle, right — and never a tool's. It used to read
+ * `viewStore.cameraMoving` instead, which is about the camera and not about
+ * the press: a tool drag begun while the view was still settling (straight
+ * after a zoom or a pan, or during a damped coast) lost its first moves, so
+ * it never crossed the drag threshold and the press read as a click.
+ * Registered by `PointerMoveGate` below, keyed by the R3F root store so
+ * multiple mounted canvases stay independent.
  */
 const pointerMoveGates = new WeakMap<object, () => boolean>();
 
@@ -129,11 +134,11 @@ const sceneEvents: typeof createPointerEvents = (store) => {
 /** Registers this canvas's camera-motion gate (see pointerMoveGates). */
 const PointerMoveGate = () => {
   const store = useThreeStore();
-  const viewApi = useViewStoreApi();
+  const ledger = usePressLedger();
   useEffect(() => {
-    pointerMoveGates.set(store, () => viewApi.getState().cameraMoving);
+    pointerMoveGates.set(store, () => ledger.current()?.owner === "camera");
     return () => void pointerMoveGates.delete(store);
-  }, [store, viewApi]);
+  }, [store, ledger]);
   return null;
 };
 
@@ -406,9 +411,10 @@ export const SceneViewport = (props: {
           <PointerMoveGate />
           <PerfFrameProbe />
           <CameraController />
-          {/* After CameraController: assigns the installed controls' button
-              map per left press (camera or tool). */}
-          <LeftPressArbiter />
+          {/* After CameraController: opens and ends every press on the canvas
+              (`platform/input/pressLedger.ts`) and gives the installed
+              controls their button map per press (camera or tool). */}
+          <PressLedgerDriver />
           {/* Also after CameraController: needs the installed controls to pan
               and dolly against. Arrow keys, so it lives in the canvas rather
               than with the other keyboard components outside it. */}
@@ -512,6 +518,8 @@ export const SceneViewport = (props: {
           </div>
 
           <CropChip />
+          {/* Why a click on data still streaming in did nothing. */}
+          <LoadingClickChip />
           <MeshDesignToolbar />
           {/* Last, and the only overlay that covers the canvas: on top of
               everything it documents. */}

@@ -1,7 +1,7 @@
 import { cn } from "@/core/util/utils";
 import { PageSections } from "@/core/layout/PageSections";
-import { ComponentContext, DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
-import { useRunTask, useTaskActionBlok } from "@/rekuest/run/useRun";
+import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
+import { TaskRunScene } from "@/rekuest/run/TaskRun";
 import { LiveTicker } from "@/rekuest/components/spaces/task/LiveTicker";
 import { LiveStatusStrip } from "@/rekuest/components/spaces/task/panels/LiveStatusStrip";
 import { TimeSlider } from "@/rekuest/components/spaces/task/panels/TimeSlider";
@@ -9,8 +9,7 @@ import {
   createSpaceViewStore,
   SpaceViewStoreContext,
 } from "@/rekuest/components/spaces/task/store";
-import { TaskRooms, TaskTravel } from "@/rekuest/components/spaces/task/TaskRoom";
-import { taskRooms } from "@/rekuest/components/spaces/task/taskRooms";
+import { TaskTravel } from "@/rekuest/components/spaces/task/TaskRoom";
 import { useEffect, useState } from "react";
 import { TaskResultSection } from "./TaskEventLog";
 import { LaneTaskEvent } from "./lane/selection";
@@ -23,16 +22,19 @@ const TAB_LABEL: Record<StageTab, string> = {
   result: "Result",
 };
 
-/** The stage views this task has something for, in switcher order. */
-export const stageTabs = (task: DetailTaskFragment): StageTab[] => {
+/**
+ * The stage views this task has something for, in switcher order. `hasScene`:
+ * the task's action declares a scene blok (its `<Space>`), drawn for the run.
+ */
+export const stageTabs = (task: DetailTaskFragment, hasScene = false): StageTab[] => {
   const tabs: StageTab[] = [];
   // fluss's runners: a graph flow, or a Python flow (deployed, or called bare).
   const runner = task.implementation?.higherOrderFor?.action?.key ?? task.implementation?.interface;
   if (runner === "run_flow" || runner === "run_python_flow") {
     tabs.push("flow");
   }
-  // Only when one of its agents stands somewhere: there is no room to show otherwise.
-  if (taskRooms(task).length > 0) {
+  // Only when its action draws the run in 3D: the action names its devices and their room.
+  if (hasScene) {
     tabs.push("space");
   }
   if (
@@ -45,8 +47,8 @@ export const stageTabs = (task: DetailTaskFragment): StageTab[] => {
 };
 
 /**
- * The rooms the task's agents stand in, as they are while the task is
- * followed live and as they were at the slider's moment otherwise.
+ * The run in 3D, as its action's scene blok draws it: as it is while the task
+ * is followed live and as it was at the slider's moment otherwise.
  * `focusTime` moves the slider to what the lane selected.
  */
 const SpaceStage = (props: {
@@ -55,9 +57,6 @@ const SpaceStage = (props: {
 }) => {
   const { task, focusTime } = props;
   const [store] = useState(() => createSpaceViewStore(task));
-  // The run as its action draws it into a room (its overlay), and the space it was started in.
-  const { task: run } = useRunTask(task.id);
-  const overlay = useTaskActionBlok(run, ComponentContext.Overlay);
 
   useEffect(() => {
     store.getState().refreshTask(task);
@@ -74,7 +73,7 @@ const SpaceStage = (props: {
         <LiveStatusStrip />
         <div className="min-h-0 flex-1">
           <TaskTravel>
-            <TaskRooms run={overlay} startedIn={run?.space} />
+            <TaskRunScene taskId={task.id} />
           </TaskTravel>
         </div>
         <TimeSlider />
@@ -85,7 +84,7 @@ const SpaceStage = (props: {
 
 /**
  * The big view above the lane: the fluss run for a flow task (drawn by fluss
- * through the `main` page-section slot), the rooms its agents stand in, or the result
+ * through the `main` page-section slot), the run in 3D, or the result
  * large. Only the active view is mounted, so no canvas lives while it is
  * hidden.
  */

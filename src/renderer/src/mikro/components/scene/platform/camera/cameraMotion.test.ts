@@ -3,7 +3,7 @@ import * as THREE from "three";
 import {
   MOTION_RELATIVE_THRESHOLD,
   WHEEL_INTERACTION_HOLD_MS,
-  cameraInteraction,
+  createCameraInteraction,
   isCameraMoving,
   matrixRelativeDelta,
 } from "./cameraMotion";
@@ -77,7 +77,10 @@ describe("isCameraMoving", () => {
 });
 
 describe("cameraInteraction", () => {
-  beforeEach(() => cameraInteraction.reset());
+  let cameraInteraction = createCameraInteraction();
+  beforeEach(() => {
+    cameraInteraction = createCameraInteraction();
+  });
 
   it("tracks gesture begin/end", () => {
     expect(cameraInteraction.isInteracting(0)).toBe(false);

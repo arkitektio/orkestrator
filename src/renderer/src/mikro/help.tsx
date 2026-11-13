@@ -318,7 +318,7 @@ export const MIKRO_HELP = {
         <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
         <>Hold <b>P</b> to probe the value under the cursor, and click to pin a probe point; the <b>Probe</b> tab of the sidebar shows the readings and compares the pinned points.</>,
         <>In 3D, hold <b>Q</b> to colour the volumes by their distance from the camera (warm is near, cool is far), shaded as relief so their shape shows, to tell structures that only overlap on screen from ones that really touch. Hold <b>Shift+Q</b> for the relief shading over the normal colours.</>,
-        <>Press <b>S</b> to crop the scene to a box: click one corner, move to the opposite corner and click, move the mouse up or down to set its depth, and click again. Only what is inside is loaded and shown; <b>Show all</b> brings the rest back.</>,
+        <>Press <b>S</b> to crop the scene to a box: click one corner, move to the opposite corner and click, scroll to set its depth, and click again. Only what is inside is loaded and shown; <b>Show all</b> brings the rest back.</>,
         <>Open the menu button at the right end of the page header and choose <b>Add Layer</b> to bring more data in, or <b>Align Layers…</b> to line layers up.</>,
         <>Open the <b>Animations</b> tab to build a camera tour: a sequence of stops the camera travels between.</>,
         <>To look at a stack from the side, open the view settings (the gear at the bottom right of the canvas) and pick another <b>Plane</b>, e.g. <b>XZ</b>; the Z slider then moves through the axis you now look down. Flat layers show <b>flat in this view</b> until you switch back, and camera tours only play in <b>XY</b>.</>,

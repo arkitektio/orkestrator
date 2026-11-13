@@ -21,6 +21,7 @@ import { pinSummary, slicePins, type LensPin } from "@/mikro/lenses";
 import type { LayerState } from "../model/layerModel";
 import { useSceneStoreApi } from "../stores/sceneStore";
 import { HEADER_BUTTON } from "./headerButton";
+import { Name } from "@/core/ui/name";
 
 /**
  * The layer's name, as a button: click it to set the anchor the name comes from.
@@ -77,13 +78,12 @@ export const LayerNamePopover = ({
           <button
             type="button"
             className={cn(
-              "min-w-0 flex-1 truncate rounded-sm text-left hover:underline hover:decoration-foreground/30 hover:underline-offset-2",
+              "min-w-0 flex-1 rounded-sm text-left hover:underline hover:decoration-foreground/30 hover:underline-offset-2",
               className,
             )}
-            title={`${label} (click to set its anchor label)`}
             onClick={(event) => event.stopPropagation()}
           >
-            {label}
+            <Name title={`${label} (click to set its anchor label)`}>{label}</Name>
           </button>
         )}
       </PopoverTrigger>

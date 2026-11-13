@@ -46,6 +46,8 @@ export function createBrickSystem(stores: {
   viewerStore: StoreApi<ViewerState & BrickSlice>;
   sceneStore: StoreApi<SceneState>;
   viewStore: StoreApi<ViewState>;
+  /** A tool press is in flight: uploads trickle meanwhile (see the manager's `isInputBusy`). */
+  isInputBusy?: () => boolean;
 }): BrickSystem {
   const { viewerStore, sceneStore, viewStore } = stores;
 
@@ -70,6 +72,7 @@ export function createBrickSystem(stores: {
     // fire time (gestures started after a timer was armed still drain under
     // the trickle policy).
     isInteracting: () => viewStore.getState().cameraMoving,
+    isInputBusy: stores.isInputBusy,
     // Between frames, and within a few frames of the plan at the latest.
     deferReconcile: (run) => scheduleIdleTask(run, RECONCILE_IDLE_DEADLINE_MS),
   });
