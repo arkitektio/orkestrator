@@ -960,9 +960,10 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
    * Resolves when the checks have run.
    */
   const goLive = (session: StoredArkitektSession, manifest: EnhancedManifest): Promise<void> => {
-      // Another profile's mesh is not wanted by this session; lok behind this
-      // one's mesh wants it from the start (the lok client is not
-      // alias-checked, so nothing else would ask for it).
+      // Another profile's mesh is not wanted by this session. Nothing asks
+      // for this one's here: the coordination server (lok, the token
+      // endpoint) is never on the mesh it coordinates, so only a service
+      // check can need it.
       const book = store.getState().profileBook;
       const profileMesh = book.activeProfileId ? book.profiles[book.activeProfileId]?.mesh : undefined;
       const mesh = meshNeeded(session.fakts, profileMesh) ? profileMesh : undefined;
@@ -971,8 +972,6 @@ export const createConnectionController = <T extends ServiceBuilderMap, S extend
         meshGateRef.current.dispose();
         meshGateRef.current = NO_MESH_GATE;
       }
-      if (mesh?.enabled && viaMesh(session.fakts.self.alias, mesh)) demandMesh(mesh.id, "self");
-      else if (mesh) releaseMesh(mesh.id, "self");
       // The previous session's probes have nobody left to answer to.
       probeControllerRef.current.abort();
       probeControllerRef.current = new AbortController();

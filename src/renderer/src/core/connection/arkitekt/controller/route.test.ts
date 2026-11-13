@@ -54,7 +54,7 @@ describe("routeOf", () => {
 });
 
 describe("meshHosts", () => {
-  it("lists the hub's mesh addresses once, lok's own included", () => {
+  it("lists the services' mesh addresses once, and never lok's own", () => {
     const fakts = {
       instances: {
         mikro: { identifier: "1", service: "mikro", aliases: [at("mikro.example.org"), at("hub.example.org", { reach: "mesh" })] },
@@ -63,7 +63,8 @@ describe("meshHosts", () => {
       self: { deployment_name: "lab", alias: at("lok.lab.mesh.arkitekt.live") },
       statuses: {},
     } as unknown as ActiveFakts;
-    expect(meshHosts(fakts, MESH)).toEqual(["hub.example.org", "lok.lab.mesh.arkitekt.live"]);
+    // The coordination server is never on the mesh it coordinates.
+    expect(meshHosts(fakts, MESH)).toEqual(["hub.example.org"]);
     expect(meshHosts(fakts, undefined)).toEqual([]);
   });
 });

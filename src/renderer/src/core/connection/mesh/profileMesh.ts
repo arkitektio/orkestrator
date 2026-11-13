@@ -149,7 +149,8 @@ export const claimProfileMesh = async (mesh: ProfileMesh | undefined): Promise<v
  * Who needs which mesh running right now. The mesh is not started because
  * the hub HAS an address on it — only when something is about to use one: a
  * service whose direct addresses all failed, a service that last answered
- * through the mesh, or `"self"` when lok itself sits behind it. Hubs with
+ * through the mesh. Never for lok: the coordination server is not on the
+ * mesh it coordinates. Hubs with
  * working direct addresses never start it (and never get Windows' firewall
  * question).
  *

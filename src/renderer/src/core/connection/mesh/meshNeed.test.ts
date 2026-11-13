@@ -29,8 +29,8 @@ describe("meshAliases", () => {
     expect(meshNeeded(fakts(["lab.hyena-sole.ts.net"]), MESH)).toBe(false);
   });
 
-  it("counts the hub's own alias too", () => {
-    expect(meshAliases(fakts([], "lok.lab.mesh.arkitekt.live"), MESH)).toEqual(["lok.lab.mesh.arkitekt.live"]);
+  it("does not count lok's own alias: the coordination server is never on the mesh", () => {
+    expect(meshAliases(fakts([], "lok.lab.mesh.arkitekt.live"), MESH)).toEqual([]);
   });
 
   it("does not count public names, LAN addresses, or bare docker hostnames", () => {

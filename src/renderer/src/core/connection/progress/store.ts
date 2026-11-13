@@ -51,7 +51,7 @@ export type MeshProgress = {
   label: string;
   phase: MeshPhase;
   since: number;
-  /** Who asked for it: service keys, `"self"` for sign-in, `"join"` for a grant. */
+  /** Who asked for it: service keys, or `"join"` for a grant. */
   demandedBy: string[];
   /** The node's own words, when it failed. */
   detail?: string;

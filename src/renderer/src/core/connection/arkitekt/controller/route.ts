@@ -64,11 +64,16 @@ export const viaMesh = (alias: Addressed, mesh: ProfileMesh | undefined): boolea
 export const routeOf = (alias: Addressed, mesh: ProfileMesh | undefined): Route =>
   mesh && viaMesh(alias, mesh) ? { kind: "mesh", meshId: mesh.id } : DIRECT;
 
-/** Every address of the hub — its services' and lok's own — in fakts order. */
+/**
+ * Every address of the hub's services, in fakts order. Not lok's own
+ * (`fakts.self`): the coordination server hands out the mesh's keys, so it is
+ * by definition reached without the mesh — over a network the computer
+ * already has (local, public, a system VPN). Only services live behind it.
+ */
 export const hubAliases = (fakts: ActiveFakts | undefined): Alias[] =>
-  fakts ? [...Object.values(fakts.instances).flatMap((instance) => instance.aliases), fakts.self.alias] : [];
+  fakts ? Object.values(fakts.instances).flatMap((instance) => instance.aliases) : [];
 
-/** The hub's hosts that live on this mesh, deduplicated, in fakts order. */
+/** The services' hosts that live on this mesh, deduplicated, in fakts order. */
 export const meshHosts = (fakts: ActiveFakts | undefined, mesh: ProfileMesh | undefined): string[] => [
   ...new Set(
     hubAliases(fakts)
