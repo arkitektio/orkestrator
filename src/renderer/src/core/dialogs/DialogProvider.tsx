@@ -1,5 +1,6 @@
 // typed-dialog-provider.tsx
 
+import { recordStep } from "@/core/diagnostics/recorder";
 import { DialogErrorScope } from "@/core/dialogs/DialogError";
 import { usePageDialogHost } from "@/core/dialogs/PageDialogHost";
 import { dialogPreferredSize } from "@/core/modules/host/dialogNeeds";
@@ -271,6 +272,7 @@ export function createDialogProvider<
     const dismissRef = useRef<(() => void) | undefined>(undefined);
 
     const show = useCallback((next: ModalState) => {
+      if (next.id) recordStep(next.type, next.id);
       const dismiss = dismissRef.current;
       dismissRef.current = next.onDismiss;
       setModalState(next);

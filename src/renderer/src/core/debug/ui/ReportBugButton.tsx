@@ -1,20 +1,18 @@
 import { Button } from "@/core/ui/button";
 import { useReport } from "@/core/debug/use-report";
-import { isElectron } from "@/core/util/platform";
 import { Flag } from "lucide-react";
 
 /**
  * "Something is wrong with this page" — from inside the debug badge.
  *
- * Files an issue for the current path with a screenshot attached, through the
- * same `useReport` the page header's menu uses. Lives in the badge's popover
- * rather than on the page: debug mode is when you are looking at what went
- * wrong, so that is where the report belongs. Desktop only — the report goes
- * through the Electron bridge, and the web build has none.
+ * Opens the report dialog (`core/diagnostics`) through the same `useReport`
+ * the page header's menu uses. Lives in the badge's popover rather than on
+ * the page: debug mode is when you are looking at what went wrong, so that is
+ * where the report belongs. In the browser build too: the report goes to the
+ * organization's server, or is downloaded as a file.
  */
 export const ReportBugButton = () => {
   const reportBug = useReport();
-  if (!isElectron()) return null;
 
   return (
     <Button

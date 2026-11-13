@@ -54,6 +54,13 @@ export const TelemetryPage = () => (
         Orkestrator sends nothing about you or this computer by itself. What it detects stays in
         its settings on this computer, and leaves only inside a bug report that you file.
       </p>
+      <p className="text-sm text-muted-foreground">
+        While it runs, each window also remembers its last errors, failed requests, console
+        warnings and the pages and dialogs you opened, so that a bug report can say what went
+        wrong. That record is kept in memory only, is gone when the window closes, and is listed
+        part by part in the report dialog, where you can leave any part out. A report you send
+        goes to the admins of your own organization, not to the developers of Orkestrator.
+      </p>
 
       <Card>
         <CardHeader>

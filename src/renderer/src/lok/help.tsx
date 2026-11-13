@@ -244,6 +244,36 @@ export const LOK_HELP = {
       ]}
     />
   ),
+  bugReports: (
+    <PageHelp
+      intro="What people reported with “Report a Bug” from inside an app. Admins see every report of the organization; everyone else sees the reports they filed themselves."
+      steps={[
+        <>Switch between <b>Open</b>, <b>Resolved</b> and <b>All</b> to choose which reports are listed.</>,
+        <>Type in <b>Search reports</b> to find a report by its words.</>,
+        <>Click a report’s title to open it and read what the app recorded.</>,
+      ]}
+      tips={[
+        <>The same list, narrowed to one app, one version or one installation, is at the bottom of that app’s, release’s and client’s page.</>,
+        <>Press <b>Show more</b> under the list to load older reports.</>,
+      ]}
+    />
+  ),
+  bugReport: (
+    <PageHelp
+      intro="One bug report: what the person wrote, the app and installation it came from, the screenshot, and what the app recorded before it was filed."
+      steps={[
+        <>Read “What happened”, then open the parts under “What the app recorded” (“Recent errors”, “Failed requests”, “Steps before the report”, “Console”) for the details.</>,
+        <>Press <b>Resolve</b> to close the report; add a <b>Note</b> if you want to say how it was dealt with.</>,
+        <>Press <b>Forward to GitHub</b> to open a pre-filled issue in the tracker of the app the report came from. The report is then marked “Forwarded”.</>,
+        <>Press <b>Reopen</b> on a resolved report to put it back among the open ones.</>,
+      ]}
+      tips={[
+        <><b>Forward to GitHub</b> is disabled when the app did not declare where its issues go.</>,
+        <>The screenshot does not travel with a forwarded issue; attach it there by hand if it is needed.</>,
+        <><b>Resolve</b>, <b>Reopen</b> and <b>Forward to GitHub</b> are shown to admins only.</>,
+      ]}
+    />
+  ),
   mandates: (
     <PageHelp
       intro="The apps allowed to act as you. A mandate is your approval for one exact app version to be started and signed in under your name, for example by an app installer on a lab computer."

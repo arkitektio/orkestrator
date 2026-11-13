@@ -137,6 +137,8 @@ declare global {
       reloadWindow: () => Promise<{ success: boolean; error?: string }>;
       forceReloadWindow: () => Promise<{ success: boolean; error?: string }>;
       openDevTools: () => Promise<{ success: boolean; error?: string }>;
+      /** Open this window's DevTools, or close them when they are open. */
+      toggleDevTools: () => Promise<{ success: boolean; open?: boolean; error?: string }>;
       setZoomLevel: (zoomLevel: number) => Promise<{ success: boolean; error?: string }>;
       getZoomLevel: () => Promise<{ success: boolean; zoomLevel?: number; error?: string }>;
       openWebbrowser: (url: string) => Promise<void>;
@@ -148,7 +150,26 @@ declare global {
         labels?: string[];
         template?: string;
         hardware?: string[];
+        body?: string;
       }) => Promise<void>;
+      /** A bug report's main-process part. Nothing here sends anything. */
+      diagnostics: {
+        info: () => Promise<{
+          appVersion: string;
+          platform: string;
+          arch: string;
+          electron: string;
+          chrome: string;
+          /** Stripped from a report by the renderer; never sent. */
+          scrub: { home: string; username: string; hostname: string };
+        }>;
+        /** The last lines the main process logged. */
+        mainLog: () => Promise<string[]>;
+        /** The window as a JPEG data URL, or null. */
+        capture: () => Promise<string | null>;
+        /** Ask where to save a report and write it. */
+        save: (args: { name: string; content: string }) => Promise<{ saved: boolean; error?: string }>;
+      };
       getNodeId: () => Promise<string>;
       trust: {
         setFaktsHosts: (trust: import("../main/trust/hosts").TrustPayload) => Promise<void>;

@@ -4,7 +4,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { ScrollArea } from "@/core/ui/scroll-area";
 import { cn } from "@/core/util/utils";
 import { useDebug, type DebugEntry } from "@/core/debug/DebugContext";
-import { Bug, Check, Copy } from "lucide-react";
+import { useDiagnostics } from "@/core/diagnostics/useDiagnostics";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
+import { isElectron } from "@/core/util/platform";
+import { Bug, Check, Copy, MonitorCog } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ReportBugButton } from "./ReportBugButton";
@@ -105,6 +108,45 @@ const CopyAllButton = ({ entries }: { entries: DebugEntry[] }) => {
   );
 };
 
+const clock = (at: number) => new Date(at).toLocaleTimeString();
+
+/** One recorded line: when, what, and the raw text under it. */
+const RecordRow = ({ at, head, tone, body }: { at: number; head: string; tone?: "error"; body?: string }) => (
+  <section className="space-y-1">
+    <header className="flex items-baseline gap-2">
+      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{clock(at)}</span>
+      <span className={cn("min-w-0 break-words text-xs font-medium", tone === "error" && "text-destructive")}>{head}</span>
+    </header>
+    {body && (
+      <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+        {body}
+      </pre>
+    )}
+  </section>
+);
+
+const Nothing = ({ children }: { children: string }) => (
+  <p className="text-xs text-muted-foreground">{children}</p>
+);
+
+/** Opens this window's DevTools, or closes them. Desktop only: it goes through the Electron bridge. */
+const DevToolsButton = () => {
+  if (!isElectron()) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-6 px-2 text-xs"
+      aria-label="Toggle developer tools"
+      onClick={() => void window.api?.toggleDevTools()}
+    >
+      <MonitorCog className="mr-1 h-3 w-3" />
+      DevTools
+    </Button>
+  );
+};
+
 /**
  * Debug mode, as a small badge in the corner of the page (see `PageCorner`).
  *
@@ -114,12 +156,15 @@ const CopyAllButton = ({ entries }: { entries: DebugEntry[] }) => {
  * its bottom-right corner; clicking it shows what the active tab's page
  * loaded: the query's variables, its data, and its error if it has one — and
  * a way to report the page, since this is where you are when it is wrong.
+ * The other tabs show what the window recorded since it opened: errors, failed
+ * requests and console warnings (`core/diagnostics`).
  *
  * Rendered only in debug mode, so it costs nothing otherwise.
  */
 export const DebugBadge = () => {
   const { debug, entries } = useDebug();
   const activeTabId = useActiveTabIdOrNull();
+  const record = useDiagnostics();
 
   if (!debug) return null;
 
@@ -127,6 +172,12 @@ export const DebugBadge = () => {
     .filter((e) => e.tabId === activeTabId)
     .sort((a, b) => a.updatedAt - b.updatedAt);
   const hasError = visible.some((e) => e.error);
+
+  // What the recorder holds (`core/diagnostics`): the same record a bug report
+  // draws on, newest first. Kept for the whole window, not per tab.
+  const errors = [...record.errors].reverse();
+  const requests = [...record.requests].reverse();
+  const consoleLines = [...record.console].reverse();
 
   return (
     <Popover>
@@ -155,15 +206,60 @@ export const DebugBadge = () => {
           </span>
           <span className="flex-1" />
           <CopyAllButton entries={visible} />
+          <DevToolsButton />
           <ReportBugButton />
         </div>
-        <ScrollArea className="max-h-[60vh]">
-          <div className="space-y-4 p-3">
-            {visible.map((entry) => (
-              <EntryView key={entry.id} entry={entry} />
-            ))}
-          </div>
-        </ScrollArea>
+        <Tabs defaultValue="queries" className="gap-0">
+          <TabsList className="mx-3 mt-2 h-7">
+            <TabsTrigger value="queries" className="text-xs">Queries {visible.length}</TabsTrigger>
+            <TabsTrigger value="errors" className="text-xs">Errors {errors.length}</TabsTrigger>
+            <TabsTrigger value="requests" className="text-xs">Failed requests {requests.length}</TabsTrigger>
+            <TabsTrigger value="console" className="text-xs">Console {consoleLines.length}</TabsTrigger>
+          </TabsList>
+          <ScrollArea className="max-h-[60vh]">
+            <TabsContent value="queries" className="space-y-4 p-3">
+              {visible.map((entry) => (
+                <EntryView key={entry.id} entry={entry} />
+              ))}
+            </TabsContent>
+            <TabsContent value="errors" className="space-y-3 p-3">
+              {errors.length === 0 && <Nothing>No errors since this window opened.</Nothing>}
+              {errors.map((error, index) => (
+                <RecordRow
+                  key={`${error.at}-${index}`}
+                  at={error.at}
+                  tone="error"
+                  head={`${error.title ? `${error.title}: ` : ""}${error.message}${error.route ? ` (${error.route})` : ""}`}
+                  body={error.technical}
+                />
+              ))}
+            </TabsContent>
+            <TabsContent value="requests" className="space-y-3 p-3">
+              {requests.length === 0 && <Nothing>No request has failed since this window opened.</Nothing>}
+              {requests.map((request, index) => (
+                <RecordRow
+                  key={`${request.at}-${index}`}
+                  at={request.at}
+                  tone="error"
+                  head={`${request.service} ${request.kind} ${request.operation}${request.status != null ? ` (HTTP ${request.status})` : ""}`}
+                  body={[request.message, request.variables !== undefined ? serialize(request.variables) : ""].filter(Boolean).join("\n")}
+                />
+              ))}
+            </TabsContent>
+            <TabsContent value="console" className="space-y-2 p-3">
+              {consoleLines.length === 0 && <Nothing>No warnings or errors in the console.</Nothing>}
+              {consoleLines.map((line, index) => (
+                <RecordRow
+                  key={`${line.at}-${index}`}
+                  at={line.at}
+                  tone={line.level === "error" ? "error" : undefined}
+                  head={`${line.level}${line.count > 1 ? ` ×${line.count}` : ""}`}
+                  body={line.text}
+                />
+              ))}
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </PopoverContent>
     </Popover>
   );

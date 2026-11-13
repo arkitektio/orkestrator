@@ -1,3 +1,5 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
 input AcceptInviteInput {
   token: String!
 }
@@ -61,6 +63,125 @@ input AppOrdering @oneOf {
 input ApproveMembershipRequestInput {
   id: ID!
   roles: [String!] = null
+}
+
+"""
+A bug a person reported from inside a client, with what the client recorded around it. It belongs to the client it was filed from and remembers that client's release, so it can be read per client, release and app. Admins of the organization see all of them; a member sees their own.
+"""
+type BugReport {
+  """The app the report is about: the app of the release it was filed from."""
+  app: App
+
+  """The version the client says it runs."""
+  appVersion: String
+
+  """The client the report was filed from. Null once that client is gone."""
+  client: Client
+
+  """When it was filed."""
+  createdAt: DateTime!
+
+  """What happened, in the reporter's words."""
+  description: String!
+
+  """
+  What the client recorded: recent errors, failed requests, steps, console. Its shape is the client's.
+  """
+  diagnostics: JSON!
+
+  """What the reporter expected instead."""
+  expected: String
+
+  """When an admin passed it on to the app's issue tracker."""
+  forwardedAt: DateTime
+
+  """The admin who passed it on."""
+  forwardedBy: User
+
+  """The issue it became, when the admin recorded it."""
+  forwardedUrl: String
+
+  """Does the report carry a screenshot?"""
+  hasScreenshot: Boolean!
+  id: ID!
+
+  """Has an admin closed this report?"""
+  isResolved: Boolean!
+
+  """The operating system the client says it runs on."""
+  platform: String
+
+  """The release that client ran when the report was filed."""
+  release: Release
+
+  """Who filed it."""
+  reporter: User
+
+  """What the admin noted when closing it."""
+  resolutionNote: String
+
+  """When an admin closed it; null while it is open."""
+  resolvedAt: DateTime
+
+  """The admin who closed it."""
+  resolvedBy: User
+
+  """The page the reporter was on."""
+  route: String
+
+  """
+  The screenshot as a data URL. Kept in the database and served only here, to those who may read the report: it can show the reporter's data, so it never goes to the public media bucket. Ask for it on one report, not on a list.
+  """
+  screenshot: String
+
+  """The first line of what the reporter wrote."""
+  title: String!
+}
+
+"""
+A bug a person reported from inside a client (Orkestrator's "Report a bug").
+
+Not a `Report`: that is a client's own configuration report. This is a user
+saying something went wrong, with what the client recorded around it.
+
+It hangs on the client that filed it (taken from the token, never from the
+payload), and remembers that client's release at the time, so an
+organization can read its reports per client, per release and per app. The
+release is kept separately because a client can be deleted or move on to a
+newer release, and the report is about the version it was filed from.
+"""
+input BugReportFilter {
+  AND: BugReportFilter
+  DISTINCT: Boolean
+  NOT: BugReportFilter
+  OR: BugReportFilter
+
+  """Reports filed from any release of this app."""
+  app: ID
+
+  """Reports filed from this client."""
+  client: ID
+
+  """
+  True: only reports already passed on to an issue tracker. False: only those that were not.
+  """
+  forwarded: Boolean
+  ids: [ID!]
+
+  """Reports filed from any client of this release."""
+  release: ID
+
+  """Reports this user filed."""
+  reporter: ID
+
+  """True: only resolved reports. False: only the ones still open."""
+  resolved: Boolean
+  search: String
+}
+
+input BugReportOrdering @oneOf {
+  createdAt: Ordering
+  id: Ordering
 }
 
 input CancelInviteInput {
@@ -247,6 +368,30 @@ type Context {
   user: User!
 }
 
+"""
+A bug report from inside a client. Which client, release and organization it belongs to is read from the token, not from here.
+"""
+input CreateBugReportInput {
+  appVersion: String = null
+
+  """What happened, in the reporter's words."""
+  description: String!
+
+  """What the client recorded. At most 512 KB as JSON."""
+  diagnostics: JSON = null
+  expected: String = null
+  platform: String = null
+
+  """The page the reporter was on."""
+  route: String = null
+
+  """A data URL (JPEG, PNG or WebP) of at most 1 MB."""
+  screenshot: String = null
+
+  """A short name; the first line of the description when omitted."""
+  title: String = null
+}
+
 input CreateGroupProfileInput {
   avatar: ID!
   group: ID!
@@ -269,7 +414,7 @@ input CreateInviteInput {
   For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires.
   """
   maxUses: Int = null
-  organization: ID
+  organization: ID = null
   roles: [String!] = null
 }
 
@@ -343,6 +488,10 @@ input DeclineMembershipRequestInput {
   id: ID!
 }
 
+input DeleteBugReportInput {
+  id: ID!
+}
+
 """Device(id, node_id, name, organization)"""
 type Device {
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
@@ -401,6 +550,15 @@ input DeviceOrdering @oneOf {
 
 """The `Fakt` scalar type represents a reference to a fakt"""
 scalar Fakt
+
+input ForwardBugReportInput {
+  """False takes the mark back."""
+  forwarded: Boolean! = true
+  id: ID!
+
+  """The issue the report became, when it is known."""
+  url: String = null
+}
 
 enum Granularity {
   DAY
@@ -1021,6 +1179,7 @@ type Mutation {
   addUserToOrganization(input: AddUserToOrganizationInput!): Membership!
   approveMembershipRequest(input: ApproveMembershipRequestInput!): Membership!
   cancelInvite(input: CancelInviteInput!): Invite!
+  createBugReport(input: CreateBugReportInput!): BugReport!
   createGroupProfile(input: CreateGroupProfileInput!): GroupProfile!
   createInvite(input: CreateInviteInput!): Invite!
   createMandate(input: CreateMandateInput!): Mandate!
@@ -1029,6 +1188,8 @@ type Mutation {
   createServiceInstance(input: CreateServiceInstanceInput!): ServiceInstance!
   declineInvite(input: DeclineInviteInput!): Invite!
   declineMembershipRequest(input: DeclineMembershipRequestInput!): MembershipRequest!
+  deleteBugReport(input: DeleteBugReportInput!): ID!
+  forwardBugReport(input: ForwardBugReportInput!): BugReport!
   issueChildMandateKey(input: IssueChildMandateKeyInput!): IssuedMandateKey!
   issueMandateKey(input: IssueMandateKeyInput!): IssuedMandateKey!
   notifyUser(input: NotifyUserInput!): Boolean!
@@ -1036,7 +1197,9 @@ type Mutation {
   render(input: RenderInput!): Fakt!
   requestMediaUpload(input: RequestMediaUploadInput!): PresignedPostCredentials!
   requestMembership(input: RequestMembershipInput!): Boolean!
+  resolveBugReport(input: ResolveBugReportInput!): BugReport!
   revokeMandate(input: RevokeMandateInput!): Mandate!
+  unresolveBugReport(input: UnresolveBugReportInput!): BugReport!
   updateDevice(input: UpdateDeviceInput!): Device!
   updateGroupProfile(input: UpdateGroupProfileInput!): GroupProfile!
   updateMembershipColors(input: UpdateMembershipColorsInput!): Membership!
@@ -1198,6 +1361,12 @@ type Query {
   _service: _Service!
   app(clientId: ID = null, id: ID = null, identifier: AppIdentifier = null): App!
   apps(filters: AppFilter, ordering: [AppOrdering!]! = [], pagination: OffsetPaginationInput): [App!]!
+  bugReport(id: ID!): BugReport!
+
+  """
+  Bugs people reported from inside a client. Every report of the organization for its admins, your own otherwise. Filter by client, release or app.
+  """
+  bugReports(filters: BugReportFilter, ordering: [BugReportOrdering!]! = [], pagination: OffsetPaginationInput): [BugReport!]!
   client(clientId: ID = null, id: ID = null): Client!
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
   device(id: ID!): Device!
@@ -1331,6 +1500,11 @@ type RequirementPin {
   service: String!
 }
 
+input ResolveBugReportInput {
+  id: ID!
+  note: String = null
+}
+
 input RevokeMandateInput {
   id: ID!
 }
@@ -1342,6 +1516,14 @@ type Role {
   description: String!
   id: ID!
   identifier: String!
+
+  """
+  The role lets a member do everything in the service declaring it. Lok gives it to the organization's owner and admins.
+  """
+  isAdminRole: Boolean!
+
+  """Every full member holds the role, unless an admin took it away."""
+  isDefaultRole: Boolean!
   organization: Organization!
 }
 
@@ -1575,7 +1757,7 @@ input SharedCollaborationInput {
   collaboration: String!
 
   """
-  The service instance the collaboration lives in (on a hub of the organization).
+  The service instance the collaboration lives in (on a hub of the organization): its id, or, when called from an app, the app's own requirement key for it (e.g. 'mikro'), resolved through the app's service mappings.
   """
   instance: ID!
 
@@ -1627,6 +1809,10 @@ type TimeBucket {
   min: Float
   sum: Float
   ts: DateTime!
+}
+
+input UnresolveBugReportInput {
+  id: ID!
 }
 
 input UpdateDeviceInput {

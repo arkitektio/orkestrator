@@ -1,6 +1,7 @@
 import { useTabId } from "@/core/tabs/TabContext";
 import { useEffect, useId } from "react";
 
+import { clearPageQuery, setPageQuery } from "@/core/diagnostics/recorder";
 import { useDebug } from "./DebugContext";
 
 export type DebugReport = {
@@ -41,6 +42,19 @@ export const useDebugReport = (label: string, state: DebugReport): void => {
     });
     // Reporting is keyed on the values, not on `report`'s identity.
   }, [debug, id, tabId, label, variablesKey, data, error, loading, report]);
+
+  // Always, debug mode or not: a bug report reads the page's query when it is
+  // filed. A reference in a map, so nothing renders for it.
+  useEffect(() => {
+    setPageQuery(id, {
+      tabId,
+      label,
+      variables: variablesKey === "null" ? undefined : JSON.parse(variablesKey),
+      data,
+      error,
+    });
+  }, [id, tabId, label, variablesKey, data, error]);
+  useEffect(() => () => clearPageQuery(id), [id]);
 
   useEffect(() => () => unreport(id), [id, unreport]);
   useEffect(() => {

@@ -9,6 +9,8 @@ import {
 import { setContext } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
+import { getMainDefinition } from "@apollo/client/utilities";
+import { recordRequest } from "@/core/diagnostics/recorder";
 import { createClient } from "graphql-ws";
 import { aliasToHttpPath, aliasToWsPath } from "../alias/helpers";
 import { createAuthRetryLink, isSubscriptionQuery } from "../runtime/authRetryLink";
@@ -27,14 +29,23 @@ export type GraphQLServiceBuilderOptions = {
   typePolicies?: TypePolicies;
 };
 
+/** The service a request went to, as a report names it: "mikro", from ".../mikro/graphql". */
+const serviceLabel = (uri: string): string => {
+  try {
+    const url = new URL(uri);
+    return url.pathname.split("/").filter((part) => part && part !== "graphql")[0] ?? url.host;
+  } catch {
+    return "unknown";
+  }
+};
+
 export const createGraphQLServiceBuilder =
   (possibleTypes: any, builderOptions?: GraphQLServiceBuilderOptions): ServiceBuilder<Service<ApolloClient<any>>> =>
     (options) => {
       const { alias, getToken, onNetworkError } = options;
 
-      const httpLink = createHttpLink({
-        uri: aliasToHttpPath(alias, "graphql"),
-      });
+      const uri = aliasToHttpPath(alias, "graphql");
+      const httpLink = createHttpLink({ uri });
 
       const queryLink = setContext(async (_, previousContext) => {
         const token = await getToken();
@@ -104,8 +115,33 @@ export const createGraphQLServiceBuilder =
         onNetworkError?.();
       });
 
+      // What failed, for a bug report (`core/diagnostics`): the operation and
+      // its variables, never the answer. Below the auth retry, so a request
+      // that only needed a fresh token is not written down as a failure.
+      const service = serviceLabel(uri);
+      const recordLink = onError(({ networkError, graphQLErrors, operation }) => {
+        if (networkError?.name === "AbortError") return;
+        const definition = getMainDefinition(operation.query);
+        const messages = [
+          ...(graphQLErrors ?? []).map((error) => error.message),
+          ...(networkError ? [networkError.message] : []),
+        ];
+        if (messages.length === 0) return;
+        recordRequest({
+          service,
+          operation: operation.operationName || "anonymous",
+          kind: "operation" in definition ? definition.operation : "query",
+          variables: operation.variables,
+          status:
+            networkError && "statusCode" in networkError && typeof networkError.statusCode === "number"
+              ? networkError.statusCode
+              : null,
+          message: messages.join("\n"),
+        });
+      });
+
       const client = new ApolloClient({
-        link: authRetryLink.concat(reachLink).concat(splitLink),
+        link: authRetryLink.concat(reachLink).concat(recordLink).concat(splitLink),
         cache: new InMemoryCache({
           possibleTypes,
           typePolicies: builderOptions?.typePolicies,

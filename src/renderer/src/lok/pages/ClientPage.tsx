@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useDetailClientQuery } from "../api/graphql";
 import { clientAppIdentifier } from "../lib/clientLabels";
+import { BugReportTable } from "../components/bugreports/BugReportTable";
+import { ADMIN_ROLE, RoleGuard } from "@/core/connection/roles";
 
 export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
   const resolve = useLokResolve();
@@ -129,6 +131,11 @@ export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
           identifier="@lok/client"
           object={{ id: data.client.id, clientId: data.client.clientId }}
         />
+
+        {/* What people reported from inside this installation. */}
+        <RoleGuard require={ADMIN_ROLE}>
+          <BugReportTable title="Bug reports" filters={{ client: data.client.id }} hideWhenEmpty />
+        </RoleGuard>
       </div>
     </LokClient.ModelPage>
   );

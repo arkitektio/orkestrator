@@ -2,6 +2,7 @@ import type { Theme } from "@/core/settings/theme/ThemeProvider";
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,
+  Flag,
   Home,
   Laptop,
   MonitorCog,
@@ -20,6 +21,8 @@ export type AppCommandContext = {
   navigate: (to: string) => void;
   openDialog: (id: string, props: Record<string, unknown>, options?: unknown) => void;
   toggleDebug: () => void;
+  /** Open the bug report dialog (`core/debug/use-report`). */
+  reportBug: () => void;
   /**
    * Put this window back on the sign-in screen without signing anything out:
    * the active profile is parked, its credential untouched, and every stored
@@ -118,6 +121,14 @@ export const APP_COMMANDS: AppCommand[] = [
     run: ({ toggleDebug }) => toggleDebug(),
   },
   {
+    id: "report-bug",
+    title: "Report a Bug",
+    description: "Say what went wrong; recent errors and a screenshot go along",
+    icon: Flag,
+    keywords: ["issue", "problem", "feedback", "broken", "error"],
+    run: ({ reportBug }) => reportBug(),
+  },
+  {
     id: "reconnect",
     title: "Reconnect to Services",
     icon: RefreshCw,
@@ -152,7 +163,7 @@ export const APP_COMMANDS: AppCommand[] = [
     icon: MonitorCog,
     keywords: ["inspect", "console"],
     electronOnly: true,
-    run: () => void window.api?.openDevTools(),
+    run: () => void window.api?.toggleDevTools(),
   },
   {
     id: "zoom-in",

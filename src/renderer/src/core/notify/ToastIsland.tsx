@@ -1,3 +1,5 @@
+import { requestReport } from "@/core/diagnostics/requestReport";
+import { currentRoute } from "@/core/diagnostics/recorder";
 import { Button } from "@/core/ui/button";
 import { RailIsland, RailIslandRow } from "@/core/ui/rail/RailIsland";
 import { cn } from "@/core/util/utils";
@@ -70,6 +72,29 @@ const CopyDetails = ({ technical }: { technical: string }) => {
   );
 };
 
+/** Opens the bug report with this failure leading it. */
+const ReportFailure = ({ toast }: { toast: RailToast }) => (
+  <Button
+    variant="link"
+    size="sm"
+    className="h-auto p-0 text-[11px] text-muted-foreground"
+    onClick={() =>
+      requestReport({
+        pinned: {
+          at: toast.createdAt,
+          route: currentRoute(),
+          source: "toast",
+          title: typeof toast.message === "string" ? toast.message : undefined,
+          message: typeof toast.description === "string" ? toast.description : "",
+          technical: toast.technical ?? "",
+        },
+      })
+    }
+  >
+    Report
+  </Button>
+);
+
 const ToastRow = ({ toast }: { toast: RailToast }) => {
   const Icon = KIND_ICON[toast.kind];
   return (
@@ -96,6 +121,7 @@ const ToastRow = ({ toast }: { toast: RailToast }) => {
               {toast.action != null && <ToastButton toast={toast} button={toast.action} />}
               {toast.cancel != null && <ToastButton toast={toast} button={toast.cancel} muted />}
               {toast.technical && <CopyDetails technical={toast.technical} />}
+              {toast.kind === "error" && toast.technical && <ReportFailure toast={toast} />}
             </div>
           )}
         </div>

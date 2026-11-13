@@ -33,6 +33,7 @@ import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
 import { useActiveTab, useTabActions } from "../../tabs/TabsProvider";
 import { APP_COMMANDS } from "./appCommands";
+import { useReport } from "@/core/debug/use-report";
 import { routeCatalog, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/core/command/breadcrumbText";
 import { isElectron } from "@/core/util/platform";
@@ -61,6 +62,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const { openDialog } = useDialog();
   const breadcrumbs = useReactRouterBreadcrumbs();
   const { debug, setDebug } = useDebug();
+  const reportBug = useReport();
   const { setTheme, toggleTheme } = useTheme();
   const { settings, setSettings } = useSettings();
   const actions = Arkitekt.useActions();
@@ -313,6 +315,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     navigate,
                     openDialog: openDialog as never,
                     toggleDebug: () => setDebug(!debug),
+                    reportBug,
                     parkSession: () => void actions.disconnect(),
                     // A failure lands in `autoLoginError`, where the shell shows it.
                     reconnect: () => void actions.reconnect().catch(() => {}),

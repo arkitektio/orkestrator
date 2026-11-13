@@ -6,6 +6,8 @@ import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokApp } from "@/core/linkers";
 import { useDetailReleaseQuery } from "../api/graphql";
 import ClientCard from "../components/cards/ClientCard";
+import { BugReportTable } from "../components/bugreports/BugReportTable";
+import { ADMIN_ROLE, RoleGuard } from "@/core/connection/roles";
 
 export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) => {
   const resolve = useLokResolve();
@@ -43,6 +45,11 @@ export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) 
       <ListRender array={data?.release?.clients} title="Clients">
         {(item) => <ClientCard item={item} />}
       </ListRender>
+      <RoleGuard require={ADMIN_ROLE}>
+        <div className="p-4">
+          <BugReportTable title="Bug reports" filters={{ release: data.release.id }} hideWhenEmpty />
+        </div>
+      </RoleGuard>
     </LokApp.ModelPage>
   );
 });

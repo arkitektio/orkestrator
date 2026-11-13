@@ -390,6 +390,18 @@ bar's palette. No sonner, no other toaster. `import { toast } from
 - **Copy confirms on the button**: `CopyButton` / `useCopyToClipboard`
   (`core/ui/copy-button.tsx`) flip to a check. A toast only where no button
   remains (a menu item, a local action).
+- **Bug reports draw on a record** (`core/diagnostics`). Each window keeps
+  its last errors, failed requests, console warnings and steps in bounded,
+  redacted rings (`recorder.ts`); nothing leaves until the user files a
+  report. `reportError`, a dialog's error scope, `QueryError` and the Apollo
+  link feed it, so reporting through the paths above is what puts a failure
+  into a report. Ask for the report dialog with `useReport({ error? })`
+  (`core/debug/use-report`) or `requestReport` where no hook fits; never
+  call `window.api.reportIssue` yourself. The dialog previews every part
+  with a tick box, sends through the `lok.fileBugReport` operation (lok ties
+  it to the calling client and its release; admins read it under
+  `/lok/bugreports` and on the app, release and client pages), and falls
+  back to a saved file or a GitHub issue when lok cannot be reached.
 - No toasts in loops (one summary), for routine state ("Loading…",
   "Connected"), for developer invariants (`console.error` + throw), or for
   background effects (console).

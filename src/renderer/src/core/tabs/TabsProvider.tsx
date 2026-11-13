@@ -1,3 +1,4 @@
+import { recordNavigation } from "@/core/diagnostics/recorder";
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { baseName } from "@/core/constants";
 import React, {
@@ -309,6 +310,7 @@ export const TabsProvider = ({
       const next = hashFor(activeTabOf(store.getState()).history.location, baseName);
       if (next === last) return;
       last = next;
+      recordNavigation(next.replace(/^#/, "") || "/");
       if (window.location.hash !== next) {
         window.history.replaceState(window.history.state, "", next);
       }

@@ -1,3 +1,4 @@
+import { recordStep } from "@/core/diagnostics/recorder";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,6 +122,7 @@ export const usePerformAction = (props: {
     });
     runIdRef.current = id;
 
+    recordStep("action", props.action.title);
     try {
       const result = await props.action.execute({
         onProgress: (p) => {

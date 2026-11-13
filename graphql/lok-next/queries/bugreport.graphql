@@ -1,0 +1,15 @@
+query BugReports(
+  $filters: BugReportFilter
+  $ordering: [BugReportOrdering!]
+  $pagination: OffsetPaginationInput
+) {
+  bugReports(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListBugReport
+  }
+}
+
+query DetailBugReport($id: ID!) {
+  bugReport(id: $id) {
+    ...DetailBugReport
+  }
+}

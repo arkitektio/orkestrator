@@ -1,5 +1,5 @@
 // main/issue-reporter.ts
-import { ipcMain, BrowserWindow, shell, clipboard } from "electron";
+import { app, ipcMain, BrowserWindow, shell, clipboard } from "electron";
 import os from "node:os";
 
 // ✅ Adjust these for your repo
@@ -89,6 +89,9 @@ export function hardwareSection(lines: unknown): string[] {
     return ["", "### Hardware", ...clean.map((line) => `- ${line}`)];
 }
 
+/** The body travels in a URL; GitHub refuses a request line much longer than this. */
+const MAX_BODY_LENGTH = 6000;
+
 /**
  * Register the IPC handler. Call registerIssueIpc() in app.whenReady().
  *
@@ -108,6 +111,11 @@ export function registerIssueIpc() {
          * "Attach to bug reports" on in Settings → Telemetry.
          */
         hardware?: string[];
+        /**
+         * The whole issue body, already written by the renderer's report
+         * (`core/diagnostics/report.ts`). Replaces the sections built here.
+         */
+        body?: string;
     }) => {
         const win = BrowserWindow.fromWebContents(event.sender);
         const rawCurrentUrl = win?.webContents.getURL() || "unknown";
@@ -126,7 +134,9 @@ export function registerIssueIpc() {
         }
 
         // Basic environment info (helps triage)
-        const appVersion = process.env.npm_package_version ?? "unknown";
+        // Not `npm_package_version`: that is only set under `pnpm dev`, so a
+        // packaged build reported "unknown".
+        const appVersion = app.getVersion();
         // Sanitize OS release to avoid exposing user information
         const platform = `${os.platform()} ${sanitizePath(os.release())}`;
         const arch = process.arch;
@@ -139,7 +149,7 @@ export function registerIssueIpc() {
         // Sanitize user-provided extra content as well
         const sanitizedExtra = args?.extra?.trim() ? sanitizePath(args.extra.trim()) : "_Describe the issue..._";
 
-        const body = [
+        const body = typeof args?.body === "string" && args.body.trim() ? sanitizePath(args.body.slice(0, MAX_BODY_LENGTH)) + screenshotNote : [
             `### What happened?`,
             sanitizedExtra,
             "",

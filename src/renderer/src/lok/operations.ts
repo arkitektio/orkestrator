@@ -1,6 +1,10 @@
 import type { OperationHandler } from "@/core/modules/host/operations";
 import type { JSONObject } from "@/core/types";
 import {
+  BugReportsDocument,
+  CreateBugReportDocument,
+  type CreateBugReportMutation,
+  type CreateBugReportMutationVariables,
   CollaborationLinksDocument,
   type CollaborationLinksQuery,
   type CollaborationLinkFragment,
@@ -209,7 +213,42 @@ const revokeLink: OperationHandler = {
   },
 };
 
+/**
+ * `lok.fileBugReport`: file a bug report from this app with the organization
+ * the user is signed in to (the host's "Report a bug", `core/diagnostics`).
+ * lok reads the client, its release and the organization off the token. Args
+ * `{ description, title?, expected?, route?, appVersion?, platform?,
+ * diagnostics?, screenshot? }`; answers `{ id }`.
+ */
+const fileBugReport: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const description = optionalString(args.description);
+    if (!description) throw new Error("A bug report needs a description");
+    const result = await client.mutate<CreateBugReportMutation, CreateBugReportMutationVariables>({
+      mutation: CreateBugReportDocument,
+      variables: {
+        input: {
+          description,
+          title: optionalString(args.title),
+          expected: optionalString(args.expected),
+          route: optionalString(args.route),
+          appVersion: optionalString(args.appVersion),
+          platform: optionalString(args.platform),
+          diagnostics: args.diagnostics && typeof args.diagnostics === "object" ? args.diagnostics : undefined,
+          screenshot: optionalString(args.screenshot),
+        },
+      },
+      refetchQueries: [BugReportsDocument],
+    });
+    const id = result.data?.createBugReport.id;
+    if (!id) throw new Error("lok did not take the report");
+    return { id };
+  },
+};
+
 export const LOK_OPERATIONS: Record<string, OperationHandler> = {
+  "lok.fileBugReport": fileBugReport,
   "lok.shareCollaboration": shareCollaboration,
   "lok.collaborationLinks": collaborationLinks,
   "lok.revokeLink": revokeLink,

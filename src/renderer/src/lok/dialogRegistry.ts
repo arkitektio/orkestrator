@@ -5,6 +5,7 @@ import { AddUserToOrganizationDialog } from "./dialogs/AddUserToOrganization";
 import { AnswerMembershipRequestDialog } from "./dialogs/AnswerMembershipRequestDialog";
 import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
+import { ResolveBugReportDialog } from "./dialogs/ResolveBugReportDialog";
 import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
 import { CreateServiceInstanceForm } from "./forms/CreateServiceInstance";
 import { UpdateComputeNodeForm } from "./forms/UpdateComputeNodeForm";
@@ -25,4 +26,5 @@ export const LOK_DIALOGS = {
   updatedevice: UpdateComputeNodeForm,
   reportclientbug: ReportClientBugDialog,
   revokemandate: RevokeMandateDialog,
+  resolvebugreport: needsRoles(ADMIN_ROLE, ResolveBugReportDialog),
 };

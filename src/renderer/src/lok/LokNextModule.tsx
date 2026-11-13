@@ -2,6 +2,8 @@ import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
+import BugReportPage from "./pages/BugReportPage";
+import BugReportsPage from "./pages/BugReportsPage";
 import AppsPage from "./pages/AppsPage";
 import ClientPage from "./pages/ClientPage";
 import DevicePage from "./pages/DevicePage";
@@ -55,6 +57,8 @@ export const LokNextModule: React.FC<Props> = () => {
             page IS it — there is no other organization to list or open. */}
         <Route path="organizations/*" element={<Navigate replace to="/lok" />} />
         <Route path="services/:id" element={<ServicePage />} />
+        <Route path="bugreports" element={<BugReportsPage />} />
+        <Route path="bugreports/:id" element={<BugReportPage />} />
         <Route path="mandates" element={<MandatesPage />} />
         <Route path="mandates/:id" element={<MandatePage />} />
         <Route

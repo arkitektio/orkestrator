@@ -852,6 +852,21 @@ export class WindowManager implements AppModule {
             return { success: false, error: "No window to open devtools for" };
         });
 
+        // The window that asked, not the focused one: detached DevTools hold
+        // the focus themselves, and they are no BrowserWindow.
+        this.ipcTransport.handleChannel("toggle-devtools", (event) => {
+            const contents = event?.sender ?? this.mainWindow?.webContents;
+            if (!contents || contents.isDestroyed()) {
+                return { success: false, error: "No window to toggle devtools for" };
+            }
+            if (contents.isDevToolsOpened()) {
+                contents.closeDevTools();
+                return { success: true, open: false };
+            }
+            contents.openDevTools({ mode: this.devToolsMode() });
+            return { success: true, open: true };
+        });
+
         this.ipcTransport.handleChannel("dialog:openFile", async () => {
             const { canceled, filePaths } = await dialog.showOpenDialog({});
             if (canceled) { return; }

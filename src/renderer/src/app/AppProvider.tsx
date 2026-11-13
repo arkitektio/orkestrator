@@ -1,3 +1,5 @@
+import { ReportHost } from "@/core/diagnostics/ReportHost";
+import { recordError } from "@/core/diagnostics/recorder";
 import { Guard } from "@/core/connection/arkitekt/host";
 import { Arkitekt } from "@/app/Arkitekt";
 // Installs every module's builtins; must precede anything that reads a registry.
@@ -25,7 +27,7 @@ import { SmartProvider } from "@/core/smart/provider";
 import { SmartPrefetchProvider } from "@/core/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/core/smart/SmartSurface";
 import { ExportHost } from "@/core/modules/export/ExportHost";
-import React from "react";
+import React, { useEffect } from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
 import { DisplayProvider } from "../core/smart/display/displays";
@@ -39,6 +41,11 @@ function ErrorFallback({
   variant,
 }: FallbackProps & { variant?: "embedded" | "page" }) {
   const reportBug = useFatalReport();
+
+  // A render that threw is the first thing a bug report should say.
+  useEffect(() => {
+    recordError(error, { source: "page", title: "A page stopped rendering" });
+  }, [error]);
 
   return (
     <UnexpectedError
@@ -54,7 +61,7 @@ function ErrorFallback({
             <RefreshCw />
             Reload
           </Button>
-          <ReportButton onReport={() => reportBug(error)} />
+          <ReportButton onReport={() => void reportBug(error)} />
         </>
       }
     />
@@ -168,6 +175,7 @@ export const AppProvider = ({
                             <ProfileScope>
                             <SmartProvider>
                               <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
+                                <ReportHost />
                                 <SelectionProvider>
                                   <SmartPrefetchProvider>
                                   {/* One window is this app's agent: the main one. */}

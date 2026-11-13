@@ -1,3 +1,4 @@
+import { recordError } from "@/core/diagnostics/recorder";
 import { reportError } from "@/core/notify";
 import { ErrorNote } from "@/core/ui/error-note";
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState } from "react";
@@ -39,7 +40,10 @@ export const DialogErrorScope = ({ children }: { children: React.ReactNode }) =>
   const [footers, setFooters] = useState<readonly number[]>([]);
 
   const report = useCallback(
-    (error: unknown, title?: string) => setFailure({ error: error ?? new Error(), title }),
+    (error: unknown, title?: string) => {
+      recordError(error, { source: "dialog", title });
+      setFailure({ error: error ?? new Error(), title });
+    },
     [],
   );
   const clear = useCallback(() => setFailure(null), []);

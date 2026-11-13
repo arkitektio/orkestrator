@@ -1,3 +1,4 @@
+import { recordError } from "@/core/diagnostics/recorder";
 import { useEffect } from "react";
 import { describeError, isAbort, type DescribedError } from "./describeError";
 import { pushToast, type ToastAction } from "./toasts";
@@ -35,6 +36,7 @@ export const reportError = (error: unknown, options: ReportOptions | string): st
   const { title, id, describe = describeError, action } = typeof options === "string" ? { title: options } : options;
   const described = describe(error);
   markReported(error);
+  recordError(error, { source: "toast", title: typeof title === "string" ? title : undefined });
   return pushToast("error", title, {
     id,
     description: described.message,

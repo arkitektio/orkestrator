@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { setReportHandler } from "@/core/diagnostics/requestReport";
 import { MemoryRouter } from "react-router-dom";
 
 import { TooltipProvider } from "@/core/ui/tooltip";
@@ -61,22 +62,27 @@ describe("the page corner", () => {
   });
 
   it("carries the bug report inside the debug badge", () => {
+    const asked = vi.fn();
+    const release = setReportHandler(asked);
+    onTestFinished(release);
     renderCorner("/mikro/arraydatasets/5");
     act(() => screen.getByText("toggle-debug").click());
     expect(screen.queryByLabelText("Report a bug on this page")).toBeNull(); // not on the page itself
     act(() => screen.getByLabelText("Debug: page state").click());
     act(() => screen.getByLabelText("Report a bug on this page").click());
-    expect(window.api.reportIssue).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Issue in /mikro/arraydatasets/5", includeScreenshot: true }),
-    );
+    // The badge asks for the report dialog; it files nothing by itself.
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(window.api.reportIssue).not.toHaveBeenCalled();
   });
 
-  it("has no report button in a browser, where there is no bridge to file it", () => {
+  it("offers the report in a browser too: it goes to the server, or is downloaded", () => {
     setElectron(false);
     renderCorner();
     act(() => screen.getByText("toggle-debug").click());
     act(() => screen.getByLabelText("Debug: page state").click());
     expect(screen.getByText("Page state")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Report a bug on this page")).toBeNull();
+    expect(screen.getByLabelText("Report a bug on this page")).toBeInTheDocument();
+    // DevTools are the desktop app's.
+    expect(screen.queryByLabelText("Toggle developer tools")).toBeNull();
   });
 });

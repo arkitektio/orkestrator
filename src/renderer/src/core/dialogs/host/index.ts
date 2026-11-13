@@ -1,4 +1,5 @@
 import { DescribeStructuresDialog } from "./DescribeStructuresDialog";
+import { ReportBugDialog } from "@/core/diagnostics/ReportBugDialog";
 import { MeshFirewallDialog } from "@/core/connection/ui/mesh/MeshFirewallDialog";
 
 /**
@@ -11,6 +12,8 @@ import { MeshFirewallDialog } from "@/core/connection/ui/mesh/MeshFirewallDialog
 export const HOST_DIALOGS = {
   describestructures: DescribeStructuresDialog,
   meshfirewall: MeshFirewallDialog,
+  // Not "reportbug": that id is rekuest's, for a failed task.
+  reportproblem: ReportBugDialog,
 } as const;
 
 export type HostDialogs = typeof HOST_DIALOGS;

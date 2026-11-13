@@ -1,0 +1,28 @@
+mutation CreateBugReport($input: CreateBugReportInput!) {
+  createBugReport(input: $input) {
+    id
+    title
+  }
+}
+
+mutation ResolveBugReport($input: ResolveBugReportInput!) {
+  resolveBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+
+mutation UnresolveBugReport($input: UnresolveBugReportInput!) {
+  unresolveBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+
+mutation ForwardBugReport($input: ForwardBugReportInput!) {
+  forwardBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+
+mutation DeleteBugReport($input: DeleteBugReportInput!) {
+  deleteBugReport(input: $input)
+}

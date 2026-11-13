@@ -85,6 +85,91 @@ export type ApproveMembershipRequestInput = {
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+/** A bug a person reported from inside a client, with what the client recorded around it. It belongs to the client it was filed from and remembers that client's release, so it can be read per client, release and app. Admins of the organization see all of them; a member sees their own. */
+export type BugReport = {
+  __typename?: 'BugReport';
+  /** The app the report is about: the app of the release it was filed from. */
+  app?: Maybe<App>;
+  /** The version the client says it runs. */
+  appVersion?: Maybe<Scalars['String']['output']>;
+  /** The client the report was filed from. Null once that client is gone. */
+  client?: Maybe<Client>;
+  /** When it was filed. */
+  createdAt: Scalars['DateTime']['output'];
+  /** What happened, in the reporter's words. */
+  description: Scalars['String']['output'];
+  /** What the client recorded: recent errors, failed requests, steps, console. Its shape is the client's. */
+  diagnostics: Scalars['JSON']['output'];
+  /** What the reporter expected instead. */
+  expected?: Maybe<Scalars['String']['output']>;
+  /** When an admin passed it on to the app's issue tracker. */
+  forwardedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The admin who passed it on. */
+  forwardedBy?: Maybe<User>;
+  /** The issue it became, when the admin recorded it. */
+  forwardedUrl?: Maybe<Scalars['String']['output']>;
+  /** Does the report carry a screenshot? */
+  hasScreenshot: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** Has an admin closed this report? */
+  isResolved: Scalars['Boolean']['output'];
+  /** The operating system the client says it runs on. */
+  platform?: Maybe<Scalars['String']['output']>;
+  /** The release that client ran when the report was filed. */
+  release?: Maybe<Release>;
+  /** Who filed it. */
+  reporter?: Maybe<User>;
+  /** What the admin noted when closing it. */
+  resolutionNote?: Maybe<Scalars['String']['output']>;
+  /** When an admin closed it; null while it is open. */
+  resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The admin who closed it. */
+  resolvedBy?: Maybe<User>;
+  /** The page the reporter was on. */
+  route?: Maybe<Scalars['String']['output']>;
+  /** The screenshot as a data URL. Kept in the database and served only here, to those who may read the report: it can show the reporter's data, so it never goes to the public media bucket. Ask for it on one report, not on a list. */
+  screenshot?: Maybe<Scalars['String']['output']>;
+  /** The first line of what the reporter wrote. */
+  title: Scalars['String']['output'];
+};
+
+/**
+ * A bug a person reported from inside a client (Orkestrator's "Report a bug").
+ *
+ * Not a `Report`: that is a client's own configuration report. This is a user
+ * saying something went wrong, with what the client recorded around it.
+ *
+ * It hangs on the client that filed it (taken from the token, never from the
+ * payload), and remembers that client's release at the time, so an
+ * organization can read its reports per client, per release and per app. The
+ * release is kept separately because a client can be deleted or move on to a
+ * newer release, and the report is about the version it was filed from.
+ */
+export type BugReportFilter = {
+  AND?: InputMaybe<BugReportFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<BugReportFilter>;
+  OR?: InputMaybe<BugReportFilter>;
+  /** Reports filed from any release of this app. */
+  app?: InputMaybe<Scalars['ID']['input']>;
+  /** Reports filed from this client. */
+  client?: InputMaybe<Scalars['ID']['input']>;
+  /** True: only reports already passed on to an issue tracker. False: only those that were not. */
+  forwarded?: InputMaybe<Scalars['Boolean']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Reports filed from any client of this release. */
+  release?: InputMaybe<Scalars['ID']['input']>;
+  /** Reports this user filed. */
+  reporter?: InputMaybe<Scalars['ID']['input']>;
+  /** True: only resolved reports. False: only the ones still open. */
+  resolved?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type BugReportOrdering =
+  { createdAt: Ordering; id?: never; }
+  |  { createdAt?: never; id: Ordering; };
+
 export type CancelInviteInput = {
   id: Scalars['ID']['input'];
   /** For a collaboration invite: also take back the collaborations it granted from everyone who accepted it. */
@@ -239,6 +324,23 @@ export type ContextMemberOfArgs = {
   organization: Scalars['ID']['input'];
 };
 
+/** A bug report from inside a client. Which client, release and organization it belongs to is read from the token, not from here. */
+export type CreateBugReportInput = {
+  appVersion?: InputMaybe<Scalars['String']['input']>;
+  /** What happened, in the reporter's words. */
+  description: Scalars['String']['input'];
+  /** What the client recorded. At most 512 KB as JSON. */
+  diagnostics?: InputMaybe<Scalars['JSON']['input']>;
+  expected?: InputMaybe<Scalars['String']['input']>;
+  platform?: InputMaybe<Scalars['String']['input']>;
+  /** The page the reporter was on. */
+  route?: InputMaybe<Scalars['String']['input']>;
+  /** A data URL (JPEG, PNG or WebP) of at most 1 MB. */
+  screenshot?: InputMaybe<Scalars['String']['input']>;
+  /** A short name; the first line of the description when omitted. */
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CreateGroupProfileInput = {
   avatar: Scalars['ID']['input'];
   group: Scalars['ID']['input'];
@@ -303,6 +405,10 @@ export type DeclineInviteInput = {
 };
 
 export type DeclineMembershipRequestInput = {
+  id: Scalars['ID']['input'];
+};
+
+export type DeleteBugReportInput = {
   id: Scalars['ID']['input'];
 };
 
@@ -381,6 +487,14 @@ export type DeviceGroupOrdering =
 export type DeviceOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
+
+export type ForwardBugReportInput = {
+  /** False takes the mark back. */
+  forwarded?: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
+  /** The issue the report became, when it is known. */
+  url?: InputMaybe<Scalars['String']['input']>;
+};
 
 export enum Granularity {
   Day = 'DAY',
@@ -915,6 +1029,7 @@ export type Mutation = {
   addUserToOrganization: Membership;
   approveMembershipRequest: Membership;
   cancelInvite: Invite;
+  createBugReport: BugReport;
   createGroupProfile: GroupProfile;
   createInvite: Invite;
   createMandate: Mandate;
@@ -923,6 +1038,8 @@ export type Mutation = {
   createServiceInstance: ServiceInstance;
   declineInvite: Invite;
   declineMembershipRequest: MembershipRequest;
+  deleteBugReport: Scalars['ID']['output'];
+  forwardBugReport: BugReport;
   issueChildMandateKey: IssuedMandateKey;
   issueMandateKey: IssuedMandateKey;
   notifyUser: Scalars['Boolean']['output'];
@@ -930,7 +1047,9 @@ export type Mutation = {
   render: Scalars['Fakt']['output'];
   requestMediaUpload: PresignedPostCredentials;
   requestMembership: Scalars['Boolean']['output'];
+  resolveBugReport: BugReport;
   revokeMandate: Mandate;
+  unresolveBugReport: BugReport;
   updateDevice: Device;
   updateGroupProfile: GroupProfile;
   updateMembershipColors: Membership;
@@ -962,6 +1081,11 @@ export type MutationApproveMembershipRequestArgs = {
 
 export type MutationCancelInviteArgs = {
   input: CancelInviteInput;
+};
+
+
+export type MutationCreateBugReportArgs = {
+  input: CreateBugReportInput;
 };
 
 
@@ -1005,6 +1129,16 @@ export type MutationDeclineMembershipRequestArgs = {
 };
 
 
+export type MutationDeleteBugReportArgs = {
+  input: DeleteBugReportInput;
+};
+
+
+export type MutationForwardBugReportArgs = {
+  input: ForwardBugReportInput;
+};
+
+
 export type MutationIssueChildMandateKeyArgs = {
   input: IssueChildMandateKeyInput;
 };
@@ -1040,8 +1174,18 @@ export type MutationRequestMembershipArgs = {
 };
 
 
+export type MutationResolveBugReportArgs = {
+  input: ResolveBugReportInput;
+};
+
+
 export type MutationRevokeMandateArgs = {
   input: RevokeMandateInput;
+};
+
+
+export type MutationUnresolveBugReportArgs = {
+  input: UnresolveBugReportInput;
 };
 
 
@@ -1236,6 +1380,9 @@ export type Query = {
   _service: _Service;
   app: App;
   apps: Array<App>;
+  bugReport: BugReport;
+  /** Bugs people reported from inside a client. Every report of the organization for its admins, your own otherwise. Filter by client, release or app. */
+  bugReports: Array<BugReport>;
   client: Client;
   clients: Array<Client>;
   device: Device;
@@ -1291,6 +1438,18 @@ export type QueryAppArgs = {
 export type QueryAppsArgs = {
   filters?: InputMaybe<AppFilter>;
   ordering?: Array<AppOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryBugReportArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryBugReportsArgs = {
+  filters?: InputMaybe<BugReportFilter>;
+  ordering?: Array<BugReportOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1560,6 +1719,11 @@ export type RequirementPin = {
   service: Scalars['String']['output'];
 };
 
+export type ResolveBugReportInput = {
+  id: Scalars['ID']['input'];
+  note?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type RevokeMandateInput = {
   id: Scalars['ID']['input'];
 };
@@ -1570,6 +1734,10 @@ export type Role = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   identifier: Scalars['String']['output'];
+  /** The role lets a member do everything in the service declaring it. Lok gives it to the organization's owner and admins. */
+  isAdminRole: Scalars['Boolean']['output'];
+  /** Every full member holds the role, unless an admin took it away. */
+  isDefaultRole: Scalars['Boolean']['output'];
   organization: Organization;
 };
 
@@ -1790,7 +1958,7 @@ export type SharedCollaboration = {
 export type SharedCollaborationInput = {
   /** The collaboration's id in that service. */
   collaboration: Scalars['String']['input'];
-  /** The service instance the collaboration lives in (on a hub of the organization). */
+  /** The service instance the collaboration lives in (on a hub of the organization): its id, or, when called from an app, the app's own requirement key for it (e.g. 'mikro'), resolved through the app's service mappings. */
   instance: Scalars['ID']['input'];
   /** Identifiers of the organization's roles that hold for the guest inside the collaboration. Empty: view only. */
   roles?: Array<Scalars['String']['input']>;
@@ -1854,6 +2022,10 @@ export type TimeBucket = {
   min?: Maybe<Scalars['Float']['output']>;
   sum?: Maybe<Scalars['Float']['output']>;
   ts: Scalars['DateTime']['output'];
+};
+
+export type UnresolveBugReportInput = {
+  id: Scalars['ID']['input'];
 };
 
 export type UpdateDeviceInput = {
@@ -2082,6 +2254,13 @@ export type DetailAppFragment = { __typename?: 'App', id: string, identifier: an
 
 export type ListAppFragment = { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
+export type ListBugReportFragment = { __typename?: 'BugReport', id: string, title: string, route?: string | null, appVersion?: string | null, createdAt: any, isResolved: boolean, forwardedAt?: any | null, hasScreenshot: boolean, reporter?: { __typename?: 'User', id: string, username: string } | null, client?: { __typename?: 'Client', id: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null } | null, release?: { __typename?: 'Release', id: string, version: any, app: { __typename?: 'App', id: string, identifier: any } } | null };
+
+export type DetailBugReportFragment = (
+  { __typename?: 'BugReport', description: string, expected?: string | null, platform?: string | null, diagnostics: any, screenshot?: string | null, resolvedAt?: any | null, resolutionNote?: string | null, forwardedUrl?: string | null, resolvedBy?: { __typename?: 'User', id: string, username: string } | null, forwardedBy?: { __typename?: 'User', id: string, username: string } | null, client?: { __typename?: 'Client', id: string, name: string, issueUrl?: string | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null } | null }
+  & ListBugReportFragment
+);
+
 export type DetailClientFragment = { __typename?: 'Client', id: string, clientId: string, name: string, public: boolean, kind: ClientKind, role: ClientRole, issueUrl?: string | null, user?: { __typename?: 'User', id: string, username: string } | null, release?: (
     { __typename?: 'Release' }
     & ListReleaseFragment
@@ -2235,6 +2414,50 @@ export type DetailUserFragment = { __typename?: 'User', id: string, username: st
 export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null };
 
 export type UserChipFragment = { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+
+export type CreateBugReportMutationVariables = Exact<{
+  input: CreateBugReportInput;
+}>;
+
+
+export type CreateBugReportMutation = { __typename?: 'Mutation', createBugReport: { __typename?: 'BugReport', id: string, title: string } };
+
+export type ResolveBugReportMutationVariables = Exact<{
+  input: ResolveBugReportInput;
+}>;
+
+
+export type ResolveBugReportMutation = { __typename?: 'Mutation', resolveBugReport: (
+    { __typename?: 'BugReport' }
+    & DetailBugReportFragment
+  ) };
+
+export type UnresolveBugReportMutationVariables = Exact<{
+  input: UnresolveBugReportInput;
+}>;
+
+
+export type UnresolveBugReportMutation = { __typename?: 'Mutation', unresolveBugReport: (
+    { __typename?: 'BugReport' }
+    & DetailBugReportFragment
+  ) };
+
+export type ForwardBugReportMutationVariables = Exact<{
+  input: ForwardBugReportInput;
+}>;
+
+
+export type ForwardBugReportMutation = { __typename?: 'Mutation', forwardBugReport: (
+    { __typename?: 'BugReport' }
+    & DetailBugReportFragment
+  ) };
+
+export type DeleteBugReportMutationVariables = Exact<{
+  input: DeleteBugReportInput;
+}>;
+
+
+export type DeleteBugReportMutation = { __typename?: 'Mutation', deleteBugReport: string };
 
 export type UpdateDeviceMutationVariables = Exact<{
   input: UpdateDeviceInput;
@@ -2474,6 +2697,28 @@ export type DetailAppQueryVariables = Exact<{
 export type DetailAppQuery = { __typename?: 'Query', app: (
     { __typename?: 'App' }
     & DetailAppFragment
+  ) };
+
+export type BugReportsQueryVariables = Exact<{
+  filters?: InputMaybe<BugReportFilter>;
+  ordering?: InputMaybe<Array<BugReportOrdering> | BugReportOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type BugReportsQuery = { __typename?: 'Query', bugReports: Array<(
+    { __typename?: 'BugReport' }
+    & ListBugReportFragment
+  )> };
+
+export type DetailBugReportQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DetailBugReportQuery = { __typename?: 'Query', bugReport: (
+    { __typename?: 'BugReport' }
+    & DetailBugReportFragment
   ) };
 
 export type ClientsQueryVariables = Exact<{
@@ -2970,6 +3215,68 @@ export const DetailAppFragmentDoc = gql`
   }
 }
     ${ListReleaseFragmentDoc}`;
+export const ListBugReportFragmentDoc = gql`
+    fragment ListBugReport on BugReport {
+  id
+  title
+  route
+  appVersion
+  createdAt
+  isResolved
+  forwardedAt
+  hasScreenshot
+  reporter {
+    id
+    username
+  }
+  client {
+    id
+    name
+    node {
+      id
+      name
+    }
+  }
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
+}
+    `;
+export const DetailBugReportFragmentDoc = gql`
+    fragment DetailBugReport on BugReport {
+  ...ListBugReport
+  description
+  expected
+  platform
+  diagnostics
+  screenshot
+  resolvedAt
+  resolutionNote
+  resolvedBy {
+    id
+    username
+  }
+  forwardedUrl
+  forwardedBy {
+    id
+    username
+  }
+  client {
+    id
+    name
+    issueUrl
+    node {
+      id
+      name
+    }
+  }
+}
+    ${ListBugReportFragmentDoc}`;
 export const DetailClientFragmentDoc = gql`
     fragment DetailClient on Client {
   id
@@ -3608,6 +3915,170 @@ export const UserChipFragmentDoc = gql`
   }
 }
     `;
+export const CreateBugReportDocument = gql`
+    mutation CreateBugReport($input: CreateBugReportInput!) {
+  createBugReport(input: $input) {
+    id
+    title
+  }
+}
+    `;
+export type CreateBugReportMutationFn = Apollo.MutationFunction<CreateBugReportMutation, CreateBugReportMutationVariables>;
+
+/**
+ * __useCreateBugReportMutation__
+ *
+ * To run a mutation, you first call `useCreateBugReportMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBugReportMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createBugReportMutation, { data, loading, error }] = useCreateBugReportMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateBugReportMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateBugReportMutation, CreateBugReportMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateBugReportMutation, CreateBugReportMutationVariables>(CreateBugReportDocument, options);
+      }
+export type CreateBugReportMutationHookResult = ReturnType<typeof useCreateBugReportMutation>;
+export type CreateBugReportMutationResult = Apollo.MutationResult<CreateBugReportMutation>;
+export type CreateBugReportMutationOptions = Apollo.BaseMutationOptions<CreateBugReportMutation, CreateBugReportMutationVariables>;
+export const ResolveBugReportDocument = gql`
+    mutation ResolveBugReport($input: ResolveBugReportInput!) {
+  resolveBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+    ${DetailBugReportFragmentDoc}`;
+export type ResolveBugReportMutationFn = Apollo.MutationFunction<ResolveBugReportMutation, ResolveBugReportMutationVariables>;
+
+/**
+ * __useResolveBugReportMutation__
+ *
+ * To run a mutation, you first call `useResolveBugReportMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResolveBugReportMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resolveBugReportMutation, { data, loading, error }] = useResolveBugReportMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useResolveBugReportMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ResolveBugReportMutation, ResolveBugReportMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ResolveBugReportMutation, ResolveBugReportMutationVariables>(ResolveBugReportDocument, options);
+      }
+export type ResolveBugReportMutationHookResult = ReturnType<typeof useResolveBugReportMutation>;
+export type ResolveBugReportMutationResult = Apollo.MutationResult<ResolveBugReportMutation>;
+export type ResolveBugReportMutationOptions = Apollo.BaseMutationOptions<ResolveBugReportMutation, ResolveBugReportMutationVariables>;
+export const UnresolveBugReportDocument = gql`
+    mutation UnresolveBugReport($input: UnresolveBugReportInput!) {
+  unresolveBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+    ${DetailBugReportFragmentDoc}`;
+export type UnresolveBugReportMutationFn = Apollo.MutationFunction<UnresolveBugReportMutation, UnresolveBugReportMutationVariables>;
+
+/**
+ * __useUnresolveBugReportMutation__
+ *
+ * To run a mutation, you first call `useUnresolveBugReportMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnresolveBugReportMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unresolveBugReportMutation, { data, loading, error }] = useUnresolveBugReportMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUnresolveBugReportMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnresolveBugReportMutation, UnresolveBugReportMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnresolveBugReportMutation, UnresolveBugReportMutationVariables>(UnresolveBugReportDocument, options);
+      }
+export type UnresolveBugReportMutationHookResult = ReturnType<typeof useUnresolveBugReportMutation>;
+export type UnresolveBugReportMutationResult = Apollo.MutationResult<UnresolveBugReportMutation>;
+export type UnresolveBugReportMutationOptions = Apollo.BaseMutationOptions<UnresolveBugReportMutation, UnresolveBugReportMutationVariables>;
+export const ForwardBugReportDocument = gql`
+    mutation ForwardBugReport($input: ForwardBugReportInput!) {
+  forwardBugReport(input: $input) {
+    ...DetailBugReport
+  }
+}
+    ${DetailBugReportFragmentDoc}`;
+export type ForwardBugReportMutationFn = Apollo.MutationFunction<ForwardBugReportMutation, ForwardBugReportMutationVariables>;
+
+/**
+ * __useForwardBugReportMutation__
+ *
+ * To run a mutation, you first call `useForwardBugReportMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useForwardBugReportMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [forwardBugReportMutation, { data, loading, error }] = useForwardBugReportMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useForwardBugReportMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ForwardBugReportMutation, ForwardBugReportMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ForwardBugReportMutation, ForwardBugReportMutationVariables>(ForwardBugReportDocument, options);
+      }
+export type ForwardBugReportMutationHookResult = ReturnType<typeof useForwardBugReportMutation>;
+export type ForwardBugReportMutationResult = Apollo.MutationResult<ForwardBugReportMutation>;
+export type ForwardBugReportMutationOptions = Apollo.BaseMutationOptions<ForwardBugReportMutation, ForwardBugReportMutationVariables>;
+export const DeleteBugReportDocument = gql`
+    mutation DeleteBugReport($input: DeleteBugReportInput!) {
+  deleteBugReport(input: $input)
+}
+    `;
+export type DeleteBugReportMutationFn = Apollo.MutationFunction<DeleteBugReportMutation, DeleteBugReportMutationVariables>;
+
+/**
+ * __useDeleteBugReportMutation__
+ *
+ * To run a mutation, you first call `useDeleteBugReportMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteBugReportMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteBugReportMutation, { data, loading, error }] = useDeleteBugReportMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDeleteBugReportMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteBugReportMutation, DeleteBugReportMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteBugReportMutation, DeleteBugReportMutationVariables>(DeleteBugReportDocument, options);
+      }
+export type DeleteBugReportMutationHookResult = ReturnType<typeof useDeleteBugReportMutation>;
+export type DeleteBugReportMutationResult = Apollo.MutationResult<DeleteBugReportMutation>;
+export type DeleteBugReportMutationOptions = Apollo.BaseMutationOptions<DeleteBugReportMutation, DeleteBugReportMutationVariables>;
 export const UpdateDeviceDocument = gql`
     mutation UpdateDevice($input: UpdateDeviceInput!) {
   updateDevice(input: $input) {
@@ -4445,6 +4916,78 @@ export function useDetailAppLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type DetailAppQueryHookResult = ReturnType<typeof useDetailAppQuery>;
 export type DetailAppLazyQueryHookResult = ReturnType<typeof useDetailAppLazyQuery>;
 export type DetailAppQueryResult = Apollo.QueryResult<DetailAppQuery, DetailAppQueryVariables>;
+export const BugReportsDocument = gql`
+    query BugReports($filters: BugReportFilter, $ordering: [BugReportOrdering!], $pagination: OffsetPaginationInput) {
+  bugReports(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListBugReport
+  }
+}
+    ${ListBugReportFragmentDoc}`;
+
+/**
+ * __useBugReportsQuery__
+ *
+ * To run a query within a React component, call `useBugReportsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBugReportsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBugReportsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useBugReportsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BugReportsQuery, BugReportsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BugReportsQuery, BugReportsQueryVariables>(BugReportsDocument, options);
+      }
+export function useBugReportsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BugReportsQuery, BugReportsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BugReportsQuery, BugReportsQueryVariables>(BugReportsDocument, options);
+        }
+export type BugReportsQueryHookResult = ReturnType<typeof useBugReportsQuery>;
+export type BugReportsLazyQueryHookResult = ReturnType<typeof useBugReportsLazyQuery>;
+export type BugReportsQueryResult = Apollo.QueryResult<BugReportsQuery, BugReportsQueryVariables>;
+export const DetailBugReportDocument = gql`
+    query DetailBugReport($id: ID!) {
+  bugReport(id: $id) {
+    ...DetailBugReport
+  }
+}
+    ${DetailBugReportFragmentDoc}`;
+
+/**
+ * __useDetailBugReportQuery__
+ *
+ * To run a query within a React component, call `useDetailBugReportQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailBugReportQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailBugReportQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailBugReportQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailBugReportQuery, DetailBugReportQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DetailBugReportQuery, DetailBugReportQueryVariables>(DetailBugReportDocument, options);
+      }
+export function useDetailBugReportLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailBugReportQuery, DetailBugReportQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DetailBugReportQuery, DetailBugReportQueryVariables>(DetailBugReportDocument, options);
+        }
+export type DetailBugReportQueryHookResult = ReturnType<typeof useDetailBugReportQuery>;
+export type DetailBugReportLazyQueryHookResult = ReturnType<typeof useDetailBugReportLazyQuery>;
+export type DetailBugReportQueryResult = Apollo.QueryResult<DetailBugReportQuery, DetailBugReportQueryVariables>;
 export const ClientsDocument = gql`
     query Clients($filters: ClientFilter, $pagination: OffsetPaginationInput) {
   clients(filters: $filters, pagination: $pagination) {

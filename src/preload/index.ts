@@ -205,6 +205,7 @@ const api = {
   reloadWindow: () => ipcRenderer.invoke("reload-window"),
   forceReloadWindow: () => ipcRenderer.invoke("force-reload-window"),
   openDevTools: () => ipcRenderer.invoke("open-devtools"),
+  toggleDevTools: () => ipcRenderer.invoke("toggle-devtools"),
   setZoomLevel: (zoomLevel: number) => ipcRenderer.invoke("set-zoom-level", zoomLevel),
   getZoomLevel: () => ipcRenderer.invoke("get-zoom-level"),
   openWebbrowser: (url: string) => ipcRenderer.invoke("open-webbrowser", url),
@@ -215,7 +216,15 @@ const api = {
     labels?: string[];
     template?: string;
     hardware?: string[];
+    body?: string;
   }) => ipcRenderer.invoke("arkitekt.reportIssue", opts),
+  /** A bug report's main-process part; nothing here sends anything (see main/diagnostics.ts). */
+  diagnostics: {
+    info: () => ipcRenderer.invoke("diagnostics:info"),
+    mainLog: () => ipcRenderer.invoke("diagnostics:main-log"),
+    capture: () => ipcRenderer.invoke("diagnostics:capture"),
+    save: (args: { name: string; content: string }) => ipcRenderer.invoke("diagnostics:save", args),
+  },
   openFilePicker: () => ipcRenderer.invoke("dialog:openFile"),
   uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => ipcRenderer.invoke("upload:bigFile", opts),
   /** Fetch an asset from the URL its app names as its source: hashed while downloading, kept in a temporary file. */

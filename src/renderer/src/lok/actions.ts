@@ -1,5 +1,5 @@
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { BellRing, Building2, ShieldOff } from 'lucide-react'
+import { BellRing, Building2, CheckCircle2, ShieldOff } from 'lucide-react'
 import { ADMIN_ROLE } from '@/core/connection/roles'
 
 export const LOK_ACTIONS = {
@@ -30,6 +30,19 @@ export const LOK_ACTIONS = {
         .map((item) => item.id)
 
       dialog.openSheet('addusertoorganization', { users }, { size: 'large' })
+    }
+  },
+  resolve_bug_report: {
+    title: 'Resolve report',
+    description: 'Close this bug report, with a note',
+    icon: CheckCircle2,
+    conditions: [{ type: 'identifier', identifier: '@lok/bugreport' }, { type: 'nopartner' }],
+    roles: ADMIN_ROLE,
+    execute: async ({ state, dialog }) => {
+      const report = state.left.find((item) => item.identifier === '@lok/bugreport')
+      if (!report) return
+
+      dialog.openDialog('resolvebugreport', { id: String(report.id) }, { size: 'small' })
     }
   },
   revoke_mandate: {

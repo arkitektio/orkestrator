@@ -1,4 +1,6 @@
 import { useReport } from "@/core/debug/use-report";
+import { recordError } from "@/core/diagnostics/recorder";
+import { useEffect } from "react";
 import { KeyRound, ShieldOff, Unplug } from "lucide-react";
 import { classifyError, describeNeeded, type Denial } from "./classifyError";
 import { StatusPage, type StatusDetail } from "./StatusPage";
@@ -219,7 +221,12 @@ const ObjectDenied = ({
 export const QueryError = ({ error, onRetry, resource, id }: QueryErrorProps) => {
   const classified = classifyError(error);
   const { module, who } = useStatusContext();
-  const report = useReport();
+  const report = useReport({ error });
+
+  // A page that failed is part of the record a bug report draws on.
+  useEffect(() => {
+    if (error) recordError(error, { source: "page", title: resource ? `Couldn't load this ${resource}` : undefined });
+  }, [error, resource]);
 
   switch (classified.kind) {
     case "denied":

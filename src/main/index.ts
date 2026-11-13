@@ -7,6 +7,7 @@ import { machineId } from "node-machine-id";
 // Import custom modules
 import { AgentGateway } from "./gateway";
 import { registerIssueIpc } from "./issue-reporter";
+import { registerDiagnosticsIpc } from "./diagnostics";
 import { IpcTransport } from "./modules/IpcTransport";
 import { WindowManager } from "./modules/WindowManager";
 import { GlobalShortcutService, electronGlobalShortcutDeps } from "./modules/GlobalShortcutService";
@@ -308,6 +309,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     registerIssueIpc();
+    registerDiagnosticsIpc();
     // COOP/COEP injection for the renderer document + its same-origin assets.
     //
     // Only the app's OWN origin(s) go through this listener. COOP/COEP are

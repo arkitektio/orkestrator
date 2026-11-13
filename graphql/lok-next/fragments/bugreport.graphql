@@ -1,0 +1,59 @@
+fragment ListBugReport on BugReport {
+  id
+  title
+  route
+  appVersion
+  createdAt
+  isResolved
+  forwardedAt
+  hasScreenshot
+  reporter {
+    id
+    username
+  }
+  client {
+    id
+    name
+    node {
+      id
+      name
+    }
+  }
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
+}
+
+fragment DetailBugReport on BugReport {
+  ...ListBugReport
+  description
+  expected
+  platform
+  diagnostics
+  screenshot
+  resolvedAt
+  resolutionNote
+  resolvedBy {
+    id
+    username
+  }
+  forwardedUrl
+  forwardedBy {
+    id
+    username
+  }
+  client {
+    id
+    name
+    issueUrl
+    node {
+      id
+      name
+    }
+  }
+}
