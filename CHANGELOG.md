@@ -1,3 +1,15 @@
+# [7.0.0](https://github.com/arkitektio/orkestrator/compare/v6.3.0...v7.0.0) (2026-11-15)
+
+
+* feat(agent)!: the in-app agent speaks agent protocol 2 ([250efd2](https://github.com/arkitektio/orkestrator/commit/250efd258bba057cabcdf4c36e977ed64f1bbcda))
+
+
+### BREAKING CHANGES
+
+* the in-app agent needs rekuest-server 19 or later.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+
 # [6.3.0](https://github.com/arkitektio/orkestrator/compare/v6.2.0...v6.3.0) (2026-11-13)
 
 
