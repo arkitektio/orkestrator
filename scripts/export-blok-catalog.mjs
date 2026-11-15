@@ -65,7 +65,7 @@ try {
   const {buildCatalogExport} = await import(
     pathToFileURL(resolve(bundleDir, 'catalogExport.mjs')).href
   );
-  const {catalog, module} = buildCatalogExport();
+  const {catalog, published} = buildCatalogExport();
 
   if (!catalog.components.length) {
     throw new Error(
@@ -75,8 +75,9 @@ try {
 
   await mkdir(outDir, {recursive: true});
   await writeFile(resolve(outDir, 'blok-catalog.json'), `${JSON.stringify(catalog, null, 2)}\n`);
-  // The `orkestrator` module in the spec's catalog format: arkitekt-spec's `modules/orkestrator.json`.
-  await writeFile(resolve(outDir, 'blok-module.json'), `${JSON.stringify(module, null, 1)}\n`);
+  // The Orkestrator's catalog as the spec writes one: what is served at its id, and what arkitekt-spec
+  // ships a snapshot of (`scripts/sync_standard_catalog.py --orkestrator <this checkout>`).
+  await writeFile(resolve(outDir, `${published.name}@${published.version}.json`), `${JSON.stringify(published, null, 1)}\n`);
 
   console.info(
     `[blok-catalog] wrote dist/catalog/ — "${catalog.name}": ${catalog.components.length} components.`,

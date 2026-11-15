@@ -139,13 +139,13 @@ describe("componentInput", () => {
 });
 
 describe("buildRegisterModuleInput", () => {
-  it("maps the real UI without throwing: its claims, and none of the claimed catalogs' components", () => {
+  it("maps the real UI without throwing: the base catalog it speaks, and none of its components", () => {
     const input = buildRegisterModuleInput(orkestratorUi);
 
     expect(input.name).toBe(UI_CATALOG_NAME);
     expect(input.widgetDefaults).toEqual([]);
     expect(input.catalogs).toEqual([...orkestratorUi.claims].sort());
-    expect(input.catalogs).toContain("ui@1");
+    expect(input.catalogs).toEqual(["base@3"]);
     const names = new Set(input.components.map((component) => component.name));
     for (const name of ["Button", "foreach", "Sheet", "Scene", "StructurePicker"]) expect(names.has(name), name).toBe(false);
     // A module adds components only: what a blok calls is the language's.

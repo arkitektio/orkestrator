@@ -13,6 +13,9 @@ import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type
 import { lazily } from "./lazily";
 import { ROW_OPS, ROWS_LIMIT_DEFAULT, ROWS_LIMIT_MAX } from "./tableSql";
 
+/** The service mikro's components need where they are drawn: without it a notice shows in their place. */
+export const MIKRO_SERVICE = "mikro";
+
 /**
  * A mikro TableDataset, as bloks: what its columns are, what one column holds,
  * and a page of its rows. Each reads one table, named as a structure
@@ -125,7 +128,7 @@ const reader = (
   name: string,
   schema: z.ZodObject<Record<string, z.ZodTypeAny>>,
   Part: React.ComponentType<BlokRenderArgs>,
-): BlokComponentDefinition => createBlokComponent({ name, schema, writesRecordTo: "bind" }, lazily(Part));
+): BlokComponentDefinition => createBlokComponent({ name, schema, service: MIKRO_SERVICE, writesRecordTo: "bind" }, lazily(Part));
 
 export const TableColumnsBlok = reader("TableColumns", tableColumnsSchema, Parts.TableColumns);
 export const ColumnStatBlok = reader("ColumnStat", columnStatSchema, Parts.ColumnStat);

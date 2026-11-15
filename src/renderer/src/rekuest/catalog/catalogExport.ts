@@ -1,23 +1,24 @@
 import {buildRegisterModuleInput} from '@/rekuest/catalog/uiCatalogInput';
-import {orkestratorUi, UI_CATALOG_DESCRIPTION, UI_CATALOG_NAME} from '@/core/blok/catalog';
-import {blokModuleSpec} from '@arkitektio/bsx/runtime';
+import {orkestratorCatalogSpec, orkestratorUi} from '@/core/blok/catalog';
 
 /**
- * The documents this client publishes for its blok module:
+ * The documents this client publishes for its blok catalog:
  *
  * - `catalog` — the full `registerModule` payload, i.e. exactly what the app
  *   would send a rekuest server (every component and prop with its description
- *   and `CatalogValueKind`, and the global catalogs it claims).
- * - `module` — the same components as the spec writes a catalog
- *   (`modules/orkestrator.json` in arkitekt-spec): what `arkitekt check` knows
- *   of the components only this app draws.
+ *   and `CatalogValueKind`, and the catalogs it speaks).
+ * - `published` — the Orkestrator's catalog as the spec writes one: what is
+ *   served at `https://arkitekt.live/catalogs/orkestrator/v1`, and what
+ *   arkitekt-spec ships a snapshot of (`catalogs/orkestrator@1.json`), so
+ *   `arkitekt check` knows the components only this app draws.
  *
  * Kept free of `fs` so it stays testable; `scripts/export-blok-catalog.mjs`
  * does the writing.
  */
 export const buildCatalogExport = () => ({
   catalog: buildRegisterModuleInput(orkestratorUi),
-  module: blokModuleSpec(UI_CATALOG_NAME, UI_CATALOG_DESCRIPTION, orkestratorUi.catalog),
-  /** The global catalogs this app implements whole, as `name@version`. */
+  published: orkestratorCatalogSpec(orkestratorUi.catalog),
+  /** The catalogs this app speaks (`base@3`), and the contexts in which it draws the base whole. */
   catalogs: [...orkestratorUi.claims],
+  contexts: [...orkestratorUi.contexts],
 });

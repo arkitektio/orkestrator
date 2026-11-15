@@ -7,7 +7,7 @@ import {
   type BlokComponentPlacement,
   type BlokPropKind,
 } from "@arkitektio/bsx/renderer/runtime/index";
-import { moduleComponentsOf, type BlokUi } from "@arkitektio/bsx/runtime";
+import { ownComponentsOf, type BlokUi } from "@arkitektio/bsx/runtime";
 import {
   ComponentContext,
   CatalogValueKind,
@@ -170,15 +170,15 @@ export const componentInput = (component: {
 };
 
 /**
- * What this UI registers (`registerModule`): its module, the components it
- * draws beyond the global catalogs (`moduleComponentsOf`), and `catalogs`, the
- * global ones it implements whole (`ui.claims`), which the server resolves
- * from the spec. base@2's components are never sent: the server holds them.
+ * What this UI registers (`registerModule`): its own catalog, the components
+ * it draws beyond the base catalog (`ownComponentsOf`), and `catalogs`, the
+ * ones it speaks (`ui.claims`: the base catalog). The base catalog's
+ * components are never sent: they are the spec's.
  */
 export const buildRegisterModuleInput = (ui: Pick<BlokUi, "name" | "description" | "catalog" | "claims">): BuiltModuleInput => ({
   name: ui.name,
   description: ui.description,
-  components: moduleComponentsOf(ui.catalog)
+  components: ownComponentsOf(ui.catalog)
     .map(componentInput)
     .sort((left, right) => left.name.localeCompare(right.name)),
   // A module adds components only: what a blok may call is the language's (the spec's vocabulary).

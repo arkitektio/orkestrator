@@ -12,7 +12,7 @@ import {
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 import { lazily } from "./lazily";
-import { MIKRO_TABLE_BLOKS } from "./table";
+import { MIKRO_SERVICE, MIKRO_TABLE_BLOKS } from "./table";
 
 /**
  * The mikro scene, as blok components an app's blok composes: a `MikroScene`
@@ -83,6 +83,7 @@ export const mikroSceneSchema = z
 export const MikroSceneBlok = createBlokComponent(
   {
     name: "MikroScene",
+    service: MIKRO_SERVICE,
     acceptsChildren: true,
     placement: { notDownstreamOf: ["MikroScene"] },
     // What each callback hands its action (`event.<field>`), as the spec publishes it.
@@ -130,6 +131,7 @@ export const mikroSceneViewportSchema = z
 export const MikroSceneViewportBlok = createBlokComponent(
   {
     name: "MikroSceneViewport",
+    service: MIKRO_SERVICE,
     placement: INSIDE,
     schema: mikroSceneViewportSchema,
   },
@@ -145,6 +147,7 @@ const panel = (name: string, description: string, Part: React.ComponentType<Blok
   createBlokComponent(
     {
       name,
+      service: MIKRO_SERVICE,
       placement: INSIDE,
       schema: mikroScenePanelSchema.describe(description),
     },
