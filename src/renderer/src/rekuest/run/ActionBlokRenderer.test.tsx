@@ -30,7 +30,7 @@ vi.mock('@/rekuest/travel/context', async importOriginal => ({
 }));
 
 import {ComponentContext, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
-import {ActionBlokRenderer, runOfTask, unboundOfRun} from './ActionBlokRenderer';
+import {ActionBlokRenderer, chromeOf, drawsTimeline, keysPlaced, runOfTask, treeHolds, unboundOfRun} from './ActionBlokRenderer';
 import {installAppBlokCatalog} from '@/core/blok/testing';
 
 installAppBlokCatalog();
@@ -178,5 +178,53 @@ describe('an optional dependency a run left out', () => {
     render(<ActionBlokRenderer actionBlok={actionBlok} run={run} />);
     await frame();
     expect(document.body.textContent).toContain('bound to no agent');
+  });
+});
+
+describe('what a blok places of the host\'s own', () => {
+  const holding = (children: unknown[]): ActionBlokFragment => ({
+    ...actionBlok,
+    blok: {...actionBlok.blok, componentTree: [{id: 'root', component: 'Card', children}]},
+  });
+  const all = ['image', 'exposure', 'gain'];
+  const placed = (children: unknown[]) => [...keysPlaced(holding(children), 'arg', 'args', all)].sort();
+
+  it('leaves the host every argument a blok places nothing for', () => {
+    expect(placed([])).toEqual([]);
+  });
+
+  it('takes the arguments placed one by one, and all of them with <args />', () => {
+    expect(placed([{id: 'a', component: 'arg', props: [{key: 'key', static_value: 'gain'}]}])).toEqual(['gain']);
+    expect(placed([{id: 'r', component: 'args'}])).toEqual(['exposure', 'gain', 'image']);
+  });
+
+  it('takes what an <args /> narrowed by only and omit draws, and no more', () => {
+    expect(placed([{id: 'r', component: 'args', props: [{key: 'only', static_value: 'image gain'}]}])).toEqual(['gain', 'image']);
+    expect(placed([{id: 'r', component: 'args', props: [{key: 'omit', static_value: ['image']}]}])).toEqual(['exposure', 'gain']);
+  });
+
+  it('takes a computed narrowing as placing everything', () => {
+    expect(placed([{id: 'r', component: 'args', props: [{key: 'only', dynamic_value: {path: 'locals.shown'}}]}])).toEqual(['exposure', 'gain', 'image']);
+  });
+
+  it('knows a blok that places the time slider', () => {
+    expect(drawsTimeline(actionBlok)).toBe(false);
+    expect(drawsTimeline(holding([{id: 't', component: 'timeline'}]))).toBe(true);
+  });
+});
+
+describe('how much a blok leaves the host to draw', () => {
+  it('reads chrome off the root, and takes anything else as auto', () => {
+    expect(chromeOf([{id: 'root', component: 'Html', props: [{key: 'chrome', static_value: 'none'}]}])).toBe('none');
+    expect(chromeOf([{id: 'root', component: 'Html'}])).toBe('auto');
+    // Only the root says it.
+    expect(chromeOf([{id: 'root', component: 'Html', children: [{id: 'c', component: 'Card', props: [{key: 'chrome', static_value: 'none'}]}]}])).toBe('auto');
+    expect(chromeOf(null)).toBe('auto');
+  });
+
+  it('finds a part anywhere in a stored tree', () => {
+    const tree = [{id: 'root', component: 'Html', children: [{id: 'c', component: 'Card', children: [{id: 't', component: 'timeline'}]}]}];
+    expect(treeHolds(tree, 'timeline')).toBe(true);
+    expect(treeHolds(tree, 'returns')).toBe(false);
   });
 });

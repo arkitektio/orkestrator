@@ -38,6 +38,22 @@ import {useBlokViewer} from './useBlokViewer';
 
 /** Where a task or action blok reads the task it is about. */
 export const BLOK_TASK_ROOT = 'task';
+/** Where an assign blok reads the run it prepares. */
+export const BLOK_ASSIGN_ROOT = 'assign';
+
+/** The run an assign blok prepares, besides `args` and `deps`. */
+export type BlokAssignRecord = {
+  /** The arguments the caller decided before the blok opened, by port key: locked. */
+  given: Record<string, boolean>;
+  /** The keys of the required arguments that are still empty. */
+  missing: string[];
+  /** Whether no required argument is missing. */
+  ready: boolean;
+  /** Whether `assign.start()` is being taken. */
+  starting: boolean;
+  /** Why the run cannot start now, as a sentence; null when it can. */
+  blocked: string | null;
+};
 
 /** What a blok draws, v2: its tree and what it declares beside it. */
 export type MaterializedContent = BlokDeclarations & {
@@ -100,15 +116,25 @@ type MaterializedBlokRendererProps = Omit<
   onAnswer?: (values: Record<string, unknown>) => unknown;
   /** Starts the run an assign blok prepares (`assign.start()`); what it returns keeps the control busy. */
   onStart?: () => unknown;
+  /** What `task.cancel()` and its kin call: cancels, pauses, resumes, steps or interrupts `task`. */
+  onControl?: (operation: 'cancel' | 'pause' | 'resume' | 'step' | 'interrupt') => unknown;
+  /** What an assign blok knows of the run it prepares: read as `assign` (`assign.given.<key>`, `assign.missing`, `assign.ready`). */
+  assign?: BlokAssignRecord | null;
   /** What else writes into the blok's runtime, rendered inside it. */
   syncs?: React.ReactNode;
 };
 
 const RECORD_FIELDS = ['id', 'status', 'progress', 'message', 'error', 'returns', 'ask', 'answer', 'args'] as const;
+/** What bsx before it knew them has no field for: compared by value. */
+const LATER_FIELDS = ['can', 'started_at', 'ended_at', 'duration', 'log'] as const;
 
 /** Whether two records say the same; `returns`, `args`, `ask` and `answer` are the events' own values, kept by reference. */
 const sameRecord = (a: BlokTaskRecord | undefined, b: BlokTaskRecord): boolean =>
-  a !== undefined && RECORD_FIELDS.every(field => a[field] === b[field]);
+  a !== undefined && RECORD_FIELDS.every(field => a[field] === b[field]) && sameCan(a, b);
+
+/** `task.can`, the times and the log, by value. */
+const sameCan = (a: BlokTaskRecord, b: BlokTaskRecord): boolean =>
+  LATER_FIELDS.every(field => JSON.stringify((a as Record<string, unknown>)[field]) === JSON.stringify((b as Record<string, unknown>)[field]));
 
 /**
  * Keeps `deps.<key>.tasks.<action>` on the task the bound agent last ran the
@@ -151,6 +177,23 @@ const LatestTaskSync = (props: {dependencyKey: string; action: string; agentId: 
   return null;
 };
 
+/** Keeps `deps.<key>.connected` on whether the bound agent is connected now. */
+const AgentConnectedSync = ({dependencyKey, connected}: {dependencyKey: string; connected: boolean}) => {
+  const store = useBlokRuntimeStoreApi();
+  const written = React.useRef<boolean | undefined>(undefined);
+  React.useEffect(() => {
+    // The first value is the initial state's.
+    if (written.current === undefined) {
+      written.current = connected;
+      return;
+    }
+    if (written.current === connected) return;
+    written.current = connected;
+    store.getState().setRuntimeValue(`deps.${dependencyKey}.connected`, connected);
+  }, [connected, dependencyKey, store]);
+  return null;
+};
+
 const MaterializedBlokRuntimeSync = (props: {
   materializedBlok: MaterializedBlokData;
   demandedStates: ReadonlyMap<string, ReadonlySet<string>>;
@@ -158,6 +201,7 @@ const MaterializedBlokRuntimeSync = (props: {
 }) => (
   <>
     {props.materializedBlok.agentMappings.flatMap(mapping => [
+      <AgentConnectedSync key={`connected-${mapping.key}`} dependencyKey={mapping.key} connected={mapping.agent.connected !== false} />,
       ...[...(props.demandedStates.get(mapping.key) ?? [])].map(stateInterface => (
         <BlokStateSync
           key={`state-${mapping.key}-${mapping.agent.id}-${stateInterface}`}
@@ -275,6 +319,19 @@ const BlokArgsSync = (props: {args: BlokArgs; onArgsChange?: (args: BlokArgs) =>
   return null;
 };
 
+/** Keeps `assign` on the run being prepared, as its arguments are filled in. */
+const AssignRecordSync = ({assign}: {assign: BlokAssignRecord}) => {
+  const store = useBlokRuntimeStoreApi();
+  const written = React.useRef<string | undefined>(undefined);
+  React.useEffect(() => {
+    const key = JSON.stringify(assign);
+    if (written.current === key) return;
+    written.current = key;
+    store.getState().setRuntimeValue(BLOK_ASSIGN_ROOT, assign);
+  }, [assign, store]);
+  return null;
+};
+
 /** Keeps `task` on the task this blok is about, as it moves. */
 const TaskRecordSync = ({task}: {task: BlokTaskRecord}) => {
   const store = useBlokRuntimeStoreApi();
@@ -337,7 +394,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
 };
 
 const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
-  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, persistence, syncs, ...rendererProps} = props;
+  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, onControl, assign, persistence, syncs, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelAt = useBlokTravelMoment();
   const travelling = useBlokTravelSource() !== null;
@@ -383,7 +440,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
     const deps = Object.fromEntries(
       materializedBlok.agentMappings.map(mapping => [
         mapping.key,
-        {id: mapping.agent.id, name: mapping.agent.name ?? null, tasks: {}},
+        {id: mapping.agent.id, name: mapping.agent.name ?? null, connected: mapping.agent.connected !== false, tasks: {}},
       ]),
     );
     const pending: Record<string, BlokSourceStatus> = {...live.statuses};
@@ -394,6 +451,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         deps,
         args: seeded ?? {},
         ...(task ? {[BLOK_TASK_ROOT]: task} : {}),
+        ...(assign ? {[BLOK_ASSIGN_ROOT]: assign} : {}),
       },
       statuses: pending,
     };
@@ -423,6 +481,8 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         readExecutor={readExecutor}
         answerTask={onAnswer}
         startRun={onStart}
+        // bsx before it knew `task.cancel()` and its kin takes no such prop.
+        {...({controlTask: onControl} as object)}
         componentState={componentState}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
@@ -434,6 +494,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         />
         {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
         {task && <TaskRecordSync task={task} />}
+        {assign && <AssignRecordSync assign={assign} />}
         {persistence && <BlokPersistSync persistence={persistence} />}
         {syncs}
       </BlokRenderer>

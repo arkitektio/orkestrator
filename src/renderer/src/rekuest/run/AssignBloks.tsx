@@ -2,7 +2,8 @@ import * as React from 'react';
 import {pinsFromFrozen, type ResolvedDependencyInput} from '@arkitektio/bsx/ports/dependencies/tree';
 import {ComponentContext, useActionBloksQuery, useDependencyTreeQuery, type ActionBlokFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
-import {ActionBlokRenderer, blokHolds, type ActionBlokRun} from './ActionBlokRenderer';
+import type {BlokAssignRecord} from '../components/MaterializedBlokRenderer';
+import {ActionBlokRenderer, blokHolds, chromeOf, keysPlaced, type ActionBlokRun, type AssignParts} from './ActionBlokRenderer';
 import {bindingFromDryRun, type RunBinding, type RunBoundAgent} from './binding';
 
 /**
@@ -19,8 +20,11 @@ import {bindingFromDryRun, type RunBinding, type RunBoundAgent} from './binding'
 const NO_BINDING: RunBinding = [];
 const NO_BLOKS: readonly ActionBlokFragment[] = [];
 
-/** The component an assign blok places the argument form with, and the effect it starts the run with. */
+/** The components an assign blok places the argument form and the dependency picker with, and the effect it starts the run with. */
 const ARGS_COMPONENT = 'args';
+const ARG_COMPONENT = 'arg';
+const DEPS_COMPONENT = 'deps';
+const DEP_COMPONENT = 'dep';
 const START_EFFECT = 'assign.start';
 
 export type AssignBlokSetup = {
@@ -30,8 +34,16 @@ export type AssignBlokSetup = {
   run: ActionBlokRun;
   /** The pins that start the run on the agents the bloks were shown; undefined until the dry run answered. */
   pins: ResolvedDependencyInput[] | undefined;
-  /** Whether a blok places the argument form itself: the host then shows none of its own. */
-  placesArgs: boolean;
+  /** The arguments the bloks place themselves (`<arg />`, `<args />`), out of `all`: the host shows the others. */
+  argsPlaced: (all: readonly string[]) => Set<string>;
+  /** The arguments placed one by one (`<arg key />`): `<args />` leaves them out. */
+  argsSingled: Set<string>;
+  /** The dependencies the bloks place themselves (`<dep />`, `<deps />`), out of `all`: the host shows the others. */
+  depsPlaced: (all: readonly string[]) => Set<string>;
+  /** The dependencies placed one by one (`<dep key />`): `<deps />` leaves them out. */
+  depsSingled: Set<string>;
+  /** Whether a blok asks for no chrome (`chrome="none"`): the host then shows no form, picker or start button of its own. */
+  bare: boolean;
   /** Whether a blok starts the run itself: the host then shows no start button of its own. */
   starts: boolean;
   /** Asks the dry run again: other agents may have come or gone. */
@@ -68,11 +80,20 @@ export const useAssignBloks = (
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const run = React.useMemo<ActionBlokRun>(() => ({binding, self, task: null}), [binding, selfKey]);
   const pins = React.useMemo(() => (level ? pinsFromFrozen(level) : undefined), [level]);
-  const placesArgs = React.useMemo(() => bloks.some(blok => blokHolds(blok, ARGS_COMPONENT)), [bloks]);
+  const union = React.useCallback(
+    (single: string, rest: string, all: readonly string[]) => new Set(bloks.flatMap(blok => [...keysPlaced(blok, single, rest, all)])),
+    [bloks],
+  );
+  const argsPlaced = React.useCallback((all: readonly string[]) => union(ARG_COMPONENT, ARGS_COMPONENT, all), [union]);
+  const depsPlaced = React.useCallback((all: readonly string[]) => union(DEP_COMPONENT, DEPS_COMPONENT, all), [union]);
+  // With nothing to take the rest from, only what is placed one by one is left.
+  const argsSingled = React.useMemo(() => union(ARG_COMPONENT, '', []), [union]);
+  const depsSingled = React.useMemo(() => union(DEP_COMPONENT, '', []), [union]);
   const starts = React.useMemo(() => bloks.some(blok => blokHolds(blok, null, START_EFFECT)), [bloks]);
+  const bare = React.useMemo(() => bloks.some(blok => chromeOf(blok.blok.componentTree) === 'none'), [bloks]);
   const refetch = dryRun.refetch;
   const rebind = React.useCallback(() => void refetch(), [refetch]);
-  return {bloks, run, pins, placesArgs, starts, rebind};
+  return {bloks, run, pins, argsPlaced, argsSingled, depsPlaced, depsSingled, bare, starts, rebind};
 };
 
 /** The assign bloks drawn: the html one as a panel, a scene one in a box of its own. */
@@ -80,14 +101,18 @@ export const AssignBloks = ({
   setup,
   surface,
   args,
-  renderArgs,
+  parts,
+  assign,
   onStart,
 }: {
   setup: AssignBlokSetup;
   /** What tells this assign surface from another showing the same action. */
   surface: string;
   args: BlokArgs | undefined;
-  renderArgs: () => React.ReactNode;
+  /** What `<args />`, `<arg />`, `<deps />` and `<dep />` draw; the same object while nothing changed. */
+  parts: AssignParts;
+  /** The run being prepared, read as `assign`. */
+  assign: BlokAssignRecord;
   onStart: () => unknown;
 }) => (
   <>
@@ -102,7 +127,8 @@ export const AssignBloks = ({
           actionBlok={blok}
           run={setup.run}
           args={args}
-          renderArgs={renderArgs}
+          parts={parts}
+          assign={assign}
           onStart={onStart}
         />
       );

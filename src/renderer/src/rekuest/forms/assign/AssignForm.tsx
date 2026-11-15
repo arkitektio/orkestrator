@@ -7,12 +7,14 @@ import { ArgsContainer } from "@arkitektio/bsx/ports/widgets/ArgsContainer";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { Button } from "@/core/ui/button";
 import {
+  DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { cn } from "@/core/util/utils";
 import {
   ArgPortFragment,
@@ -24,6 +26,8 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { useWatch } from "react-hook-form";
 import { AssignBloks, useAssignBloks } from "../../run/AssignBloks";
+import type { AssignParts } from "../../run/ActionBlokRenderer";
+import type { BlokAssignRecord } from "../../components/MaterializedBlokRenderer";
 import { v4 as uuidv4 } from "uuid";
 import { AssignErrorNote } from "../../components/AssignErrorNote";
 import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/AutoModeToggle";
@@ -188,28 +192,99 @@ export const AssignForm = ({
     }
   };
 
-  // The generated argument form: on its own, or where an assign blok places it (`<args />`).
+  // The generated argument form, in parts: an assign blok places some (`<arg />`, `<args />`),
+  // the form shows the rest. What the caller gave (`hidden`) is decided: it is drawn nowhere,
+  // or locked where a blok lists it (`<args given="show" />`).
   const portGroups = action?.portGroups;
   const boundAgent = implementation?.agent.id;
-  const renderArgsForm = useCallback(
-    () => (
-      <>
-        {formPorts && formPorts.length == 0 && (
-          <div className="text-sm text-muted-foreground">No arguments needed</div>
-        )}
+  const argKeys = useMemo(() => (formPorts ?? []).map((port) => port.key), [formPorts]);
+  const givenKeys = useMemo(
+    () => argKeys.filter((key) => hiddenKeys?.[key]),
+    [argKeys, hiddenKeys],
+  );
+  const drawArgs = useCallback(
+    (keys: readonly string[], locked = false) => {
+      const ports = (formPorts ?? []).filter((port) => keys.includes(port.key));
+      if (ports.length === 0) return null;
+      return (
         <ArgsContainer
           registry={registry}
           groups={portGroups || []}
-          ports={formPorts || []}
-          hidden={hiddenKeys}
+          ports={ports}
           bound={boundAgent}
-          options={{ layout: "stack" }}
+          options={{ layout: "stack", disable: locked }}
           path={["args"]}
         />
-      </>
-    ),
-    [boundAgent, formPorts, hiddenKeys, portGroups, registry],
+      );
+    },
+    [boundAgent, formPorts, portGroups, registry],
   );
+  const { argsSingled, depsSingled } = setup;
+  const depKeys = useMemo(
+    () => (pinning?.dependencies ?? []).map((dependency) => dependency.key),
+    [pinning?.dependencies],
+  );
+  const treeNodes = tree.nodes;
+  const drawDeps = useCallback(
+    (keys: readonly string[]) => {
+      const dependencies = (pinning?.dependencies ?? []).filter((dependency) => keys.includes(dependency.key));
+      if (!pinning || dependencies.length === 0) return null;
+      return (
+        <DependenciesContainer dependencies={dependencies} bound={pinning.agent.id} tree={treeNodes} />
+      );
+    },
+    [pinning, treeNodes],
+  );
+  const parts = useMemo<AssignParts>(
+    () => ({
+      // The rest: not given, not placed one by one, narrowed by `only` / `omit`.
+      renderArgs: (options) => {
+        const rest = argKeys.filter(
+          (key) =>
+            !givenKeys.includes(key) &&
+            !argsSingled.has(key) &&
+            (!options?.only || options.only.includes(key)) &&
+            !options?.omit?.includes(key),
+        );
+        return (
+          <>
+            {options?.given === "show" && drawArgs(givenKeys, true)}
+            {drawArgs(rest)}
+          </>
+        );
+      },
+      renderArg: (key) => (givenKeys.includes(key) ? null : drawArgs([key])),
+      renderDeps: () => drawDeps(depKeys.filter((key) => !depsSingled.has(key))),
+      renderDep: (key) => drawDeps([key]),
+    }),
+    [argKeys, argsSingled, depKeys, depsSingled, drawArgs, drawDeps, givenKeys],
+  );
+  const isSubmitting = form.formState.isSubmitting;
+  // Why the button is grey, said on the button: the rows above carry the detail.
+  const blocked = fit.refused
+    ? `No agent fits this ${fit.refused.port}`
+    : tree.satisfied === false
+      ? tree.unmet.length > 1
+        ? `${tree.unmet.length} dependencies are not met`
+        : "A dependency is not met"
+      : undefined;
+  // What an assign blok reads as `assign`: what the caller decided, what is still to fill in,
+  // and whether the run can start.
+  const assignRecord = useMemo<BlokAssignRecord>(() => {
+    const missing = (formPorts ?? [])
+      .filter((port) => {
+        const value = filling?.[port.key];
+        return !port.nullable && (value === undefined || value === null || value === "");
+      })
+      .map((port) => port.key);
+    return {
+      given: Object.fromEntries(givenKeys.map((key) => [key, true])),
+      missing,
+      ready: missing.length === 0,
+      starting: isSubmitting,
+      blocked: blocked ?? null,
+    };
+  }, [blocked, filling, formPorts, givenKeys, isSubmitting]);
   // `assign.start()`: the form's own submit, with its validation; nothing while it may not start.
   const submitRef = useRef(onSubmit);
   submitRef.current = onSubmit;
@@ -231,11 +306,17 @@ export const AssignForm = ({
     );
   }
 
-  const isSubmitting = form.formState.isSubmitting;
-
-  const argsForm = renderArgsForm();
+  // `chrome="none"` on an assign blok's root: the form adds no arguments, picker or button of its own.
+  const bare = assignBloks && setup.bare;
+  // What no assign blok places is the form's own to show.
+  const restArgs = argKeys.filter(
+    (key) => !givenKeys.includes(key) && !(assignBloks && setup.argsPlaced(argKeys).has(key)),
+  );
+  const restDeps = depKeys.filter((key) => !(assignBloks && setup.depsPlaced(depKeys).has(key)));
   const startDisabled = isSubmitting || tree.satisfied === false || Boolean(fit.refused);
   startDisabledRef.current = startDisabled;
+  // In a dialog the fields scroll between a header and a footer that stay put.
+  const Fields = layout === "dialog" ? DialogBody : "div";
 
   return (
     <Form {...form}>
@@ -246,6 +327,8 @@ export const AssignForm = ({
         }}
         className={cn(
           "flex flex-col gap-4 @container",
+          // A `DialogForm`: carries the dialog's column on to the body.
+          layout === "dialog" && "min-h-0 flex-1",
           // `@container` contains the form's inline size, so its rows give a
           // fitted dialog no width to fit: it would open at the floor. The
           // dialog gets its width here instead (the page still caps it).
@@ -260,15 +343,17 @@ export const AssignForm = ({
               {action?.logo && <ActionLogo action={action} className="h-6 w-6" />}
               <span className="min-w-0 truncate">{action?.name}</span>
             </DialogTitle>
-            {implementation && (
-              <p className="text-xs text-muted-foreground">@ {implementation.interface}</p>
-            )}
-            {action?.description && (
-              <DialogDescription>{action.description}</DialogDescription>
+            {(implementation || action?.description) && (
+              <DialogDescription>
+                {implementation && <span className="font-mono">{implementation.interface}</span>}
+                {implementation && action?.description && " · "}
+                {action?.description}
+              </DialogDescription>
             )}
           </DialogHeader>
         )}
 
+        <Fields className="flex flex-col gap-4">
         <PortFitsContext.Provider value={portFits}>
         <DependencyDefinitionsProvider dependencies={pinning?.dependencies || []}>
           {assignBloks && (
@@ -276,19 +361,30 @@ export const AssignForm = ({
               setup={setup}
               surface={`${action?.id ?? "action"}-${chosen?.id ?? "any"}`}
               args={filling}
-              renderArgs={renderArgsForm}
+              parts={parts}
+              assign={assignRecord}
               onStart={startRun}
             />
           )}
-          {/* An assign blok that places the form (`<args />`) leaves none to show here. */}
-          {!(assignBloks && setup.placesArgs) && argsForm}
-          {pinning && pinning.dependencies.length > 0 && (
-            <DependenciesContainer
-              dependencies={pinning.dependencies}
-              bound={pinning.agent.id}
-              tree={tree.nodes}
-            />
+          {formPorts && formPorts.length == 0 && !bare && (
+            <div className="text-sm text-muted-foreground">No arguments needed</div>
           )}
+          {/* What the caller gave is shown nowhere, yet validated and sent: its fields stay registered. */}
+          {givenKeys.length > 0 && (
+            <div className="hidden">
+              <ArgsContainer
+                registry={registry}
+                groups={portGroups || []}
+                ports={(formPorts ?? []).filter((port) => givenKeys.includes(port.key))}
+                hidden={hiddenKeys}
+                bound={boundAgent}
+                path={["args"]}
+              />
+            </div>
+          )}
+          {/* The arguments and dependencies no assign blok places (`<arg />`, `<args />`, `<dep />`, `<deps />`). */}
+          {!bare && drawArgs(restArgs)}
+          {!bare && drawDeps(restDeps)}
         </DependencyDefinitionsProvider>
         </PortFitsContext.Provider>
         <DependencyTreeNotice tree={tree} />
@@ -304,6 +400,7 @@ export const AssignForm = ({
             No agent fits this {fit.refused.port}: {fit.refused.source}
           </div>
         )}
+        </Fields>
 
         <DialogFooter className="sm:items-center">
           {/* To the left of the button that was pressed. */}
@@ -321,20 +418,30 @@ export const AssignForm = ({
           />
           <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" />
           {/* An assign blok that starts the run itself (`assign.start()`) is the start button. */}
-          {!(assignBloks && setup.starts) && <Button
-            type="submit"
-            // Red while it shakes, then back to the plain button.
-            variant={refused ? "destructive" : "outline"}
-            disabled={startDisabled}
-            className={cn("shrink-0 gap-2", refused && "animate-refuse-shake")}
-            onAnimationEnd={() => setRefused(false)}
-            onClick={(e) => {
-              keepOpenRef.current = e.ctrlKey || e.metaKey;
-            }}
-          >
-            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {submitLabel}
-          </Button>}
+          {!(assignBloks && (setup.starts || setup.bare)) && (
+            <Tooltip>
+              {/* A disabled button hears no pointer: the span around it does. */}
+              <TooltipTrigger asChild>
+                <span className="shrink-0 max-sm:*:w-full" tabIndex={blocked ? 0 : undefined}>
+                  <Button
+                    type="submit"
+                    // Red while it shakes, then back to the plain button.
+                    variant={refused ? "destructive" : "default"}
+                    disabled={startDisabled}
+                    className={cn("gap-2", refused && "animate-refuse-shake")}
+                    onAnimationEnd={() => setRefused(false)}
+                    onClick={(e) => {
+                      keepOpenRef.current = e.ctrlKey || e.metaKey;
+                    }}
+                  >
+                    {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {submitLabel}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {blocked && <TooltipContent>{blocked}</TooltipContent>}
+            </Tooltip>
+          )}
         </DialogFooter>
       </form>
     </Form>

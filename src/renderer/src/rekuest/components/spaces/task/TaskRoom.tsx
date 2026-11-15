@@ -5,9 +5,10 @@ import { bindTravelClock } from './travelClock'
 
 /**
  * Puts what is below (the run in 3D) on the task's clock: live while the task
- * is followed live, at the slider's moment otherwise.
+ * is followed live, at the slider's moment otherwise. `present` keeps it on
+ * the present whatever the slider says (the slider is folded away).
  */
-export const TaskTravel = ({ children }: { children: ReactNode }) => {
+export const TaskTravel = ({ children, present = false }: { children: ReactNode; present?: boolean }) => {
   const store = useSpaceViewStoreApi()
   const isLive = useSpaceViewStore((s) => s.isLive)
   const source = useRekuestTravelSource()
@@ -16,5 +17,5 @@ export const TaskTravel = ({ children }: { children: ReactNode }) => {
   // below starts to watch the source.
   useLayoutEffect(() => bindTravelClock(store, source), [store, source])
 
-  return <BlokTravelProvider source={isLive ? null : source}>{children}</BlokTravelProvider>
+  return <BlokTravelProvider source={isLive || present ? null : source}>{children}</BlokTravelProvider>
 }

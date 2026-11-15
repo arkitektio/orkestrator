@@ -34,6 +34,51 @@ export type TaskRootSource = {
 const FAILED_KINDS: readonly TaskEventKind[] = [TaskEventKind.Failed, TaskEventKind.Critical, TaskEventKind.Lost, TaskEventKind.Denied];
 const CANCELLED_KINDS: readonly TaskEventKind[] = [TaskEventKind.Cancelled, TaskEventKind.Interrupted];
 const QUEUED_KINDS: readonly TaskEventKind[] = [TaskEventKind.Queued, TaskEventKind.Bound];
+/** How many log entries `task.log` keeps: the latest. */
+const LOG_LIMIT = 100;
+
+/** One thing the run reported, as `task.log` lists it. */
+export type TaskLogEntry = {at: string | null; kind: string; message: string | null};
+
+/**
+ * The task record with what bsx before it knew them has no field for: the
+ * paused state, the run's times and its log.
+ */
+export type TaskRecord = Omit<BlokTaskRecord, 'status'> & {
+  status: BlokTaskStatus | 'paused';
+  paused: boolean;
+  started_at: string | null;
+  ended_at: string | null;
+  duration: number | null;
+  log: TaskLogEntry[];
+};
+
+type Reported = TaskRootSource['events'];
+
+/** When the run started and ended, how long it took, and what it said, from events newest first. */
+const historyOf = (events: Reported, ended: boolean): Pick<TaskRecord, 'started_at' | 'ended_at' | 'duration' | 'log'> => {
+  const started = events.at(-1)?.createdAt ?? null;
+  const finished = ended ? (events[0]?.createdAt ?? null) : null;
+  const from = started ? parseTimestamp(started) : NaN;
+  const to = finished ? parseTimestamp(finished) : NaN;
+  return {
+    started_at: started,
+    ended_at: finished,
+    duration: Number.isNaN(from) || Number.isNaN(to) ? null : Math.max(0, (to - from) / 1000),
+    log: events
+      .slice(0, LOG_LIMIT)
+      .reverse()
+      .map(event => ({at: event.createdAt ?? null, kind: event.kind.toLowerCase(), message: event.message ?? null})),
+  };
+};
+
+/** The record a status gives: a paused run has started and not ended. */
+const withStatus = (status: TaskRecord['status']): Omit<TaskRecord, 'started_at' | 'ended_at' | 'duration' | 'log'> => ({
+  ...withTaskStatus(idleTaskRecord(), status as BlokTaskStatus),
+  status,
+  running: status === 'queued' || status === 'running' || status === 'asking' || status === 'paused',
+  paused: status === 'paused',
+});
 
 const isRecordValue = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -48,12 +93,13 @@ export const openAsks = (task: Pick<TaskRootSource, 'events'>): HoldRequest[] =>
 export const shownAsk = (task: Pick<TaskRootSource, 'events' | 'isDone' | 'latestEventKind'>): HoldRequest | undefined =>
   task.isDone || isTerminalEvent(task.latestEventKind) ? undefined : openAsks(task).at(-1);
 
-const statusOf = (kind: TaskEventKind, ended: boolean, asking: boolean): BlokTaskStatus => {
+const statusOf = (kind: TaskEventKind, ended: boolean, asking: boolean): TaskRecord['status'] => {
   if (kind === TaskEventKind.Completed) return 'done';
   if (FAILED_KINDS.includes(kind)) return 'failed';
   if (CANCELLED_KINDS.includes(kind)) return 'cancelled';
   if (ended) return 'done';
   if (asking) return 'asking';
+  if (kind === TaskEventKind.Paused) return 'paused';
   return QUEUED_KINDS.includes(kind) ? 'queued' : 'running';
 };
 
@@ -61,7 +107,7 @@ const askOf = (hold: HoldRequest | undefined): BlokTaskRecord['ask'] =>
   hold ? {question: hold.title, form: {task: hold.task, kind: hold.kind, description: hold.description ?? null}} : null;
 
 /** The run as a task record; with `at` (ms), as it was at that moment. */
-export const taskRecordOf = (task: TaskRootSource, at?: number): BlokTaskRecord => {
+export const taskRecordOf = (task: TaskRootSource, at?: number): TaskRecord => {
   const args = isRecordValue(task.args) ? task.args : {};
   if (at !== undefined) {
     // Events newest first, as the task fragments order them.
@@ -70,12 +116,13 @@ export const taskRecordOf = (task: TaskRootSource, at?: number): BlokTaskRecord 
       return Number.isNaN(moment) || moment <= at;
     });
     const latest = seen[0];
-    if (!latest) return {...withTaskStatus(idleTaskRecord(), 'queued'), id: task.id, args};
+    if (!latest) return {...withStatus('queued'), ...historyOf([], false), id: task.id, args};
     const ended = isTerminalEvent(latest.kind);
     const asks = ended ? [] : openAsks({events: seen});
     const status = statusOf(latest.kind, ended, asks.length > 0);
     return {
-      ...withTaskStatus(idleTaskRecord(), status),
+      ...withStatus(status),
+      ...historyOf(seen, ended),
       id: task.id,
       args,
       progress: status === 'done' ? 100 : 0,
@@ -90,7 +137,8 @@ export const taskRecordOf = (task: TaskRootSource, at?: number): BlokTaskRecord 
   const status = statusOf(task.latestEventKind, ended, shown !== undefined);
   const progress = typeof task.latestProgress === 'number' && Number.isFinite(task.latestProgress) ? task.latestProgress : 0;
   return {
-    ...withTaskStatus(idleTaskRecord(), status),
+    ...withStatus(status),
+    ...historyOf(task.events, ended),
     id: task.id,
     args,
     progress: status === 'done' ? 100 : Math.min(100, Math.max(0, progress)),

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DetailTaskFragment, TaskEventKind } from '@/rekuest/api/graphql'
 import { useBlokTravelSource } from '@/rekuest/travel/context'
 import { createSpaceViewStore, SpaceViewStoreContext } from './store'
+import { TaskClock } from './TaskClock'
 import { TaskTravel } from './TaskRoom'
 
 vi.mock('@/rekuest/api/hooks', () => ({ useRekuest: () => null }))
@@ -65,5 +66,36 @@ describe('the task clock the run in 3D is drawn on', () => {
     mount(false)
     const source = last(seen) as { getClock: () => { at: number } }
     expect(source.getClock().at).toBe(CREATED)
+  })
+})
+
+describe('the task clock around a blok', () => {
+  const mountClock = (props: { slider?: boolean; placed?: boolean }) => {
+    seen.length = 0
+    return render(
+      <TaskClock task={task(false)} onSlider={() => undefined} {...props}>
+        <Probe />
+      </TaskClock>
+    )
+  }
+
+  it('shows the present and no slider while its slider is folded away', () => {
+    const view = mountClock({ slider: false })
+    expect(last(seen)).toBeNull()
+    expect(view.queryByRole('slider')).toBeNull()
+    expect(view.getByRole('button', { name: 'Time' })).toBeTruthy()
+  })
+
+  it('travels with the slider at its foot', () => {
+    const view = mountClock({ slider: true })
+    expect(last(seen)).not.toBeNull()
+    expect(view.queryByRole('slider')).not.toBeNull()
+  })
+
+  it('leaves the slider to a blok that places it, and still travels', () => {
+    const view = mountClock({ slider: false, placed: true })
+    expect(last(seen)).not.toBeNull()
+    expect(view.queryByRole('slider')).toBeNull()
+    expect(view.queryByRole('button', { name: 'Time' })).toBeNull()
   })
 })

@@ -55,13 +55,15 @@ import { REKUEST_HELP } from "../help";
 import { TaskFacts } from "../sidebars/TaskInfoSidebar";
 import { TaskRunPanel, TaskRunScene } from "../run/TaskRun";
 import { TaskBloks } from "../components/TaskBloks";
+import { TaskClock } from "../components/spaces/task/TaskClock";
 import { useRunTask, useTaskActionBlok } from "../run/useRun";
-import { drawsAsk } from "../run/ActionBlokRenderer";
+import { chromeOf, drawsAsk, drawsTimeline } from "../run/ActionBlokRenderer";
 import { useTask } from "../hooks/useTasks";
 
 const STAGE_OPEN_KEY = "rekuest.task.stage.open";
 const RECORD_OPEN_KEY = "rekuest.task.record.open";
 const STAGE_TAB_KEY = "rekuest.task.stage.tab";
+const BLOK_SLIDER_KEY = "rekuest.task.blok.slider.open";
 
 const readPref = (key: string): string | null => {
   try {
@@ -180,6 +182,15 @@ export const TPage = asDetailQueryRoute(
       writePref(RECORD_OPEN_KEY, String(next));
     };
 
+    // The time slider under the task's blok: folded or not, remembered.
+    const [sliderOpen, setSliderOpenState] = useState(
+      () => readPref(BLOK_SLIDER_KEY) !== "false",
+    );
+    const setSliderOpen = (next: boolean) => {
+      setSliderOpenState(next);
+      writePref(BLOK_SLIDER_KEY, String(next));
+    };
+
     const [selection, setSelection] = useState<LaneSelection>(null);
     // What waits for a decision: this task's own hold, or a child it asked for.
     const holds = useMemo(() => pendingHolds(data.task.events), [data.task.events]);
@@ -223,6 +234,22 @@ export const TPage = asDetailQueryRoute(
       [panel],
     );
 
+    // A blok that places the time slider itself (`<timeline />`) owns it: the
+    // page then draws none under it.
+    const sceneTimeline = useMemo(
+      () => (scene ? drawsTimeline(scene.actionBlok) : false),
+      [scene],
+    );
+    const panelTimeline = useMemo(
+      () => (panel ? drawsTimeline(panel.actionBlok) : false),
+      [panel],
+    );
+
+    // `chrome="none"` on the blok's root: shown alone, the page adds nothing it
+    // could place itself (status line, ask cards, slider, the main button).
+    const bare =
+      blokOnly && liveBlok != null && chromeOf(liveBlok.actionBlok.blok.componentTree) === "none";
+
     const stage = useStagePrefs(data.task.isDone);
     const tabs = stageTabs(data.task, scene != null);
     const stageTab =
@@ -238,16 +265,27 @@ export const TPage = asDetailQueryRoute(
         : sceneAsks
       : spaceShown && sceneAsks;
 
+    // The blok alone, on the task's clock: the time slider moves it to any
+    // moment of the run. The blok places it (`<timeline />`), else it is at
+    // the foot and folds away.
     const live = blokOnly ? (
-      panel ? (
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <TaskRunPanel taskId={data.task.id} showAsk={panelAsks} />
-        </div>
-      ) : (
-        <div className="min-h-0 flex-1">
-          <TaskRunScene taskId={data.task.id} />
-        </div>
-      )
+      <div className="min-h-0 flex-1">
+        <TaskClock
+          task={data.task}
+          slider={bare ? false : sliderOpen}
+          onSlider={bare ? undefined : setSliderOpen}
+          openAt="end"
+          placed={panel ? panelTimeline : sceneTimeline}
+        >
+          {panel ? (
+            <div className="h-full overflow-y-auto p-4">
+              <TaskRunPanel taskId={data.task.id} showAsk={panelAsks} />
+            </div>
+          ) : (
+            <TaskRunScene taskId={data.task.id} />
+          )}
+        </TaskClock>
+      </div>
     ) : (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         {/* The latest thing the task showed, live; the rest is the timeline's. */}
@@ -280,6 +318,7 @@ export const TPage = asDetailQueryRoute(
               focusTime={null}
               selectedYield={null}
               showAsk={sceneAsks}
+              timelinePlaced={sceneTimeline}
             />
           </div>
         )}
@@ -340,7 +379,8 @@ export const TPage = asDetailQueryRoute(
                     onClick={() => setView(v)}
                     className={i === 0 ? "rounded-r-none" : "rounded-l-none border-l-0"}
                   >
-                    {VIEW_LABEL[v]}
+                    {/* Live, for an action with a blok of its own, is that blok. */}
+                    {v === "live" && liveBlok != null ? "Blok" : VIEW_LABEL[v]}
                   </PageAction>
                 ))}
               </PageActionGroup>
@@ -348,12 +388,12 @@ export const TPage = asDetailQueryRoute(
             {/* The one thing most likely wanted now; the rest is under More.
                 A paused task waits for a person — a pause someone asked for,
                 or a workflow that held itself for a decision. */}
-            {primary === "resume" && (
+            {!bare && primary === "resume" && (
               <PageAction alwaysShow size="sm" onClick={() => doResume(false)}>
                 Resume
               </PageAction>
             )}
-            {primary === "cancel" && (
+            {!bare && primary === "cancel" && (
               <PageAction
                 alwaysShow
                 size="sm"
@@ -363,7 +403,7 @@ export const TPage = asDetailQueryRoute(
                 Cancel
               </PageAction>
             )}
-            {primary === "rerun" && (
+            {!bare && primary === "rerun" && (
               <PageAction alwaysShow size="sm" onClick={() => reassign()}>
                 Rerun
               </PageAction>
@@ -393,12 +433,15 @@ export const TPage = asDetailQueryRoute(
                     Pause
                   </DropdownMenuItem>
                 )}
+                {bare && isResumable(data.task) && (
+                  <DropdownMenuItem onClick={() => doResume(false)}>Resume</DropdownMenuItem>
+                )}
                 {isResumable(data.task) && (
                   <DropdownMenuItem onClick={() => doResume(true)}>
                     Step to next breakpoint
                   </DropdownMenuItem>
                 )}
-                {primary !== "cancel" && isCancelable(data.task) && (
+                {(bare || primary !== "cancel") && isCancelable(data.task) && (
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={doCancel}
@@ -418,7 +461,7 @@ export const TPage = asDetailQueryRoute(
                     Interrupt
                   </DropdownMenuItem>
                 )}
-                {primary !== "rerun" && (
+                {(bare || primary !== "rerun") && (
                   <DropdownMenuItem onClick={() => reassign()}>
                     Rerun
                   </DropdownMenuItem>
@@ -462,10 +505,12 @@ export const TPage = asDetailQueryRoute(
       >
         <div className="flex h-full w-full flex-col">
           <ChildTaskUpdater taskId={data.task.id} />
-          <div className="shrink-0">
-            <TaskStatusHero task={data.task} />
-          </div>
-          {holds.length > 0 && closed !== "ended" && !askInView && (
+          {!bare && (
+            <div className="shrink-0">
+              <TaskStatusHero task={data.task} />
+            </div>
+          )}
+          {holds.length > 0 && closed !== "ended" && !askInView && !bare && (
             <div className="flex shrink-0 flex-col gap-2 px-4 pt-3">
               {holds.map((hold) => (
                 <HoldCard key={hold.task} hold={hold} closed={closed} />
@@ -485,6 +530,7 @@ export const TPage = asDetailQueryRoute(
                 onTab={stage.setTab}
                 focusTime={selection ? selectionTime(resolved) : null}
                 showAsk={sceneAsks}
+                timelinePlaced={sceneTimeline}
                 selectedYield={
                   resolved?.kind === "event" && isYieldLike(resolved.event)
                     ? resolved.event

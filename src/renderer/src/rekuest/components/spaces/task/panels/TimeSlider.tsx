@@ -2,7 +2,8 @@ import { isTaskLive } from '@/rekuest/lib/taskTracker'
 import { Slider } from '@/core/ui/slider'
 import { Button } from '@/core/ui/button'
 import { Radio } from 'lucide-react'
-import { useSpaceViewStore } from '../store'
+import { useContext } from 'react'
+import { SpaceViewStoreContext, useSpaceViewStore } from '../store'
 
 /**
  * The moment the Space shows, as one thin row: the task's start, the slider,
@@ -57,3 +58,9 @@ export const TimeSlider = () => {
     </div>
   )
 }
+
+/**
+ * The slider where a blok places it (`<timeline />`): the same clock as the
+ * page's. Nothing where the blok is shown off a task's clock (a card, a list).
+ */
+export const PlacedTimeSlider = () => (useContext(SpaceViewStoreContext) ? <TimeSlider /> : null)

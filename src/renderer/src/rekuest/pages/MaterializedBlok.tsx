@@ -22,6 +22,8 @@ import {
 } from "@/rekuest/components/blokArgs";
 import { BlokTravelProvider } from "@/rekuest/travel/context";
 import { TravelBar } from "@/rekuest/travel/TravelBar";
+import { BlokRunHostProvider } from "@arkitektio/bsx/renderer/bloks/run/index";
+import { treeHolds } from "@/rekuest/run/ActionBlokRenderer";
 import { useBlokTravel } from "@/rekuest/travel/useBlokTravel";
 import { History, Pin, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -149,6 +151,18 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
     [materializedBlok.agentMappings],
   );
 
+  // `<timeline />` in the blok's own tree is where its history bar goes; the History button still opens it.
+  const shownTree = (materializedBlok.revision ?? materializedBlok.blok).componentTree;
+  const placesTimeline = useMemo(() => treeHolds(shownTree, "timeline"), [shownTree]);
+  const partsHost = useMemo(
+    () => ({
+      agentsFor: () => [],
+      renderAsk: () => null,
+      renderTimeline: () => (travel.open ? <TravelBar travel={travel} names={agentNames} revisions /> : null),
+    }),
+    [agentNames, travel],
+  );
+
   return (
     <RekuestMaterializedBlok.ModelPage
       title={materializedBlok.name || materializedBlok.blok.name || materializedBlok.id}
@@ -241,18 +255,21 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
             />
           ) : (
             <BlokTravelProvider source={travel.source}>
-              <MaterializedBlokRenderer
-                key={materializedBlok.id}
-                materializedBlok={materializedBlok}
-                surfaceId={materializedBlok.id}
-                chrome="minimal"
-                args={args}
-                onArgsChange={setArgs}
-              />
+              <BlokRunHostProvider value={partsHost}>
+                <MaterializedBlokRenderer
+                  key={materializedBlok.id}
+                  materializedBlok={materializedBlok}
+                  surfaceId={materializedBlok.id}
+                  chrome="minimal"
+                  args={args}
+                  onArgsChange={setArgs}
+                />
+              </BlokRunHostProvider>
             </BlokTravelProvider>
           )}
         </div>
-        {travel.open && <TravelBar travel={travel} names={agentNames} revisions className="mt-2 shrink-0" />}
+        {/* A blok that places the bar itself (`<timeline />`) has it there. */}
+        {travel.open && !placesTimeline && <TravelBar travel={travel} names={agentNames} revisions className="mt-2 shrink-0" />}
       </div>
     </RekuestMaterializedBlok.ModelPage>
   );

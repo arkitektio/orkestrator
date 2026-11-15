@@ -37,7 +37,28 @@ describe('task: the one task record', () => {
       message: 'staining',
       args: {slide: 'S1'},
       returns: {slide: 'S1'},
+      paused: false,
+      started_at: null,
+      ended_at: null,
+      duration: null,
+      log: [],
     });
+  });
+
+  it('says a paused run is paused, and still under way', () => {
+    const paused = taskRecordOf(running({latestEventKind: TaskEventKind.Paused}));
+    expect([paused.status, paused.paused, paused.running, paused.done]).toEqual(['paused', true, true, false]);
+  });
+
+  it('knows when the run started and ended, how long it took and what it said, oldest first', () => {
+    const ended = taskRecordOf(running({latestEventKind: TaskEventKind.Completed, isDone: true, events: [completed, started]}));
+    expect(ended.started_at).toBe('2026-10-25T10:00:00Z');
+    expect(ended.ended_at).toBe('2026-10-25T10:00:05Z');
+    expect(ended.duration).toBe(5);
+    expect(ended.log.map(entry => entry.kind)).toEqual(['started', 'completed']);
+    // While it runs there is no end, and no duration: a blok never reads the clock.
+    const going = taskRecordOf(running({events: [started]}));
+    expect([going.started_at, going.ended_at, going.duration]).toEqual(['2026-10-25T10:00:00Z', null, null]);
   });
 
   it("asks while a hold is open, with the agent's words, and stops once it is decided", () => {

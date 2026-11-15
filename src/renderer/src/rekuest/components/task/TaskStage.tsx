@@ -2,14 +2,7 @@ import { cn } from "@/core/util/utils";
 import { PageSections } from "@/core/layout/PageSections";
 import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
 import { TaskRunScene } from "@/rekuest/run/TaskRun";
-import { LiveTicker } from "@/rekuest/components/spaces/task/LiveTicker";
-import { TimeSlider } from "@/rekuest/components/spaces/task/panels/TimeSlider";
-import {
-  createSpaceViewStore,
-  SpaceViewStoreContext,
-} from "@/rekuest/components/spaces/task/store";
-import { TaskTravel } from "@/rekuest/components/spaces/task/TaskRoom";
-import { useEffect, useState } from "react";
+import { TaskClock } from "@/rekuest/components/spaces/task/TaskClock";
 import { TaskResultSection } from "./TaskEventLog";
 import { LaneTaskEvent } from "./lane/selection";
 
@@ -54,32 +47,12 @@ const SpaceStage = (props: {
   task: DetailTaskFragment;
   focusTime: number | null;
   showAsk: boolean;
-}) => {
-  const { task, focusTime } = props;
-  const [store] = useState(() => createSpaceViewStore(task));
-
-  useEffect(() => {
-    store.getState().refreshTask(task);
-  }, [store, task]);
-
-  useEffect(() => {
-    if (focusTime != null) store.getState().selectTimepoint(focusTime);
-  }, [store, focusTime]);
-
-  return (
-    <SpaceViewStoreContext.Provider value={store}>
-      <LiveTicker />
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1">
-          <TaskTravel>
-            <TaskRunScene taskId={task.id} showAsk={props.showAsk} />
-          </TaskTravel>
-        </div>
-        <TimeSlider />
-      </div>
-    </SpaceViewStoreContext.Provider>
-  );
-};
+  timelinePlaced: boolean;
+}) => (
+  <TaskClock task={props.task} focusTime={props.focusTime} placed={props.timelinePlaced}>
+    <TaskRunScene taskId={props.task.id} showAsk={props.showAsk} />
+  </TaskClock>
+);
 
 /**
  * The big view above the lane: the fluss run for a flow task (drawn by fluss
@@ -96,6 +69,8 @@ export const TaskStage = (props: {
   selectedYield: LaneTaskEvent | null;
   /** Whether the Space's `<ask />` shows the run's open ask; off where the page shows a card for it. */
   showAsk?: boolean;
+  /** Whether the Space places the time slider itself (`<timeline />`): then there is none under it. */
+  timelinePlaced?: boolean;
 }) => {
   const { task, tabs, tab, onTab } = props;
 
@@ -129,7 +104,7 @@ export const TaskStage = (props: {
           />
         )}
         {tab === "space" && (
-          <SpaceStage task={task} focusTime={props.focusTime} showAsk={props.showAsk ?? true} />
+          <SpaceStage task={task} focusTime={props.focusTime} showAsk={props.showAsk ?? true} timelinePlaced={props.timelinePlaced ?? false} />
         )}
         {tab === "result" && (
           <TaskResultSection
