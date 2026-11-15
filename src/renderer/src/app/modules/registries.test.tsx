@@ -454,6 +454,7 @@ describe("host registries", () => {
       "register-scene-interactively",
       "register-tabledataset-into-coordinatesystem",
       "rekuest-assign-action",
+      "rekuest-auto-list-action",
       "rekuest-automate-signal",
       "rekuest-bind-shortcut",
       "rekuest-block-agent",
@@ -541,6 +542,7 @@ describe("host registries", () => {
       "mikro.recent-files",
       "rekuest.agents",
       "elektro.experiments",
+      "rekuest.autolist",
       "elektro.models",
     ]);
   });

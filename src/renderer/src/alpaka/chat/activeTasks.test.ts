@@ -170,6 +170,8 @@ describe("a pill whose replyer waits for the user", () => {
         action: { id: "a1", name: "Segmenter", hash: "h1" },
         agent: { id: "ag2", name: "segmenter-app" },
         callerAgent: { id: "ag1", name: "blok-assistant" },
+        // The event names no asking action: a hold of an agent's own, not of an action it runs.
+        callerAction: null,
         args: { sigma: 2 },
       },
     ]);
