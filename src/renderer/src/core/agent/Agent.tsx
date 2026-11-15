@@ -8,22 +8,21 @@ import { BlokImplementationInput, ComponentContext, DefinitionInput, EnsureAgent
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
   AGENT_SPEC_VERSION,
-  AgentMode,
   Assign,
   CancelledEvent,
   CancelMessage,
   CompletedEvent,
   CriticalEvent,
-  EventAck,
   FailedEvent,
   FromAgentMessage,
   Init,
-  ProgressEvent,
+  InquireMessage,
   Register,
   StartedEvent,
   ToAgentMessage,
   YieldEvent,
 } from "./message";
+import { Journal } from "./journal";
 import { ACTION_LOGOS } from "./logos";
 import { globalRegistry } from "./registry";
 import { expandArgs, shrinkReturns, SerPort } from "./serialization";
@@ -98,11 +97,14 @@ export class OrkestratorAgent {
   // the backend the process survived (reclaim in-flight work). A fresh
   // OrkestratorAgent (app reload) mints a new one → fail-and-cascade.
   sessionId: string = crypto.randomUUID();
-  // Monotonic per-connection stream sequence for at-least-once event dedup.
-  private nextSeq = 0;
-  // Terminal reports retained until the backend EVENT_ACKs them; resent on
-  // reconnect (persist-then-ack). Keyed by the report's event id.
-  private unackedEvents: Map<string, FromAgentMessage> = new Map();
+  // Every report, numbered, kept until the backend's JOURNAL_ACK covers it and
+  // sent again after a reconnect from where the backend says it stands.
+  private journal = new Journal<FromAgentMessage>(this.sessionId);
+  // The highest command position handled: a command is handled once, however
+  // often a reconnect brings it back.
+  private commandsSeen = 0;
+  // Names the current connection attempt; an INIT with another nonce is stale.
+  private nonce = "";
 
   assignments: Assign[] = [];
   errors: string[] = [];
@@ -510,12 +512,17 @@ export class OrkestratorAgent {
       }, RETRY_RESET_MS);
       this.notify();
 
+      this.nonce = crypto.randomUUID();
       this.send(
         Register.parse({
           type: "REGISTER",
           token: this.token,
-          mode: AgentMode.enum.EXECUTOR,
           session_id: this.sessionId,
+          nonce: this.nonce,
+          // Where this process stands: the backend sends the commands after
+          // this position, and says how far it has the session we still owe.
+          commands_seen: this.commandsSeen,
+          sessions: this.journal.owes ? [this.journal.session] : [],
           // takt refuses a REGISTER that names no spec (4006).
           spec_version: AGENT_SPEC_VERSION,
           // Don't displace another live Orkestrator connection (avoids two
@@ -579,16 +586,12 @@ export class OrkestratorAgent {
   }
 
   /**
-   * Send an agent→backend report, stamping a monotonic `seq`. Terminal reports
-   * (completed/failed/critical/cancelled/interrupted) are retained until the
-   * backend EVENT_ACKs their id and resent on reconnect (persist-then-ack).
+   * Send an agent→backend report at the next position of the journal, where it
+   * stays until the backend acknowledges it. A report made while the socket is
+   * down is sent once INIT says where the backend stands.
    */
-  private report(message: FromAgentMessage, terminal: boolean) {
-    const stamped = { ...message, seq: this.nextSeq++ } as FromAgentMessage;
-    if (terminal && stamped.id) {
-      this.unackedEvents.set(stamped.id, stamped);
-    }
-    this.send(stamped);
+  private report(message: FromAgentMessage) {
+    this.send(this.journal.record(message));
   }
 
   private async handleHeartbeat(_: ToAgentMessage) {
@@ -607,7 +610,7 @@ export class OrkestratorAgent {
       this.report(CancelledEvent.parse({
         type: "CANCELLED",
         task: message.task,
-      }), true);
+      }));
       this.assignments = this.assignments.filter(a => a.task !== message.task);
       this.notify();
     }
@@ -616,47 +619,87 @@ export class OrkestratorAgent {
         type: "CRITICAL",
         task: message.task,
         error: `The task ${message.task} could not be cancelled because it was not found.`,
-      }), true);
+      }));
     }
 
   }
 
   /**
-   * Backend acknowledgement of our Register. On a transient reconnect it carries
-   * inquiries about tasks the backend still thinks we own: report those we still
-   * run as in-progress, the rest as critically lost (a fresh process — new
-   * session_id — owns none). Then resend any un-acked terminal reports.
+   * The backend's answer to our REGISTER. It says how far it has the journal
+   * session we named: what it has is forgotten, the rest is sent again in
+   * order. Tasks the backend still believes we run it asks about one by one
+   * (INQUIRE).
    */
   private handleInit(message: Init) {
-    for (const inquiry of message.inquiries) {
-      if (this.cancelControllers.has(inquiry.task)) {
-        this.report(ProgressEvent.parse({
-          type: "PROGRESS",
-          task: inquiry.task,
-          progress: 0,
-          message: "Actor is still running",
-        }), false);
-      } else {
-        this.report(CriticalEvent.parse({
-          type: "CRITICAL",
-          task: inquiry.task,
-          error: "After a disconnect this task was no longer managed by the agent.",
-        }), true);
-      }
+    if (message.nonce && message.nonce !== this.nonce) {
+      // Of a connection that is gone.
+      return;
     }
-
-    for (const event of this.unackedEvents.values()) {
-      this.send(event);
+    const through = message.positions[this.journal.session];
+    if (through !== undefined) {
+      this.journal.ack(through);
+    }
+    for (const frame of this.journal.owed()) {
+      this.send(frame);
     }
   }
 
+  /** A gap: send again from where the backend stands, saying what is no longer held. */
+  private handleJournalNack(session: string, expected: number) {
+    if (session !== this.journal.session) return;
+    const missing = this.journal.missing(expected);
+    if (missing) {
+      this.send(FromAgentMessage.parse({ type: "JOURNAL_SKIP", ...missing }));
+    }
+    for (const frame of this.journal.owed(expected)) {
+      this.send(frame);
+    }
+  }
+
+  /** What we know of a task, at once: running here, or not known to this process. */
+  private handleInquire(message: InquireMessage) {
+    this.send(
+      FromAgentMessage.parse({
+        type: "INQUIRY_ANSWER",
+        task: message.task,
+        request: message.request,
+        status: this.cancelControllers.has(message.task) ? "RUNNING" : "UNKNOWN",
+      }),
+    );
+  }
+
+  /**
+   * A command carries its position. One already handled is acknowledged again
+   * and dropped; a new one is acknowledged as it is taken on: from then on this
+   * process answers for it (to an INQUIRE, or with a report).
+   */
+  private takeCommand(pos: number): boolean {
+    const fresh = pos > this.commandsSeen;
+    if (fresh) this.commandsSeen = pos;
+    this.send(
+      FromAgentMessage.parse({ type: "COMMAND_ACK", through: this.commandsSeen }),
+    );
+    return fresh;
+  }
+
   private async handleMessage(message: ToAgentMessage) {
+    if (typeof message.pos === "number" && !this.takeCommand(message.pos)) {
+      return;
+    }
     switch (message.type) {
       case "INIT":
         this.handleInit(message);
         break;
-      case "EVENT_ACK":
-        this.unackedEvents.delete((message as EventAck).event);
+      case "JOURNAL_ACK":
+        if (message.journal_session === this.journal.session) {
+          this.journal.ack(message.through);
+        }
+        break;
+      case "JOURNAL_NACK":
+        this.handleJournalNack(message.journal_session, message.expected);
+        break;
+      case "INQUIRE":
+        this.handleInquire(message);
         break;
       case "BOUNCE":
         // Soft restart: drop the socket and let the reconnect logic re-open it.
@@ -701,9 +744,7 @@ export class OrkestratorAgent {
           type: "CRITICAL",
           task,
           error: `No handler for interface ${interfaceName}`,
-        }),
-        true,
-      );
+        }));
       return;
     }
 
@@ -712,7 +753,7 @@ export class OrkestratorAgent {
     this.assignments.push(message);
     this.notify();
 
-    this.report(StartedEvent.parse({ type: "STARTED", task }), false);
+    this.report(StartedEvent.parse({ type: "STARTED", task }));
 
     // Serialize against the published definition: incoming structure args arrive
     // shrunk as `{ __identifier, object }` and must be expanded; the handler's
@@ -734,15 +775,11 @@ export class OrkestratorAgent {
               type: "YIELD",
               task,
               returns: shrinkReturns(returns, returnPorts),
-            }),
-            false,
-          );
+            }));
         },
         error: (error) => {
           this.report(
-            FailedEvent.parse({ type: "FAILED", task, error }),
-            true,
-          );
+            FailedEvent.parse({ type: "FAILED", task, error }));
           this.finishTask(task);
         },
         return: (returns) => {
@@ -751,10 +788,8 @@ export class OrkestratorAgent {
               type: "YIELD",
               task,
               returns: shrinkReturns(returns, returnPorts),
-            }),
-            false,
-          );
-          this.report(CompletedEvent.parse({ type: "COMPLETED", task }), true);
+            }));
+          this.report(CompletedEvent.parse({ type: "COMPLETED", task }));
           this.finishTask(task);
         },
         controller: newController,
@@ -764,9 +799,7 @@ export class OrkestratorAgent {
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       this.report(
-        CriticalEvent.parse({ type: "CRITICAL", task, error: errorMessage }),
-        true,
-      );
+        CriticalEvent.parse({ type: "CRITICAL", task, error: errorMessage }));
       this.finishTask(task);
     }
   }
