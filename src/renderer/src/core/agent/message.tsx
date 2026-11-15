@@ -4,8 +4,12 @@ import { z } from "zod";
  * Agent wire protocol — ported from the canonical Python reference
  * `rekuest_next/messages.py`. The client acts as an EXECUTOR: it publishes
  * implementations, receives ASSIGN, and reports STARTED/PROGRESS/LOG/YIELD/
- * COMPLETED/FAILED/CRITICAL back. Terminal reports are retained until the
- * backend sends an EVENT_ACK (persist-then-ack) and resent on reconnect.
+ * COMPLETED/FAILED/CRITICAL back.
+ *
+ * Agent protocol 2: both directions are numbered and acknowledged. A report
+ * carries `pos` in this process's `journal_session` and is kept until a
+ * `JOURNAL_ACK` covers it; a command from the server carries `pos` and is
+ * answered with `COMMAND_ACK`. See `journal.ts`.
  */
 
 /**
@@ -14,18 +18,23 @@ import { z } from "zod";
  * `arkitekt_spec.current_spec_version()`). takt refuses a REGISTER without one
  * (close 4006). Bump it when the agent is brought up to a newer spec.
  */
-export const AGENT_SPEC_VERSION = "8.0.0";
+export const AGENT_SPEC_VERSION = "10.1.0";
+
+/** The feature a server speaking agent protocol 2 requires of a REGISTER. */
+export const FEATURE_PROTOCOL_2 = "protocol_2";
 
 export const LogLevel = z.enum(["DEBUG", "INFO", "ERROR", "WARN", "CRITICAL"]);
 
-/** How a participant intends to use the protocol (granted per token scopes). */
-export const AgentMode = z.enum([
-  "EXECUTOR",
-  "CALLER",
-  "ORCHESTRATOR",
-  "OBSERVER",
+/** What an agent knows of a task, when asked (`INQUIRE`). */
+export const TaskStatus = z.enum([
+  "UNKNOWN",
+  "WAITING",
+  "RUNNING",
+  "PAUSED",
+  "HELD",
+  "ENDED",
 ]);
-export type AgentMode = z.infer<typeof AgentMode>;
+export type TaskStatus = z.infer<typeof TaskStatus>;
 
 export const ToAgentMessageType = z.enum([
   "INIT",
@@ -39,7 +48,9 @@ export const ToAgentMessageType = z.enum([
   "BOUNCE",
   "KICK",
   "PROTOCOL_ERROR",
-  "EVENT_ACK",
+    "JOURNAL_ACK",
+  "JOURNAL_NACK",
+  "INQUIRE",
   "ASSIGN_RESPONSE",
 ]);
 
@@ -58,7 +69,10 @@ export const FromAgentMessageType = z.enum([
   "CANCELLED",
   "APP_CANCELLED",
   "INTERRUPTED",
-  "HEARTBEAT_ANSWER",
+    "HEARTBEAT_ANSWER",
+  "COMMAND_ACK",
+  "JOURNAL_SKIP",
+  "INQUIRY_ANSWER",
 ]);
 
 export const ShallowJSONSerializable = z.union([
@@ -71,9 +85,11 @@ export const ShallowJSONSerializable = z.union([
 ]);
 
 export const Message = z.object({
-  // Reply messages should carry the same id; the backend correlates EVENT_ACK
-  // against a report's id, so agent→backend events default-generate one.
   id: z.string().optional(),
+  // A command's position in the server's stream to this agent: handled once per
+  // position and answered with COMMAND_ACK. Absent on what is not a command
+  // (INIT, HEARTBEAT, the acknowledgements, INQUIRE).
+  pos: z.number().optional().nullable(),
 });
 
 /**
@@ -84,10 +100,10 @@ const FromAgentFrame = Message.extend({
   id: z.string().default(() => crypto.randomUUID()),
 });
 
-/** Base for agent→backend reporting events that join the ack/resume stream. */
+/** Base for agent→backend reports: numbered by the journal before they are sent. */
 const FromAgentEvent = FromAgentFrame.extend({
-  // Monotonic per-connection stream sequence for at-least-once dedup/resume.
-  seq: z.number().optional().nullable(),
+  journal_session: z.string().optional().nullable(),
+  agent_ts: z.number().optional().nullable(),
 });
 
 // ---------------------------------------------------------------------------
@@ -157,21 +173,35 @@ export const ProtocolError = Message.extend({
   error: z.string(),
 });
 
-export const EventAck = Message.extend({
-  type: z.literal(ToAgentMessageType.enum.EVENT_ACK),
-  event: z.string(),
-  task: z.string().optional().nullable(),
-  seq: z.number().optional().nullable(),
+/** The server has every report of `journal_session` through `through`. */
+export const JournalAck = Message.extend({
+  type: z.literal(ToAgentMessageType.enum.JOURNAL_ACK),
+  journal_session: z.string(),
+  through: z.number(),
 });
 
-export const AssignInquiry = z.object({
+/** A gap: the server next takes position `expected` of `journal_session`. */
+export const JournalNack = Message.extend({
+  type: z.literal(ToAgentMessageType.enum.JOURNAL_NACK),
+  journal_session: z.string(),
+  expected: z.number(),
+});
+
+/** What does this agent know of `task`? Answered at once (`INQUIRY_ANSWER`). */
+export const Inquire = Message.extend({
+  type: z.literal(ToAgentMessageType.enum.INQUIRE),
   task: z.string(),
+  request: z.string(),
 });
 
 export const Init = Message.extend({
   type: z.literal(ToAgentMessageType.enum.INIT),
   agent: z.string(),
-  inquiries: z.array(AssignInquiry).default([]),
+  // The nonce of the REGISTER this answers: an INIT with another is of a
+  // connection that is gone.
+  nonce: z.string().optional().nullable(),
+  // How far the server has each journal session the REGISTER named.
+  positions: z.record(z.string(), z.number()).default({}),
 });
 
 export const AssignResponse = Message.extend({
@@ -191,9 +221,37 @@ export const Register = FromAgentFrame.extend({
   type: z.literal(FromAgentMessageType.enum.REGISTER),
   token: z.string(),
   force: z.boolean().default(false),
-  mode: AgentMode.default(AgentMode.enum.EXECUTOR),
-  session_id: z.string().optional().nullable(),
+    session_id: z.string().optional().nullable(),
   spec_version: z.string().min(1).default(AGENT_SPEC_VERSION),
+  // A server on protocol 2 refuses a REGISTER that does not say so.
+  features: z.array(z.string()).default([FEATURE_PROTOCOL_2]),
+  // New for every connection attempt; INIT echoes it.
+  nonce: z.string().default(() => crypto.randomUUID()),
+  // The highest command position this process has handled.
+  commands_seen: z.number().default(0),
+  // The journal sessions this process still owes reports of.
+  sessions: z.array(z.string()).default([]),
+});
+
+/** Every command through `through` has been handled. */
+export const CommandAck = FromAgentFrame.extend({
+  type: z.literal(FromAgentMessageType.enum.COMMAND_ACK),
+  through: z.number(),
+});
+
+/** Positions `first`..`last` of `session` are no longer held: pass them over. */
+export const JournalSkip = FromAgentFrame.extend({
+  type: z.literal(FromAgentMessageType.enum.JOURNAL_SKIP),
+  session: z.string(),
+  first: z.number(),
+  last: z.number(),
+});
+
+export const InquiryAnswer = FromAgentFrame.extend({
+  type: z.literal(FromAgentMessageType.enum.INQUIRY_ANSWER),
+  task: z.string(),
+  request: z.string(),
+  status: TaskStatus,
 });
 
 export const SessionInit = FromAgentFrame.extend({
@@ -279,8 +337,10 @@ export const ToAgentMessage = z.discriminatedUnion("type", [
   Collect,
   Bounce,
   Kick,
-  ProtocolError,
-  EventAck,
+    ProtocolError,
+  JournalAck,
+  JournalNack,
+  Inquire,
   AssignResponse,
 ]);
 
@@ -297,8 +357,11 @@ export const FromAgentMessage = z.discriminatedUnion("type", [
   CancelledEvent,
   InterruptedEvent,
   PausedEvent,
-  ResumedEvent,
+    ResumedEvent,
   HeartbeatEvent,
+  CommandAck,
+  JournalSkip,
+  InquiryAnswer,
 ]);
 
 export type ToAgentMessage = z.infer<typeof ToAgentMessage>;
@@ -308,7 +371,7 @@ export type Init = z.infer<typeof Init>;
 export type CancelMessage = z.infer<typeof Cancel>;
 export type Heartbeat = z.infer<typeof Heartbeat>;
 export type Register = z.infer<typeof Register>;
-export type EventAck = z.infer<typeof EventAck>;
+export type InquireMessage = z.infer<typeof Inquire>;
 export type YieldEvent = z.infer<typeof YieldEvent>;
 export type CompletedEvent = z.infer<typeof CompletedEvent>;
 export type FailedEvent = z.infer<typeof FailedEvent>;
