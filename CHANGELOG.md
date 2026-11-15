@@ -1,3 +1,18 @@
+# [7.1.0](https://github.com/arkitektio/orkestrator/compare/v7.0.0...v7.1.0) (2026-11-15)
+
+
+### Bug Fixes
+
+* **connection:** what happened while a subscription socket was down is read again ([12f4eae](https://github.com/arkitektio/orkestrator/commit/12f4eaecce0e05cdb4ded154a01f00e5b43ca412))
+
+
+### Features
+
+* **blok:** the Orkestrator publishes its own catalog on bsx 5 ([998b950](https://github.com/arkitektio/orkestrator/commit/998b950d4140fc16ca3d64a68fa4b3e0b2037444))
+* **rekuest:** an approval can be remembered: the auto list of actions that run without asking ([9479bff](https://github.com/arkitektio/orkestrator/commit/9479bff02922616c7f7676697e20e8b901e3f083))
+* **rekuest:** bloks place the host's chrome: timeline, args, deps, returns, status ([95d4b7b](https://github.com/arkitektio/orkestrator/commit/95d4b7bc509a1adcdd7e021babea602452186508))
+* **rekuest:** the task page: one status line, the stage over the whole page, a More menu ([005743e](https://github.com/arkitektio/orkestrator/commit/005743eb487489cf35b17193854f3bde96ada4f2))
+
 # [7.0.0](https://github.com/arkitektio/orkestrator/compare/v6.3.0...v7.0.0) (2026-11-15)
 
 
