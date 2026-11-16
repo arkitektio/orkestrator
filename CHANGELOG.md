@@ -1,3 +1,15 @@
+# [8.2.0](https://github.com/arkitektio/orkestrator/compare/v8.1.1...v8.2.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* **rekuest:** a state choice keeps its options while the state patches, and its value's type ([4fccd65](https://github.com/arkitektio/orkestrator/commit/4fccd6560fc0babb2209d72aaff2bbd0f57633d4))
+
+
+### Features
+
+* **rekuest:** play and custom play on an agent's actions ([bfb97ca](https://github.com/arkitektio/orkestrator/commit/bfb97ca3e1cd1f72e4bccbded548df2a6b99a816))
+
 ## [8.1.1](https://github.com/arkitektio/orkestrator/compare/v8.1.0...v8.1.1) (2026-11-16)
 
 
