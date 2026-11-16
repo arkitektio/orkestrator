@@ -1,3 +1,10 @@
+# [8.1.0](https://github.com/arkitektio/orkestrator/compare/v8.0.2...v8.1.0) (2026-11-16)
+
+
+### Features
+
+* **mikro:** a viewer for @mikro/arraylens ([3508d67](https://github.com/arkitektio/orkestrator/commit/3508d6705dfe84a33a1fe67256d4aaea51775100))
+
 ## [8.0.2](https://github.com/arkitektio/orkestrator/compare/v8.0.1...v8.0.2) (2026-11-16)
 
 
