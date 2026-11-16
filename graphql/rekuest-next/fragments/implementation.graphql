@@ -96,6 +96,10 @@ fragment ListImplementation on Implementation {
     description
     name
     stateful
+    # Whether it brings its own interface for starting a run (a "custom play").
+    assignBloks {
+      id
+    }
   }
   agent {
     name

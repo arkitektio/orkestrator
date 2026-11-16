@@ -7793,7 +7793,7 @@ export type DetailImplementationFragment = { __typename?: 'Implementation', id: 
 export type ListImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, action: { __typename?: 'Action', id: string, description?: string | null, name: string, stateful: boolean, logo?: (
       { __typename?: 'Blok' }
       & BlokLogoFragment
-    ) | null }, agent: { __typename?: 'Agent', name: string, active: boolean } };
+    ) | null, assignBloks: Array<{ __typename?: 'ActionBlok', id: string }> }, agent: { __typename?: 'Agent', name: string, active: boolean } };
 
 export type EstimatedRuntimeFragment = { __typename?: 'EstimatedRuntime', callJson: any, source?: string | null, uiCallJson?: any | null, uiSource?: string | null };
 
@@ -11656,6 +11656,9 @@ export const ListImplementationFragmentDoc = gql`
     description
     name
     stateful
+    assignBloks {
+      id
+    }
   }
   agent {
     name

@@ -5,7 +5,6 @@ import type { Object } from "@/core/types";
 import { buildAssignInput } from "../assign";
 import {
   DemandKind,
-  type ListImplementationFragment,
   PortKind,
   useAgentsQuery,
   useImplementationsQuery,
@@ -49,7 +48,7 @@ export const BackendAgents = ({ object }: SectionProps) => {
   );
 };
 
-const PodActionButton = (props: { implementation: ListImplementationFragment; pod: string }) => {
+const PodActionButton = (props: { implementation: { id: string; action: { name: string } }; pod: string }) => {
   const { assign } = useImplementationAction({ id: props.implementation.id });
   return (
     <Button

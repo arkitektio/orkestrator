@@ -1,11 +1,14 @@
 import React from "react";
 import { useDialog } from "@/core/dialogs/registry";
+import { Button } from "@/core/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { cn } from "@/core/util/utils";
 import { RekuestImplementation } from "@/core/linkers";
 import { ListImplementationFragment } from "@/rekuest/api/graphql";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
-import { PlayCircle } from "lucide-react";
+import { Play, PlayCircle, SquarePlay } from "lucide-react";
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   item: ListImplementationFragment;
@@ -13,13 +16,25 @@ interface Props {
 
 const AgentImplementationCard = ({ item }: Props) => {
   const { openDialog } = useDialog();
+  const navigate = useNavigate();
+  // The action's own interface for starting a run: offered next to the plain form, on a page of its own.
+  const custom = item.action.assignBloks.length > 0;
 
+  // "Play": the plain generated form, whatever interface the action brings.
   const onRun = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      openDialog("assign", { target: { implementation: item.id } });
+      openDialog("assign", { target: { implementation: item.id }, bloks: false });
     },
     [item.id, openDialog],
+  );
+
+  const onCustomRun = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigate(`${RekuestImplementation.linkBuilder(item.id)}/assign`);
+    },
+    [item.id, navigate],
   );
 
   return (
@@ -46,6 +61,40 @@ const AgentImplementationCard = ({ item }: Props) => {
               {item.action.description}
             </p>
           )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {custom && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label={`Run ${item.action.name} with its own interface`}
+                  onClick={onCustomRun}
+                >
+                  <SquarePlay className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Custom play: its own interface, on a page</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label={`Run ${item.action.name}`}
+                onClick={onRun}
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Play</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </RekuestImplementation.Smart>

@@ -15,6 +15,7 @@ import Dependency from "./pages/Dependency";
 import AgentsPage from "./pages/AgentsPage";
 import Home from "./pages/Home";
 import Implementation from "./pages/ImplementationPage";
+import ImplementationAssignPage from "./pages/ImplementationAssignPage";
 import MemoryShelve from "./pages/MemoryShelve";
 import MaterializedBlokPage from "./pages/MaterializedBlok";
 import MaterializedBloks from "./pages/MaterializedBloks";
@@ -113,6 +114,8 @@ const Module: React.FC = () => {
         <Route path="dependencies/:id" element={<Dependency />} />
         <Route path="implementations" element={<ImplementationsPage />} />
         <Route path="implementations/:id" element={<Implementation />} />
+        {/* The action's own interface for starting a run (its assign bloks), on a page of its own. */}
+        <Route path="implementations/:id/assign" element={<ImplementationAssignPage />} />
         <Route path="agents/:id" element={<AgentPage />} />
         <Route path="agents/:id/states" element={<AgentStatesPage />} />
         <Route path="agents/:id/tasks" element={<AgentTasksPage />} />

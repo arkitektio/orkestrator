@@ -57,6 +57,11 @@ export type AssignFormProps = {
   ports?: ArgPortFragment[];
   /** Start from the args of the viewer's latest task of the target. */
   prefillLatest?: boolean;
+  /**
+   * Whether the action's own interface for starting a run (its assign bloks)
+   * is drawn. Off, this is the plain generated form whatever the action brings.
+   */
+  bloks?: boolean;
   submitLabel?: ReactNode;
   /** Runs before the assign, and may refuse it by throwing (a replyer opens its room). */
   prepareArgs?: (args: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -87,6 +92,7 @@ export const AssignForm = ({
   hidden,
   ports,
   prefillLatest = true,
+  bloks = true,
   submitLabel = "Do",
   prepareArgs,
   track,
@@ -133,6 +139,8 @@ export const AssignForm = ({
   const { registry } = useWidgetRegistry();
 
   const keepOpenRef = useRef(false);
+  // A start that is on its way: a second one is dropped until it answered.
+  const startingRef = useRef(false);
   // Why the last submit did not start; the form stays on it.
   const [failure, setFailure] = useState<unknown>(null);
   // The button shakes once per refusal; cleared when the animation ends.
@@ -155,13 +163,16 @@ export const AssignForm = ({
   }, [candidates, fit.pin, implementation, target.resolution]);
   const watchedPins = useWatch({ control: fieldsControl, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
   const filling = useWatch({ control: fieldsControl, name: "args" }) as Record<string, unknown> | undefined;
-  const setup = useAssignBloks(action?.id, chosen, pinning ? watchedPins : undefined);
+  const setup = useAssignBloks(bloks ? action?.id : undefined, chosen, pinning ? watchedPins : undefined);
   const assignBloks = setup.bloks.length > 0;
 
   const onSubmit = async (data: {
     args: Record<string, unknown>;
     dependencies: ResolvedDependencyInput[];
   }) => {
+    // One run per start, whatever asked twice (a double click, a blok and the form).
+    if (startingRef.current) return;
+    startingRef.current = true;
     const keepOpen = keepOpenRef.current;
     keepOpenRef.current = false;
     setFailure(null);
@@ -193,6 +204,8 @@ export const AssignForm = ({
       setRefused(true);
       setRefusals((count) => count + 1);
       onError?.(e);
+    } finally {
+      startingRef.current = false;
     }
   };
 
@@ -327,7 +340,17 @@ export const AssignForm = ({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={(event) => {
+          // A button an assign blok draws is, inside this form, a submit button: its click would
+          // start the run a second time next to its own `assign.start()` (or start one it never
+          // asked for). What a blok's button does is the blok's to say.
+          const submitter = (event.nativeEvent as SubmitEvent).submitter;
+          if (submitter?.closest("[data-assign-bloks]")) {
+            event.preventDefault();
+            return;
+          }
+          void form.handleSubmit(onSubmit)(event);
+        }}
         onKeyDownCapture={(e) => {
           if (e.key === "Enter") keepOpenRef.current = e.ctrlKey || e.metaKey;
         }}
@@ -363,14 +386,17 @@ export const AssignForm = ({
         <PortFitsContext.Provider value={portFits}>
         <DependencyDefinitionsProvider dependencies={pinning?.dependencies || []}>
           {assignBloks && (
-            <AssignBloks
-              setup={setup}
-              surface={`${action?.id ?? "action"}-${chosen?.id ?? "any"}`}
-              args={filling}
-              parts={parts}
-              assign={assignRecord}
-              onStart={startRun}
-            />
+            // `contents`: no box of its own, only the mark the submit handler looks for.
+            <div data-assign-bloks className="contents">
+              <AssignBloks
+                setup={setup}
+                surface={`${action?.id ?? "action"}-${chosen?.id ?? "any"}`}
+                args={filling}
+                parts={parts}
+                assign={assignRecord}
+                onStart={startRun}
+              />
+            </div>
           )}
           {formPorts && formPorts.length == 0 && !bare && (
             <div className="text-sm text-muted-foreground">No arguments needed</div>
