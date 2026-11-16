@@ -5,9 +5,11 @@ import type { ViewerWidgetProps } from "@/core/smart/display/registry";
 // Lazy: the scene renderer (three, WebGPU) is only fetched once a viewer is
 // actually mounted, never by registering the module.
 const LazyArrayDatasetViewer = lazy(() => import("./ArrayDatasetViewer"));
+const LazyArrayLensViewer = lazy(() => import("./ArrayLensViewer"));
 const LazySceneViewer = lazy(() => import("./SceneViewer"));
 const LazyMeshObjectViewer = lazy(() => import("./MeshObjectViewer"));
 
 export const ArrayDatasetViewer = (props: ViewerWidgetProps) => <LazyArrayDatasetViewer {...props} />;
+export const ArrayLensViewer = (props: ViewerWidgetProps) => <LazyArrayLensViewer {...props} />;
 export const SceneViewer = (props: ViewerWidgetProps) => <LazySceneViewer {...props} />;
 export const MeshObjectViewer = (props: ViewerWidgetProps) => <LazyMeshObjectViewer {...props} />;

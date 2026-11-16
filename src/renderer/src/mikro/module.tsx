@@ -28,7 +28,7 @@ import { service } from "./service";
 import { MIKRO_NAV_LINKS } from "./navLinks";
 import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
-import { ArrayDatasetViewer, MeshObjectViewer, SceneViewer } from "./viewers";
+import { ArrayDatasetViewer, ArrayLensViewer, MeshObjectViewer, SceneViewer } from "./viewers";
 
 
 export const MIKRO_MODULE = defineModule({
@@ -54,6 +54,7 @@ export const MIKRO_MODULE = defineModule({
     viewers: {
       "@mikro/scene": SceneViewer,
       "@mikro/arraydataset": ArrayDatasetViewer,
+      "@mikro/arraylens": ArrayLensViewer,
       "@mikro/meshobject": MeshObjectViewer,
     },
     // The scene as parts an app's blok composes (`mikro/bloks`).
