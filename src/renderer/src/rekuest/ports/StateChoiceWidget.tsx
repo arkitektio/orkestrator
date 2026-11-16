@@ -12,35 +12,52 @@ import {
   useDependencyDefinitions,
 } from "@arkitektio/bsx/ports/engine/DependencyContext";
 import { InputWidgetProps } from "@arkitektio/bsx/ports/engine/types";
-import { pathToName } from "@arkitektio/bsx/ports/engine/utils";
-import { useCallback, useMemo } from "react";
+import { pathToName, recursiveExtract, recursiveSet } from "@arkitektio/bsx/ports/engine/utils";
+import { useCallback, useMemo, useRef } from "react";
 import { useWatch } from "react-hook-form";
+import {
+  choiceKey,
+  choicesSignature,
+  filterChoices,
+  pathSegments,
+  readPath,
+  stateChoiceOptions,
+  type StateChoiceOption,
+} from "./stateChoices";
 
+/** The ports whose value is an object: without a `VALUE` accessor they get the whole state entry. */
+const OBJECT_KINDS: readonly PortKind[] = [
+  PortKind.Model,
+  PortKind.Dict,
+  PortKind.List,
+  PortKind.MemoryStructure,
+];
 
+const NO_OPTIONS: StateChoiceOption[] = [];
 
-const accessNestedValue = (obj: Record<string, unknown>, path: string[]): unknown => {
-  return path.reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === "object" && key in (acc as Record<string, unknown>)) {
-      return (acc as Record<string, unknown>)[key];
-    }
-    return null;
-  }, obj);
-}
+type Choices =
+  | { status: "waiting" }
+  | { status: "invalid"; reason: string }
+  | { status: "ready"; options: StateChoiceOption[] };
 
-
+/**
+ * A choice among the entries of a list in an agent's live state (the saved
+ * positions of a stage, the loaded objectives).
+ *
+ * The form holds the entry's own value (a number stays a number, an object
+ * port gets the object in the form's shape); the field tells choices apart by
+ * `choiceKey`. The option list follows the state, but is asked again only
+ * when the choices themselves change: a state patches far more often than
+ * its list does, and a reload mid-typing would drop what was typed.
+ */
 export const StateChoiceWidget = (
   props: InputWidgetProps<StateChoiceAssignWidgetFragment>,
 ) => {
-
-
+  const { port } = props;
   const statePath = props.widget?.statePath;
-  const stateKey = statePath?.split(".")[0];
-  // Memoized: `statePaths` is a dependency of `search` below, and a fresh
-  // array per render made SearchField re-query on every live-state patch.
-  const statePaths = useMemo(
-    () => statePath?.split(".").slice(1) || [],
-    [statePath],
-  );
+  const segments = useMemo(() => pathSegments(statePath), [statePath]);
+  // The first segment selects the agent's state interface, the rest walks into it.
+  const stateKey = segments[0];
   const stateAccessors = props.widget?.stateAccessors;
   const dependency = props.widget?.dependency;
 
@@ -66,93 +83,81 @@ export const StateChoiceWidget = (
       ?.mappedAgents?.[0]?.agent;
   }
 
-  const { value: liveValue, revision } = useAgentLiveState({
+  const { value: liveValue } = useAgentLiveState({
     agentID: agentID,
     stateInterface: stateKey,
     skip: !agentID || !stateKey,
   });
 
-  const search = useCallback(
-    async (searching: SearchOptions) => {
-      const accessedValue = accessNestedValue(liveValue || {}, statePaths);
-      // 1. Validation: Must be an array — the options are built by mapping over it.
-      if (!Array.isArray(accessedValue)) {
-        const stateLoaded =
-          liveValue != null && Object.keys(liveValue).length > 0;
-        const found =
-          accessedValue === null
-            ? stateLoaded
-              ? "nothing (a key along the path is missing — check it for typos)"
-              : `nothing (state "${stateKey}" hasn't been reported by the agent yet)`
-            : `a ${typeof accessedValue} (${JSON.stringify(accessedValue)})`;
-        throw new Error(
-          `State choice "${props.port.key}" expected its state path "${props.widget?.statePath}" ` +
-            `to resolve to a list of options, but found ${found}. ` +
-            `The first segment ("${stateKey}") selects the agent's state interface; ` +
-            `the rest ("${statePaths.join(".") || "—"}") walks into it and must land on an array.`,
-        );
-      }
+  const wholeEntry = OBJECT_KINDS.includes(port.kind);
+  const choices = useMemo<Choices>(() => {
+    // Not reported yet: nothing to choose from, and nothing wrong either.
+    if (liveValue == null) return { status: "waiting" };
+    const list = readPath(liveValue, segments.slice(1));
+    if (!Array.isArray(list)) {
+      const found =
+        list === undefined || list === null
+          ? "nothing (a key along the path is missing, check it for typos)"
+          : `a ${typeof list}`;
+      return {
+        status: "invalid",
+        reason:
+          `The state path "${statePath}" should lead to a list of choices, but leads to ${found}. ` +
+          `Its first part ("${stateKey}") names the agent's state, the rest walks into it.`,
+      };
+    }
+    return { status: "ready", options: stateChoiceOptions(list, stateAccessors, wholeEntry) };
+  }, [liveValue, segments, stateAccessors, stateKey, statePath, wholeEntry]);
 
-      // 2. Identify Subpaths (Handling null accessors)
-      const valuePath = stateAccessors?.find(a => a?.optionKey === 'VALUE')?.path;
-      const labelPath = stateAccessors?.find(a => a?.optionKey === 'LABEL')?.path;
-      const descPath = stateAccessors?.find(a => a?.optionKey === 'DESCRIPTION')?.path;
+  const options = choices.status === "ready" ? choices.options : NO_OPTIONS;
+  // Read through a ref: the field keeps `search` and the two converters across renders.
+  const choicesRef = useRef(choices);
+  choicesRef.current = choices;
 
-
-      // 3. Map the array with fallbacks
-      const options = accessedValue.map((rawItem, index) => {
-        // Handle Objects
-        if (rawItem !== null && typeof rawItem === "object") {
-          const item = rawItem;
-
-          if (props.port.kind == PortKind.MemoryStructure) {
-            return {
-              value: item,
-              label: item.name || item.id || `Option ${index + 1}`,
-              description: item.description || undefined,
-              key: String(item.id || index), // Keys must be strings for many UI frameworks
-            };
-          }
-
-
-
-          // Resolve values via subpaths or fallback to common keys
-          const val = valuePath ? accessNestedValue(item, valuePath.split('.')) : (item.id || item.key || index);
-          const lab = labelPath ? accessNestedValue(item, labelPath.split('.')) : (item.name || item.label || String(val));
-          const desc = descPath ? accessNestedValue(item, descPath.split('.')) : undefined;
-          return {
-            value: val,
-            label: lab,
-            description: desc,
-            key: String(val), // Keys must be strings for many UI frameworks
-          };
-        }
-
-        // Handle Primitives (Strings/Numbers)
+  const search = useCallback(async (searching: SearchOptions) => {
+    const current = choicesRef.current;
+    if (searching.values) {
+      const known = current.status === "ready" ? current.options : NO_OPTIONS;
+      return searching.values.map((wanted) => {
+        const key = String(wanted);
+        const option = known.find((candidate) => candidate.key === key);
+        if (option) return { value: option.key, label: option.label };
+        // Still shown, as what it is: the state may not have arrived, or the entry is gone.
+        const shown = key.startsWith("{") || key.startsWith("[") ? "The chosen value" : key;
         return {
-          value: rawItem,
-          label: String(rawItem),
-          key: String(rawItem),
+          value: key,
+          label: current.status === "waiting" ? shown : `${shown} (not in the state any more)`,
         };
       });
+    }
+    if (current.status === "invalid") throw new Error(current.reason);
+    if (current.status === "waiting") return [];
+    return filterChoices(current.options, searching.search).map((option) => ({
+      value: option.key,
+      label: option.label,
+    }));
+  }, []);
 
-      // 4. Narrow to what was asked for: the selected values (so the field
-      // shows the label of the choice made, not of the first option) or the
-      // typed text.
-      if (searching.values) {
-        const wanted = searching.values.map(String);
-        return options.filter(
-          (o) => wanted.includes(o.key) || wanted.includes(String(o.value)),
-        );
-      }
-      const term = searching.search?.trim().toLowerCase();
-      if (term) {
-        return options.filter((o) => String(o.label).toLowerCase().includes(term));
-      }
-      return options;
+  // The form holds values in its own shape (a list is rows of `__value`): in and out through the port.
+  const toFieldValue = useCallback(
+    (key: string) => {
+      const current = choicesRef.current;
+      const option =
+        current.status === "ready" ? current.options.find((candidate) => candidate.key === key) : undefined;
+      return option ? recursiveSet(option.value, port) : key;
     },
-    [liveValue, statePaths, stateAccessors],
+    [port],
   );
+  const fieldKey = useCallback(
+    (fieldValue: unknown) =>
+      fieldValue === undefined || fieldValue === null
+        ? undefined
+        : choiceKey(typeof fieldValue === "object" ? recursiveExtract(fieldValue, port) : fieldValue),
+    [port],
+  );
+
+  const name = pathToName(props.path);
+  const label = portLabel(port) || undefined;
 
   if (!stateKey) {
     return <div>Invalid state choices widget configuration</div>;
@@ -161,9 +166,7 @@ export const StateChoiceWidget = (
   if (!agentID) {
     return (
       <div className="flex flex-col gap-1">
-        <FormLabel className="text-sm">
-          {portLabel(props.port)}
-        </FormLabel>
+        {label && <FormLabel className="text-sm">{label}</FormLabel>}
         <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           {dependency
             ? `First select an agent for "${dependencyLabel}"`
@@ -174,16 +177,20 @@ export const StateChoiceWidget = (
   }
 
   return (
-    <>
-      <SearchField
-        name={pathToName(props.path)}
-        label={portLabel(props.port)}
-        search={search}
-        description={portDescription(props.port, props.widget)}
-        noOptionFoundPlaceholder="No options found"
-        commandPlaceholder="Search..."
-        searchKey={revision ?? undefined}
-      />
-    </>
+    <SearchField
+      // A row of a list changes its name when a row before it goes: the field starts over under the new one.
+      key={name}
+      name={name}
+      label={label}
+      search={search}
+      toFieldValue={toFieldValue}
+      fieldKey={fieldKey}
+      description={portDescription(port, props.widget)}
+      noOptionFoundPlaceholder={
+        choices.status === "waiting" ? "Waiting for the agent's state…" : "No options found"
+      }
+      commandPlaceholder="Search..."
+      searchKey={`${choices.status}:${choicesSignature(options)}`}
+    />
   );
 };
