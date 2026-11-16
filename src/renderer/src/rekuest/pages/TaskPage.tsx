@@ -278,7 +278,7 @@ export const TPage = asDetailQueryRoute(
           placed={panel ? panelTimeline : sceneTimeline}
         >
           {panel ? (
-            <div className="h-full overflow-y-auto p-4">
+            <div className="h-full p-4">
               <TaskRunPanel taskId={data.task.id} showAsk={panelAsks} />
             </div>
           ) : (

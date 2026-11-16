@@ -175,8 +175,9 @@ export const MaterializedBlokEmbed = ({
       ) : (
         <div
           className={cn(
-            "overflow-auto rounded-md",
-            scene ? "aspect-[8/5] w-full" : "max-h-[60vh]",
+            // The blok scrolls itself: a capped flex column lets it shrink to the cap instead of growing past it.
+            "overflow-hidden rounded-md",
+            scene ? "aspect-[8/5] w-full" : "flex max-h-[60vh] flex-col",
             // Settled, the blok shows what was chosen but takes no more input.
             frozen && "pointer-events-none select-none opacity-80",
           )}

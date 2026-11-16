@@ -105,6 +105,7 @@ export const InteractionCard = ({
                 <DemoBlokRenderer
                   surfaceId={`interaction-${interaction.id}`}
                   blok={interaction.blok}
+                  chrome="none"
                 />
               </ErrorBoundary>
             </div>

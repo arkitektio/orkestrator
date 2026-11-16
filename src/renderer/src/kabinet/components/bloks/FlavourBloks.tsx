@@ -119,7 +119,9 @@ const BlokPreview = ({ blok }: { blok: KabinetBlokFragment }) => {
         surfaceId={`kabinet-preview-${blok.id}`}
         uiComponents={roots}
         initialState={initialState}
-        chrome="minimal"
+        // The bordered box frames it; a preview offers no view controls.
+        chrome="none"
+        sceneControls={false}
         refuseAction={REFUSE_EVERY_ACTION}
       />
     </AsyncBoundary>
@@ -205,7 +207,7 @@ const PreviewCell = ({ blok, scene }: { blok: KabinetBlokFragment; scene?: boole
       {blok.parseError ? (
         <ParseFailure blok={blok} />
       ) : live ? (
-        <div className={cn("overflow-auto rounded-xl border", scene ? "h-[28rem]" : "max-h-[32rem] p-3")}>
+        <div className={cn("overflow-hidden rounded-xl border", scene ? "h-[28rem]" : "flex max-h-[32rem] flex-col p-3")}>
           <BlokPreview blok={blok} />
         </div>
       ) : (

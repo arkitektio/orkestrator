@@ -161,7 +161,7 @@ const ArgsPanel = ({ args }: { args: ArgPortFragment[] }) => (
 );
 
 const Preview = (props: { blokId?: string; tree: BlokComponentNode | null; declarations: BlokDeclarations }) => (
-  <div className="h-full overflow-auto p-3">
+  <div className="h-full p-3">
     {props.tree ? (
       <ErrorBoundary
         resetKeys={[props.tree, props.declarations]}

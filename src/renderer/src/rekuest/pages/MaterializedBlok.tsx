@@ -242,7 +242,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
         </Sidebars>
       }
     >
-      <div className="flex h-full w-full flex-col p-3">
+      <div className="flex h-full w-full flex-col">
         <div className="min-h-0 flex-1">
           {/* Around the renderer, not in it: the cards a scene opens are bloks of their own and follow the same clock. */}
           {asking ? (

@@ -137,7 +137,10 @@ export const AssignBloks = ({
           {drawn}
         </div>
       ) : (
-        <React.Fragment key={blok.id}>{drawn}</React.Fragment>
+        // Its own height: in the dialog's scrolling body a fill box would shrink to nothing.
+        <div key={blok.id} className="shrink-0">
+          {drawn}
+        </div>
       );
     })}
   </>

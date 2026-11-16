@@ -20,7 +20,8 @@ const MaterializedBlokById = React.lazy(
 
 const MaterializedBlokCard = ({id}: {id: string}) => (
   <React.Suspense fallback={null}>
-    <MaterializedBlokById materializedBlokId={id} />
+    {/* The scene's card frames it already. */}
+    <MaterializedBlokById materializedBlokId={id} chrome="none" />
   </React.Suspense>
 );
 

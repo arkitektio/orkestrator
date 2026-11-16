@@ -13,7 +13,8 @@ export const TaskRunPanel = ({taskId, showAsk = false, className}: {taskId: stri
   const shown = useTaskActionBlok(task, ComponentContext.Panel);
   if (!shown) return null;
   return (
-    <div className={className}>
+    // A bounded box the blok fills and scrolls in: an auto-height wrapper would cut the height chain.
+    <div className={className ?? 'h-full'}>
       <ActionBlokRenderer
         surfaceId={`task-${taskId}-panel`}
         chrome="minimal"

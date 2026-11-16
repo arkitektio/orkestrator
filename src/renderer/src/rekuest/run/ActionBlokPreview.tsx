@@ -83,6 +83,7 @@ export const ActionBlokPreview = ({
           <ActionBlokRenderer
             surfaceId={`action-${actionId}-scene-preview`}
             chrome="none"
+            sceneControls={false}
             sizing="fill"
             actionBlok={scene}
             run={run}

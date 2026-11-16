@@ -34,7 +34,7 @@ export const BsxDraftPreview = ({source}: {source: string}) => {
             resetKeys={[tree]}
             fallbackRender={({error}) => <ErrorNote error={error} title="The preview could not draw this" />}
           >
-            <DemoBlokRenderer surfaceId={surfaceId} blok={{id: 'draft', componentTree: [tree], ...NO_DECLARATIONS}} />
+            <DemoBlokRenderer surfaceId={surfaceId} blok={{id: 'draft', componentTree: [tree], ...NO_DECLARATIONS}} chrome="none" />
           </ErrorBoundary>
         ) : (
           <p className="text-xs text-muted-foreground">The preview shows once the source starts to parse.</p>

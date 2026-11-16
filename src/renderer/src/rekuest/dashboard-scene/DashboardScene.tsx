@@ -132,10 +132,12 @@ const useDashboardScene = () => {
 
 const DashboardDynamicLoader = ({ blok }: { blok: MaterializedBlokFragment }) => {
   return (
-    <div className="h-full overflow-auto p-3 @container">
+    // The blok scrolls itself; the dock panel frames it already.
+    <div className="h-full p-3 @container">
       <MaterializedBlokRenderer
         surfaceId={blok.id}
         materializedBlok={blok}
+        chrome="minimal"
       />
     </div>
   );

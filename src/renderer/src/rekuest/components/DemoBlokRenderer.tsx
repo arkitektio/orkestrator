@@ -37,6 +37,8 @@ export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
   return (
     <RekuestDemoHost>
       <BlokRenderer
+        // A demo is a preview: its scene offers no view controls unless the host asks for them.
+        sceneControls={false}
         {...rendererProps}
         surfaceId={surfaceId ?? `${blok.id ?? 'blok'}-demo`}
         uiComponents={roots}
