@@ -1,3 +1,10 @@
+## [8.0.2](https://github.com/arkitektio/orkestrator/compare/v8.0.1...v8.0.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* a blok with chrome="none" shows no scene view controls ([97b2f18](https://github.com/arkitektio/orkestrator/commit/97b2f18e5ba2831776a91fbd456b91a52a722c60))
+
 ## [8.0.1](https://github.com/arkitektio/orkestrator/compare/v8.0.0...v8.0.1) (2026-11-16)
 
 
