@@ -1,3 +1,10 @@
+## [8.1.1](https://github.com/arkitektio/orkestrator/compare/v8.1.0...v8.1.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* what an assign blok places in a popover or accordion is sent once it is closed ([7ce5664](https://github.com/arkitektio/orkestrator/commit/7ce56647a30ebfabb890d30506bbee19a7cfafea))
+
 # [8.1.0](https://github.com/arkitektio/orkestrator/compare/v8.0.2...v8.1.0) (2026-11-16)
 
 
