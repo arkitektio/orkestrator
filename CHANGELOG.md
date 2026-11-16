@@ -1,3 +1,15 @@
+# [8.0.0](https://github.com/arkitektio/orkestrator/compare/v7.1.0...v8.0.0) (2026-11-16)
+
+
+* feat!: bloks are self-contained <Blok kind context> trees ([ce5197e](https://github.com/arkitektio/orkestrator/commit/ce5197e4f7dfa3deef8174d50bff820625c7f6e2))
+
+
+### BREAKING CHANGES
+
+* needs rekuest-server and kabinet-server with the self-contained blok schema and @arkitektio/bsx 6; locals kept on a device before are dropped once.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 # [7.1.0](https://github.com/arkitektio/orkestrator/compare/v7.0.0...v7.1.0) (2026-11-15)
 
 
