@@ -25,6 +25,8 @@ export type TaskRootSource = {
   events: ReadonlyArray<{
     kind: TaskEventKind;
     value?: unknown;
+    /** What a PROGRESS event reported (0-100). */
+    progress?: number | null;
     message?: string | null;
     createdAt?: string | null;
     task: {id: string};
@@ -120,12 +122,14 @@ export const taskRecordOf = (task: TaskRootSource, at?: number): TaskRecord => {
     const ended = isTerminalEvent(latest.kind);
     const asks = ended ? [] : openAsks({events: seen});
     const status = statusOf(latest.kind, ended, asks.length > 0);
+    // The progress the run had reported by then: its newest progress up to the moment.
+    const reported = seen.find(event => typeof event.progress === 'number' && Number.isFinite(event.progress))?.progress ?? 0;
     return {
       ...withStatus(status),
       ...historyOf(seen, ended),
       id: task.id,
       args,
-      progress: status === 'done' ? 100 : 0,
+      progress: status === 'done' ? 100 : Math.min(100, Math.max(0, reported)),
       message: latest.message ?? null,
       error: status === 'failed' ? (latest.message ?? null) : null,
       ask: askOf(asks.at(-1)),

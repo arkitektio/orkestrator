@@ -27,6 +27,14 @@ const running = (overrides: Partial<TaskRootSource> = {}): TaskRootSource => ({
 });
 
 describe('task: the one task record', () => {
+  it('at a moment, shows the progress the run had reported by then', () => {
+    const progress = (value: number, at: string) => ({kind: TaskEventKind.Progress, progress: value, message: null, createdAt: at, task: {id: 't1'}});
+    const run = running({events: [progress(80, '2026-10-25T10:00:03Z'), progress(30, '2026-10-25T10:00:01Z'), started]});
+    expect(taskRecordOf(run, Date.parse('2026-10-25T10:00:00.500Z')).progress).toBe(0);
+    expect(taskRecordOf(run, Date.parse('2026-10-25T10:00:02Z')).progress).toBe(30);
+    expect(taskRecordOf(run, Date.parse('2026-10-25T10:00:04Z')).progress).toBe(80);
+  });
+
   it('reads what the run last reported, with its id and args', () => {
     expect(taskRecordOf(running())).toEqual({
       ...idleTaskRecord(),
