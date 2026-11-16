@@ -23,7 +23,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { DependenciesContainer } from "@arkitektio/bsx/ports/dependencies/DependenciesContainer";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWatch } from "react-hook-form";
 import { AssignBloks, useAssignBloks } from "../../run/AssignBloks";
 import type { AssignParts } from "../../run/ActionBlokRenderer";
@@ -108,11 +108,15 @@ export const AssignForm = ({
     [defaults, prefillLatest, latestTask?.args, args],
   );
 
+  // What the assign bloks place (`<arg />`, `<args />`): sent even while a closed popover or
+  // accordion holds its field. Known once the bloks are read, which needs this form's pins.
+  const [placedArgs, setPlacedArgs] = useState<string[]>([]);
   const form = useAssignForm({
     ports: formPorts,
     dependencies: pinning?.dependencies,
     overwrites,
     reValidateMode: "onChange",
+    placed: placedArgs,
   });
 
   const hiddenKeys = useMemo(
@@ -198,6 +202,8 @@ export const AssignForm = ({
   const portGroups = action?.portGroups;
   const boundAgent = implementation?.agent.id;
   const argKeys = useMemo(() => (formPorts ?? []).map((port) => port.key), [formPorts]);
+  const placedKey = assignBloks ? [...setup.argsPlaced(argKeys)].sort().join("\u0000") : "";
+  useEffect(() => setPlacedArgs(placedKey ? placedKey.split("\u0000") : []), [placedKey]);
   const givenKeys = useMemo(
     () => argKeys.filter((key) => hiddenKeys?.[key]),
     [argKeys, hiddenKeys],
