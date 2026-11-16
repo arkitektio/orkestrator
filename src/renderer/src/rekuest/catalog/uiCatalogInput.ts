@@ -137,7 +137,7 @@ const sortByKey = <T extends { key: string }>(items: T[]): T[] =>
   [...items].sort((left, right) => left.key.localeCompare(right.key));
 
 const CONTEXT: Record<BlokComponentContext, ComponentContext> = {
-  html: ComponentContext.Html,
+  panel: ComponentContext.Panel,
   scene: ComponentContext.Scene,
   logo: ComponentContext.Logo,
 };
@@ -155,7 +155,7 @@ export const componentInput = (component: {
     name: component.name,
     description: describe(component.schema),
     acceptsChildren: component.acceptsChildren ?? "children" in shape,
-    context: CONTEXT[placement.context ?? "html"],
+    context: CONTEXT[placement.context ?? "panel"],
     childrenContext: placement.childrenContext ? CONTEXT[placement.childrenContext] : null,
     inheritsContext: placement.inheritsContext ?? false,
     downstreamOf: [...(placement.downstreamOf ?? [])].sort(),
@@ -246,7 +246,7 @@ const canonicalize = (
       name: component.name,
       description: component.description ?? null,
       acceptsChildren: component.acceptsChildren ?? true,
-      context: component.context ?? ComponentContext.Html,
+      context: component.context ?? ComponentContext.Panel,
       childrenContext: component.childrenContext ?? null,
       downstreamOf: [...(component.downstreamOf ?? [])].sort(),
       notDownstreamOf: [...(component.notDownstreamOf ?? [])].sort(),

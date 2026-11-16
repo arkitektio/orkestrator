@@ -7,7 +7,7 @@ describe("createCheckScheduler", () => {
   afterEach(() => vi.useRealTimers());
 
   it("checks once, after the draft stops changing", async () => {
-    const run = vi.fn(async () => ({ diagnostics: [], resolvedLocals: [{ key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] }));
+    const run = vi.fn(async () => ({ diagnostics: [], resolvedLocals: [{ node: "Blok[0]/local[0]", key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] }));
     const results: ServerCheck[] = [];
     const scheduler = createCheckScheduler(run, (check) => results.push(check), 1000);
     scheduler.schedule("a");
@@ -19,7 +19,7 @@ describe("createCheckScheduler", () => {
     expect(run).toHaveBeenCalledExactlyOnceWith("ab");
     expect(results.map((check) => check.status)).toEqual(["checking", "ok"]);
     // An answer names the draft it is for, with the locals as the server resolves them.
-    expect(results[1]).toEqual({ status: "ok", checked: '"ab"', resolvedLocals: [{ key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] });
+    expect(results[1]).toEqual({ status: "ok", checked: '"ab"', resolvedLocals: [{ node: "Blok[0]/local[0]", key: "on", kind: LocalKind.Bool, nullable: false, persist: false }] });
   });
 
   it("drops a slow answer to an older draft", async () => {

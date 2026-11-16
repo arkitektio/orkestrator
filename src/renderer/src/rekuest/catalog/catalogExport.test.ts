@@ -21,8 +21,8 @@ describe('buildCatalogExport', () => {
 
     expect(catalog.name).toBe(UI_CATALOG_NAME);
     expect(catalog.description).toBeTruthy();
-    expect(catalogs).toEqual(['base@3']);
-    expect(contexts).toEqual(['HTML', 'SCENE', 'LOGO']);
+    expect(catalogs).toEqual(['base@4']);
+    expect(contexts).toEqual(['PANEL', 'SCENE', 'LOGO']);
     expect(catalog.catalogs).toEqual(catalogs);
     // A module adds components only: what a blok calls is the language's.
     expect(catalog.operations).toEqual([]);
@@ -32,14 +32,14 @@ describe('buildCatalogExport', () => {
     const {published} = buildCatalogExport();
 
     expect([published.id, published.name, published.version, published.minor]).toEqual([UI_CATALOG_ID, UI_CATALOG_NAME, UI_CATALOG_VERSION, 0]);
-    expect(published.extends).toBe('https://arkitekt.live/catalogs/base/v3');
+    expect(published.extends).toBe('https://arkitekt.live/catalogs/base/v4');
   });
 
   it('publishes only what the base catalog does not hold: its components are the spec\'s, never repeated', () => {
     const {catalog, published} = buildCatalogExport();
     const inCatalog = new Set(catalog.components.map(component => component.name));
 
-    for (const name of [...baseBlokCatalog.components.keys(), 'Button', 'div', 'Scene', 'Sheet', 'Chart', 'AgentLogo', 'StructurePicker']) {
+    for (const name of [...baseBlokCatalog.components.keys(), 'Button', 'div', 'Scene', 'Sheet', 'Chart', 'Logo', 'StructurePicker']) {
       expect(inCatalog.has(name), name).toBe(false);
     }
     expect(published.components.map(component => component.name)).toEqual([...inCatalog].sort());

@@ -39,7 +39,7 @@ const interaction = (
   description: `${key} described`,
   blok: {
     id: `blok-${id}`,
-    context: ComponentContext.Html,
+    context: ComponentContext.Panel,
     heldByAction: true,
     componentTree: [],
     vocab: 2,

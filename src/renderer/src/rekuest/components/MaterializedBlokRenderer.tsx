@@ -11,9 +11,9 @@ import {
 } from '@arkitektio/bsx/renderer/runtime/index';
 import {
   declaredLocals,
-  declaredQueries,
-  declaredSubscriptions,
   liveModel,
+  treeQueries,
+  treeSubscriptions,
   type BlokDeclarations,
 } from '@arkitektio/bsx/renderer/declarations';
 import {describeError, toast} from '@/core/notify';
@@ -55,7 +55,7 @@ export type BlokAssignRecord = {
   blocked: string | null;
 };
 
-/** What a blok draws, v2: its tree and what it declares beside it. */
+/** What a blok draws, v2: its tree (which declares its locals, queries and subscriptions) and how the server resolved its locals. */
 export type MaterializedContent = BlokDeclarations & {
   /** Typed `ComponentNode` tree, in the wire spelling. */
   componentTree?: unknown;
@@ -103,7 +103,7 @@ type MaterializedBlokRendererProps = Omit<
   | 'answerTask'
   | 'componentState'
   | 'keptValues'
-  | 'keptRoots'
+  | 'keptLocals'
 > & {
   materializedBlok: MaterializedBlokData;
   /** The items the blok is opened for, by arg key; a declared arg left out reads null. */
@@ -412,8 +412,9 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
     [materializedBlok.agentMappings],
   );
-  const queries = React.useMemo(() => declaredQueries(shown), [shown]);
-  const subscriptions = React.useMemo(() => declaredSubscriptions(shown), [shown]);
+  // The reads are the tree's `<query>`/`<subscription>` children.
+  const queries = React.useMemo(() => treeQueries(roots), [roots]);
+  const subscriptions = React.useMemo(() => treeSubscriptions(roots), [roots]);
   const readVariables = React.useMemo(
     () => [...queries, ...subscriptions].flatMap(read => read.variables ?? []),
     [queries, subscriptions],
@@ -436,7 +437,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
 
   // Seeded once: the syncs follow later changes.
   const {initialState, statuses} = React.useMemo(() => {
-    const live = liveModel(roots, shown);
+    const live = liveModel(roots);
     const deps = Object.fromEntries(
       materializedBlok.agentMappings.map(mapping => [
         mapping.key,
@@ -463,13 +464,13 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
      <RekuestAssetHost agents={boundAgents}>
       <BlokRenderer
         // Opened again when what it keeps changes: the kept values seed a new runtime.
-        key={persistence ? [...persistence.keys].join('\u0000') : undefined}
+        key={persistence ? [...persistence.locals].join('\u0000') : undefined}
         {...rendererProps}
         uiComponents={roots}
         initialState={initialState}
         statuses={statuses}
         keptValues={persistence?.initial}
-        keptRoots={persistence?.keys}
+        keptLocals={persistence?.locals}
         dispatchAction={dispatchAction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
         unavailableDependencies={unavailableDependencies}

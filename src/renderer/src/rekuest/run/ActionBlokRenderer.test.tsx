@@ -29,7 +29,7 @@ vi.mock('@/rekuest/travel/context', async importOriginal => ({
   }),
 }));
 
-import {ComponentContext, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
+import {ActionBlokPhase, ComponentContext, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import {ActionBlokRenderer, chromeOf, drawsTimeline, keysPlaced, runOfTask, treeHolds, unboundOfRun} from './ActionBlokRenderer';
 import {installAppBlokCatalog} from '@/core/blok/testing';
 
@@ -42,10 +42,11 @@ const text = (id: string, path: string) => ({id, component: 'Text', props: [{key
 /** The sketch's task panel: the run's report, the workflow's own state, a device's state, the ask. */
 const actionBlok: ActionBlokFragment = {
   id: '5',
-  context: ComponentContext.Html,
+  context: ComponentContext.Panel,
+  phase: ActionBlokPhase.Run,
   blok: {
     id: 'b5',
-    context: ComponentContext.Html,
+    context: ComponentContext.Panel,
     heldByAction: true,
     componentTree: [
       {
@@ -62,6 +63,7 @@ const actionBlok: ActionBlokFragment = {
       },
     ],
     vocab: 2,
+    catalogs: [],
     resolvedLocals: [],
     demo: null,
     queries: [],
@@ -215,15 +217,15 @@ describe('what a blok places of the host\'s own', () => {
 
 describe('how much a blok leaves the host to draw', () => {
   it('reads chrome off the root, and takes anything else as auto', () => {
-    expect(chromeOf([{id: 'root', component: 'Html', props: [{key: 'chrome', static_value: 'none'}]}])).toBe('none');
-    expect(chromeOf([{id: 'root', component: 'Html'}])).toBe('auto');
+    expect(chromeOf([{id: 'root', component: 'Blok', props: [{key: 'chrome', static_value: 'none'}]}])).toBe('none');
+    expect(chromeOf([{id: 'root', component: 'Blok'}])).toBe('auto');
     // Only the root says it.
-    expect(chromeOf([{id: 'root', component: 'Html', children: [{id: 'c', component: 'Card', props: [{key: 'chrome', static_value: 'none'}]}]}])).toBe('auto');
+    expect(chromeOf([{id: 'root', component: 'Blok', children: [{id: 'c', component: 'Card', props: [{key: 'chrome', static_value: 'none'}]}]}])).toBe('auto');
     expect(chromeOf(null)).toBe('auto');
   });
 
   it('finds a part anywhere in a stored tree', () => {
-    const tree = [{id: 'root', component: 'Html', children: [{id: 'c', component: 'Card', children: [{id: 't', component: 'timeline'}]}]}];
+    const tree = [{id: 'root', component: 'Blok', children: [{id: 'c', component: 'Card', children: [{id: 't', component: 'timeline'}]}]}];
     expect(treeHolds(tree, 'timeline')).toBe(true);
     expect(treeHolds(tree, 'returns')).toBe(false);
   });

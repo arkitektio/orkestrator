@@ -212,7 +212,7 @@ export const TPage = asDetailQueryRoute(
     const { task: run, error: runError } = useRunTask(data.task.id, {
       follow: own === undefined,
     });
-    const panel = useTaskActionBlok(run, ComponentContext.Html);
+    const panel = useTaskActionBlok(run, ComponentContext.Panel);
     const scene = useTaskActionBlok(run, ComponentContext.Scene);
     const { view, setView } = useTaskView(
       data.task.action.id,

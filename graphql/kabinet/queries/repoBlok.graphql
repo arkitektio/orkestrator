@@ -13,10 +13,7 @@ query RepoBlokTree($id: ID!) {
     vocab
     catalogs
     module
-    locals
     demo
-    queries
-    subscriptions
   }
 }
 

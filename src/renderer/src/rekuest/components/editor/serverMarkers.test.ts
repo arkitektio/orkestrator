@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { diagnosticMarkers, rangeForServerPath, refusalMarkers } from "./serverMarkers";
 
-const source = '<Html><Card>\n  <Button label="Gö" onClick={deps.stage.move()} />\n</Card></Html>';
+const source = '<Blok kind="custom" context="panel"><Card>\n  <Button label="Gö" onClick={deps.stage.move()} />\n</Card></Blok>';
 const slice = (range: { start: number; end: number }) => source.slice(range.start, range.end);
 
 describe("server markers", () => {
   it("places a diagnostic by node id and prop", () => {
-    expect(slice(rangeForServerPath(source, "Html[0]/Card[0]/Button[0]"))).toBe("Button");
-    expect(slice(rangeForServerPath(source, "Html[0]/Card[0]/Button[0].props.onClick"))).toBe("deps.stage.move()");
+    expect(slice(rangeForServerPath(source, "Blok[0]/Card[0]/Button[0]"))).toBe("Button");
+    expect(slice(rangeForServerPath(source, "Blok[0]/Card[0]/Button[0].props.onClick"))).toBe("deps.stage.move()");
   });
 
   it("falls back to the root tag", () => {
-    expect(slice(rangeForServerPath(source, null))).toBe("Html");
-    expect(slice(rangeForServerPath(source, "somewhere/else"))).toBe("Html");
+    expect(slice(rangeForServerPath(source, null))).toBe("Blok");
+    expect(slice(rangeForServerPath(source, "somewhere/else"))).toBe("Blok");
   });
 
   it("turns diagnostics into warnings", () => {
@@ -28,7 +28,7 @@ describe("server markers", () => {
   });
 
   it("counts the server's columns in code points", () => {
-    const wide = '<Html><Card>\n  <Text text="😀" x />\n</Card></Html>';
+    const wide = '<Blok kind="custom" context="panel"><Card>\n  <Text text="😀" x />\n</Card></Blok>';
     const [marker] = refusalMarkers(new Error("bsx.syntax at line 2, column 18"), wide);
     expect(wide.slice(marker.range.start).startsWith("x />")).toBe(true);
   });

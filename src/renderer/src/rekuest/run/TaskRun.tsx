@@ -10,7 +10,7 @@ import {useRunTask, useTaskActionBlok} from './useRun';
  */
 export const TaskRunPanel = ({taskId, showAsk = false, className}: {taskId: string; showAsk?: boolean; className?: string}) => {
   const {task} = useRunTask(taskId);
-  const shown = useTaskActionBlok(task, ComponentContext.Html);
+  const shown = useTaskActionBlok(task, ComponentContext.Panel);
   if (!shown) return null;
   return (
     <div className={className}>

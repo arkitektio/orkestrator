@@ -5,15 +5,13 @@ query KabinetLogoTree($id: ID!) {
     hash
     componentTree
     vocab
-    locals
     demo
-    queries
   }
 }
 
 # What a flavour's app brings, for its Bloks tab: every blok ready to draw, the
 # files they name (name, kind, ref, size, path or source; nothing stores them
-# before the app is installed), and which action each ACTION_LOGO draws.
+# before the app is installed), and which action each action logo draws.
 query FlavourBloks($id: ID!) {
   flavour(id: $id) {
     id

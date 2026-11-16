@@ -40,7 +40,7 @@ export const ActionBlokPreview = ({
 }) => {
   const {data} = useActionBloksQuery({variables: {id: actionId}});
   const bloks = data?.action.bloks;
-  const html = actionBlokFor(bloks, ComponentContext.Html);
+  const html = actionBlokFor(bloks, ComponentContext.Panel);
   const scene = actionBlokFor(bloks, ComponentContext.Scene);
 
   // The agent a run would most likely go to: a connected one, else any.

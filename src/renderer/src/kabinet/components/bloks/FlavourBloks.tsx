@@ -266,6 +266,9 @@ const AssetTable = ({ assets }: { assets: InspectedAsset[] }) => (
   </div>
 );
 
+/** The kind of an action's own blok: in the LOGO context, an action's logo. */
+const ACTION_KIND = "action";
+
 const byContext = (bloks: KabinetBlokFragment[], context: ComponentContext) =>
   bloks.filter((blok) => blok.context === context);
 
@@ -298,9 +301,11 @@ export const FlavourBloks = ({ flavourId }: { flavourId: string }) => {
   if (error) return <QueryError error={error} onRetry={() => void refetch()} />;
   if (loading && !flavour) return <Loader2 className="size-5 animate-spin text-muted-foreground" />;
 
-  const logos = byContext(bloks, ComponentContext.Logo);
-  const actionLogos = byContext(bloks, ComponentContext.ActionLogo);
-  const panels = byContext(bloks, ComponentContext.Html);
+  // One LOGO context for both: the `<Blok kind>` says whose logo it is (the app's agent, or an action).
+  const allLogos = byContext(bloks, ComponentContext.Logo);
+  const logos = allLogos.filter((blok) => blok.kind !== ACTION_KIND);
+  const actionLogos = allLogos.filter((blok) => blok.kind === ACTION_KIND);
+  const panels = byContext(bloks, ComponentContext.Panel);
   const scenes = byContext(bloks, ComponentContext.Scene);
 
   return (

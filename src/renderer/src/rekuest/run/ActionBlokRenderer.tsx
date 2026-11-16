@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {dependencyKeysRead} from '@arkitektio/bsx/bsx/infer';
-import {normalizeBlokArgument, normalizeBlokComponentTree, type BlokActionArgument, type BlokComponentNode, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
+import {normalizeBlokComponentTree, type BlokComponentNode, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import {BlokRunHostProvider, type BlokRunHost} from '@arkitektio/bsx/renderer/bloks/run/index';
 import {ActionBlokPhase, TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
@@ -145,15 +145,11 @@ export const blokHolds = (actionBlok: ActionBlokFragment, component: string | nu
 const isComponentNode = (value: unknown): value is BlokComponentNode =>
   typeof value === 'object' && value !== null && typeof (value as {id?: unknown}).id === 'string' && typeof (value as {component?: unknown}).component === 'string';
 
-/** The dependency keys `actionBlok`'s tree reads that `binding` binds to no agent. */
+/** The dependency keys `actionBlok`'s tree reads (its query variables too: `<var>` nodes) that `binding` binds to no agent. */
 export const unboundOfRun = (actionBlok: ActionBlokFragment, binding: RunBinding): string[] => {
   const {roots} = normalizeBlokComponentTree(actionBlok.blok.componentTree as unknown[] | null);
-  const variables = [...(actionBlok.blok.queries ?? []), ...(actionBlok.blok.subscriptions ?? [])].flatMap(read =>
-    (Array.isArray(read.variables) ? read.variables : []).map(argument => normalizeBlokArgument(argument) as BlokActionArgument),
-  );
   const bound = new Set(binding.map(({key}) => key));
-  const nodes = roots.filter(isComponentNode);
-  return dependencyKeysRead(nodes, variables).filter(key => !bound.has(key));
+  return dependencyKeysRead(roots.filter(isComponentNode)).filter(key => !bound.has(key));
 };
 
 /** Whether `actionBlok`'s tree draws the run's open ask itself (an `<ask />` anywhere in it). */
@@ -213,7 +209,7 @@ export const treeHolds = (componentTree: unknown, component: string): boolean =>
 
 /**
  * How much the host draws around a blok of its own, as its root says
- * (`<Html chrome="none">`): `none` adds nothing the blok could place itself.
+ * (`<Blok chrome="none">`): `none` adds nothing the blok could place itself.
  */
 export const chromeOf = (componentTree: unknown): 'auto' | 'none' => {
   const {roots} = normalizeBlokComponentTree(componentTree as unknown[] | null);
@@ -267,8 +263,6 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, args: filling, par
         vocab: actionBlok.blok.vocab,
         resolvedLocals: actionBlok.blok.resolvedLocals,
         demo: actionBlok.blok.demo,
-        queries: actionBlok.blok.queries,
-        subscriptions: actionBlok.blok.subscriptions,
       },
       revision: null,
       agentMappings: agentMappingsOf(run.binding, run.self),

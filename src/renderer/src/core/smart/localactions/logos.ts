@@ -1,7 +1,8 @@
 import { actionLogoSource } from "@arkitektio/bsx/logo/actionLogoSource";
 
 /**
- * The logos of the host's own local actions (`registry.tsx`): v2 logo BSX (`ActionLogo`),
+ * The logos of the host's own local actions (`registry.tsx`): v2 action logo BSX
+ * (`<Blok kind="action" context="logo">`),
  * drawn with the same pen as the agent's (`core/agent/logos.ts`), but never
  * declared to rekuest: `SourceLogo` draws them from here.
  */

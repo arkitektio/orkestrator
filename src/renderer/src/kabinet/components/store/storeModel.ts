@@ -20,7 +20,7 @@ export type StoreBlok = StoreFlavourFragment["blokImplementations"][number];
  * their app and its actions, so they are no thing to install.
  */
 export const isOfferedBlok = (blok: Pick<StoreBlok, "context">): boolean =>
-  blok.context === ComponentContext.Html || blok.context === ComponentContext.Scene;
+  blok.context === ComponentContext.Panel || blok.context === ComponentContext.Scene;
 
 export type Hardware = "gpu" | "cpu";
 

@@ -3,7 +3,7 @@ fragment Definition on Definition {
   name
   hash
   description
-  # The ACTION_LOGO blok that draws it (that of the newest flavour naming one).
+  # The action logo blok (kind action, context LOGO) that draws it (that of the newest flavour naming one).
   logo {
     ...KabinetLogoBlok
   }

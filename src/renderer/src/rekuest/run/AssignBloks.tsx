@@ -62,7 +62,7 @@ export const useAssignBloks = (
   const {data} = useActionBloksQuery({variables: {id: actionId ?? ''}, skip: !actionId});
   const declared = data?.action.assignBloks ?? NO_BLOKS;
   const bloks = React.useMemo(
-    () => [...declared].sort((a, b) => Number(a.context !== ComponentContext.Html) - Number(b.context !== ComponentContext.Html)),
+    () => [...declared].sort((a, b) => Number(a.context !== ComponentContext.Panel) - Number(b.context !== ComponentContext.Panel)),
     [declared],
   );
   const pinKey = JSON.stringify(pinned ?? []);

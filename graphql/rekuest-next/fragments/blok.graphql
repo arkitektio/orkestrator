@@ -95,29 +95,11 @@ fragment BlokLocalChild on ArgPort {
   }
 }
 
-# A local as the blok wrote it, its kind null when it was left out. Only the
-# editor reads these: it loads and sends them as written, so a re-save never
-# pins an inferred kind.
-fragment BlokLocal on BlokLocal {
-  key
-  label
-  kind
-  description
-  identifier
-  nullable
-  default
-  persist
-  choices {
-    ...BlokLocalChoice
-  }
-  children {
-    ...BlokLocalChild
-  }
-}
-
 # A local as the blok's tree resolves it, its kind always set (inferred when
 # the blok left it out, ANY when nothing tells): what renderers type it with.
 fragment ResolvedBlokLocal on ResolvedBlokLocal {
+  # The id of the `<local>` node that declares it: kept values are typed by it.
+  node
   key
   label
   kind
@@ -467,39 +449,12 @@ fragment BlokEditor on Blok {
   componentTree
   vocab
   catalogs
-  locals {
-    ...BlokLocal
-  }
-  # What the tree makes of them, for "inferred: X" before the source parses here.
-  resolvedLocals {
-    ...ResolvedBlokLocal
-  }
   demo {
     deps
     args
     task
     queries
     subscriptions
-  }
-  queries {
-    key
-    service
-    document
-    variables {
-      ...BlokArgument
-    }
-    poll
-    more
-  }
-  subscriptions {
-    key
-    service
-    document
-    variables {
-      ...BlokArgument
-    }
-    keep
-    history
   }
   args {
     ...ArgPort

@@ -18,21 +18,22 @@ const usePersistScope = (): Omit<BlokPersistScope, 'materializedBlok'> | null =>
 };
 
 /**
- * The locals this device keeps for a materialization (those declared
- * `Local(persist=True)`): `undefined` while they are read, `null` when there is
- * nothing to keep (the blok persists no local, or nobody is signed in to keep
- * it for). Opened again when the persisted keys, the hub or the user change.
+ * The locals this device keeps for a materialization (the `<local persist />`
+ * nodes, their values by runtime id): `undefined` while they are read, `null`
+ * when there is nothing to keep (the blok persists no local, or nobody is
+ * signed in to keep it for). Opened again when the persisted local nodes, the
+ * hub or the user change.
  */
 export const useBlokPersistence = (
   materializedBlok: string,
   locals: ReadonlyArray<BlokLocal> | null | undefined,
 ): BlokPersistence | null | undefined => {
   const scope = usePersistScope();
-  const keys = (locals ?? [])
+  const nodes = (locals ?? [])
     .filter(local => local.persist)
-    .map(local => local.key)
+    .map(local => local.node)
     .join('\u0000');
-  const wanted = scope && keys ? `${JSON.stringify([scope.hub, scope.user, materializedBlok])}\u0000${keys}` : null;
+  const wanted = scope && nodes ? `${JSON.stringify([scope.hub, scope.user, materializedBlok])}\u0000${nodes}` : null;
   const [opened, setOpened] = React.useState<{for: string; persistence: BlokPersistence} | null>(null);
   // Read when the blok is opened, not followed: new defaults alone open nothing again.
   const declared = React.useRef(locals);

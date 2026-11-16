@@ -1,5 +1,5 @@
-# A blok a flavour's app brings (FlavourBlok): its LOGO, an action's ACTION_LOGO,
-# a panel or a scene. kabinet parses its BSX source when the flavour is imported;
+# A blok a flavour's app brings (FlavourBlok): its logo (kind agent), an action's
+# logo (kind action, context LOGO), a panel or a scene. kabinet parses its BSX source when the flavour is imported;
 # `componentTree` is that tree in the runtime's own (snake_case) spelling, the
 # same value rekuest serves as `Blok.componentTree`.
 
@@ -14,15 +14,14 @@ fragment KabinetBlok on FlavourBlok {
   id
   flavourId
   key
+  kind
   context
   default
   description
   hash
   componentTree
   vocab
-  locals
   demo
-  queries
   forModel
   forNode
   parseError

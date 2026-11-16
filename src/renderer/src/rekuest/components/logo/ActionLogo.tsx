@@ -16,7 +16,7 @@ export const ACTION_LOGO_TASK_ROOT = "task";
 const REFUSE_EVERY_ACTION = () => true;
 
 /**
- * An action's logo (an `ActionLogo` blok, the action-logo kind), drawn against the
+ * An action's logo (a `<Blok kind="action" context="logo">`), drawn against the
  * task the viewer last ran of the action, in the v2 task record.
  *
  * Until they run it, that task is null and the logo is the drawing kept for

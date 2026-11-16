@@ -4,546 +4,562 @@
   "demo": {},
   "componentTree": [
    {
-    "id": "AgentLogo[0]",
+    "id": "Blok[0]",
+    "component": "Blok",
     "props": [
      {
-      "key": "viewBox",
-      "static_value": "0 0 64 64"
+      "key": "kind",
+      "static_value": "agent"
      },
      {
-      "key": "title",
-      "static_value": "basiks"
+      "key": "context",
+      "static_value": "logo"
      }
     ],
     "children": [
      {
-      "id": "AgentLogo[0]/Defs[0]",
+      "id": "Blok[0]/Logo[0]",
+      "props": [
+       {
+        "key": "viewBox",
+        "static_value": "0 0 64 64"
+       },
+       {
+        "key": "title",
+        "static_value": "basiks"
+       }
+      ],
       "children": [
        {
-        "id": "ground",
+        "id": "Blok[0]/Logo[0]/Defs[0]",
+        "children": [
+         {
+          "id": "ground",
+          "props": [
+           {
+            "key": "x1",
+            "static_value": "0"
+           },
+           {
+            "key": "y1",
+            "static_value": "0"
+           },
+           {
+            "key": "x2",
+            "static_value": "1"
+           },
+           {
+            "key": "y2",
+            "static_value": "1"
+           }
+          ],
+          "children": [
+           {
+            "id": "ground/Stop[0]",
+            "props": [
+             {
+              "key": "offset",
+              "static_value": "0"
+             },
+             {
+              "key": "stopColor",
+              "static_value": "ink"
+             }
+            ],
+            "component": "Stop"
+           },
+           {
+            "id": "ground/Stop[1]",
+            "props": [
+             {
+              "key": "offset",
+              "static_value": "1"
+             },
+             {
+              "key": "stopColor",
+              "static_value": "brand-strong"
+             }
+            ],
+            "component": "Stop"
+           }
+          ],
+          "component": "LinearGradient"
+         }
+        ],
+        "component": "Defs"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[0]",
         "props": [
          {
-          "key": "x1",
+          "key": "x",
           "static_value": "0"
          },
          {
-          "key": "y1",
+          "key": "y",
           "static_value": "0"
          },
          {
-          "key": "x2",
-          "static_value": "1"
+          "key": "width",
+          "static_value": "64"
          },
          {
-          "key": "y2",
-          "static_value": "1"
+          "key": "height",
+          "static_value": "64"
+         },
+         {
+          "key": "rx",
+          "static_value": "14"
+         },
+         {
+          "key": "fill",
+          "static_value": "url(#ground)"
+         }
+        ],
+        "component": "Rect"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[1]",
+        "props": [
+         {
+          "key": "x",
+          "static_value": "9"
+         },
+         {
+          "key": "y",
+          "static_value": "9"
+         },
+         {
+          "key": "width",
+          "static_value": "21"
+         },
+         {
+          "key": "height",
+          "static_value": "21"
+         },
+         {
+          "key": "rx",
+          "static_value": "5"
+         },
+         {
+          "key": "fill",
+          "static_value": "success"
+         }
+        ],
+        "component": "Rect"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[2]",
+        "props": [
+         {
+          "key": "x",
+          "static_value": "34"
+         },
+         {
+          "key": "y",
+          "static_value": "9"
+         },
+         {
+          "key": "width",
+          "static_value": "21"
+         },
+         {
+          "key": "height",
+          "static_value": "21"
+         },
+         {
+          "key": "rx",
+          "static_value": "5"
+         },
+         {
+          "key": "fill",
+          "static_value": "warning"
+         }
+        ],
+        "component": "Rect"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[3]",
+        "props": [
+         {
+          "key": "x",
+          "static_value": "9"
+         },
+         {
+          "key": "y",
+          "static_value": "34"
+         },
+         {
+          "key": "width",
+          "static_value": "21"
+         },
+         {
+          "key": "height",
+          "static_value": "21"
+         },
+         {
+          "key": "rx",
+          "static_value": "5"
+         },
+         {
+          "key": "fill",
+          "static_value": "brand"
+         }
+        ],
+        "component": "Rect"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[4]",
+        "props": [
+         {
+          "key": "x",
+          "static_value": "34"
+         },
+         {
+          "key": "y",
+          "static_value": "34"
+         },
+         {
+          "key": "width",
+          "static_value": "21"
+         },
+         {
+          "key": "height",
+          "static_value": "21"
+         },
+         {
+          "key": "rx",
+          "static_value": "5"
+         },
+         {
+          "key": "fill",
+          "static_value": "info"
+         }
+        ],
+        "component": "Rect"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/G[0]",
+        "props": [
+         {
+          "key": "fill",
+          "static_value": "ink"
          }
         ],
         "children": [
          {
-          "id": "ground/Stop[0]",
+          "id": "Blok[0]/Logo[0]/G[0]/Rect[0]",
           "props": [
            {
-            "key": "offset",
-            "static_value": "0"
+            "key": "x",
+            "static_value": "13"
            },
            {
-            "key": "stopColor",
-            "static_value": "ink"
+            "key": "y",
+            "static_value": "19.5"
+           },
+           {
+            "key": "width",
+            "static_value": "3.5"
+           },
+           {
+            "key": "height",
+            "static_value": "6"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
            }
           ],
-          "component": "Stop"
+          "component": "Rect"
          },
          {
-          "id": "ground/Stop[1]",
+          "id": "Blok[0]/Logo[0]/G[0]/Rect[1]",
           "props": [
            {
-            "key": "offset",
-            "static_value": "1"
+            "key": "x",
+            "static_value": "18.25"
            },
            {
-            "key": "stopColor",
-            "static_value": "brand-strong"
+            "key": "y",
+            "static_value": "14"
+           },
+           {
+            "key": "width",
+            "static_value": "3.5"
+           },
+           {
+            "key": "height",
+            "static_value": "11.5"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
            }
           ],
-          "component": "Stop"
+          "component": "Rect"
+         },
+         {
+          "id": "Blok[0]/Logo[0]/G[0]/Rect[2]",
+          "props": [
+           {
+            "key": "x",
+            "static_value": "23.5"
+           },
+           {
+            "key": "y",
+            "static_value": "17.5"
+           },
+           {
+            "key": "width",
+            "static_value": "3.5"
+           },
+           {
+            "key": "height",
+            "static_value": "8"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
+           }
+          ],
+          "component": "Rect"
          }
         ],
-        "component": "LinearGradient"
-       }
-      ],
-      "component": "Defs"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[0]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "0"
+        "component": "G"
        },
        {
-        "key": "y",
-        "static_value": "0"
-       },
-       {
-        "key": "width",
-        "static_value": "64"
-       },
-       {
-        "key": "height",
-        "static_value": "64"
-       },
-       {
-        "key": "rx",
-        "static_value": "14"
-       },
-       {
-        "key": "fill",
-        "static_value": "url(#ground)"
-       }
-      ],
-      "component": "Rect"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[1]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "9"
-       },
-       {
-        "key": "y",
-        "static_value": "9"
-       },
-       {
-        "key": "width",
-        "static_value": "21"
-       },
-       {
-        "key": "height",
-        "static_value": "21"
-       },
-       {
-        "key": "rx",
-        "static_value": "5"
-       },
-       {
-        "key": "fill",
-        "static_value": "success"
-       }
-      ],
-      "component": "Rect"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[2]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "34"
-       },
-       {
-        "key": "y",
-        "static_value": "9"
-       },
-       {
-        "key": "width",
-        "static_value": "21"
-       },
-       {
-        "key": "height",
-        "static_value": "21"
-       },
-       {
-        "key": "rx",
-        "static_value": "5"
-       },
-       {
-        "key": "fill",
-        "static_value": "warning"
-       }
-      ],
-      "component": "Rect"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[3]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "9"
-       },
-       {
-        "key": "y",
-        "static_value": "34"
-       },
-       {
-        "key": "width",
-        "static_value": "21"
-       },
-       {
-        "key": "height",
-        "static_value": "21"
-       },
-       {
-        "key": "rx",
-        "static_value": "5"
-       },
-       {
-        "key": "fill",
-        "static_value": "brand"
-       }
-      ],
-      "component": "Rect"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[4]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "34"
-       },
-       {
-        "key": "y",
-        "static_value": "34"
-       },
-       {
-        "key": "width",
-        "static_value": "21"
-       },
-       {
-        "key": "height",
-        "static_value": "21"
-       },
-       {
-        "key": "rx",
-        "static_value": "5"
-       },
-       {
-        "key": "fill",
-        "static_value": "info"
-       }
-      ],
-      "component": "Rect"
-     },
-     {
-      "id": "AgentLogo[0]/G[0]",
-      "props": [
-       {
-        "key": "fill",
-        "static_value": "ink"
-       }
-      ],
-      "children": [
-       {
-        "id": "AgentLogo[0]/G[0]/Rect[0]",
+        "id": "Blok[0]/Logo[0]/Circle[0]",
         "props": [
          {
-          "key": "x",
-          "static_value": "13"
+          "key": "cx",
+          "static_value": "44.5"
          },
          {
-          "key": "y",
+          "key": "cy",
           "static_value": "19.5"
          },
          {
-          "key": "width",
-          "static_value": "3.5"
+          "key": "r",
+          "static_value": "6.5"
          },
          {
-          "key": "height",
-          "static_value": "6"
+          "key": "fill",
+          "static_value": "none"
          },
          {
-          "key": "rx",
-          "static_value": "0.8"
+          "key": "stroke",
+          "static_value": "ink"
+         },
+         {
+          "key": "strokeWidth",
+          "static_value": "2.2"
          }
         ],
-        "component": "Rect"
+        "component": "Circle"
        },
        {
-        "id": "AgentLogo[0]/G[0]/Rect[1]",
+        "id": "Blok[0]/Logo[0]/Path[0]",
         "props": [
          {
-          "key": "x",
-          "static_value": "18.25"
-         },
-         {
-          "key": "y",
-          "static_value": "14"
-         },
-         {
-          "key": "width",
-          "static_value": "3.5"
-         },
-         {
-          "key": "height",
-          "static_value": "11.5"
-         },
-         {
-          "key": "rx",
-          "static_value": "0.8"
-         }
-        ],
-        "component": "Rect"
-       },
-       {
-        "id": "AgentLogo[0]/G[0]/Rect[2]",
-        "props": [
-         {
-          "key": "x",
-          "static_value": "23.5"
-         },
-         {
-          "key": "y",
-          "static_value": "17.5"
-         },
-         {
-          "key": "width",
-          "static_value": "3.5"
-         },
-         {
-          "key": "height",
-          "static_value": "8"
-         },
-         {
-          "key": "rx",
-          "static_value": "0.8"
-         }
-        ],
-        "component": "Rect"
-       }
-      ],
-      "component": "G"
-     },
-     {
-      "id": "AgentLogo[0]/Circle[0]",
-      "props": [
-       {
-        "key": "cx",
-        "static_value": "44.5"
-       },
-       {
-        "key": "cy",
-        "static_value": "19.5"
-       },
-       {
-        "key": "r",
-        "static_value": "6.5"
-       },
-       {
-        "key": "fill",
-        "static_value": "none"
-       },
-       {
-        "key": "stroke",
-        "static_value": "ink"
-       },
-       {
-        "key": "strokeWidth",
-        "static_value": "2.2"
-       }
-      ],
-      "component": "Circle"
-     },
-     {
-      "id": "AgentLogo[0]/Path[0]",
-      "props": [
-       {
-        "key": "d",
-        "static_value": "M44.5 13a6.5 6.5 0 0 0 0 13Z"
-       },
-       {
-        "key": "fill",
-        "static_value": "ink"
-       }
-      ],
-      "component": "Path"
-     },
-     {
-      "id": "AgentLogo[0]/G[1]",
-      "props": [
-       {
-        "key": "fill",
-        "static_value": "ink"
-       }
-      ],
-      "children": [
-       {
-        "id": "AgentLogo[0]/G[1]/Rect[0]",
-        "props": [
-         {
-          "key": "x",
-          "static_value": "12.5"
-         },
-         {
-          "key": "y",
-          "static_value": "47.5"
-         },
-         {
-          "key": "width",
-          "static_value": "14"
-         },
-         {
-          "key": "height",
-          "static_value": "3.5"
-         },
-         {
-          "key": "rx",
-          "static_value": "0.8"
-         }
-        ],
-        "component": "Rect"
-       },
-       {
-        "id": "AgentLogo[0]/G[1]/Rect[1]",
-        "props": [
-         {
-          "key": "x",
-          "static_value": "15"
-         },
-         {
-          "key": "y",
-          "static_value": "43"
-         },
-         {
-          "key": "width",
-          "static_value": "9"
-         },
-         {
-          "key": "height",
-          "static_value": "3.5"
-         },
-         {
-          "key": "rx",
-          "static_value": "0.8"
-         }
-        ],
-        "component": "Rect"
-       },
-       {
-        "id": "AgentLogo[0]/G[1]/Rect[2]",
-        "props": [
-         {
-          "key": "x",
-          "static_value": "17.5"
-         },
-         {
-          "key": "y",
-          "static_value": "38.5"
-         },
-         {
-          "key": "width",
-          "static_value": "4"
-         },
-         {
-          "key": "height",
-          "static_value": "3.5"
-         },
-         {
-          "key": "rx",
-          "static_value": "0.8"
-         }
-        ],
-        "component": "Rect"
-       }
-      ],
-      "component": "G"
-     },
-     {
-      "id": "AgentLogo[0]/G[2]",
-      "props": [
-       {
-        "key": "fill",
-        "static_value": "none"
-       },
-       {
-        "key": "stroke",
-        "static_value": "ink"
-       },
-       {
-        "key": "strokeWidth",
-        "static_value": "2"
-       },
-       {
-        "key": "strokeLinejoin",
-        "static_value": "round"
-       }
-      ],
-      "children": [
-       {
-        "id": "AgentLogo[0]/G[2]/Polygon[0]",
-        "props": [
-         {
-          "key": "points",
-          "static_value": "44.5,43 51.5,46.5 44.5,50 37.5,46.5"
+          "key": "d",
+          "static_value": "M44.5 13a6.5 6.5 0 0 0 0 13Z"
          },
          {
           "key": "fill",
           "static_value": "ink"
-         },
-         {
-          "key": "fillOpacity",
-          "static_value": "0.3"
          }
         ],
-        "component": "Polygon"
+        "component": "Path"
        },
        {
-        "id": "AgentLogo[0]/G[2]/Polygon[1]",
+        "id": "Blok[0]/Logo[0]/G[1]",
         "props": [
          {
-          "key": "points",
-          "static_value": "44.5,38 51.5,41.5 44.5,45 37.5,41.5"
+          "key": "fill",
+          "static_value": "ink"
          }
         ],
-        "component": "Polygon"
+        "children": [
+         {
+          "id": "Blok[0]/Logo[0]/G[1]/Rect[0]",
+          "props": [
+           {
+            "key": "x",
+            "static_value": "12.5"
+           },
+           {
+            "key": "y",
+            "static_value": "47.5"
+           },
+           {
+            "key": "width",
+            "static_value": "14"
+           },
+           {
+            "key": "height",
+            "static_value": "3.5"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
+           }
+          ],
+          "component": "Rect"
+         },
+         {
+          "id": "Blok[0]/Logo[0]/G[1]/Rect[1]",
+          "props": [
+           {
+            "key": "x",
+            "static_value": "15"
+           },
+           {
+            "key": "y",
+            "static_value": "43"
+           },
+           {
+            "key": "width",
+            "static_value": "9"
+           },
+           {
+            "key": "height",
+            "static_value": "3.5"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
+           }
+          ],
+          "component": "Rect"
+         },
+         {
+          "id": "Blok[0]/Logo[0]/G[1]/Rect[2]",
+          "props": [
+           {
+            "key": "x",
+            "static_value": "17.5"
+           },
+           {
+            "key": "y",
+            "static_value": "38.5"
+           },
+           {
+            "key": "width",
+            "static_value": "4"
+           },
+           {
+            "key": "height",
+            "static_value": "3.5"
+           },
+           {
+            "key": "rx",
+            "static_value": "0.8"
+           }
+          ],
+          "component": "Rect"
+         }
+        ],
+        "component": "G"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/G[2]",
+        "props": [
+         {
+          "key": "fill",
+          "static_value": "none"
+         },
+         {
+          "key": "stroke",
+          "static_value": "ink"
+         },
+         {
+          "key": "strokeWidth",
+          "static_value": "2"
+         },
+         {
+          "key": "strokeLinejoin",
+          "static_value": "round"
+         }
+        ],
+        "children": [
+         {
+          "id": "Blok[0]/Logo[0]/G[2]/Polygon[0]",
+          "props": [
+           {
+            "key": "points",
+            "static_value": "44.5,43 51.5,46.5 44.5,50 37.5,46.5"
+           },
+           {
+            "key": "fill",
+            "static_value": "ink"
+           },
+           {
+            "key": "fillOpacity",
+            "static_value": "0.3"
+           }
+          ],
+          "component": "Polygon"
+         },
+         {
+          "id": "Blok[0]/Logo[0]/G[2]/Polygon[1]",
+          "props": [
+           {
+            "key": "points",
+            "static_value": "44.5,38 51.5,41.5 44.5,45 37.5,41.5"
+           }
+          ],
+          "component": "Polygon"
+         }
+        ],
+        "component": "G"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Rect[5]",
+        "props": [
+         {
+          "key": "x",
+          "static_value": "0.5"
+         },
+         {
+          "key": "y",
+          "static_value": "0.5"
+         },
+         {
+          "key": "width",
+          "static_value": "63"
+         },
+         {
+          "key": "height",
+          "static_value": "63"
+         },
+         {
+          "key": "rx",
+          "static_value": "13.5"
+         },
+         {
+          "key": "fill",
+          "static_value": "none"
+         },
+         {
+          "key": "stroke",
+          "static_value": "muted"
+         },
+         {
+          "key": "strokeOpacity",
+          "static_value": "0.3"
+         },
+         {
+          "key": "strokeWidth",
+          "static_value": "1"
+         }
+        ],
+        "component": "Rect"
        }
       ],
-      "component": "G"
-     },
-     {
-      "id": "AgentLogo[0]/Rect[5]",
-      "props": [
-       {
-        "key": "x",
-        "static_value": "0.5"
-       },
-       {
-        "key": "y",
-        "static_value": "0.5"
-       },
-       {
-        "key": "width",
-        "static_value": "63"
-       },
-       {
-        "key": "height",
-        "static_value": "63"
-       },
-       {
-        "key": "rx",
-        "static_value": "13.5"
-       },
-       {
-        "key": "fill",
-        "static_value": "none"
-       },
-       {
-        "key": "stroke",
-        "static_value": "muted"
-       },
-       {
-        "key": "strokeOpacity",
-        "static_value": "0.3"
-       },
-       {
-        "key": "strokeWidth",
-        "static_value": "1"
-       }
-      ],
-      "component": "Rect"
+      "component": "Logo"
      }
-    ],
-    "component": "AgentLogo"
+    ]
    }
   ]
  },
@@ -554,98 +570,114 @@
   },
   "componentTree": [
    {
-    "id": "ActionLogo[0]",
+    "id": "Blok[0]",
+    "component": "Blok",
     "props": [
      {
-      "key": "viewBox",
-      "static_value": "0 0 24 24"
+      "key": "kind",
+      "static_value": "action"
      },
      {
-      "key": "title",
-      "static_value": "Binarize"
+      "key": "context",
+      "static_value": "logo"
      }
     ],
     "children": [
      {
-      "id": "ActionLogo[0]/Circle[0]",
+      "id": "Blok[0]/Logo[0]",
       "props": [
        {
-        "key": "cx",
-        "static_value": "12"
+        "key": "viewBox",
+        "static_value": "0 0 24 24"
        },
        {
-        "key": "cy",
-        "static_value": "12"
-       },
-       {
-        "key": "r",
-        "static_value": "8.5"
-       },
-       {
-        "key": "fill",
-        "static_value": "brand-soft"
+        "key": "title",
+        "static_value": "Binarize"
        }
       ],
-      "component": "Circle"
-     },
-     {
-      "id": "ActionLogo[0]/Path[0]",
-      "props": [
+      "children": [
        {
-        "key": "d",
-        "static_value": "M12 3.5a8.5 8.5 0 0 0 0 17Z"
+        "id": "Blok[0]/Logo[0]/Circle[0]",
+        "props": [
+         {
+          "key": "cx",
+          "static_value": "12"
+         },
+         {
+          "key": "cy",
+          "static_value": "12"
+         },
+         {
+          "key": "r",
+          "static_value": "8.5"
+         },
+         {
+          "key": "fill",
+          "static_value": "brand-soft"
+         }
+        ],
+        "component": "Circle"
        },
        {
-        "key": "fill",
-        "static_value": "ink"
+        "id": "Blok[0]/Logo[0]/Path[0]",
+        "props": [
+         {
+          "key": "d",
+          "static_value": "M12 3.5a8.5 8.5 0 0 0 0 17Z"
+         },
+         {
+          "key": "fill",
+          "static_value": "ink"
+         }
+        ],
+        "component": "Path"
+       },
+       {
+        "id": "Blok[0]/Logo[0]/Circle[1]",
+        "props": [
+         {
+          "key": "cx",
+          "static_value": "12"
+         },
+         {
+          "key": "cy",
+          "static_value": "12"
+         },
+         {
+          "key": "r",
+          "static_value": "8.5"
+         },
+         {
+          "key": "fill",
+          "static_value": "none"
+         },
+         {
+          "key": "stroke",
+          "static_value": "ink"
+         },
+         {
+          "key": "strokeWidth",
+          "static_value": "1.6"
+         },
+         {
+          "key": "strokeLinecap",
+          "static_value": "round"
+         },
+         {
+          "key": "strokeLinejoin",
+          "static_value": "round"
+         },
+         {
+          "key": "animate",
+          "static_value": "draw"
+         }
+        ],
+        "component": "Circle"
        }
       ],
-      "component": "Path"
-     },
-     {
-      "id": "ActionLogo[0]/Circle[1]",
-      "props": [
-       {
-        "key": "cx",
-        "static_value": "12"
-       },
-       {
-        "key": "cy",
-        "static_value": "12"
-       },
-       {
-        "key": "r",
-        "static_value": "8.5"
-       },
-       {
-        "key": "fill",
-        "static_value": "none"
-       },
-       {
-        "key": "stroke",
-        "static_value": "ink"
-       },
-       {
-        "key": "strokeWidth",
-        "static_value": "1.6"
-       },
-       {
-        "key": "strokeLinecap",
-        "static_value": "round"
-       },
-       {
-        "key": "strokeLinejoin",
-        "static_value": "round"
-       },
-       {
-        "key": "animate",
-        "static_value": "draw"
-       }
-      ],
-      "component": "Circle"
+      "component": "Logo"
      }
-    ],
-    "component": "ActionLogo"
+    ]
    }
   ]
  }

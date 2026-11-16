@@ -14,7 +14,7 @@ import { KABINET_HELP } from "../help";
 
 const CONTEXTS: { value: ComponentContext | null; label: string; icon: LucideIcon }[] = [
   { value: null, label: "All bloks", icon: Shapes },
-  { value: ComponentContext.Html, label: "Panels", icon: LayoutPanelTop },
+  { value: ComponentContext.Panel, label: "Panels", icon: LayoutPanelTop },
   { value: ComponentContext.Scene, label: "Scenes", icon: Box },
 ];
 

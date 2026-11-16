@@ -17,14 +17,21 @@ const BLOK = {
   hash: 'a1',
   componentTree: [
     {
-      id: 'logo',
-      component: 'ActionLogo',
-      props: [{key: 'viewBox', static_value: '0 0 24 24'}],
+      id: 'blok',
+      component: 'Blok',
+      props: [{key: 'kind', static_value: 'action'}, {key: 'context', static_value: 'logo'}],
       children: [
-        {id: 'frame', component: 'Rect', props: [{key: 'width', static_value: '24'}, {key: 'stroke', static_value: 'brand-strong'}, {key: 'animate', static_value: 'march'}]},
-        {id: 'dot', component: 'Circle', props: [{key: 'r', static_value: '2'}, {key: 'fill', static_value: '#ff0000'}]},
-        {id: 'said', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.message'}}]},
-        {id: 'state', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.status'}}]},
+        {
+          id: 'logo',
+          component: 'Logo',
+          props: [{key: 'viewBox', static_value: '0 0 24 24'}],
+          children: [
+            {id: 'frame', component: 'Rect', props: [{key: 'width', static_value: '24'}, {key: 'stroke', static_value: 'brand-strong'}, {key: 'animate', static_value: 'march'}]},
+            {id: 'dot', component: 'Circle', props: [{key: 'r', static_value: '2'}, {key: 'fill', static_value: '#ff0000'}]},
+            {id: 'said', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.message'}}]},
+            {id: 'state', component: 'SvgText', props: [{key: 'text', dynamic_value: {path: 'task.status'}}]},
+          ],
+        },
       ],
     },
   ],

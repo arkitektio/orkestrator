@@ -224,8 +224,9 @@ export class OrkestratorAgent {
         key: logo.key,
         description: logo.description,
         source: logo.source,
-        context: ComponentContext.ActionLogo,
-        // Blok language v2. An action logo reads only `task`, the viewer's own last task of it.
+        // `<Blok kind="action" context="logo">`: an action logo reads only `task`, the viewer's own last task of it.
+        context: ComponentContext.Logo,
+        // Blok language v2.
         vocab: 2,
       }));
   }

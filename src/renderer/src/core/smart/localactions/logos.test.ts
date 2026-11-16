@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { parseBsxSafe } from "@arkitektio/bsx/bsx/parse";
+import { blokHeader } from "@arkitektio/bsx/bsx/declared";
 import { defaultBlokCatalog } from "@/core/blok/catalog";
 import { LOGO_ANIMATIONS, LOGO_PAINT_TOKENS } from "@arkitektio/bsx/catalogs/parts/logo";
 import { normalizeBlokComponentTree, preflightBlokDocument } from "@arkitektio/bsx/renderer/runtime/index";
@@ -10,10 +11,10 @@ const attributes = (source: string, name: string) =>
   [...source.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((match) => match[1]);
 
 describe("the host actions' logos", () => {
-  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an ActionLogo this catalog draws, in the pens", (_, source) => {
+  it.each(Object.entries(HOST_ACTION_LOGOS))("%s is an action logo this catalog draws, in the pens", (_, source) => {
     const parsed = parseBsxSafe(source);
     if (!parsed.ok) throw parsed.error;
-    expect(parsed.tree.component).toBe("ActionLogo");
+    expect(blokHeader(parsed.tree)).toMatchObject({ kind: "action", context: "LOGO" });
 
     const preflight = preflightBlokDocument(normalizeBlokComponentTree([parsed.tree]).roots, defaultBlokCatalog);
     expect(preflight.errors).toEqual([]);

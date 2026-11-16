@@ -1,5 +1,6 @@
 /**
- * The action logos this app draws its agent's actions with: ACTION_LOGO bloks,
+ * The action logos this app draws its agent's actions with: action logo bloks
+ * (`<Blok kind="action" context="logo">`),
  * declared with the agent and named by its implementations (`logo`). Drawn
  * with the shared pen (`core/blok/logo/actionLogoSource.ts`).
  *

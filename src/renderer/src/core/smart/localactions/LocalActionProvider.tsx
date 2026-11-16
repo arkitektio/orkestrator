@@ -84,7 +84,7 @@ export type Action<TAppOrServices = ServiceMap> = {
   description: string;
   icon?: LucideIcon;
   /**
-   * BSX of an ActionLogo blok (`actionLogoSource`), drawn in the icon's place
+   * BSX of an action logo blok (`<Blok kind="action" context="logo">`, `actionLogoSource`), drawn in the icon's place
    * where there is room for a picture: menu rows, the context menu. The icon
    * stays for the small buttons.
    */

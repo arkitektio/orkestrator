@@ -12,7 +12,8 @@ installAppBlokCatalog();
 
 /**
  * `basiks.fixture.json` is what kabinet serves for the basiks app, as v2 trees: its
- * logo and the action logo of `threshold_image` (`AgentLogo` and `ActionLogo` roots, painted with
+ * logo and the action logo of `threshold_image` (`<Blok kind="agent" context="logo">` and
+ * `<Blok kind="action" context="logo">`, each holding one `<Logo>`, painted with
  * the viewer's pens), each parsed from the BSX the app sent.
  * They must draw through the same logo cache rekuest's bloks do.
  */
@@ -41,7 +42,7 @@ describe("a kabinet logo", { timeout: 20000 }, () => {
     expect(parseBsx(printBsx(root)).tree).toEqual(root);
   });
 
-  it("draws an app's LOGO from the tree kabinet parsed, and keeps it", async () => {
+  it("draws an app's logo from the tree kabinet parsed, and keeps it", async () => {
     const first = render(<KabinetBlokLogo blok={{ id: "3:basiks_logo", hash: basiks.logo.hash }} className="size-8" />);
 
     await waitFor(() => expect(first.container.querySelector(KEPT)).not.toBeNull(), SLOW);
@@ -55,7 +56,7 @@ describe("a kabinet logo", { timeout: 20000 }, () => {
     expect(useKabinetLogoTreeQuery).not.toHaveBeenCalled();
   });
 
-  it("draws an action by the ACTION_LOGO its definition names", async () => {
+  it("draws an action by the action logo its definition names", async () => {
     const definition = { logo: { id: "3:basiks_threshold_image", hash: basiks.actionLogo.hash } };
     const drawn = render(<DefinitionLogo definition={definition} className="size-4" />);
 

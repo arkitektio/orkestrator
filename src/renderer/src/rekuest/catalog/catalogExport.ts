@@ -18,7 +18,7 @@ import {orkestratorCatalogSpec, orkestratorUi} from '@/core/blok/catalog';
 export const buildCatalogExport = () => ({
   catalog: buildRegisterModuleInput(orkestratorUi),
   published: orkestratorCatalogSpec(orkestratorUi.catalog),
-  /** The catalogs this app speaks (`base@3`), and the contexts in which it draws the base whole. */
+  /** The catalogs this app speaks (`base@4`), and the contexts in which it draws the base whole. */
   catalogs: [...orkestratorUi.claims],
   contexts: [...orkestratorUi.contexts],
 });

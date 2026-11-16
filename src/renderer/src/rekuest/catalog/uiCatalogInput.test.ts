@@ -61,7 +61,7 @@ describe("componentInput", () => {
       name: "Box",
       description: null,
       acceptsChildren: true,
-      context: "HTML",
+      context: "PANEL",
       childrenContext: null,
       inheritsContext: false,
       downstreamOf: [],
@@ -94,7 +94,7 @@ describe("componentInput", () => {
     const Popout = createBlokComponent(
       {
         name: "Popout",
-        placement: { context: "scene", childrenContext: "html", downstreamOf: ["Robot", "Model"] },
+        placement: { context: "scene", childrenContext: "panel", downstreamOf: ["Robot", "Model"] },
         schema: z.object({}),
       },
       Noop,
@@ -108,7 +108,7 @@ describe("componentInput", () => {
     ]);
     expect(componentInput(Popout)).toMatchObject({
       context: "SCENE",
-      childrenContext: "HTML",
+      childrenContext: "PANEL",
       downstreamOf: ["Model", "Robot"],
     });
   });
@@ -127,7 +127,7 @@ describe("componentInput", () => {
       Noop,
     );
 
-    expect(componentInput(Svg)).toMatchObject({ context: "HTML", childrenContext: "LOGO", inheritsContext: false });
+    expect(componentInput(Svg)).toMatchObject({ context: "PANEL", childrenContext: "LOGO", inheritsContext: false });
     expect(componentInput(Path)).toMatchObject({ context: "LOGO", childrenContext: null, downstreamOf: ["SVG"] });
     expect(componentInput(Loop)).toMatchObject({ inheritsContext: true });
   });
@@ -145,7 +145,7 @@ describe("buildRegisterModuleInput", () => {
     expect(input.name).toBe(UI_CATALOG_NAME);
     expect(input.widgetDefaults).toEqual([]);
     expect(input.catalogs).toEqual([...orkestratorUi.claims].sort());
-    expect(input.catalogs).toEqual(["base@3"]);
+    expect(input.catalogs).toEqual(["base@4"]);
     const names = new Set(input.components.map((component) => component.name));
     for (const name of ["Button", "foreach", "Sheet", "Scene", "StructurePicker"]) expect(names.has(name), name).toBe(false);
     // A module adds components only: what a blok calls is the language's.

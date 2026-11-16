@@ -1,18 +1,28 @@
 [
   {
-    "id": "Html[0]",
-    "component": "Html",
+    "id": "Blok[0]",
+    "component": "Blok",
+    "props": [
+      {
+        "key": "kind",
+        "static_value": "agent"
+      },
+      {
+        "key": "context",
+        "static_value": "panel"
+      }
+    ],
     "children": [
       {
-        "id": "Html[0]/Card[0]",
+        "id": "Blok[0]/Card[0]",
         "component": "Card",
         "children": [
           {
-            "id": "Html[0]/Card[0]/CardHeader[0]",
+            "id": "Blok[0]/Card[0]/CardHeader[0]",
             "component": "CardHeader",
             "children": [
               {
-                "id": "Html[0]/Card[0]/CardHeader[0]/CardTitle[0]",
+                "id": "Blok[0]/Card[0]/CardHeader[0]/CardTitle[0]",
                 "component": "CardTitle",
                 "props": [
                   {
@@ -24,15 +34,15 @@
             ]
           },
           {
-            "id": "Html[0]/Card[0]/CardContent[0]",
+            "id": "Blok[0]/Card[0]/CardContent[0]",
             "component": "CardContent",
             "children": [
               {
-                "id": "Html[0]/Card[0]/CardContent[0]/Row[0]",
+                "id": "Blok[0]/Card[0]/CardContent[0]/Row[0]",
                 "component": "Row",
                 "children": [
                   {
-                    "id": "Html[0]/Card[0]/CardContent[0]/Row[0]/Button[0]",
+                    "id": "Blok[0]/Card[0]/CardContent[0]/Row[0]/Button[0]",
                     "component": "Button",
                     "props": [
                       {
@@ -55,7 +65,7 @@
                     ]
                   },
                   {
-                    "id": "Html[0]/Card[0]/CardContent[0]/Row[0]/Button[1]",
+                    "id": "Blok[0]/Card[0]/CardContent[0]/Row[0]/Button[1]",
                     "component": "Button",
                     "props": [
                       {
@@ -80,7 +90,7 @@
                 ]
               },
               {
-                "id": "Html[0]/Card[0]/CardContent[0]/Progress[0]",
+                "id": "Blok[0]/Card[0]/CardContent[0]/Progress[0]",
                 "component": "Progress",
                 "props": [
                   {
