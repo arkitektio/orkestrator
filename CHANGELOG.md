@@ -1,3 +1,11 @@
+## [8.0.1](https://github.com/arkitektio/orkestrator/compare/v8.0.0...v8.0.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* a task's progress follows the moment the timeline shows ([85fc806](https://github.com/arkitektio/orkestrator/commit/85fc8064227950321b244a4968e9716fc50c1a66))
+* bloks fit the box they are shown in, and scenes show no frame ([899c3e4](https://github.com/arkitektio/orkestrator/commit/899c3e425f46df037aaa39ccd5dc22942951bcad))
+
 # [8.0.0](https://github.com/arkitektio/orkestrator/compare/v7.1.0...v8.0.0) (2026-11-16)
 
 
