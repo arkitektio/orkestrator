@@ -23,10 +23,8 @@ import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
 import type { ChannelRenderNode, PhasorRenderNode, TransferFn } from "../../platform/model/renderGraph";
 import { serializePhasorTransfer } from "../../platform/model/renderGraph";
-import {
-  PhasorNodeEditor,
-  TransferEditor,
-} from "../../features/volume/rendergraph/RenderNodeEditor";
+import { TransferEditor } from "../../features/volume/rendergraph/RenderNodeEditor";
+import { PhasorLayerEditor } from "./PhasorLayerEditor";
 import { RgbChannelEditor } from "./RgbChannelEditor";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { reportError, reportErrorAs } from "@/core/notify";
@@ -79,20 +77,24 @@ const PROJECTIONS: ReadonlyArray<{
  * card, not a poorer one — the graph editor's whole vocabulary (add a node,
  * change a blend, reparent) describes choices these types do not offer.
  *
- * The INTENSITY and PHASOR editors are the SAME ones the graph editor mounts
- * (`TransferEditor`, `PhasorNodeEditor`), reused rather than reimplemented — an
- * intensity layer's transfer is the identical `TransferFn`, tint included, and
- * a phasor layer's `phasorRender` normalizes to the identical node. What
- * differs is only where the edit is persisted: each type has its own
- * `update*Layer` mutation, because the generic `updateLayer` takes a
- * `renderGraph` and none of these has one.
+ * The INTENSITY editor is the SAME one the graph editor mounts
+ * (`TransferEditor`), reused rather than reimplemented — an intensity layer's
+ * transfer is the identical `TransferFn`, tint included. What differs is only
+ * where the edit is persisted: each type has its own `update*Layer` mutation,
+ * because the generic `updateLayer` takes a `renderGraph` and none of these
+ * has one.
  *
  * RGB does NOT share that editor, and `RgbChannelEditor`'s docblock argues
  * why at length: an RGB layer's question is which plane feeds which primary,
  * and almost everything a transfer editor offers — gamma, a curve, a colormap,
  * a per-plane window — is both unpersistable for it and enough to demote it
  * off its specialised material. It brings its own sections instead of a
- * "Rendering" block.
+ * "rendering" block.
+ *
+ * PHASOR brings its own sections too (`PhasorLayerEditor`). Its `phasorRender`
+ * normalizes to the node the graph's `PhasorNodeEditor` edits, and it edits
+ * that same node — but a graph node is a box among boxes, and a phasor layer
+ * is its one node, so the card itself is the box.
  *
  * Live preview is a store write (the renderer reads `sceneStore.layers`); the
  * mutation is the explicit Save, exactly as the graph editor sequences it.
@@ -382,24 +384,17 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               onWhiteBalance={setRgbWhiteBalance}
             />
           )}
-          {layer.__typename !== "RgbLayer" && (
-            <CardSection title="Rendering">
-              {layer.__typename === "IntensityLayer" && layer.channels[0] && (
-                <TransferEditor
-                  layer={layer}
-                  transfer={layer.channels[0].transfer}
-                  onChange={setIntensityTransfer}
-                />
-              )}
-              {layer.__typename === "PhasorLayer" && layer.phasors[0] && (
-                <PhasorNodeEditor
-                  layer={layer}
-                  node={layer.phasors[0]}
-                  onChange={setPhasorNode}
-                  channelLocked
-                />
-              )}
+          {layer.__typename === "IntensityLayer" && layer.channels[0] && (
+            <CardSection title="rendering">
+              <TransferEditor
+                layer={layer}
+                transfer={layer.channels[0].transfer}
+                onChange={setIntensityTransfer}
+              />
             </CardSection>
+          )}
+          {layer.__typename === "PhasorLayer" && layer.phasors[0] && (
+            <PhasorLayerEditor layer={layer} node={layer.phasors[0]} onChange={setPhasorNode} />
           )}
         </div>
       </CollapsibleContent>

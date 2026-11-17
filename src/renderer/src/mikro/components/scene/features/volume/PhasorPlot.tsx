@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Eraser } from "lucide-react";
 
-import { Button } from "@/core/ui/button";
+import { RowAction, Segment, SegmentGroup } from "@/core/data/scene/layerui/cardControls";
 import { PhasorCursorKind } from "@/mikro/api/graphql";
 import { cn } from "@/core/util/utils";
 import {
@@ -11,6 +12,7 @@ import {
   type PhasorScale,
 } from "../../platform/model/phasor";
 import type { PhasorCursorDef } from "../../platform/model/renderGraph";
+import { phasorPlotGeometry } from "./phasorPlotGeometry";
 
 /**
  * The classic phasor plot: the (g, s) density of the layer's phasor, the
@@ -25,6 +27,15 @@ import type { PhasorCursorDef } from "../../platform/model/renderGraph";
  * The density comes from `PhasorContext.phasorHistogram`, computed after ingest
  * by a task that read the whole cube — which is exactly why a client can range
  * the overlay without reading it back itself.
+ *
+ * The plot takes the WIDTH it is given and derives its height
+ * (`phasorPlotGeometry`): g and s share one scale, so a circle cursor is drawn
+ * as the circle `cursorHit` tests.
+ *
+ * What is being drawn — the tool, the unfinished shape — is a `PhasorDraw` the
+ * HOST owns (`usePhasorDraw`), so the tool buttons (`PhasorPlotTools`) can sit
+ * wherever the host's layout puts them: in a card section's title line, or
+ * under the plot in a graph node.
  */
 
 export type PhasorHistogramData = {
@@ -39,26 +50,126 @@ export type PhasorHistogramData = {
 
 type Draft = { kind: PhasorCursorKind; points: [number, number][] } | null;
 
-const SIZE = 220;
-const PADDING = 18;
+/** The drawing in progress: which tool is armed and the shape so far. */
+export type PhasorDraw = {
+  tool: PhasorCursorKind | null;
+  draft: Draft;
+  /** Arm a tool, or disarm it when it is the armed one. Drops the draft. */
+  pickTool: (tool: PhasorCursorKind) => void;
+  setDraft: (draft: Draft) => void;
+  /** Add the finished cursor and disarm. */
+  commit: (cursor: PhasorCursorDef) => void;
+  /** Whether the polygon being drawn has enough corners to close. */
+  canClose: boolean;
+  closePolygon: () => void;
+};
+
+export const usePhasorDraw = (
+  cursors: PhasorCursorDef[],
+  onCursorsChange: (cursors: PhasorCursorDef[]) => void,
+): PhasorDraw => {
+  const [tool, setTool] = useState<PhasorCursorKind | null>(null);
+  const [draft, setDraft] = useState<Draft>(null);
+
+  const commit = (cursor: PhasorCursorDef) => {
+    onCursorsChange([...cursors, cursor]);
+    setDraft(null);
+    setTool(null);
+  };
+  const canClose = draft?.kind === PhasorCursorKind.Polygon && draft.points.length >= 3;
+
+  return {
+    tool,
+    draft,
+    pickTool: (next) => {
+      setDraft(null);
+      setTool(tool === next ? null : next);
+    },
+    setDraft,
+    commit,
+    canClose,
+    closePolygon: () => {
+      if (draft && canClose) commit(polygonCursor(draft.points));
+    },
+  };
+};
+
+/**
+ * The plot's tools, in the layer cards' control vocabulary: the two shapes as
+ * one segmented group (they are mutually exclusive), then the actions that only
+ * exist sometimes — close the polygon being drawn, remove every cursor.
+ */
+export const PhasorPlotTools = ({
+  draw,
+  cursors,
+  onCursorsChange,
+}: {
+  draw: PhasorDraw;
+  cursors: PhasorCursorDef[];
+  onCursorsChange: (cursors: PhasorCursorDef[]) => void;
+}) => (
+  <div className="flex items-center gap-1">
+    {draw.canClose && (
+      <RowAction title="Close the polygon" onClick={draw.closePolygon}>
+        <Check className="h-2.5 w-2.5" />
+      </RowAction>
+    )}
+    {cursors.length > 0 && (
+      <RowAction title="Remove every cursor" danger onClick={() => onCursorsChange([])}>
+        <Eraser className="h-2.5 w-2.5" />
+      </RowAction>
+    )}
+    <SegmentGroup>
+      <Segment
+        active={draw.tool === PhasorCursorKind.Circle}
+        title="Draw a circle cursor: drag on the plot from its centre"
+        onClick={() => draw.pickTool(PhasorCursorKind.Circle)}
+      >
+        circle
+      </Segment>
+      <Segment
+        active={draw.tool === PhasorCursorKind.Polygon}
+        title="Draw a polygon cursor: click its corners, then the first one again"
+        onClick={() => draw.pickTool(PhasorCursorKind.Polygon)}
+      >
+        polygon
+      </Segment>
+    </SegmentGroup>
+  </div>
+);
 
 export const PhasorPlot = ({
   histogram,
   cursors,
   scale,
+  draw,
   onCursorsChange,
   className,
 }: {
   histogram: PhasorHistogramData | null;
   cursors: PhasorCursorDef[];
   scale: PhasorScale;
+  draw: PhasorDraw;
   onCursorsChange: (cursors: PhasorCursorDef[]) => void;
   className?: string;
 }) => {
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [tool, setTool] = useState<PhasorCursorKind | null>(null);
-  const [draft, setDraft] = useState<Draft>(null);
+  const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<[number, number] | null>(null);
+  const { tool, draft, setDraft, commit } = draw;
+
+  // The plot is as wide as its host: a card in a three-column panel and the
+  // same card in a float are different widths, and neither is 220px.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const measure = () => setWidth(Math.floor(frame.clientWidth));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   // The plot's own extent. The histogram states the range it was computed over;
   // without one, show the whole reachable half-plane (a phasor lives in the
@@ -73,51 +184,31 @@ export const PhasorPlot = ({
     [histogram],
   );
 
-  const toPixel = useMemo(() => {
-    const width = SIZE - 2 * PADDING;
-    return (g: number, s: number): [number, number] => [
-      PADDING + ((g - extent.gMin) / (extent.gMax - extent.gMin)) * width,
-      // s grows upward on the plot, downward in canvas coords.
-      SIZE - PADDING - ((s - extent.sMin) / (extent.sMax - extent.sMin)) * width,
-    ];
-  }, [extent]);
-
-  const toPhasor = useMemo(() => {
-    const width = SIZE - 2 * PADDING;
-    return (x: number, y: number): [number, number] => [
-      extent.gMin + ((x - PADDING) / width) * (extent.gMax - extent.gMin),
-      extent.sMin + ((SIZE - PADDING - y) / width) * (extent.sMax - extent.sMin),
-    ];
-  }, [extent]);
+  const geometry = useMemo(() => phasorPlotGeometry(extent, width), [extent, width]);
+  const { toPixel, toPhasor, height } = geometry;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
-    if (!canvas || !context) return;
+    if (!canvas || !context || width <= 0) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = SIZE * dpr;
-    canvas.height = SIZE * dpr;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, SIZE, SIZE);
+    context.clearRect(0, 0, width, height);
 
-    drawDensity(context, histogram, toPixel, extent);
+    drawDensity(context, histogram, toPixel);
     drawSemicircle(context, toPixel, scale);
     // Same color rule as the shader (`writeCursors`), so a cursor on the plot is
     // drawn in exactly the color it paints the image with.
     cursors.forEach((cursor, i) => drawCursor(context, cursor, i, toPixel));
     if (draft) drawDraft(context, draft, hover, toPixel);
-  }, [histogram, cursors, scale, draft, hover, toPixel, extent]);
+  }, [histogram, cursors, scale, draft, hover, toPixel, width, height]);
 
   const pointerPhasor = (event: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
     const rect = event.currentTarget.getBoundingClientRect();
     return toPhasor(event.clientX - rect.left, event.clientY - rect.top);
-  };
-
-  const commit = (cursor: PhasorCursorDef) => {
-    onCursorsChange([...cursors, cursor]);
-    setDraft(null);
-    setTool(null);
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -143,8 +234,8 @@ export const PhasorPlot = ({
       return;
     }
 
-    // Polygon: click to add a vertex; click near the first one (or press Close)
-    // to finish.
+    // Polygon: click to add a vertex; click near the first one (or the close
+    // action in `PhasorPlotTools`) to finish.
     const points = draft?.points ?? [];
     if (points.length >= 3) {
       const [fg, fs] = points[0];
@@ -183,69 +274,26 @@ export const PhasorPlot = ({
   };
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
+    // `dark`: the plot is a black surface in either theme, like the levels
+    // histogram, so its white strokes always have something to sit on.
+    <div
+      ref={frameRef}
+      className={cn(
+        "dark w-full overflow-hidden rounded border border-foreground/10 bg-background/85",
+        className,
+      )}
+    >
       <canvas
         ref={canvasRef}
-        style={{ width: SIZE, height: SIZE }}
-        className={cn(
-          "dark rounded border border-border/40 bg-background/85",
-          tool ? "cursor-crosshair" : "cursor-pointer",
-        )}
+        style={{ width, height }}
+        className={cn("block touch-none", tool ? "cursor-crosshair" : "cursor-pointer")}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={() => {
+          if (draft?.kind === PhasorCursorKind.Circle) setDraft(null);
+        }}
       />
-
-      <div className="flex items-center gap-1">
-        <Button
-          variant={tool === PhasorCursorKind.Circle ? "secondary" : "ghost"}
-          size="sm"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => {
-            setDraft(null);
-            setTool(tool === PhasorCursorKind.Circle ? null : PhasorCursorKind.Circle);
-          }}
-        >
-          Circle
-        </Button>
-        <Button
-          variant={tool === PhasorCursorKind.Polygon ? "secondary" : "ghost"}
-          size="sm"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => {
-            setDraft(null);
-            setTool(tool === PhasorCursorKind.Polygon ? null : PhasorCursorKind.Polygon);
-          }}
-        >
-          Polygon
-        </Button>
-        {draft && draft.points.length >= 3 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-6 px-2 text-[10px]"
-            onClick={() => commit(polygonCursor(draft.points))}
-          >
-            Close
-          </Button>
-        )}
-        {cursors.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[10px] text-muted-foreground"
-            onClick={() => onCursorsChange([])}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
-
-      {!histogram && (
-        <span className="text-[10px] text-muted-foreground">
-          No phasor distribution computed for this lens yet — cursors still work.
-        </span>
-      )}
     </div>
   );
 };
@@ -269,7 +317,6 @@ function drawDensity(
   context: CanvasRenderingContext2D,
   histogram: PhasorHistogramData | null,
   toPixel: ToPixel,
-  extent: { gMin: number; gMax: number; sMin: number; sMax: number },
 ): void {
   if (!histogram || histogram.bins <= 0) return;
 
@@ -300,7 +347,6 @@ function drawDensity(
       );
     }
   }
-  void extent;
 }
 
 /**

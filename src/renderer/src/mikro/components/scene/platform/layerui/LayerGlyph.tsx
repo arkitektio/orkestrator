@@ -29,6 +29,13 @@ const diskBackground = (channel: ChannelRenderNode): string => {
 const layerFill = (layer: LayerState): string => {
   const flavor = layerFlavor(layer);
   if (flavor === "RGB") return wedgeBackground(RGB);
+  // A phasor layer has no channels to take a colour from: what it paints is
+  // its phasor ramp, so that is its mark. (An image layer mixing channels with
+  // a phasor node keeps its channels' wedge.)
+  const phasor = layer.phasors[0];
+  if (flavor === "FLIM" && phasor && layer.channels.length === 0) {
+    return colormapGradientCSS(phasor.transfer.colormap, 12, null).replace("to right", "135deg");
+  }
   const visible = layer.channels.filter((channel) => channel.visible !== false);
   const single = flavor !== "FLIM" && visible.length === 1 ? visible[0] : undefined;
   return single ? diskBackground(single) : layerSwatchBackground(layer.channels);
@@ -57,7 +64,8 @@ export const LayerProbeMark = ({ layer, className }: { layer: LayerState; classN
  *    same way, so a composite reads as one.
  *  - One channel (an image, an intensity layer): a single disk in its base
  *    colour, or its colormap when it has one.
- *  - Anything else (FLIM, no visible channel): the render graph's swatch.
+ *  - A phasor layer: a disk in its phasor ramp.
+ *  - Anything else (no visible channel): the render graph's swatch.
  */
 export const LayerGlyph = ({ layer, className }: { layer: LayerState; className: string }) => {
   const flavor = layerFlavor(layer);

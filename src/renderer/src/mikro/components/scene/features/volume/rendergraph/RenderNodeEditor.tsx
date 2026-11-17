@@ -81,7 +81,7 @@ import { keptPositions, pinnedIndex } from "@/mikro/lib/lenses/lensSelection";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { reportError } from "@/core/notify";
 import { resolvePhasorScale } from "../../../platform/model/phasor";
-import { PhasorPlot } from "../PhasorPlot";
+import { PhasorPlot, PhasorPlotTools, usePhasorDraw } from "../PhasorPlot";
 import { useBrickStore } from "../../bricks/store/brickSlice";
 
 const colorToObj = (color: number[] | null) => ({
@@ -633,23 +633,18 @@ const ChannelNodeEditor = ({
  * the layer's pool. The rest — mode, colormap, range, cursors — are shader
  * uniforms and update on the next frame.
  */
-/** Exported for the `PhasorLayer` card: its `phasorRender` normalizes to
- * exactly this node, so it edits through exactly this editor. */
-export const PhasorNodeEditor = ({
+/** A `PhasorLayer`'s card edits the identical node through its own sections
+ * (`shell/layerPanel/PhasorLayerEditor`): there the card is the node's box. */
+const PhasorNodeEditor = ({
   node,
   onChange,
   onRemove,
   layer,
-  channelLocked = false,
 }: {
   node: PhasorRenderNode;
   onChange: (n: PhasorRenderNode) => void;
   onRemove?: () => void;
   layer?: LayerState;
-  /** A `PhasorLayer`'s channel is its lens', fixed when the layer was made, so
-   *  its card offers no channel to pick. A phasor NODE in a render graph names
-   *  its own. */
-  channelLocked?: boolean;
 }) => {
   const [open, setOpen] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -688,6 +683,8 @@ export const PhasorNodeEditor = ({
   );
   const setTransfer = (patch: Partial<PhasorRenderNode["transfer"]>) =>
     onChange({ ...node, transfer: { ...node.transfer, ...patch } });
+  const setCursors = (cursors: PhasorRenderNode["transfer"]["cursors"]) => setTransfer({ cursors });
+  const draw = usePhasorDraw(node.transfer.cursors, setCursors);
 
   const tint = colormapGradientCSS(node.transfer.colormap, 18, null);
   const unit = scale.dimension === "time" ? "ns" : scale.dimension === "length" ? "nm" : "";
@@ -726,8 +723,17 @@ export const PhasorNodeEditor = ({
             histogram={plotHistogram}
             cursors={node.transfer.cursors}
             scale={scale}
-            onCursorsChange={(cursors) => setTransfer({ cursors })}
+            draw={draw}
+            onCursorsChange={setCursors}
           />
+          <div className="flex justify-end">
+            <PhasorPlotTools draw={draw} cursors={node.transfer.cursors} onCursorsChange={setCursors} />
+          </div>
+          {!plotHistogram && (
+            <span className="text-[10px] text-muted-foreground">
+              No phasor distribution computed for this lens yet — cursors still work.
+            </span>
+          )}
 
           <div className="flex items-center gap-2">
             <div className="flex flex-1 flex-col gap-1">
@@ -833,14 +839,12 @@ export const PhasorNodeEditor = ({
                     }
                   />
                 </div>
-                {!channelLocked && (
-                  <ChannelPositionSelect
-                    label="Channel"
-                    value={node.intensityIndex}
-                    layer={layer}
-                    onChange={(intensityIndex) => onChange({ ...node, intensityIndex })}
-                  />
-                )}
+                <ChannelPositionSelect
+                  label="Channel"
+                  value={node.intensityIndex}
+                  layer={layer}
+                  onChange={(intensityIndex) => onChange({ ...node, intensityIndex })}
+                />
               </div>
               <PhasorContextSummary layer={layer} harmonic={node.harmonic} />
             </div>
