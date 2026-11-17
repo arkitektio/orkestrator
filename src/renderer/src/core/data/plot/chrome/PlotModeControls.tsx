@@ -59,7 +59,7 @@ export const PlotModeControls = ({
   const modes = annotatable ? modeOptions : modeOptions.filter((m) => m.value === "EXPLORE");
 
   return (
-    <div className="pointer-events-auto absolute bottom-14 right-2 z-30 flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto absolute bottom-14 right-2 z-30 flex items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       {/* Interaction modes — iconified switches, as in the scene. A lone mode is
           not a choice, so it is not shown. */}
       {modes.length > 1 && (
@@ -72,7 +72,7 @@ export const PlotModeControls = ({
                 key={option.value}
                 variant={active ? "default" : "outline"}
                 size="xs"
-                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
                 title={`${option.label} — ${option.description}`}
                 aria-pressed={active}
                 onClick={() => viewerApi.getState().setInteractionMode(option.value)}

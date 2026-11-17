@@ -5,9 +5,9 @@ const DOT: Record<AutomationState, string> = {
   ended: "bg-muted-foreground/40",
   paused: "bg-muted-foreground/40",
   failing: "bg-destructive",
-  waiting: "bg-green-500",
-  running: "bg-blue-500 animate-pulse",
-  idle: "bg-green-500",
+  waiting: "bg-success",
+  running: "bg-info animate-pulse",
+  idle: "bg-success",
 };
 
 /** Just the dot, for rows that say the state in their own words. */

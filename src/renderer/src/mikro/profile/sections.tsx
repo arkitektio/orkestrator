@@ -50,8 +50,8 @@ const LatestImages = ({ sub }: ProfileContext) => {
                     <Boxes className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-black/50 px-1.5 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                  <p className="truncate text-[10px] text-white">{dataset.name}</p>
+                <div className="dark absolute inset-x-0 bottom-0 bg-background/50 px-1.5 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <p className="truncate text-[10px] text-foreground">{dataset.name}</p>
                 </div>
               </Card>
             </MikroArrayDataset.DetailLink>

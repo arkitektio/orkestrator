@@ -22,13 +22,13 @@ export const MorphologyModeControls = ({
   const next = displayMode === "3D" ? "Tree" : "3D";
 
   return (
-    <div className="pointer-events-auto absolute bottom-2 right-2 z-30 flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto absolute bottom-2 right-2 z-30 flex items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       {displayMode === "3D" && (
         <>
           <Button
             variant="outline"
             size="xs"
-            className="h-7 w-8 bg-black p-0"
+            className="h-7 w-8 bg-background p-0"
             onClick={requestFit}
             title="Frame the whole model (F)"
           >
@@ -41,7 +41,7 @@ export const MorphologyModeControls = ({
         <Button
           variant="outline"
           size="xs"
-          className="h-7 w-12 bg-black tabular-nums"
+          className="h-7 w-12 bg-background tabular-nums"
           onClick={() => setDisplayMode(next)}
           title={`Switch to ${next} view`}
         >

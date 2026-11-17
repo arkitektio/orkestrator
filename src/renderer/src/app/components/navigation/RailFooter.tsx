@@ -70,7 +70,7 @@ const PathNote = ({ path, directness }: { path: TunnelPath; directness?: Directn
             <AlertTriangle
               data-testid="rail-footer-path-warning"
               aria-hidden
-              className="absolute -right-2 -top-1.5 h-3 w-3 fill-popover text-amber-500"
+              className="absolute -right-2 -top-1.5 h-3 w-3 fill-popover text-warning"
             />
           )}
         </span>
@@ -82,7 +82,7 @@ const PathNote = ({ path, directness }: { path: TunnelPath; directness?: Directn
         <span
           data-testid="rail-footer-path-directness"
           data-directness={directness?.state}
-          className={cn("max-w-full truncate text-[10px]", warn ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/70")}
+          className={cn("max-w-full truncate text-[10px]", warn ? "text-warning" : "text-muted-foreground/70")}
           // Which machines, when it is not all of them at a glance.
           title={slow.map((machine) => `${machine.name}: ${machine.path === "relayed" ? `relayed${machine.relay ? ` via ${machine.relay}` : ""}` : "no answer"}`).join("\n") || undefined}
         >

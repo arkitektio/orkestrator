@@ -243,7 +243,7 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
         {children}
       </Canvas>
       {deviceLost && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 px-8 text-center text-sm text-zinc-300">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/70 px-8 text-center text-sm text-foreground/80">
           <div>
             The GPU device was lost ({deviceLost.reason ?? "unknown reason"}): {deviceLost.message}
           </div>
@@ -273,7 +273,7 @@ const SceneModeContent = () => {
  * The scene's `backgroundColor` as an inline style, or nothing at all.
  *
  * Null means "the viewer keeps its own", so it must fall through to the
- * `bg-black` class rather than resolve to a colour here. Components are RGBA in
+ * `bg-background` class rather than resolve to a colour here. Components are RGBA in
  * 0..1 (the schema's own convention, as on `SceneSnapshot.majorColor`); alpha
  * is optional and defaults to opaque. The Canvas itself stays transparent, so
  * this div showing through IS the background.
@@ -367,7 +367,7 @@ export const SceneViewport = (props: {
           : "Initializing scene data...";
     return (
       <div className="dark relative h-full w-full overflow-hidden rounded-lg bg-black text-foreground">
-        <div className="flex h-full w-full items-center justify-center px-8 text-center text-sm text-zinc-300">
+        <div className="flex h-full w-full items-center justify-center px-8 text-center text-sm text-foreground/80">
           {message}
         </div>
       </div>

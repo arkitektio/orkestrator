@@ -39,7 +39,7 @@ export const ClientFailedTasks = ({ object }: { identifier: string; object: Obje
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-red-500 font-medium">
+      <div className="flex items-center gap-2 text-destructive font-medium">
         <AlertTriangle className="h-5 w-5" />
         <h3>Critical Failures</h3>
       </div>

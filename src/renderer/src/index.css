@@ -302,11 +302,13 @@
   --ring: oklch(from var(--primary) 0.708 calc(c * 0.5) h);
 
   /* Charts */
-  --chart-1: oklch(0.85 0.13 calc(var(--brand-hue) - 100));
-  --chart-2: oklch(0.77 0.15 calc(var(--brand-hue) - 104));
-  --chart-3: oklch(0.7 0.15 calc(var(--brand-hue) - 105));
-  --chart-4: oklch(0.6 0.13 calc(var(--brand-hue) - 104));
-  --chart-5: oklch(0.51 0.1 calc(var(--brand-hue) - 101));
+  /* On the brand hue, as in `.dark`: a ramp of the brand, not a hue of its own
+     (an offset here turned every chart-tinted card blue under a pink brand). */
+  --chart-1: oklch(0.85 0.13 var(--brand-hue));
+  --chart-2: oklch(0.77 0.15 calc(var(--brand-hue) - 2));
+  --chart-3: oklch(0.7 0.15 calc(var(--brand-hue) - 3));
+  --chart-4: oklch(0.6 0.13 calc(var(--brand-hue) - 2));
+  --chart-5: oklch(0.51 0.1 calc(var(--brand-hue) + 1));
 
   --radius: 0.625rem;
 
@@ -899,4 +901,18 @@
   .logo-anim {
     animation: none !important;
   }
+}
+
+/* A panel blok hosted plainly: the renderer's `minimal` frame (border, card
+   background, shadow, padding) is taken off, so the panel stands on whatever
+   it is shown in. Not `chrome="none"`: that also makes an inline <Scene> fill
+   its box and ignore the height it declares. A blok nested in the panel (a
+   card a scene opens) keeps its own frame. Unlayered, so it wins over the
+   renderer's utilities. */
+.blok-plain .a2ui-container:not(.a2ui-container .a2ui-container) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }

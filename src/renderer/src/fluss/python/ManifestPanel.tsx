@@ -161,7 +161,7 @@ export const ManifestPanel = (props: {
                 </SelectContent>
               </Select>
               {row.effect === Effects.Irreversible && (
-                <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                <div className="flex items-start gap-1.5 text-xs text-warning">
                   <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                   {EFFECT_HINT[Effects.Irreversible]}
                 </div>

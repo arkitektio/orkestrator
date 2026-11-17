@@ -22,7 +22,7 @@ export const AgentDisplay = (props: DisplayWidgetProps) => {
               "h-2 w-2 rounded-full",
               // Over the logo's corner when there is one, where the dot alone was before.
               agent.logo?.blok && "absolute -bottom-0.5 -right-0.5 ring-1 ring-background",
-              agent.blocked ? "bg-red-500" : agent.connected ? "bg-green-500" : "bg-muted-foreground/40",
+              agent.blocked ? "bg-destructive" : agent.connected ? "bg-success" : "bg-muted-foreground/40",
             )}
           />
         </span>

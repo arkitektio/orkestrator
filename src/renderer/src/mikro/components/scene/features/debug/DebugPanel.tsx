@@ -154,7 +154,7 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
     <div className="absolute top-16 left-2 z-50 w-64 max-h-[70vh] overflow-y-auto bg-background/80 backdrop-blur-md border border-border/50 text-xs p-2 rounded shadow-lg pointer-events-auto">
       <h3 className="font-bold border-b border-border/50 pb-1 mb-2">Debug: Octree Renderer</h3>
       {renderBudget && (
-        <div className="mb-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200">
+        <div className="mb-2 rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] text-warning">
           Render budget exceeded: {(renderBudget.usedBytes / (1024 * 1024)).toFixed(0)} /{" "}
           {(renderBudget.budgetBytes / (1024 * 1024)).toFixed(0)} MB — culled{" "}
           {renderBudget.culledLayerIds.length} layer(s): {renderBudget.culledLayerIds.join(", ")}
@@ -226,8 +226,8 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
                       key={tier === null ? "auto" : tier}
                       className={`flex-1 rounded border px-1 py-0.5 text-[10px] transition-colors ${
                         qualityGovernor.getOverride() === tier
-                          ? "border-white/40 bg-white/15 text-white"
-                          : "border-border/50 text-muted-foreground hover:bg-white/10"
+                          ? "border-foreground/40 bg-foreground/15 text-foreground"
+                          : "border-border/50 text-muted-foreground hover:bg-foreground/10"
                       }`}
                       onClick={() => qualityGovernor.setOverride(tier as QualityTier | null)}
                     >
@@ -250,8 +250,8 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
                       }
                       className={`flex-1 rounded border px-1 py-0.5 text-[10px] transition-colors ${
                         qualityGovernor.getFidelity() === mode
-                          ? "border-white/40 bg-white/15 text-white"
-                          : "border-border/50 text-muted-foreground hover:bg-white/10"
+                          ? "border-foreground/40 bg-foreground/15 text-foreground"
+                          : "border-border/50 text-muted-foreground hover:bg-foreground/10"
                       }`}
                       onClick={() => qualityGovernor.setFidelity(mode)}
                     >
@@ -262,7 +262,7 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
               </div>
 
               <button
-                className="flex w-full items-center justify-center gap-1 rounded border border-border/50 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-white/10 transition-colors"
+                className="flex w-full items-center justify-center gap-1 rounded border border-border/50 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-foreground/10 transition-colors"
                 onClick={copyDebugReport}
               >
                 <ClipboardCopy className="h-3 w-3" />
@@ -274,8 +274,8 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
               <button
                 className={`flex w-full items-center justify-center gap-1 rounded border px-2 py-1 text-[10px] font-medium transition-colors ${
                   recording
-                    ? "border-red-500/60 bg-red-500/15 text-red-200 hover:bg-red-500/25"
-                    : "border-border/50 text-muted-foreground hover:bg-white/10"
+                    ? "border-destructive/60 bg-destructive/15 text-destructive hover:bg-destructive/25"
+                    : "border-border/50 text-muted-foreground hover:bg-foreground/10"
                 }`}
                 onClick={togglePerfRecording}
               >
@@ -311,7 +311,7 @@ const PerfSessionSummary = ({ report }: { report: PerfSessionReport }) => {
           {report.fps.toFixed(0)} fps
         </span>
         {report.truncated && (
-          <span className="rounded border border-amber-500/50 px-1 text-amber-300">
+          <span className="rounded border border-warning/50 px-1 text-warning">
             capped
           </span>
         )}
@@ -340,14 +340,14 @@ const PerfSessionSummary = ({ report }: { report: PerfSessionReport }) => {
         <span
           className={`rounded border px-1 ${
             report.renderCalls.max > 4
-              ? "border-amber-500/50 text-amber-300"
+              ? "border-warning/50 text-warning"
               : "border-border/50"
           }`}
         >
           {report.renderCalls.avg.toFixed(1)} render/f
         </span>
         {report.jankFrames > 0 && (
-          <span className="rounded border border-red-500/50 px-1 text-red-300">
+          <span className="rounded border border-destructive/50 px-1 text-destructive">
             {report.jankFrames} jank
           </span>
         )}
@@ -369,7 +369,7 @@ const PerfSessionSummary = ({ report }: { report: PerfSessionReport }) => {
           without one, the GPU process held the frame up. */}
       {report.longFrames.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="rounded border border-amber-500/50 px-1 text-amber-300">
+          <span className="rounded border border-warning/50 px-1 text-warning">
             {report.longFrames.length} missed · max {report.periodMs.max.toFixed(0)}ms
           </span>
           {report.longAnimationFrames ? (

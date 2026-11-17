@@ -26,9 +26,9 @@ const KIND_ICON: Record<ToastKind, LucideIcon> = {
 
 const KIND_COLOR: Record<ToastKind, string> = {
   default: "text-muted-foreground",
-  success: "text-emerald-500",
+  success: "text-success",
   info: "text-muted-foreground",
-  warning: "text-amber-500",
+  warning: "text-warning",
   error: "text-destructive",
 };
 

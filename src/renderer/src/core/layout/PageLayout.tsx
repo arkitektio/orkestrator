@@ -53,6 +53,12 @@ export type PageLayoutProps = {
    */
   besideTitle?: React.ReactNode;
   /**
+   * What a crumb reads as in place of its path segment, by segment: an
+   * object's name for its id (`{ [agent.id]: agent.name }`). The crumbs come
+   * from the URL alone, so a page that knows better says so here.
+   */
+  crumbs?: Readonly<Record<string, React.ReactNode>>;
+  /**
    * A canvas page: the content is one viewer sized `h-full w-full`, inset
    * from the page edges and never scrolled. The rail is the same as on every
    * other page.
@@ -94,6 +100,7 @@ export const PageLayout = ({
   actions,
   pageActions,
   besideTitle,
+  crumbs,
   overlay = false,
   title,
 }: PageLayoutProps) => {
@@ -183,7 +190,7 @@ export const PageLayout = ({
                 the trail truncates instead of wrapping. */}
             <div className="p-2 flex-grow min-w-[10rem] flex flex-row items-center gap-2 truncate">
               <div className="flex-shrink min-w-0 truncate">
-                <BreadCrumbs />
+                <BreadCrumbs labels={crumbs} />
               </div>
               {besideTitle && <div className="flex shrink-0 items-center gap-1">{besideTitle}</div>}
             </div>

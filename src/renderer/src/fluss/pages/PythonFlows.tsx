@@ -101,7 +101,7 @@ const Page = () => {
                 </div>
                 {flow.physical && (
                   <span
-                    className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
+                    className="flex items-center gap-1 text-xs text-warning"
                     title="Calls an action whose effect is irreversible"
                   >
                     <AlertTriangle className="h-3 w-3" /> Irreversible

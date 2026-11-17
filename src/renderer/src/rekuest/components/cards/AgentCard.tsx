@@ -24,7 +24,9 @@ const TheCard = ({ item }: Props) => {
       <Card
         className={cn(
           "group aspect-square flex flex-col relative overflow-visible",
-          item.active && "dark:border-primary border ",
+          // An active agent wears the brand: a firm edge with a soft halo, in either theme.
+          item.active &&
+            "border border-primary/50 ring-2 ring-primary/15 hover:ring-2 hover:ring-primary/30 dark:hover:ring-primary/30",
         )}
       >
         <CardHeader className="flex-grow">

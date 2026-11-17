@@ -23,7 +23,7 @@ const RemapChip = () => {
     <button
       onClick={() => setRemap(sceneId, { ...remap, factor: 1 })}
       title="The scene is drawn with this axis remapped, so lengths along it are not physical. Click to go back to 1×."
-      className="absolute bottom-16 left-8 z-10 rounded bg-amber-500/80 px-1.5 py-0.5 font-mono text-[10px] text-black hover:bg-amber-400"
+      className="absolute bottom-16 left-8 z-10 rounded bg-warning/80 px-1.5 py-0.5 font-mono text-[10px] text-warning-foreground hover:bg-warning"
     >
       {axis} ×{remap.factor.toFixed(2)} · display only
     </button>

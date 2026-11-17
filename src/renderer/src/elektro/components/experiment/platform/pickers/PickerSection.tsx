@@ -118,7 +118,7 @@ export const PickerSection = ({
                 className={
                   "rounded border px-1.5 py-0.5 font-mono text-[10px] " +
                   (problem
-                    ? "border-amber-500/60 text-amber-500"
+                    ? "border-warning/60 text-warning"
                     : on
                       ? "border-foreground/60 bg-accent"
                       : "border-border/60 text-muted-foreground")
@@ -132,7 +132,7 @@ export const PickerSection = ({
         </div>
       )}
       {activeColorBy != null && problems[`c${activeColorBy}`] && (
-        <div className="text-amber-500">Not drawn: {problems[`c${activeColorBy}`]}</div>
+        <div className="text-warning">Not drawn: {problems[`c${activeColorBy}`]}</div>
       )}
       {editing && (
         <PickerEditor root={root} colorBys={colorBys} filterBys={filterBys} write={write} />

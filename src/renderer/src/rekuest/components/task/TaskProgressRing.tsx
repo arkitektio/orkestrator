@@ -47,10 +47,10 @@ export const taskRingState = (task: {
 const COLOR: Record<TaskRingState, string> = {
   queued: "text-muted-foreground",
   running: "text-primary",
-  stopping: "text-orange-400",
-  done: "text-green-500",
+  stopping: "text-warning",
+  done: "text-success",
   error: "text-destructive",
-  lost: "text-amber-500",
+  lost: "text-warning",
   cancelled: "text-muted-foreground",
 };
 

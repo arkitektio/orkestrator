@@ -17,17 +17,17 @@ export function CodeBlock({ language, content }: CodeBlockProps) {
   };
 
   return (
-    <div className="my-3 rounded-lg border border-border/40 bg-zinc-950 dark:bg-zinc-900/60 overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/10 bg-zinc-900 dark:bg-zinc-950/40 text-[10px] font-mono text-zinc-400 select-none">
+    <div className="my-3 rounded-lg border border-border/40 bg-muted/60 overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/40 bg-muted text-[10px] font-mono text-muted-foreground select-none">
         <span>{language || "text"}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-zinc-800 hover:text-zinc-200 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
         >
           {copied ? (
             <>
-              <Check className="h-3 w-3 text-emerald-500" />
-              <span className="text-emerald-500 font-medium">Copied!</span>
+              <Check className="h-3 w-3 text-success" />
+              <span className="text-success font-medium">Copied!</span>
             </>
           ) : (
             <>
@@ -37,7 +37,7 @@ export function CodeBlock({ language, content }: CodeBlockProps) {
           )}
         </button>
       </div>
-      <pre className="p-3 overflow-x-auto text-xs font-mono text-zinc-100 dark:text-zinc-200 leading-relaxed scrollbar-thin">
+      <pre className="p-3 overflow-x-auto text-xs font-mono text-foreground leading-relaxed scrollbar-thin">
         <code>{content}</code>
       </pre>
     </div>

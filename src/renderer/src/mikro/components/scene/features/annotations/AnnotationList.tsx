@@ -75,9 +75,9 @@ export const AnnotationSelection = ({
   const elsewhere = selectedTotal - selected.length;
 
   return (
-    <div className="flex flex-col gap-1 border-t border-amber-400/20 bg-amber-400/5 px-2 py-1.5">
+    <div className="flex flex-col gap-1 border-t border-warning/20 bg-warning/5 px-2 py-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="min-w-0 flex-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-amber-700/80 dark:text-amber-200/80">
+        <span className="min-w-0 flex-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-warning/80">
           {selected.length} selected
         </span>
         <Button
@@ -109,7 +109,7 @@ export const AnnotationSelection = ({
           // Spread: the Smart wrapper wants a JSON-shaped object, and the
           // store's `name` may be `undefined`, which JSON has no word for.
           <MikroAnnotation.Smart key={roi.id} object={{ ...roi, name: roi.name ?? null }}>
-            <div className="rounded-md border border-amber-400/30 bg-background/30 px-1.5 py-1">
+            <div className="rounded-md border border-warning/30 bg-background/30 px-1.5 py-1">
               <div className="flex items-center gap-1.5">
                 <span className="shrink-0 font-mono text-[10px] text-foreground/90">
                   {index >= 0 ? indexLabel(index) : "—"}
@@ -171,7 +171,7 @@ const AnnotationRow = memo(
         className={`group flex cursor-pointer items-center gap-1.5 rounded-md border px-1.5 py-0.5 transition-colors ${
           isSelected
             ? // Amber — the same color the scene highlights the selected shape in.
-              "border-amber-400/40 bg-amber-400/10"
+              "border-warning/40 bg-warning/10"
             : "border-transparent hover:bg-foreground/5"
         }`}
         title={isSelected ? "Click to deselect" : "Click to select"}
@@ -215,7 +215,7 @@ const AnnotationRow = memo(
         <Button
           variant="ghost"
           size="xs"
-          className={`h-5 w-5 shrink-0 p-0 text-foreground/35 hover:text-red-700 dark:hover:text-red-300 ${
+          className={`h-5 w-5 shrink-0 p-0 text-foreground/35 hover:text-destructive ${
             isDeleting ? "opacity-40" : ""
           }`}
           title={isDeleting ? "Deleting…" : "Delete annotation"}

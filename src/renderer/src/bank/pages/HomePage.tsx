@@ -61,7 +61,7 @@ const Stat = ({ label, value, tone }: { label: string; value: string; tone?: "in
     <span
       className={cn(
         "text-2xl font-semibold tabular-nums",
-        tone === "in" && "text-emerald-600 dark:text-emerald-400",
+        tone === "in" && "text-success",
       )}
     >
       {value}

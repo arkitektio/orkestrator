@@ -162,8 +162,8 @@ export const MorphologyLayerCard = ({
 
   return (
     <LayerCardShell
-      icon={<GitBranch className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
-      tile="bg-emerald-400/15"
+      icon={<GitBranch className="h-3 w-3 text-success" />}
+      tile="bg-success/15"
       title="Morphology"
       badges={
         <>
@@ -276,8 +276,8 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
 
   return (
     <LayerCardShell
-      icon={<Waypoints className="h-3 w-3 text-violet-700 dark:text-violet-300" />}
-      tile="bg-violet-400/15"
+      icon={<Waypoints className="h-3 w-3 text-spectrum-violet" />}
+      tile="bg-spectrum-violet/15"
       title="Network"
       badges={
         <Badge title="Synapses">{formatCount(network.synapses.length)} syn</Badge>
@@ -307,7 +307,7 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
               active={settings.synapses}
               title="Synapse markers on the morphology"
               onClick={() => setNetwork({ synapses: !settings.synapses })}
-              icon={<span className="size-1.5 rounded-full bg-amber-400" />}
+              icon={<span className="size-1.5 rounded-full bg-warning" />}
               label={`${formatCount(network.synapses.length)} synapses`}
             />
           )}
@@ -316,7 +316,7 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
               active={settings.stimulators}
               title="Stimulator glyphs beside the arbor"
               onClick={() => setNetwork({ stimulators: !settings.stimulators })}
-              icon={<span className="size-1.5 rotate-45 bg-violet-400" />}
+              icon={<span className="size-1.5 rotate-45 bg-spectrum-violet" />}
               label={`${formatCount(network.stimulators.length)} stimulators`}
             />
           )}
@@ -325,7 +325,7 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
               active={settings.connections}
               title="Stimulator → synapse connections"
               onClick={() => setNetwork({ connections: !settings.connections })}
-              icon={<span className="h-px w-2 bg-violet-300" />}
+              icon={<span className="h-px w-2 bg-spectrum-violet/30" />}
               label={`${formatCount(network.connections.length)} connections`}
             />
           )}

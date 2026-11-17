@@ -350,8 +350,8 @@ export const LabelLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Puzzle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
-        tile="bg-emerald-400/15"
+        icon={<Puzzle className="h-3 w-3 text-success" />}
+        tile="bg-success/15"
         // The same name rule as the image rows: its own name, then the lens',
         // then the dataset. The whole title bar folds the card; the rename is
         // the pencil among the actions.
@@ -367,7 +367,7 @@ export const LabelLayerCard = memo(
                 graph save: visible only while there is something to save. */}
             {dirty && (
               <button
-                className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
+                className="shrink-0 rounded p-0.5 text-warning/90 transition-colors hover:text-warning/80 disabled:opacity-50"
                 title="Save changes"
                 disabled={saving}
                 onClick={save}

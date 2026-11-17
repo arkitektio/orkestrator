@@ -33,7 +33,7 @@ const AccountCard = ({ item }: { item: ListBankAccountFragment }) => {
             <RefreshCw className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
           ) : trouble ? (
             <AlertTriangle
-              className="h-3.5 w-3.5 shrink-0 text-amber-500"
+              className="h-3.5 w-3.5 shrink-0 text-warning"
               aria-label={item.lastError ?? "The bank consent ran out"}
             />
           ) : null}

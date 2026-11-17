@@ -76,7 +76,7 @@ export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
         <div className="flex flex-col gap-2 p-3">
           <div className="flex min-w-0 flex-row items-start gap-2">
             <Icon
-              className="mt-0.5 h-4 w-4 shrink-0 text-white/70"
+              className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70"
               aria-label={spatial?.label}
             />
             <span className="min-w-0 break-words text-sm font-semibold leading-tight line-clamp-2">
@@ -85,9 +85,9 @@ export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
           </div>
 
           <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-xs tabular-nums text-white/90">{extent}</span>
+            <span className="text-xs tabular-nums text-foreground/90">{extent}</span>
             {axes.acquisition.length > 0 && (
-              <span className="text-xs tabular-nums text-white/70">
+              <span className="text-xs tabular-nums text-foreground/70">
                 {formatAxes(axes.acquisition)}
               </span>
             )}
@@ -95,7 +95,7 @@ export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
               <Badge
                 key={modifier.spec}
                 variant="outline"
-                className="border-white/40 px-1 py-0 text-[10px] font-normal text-white"
+                className="border-foreground/40 px-1 py-0 text-[10px] font-normal text-foreground"
               >
                 {modifier.short}
               </Badge>
@@ -103,7 +103,7 @@ export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
             {arrayDataset.multiscale && (
               <Badge
                 variant="outline"
-                className="border-white/40 px-1 py-0 text-[10px] font-normal text-white"
+                className="border-foreground/40 px-1 py-0 text-[10px] font-normal text-foreground"
               >
                 multiscale
               </Badge>

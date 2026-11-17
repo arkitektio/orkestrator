@@ -164,7 +164,7 @@ const DrawSurface = ({ targetId }: { targetId: string }) => {
           <polyline
             ref={previewRef}
             fill="none"
-            className="stroke-sky-400"
+            className="stroke-info"
             strokeDasharray="4 3"
             strokeWidth={1.5}
             vectorEffect="non-scaling-stroke"

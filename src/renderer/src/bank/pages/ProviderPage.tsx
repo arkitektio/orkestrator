@@ -113,7 +113,7 @@ const ProviderPage = asDetailQueryRoute(useGetBankProviderQuery, ({ data }) => {
               return (
                 <li key={info.capability} className={"flex items-start gap-3" + (on ? "" : " text-muted-foreground")}>
                   {on ? (
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
                   ) : (
                     <Minus className="mt-0.5 h-4 w-4 shrink-0" />
                   )}

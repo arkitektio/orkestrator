@@ -8,7 +8,7 @@ export default memo(({ data, id, selected }: NodeProps<ProtocolEventNode>) => {
   return (
     <>
       <NodeResizer
-        color="#ff0071"
+        color="var(--primary)"
         isVisible={selected}
         minWidth={100}
         minHeight={30}

@@ -36,7 +36,7 @@ const Agents = ({ sub }: ProfileContext) => {
                   <span
                     className={cn(
                       "!h-2 !w-2 rounded-full",
-                      agent.connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+                      agent.connected ? "bg-success" : "bg-muted-foreground/40",
                     )}
                   />
                 }

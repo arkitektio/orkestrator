@@ -36,7 +36,7 @@ const useConnector = (): Connector => {
 };
 
 const Notice = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("flex h-full w-full flex-col items-center justify-center gap-2 bg-black text-sm text-white/60", className)}>
+  <div className={cn("dark flex h-full w-full flex-col items-center justify-center gap-2 bg-background text-sm text-foreground/60", className)}>
     {children}
   </div>
 );
@@ -58,13 +58,13 @@ const PublishedTrack = ({ room, stream, className }: { room: Room; stream: Shown
   if (stream.kind === StreamKind.Audio) {
     return (
       <Notice className={className}>
-        <Mic className="size-5 text-emerald-400" />
+        <Mic className="size-5 text-success" />
         <span>{stream.title}</span>
         <AudioTrack trackRef={track} />
       </Notice>
     );
   }
-  return <VideoTrack trackRef={track} className={cn("h-full w-full bg-black object-contain", className)} />;
+  return <VideoTrack trackRef={track} className={cn("dark h-full w-full bg-background object-contain", className)} />;
 };
 
 const Connected = ({ stream, className }: { stream: ShownStream; className?: string }) => {

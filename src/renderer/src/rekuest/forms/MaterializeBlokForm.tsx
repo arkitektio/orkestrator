@@ -144,7 +144,7 @@ export const MaterializeBlokForm = (
             <Button
               type="submit"
               disabled={loading}
-              className={cn("flex-initial", form.formState.isSubmitting && "bg-red-200")}
+              className={cn("flex-initial", form.formState.isSubmitting && "bg-destructive/20")}
             >
               Submit
             </Button>

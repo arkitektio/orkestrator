@@ -66,10 +66,10 @@ describe("ServiceCard", () => {
 
   it("shows its state as a toned status, not a filled badge", () => {
     const { rerender } = render(<ServiceCard service={service("mikro.example.org")} />);
-    expect(screen.getByText("Reachable")).toHaveClass("text-emerald-600");
+    expect(screen.getByText("Reachable")).toHaveClass("text-success");
     rerender(<ServiceCard service={service("mikro.example.org", { status: "invalid" })} />);
     expect(screen.getByText("Unreachable")).toHaveClass("text-destructive");
     rerender(<ServiceCard service={service("mikro.example.org", { status: "checking" })} />);
-    expect(screen.getByText("Checking")).toHaveClass("text-amber-600");
+    expect(screen.getByText("Checking")).toHaveClass("text-warning");
   });
 });

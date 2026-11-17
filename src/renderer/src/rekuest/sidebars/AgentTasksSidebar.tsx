@@ -18,8 +18,8 @@ export const AgentTasksSidebar = (props: { agent: string }) => {
     return (
       <div className="p-4">
         <h2 className="text-lg font-semibold mb-4">Runs</h2>
-        <div className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-          <p className="text-sm text-red-600 dark:text-red-400">
+        <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/10">
+          <p className="text-sm text-destructive">
             Error loading runs: {error.message}
           </p>
         </div>

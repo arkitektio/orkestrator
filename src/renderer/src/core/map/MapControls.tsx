@@ -9,7 +9,7 @@ import { MAP_STYLES, MapStyleId, setMapStyle, useMapStyleId } from "./styles";
 
 type Bounds = [[number, number], [number, number]];
 
-const HUD_BUTTON = "h-7 w-8 bg-black p-0";
+const HUD_BUTTON = "h-7 w-8 bg-background p-0";
 
 /** A row in the settings popover (same shape as the scene's). */
 export const MapSettingRow = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -50,7 +50,7 @@ export const MapControls = ({ fit, settings }: { fit?: Bounds | null; settings?:
   const rotated = Math.abs(bearing) > 0.5;
 
   return (
-    <div className="pointer-events-auto absolute bottom-2 right-2 z-10 flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="dark text-foreground pointer-events-auto absolute bottom-2 right-2 z-10 flex items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       <ButtonGroup>
         <Button variant="outline" size="xs" className={HUD_BUTTON} onClick={() => map.zoomOut()} title="Zoom out">
           <Minus className="h-3.5 w-3.5" />
@@ -75,7 +75,7 @@ export const MapControls = ({ fit, settings }: { fit?: Bounds | null; settings?:
       <Button
         variant="outline"
         size="xs"
-        className="h-7 w-11 bg-black tabular-nums"
+        className="h-7 w-11 bg-background tabular-nums"
         onClick={() => map.easeTo({ pitch: tilted ? 0 : 55 })}
         title={tilted ? "Look straight down" : "Tilt the map (3D buildings on Streets)"}
       >

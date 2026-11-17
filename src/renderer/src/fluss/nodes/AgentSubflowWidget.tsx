@@ -23,7 +23,7 @@ const ResizeHandle = ({ selected }: { selected?: boolean }) => (
   >
     <div
       className={[
-        "flex h-6 w-6 items-center justify-center rounded-md border border-amber-300/80 bg-background/95 text-amber-600 shadow-md backdrop-blur-sm",
+        "flex h-6 w-6 items-center justify-center rounded-md border border-warning/80 bg-background/95 text-warning shadow-md backdrop-blur-sm",
         "nodrag nopan nowheel",
         selected ? "opacity-100" : "pointer-events-none opacity-0",
       ].join(" ")}
@@ -73,14 +73,14 @@ const EditorControls = ({
       </Button>
       {agentError && (
         <div className="px-4 pb-4">
-          <div className="flex min-h-[92px] items-center justify-center rounded-lg border border-dashed border-amber-300/80 bg-background/70 text-center text-sm text-muted-foreground dark:border-amber-700/70 dark:bg-background/20">
+          <div className="flex min-h-[92px] items-center justify-center rounded-lg border border-dashed border-warning/80 bg-background/70 text-center text-sm text-muted-foreground dark:bg-background/20">
             Error fetching agents.
           </div>
         </div>
       )}
       {childCount === 0 && (
         <div className="px-4 pb-4">
-          <div className="flex min-h-[92px] items-center justify-center rounded-lg border border-dashed border-amber-300/80 bg-background/70 text-center text-sm text-muted-foreground dark:border-amber-700/70 dark:bg-background/20">
+          <div className="flex min-h-[92px] items-center justify-center rounded-lg border border-dashed border-warning/80 bg-background/70 text-center text-sm text-muted-foreground dark:bg-background/20">
             Click the node to add an implementation.
           </div>
         </div>

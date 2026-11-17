@@ -120,7 +120,7 @@ export const PointsChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
           <ChartFacts error={readout?.error}>
             <ChartFact label="Rows" value={rows ? `${rows}${readout?.loading ? " …" : ""}` : readout?.loading ? "…" : null} />
             {readout?.note && <div className="text-[10px] text-foreground/40">{readout.note}</div>}
-            {layer.sourceFailure && <div className="text-[10px] text-amber-300/70">{layer.sourceFailure}</div>}
+            {layer.sourceFailure && <div className="text-[10px] text-warning/70">{layer.sourceFailure}</div>}
           </ChartFacts>
         </>
       )}

@@ -172,12 +172,12 @@ export const ComparedHopBlock = ({ hop }: { hop: ComparedHop }) => {
         )}
         {meta.via && <span className="truncate text-[9px] text-foreground/35">{meta.via}</span>}
         {meta.kind === "SPARSE" && (
-          <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-700/80 dark:text-sky-200/80">
+          <span className="rounded bg-info/20 px-1 text-[9px] font-medium text-info/80">
             matrix
           </span>
         )}
         {meta.kind === "ARRAY" && (
-          <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-700/80 dark:text-amber-200/80">
+          <span className="rounded bg-warning/20 px-1 text-[9px] font-medium text-warning/80">
             array
           </span>
         )}

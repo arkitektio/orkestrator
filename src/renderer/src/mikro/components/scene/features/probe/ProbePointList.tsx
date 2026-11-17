@@ -214,7 +214,7 @@ const LegendRow = ({
       <span className="min-w-0 flex-1 truncate text-foreground/40">{layerName}</span>
       {lookup?.status === "loading" && <span className="text-foreground/40">…</span>}
       {lookup?.status === "error" && (
-        <span className="truncate text-red-700/70 dark:text-red-300/70" title={lookup.error}>
+        <span className="truncate text-destructive/70" title={lookup.error}>
           lookup failed
         </span>
       )}

@@ -38,9 +38,9 @@ export const CropChip = () => {
   if (!hint && !hasBox) return null;
 
   return (
-    <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/80 backdrop-blur-sm">
+    <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 flex items-center gap-2 rounded-md bg-background/60 px-2 py-1 text-[10px] text-foreground/80 backdrop-blur-sm">
       {hint ? (
-        <span className={phase === "idle" ? "text-amber-300/90" : undefined}>{hint}</span>
+        <span className={phase === "idle" ? "text-warning/90" : undefined}>{hint}</span>
       ) : (
         <>
           <span>Cropped to a box</span>
@@ -48,7 +48,7 @@ export const CropChip = () => {
             type="button"
             onClick={clearCrop}
             title="Remove the crop box (Shift+S)"
-            className="flex items-center gap-0.5 rounded px-1 text-white/70 hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-0.5 rounded px-1 text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
           >
             <X className="h-3 w-3" />
             Show all

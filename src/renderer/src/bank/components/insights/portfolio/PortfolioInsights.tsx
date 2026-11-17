@@ -37,7 +37,7 @@ export const PortfolioInsights = ({ accounts }: { accounts?: string[] }) => {
           <InsightStat
             label="Unrealized gain"
             value={
-              <span className={cn(gainValue >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+              <span className={cn(gainValue >= 0 ? "text-success" : "text-destructive")}>
                 {formatMoney(gain.amount, currency, { signed: true })}
               </span>
             }

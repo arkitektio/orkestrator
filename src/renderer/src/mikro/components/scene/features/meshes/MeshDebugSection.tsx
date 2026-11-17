@@ -168,7 +168,7 @@ const FabriksMeshSection = ({
                   {(lastPlan.totalIndices / 3 / 1e6).toFixed(2)} Mtri
                 </span>
                 {lastPlan.coarsenedRegions > 0 && (
-                  <span className="px-1 rounded border border-amber-500/50 text-amber-300">
+                  <span className="px-1 rounded border border-warning/50 text-warning">
                     coarsened {lastPlan.coarsenedRegions}
                   </span>
                 )}
@@ -225,12 +225,12 @@ const FabriksMeshSection = ({
                   means something is churning matrices that should be
                   value-stable — the exact failure Phase 1 removed. */}
               {stats.indexRebuilds > 1 && (
-                <span className="px-1 rounded border border-amber-500/50 text-amber-300">
+                <span className="px-1 rounded border border-warning/50 text-warning">
                   rebuilds {stats.indexRebuilds}
                 </span>
               )}
               {(stats.fetchErrors > 0 || (transport?.errors ?? 0) > 0) && (
-                <span className="px-1 rounded border border-red-500/50 text-red-300">
+                <span className="px-1 rounded border border-destructive/50 text-destructive">
                   errors {stats.fetchErrors + (transport?.errors ?? 0)}
                 </span>
               )}

@@ -36,7 +36,7 @@ export const ChangeBadge = ({ change, className }: { change?: ChangeFragment | n
       title={`Before: ${formatMoney(change.previous, change.currency)}`}
       className={cn(
         "rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums",
-        good ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400",
+        good ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
         className,
       )}
     >

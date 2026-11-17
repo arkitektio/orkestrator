@@ -250,16 +250,16 @@ const FilterMenu = ({
   );
 };
 
-/** Live apps first, then recently active ones, then everything else by recency. */
+/**
+ * Live apps first, then recently active ones, then the rest; by name within
+ * each. Never by `lastSeen`: it moves with every heartbeat, so the rows would
+ * keep changing places. A row only moves when its agent's status does.
+ */
 const rank = (a: ListAgentFragment) => (a.blocked ? 3 : a.connected ? 0 : a.active ? 1 : 2);
 const sortAgents = (agents: ListAgentFragment[]) =>
-  [...agents].sort((a, b) => {
-    const r = rank(a) - rank(b);
-    if (r !== 0) return r;
-    const at = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
-    const bt = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
-    return bt - at;
-  });
+  [...agents].sort(
+    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+  );
 
 const Page = () => {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));

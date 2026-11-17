@@ -7,7 +7,7 @@ import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer, type BlokAssignRecord} from '../components/MaterializedBlokRenderer';
 import {HoldCard} from '../components/task/HoldCard';
 import {PlacedTimeSlider} from '../components/spaces/task/panels/TimeSlider';
-import {askClosed} from '../lib/holds';
+import {askClosed, holdKey} from '../lib/holds';
 import {agentMappingsOf, agentsByKey, type RunBinding, type RunBoundAgent} from './binding';
 import {useBlokTravelMoment} from '../travel/context';
 import {parseTimestamp} from '../travel/travelSource';
@@ -54,11 +54,11 @@ export const runOfTask = (task: RunTaskFragment): ActionBlokRun => ({
 export const RunAsk = ({task}: {task: RunTaskFragment}) => {
   const hold = React.useMemo(() => shownAsk(task), [task]);
   if (!hold) return null;
-  return <HoldCard key={hold.task} hold={hold} closed={askClosed(task)} />;
+  return <HoldCard key={holdKey(hold)} hold={hold} closed={askClosed(task)} />;
 };
 
 const AskPlaceholder = () => (
-  <div className="rounded-xl border border-dashed border-amber-500/40 px-3 py-2 text-xs text-muted-foreground">
+  <div className="rounded-xl border border-dashed border-warning/40 px-3 py-2 text-xs text-muted-foreground">
     When the run asks something, it is answered here.
   </div>
 );

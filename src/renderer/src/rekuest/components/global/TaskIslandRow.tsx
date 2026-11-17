@@ -131,7 +131,7 @@ const RowDetail = ({
   return (
     <div className="flex min-w-0 flex-col gap-1.5 px-2.5 pb-2">
       {lost ? (
-        <p className="line-clamp-2 min-w-0 break-words text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+        <p className="line-clamp-2 min-w-0 break-words text-[11px] leading-snug text-warning">
           {failureFallback(TaskEventKind.Lost)}
         </p>
       ) : (
@@ -148,7 +148,7 @@ const RowDetail = ({
         // unbroken token like a URL or a UUID, which would otherwise push the
         // row wider than the rail. Break anywhere, and cap the height so one
         // long failure cannot take the rail over.
-        <div className="max-h-24 w-full min-w-0 overflow-y-auto whitespace-pre-wrap break-words rounded bg-red-500/10 p-1.5 text-[11px] leading-snug text-red-500">
+        <div className="max-h-24 w-full min-w-0 overflow-y-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-1.5 text-[11px] leading-snug text-destructive">
           {live.error}
         </div>
       )}

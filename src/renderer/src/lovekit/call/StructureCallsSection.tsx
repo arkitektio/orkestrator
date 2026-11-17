@@ -37,8 +37,8 @@ export const StructureCallsSection = ({ identifier, object }: { identifier: Iden
         return (
           <div key={call.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-2 py-1.5 text-xs">
             <span className="relative flex size-2 shrink-0">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-success" />
             </span>
             <span className="min-w-0 flex-1 truncate font-medium">{call.title}</span>
             <span className="flex shrink-0 items-center gap-1 text-muted-foreground">

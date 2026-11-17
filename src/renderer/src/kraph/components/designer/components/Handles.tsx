@@ -29,7 +29,7 @@ export const Handles = (props: { self: string }) => {
       {/* We want to disable the target handle, if the connection was started from this node */}
       {(!connection.inProgress || isTarget) && (
         <Handle
-          className="w-1 h-1 group-hover:bg-red-500 opacity-0 hover:opacity-100"
+          className="w-1 h-1 group-hover:bg-destructive opacity-0 hover:opacity-100"
           position={Position.Bottom}
           style={{
             width: "100%",

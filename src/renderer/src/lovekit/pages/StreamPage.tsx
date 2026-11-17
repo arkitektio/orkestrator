@@ -45,7 +45,7 @@ export default asDetailQueryRoute(
           </Sidebars>
         }
       >
-        <div className="flex h-full w-full items-center justify-center bg-black">
+        <div className="dark flex h-full w-full items-center justify-center bg-background text-foreground">
           <StreamVideo stream={stream} />
         </div>
       </LovekitStream.ModelPage>

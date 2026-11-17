@@ -42,7 +42,7 @@ export const ZoomBoxOverlay = () => {
   return (
     <div
       ref={boxRef}
-      className="pointer-events-none absolute top-0 bottom-12 z-10 border-x border-sky-400/80 bg-sky-400/15"
+      className="pointer-events-none absolute top-0 bottom-12 z-10 border-x border-info/80 bg-info/15"
       style={{ display: "none" }}
     />
   );

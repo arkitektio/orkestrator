@@ -74,7 +74,7 @@ export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => 
               variant="outline"
               className={cn(
                 "rounded-full",
-                status === "live" && "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+                status === "live" && "border-success/40 text-success",
               )}
             >
               {MANDATE_STATUS_LABEL[status]}

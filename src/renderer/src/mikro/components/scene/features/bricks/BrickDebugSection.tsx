@@ -33,7 +33,7 @@ const BrickDebugWarnings: FC = () => {
       {Object.entries(unplannableLayers).map(([layerId, info]) => (
         <div
           key={layerId}
-          className="mb-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200"
+          className="mb-2 rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] text-warning"
         >
           {layerId}: not planned in {info.mode} — coarsest-level pool floor{" "}
           {(info.floorBytes / MB).toFixed(0)} MB exceeds{" "}
@@ -149,7 +149,7 @@ const BrickDebugBody: FC<{ selfTests: readonly SelfTest[] }> = ({ selfTests }) =
             </span>
           )}
           {brickSystem.stats.fetchErrors > 0 && (
-            <span className="px-1 rounded border border-red-500/50 text-red-300">
+            <span className="px-1 rounded border border-destructive/50 text-destructive">
               errors {brickSystem.stats.fetchErrors}
             </span>
           )}
@@ -253,13 +253,13 @@ const BrickDebugBody: FC<{ selfTests: readonly SelfTest[] }> = ({ selfTests }) =
                     empty {pool.emptyValues.size}
                   </span>
                   {(pool.queue.length > 0 || pool.inFlight.size > 0) && (
-                    <span className="px-1 rounded border border-amber-500/50 text-amber-300">
+                    <span className="px-1 rounded border border-warning/50 text-warning">
                       ↓{pool.inFlight.size} ⇡{pool.queue.length}
                     </span>
                   )}
                   {pool.provisionalKeys.size > 0 && (
                     <span
-                      className="px-1 rounded border border-sky-500/50 text-sky-300"
+                      className="px-1 rounded border border-info/50 text-info"
                       title="Two-phase bricks: residents whose 1-voxel border is still edge-replicated (halo refine pending)"
                     >
                       ◐{pool.provisionalKeys.size}

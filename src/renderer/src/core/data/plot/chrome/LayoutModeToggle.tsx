@@ -52,7 +52,7 @@ export const LayoutModeToggle = ({
             key={option.value}
             variant={active ? "default" : "outline"}
             size="xs"
-            className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+            className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
             title={titles?.[option.value] ?? option.title}
             aria-pressed={active}
             onClick={() =>

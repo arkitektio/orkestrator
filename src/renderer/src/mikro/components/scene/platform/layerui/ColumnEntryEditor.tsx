@@ -518,7 +518,7 @@ const SparseSliceSettings = ({
   }
   if (error) {
     return (
-      <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">
+      <div className="text-[10px] text-warning/80">
         Could not read the slice: {error}
       </div>
     );
@@ -842,12 +842,12 @@ export const ColumnEntrySettings = ({
         <div className="text-[10px] text-foreground/40">Resolving column…</div>
       )}
       {!tableResult.loading && table && !column && (
-        <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">
+        <div className="text-[10px] text-warning/80">
           {table.name} no longer declares a column named “{entry.column}”.
         </div>
       )}
       {statsError && (
-        <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80" title={statsError.detail}>
+        <div className="text-[10px] text-warning/80" title={statsError.detail}>
           Could not read the column’s values: {statsError.summary}. The full error is in
           the console.
         </div>
@@ -973,7 +973,7 @@ export const ColumnEntrySettings = ({
           {/* A list cut at the cap read as complete is worse than no list: a
               rule authored against it silently drops what it never showed. */}
           {distinct?.truncated && (
-            <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80">
+            <div className="text-[9px] text-warning/80">
               More than {DISTINCT_LIMIT} distinct values — showing the first
               {" "}
               {DISTINCT_LIMIT}. Narrow with a bound instead if this is not the

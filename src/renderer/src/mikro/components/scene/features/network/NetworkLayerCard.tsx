@@ -249,8 +249,8 @@ export const NetworkLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Share2 className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />}
-        tile="bg-emerald-400/15"
+        icon={<Share2 className="h-3 w-3 text-success" />}
+        tile="bg-success/15"
         title={collection?.label || `Network ${layer.id}`}
         hidden={hidden}
         expanded={expanded}
@@ -440,7 +440,7 @@ export const NetworkLayerCard = memo(
           {/* Declared-but-unimplemented: shown so a set field is not silently
               ignored. See the module docblock. */}
           {(layer.nodeSizeColumn || layer.edgeWidthColumn) && (
-            <div className="mt-1 text-[9px] text-amber-700/60 dark:text-amber-300/60">
+            <div className="mt-1 text-[9px] text-warning/60">
               {layer.nodeSizeColumn
                 ? `nodeSizeColumn "${layer.nodeSizeColumn}"`
                 : `edgeWidthColumn "${layer.edgeWidthColumn}"`}{" "}

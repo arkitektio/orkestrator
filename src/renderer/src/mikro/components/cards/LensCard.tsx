@@ -59,7 +59,7 @@ const TheCard = ({ item }: Props) => {
               aside={
                 <LensContainerLink
                   lens={item}
-                  className="mt-0.5 shrink-0 text-white/60 hover:text-white"
+                  className="mt-0.5 shrink-0 text-foreground/60 hover:text-foreground"
                 >
                   <Database className="h-3.5 w-3.5" aria-label="Open the dataset" />
                 </LensContainerLink>
@@ -71,19 +71,19 @@ const TheCard = ({ item }: Props) => {
                 <LensSmart.DetailLink object={item}>{title}</LensSmart.DetailLink>
               </CardTitle>
               <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-1 text-[0.625rem] text-white/80">
+                <div className="flex items-center gap-1 text-[0.625rem] text-foreground/80">
                   <Icon className="h-3 w-3 shrink-0" aria-label={info.label} />
                   <LensContainerLink lens={item} className="truncate">
                     {subline}
                   </LensContainerLink>
                 </div>
                 {selection && (
-                  <div className="break-words font-mono text-[0.625rem] leading-snug text-white/70">
+                  <div className="break-words font-mono text-[0.625rem] leading-snug text-foreground/70">
                     {label}
                   </div>
                 )}
-                {specs && <div className="truncate text-[0.625rem] text-white/60">{specs}</div>}
-                <div className="text-[0.625rem] text-white/60">
+                {specs && <div className="truncate text-[0.625rem] text-foreground/60">{specs}</div>}
+                <div className="text-[0.625rem] text-foreground/60">
                   {new Date(item.createdAt).toLocaleDateString()}
                 </div>
               </div>

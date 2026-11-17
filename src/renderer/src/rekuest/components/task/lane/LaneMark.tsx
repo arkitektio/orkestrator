@@ -24,9 +24,9 @@ export const formatMarkTime = (iso: string) => {
 /** Text color of a mark: severity outranks the kind's own hue. */
 export const markColor = (severity: LaneSeverity, kind: TaskEventKind) =>
   severity === "error"
-    ? "text-red-500"
+    ? "text-destructive"
     : severity === "warn"
-      ? "text-amber-500"
+      ? "text-warning"
       : eventKindColor(kind);
 
 /** One line of what an event says, for peeks and the detail strip. */

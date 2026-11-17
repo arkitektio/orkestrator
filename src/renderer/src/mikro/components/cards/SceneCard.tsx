@@ -24,7 +24,7 @@ const TheCard = ({ scene }: Props) => {
             <CardTitle>
               <MikroScene.DetailLink object={scene}>
                 <h1 className="line-clamp-2 ellipsis">{scene.name}</h1>
-                <span className="font-light text-white/70">{scene.id}</span>
+                <span className="font-light text-foreground/70">{scene.id}</span>
               </MikroScene.DetailLink>
             </CardTitle>
           </CardHeader>

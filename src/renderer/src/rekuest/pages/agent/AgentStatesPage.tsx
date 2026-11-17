@@ -69,14 +69,14 @@ const AgentLiveStateCard = ({
           <h3 className="text-sm font-semibold">{state.definition.name}</h3>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               Live
             </span>
             {(revision ?? checkoutRevision) != null && <span>Rev {revision ?? checkoutRevision}</span>}
           </div>
         </div>
         {checkoutError && (
-          <div className="text-xs text-red-500">Error: {checkoutError.message}</div>
+          <div className="text-xs text-destructive">Error: {checkoutError.message}</div>
         )}
         <AgentStateValueDisplay state={state} value={displayValue} />
       </div>
@@ -119,7 +119,7 @@ const AgentCheckoutTab = ({
             <span className="font-mono">
               {effectiveRevision ?? "–"} / {maxRevision}
             </span>
-            {loading && <span className="text-yellow-500">loading…</span>}
+            {loading && <span className="text-warning">loading…</span>}
           </div>
           {maxRevision > 0 && (
             <Slider
@@ -131,7 +131,7 @@ const AgentCheckoutTab = ({
             />
           )}
         </div>
-        {error && <div className="text-xs text-red-500">Error: {error.message}</div>}
+        {error && <div className="text-xs text-destructive">Error: {error.message}</div>}
         <div className="grid gap-4">
           {states.map((state) =>{
 
@@ -161,6 +161,8 @@ export const AgentStatesPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) 
       title={`${data?.agent?.name} — States`}
       help={REKUEST_HELP.agentStates}
       object={data.agent}
+      // The breadcrumb reads the agent's name, not its number.
+      crumbs={{ [data.agent.id]: data.agent.name }}
     >
       <div className="flex h-full flex-col gap-4 p-6">
         <Tabs defaultValue="live">

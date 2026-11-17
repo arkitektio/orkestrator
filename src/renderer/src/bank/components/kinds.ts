@@ -7,12 +7,12 @@ import { TransactionKind as K } from "../api/graphql";
 export const KIND_GROUPS = {
   trades: {
     label: "Trades",
-    tone: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    tone: "bg-info/15 text-info",
     kinds: [K.Buy, K.Sell, K.SavingsPlan, K.SwapIn, K.SwapOut, K.CurrencySwitchBuy, K.CurrencySwitchSell],
   },
   income: {
     label: "Income",
-    tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    tone: "bg-success/15 text-success",
     kinds: [
       K.Distribution,
       K.Interest,
@@ -30,7 +30,7 @@ export const KIND_GROUPS = {
   },
   costs: {
     label: "Costs",
-    tone: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+    tone: "bg-warning/15 text-warning",
     kinds: [K.Fee, K.Tax],
   },
 } as const;

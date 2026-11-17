@@ -138,7 +138,7 @@ export const AssignBloks = ({
         </div>
       ) : (
         // Its own height: in the dialog's scrolling body a fill box would shrink to nothing.
-        <div key={blok.id} className="shrink-0">
+        <div key={blok.id} className="blok-plain shrink-0">
           {drawn}
         </div>
       );

@@ -433,7 +433,7 @@ export const DateTimeRangePicker = ({
                 <Button
                   variant="ghost"
                   onClick={resetValues}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                 >
                   <ResetIcon className="mr-2 h-4 w-4" />
                   Reset

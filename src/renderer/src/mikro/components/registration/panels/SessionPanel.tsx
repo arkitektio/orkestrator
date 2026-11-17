@@ -63,7 +63,7 @@ export const SessionPanel = () => {
         </div>
         <div className="text-xs text-muted-foreground">into {world.name ?? "the scene's world"}</div>
         {others.length > 0 && (
-          <div className="text-xs text-amber-500">
+          <div className="text-xs text-warning">
             Also moves {others.map(nameOf).join(", ")} — {others.length === 1 ? "it shares" : "they share"} this
             registration.
           </div>

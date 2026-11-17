@@ -27,8 +27,8 @@ const STATUS_LABEL: Record<AgentStatus, string> = {
 };
 
 const STATUS_CLASS: Record<AgentStatus, string> = {
-  online: "bg-green-500",
-  recent: "bg-amber-500",
+  online: "bg-success",
+  recent: "bg-warning",
   offline: "bg-muted-foreground/40",
   blocked: "bg-destructive",
 };

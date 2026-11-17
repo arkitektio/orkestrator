@@ -471,7 +471,7 @@ const BlokEditorWorkspace = (props: {
           </div>
         )}
         {conflict && (
-          <div className="flex flex-wrap items-center gap-2 border-b border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/10 px-3 py-2 text-sm">
             <span className="flex-1">Revision {conflict.number} was saved meanwhile, so this draft no longer starts from the latest.</span>
             <Button size="sm" variant="outline" onClick={() => void save(conflict.id)}>
               Save on top

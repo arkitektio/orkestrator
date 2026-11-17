@@ -22,9 +22,9 @@ export type Step = {
 };
 
 const ICON: Record<StepState, ReactNode> = {
-  done: <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />,
+  done: <Check className="size-3.5 text-success" />,
   working: <Loader2 className="size-3.5 animate-spin text-muted-foreground" />,
-  waiting: <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />,
+  waiting: <Clock className="size-3.5 text-warning" />,
   failed: <X className="size-3.5 text-destructive" />,
   pending: <Circle className="size-2.5 text-muted-foreground/40" />,
 };

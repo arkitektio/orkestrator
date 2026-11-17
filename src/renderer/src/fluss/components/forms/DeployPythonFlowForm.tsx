@@ -97,7 +97,7 @@ export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }
               impl.id === chosen ? "border-primary bg-primary/5" : "hover:bg-muted/60",
             )}
           >
-            <span className={cn("h-2 w-2 rounded-full", impl.agent.active ? "bg-green-500" : "bg-muted-foreground/40")} />
+            <span className={cn("h-2 w-2 rounded-full", impl.agent.active ? "bg-success" : "bg-muted-foreground/40")} />
             <span className="flex-1 truncate">{impl.agent.name}</span>
             {!impl.agent.active && <span className="text-xs text-muted-foreground">offline</span>}
             {deployedOn.has(impl.agent.name) && <span className="text-xs text-muted-foreground">deployed</span>}

@@ -88,17 +88,17 @@ export const TaskStatusIcon = ({
 }) => {
   switch (statusBucket(kind, isDone)) {
     case "done":
-      return <CheckCircle className={`${className} text-green-500`} />;
+      return <CheckCircle className={`${className} text-success`} />;
     case "error":
       return <XCircle className={`${className} text-destructive`} />;
     case "cancelled":
       return <XCircle className={`${className} text-muted-foreground`} />;
     case "lost":
-      return <CircleHelp className={`${className} text-amber-500`} />;
+      return <CircleHelp className={`${className} text-warning`} />;
     case "paused":
-      return <PauseCircle className={`${className} text-amber-500`} />;
+      return <PauseCircle className={`${className} text-warning`} />;
     case "held":
-      return <Hand className={`${className} text-amber-500`} />;
+      return <Hand className={`${className} text-warning`} />;
     case "queued":
       return <Clock className={`${className} text-muted-foreground`} />;
     default:
@@ -113,17 +113,17 @@ export const statusTextColor = (
   kind: TaskEventKind | null | undefined,
   isDone?: boolean | null,
 ): string => {
-  if (kind === TaskEventKind.Bound) return "text-blue-500";
-  if (kind === TaskEventKind.Progress) return "text-yellow-500";
+  if (kind === TaskEventKind.Bound) return "text-info";
+  if (kind === TaskEventKind.Progress) return "text-warning";
   switch (statusBucket(kind, isDone)) {
     case "done":
-      return "text-green-500";
+      return "text-success";
     case "error":
-      return "text-red-500";
+      return "text-destructive";
     case "lost":
     case "paused":
     case "held":
-      return "text-amber-500";
+      return "text-warning";
     default:
       return "text-muted-foreground";
   }
@@ -133,31 +133,31 @@ export const statusTextColor = (
 export const eventKindColor = (kind: TaskEventKind): string => {
   switch (kind) {
     case TaskEventKind.Completed:
-      return "text-green-500";
+      return "text-success";
     case TaskEventKind.Yield:
-      return "text-purple-500";
+      return "text-spectrum-violet";
     case TaskEventKind.Failed:
     case TaskEventKind.Critical:
-      return "text-red-500";
+      return "text-destructive";
     case TaskEventKind.Cancelled:
     case TaskEventKind.Cancelling:
     case TaskEventKind.Interrupted:
     case TaskEventKind.Interrupting:
-      return "text-orange-400";
+      return "text-warning";
     case TaskEventKind.Bound:
-      return "text-blue-500";
+      return "text-info";
     case TaskEventKind.Delegate:
-      return "text-blue-400";
+      return "text-info";
     case TaskEventKind.Progress:
-      return "text-yellow-500";
+      return "text-warning";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
     case TaskEventKind.Held:
-      return "text-amber-500";
+      return "text-warning";
     case TaskEventKind.Decided:
-      return "text-blue-400";
+      return "text-info";
     case TaskEventKind.Denied:
-      return "text-orange-400";
+      return "text-warning";
     default:
       return "text-muted-foreground";
   }
@@ -174,26 +174,26 @@ export const eventKindTint = (
 ): string => {
   switch (kind) {
     case TaskEventKind.Completed:
-      return "bg-green-500/25";
+      return "bg-success/25";
     case TaskEventKind.Yield:
-      return "bg-purple-500/25";
+      return "bg-spectrum-violet/25";
     case TaskEventKind.Failed:
     case TaskEventKind.Critical:
-      return "bg-red-500/25";
+      return "bg-destructive/25";
     case TaskEventKind.Cancelled:
     case TaskEventKind.Cancelling:
     case TaskEventKind.Interrupted:
     case TaskEventKind.Interrupting:
-      return "bg-orange-400/25";
+      return "bg-warning/25";
     case TaskEventKind.Bound:
     case TaskEventKind.Delegate:
-      return "bg-blue-500/25";
+      return "bg-info/25";
     case TaskEventKind.Progress:
-      return "bg-yellow-500/20";
+      return "bg-warning/20";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
     case TaskEventKind.Held:
-      return "bg-amber-500/25";
+      return "bg-warning/25";
     case TaskEventKind.Effect:
     case TaskEventKind.LateReport:
       return "bg-muted";
@@ -202,28 +202,28 @@ export const eventKindTint = (
   }
 };
 
-/** Fill + border classes for gantt/timeline bars keyed by event kind. */
+/** Fill, border and text classes for gantt/timeline bars keyed by event kind. */
 export const statusBarColor = (
   status: TaskEventKind | undefined | string,
 ): string => {
   switch (status) {
     case TaskEventKind.Completed:
-      return "bg-green-500 border-green-600";
+      return "bg-success border-success text-success-foreground";
     case TaskEventKind.Yield:
-      return "bg-purple-500 border-purple-600";
+      return "bg-spectrum-violet border-spectrum-violet text-background";
     case TaskEventKind.Failed:
     case TaskEventKind.Critical:
-      return "bg-red-500 border-red-600";
+      return "bg-destructive border-destructive text-background";
     case TaskEventKind.Cancelled:
-      return "bg-gray-500 border-gray-600";
+      return "bg-muted-foreground border-muted-foreground text-background";
     case TaskEventKind.Bound:
-      return "bg-blue-500 border-blue-600";
+      return "bg-info border-info text-info-foreground";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
     case TaskEventKind.Held:
-      return "bg-amber-500 border-amber-600";
+      return "bg-warning border-warning text-warning-foreground";
     default:
-      return "bg-slate-500 border-slate-600";
+      return "bg-muted-foreground border-muted-foreground text-background";
   }
 };
 
@@ -239,9 +239,9 @@ export const statusTheme = (task: {
   switch (statusBucket(kind, task.isDone)) {
     case "done":
       return {
-        ring: "ring-green-500/20",
-        bg: "bg-green-500/5",
-        text: "text-green-600 dark:text-green-400",
+        ring: "ring-success/20",
+        bg: "bg-success/5",
+        text: "text-success",
         label: "Completed",
       };
     case "error":
@@ -262,9 +262,9 @@ export const statusTheme = (task: {
     case "paused":
     case "held":
       return {
-        ring: "ring-amber-500/20",
-        bg: "bg-amber-500/5",
-        text: "text-amber-600 dark:text-amber-400",
+        ring: "ring-warning/20",
+        bg: "bg-warning/5",
+        text: "text-warning",
         label: formatEventKind(kind),
       };
     default:

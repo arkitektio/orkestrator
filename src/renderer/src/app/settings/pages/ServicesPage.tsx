@@ -152,9 +152,9 @@ export const ServicesPage = () => {
       }
     >
       {configurationIssues.length > 0 && (
-        <Card className="border-amber-500/30">
+        <Card className="border-warning/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+            <CardTitle className="flex items-center gap-2 text-warning">
               <XCircle className="w-5 h-5" />
               Configuration issues
             </CardTitle>
@@ -164,7 +164,7 @@ export const ServicesPage = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             {configurationIssues.map((issue) => (
-              <div key={issue} className="rounded border border-amber-500/30 bg-amber-500/10 p-2 text-sm">
+              <div key={issue} className="rounded border border-warning/30 bg-warning/10 p-2 text-sm">
                 {issue}
               </div>
             ))}

@@ -139,7 +139,7 @@ export const NetworkEditor = ({
       {/* Synapses */}
       <section className="space-y-2">
         <GroupHeader
-          icon={<Zap className="h-3.5 w-3.5 text-amber-500" />}
+          icon={<Zap className="h-3.5 w-3.5 text-warning" />}
           title="Synapses"
           count={synapses.length}
           onAdd={onAddSynapse}

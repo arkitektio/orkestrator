@@ -154,7 +154,7 @@ export const NumericPanel = () => {
       </div>
 
       {parts.reflected && (
-        <div className="text-[0.65rem] text-amber-500">This adjustment mirrors the data.</div>
+        <div className="text-[0.65rem] text-warning">This adjustment mirrors the data.</div>
       )}
     </div>
   );

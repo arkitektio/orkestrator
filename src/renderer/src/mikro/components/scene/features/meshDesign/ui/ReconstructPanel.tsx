@@ -147,9 +147,9 @@ export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) =
           Try again
         </Button>
       )}
-      <span className="max-w-64 text-[10px] text-white/50">
+      <span className="max-w-64 text-[10px] text-foreground/50">
         {brushMessage ? (
-          <span className="text-amber-300/90">{brushMessage}</span>
+          <span className="text-warning/90">{brushMessage}</span>
         ) : status === "painting" ? (
           "Release to reconstruct"
         ) : working ? (
@@ -157,7 +157,7 @@ export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) =
         ) : last ? (
           <>
             Added — move a slider to refit it, ⌘Z takes it back
-            {last.note && <span className="block text-amber-300/90">{last.note}</span>}
+            {last.note && <span className="block text-warning/90">{last.note}</span>}
           </>
         ) : (
           reconstructor?.description

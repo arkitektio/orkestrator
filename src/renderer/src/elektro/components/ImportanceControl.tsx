@@ -52,7 +52,7 @@ const HelpTooltip = ({ dark }: { dark: boolean }) => (
         type="button"
         aria-label="How is importance derived?"
         className={`rounded-full p-0.5 transition-colors ${
-          dark ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground"
+          dark ? "text-foreground/50 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         <HelpCircle className="size-3.5" />
@@ -182,14 +182,14 @@ export const ImportanceControl = ({
   const customized = !isDefaultWeights(weights);
 
   const shell = dark
-    ? "border-white/10 bg-black/60 text-white/80 backdrop-blur-md"
+    ? "dark border-foreground/10 bg-background/60 text-foreground/80 backdrop-blur-md"
     : "border bg-card text-card-foreground shadow-sm";
   const pillActive = dark
-    ? "bg-white/15 text-white ring-1 ring-white/30"
+    ? "bg-foreground/15 text-foreground ring-1 ring-foreground/30"
     : "bg-primary/10 text-primary ring-1 ring-primary/40";
-  const pillIdle = dark ? "hover:bg-white/10" : "hover:bg-muted";
+  const pillIdle = dark ? "hover:bg-foreground/10" : "hover:bg-muted";
   const iconBtn = dark
-    ? "text-white/60 hover:bg-white/10 hover:text-white"
+    ? "text-foreground/60 hover:bg-foreground/10 hover:text-foreground"
     : "text-muted-foreground hover:bg-muted hover:text-foreground";
 
   return (
@@ -221,7 +221,7 @@ export const ImportanceControl = ({
               aria-label="Weighting settings"
               title="Weighting settings"
               className={`relative rounded p-1 transition-colors ${iconBtn} ${
-                settingsOpen ? (dark ? "bg-white/10 text-white" : "bg-muted") : ""
+                settingsOpen ? (dark ? "bg-foreground/10 text-foreground" : "bg-muted") : ""
               }`}
             >
               <Settings2 className="size-3.5" />

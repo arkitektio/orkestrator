@@ -52,7 +52,7 @@ export const DrawSizeReadout = () => {
     <div
       ref={boxRef}
       style={{ display: "none" }}
-      className="pointer-events-none absolute left-0 top-0 z-30 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-white tabular-nums"
+      className="pointer-events-none absolute left-0 top-0 z-30 rounded bg-background/70 px-1.5 py-0.5 font-mono text-[10px] text-foreground tabular-nums"
     />
   );
 };

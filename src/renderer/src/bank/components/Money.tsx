@@ -22,7 +22,7 @@ export const Money = ({
     <span
       className={cn(
         "tabular-nums whitespace-nowrap",
-        signed && value > 0 && "text-emerald-600 dark:text-emerald-400",
+        signed && value > 0 && "text-success",
         className,
       )}
     >

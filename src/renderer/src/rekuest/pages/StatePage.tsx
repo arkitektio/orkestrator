@@ -105,7 +105,7 @@ const LiveStateDisplay = ({
     <AsyncBoundary>
       <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
           Live
         </span>
         <span>Revision: {revision ?? "–"}</span>
@@ -156,14 +156,14 @@ const CheckoutStateDisplay = ({
 
   return (
     <AsyncBoundary>
-      {error && <div className="text-red-500">Error: {error.message}</div>}
+      {error && <div className="text-destructive">Error: {error.message}</div>}
       <div className="flex flex-col gap-3 mb-3">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>Revision</span>
           <span className="font-mono">
             {effectiveRevision ?? "–"} / {maxRevision}
           </span>
-          {loading && <span className="text-yellow-500">loading…</span>}
+          {loading && <span className="text-warning">loading…</span>}
         </div>
         {maxRevision > 0 && (
           <Slider

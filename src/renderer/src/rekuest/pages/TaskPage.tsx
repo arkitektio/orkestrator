@@ -50,7 +50,7 @@ import {
 } from "../lib/taskStatus";
 import { TaskFiredBy } from "../components/task/TaskFiredBy";
 import { HoldCard } from "../components/task/HoldCard";
-import { askClosed, pendingHolds } from "../lib/holds";
+import { askClosed, holdKey, pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
 import { TaskFacts } from "../sidebars/TaskInfoSidebar";
 import { TaskRunPanel, TaskRunScene } from "../run/TaskRun";
@@ -513,7 +513,7 @@ export const TPage = asDetailQueryRoute(
           {holds.length > 0 && closed !== "ended" && !askInView && !bare && (
             <div className="flex shrink-0 flex-col gap-2 px-4 pt-3">
               {holds.map((hold) => (
-                <HoldCard key={hold.task} hold={hold} closed={closed} />
+                <HoldCard key={holdKey(hold)} hold={hold} closed={closed} />
               ))}
             </div>
           )}

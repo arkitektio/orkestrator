@@ -229,7 +229,7 @@ export const OverviewStrip = () => {
       {/* The range being selected — the same colours as the canvas' zoom box. */}
       <div
         ref={selectionRef}
-        className="pointer-events-none absolute inset-y-0 hidden border-x border-sky-400/80 bg-sky-400/25"
+        className="pointer-events-none absolute inset-y-0 hidden border-x border-info/80 bg-info/25"
       />
     </div>
   );

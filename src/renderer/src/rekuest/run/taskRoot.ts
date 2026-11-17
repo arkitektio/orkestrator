@@ -23,6 +23,8 @@ export type TaskRootSource = {
   latestReturns?: unknown;
   isDone: boolean;
   events: ReadonlyArray<{
+    /** The event itself: what tells one ask of a task from its next (`holdKey`). */
+    id?: string | null;
     kind: TaskEventKind;
     value?: unknown;
     /** What a PROGRESS event reported (0-100). */

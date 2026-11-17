@@ -16,12 +16,12 @@ export const PropertyRenderer = ({
   switch (definition.valueKind) {
     case ValueKind.Boolean:
       return value === "true" || value === true ? (
-        <div className="flex items-center gap-1 text-emerald-500">
+        <div className="flex items-center gap-1 text-success">
           <Check className="h-4 w-4" />
           <span className="text-sm font-medium">True</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 text-rose-500">
+        <div className="flex items-center gap-1 text-destructive">
           <X className="h-4 w-4" />
           <span className="text-sm font-medium">False</span>
         </div>

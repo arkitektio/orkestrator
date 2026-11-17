@@ -91,7 +91,7 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
       {errorEvent && (
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle className="font-light text-red-800">
+            <CardTitle className="font-light text-destructive">
               Errors
             </CardTitle>
           </CardHeader>

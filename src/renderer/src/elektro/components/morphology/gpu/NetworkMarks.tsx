@@ -36,8 +36,8 @@ const STIMULATOR_GEOMETRY = new THREE.OctahedronGeometry(1.6, 0);
 
 const TipRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex items-baseline justify-between gap-3">
-    <span className="text-white/50">{label}</span>
-    <span className="font-mono text-white/90">{value}</span>
+    <span className="text-foreground/50">{label}</span>
+    <span className="font-mono text-foreground/90">{value}</span>
   </div>
 );
 
@@ -70,11 +70,11 @@ const NetworkTooltip = ({ hovered }: { hovered: Hovered }) => {
 
   return (
     <Html position={hovered.point.toArray()} center>
-      <div className="pointer-events-none -translate-y-3 rounded-md border border-white/10 bg-black/80 px-2 py-1.5 text-xs text-white shadow-xl backdrop-blur-md">
+      <div className="pointer-events-none -translate-y-3 rounded-md border border-foreground/10 bg-background/80 px-2 py-1.5 text-xs text-foreground shadow-xl backdrop-blur-md">
         <div className="mb-1 flex items-center gap-2">
           <span className="font-semibold tracking-tight">{title}</span>
           {badge && (
-            <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[0.5625rem] uppercase tracking-widest text-white/60">
+            <span className="rounded-full bg-foreground/10 px-1.5 py-0.5 text-[0.5625rem] uppercase tracking-widest text-foreground/60">
               {badge}
             </span>
           )}

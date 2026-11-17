@@ -1,5 +1,4 @@
 import { useCommandPalette } from "@/core/command/CommandPaletteProvider";
-import { CyclingPlaceholder } from "@/core/command/CyclingPlaceholder";
 import { cn } from "@/core/util/utils";
 import { Search } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -85,7 +84,7 @@ export const TitleSearchBar = () => {
     >
       <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
 
-      <CyclingPlaceholder className="min-w-0 flex-1 text-left opacity-70" />
+      <span className="min-w-0 flex-1 truncate text-left opacity-70">Search…</span>
 
       <kbd className="shrink-0 rounded border border-border/50 px-1 py-px text-[10px] tracking-wider opacity-0 transition-opacity group-hover:opacity-60">
         ⌘K

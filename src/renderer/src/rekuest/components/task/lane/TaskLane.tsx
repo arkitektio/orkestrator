@@ -35,12 +35,12 @@ const MAX_ZOOM = 64;
 const FRESH_MS = 3000;
 
 const BAR_COLOR: Record<TaskStatusBucket, string> = {
-  done: "bg-green-500/70",
-  error: "bg-red-500/80",
+  done: "bg-success/70",
+  error: "bg-destructive/80",
   cancelled: "bg-muted-foreground/40",
-  lost: "bg-amber-500/70",
-  paused: "bg-amber-500/50",
-  held: "bg-amber-500/50",
+  lost: "bg-warning/70",
+  paused: "bg-warning/50",
+  held: "bg-warning/50",
   queued: "bg-muted-foreground/25",
   running: "bg-primary/60",
 };
@@ -234,12 +234,12 @@ export const TaskLane = (props: {
               key={a.index}
               className={cn(
                 "absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full",
-                a.index === lastAttempt ? BAR_COLOR[runStatus] : "bg-amber-500/40",
+                a.index === lastAttempt ? BAR_COLOR[runStatus] : "bg-warning/40",
               )}
               style={{ left: pos(a.x0), width: Math.max(2, (a.x1 - a.x0) * inner) }}
             >
               {lane.attempts.length > 1 && (
-                <span className="absolute -top-3.5 left-0 whitespace-nowrap text-[9px] text-amber-600 dark:text-amber-400">
+                <span className="absolute -top-3.5 left-0 whitespace-nowrap text-[9px] text-warning">
                   {a.index === 0 ? "run 1" : `resumed · run ${a.index + 1}`}
                 </span>
               )}

@@ -19,7 +19,7 @@ export const BlokTruncationNotice = ({truncatedIds}: {truncatedIds: readonly str
   }
 
   return (
-    <div className="mb-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-foreground">
+    <div className="mb-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-foreground">
       This blok nests deeper than the client fetches. {truncatedIds.length} component
       {truncatedIds.length === 1 ? '' : 's'} not rendered:{' '}
       <span className="font-mono text-xs">{truncatedIds.join(', ')}</span>

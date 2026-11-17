@@ -10,7 +10,7 @@ export const ProtocolEventCategoryNode = memo(({ data, id, selected }: NodeProps
   return (
     <>
       <NodeResizer
-        color="#ff0071"
+        color="var(--primary)"
         isVisible={selected}
         minWidth={100}
         minHeight={30}
@@ -18,7 +18,7 @@ export const ProtocolEventCategoryNode = memo(({ data, id, selected }: NodeProps
       <Handles self={id} />
       <KraphProtocolEventCategory.Smart
         object={data}
-        containerClassName="h-full w-full rounded-lg  group ring-4 ring-red ring-red-200"
+        containerClassName="h-full w-full rounded-lg  group ring-4 ring-red ring-destructive/30"
         className="h-full w-full"
       >
         {/* If handles are conditionally rendered and not present initially, you need to update the node internals https://reactflow.dev/docs/api/hooks/use-update-node-internals/ */}
@@ -35,7 +35,7 @@ export const ProtocolEventCategoryNode = memo(({ data, id, selected }: NodeProps
             )}
           </WithKraphMediaUrl>
         )}
-        <div className="absolute top-0 left-0 right-0 bottom-0 z-10 flex items-center justify-center flex-col bg-black/50 p-3 flex-row">
+        <div className="absolute top-0 left-0 right-0 bottom-0 z-10 flex items-center justify-center flex-col bg-background/50 p-3 flex-row">
           <div className="w-full overflow-hidden">
             <KraphProtocolEventCategory.DetailLink
               object={data}

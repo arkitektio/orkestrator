@@ -20,22 +20,22 @@ export const DepthCodeLegend = () => {
   const remap = useSceneDisplayRemap(sceneId);
   if (!view) return null;
   return (
-    <div className="pointer-events-none absolute bottom-24 left-8 z-10 flex flex-col gap-0.5 rounded bg-black/40 px-1.5 py-1 font-mono text-[10px] text-white">
+    <div className="pointer-events-none absolute bottom-24 left-8 z-10 flex flex-col gap-0.5 rounded bg-background/40 px-1.5 py-1 font-mono text-[10px] text-foreground">
       {view === "hues" ? (
         <>
-          <span className="text-white/70">Depth from camera</span>
+          <span className="text-foreground/70">Depth from camera</span>
           <div className="h-2 w-40 rounded-sm" style={{ backgroundImage: GRADIENT }} />
-          <div className="flex w-40 justify-between text-white/70">
+          <div className="flex w-40 justify-between text-foreground/70">
             <span>near</span>
             <span>far</span>
           </div>
-          <span className="text-white/50">shaded by surface shape</span>
+          <span className="text-foreground/50">shaded by surface shape</span>
         </>
       ) : (
-        <span className="text-white/70">Relief: shaded by surface shape</span>
+        <span className="text-foreground/70">Relief: shaded by surface shape</span>
       )}
       {isRemapActive(remap) && (
-        <span className="text-white/50">axis remap on: depth is display-scaled</span>
+        <span className="text-foreground/50">axis remap on: depth is display-scaled</span>
       )}
     </div>
   );

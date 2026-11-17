@@ -85,7 +85,7 @@ const MaterializedBlokCard = ({ item }: Props) => {
                   <span
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
-                      agent.connected ? "bg-green-500" : "bg-muted-foreground/40",
+                      agent.connected ? "bg-success" : "bg-muted-foreground/40",
                     )}
                   />
                   <span className="truncate">{agent.name}</span>

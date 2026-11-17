@@ -97,17 +97,17 @@ export function PropertyInspector({
         {/* Display Name */}
         <div className="space-y-2">
           <Label htmlFor="label" className="text-base font-semibold">
-            Display Name {errors?.label && <span className="text-red-500">*</span>}
+            Display Name {errors?.label && <span className="text-destructive">*</span>}
           </Label>
           <Input
             id="label"
             value={property.label || ""}
             onChange={(e) => handleLabelChange(e.target.value)}
             placeholder="e.g., Phone Number"
-            className={`text-lg ${errors?.label ? "border-red-500" : ""}`}
+            className={`text-lg ${errors?.label ? "border-destructive" : ""}`}
           />
           {errors?.label && (
-            <p className="text-xs text-red-600">{errors.label.message}</p>
+            <p className="text-xs text-destructive">{errors.label.message}</p>
           )}
           <p className="text-xs text-muted-foreground">
             Human-readable name shown in the interface
@@ -117,17 +117,17 @@ export function PropertyInspector({
         {/* Machine Key */}
         <div className="space-y-2">
           <Label htmlFor="key" className="text-base font-semibold">
-            Machine Key {(errors?.key || keyError) && <span className="text-red-500">*</span>}
+            Machine Key {(errors?.key || keyError) && <span className="text-destructive">*</span>}
           </Label>
           <Input
             id="key"
             value={property.key}
             onChange={(e) => handleKeyChange(e.target.value)}
             placeholder="e.g., phone_number"
-            className={`font-mono ${keyError || errors?.key ? "border-red-500" : ""}`}
+            className={`font-mono ${keyError || errors?.key ? "border-destructive" : ""}`}
           />
           {(keyError || errors?.key) && (
-            <p className="text-xs text-red-600">{errors?.key?.message || keyError}</p>
+            <p className="text-xs text-destructive">{errors?.key?.message || keyError}</p>
           )}
           <p className="text-xs text-muted-foreground">
             Database identifier (lowercase, underscores only)
@@ -251,9 +251,9 @@ export function PropertyInspector({
         </fieldset>
 
         {property.searchable && (
-          <Alert className="bg-yellow-50 border-yellow-200">
-            <InfoIcon className="h-4 w-4 text-yellow-800" />
-            <AlertDescription className="text-yellow-800 text-xs">
+          <Alert className="bg-warning-soft border-warning/30">
+            <InfoIcon className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-warning text-xs">
               Enabling full-text search will create an index on this field,
               which may impact storage and query performance.
             </AlertDescription>

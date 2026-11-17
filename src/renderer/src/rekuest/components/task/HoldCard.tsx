@@ -57,7 +57,7 @@ const HoldBadge = ({ hold, logo }: { hold: HoldRequest; logo?: Parameters<typeof
   const tile = "h-10 w-10 rounded-xl";
   if (hold.kind === "self" || !hold.action) {
     return (
-      <span className={cn(tile, "flex shrink-0 items-center justify-center bg-amber-500/15 text-amber-600 dark:text-amber-400")}>
+      <span className={cn(tile, "flex shrink-0 items-center justify-center bg-warning/15 text-warning")}>
         <Hand className="h-5 w-5" />
       </span>
     );
@@ -123,14 +123,14 @@ export const HoldCard = ({
       aria-disabled={closed ? true : undefined}
       className={cn(
         "relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm",
-        closed ? "border-border" : "border-amber-500/30",
+        closed ? "border-border" : "border-warning/30",
         className,
       )}
     >
       {/* The accent: an edge in the waiting colour, so a held card reads as one at a glance. */}
       <span
         aria-hidden
-        className={cn("absolute inset-y-0 left-0 w-1", closed ? "bg-muted-foreground/30" : "bg-amber-500/70")}
+        className={cn("absolute inset-y-0 left-0 w-1", closed ? "bg-muted-foreground/30" : "bg-warning/70")}
       />
 
       <div className={cn("flex flex-col gap-3", closed && "pointer-events-none select-none opacity-60")}>
@@ -207,10 +207,10 @@ export const HoldCard = ({
       )}
 
       <div className="flex items-center gap-1.5 pl-1">
-        <span className="mr-auto flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+        <span className="mr-auto flex items-center gap-1.5 text-[11px] text-warning">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500/60 motion-reduce:animate-none" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning/60 motion-reduce:animate-none" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
           </span>
           Waiting for you
         </span>
@@ -318,7 +318,7 @@ export const HoldDecisionLine = ({
       className={cn(
         "flex items-center gap-2 rounded-full border px-3 py-1 text-[11px]",
         decision.approved
-          ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"
+          ? "border-success/30 bg-success/5 text-success"
           : "border-border bg-muted/40 text-muted-foreground",
         className,
       )}

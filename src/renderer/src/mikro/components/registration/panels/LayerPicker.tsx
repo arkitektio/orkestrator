@@ -45,7 +45,7 @@ export const LayerPicker = (props: {
             )}
           </div>
           {verdict.status === "unregistered" && (
-            <div className="text-xs text-amber-500">
+            <div className="text-xs text-warning">
               Not placed in this scene yet. Register it first; it can then be aligned here.
             </div>
           )}

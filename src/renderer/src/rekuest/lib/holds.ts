@@ -12,6 +12,11 @@ import { HoldRemember, TaskEventKind } from "../api/graphql";
  * `args` are what the server knows for certain and are shown beside them.
  */
 export interface HoldRequest {
+  /**
+   * The HELD event this ask is. A task that asks twice carries the same `task`
+   * both times, so this is what tells one ask from the next (`holdKey`).
+   */
+  id?: string;
   /** The held task: the one `decide` answers. */
   task: string;
   kind: "assign" | "self";
@@ -28,6 +33,7 @@ export interface HoldRequest {
 }
 
 type HoldEvent = {
+  id?: string | null;
   kind: TaskEventKind;
   value?: unknown;
   message?: string | null;
@@ -59,6 +65,7 @@ export const holdFromEvent = (event: HoldEvent): HoldRequest | null => {
   const action = named(value.action);
   const callerAgent = named(value.caller_agent);
   return {
+    ...(event.id != null ? { id: String(event.id) } : {}),
     task: heldTaskOf(event),
     kind: value.kind === "self" ? "self" : "assign",
     title:
@@ -74,6 +81,14 @@ export const holdFromEvent = (event: HoldEvent): HoldRequest | null => {
     ...(value.blok != null ? { blok: String(value.blok) } : {}),
   };
 };
+
+/**
+ * The React key of a hold's card: one per ASK, not per task. An answer and the
+ * task's next ask can land in one render (task events are batched), and a card
+ * keyed by the task would then be reused for the new ask with the old one's
+ * "sending" still set, busy for good.
+ */
+export const holdKey = (hold: HoldRequest): string => hold.id ?? hold.task;
 
 /** A blok a task showed while it carried on (an INFORM event). */
 export interface TaskInform {

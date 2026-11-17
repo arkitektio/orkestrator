@@ -37,7 +37,7 @@ export const AgentApp = ({ agent, className }: { agent: AgentOwnerFragment; clas
 /** A dot that is green while it is live. */
 export const LiveDot = ({ live, className }: { live: boolean; className?: string }) => (
   <span className={cn("relative flex size-2 shrink-0", className)} title={live ? "Live" : "Offline"}>
-    {live && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />}
-    <span className={cn("relative inline-flex size-2 rounded-full", live ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+    {live && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />}
+    <span className={cn("relative inline-flex size-2 rounded-full", live ? "bg-success" : "bg-muted-foreground/40")} />
   </span>
 );

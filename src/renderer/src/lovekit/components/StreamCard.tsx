@@ -20,7 +20,7 @@ const TheCard = ({ item, className }: Props) => {
           <span
             className={cn(
               "flex size-7 shrink-0 items-center justify-center rounded-md",
-              audio ? "bg-amber-500/10 text-amber-500" : "bg-sky-500/10 text-sky-500",
+              audio ? "bg-warning/10 text-warning" : "bg-info/10 text-info",
             )}
           >
             <StreamKindIcon kind={item.kind} />

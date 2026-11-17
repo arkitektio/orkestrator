@@ -101,8 +101,8 @@ export const PointLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<CircleDot className="h-3 w-3 text-violet-700 dark:text-violet-300" />}
-        tile="bg-violet-400/15"
+        icon={<CircleDot className="h-3 w-3 text-spectrum-violet" />}
+        tile="bg-spectrum-violet/15"
         title={layer.tableDataset?.name?.trim() || `Points ${layer.id}`}
         hidden={hidden}
         expanded={expanded}

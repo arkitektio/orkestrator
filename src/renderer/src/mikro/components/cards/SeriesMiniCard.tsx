@@ -44,7 +44,7 @@ const SeriesMiniCard = ({ item, label, fill, caption = true }: Props) => {
           <div className="flex h-full flex-col justify-between gap-1 px-2 py-1.5">
             <div className="flex min-w-0 items-start gap-1.5 text-xs font-medium leading-tight">
               {caption && (
-                <Icon className="mt-px hidden h-3.5 w-3.5 shrink-0 text-white/70 @[7rem]:block" aria-label={spatial?.label} />
+                <Icon className="mt-px hidden h-3.5 w-3.5 shrink-0 text-foreground/70 @[7rem]:block" aria-label={spatial?.label} />
               )}
               {/* Stretched over the tile, as `HomeCardTitle` does; without a
                   caption the name is only for screen readers. */}
@@ -71,7 +71,7 @@ const SeriesMiniCard = ({ item, label, fill, caption = true }: Props) => {
                 </>
               )}
               {caption && axes.spatial.length > 0 && (
-                <span className="hidden truncate text-[10px] tabular-nums text-white/70 @[8rem]:block">
+                <span className="hidden truncate text-[10px] tabular-nums text-foreground/70 @[8rem]:block">
                   {formatAxes([...axes.spatial, ...axes.acquisition])}
                 </span>
               )}

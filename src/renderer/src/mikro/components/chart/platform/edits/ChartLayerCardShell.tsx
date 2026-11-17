@@ -91,7 +91,7 @@ export const ChartFacts = ({ children, error }: { children: ReactNode; error?: s
   <CardSection title="data">
     <div className="flex flex-col gap-0.5">{children}</div>
     {error && (
-      <div className="truncate text-[10px] text-red-700 dark:text-red-300" title={error}>
+      <div className="truncate text-[10px] text-destructive" title={error}>
         {error}
       </div>
     )}

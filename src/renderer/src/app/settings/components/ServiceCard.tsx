@@ -31,7 +31,7 @@ const RouteLine = ({ route, ssl }: { route: ServiceRoute; ssl: boolean }) => {
     const { peer } = route;
     return (
       <span className="flex min-w-0 items-center gap-1.5">
-        <Network className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <Network className="size-3.5 shrink-0 text-success" />
         <span className="min-w-0 truncate">
           Through the mesh <span className="font-medium text-foreground">{route.meshLabel}</span>
           {peer && (
@@ -54,7 +54,7 @@ const RouteLine = ({ route, ssl }: { route: ServiceRoute; ssl: boolean }) => {
   const suspicious = route.network === "mesh-down";
   const Encryption = ssl ? Lock : LockOpen;
   return (
-    <span className={cn("flex min-w-0 items-center gap-1.5", suspicious && "text-amber-600 dark:text-amber-400")}>
+    <span className={cn("flex min-w-0 items-center gap-1.5", suspicious && "text-warning")}>
       <Globe className="size-3.5 shrink-0" />
       <span className="min-w-0 truncate">Direct {NETWORK_LABEL[route.network]}</span>
       {!suspicious && (
@@ -85,7 +85,7 @@ const HubLine = ({ service, hub }: { service: ServiceRuntimeState; hub: HubHealt
     comparison.verdict === "agree-ok" ? "" : [HUB_VERDICT_TEXT[comparison.verdict], comparison.reason].filter(Boolean).join(" ");
 
   return (
-    <div className={cn("text-xs text-muted-foreground", mismatch && "text-amber-600 dark:text-amber-400")}>
+    <div className={cn("text-xs text-muted-foreground", mismatch && "text-warning")}>
       <div>
         Hub: {HUB_SIDE_LABEL[comparison.hub]} · This computer: {CLIENT_SIDE_LABEL[comparison.client]}
       </div>

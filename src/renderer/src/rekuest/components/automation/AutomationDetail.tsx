@@ -92,7 +92,7 @@ export const PolicyRow = ({ rule }: { rule: { policy: TaskPolicy } }) => (
   <RuleRow label="Asks">
     {rule.policy === TaskPolicy.Auto ? (
       <span className="inline-flex items-center gap-1.5">
-        <Zap className="h-3.5 w-3.5 text-amber-500" />
+        <Zap className="h-3.5 w-3.5 text-warning" />
         Auto-mode: what its runs ask other actions to do runs without asking
       </span>
     ) : (

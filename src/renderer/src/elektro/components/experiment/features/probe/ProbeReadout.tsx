@@ -151,7 +151,7 @@ const ReadoutPanel = () => {
             {formatUnit(row.unit) ? ` ${formatUnit(row.unit)}` : ""}
           </span>
           {row.decimated && (
-            <span className="text-[10px] text-amber-500" title="Read from a coarser pyramid level, not the raw samples">
+            <span className="text-[10px] text-warning" title="Read from a coarser pyramid level, not the raw samples">
               ~
             </span>
           )}

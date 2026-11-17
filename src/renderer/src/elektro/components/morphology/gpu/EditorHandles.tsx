@@ -44,7 +44,7 @@ export const EditorHandles = ({
     <>
       {hover && (
         <Html position={hover.point}>
-          <div className="pointer-events-none rounded bg-black/80 px-1 text-xs text-white">
+          <div className="pointer-events-none rounded bg-background/80 px-1 text-xs text-foreground">
             {(hover.location * 100).toFixed(0)}%
           </div>
         </Html>

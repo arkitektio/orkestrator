@@ -279,14 +279,14 @@ export const MorseCodeRecorder: React.FC = () => {
 
                 {/* Current Morse Input */}
                 {currentMorse && (
-                    <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-md">
+                    <div className="p-4 bg-info-soft rounded-md">
                         <p className="text-xs text-muted-foreground mb-1">Current Letter:</p>
                         <p className="text-2xl font-mono font-bold tracking-widest">{currentMorse}</p>
                     </div>
                 )}
 
                 {/* Decoded Text */}
-                <div className="p-4 bg-green-50 dark:bg-green-950 rounded-md min-h-[100px]">
+                <div className="p-4 bg-success-soft rounded-md min-h-[100px]">
                     <p className="text-xs text-muted-foreground mb-2">Decoded Text:</p>
                     <p className="text-xl font-mono break-words">
                         {decodedText || (startCodonDetected ? '(waiting for input...)' : '(waiting for start codon...)')}

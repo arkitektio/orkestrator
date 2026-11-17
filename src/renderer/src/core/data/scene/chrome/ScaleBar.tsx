@@ -31,10 +31,10 @@ export const ScaleBarView = ({
   return (
     <div className="absolute bottom-8 left-8 z-10 flex flex-col items-center pointer-events-none">
       <div
-        className="border-b-2 border-l-2 border-r-2 border-white h-2"
+        className="border-b-2 border-l-2 border-r-2 border-foreground h-2"
         style={{ width: `${finalWidthPx}px` }}
       />
-      <span className="text-[10px] text-white font-mono mt-1 bg-black/40 px-1 rounded">
+      <span className="text-[10px] text-foreground font-mono mt-1 bg-background/40 px-1 rounded">
         {niceUnits} {unitLabel}
       </span>
     </div>

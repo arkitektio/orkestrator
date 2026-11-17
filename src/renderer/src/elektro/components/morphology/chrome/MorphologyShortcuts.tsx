@@ -37,7 +37,7 @@ export const MORPHOLOGY_SHORTCUTS: ShortcutGroups = {
 };
 
 const Keycap = ({ children }: { children: string }) => (
-  <kbd className="rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[0.6875rem] leading-none text-white">
+  <kbd className="rounded border border-foreground/20 bg-foreground/10 px-1.5 py-0.5 font-mono text-[0.6875rem] leading-none text-foreground">
     {children}
   </kbd>
 );
@@ -75,19 +75,19 @@ export const MorphologyShortcuts = ({ groups = MORPHOLOGY_SHORTCUTS }: { groups?
     // z-50 clears the page's title overlay at z-40; the backdrop is the
     // dismiss target, so a click anywhere outside the card closes it.
     <div
-      className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+      className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-background/50 p-6"
       onClick={() => setOpen(false)}
     >
       <div
-        className="max-h-full w-full max-w-lg overflow-y-auto rounded-lg border border-black/10 bg-black/60 p-4 backdrop-blur-md"
+        className="max-h-full w-full max-w-lg overflow-y-auto rounded-lg border border-background/10 bg-background/60 p-4 backdrop-blur-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h2 className="text-sm font-semibold text-white">Keyboard shortcuts</h2>
+          <h2 className="text-sm font-semibold text-foreground">Keyboard shortcuts</h2>
           <Button
             variant="outline"
             size="xs"
-            className="h-7 w-8 bg-black p-0"
+            className="h-7 w-8 bg-background p-0"
             onClick={() => setOpen(false)}
             title="Close (Esc)"
           >
@@ -97,19 +97,19 @@ export const MorphologyShortcuts = ({ groups = MORPHOLOGY_SHORTCUTS }: { groups?
         <div className="flex flex-col gap-3">
           {Object.entries(groups).map(([group, entries]) => (
             <div key={group} className="flex flex-col gap-1">
-              <div className="text-[0.625rem] font-medium uppercase tracking-widest text-white/50">
+              <div className="text-[0.625rem] font-medium uppercase tracking-widest text-foreground/50">
                 {group}
               </div>
               {entries.map((entry) => (
                 <div
                   key={entry.action + entry.keys.join("+")}
-                  className="flex items-center justify-between gap-4 text-xs text-white/80"
+                  className="flex items-center justify-between gap-4 text-xs text-foreground/80"
                 >
                   <span>{entry.action}</span>
                   <span className="flex shrink-0 items-center gap-1">
                     {entry.keys.map((key, i) => (
                       <span key={key} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-white/40">+</span>}
+                        {i > 0 && <span className="text-foreground/40">+</span>}
                         <Keycap>{key}</Keycap>
                       </span>
                     ))}

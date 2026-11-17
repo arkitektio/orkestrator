@@ -47,7 +47,7 @@ const LabeledEdgeInner: React.FC<VanillaEdgeProps> = (props) => {
               pointerEvents: "all",
             }}
             data-edgeid={id}
-            className="nodrag nopan rounded group rounded-md border bg-gray-800 dark:bg-sidebar dark:text-gray-800 text-gray-200 py-0 px-1 hover:px-4 transition-all duration-300 group-hover:opacity-100 stream-edge-label z-50 text-xs"
+            className="nodrag nopan rounded group rounded-md border bg-popover text-popover-foreground py-0 px-1 hover:px-4 transition-all duration-300 group-hover:opacity-100 stream-edge-label z-50 text-xs"
           >
             {isConnecting && (
               <MergeIcon

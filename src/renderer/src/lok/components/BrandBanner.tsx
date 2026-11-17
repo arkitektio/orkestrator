@@ -145,8 +145,8 @@ export const EditablePortrait = ({
         className={cn(shapeClassName, isOver && "ring-primary")}
       >
         {upload.busy ? (
-          <div className={cn("absolute inset-0 flex items-center justify-center bg-black/50", shapeClassName)}>
-            <Loader2 className="h-5 w-5 animate-spin text-white" />
+          <div className={cn("dark absolute inset-0 flex items-center justify-center bg-background/50", shapeClassName)}>
+            <Loader2 className="h-5 w-5 animate-spin text-foreground" />
           </div>
         ) : (
           <button
@@ -154,7 +154,7 @@ export const EditablePortrait = ({
             aria-label={label}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-medium text-white transition-opacity focus-visible:opacity-100",
+              "dark absolute inset-0 flex items-center justify-center bg-background/50 text-xs font-medium text-foreground transition-opacity focus-visible:opacity-100",
               dragging ? "opacity-100" : "opacity-0 group-hover:opacity-100",
               shapeClassName,
             )}

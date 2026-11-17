@@ -62,7 +62,7 @@ const TCard = ({ image }: Props) => {
       object={image}
     >
       <Card
-        className="px-2 py-2 h-40 w-full top-0 left-0 bg-opacity-20 bg-black  rounded rounded-xl"
+        className="px-2 py-2 h-40 w-full top-0 left-0 rounded-xl"
         ref={ref}
       >
         <OmeroArkImage.DetailLink

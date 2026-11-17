@@ -301,8 +301,8 @@ const HoldRow = ({ hold }: { hold: HoldRequest }) => {
       transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.7, opacity: { duration: 0.15 } }}
       className="flex w-full items-end gap-3"
     >
-      <Avatar size="lg" className="relative mt-1 shrink-0 border border-amber-500/40 bg-muted/60 shadow-sm" title={asker}>
-        <AvatarFallback className="bg-amber-500/10 text-xs font-semibold text-amber-700 dark:text-amber-300">
+      <Avatar size="lg" className="relative mt-1 shrink-0 border border-warning/40 bg-muted/60 shadow-sm" title={asker}>
+        <AvatarFallback className="bg-warning/10 text-xs font-semibold text-warning">
           {displayInitials(asker, "AI")}
         </AvatarFallback>
       </Avatar>
@@ -375,11 +375,11 @@ export const TaskActivityRow = ({
       transition={{ duration: 0.15 }}
       className={cn(
         "group flex min-w-0 items-center gap-2 pl-[52px] text-[11px]",
-        failed ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+        failed ? "text-destructive" : "text-muted-foreground",
       )}
     >
       {task.status === "HELD" ? (
-        <Hand className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+        <Hand className="h-3 w-3 shrink-0 text-warning" />
       ) : live ? (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin motion-reduce:animate-none" />
       ) : failed ? (
@@ -397,7 +397,7 @@ export const TaskActivityRow = ({
           <button
             type="button"
             onClick={() => onCancel?.(task.id, task.reference)}
-            className="shrink-0 rounded px-1 opacity-0 transition-opacity hover:text-red-500 focus-visible:opacity-100 group-hover:opacity-100"
+            className="shrink-0 rounded px-1 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
             title="Stop this replyer"
           >
             Stop
@@ -499,7 +499,7 @@ export function ChatList({
   const holdRows = activeTasks.flatMap((ass) => [
     ...(ass.decided ?? []).map((decided) => ({ key: `${ass.reference}:decided:${decided.task}`, decided, hold: null })),
     ...(ass.status === "HELD" ? (ass.holds ?? []) : []).map((hold) => ({
-      key: `${ass.reference}:hold:${hold.task}`,
+      key: `${ass.reference}:hold:${hold.id ?? hold.task}`,
       decided: null,
       hold,
     })),

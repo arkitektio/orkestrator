@@ -113,6 +113,12 @@ export type ModelPageLayoutProps = {
   chat?: boolean;
   /** What the page also stands for in the ⌘K palette (a container's whole lens). */
   related?: RelatedContext[];
+  /**
+   * What a crumb reads as in place of its path segment, by segment: an
+   * object's name for its id (`{ [agent.id]: agent.name }`). The crumbs come
+   * from the URL alone, so a page that knows better says so here.
+   */
+  crumbs?: Readonly<Record<string, React.ReactNode>>;
   callback?: (object: Object) => void;
 };
 
@@ -131,6 +137,7 @@ export const ModelPageLayout = ({
   pageActions,
   chat = true,
   related,
+  crumbs,
 }: ModelPageLayoutProps) => {
   const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
   const objects = useMemo(
@@ -167,6 +174,7 @@ export const ModelPageLayout = ({
       )}
       help={help}
       overlay={overlay}
+      crumbs={crumbs}
       actions={actions}
       // Other modules' small buttons for this model (the "pagebar" slot) sit
       // beside the page's name, left of its own actions.

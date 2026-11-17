@@ -239,8 +239,8 @@ const DraftPreview = ({ surfaceRef }: { surfaceRef: React.RefObject<HTMLDivEleme
 
   return (
     <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
-      <rect ref={spanRef} y={0} className="fill-amber-400/20 stroke-amber-400/60" style={{ display: "none" }} />
-      <path ref={pathRef} className="fill-none stroke-amber-300" strokeWidth={1.5} strokeDasharray="4 3" />
+      <rect ref={spanRef} y={0} className="fill-warning/20 stroke-warning/60" style={{ display: "none" }} />
+      <path ref={pathRef} className="fill-none stroke-warning" strokeWidth={1.5} strokeDasharray="4 3" />
     </svg>
   );
 };

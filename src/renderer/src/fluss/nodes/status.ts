@@ -6,9 +6,9 @@ export const statusClassName = (event: RunEventFragment | undefined, base?: stri
   cn(
     base,
     event?.kind === RunEventKind.Error &&
-      "border-red-400 dark:border-red-300 dark:shadow-red/20 shadow-red-400/10",
+      "border-destructive dark:shadow-red/20 shadow-destructive/10",
     event?.kind === RunEventKind.Complete &&
-      "border-green-400 dark:border-green-300 dark:shadow-green/20 shadow-green-400/10",
+      "border-success dark:shadow-green/20 shadow-success/10",
   );
 
 export const errorClassName = (hasErrors: boolean, base: string) =>

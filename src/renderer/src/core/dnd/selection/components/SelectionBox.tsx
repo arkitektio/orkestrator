@@ -83,7 +83,7 @@ export const SelectionBox = () => {
 
         {btotal > 0 && (
           <div className="flex items-baseline gap-2">
-            <div className="font-semibold text-red-500"> + {btotal}</div>
+            <div className="font-semibold text-destructive"> + {btotal}</div>
             <div className="ml-2 text-sm text-muted-foreground">
               {buniqueIdentifiers.map((c) => c).join(", ")}
             </div>

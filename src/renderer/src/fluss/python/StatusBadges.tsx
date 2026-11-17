@@ -4,14 +4,14 @@ import { PythonFlowStatus, PythonRunStatus } from "@/fluss/api/graphql";
 
 const FLOW_STATUS: Record<PythonFlowStatus, { label: string; dot: string }> = {
   [PythonFlowStatus.Draft]: { label: "Draft", dot: "bg-muted-foreground/50" },
-  [PythonFlowStatus.Published]: { label: "Published", dot: "bg-green-500" },
-  [PythonFlowStatus.Archived]: { label: "Archived", dot: "bg-amber-500/70" },
+  [PythonFlowStatus.Published]: { label: "Published", dot: "bg-success" },
+  [PythonFlowStatus.Archived]: { label: "Archived", dot: "bg-warning/70" },
 };
 
 const RUN_STATUS: Record<PythonRunStatus, { label: string; dot: string }> = {
-  [PythonRunStatus.Running]: { label: "Running", dot: "bg-blue-500 animate-pulse" },
-  [PythonRunStatus.Completed]: { label: "Completed", dot: "bg-green-500" },
-  [PythonRunStatus.Failed]: { label: "Failed", dot: "bg-red-500" },
+  [PythonRunStatus.Running]: { label: "Running", dot: "bg-info animate-pulse" },
+  [PythonRunStatus.Completed]: { label: "Completed", dot: "bg-success" },
+  [PythonRunStatus.Failed]: { label: "Failed", dot: "bg-destructive" },
   [PythonRunStatus.Cancelled]: { label: "Cancelled", dot: "bg-muted-foreground/50" },
 };
 

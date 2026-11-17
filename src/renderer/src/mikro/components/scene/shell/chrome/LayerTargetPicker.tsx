@@ -63,7 +63,7 @@ export const LayerTargetPicker = () => {
           <Button
             variant={"outline"}
             size={"xs"}
-            className="h-7 gap-1 bg-black px-1.5 text-white/80"
+            className="h-7 gap-1 bg-background px-1.5 text-foreground/80"
             disabled={data === null}
           >
             {probed && <LayerProbeMark layer={probed} className="h-3.5 w-3.5" />}

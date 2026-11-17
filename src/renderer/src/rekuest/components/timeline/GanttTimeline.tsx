@@ -140,12 +140,12 @@ const TimelineBars = ({
               width: Math.max((item.end - item.start) * 100, 0.5) + "%",
             }}
           >
-            <div className="text-[10px] truncate w-full text-center px-1 text-white font-medium drop-shadow-md">
+            <div className="text-[10px] truncate w-full text-center px-1 font-medium">
               {item.task.action?.name}
             </div>
             {!item.task.isDone && (
               <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
-                <Loader2 className="w-3 h-3 animate-spin text-white" />
+                <Loader2 className="w-3 h-3 animate-spin" />
               </div>
             )}
           </div>
@@ -181,12 +181,12 @@ const TimelineMethodRender = ({
 }) => {
   return (
     <>
-      <div className="col-span-2 ml-4 rounded-md border border-amber-200/70 bg-background/50 px-2 py-2 z-10">
+      <div className="col-span-2 ml-4 rounded-md border border-warning/70 bg-background/50 px-2 py-2 z-10">
         <div className="relative pl-5">
-          <span className="absolute left-0 top-1/2 h-px w-3 -translate-y-1/2 bg-amber-300/70" />
-          <span className="absolute left-0 -top-3 h-6 w-px bg-amber-300/70" />
+          <span className="absolute left-0 top-1/2 h-px w-3 -translate-y-1/2 bg-warning/70" />
+          <span className="absolute left-0 -top-3 h-6 w-px bg-warning/70" />
           <div className="flex items-center gap-2 min-w-0">
-            <div className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 shrink-0">
+            <div className="rounded bg-warning/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-warning shrink-0">
               {row.method}
             </div>
             <div className="text-xs text-muted-foreground truncate">
@@ -221,7 +221,7 @@ export const TimelineRender = ({
       <div
         className={
           expanded
-            ? "col-span-2 cursor-pointer rounded-md border border-amber-300/70 bg-amber-50/40 shadow-sm shadow-amber-200/20 transition-colors z-10"
+            ? "col-span-2 cursor-pointer rounded-md border border-warning/70 bg-warning-soft/40 shadow-sm shadow-warning/20 transition-colors z-10"
             : "col-span-2 cursor-pointer rounded-md border border-border bg-card/60 hover:bg-card transition-colors z-10"
         }
       >
@@ -229,20 +229,20 @@ export const TimelineRender = ({
           <div className="flex flex-col px-2 py-2">
             <div className="flex items-center gap-2 min-w-0">
               {expanded ? (
-                <ChevronDown className="w-4 h-4 text-amber-600 shrink-0" />
+                <ChevronDown className="w-4 h-4 text-warning shrink-0" />
               ) : (
                 <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               )}
               <div className="font-semibold text-sm truncate">{group.dependency}</div>
-              <div className="ml-auto rounded bg-amber-500/10 px-1 py-0.5 text-[10px] text-amber-700">
+              <div className="ml-auto rounded bg-warning/10 px-1 py-0.5 text-[10px] text-warning">
                 {itemCount}
               </div>
             </div>
 
             <div className="pl-6 pt-2">
-              <div className="relative rounded-lg border border-dashed border-amber-300/80 bg-background/70 px-2 py-1 text-xs text-muted-foreground truncate">
-                <span className="absolute -left-3 top-1/2 h-px w-3 -translate-y-1/2 bg-amber-300/70" />
-                <span className="absolute -left-3 top-0 h-1/2 w-px bg-amber-300/70" />
+              <div className="relative rounded-lg border border-dashed border-warning/80 bg-background/70 px-2 py-1 text-xs text-muted-foreground truncate">
+                <span className="absolute -left-3 top-1/2 h-px w-3 -translate-y-1/2 bg-warning/70" />
+                <span className="absolute -left-3 top-0 h-1/2 w-px bg-warning/70" />
                 {group.summary || `${methodCount} method${methodCount === 1 ? "" : "s"}`}
               </div>
             </div>
@@ -257,11 +257,11 @@ export const TimelineRender = ({
       </div>
       <div className="col-span-10 flex items-center relative z-10">
         {!expanded ? (
-          <div className="relative h-6 w-full rounded-full border border-dashed border-amber-300/70 bg-amber-50/30 flex items-center px-3 text-xs text-muted-foreground">
+          <div className="relative h-6 w-full rounded-full border border-dashed border-warning/70 bg-warning-soft/30 flex items-center px-3 text-xs text-muted-foreground">
             {itemCount} delegated task{itemCount === 1 ? "" : "s"}
           </div>
         ) : (
-          <div className="relative h-6 w-full rounded-full border border-dashed border-amber-300/70 bg-amber-50/20 flex items-center px-3 text-xs text-muted-foreground">
+          <div className="relative h-6 w-full rounded-full border border-dashed border-warning/70 bg-warning-soft/20 flex items-center px-3 text-xs text-muted-foreground">
             {methodCount} method{methodCount === 1 ? "" : "s"} grouped under this dependency
           </div>
         )}

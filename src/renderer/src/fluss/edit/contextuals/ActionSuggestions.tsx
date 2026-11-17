@@ -16,14 +16,14 @@ export const ActionSuggestions = (props: {
   onPick: (actionId: string, templateId?: string) => void;
 }) => (
   <div className="flex flex-row gap-1 my-auto flex-wrap mt-2">
-    {props.error && <div className="text-red-500">Error: {props.error.message}</div>}
+    {props.error && <div className="text-destructive">Error: {props.error.message}</div>}
     {props.actions.map((action) => (
       <Tooltip key={action.id}>
         <TooltipTrigger asChild>
           {action.stateful ? (
             <Popover>
               <PopoverTrigger asChild>
-                <Card className="flex items-center gap-1.5 px-2 py-1 border-solid border-2 border-green-300 cursor-pointer">
+                <Card className="flex items-center gap-1.5 px-2 py-1 border-solid border-2 border-success/40 cursor-pointer">
                   <BlokLogo blok={action.logo} className="h-4 w-4" />
                   {action.name}
                 </Card>
@@ -44,7 +44,7 @@ export const ActionSuggestions = (props: {
               onClick={() => props.onPick(action.id)}
               className={clsx(
                 "flex items-center gap-1.5 px-2 py-1 border cursor-pointer",
-                action.scope == ActionScope.Global ? "" : "dark:border-blue-200",
+                action.scope == ActionScope.Global ? "" : "dark:border-info/30",
               )}
             >
               <BlokLogo blok={action.logo} className="h-4 w-4" />
@@ -55,7 +55,7 @@ export const ActionSuggestions = (props: {
         <TooltipContent align="center">
           {action.description}
           {action.scope != ActionScope.Global && (
-            <div className="text-blue-200 mt-2">This Node will bind this workflow to specific apps</div>
+            <div className="text-info mt-2">This Node will bind this workflow to specific apps</div>
           )}
         </TooltipContent>
       </Tooltip>

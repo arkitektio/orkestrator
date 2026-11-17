@@ -70,7 +70,7 @@ export const ShellSignInNotice = () => {
     >
       <div className="w-full max-w-sm space-y-4 rounded-2xl border bg-background/95 p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
           <div className="min-w-0 space-y-1">
             <div className="text-sm font-medium">
               {expired

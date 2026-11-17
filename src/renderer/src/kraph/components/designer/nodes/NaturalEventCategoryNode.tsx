@@ -14,7 +14,7 @@ export const NaturalEventCategoryNode = memo(({ data, id, selected }: NodeProps<
   return (
     <>
       <NodeResizer
-        color="#ff0071"
+        color="var(--primary)"
         isVisible={selected}
         minWidth={100}
         minHeight={30}
@@ -22,7 +22,7 @@ export const NaturalEventCategoryNode = memo(({ data, id, selected }: NodeProps<
       <Handles self={id} />
       <div className="absolute top-1 left-1 right-1 bottom-1 z-10">
         <Card
-          className="h-full w-full rounded-lg z-10  relative overflow-hidden group ring-4 ring-green ring-green-200"
+          className="h-full w-full rounded-lg z-10  relative overflow-hidden group ring-4 ring-green ring-success/30"
           style={{ zIndex: 10 }}
         >
           {/* If handles are conditionally rendered and not present initially, you need to update the node internals https://reactflow.dev/docs/api/hooks/use-update-node-internals/ */}
@@ -39,7 +39,7 @@ export const NaturalEventCategoryNode = memo(({ data, id, selected }: NodeProps<
               )}
             </WithKraphMediaUrl>
           )}
-          <div className="absolute top-0 left-0 right-0 bottom-0 z-10 flex items-center justify-center flex-col bg-black/50  ">
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-10 flex items-center justify-center flex-col bg-background/50  ">
             <KraphProtocolEventCategory.DetailLink
               object={data}
               className={"font-bold"}

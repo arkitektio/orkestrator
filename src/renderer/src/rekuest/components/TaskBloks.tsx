@@ -6,7 +6,7 @@ import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, useDecideMutation, useT
 import { useTask } from "../hooks/useTasks";
 import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { openAsks, shownAsk, type TaskRootSource } from "../run/taskRoot";
-import { askClosed, askClosedText } from "../lib/holds";
+import { askClosed, askClosedText, holdKey } from "../lib/holds";
 import { MaterializedBlokEmbed } from "./MaterializedBlokEmbed";
 import { HoldCard } from "./task/HoldCard";
 
@@ -31,7 +31,7 @@ export const TaskOpenAsk = ({
         : undefined,
     [task, blok],
   );
-  return hold ? <HoldCard key={hold.task} hold={hold} closed={task ? askClosed(task) : null} /> : null;
+  return hold ? <HoldCard key={holdKey(hold)} hold={hold} closed={task ? askClosed(task) : null} /> : null;
 };
 
 /** The run host a task blok's tree reads: its agents by key, and `<ask>` drawing the task's open ask. */

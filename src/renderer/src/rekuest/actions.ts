@@ -339,6 +339,18 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           continue
         }
 
+        // What an agent declares is the agent's: it is forked, never deleted.
+        const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
+          query: MaterializedBlokDocument,
+          variables: { id: structure.id },
+        })
+        const declared = data.materializedBlok
+        if (declared?.declaredBy) {
+          throw new Error(
+            `${declared.name || declared.blok.name} belongs to ${declared.declaredBy.name}; it cannot be deleted. Fork its blok to make one of your own.`,
+          )
+        }
+
         await services.rekuest.client.mutate<DeleteMaterializedBlokMutation, DeleteMaterializedBlokMutationVariables>({
           mutation: DeleteMaterializedBlokDocument,
           variables: {

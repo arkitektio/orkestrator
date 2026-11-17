@@ -46,7 +46,7 @@ export const ChartProbeReadout = ({ axisName, unit }: { axisName: string; unit: 
 
   return (
     <>
-      <div ref={lineRef} className="pointer-events-none absolute top-0 bottom-12 left-0 w-px bg-white/35" style={{ display: "none" }} />
+      <div ref={lineRef} className="pointer-events-none absolute top-0 bottom-12 left-0 w-px bg-foreground/35" style={{ display: "none" }} />
       <Readout axisName={axisName} unit={unit} />
     </>
   );
@@ -91,7 +91,7 @@ const Readout = ({ axisName, unit }: { axisName: string; unit: string | null }) 
 
   if (hoverTime == null || rows.length === 0) return null;
   return (
-    <div className="pointer-events-none absolute right-2 top-2 z-20 w-fit min-w-40 max-w-xs rounded-md border border-white/10 bg-zinc-950/85 px-2 py-1.5 text-[11px] shadow-lg backdrop-blur">
+    <div className="pointer-events-none absolute right-2 top-2 z-20 w-fit min-w-40 max-w-xs rounded-md border border-foreground/10 bg-popover/85 px-2 py-1.5 text-[11px] shadow-lg backdrop-blur">
       <div className="mb-1 font-mono tabular-nums text-foreground/55">
         {axisName || "at"} = {formatSiValue(hoverTime)}
         {unit ? ` ${unit}` : ""}
@@ -105,7 +105,7 @@ const Readout = ({ axisName, unit }: { axisName: string; unit: string | null }) 
             {formatUnit(row.unit) ? ` ${formatUnit(row.unit)}` : ""}
           </span>
           {row.approximate && (
-            <span className="text-[10px] text-amber-400" title="Read off the drawn envelope, not the raw samples">
+            <span className="text-[10px] text-warning" title="Read off the drawn envelope, not the raw samples">
               ~
             </span>
           )}

@@ -14,6 +14,7 @@ import { agentStructure } from "@/rekuest/smart/agent";
 import {
   AgentFragment,
   ComponentContext,
+  ListMaterializedBlokFragment,
   useAgentQuery,
   useBounceMutation,
   useListMaterializedBloksQuery,
@@ -25,8 +26,10 @@ import {
   WatchAgentTasksSubscription,
   WatchAgentTasksSubscriptionVariables,
 } from "@/rekuest/api/graphql";
-import { Pin, PinOff } from "lucide-react";
-import { useEffect } from "react";
+import { LayoutPanelTop, Pin, PinOff } from "lucide-react";
+import { Link } from "react-router-dom";
+import { PageAction } from "@/core/ui/page-action";
+import { useEffect, useMemo } from "react";
 import Timestamp from "@/core/ui/timestamp";
 import {
   applyTaskChangeScalars,
@@ -38,6 +41,7 @@ import AgentTaskCard from "../components/cards/AgentTaskCard";
 import { AgentFacts } from "../sidebars/AgentInfoSidebar";
 import { AgentTasksSidebar } from "../sidebars/AgentTasksSidebar";
 import { REKUEST_HELP } from "../help";
+import { agentPanelLink } from "./agent/AgentPanelPage";
 
 export const PinAgent = (props: { agent: AgentFragment }) => {
   const [pin] = usePinAgentMutation();
@@ -90,35 +94,51 @@ export const BounceAgentButton = (props: { agent: AgentFragment }) => {
 };
 
 
+const NO_PANELS: ListMaterializedBlokFragment[] = [];
+
 /**
- * The agent's default blok for the scene context, if it declared one.
+ * The agent's bloks the page shows, read once: its default blok for the scene
+ * context, if it declared one, and its panels (what it brings to control it,
+ * linked from the title bar).
  * `settled` is false until that is known, so no other scene is mounted first.
  */
-const useDefaultSceneBlok = (agent: string) => {
+const useAgentBloks = (agent: string) => {
   const { data, loading } = useListMaterializedBloksQuery({
-    variables: { filters: { agent, contexts: [ComponentContext.Scene] } },
+    variables: {
+      filters: { agent, contexts: [ComponentContext.Scene, ComponentContext.Panel] },
+    },
   });
-  const id = data?.materializedBloks.find(
+  const bloks = data?.materializedBloks;
+  const scene = bloks?.find(
     (blok) => blok.isDefault && blok.blok.context === ComponentContext.Scene,
   )?.id;
-  return { id, settled: !!data || !loading };
+  const panels = useMemo(
+    () =>
+      bloks
+        ?.filter((blok) => blok.blok.context === ComponentContext.Panel)
+        // The default one first, as the one most likely wanted.
+        .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) ?? NO_PANELS,
+    [bloks],
+  );
+  return { scene, panels, settled: !!data || !loading };
 };
 
 /**
- * The agent's default scene, on the right of the page. It starts just inside
- * the content column (620px wide) and its left edge fades into the page, so
- * the two meet in a soft seam rather than the scene running behind the lists.
- * The scene itself is dark in either theme (`dark`), like every canvas.
+ * The agent's default scene, on the right of the page, starting just inside
+ * the content column (620px wide). It has no backdrop of its own: the scene
+ * draws on a clear canvas, so the model and its ground grid stand directly on
+ * the page's background, in either theme. Its left edge fades into the backdrop
+ * of the lists over a short stretch, so the two meet without a seam.
  */
 const AgentBackgroundScene = (props: { materializedBlok: string }) => (
-  <div className="dark text-foreground absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
+  <div className="absolute inset-y-0 right-0 left-[min(540px,45%)] z-0">
     <MaterializedBlokById
       key={props.materializedBlok}
       materializedBlokId={props.materializedBlok}
       surfaceId={props.materializedBlok}
       chrome="none"
     />
-    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-linear-to-r from-background via-background/85 via-35% to-transparent" />
+    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-32 bg-linear-to-r from-background to-transparent" />
   </div>
 );
 
@@ -205,13 +225,15 @@ export const AgentPage = asDetailQueryRoute(
     }, [client, agentId]);
 
     const recentTasks = data.agent.tasks.slice(0, 5);
-    const defaultScene = useDefaultSceneBlok(agentId);
+    const bloks = useAgentBloks(agentId);
 
     return (
       <RekuestAgent.ModelPage
         title={data.agent.name}
         help={REKUEST_HELP.agent}
         object={data.agent}
+        // The breadcrumb reads the agent's name, not its number.
+        crumbs={{ [data.agent.id]: data.agent.name }}
         sidebars={
           <Sidebars sidebarKey="AgentDetail" defaultTab="Info">
             <Sidebars.Tab label="Info">
@@ -232,6 +254,24 @@ export const AgentPage = asDetailQueryRoute(
             {/* What other apps offer on this agent, its supervisor's stop / start /
                 restart under "Supervisor" (the structure carries @rekuest/supervisor). */}
             <ObjectButton objects={[agentStructure(data.agent)]} />
+            {/* The panels the agent brings to control it, each on its own page. */}
+            {bloks.panels.map((panel) => (
+              <PageAction
+                key={panel.id}
+                asChild
+                size="sm"
+                collapse="icon"
+                icon={<LayoutPanelTop className="h-4 w-4" />}
+                menuLabel={panel.name || panel.blok.name}
+              >
+                <Link
+                  to={agentPanelLink(agentId, panel.id)}
+                  title={panel.description ?? panel.blok.description ?? undefined}
+                >
+                  {panel.name || panel.blok.name}
+                </Link>
+              </PageAction>
+            ))}
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
             {/* The agent's tasks, states and bloks pages and its Python
@@ -239,10 +279,10 @@ export const AgentPage = asDetailQueryRoute(
           </>
         }
       >
-        <div className="relative h-full w-full overflow-hidden  shadow-[0_30px_120px_-48px_rgba(15,23,42,0.55)]">
+        <div className="relative h-full w-full overflow-hidden">
 
 
-          {defaultScene.id && <AgentBackgroundScene materializedBlok={defaultScene.id} />}
+          {bloks.scene && <AgentBackgroundScene materializedBlok={bloks.scene} />}
 
           <div className="absolute inset-y-0 left-0 z-20 flex w-full max-w-[620px] items-stretch">
             <div className="flex w-full flex-col justify-between gap-6 p-6">
@@ -262,8 +302,8 @@ export const AgentPage = asDetailQueryRoute(
                         className={cn(
                           "h-2.5 w-2.5 rounded-full",
                           data.agent.connected
-                            ? "bg-green-500 shadow-[0_0_14px_rgba(34,197,94,0.75)]"
-                            : "bg-red-500 shadow-[0_0_14px_rgba(239,68,68,0.75)]",
+                            ? "bg-success shadow-[0_0_14px_var(--success)]"
+                            : "bg-destructive shadow-[0_0_14px_var(--destructive)]",
                         )}
                       />
                       <span className="text-lg font-semibold">
@@ -305,8 +345,9 @@ export const AgentPage = asDetailQueryRoute(
 
 
         <div className="mt-4 flex flex-col gap-4 min-h-0 flex-1">
-          {/* What other modules show about this agent (lovekit: its live
-              streams), given the app instance it runs as. */}
+          {/* What other modules show about this agent, given the app instance
+              it runs as. Nothing does for now: its live streams are not shown
+              here by choice. */}
           <PageSections
             placement="main"
             identifier="@rekuest/agent"

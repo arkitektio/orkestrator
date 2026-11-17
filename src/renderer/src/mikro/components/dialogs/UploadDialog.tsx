@@ -89,7 +89,7 @@ export const UploadDialog: React.FC<UploadDialogProps> = ({
       file.type.includes("csv") ||
       file.type.includes("json")
     ) {
-      return <Database className="h-5 w-5 text-green-500" />;
+      return <Database className="h-5 w-5 text-success" />;
     } else {
       return <File className="h-5 w-5 text-muted-foreground" />;
     }

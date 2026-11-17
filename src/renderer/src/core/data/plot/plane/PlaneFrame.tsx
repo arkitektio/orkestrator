@@ -103,14 +103,14 @@ const Axes = ({ x, y }: { x: PlaneAxisSpec; y: PlaneAxisSpec }) => {
     <div className="pointer-events-none absolute inset-0">
       {/* Grid and frame: under everything drawn in the plot area. */}
       <div
-        className="absolute border border-white/10"
+        className="absolute border border-foreground/10"
         style={{ left: GUTTER.left, right: GUTTER.right, top: GUTTER.top, bottom: GUTTER.bottom }}
       >
         {xTicks.map((t) => (
-          <div key={`gx${t.value}`} className="absolute inset-y-0 w-px bg-white/[0.06]" style={{ left: xPx(t.value) }} />
+          <div key={`gx${t.value}`} className="absolute inset-y-0 w-px bg-foreground/[0.06]" style={{ left: xPx(t.value) }} />
         ))}
         {yTicks.map((t) => (
-          <div key={`gy${t.value}`} className="absolute inset-x-0 h-px bg-white/[0.06]" style={{ top: yPx(t.value) }} />
+          <div key={`gy${t.value}`} className="absolute inset-x-0 h-px bg-foreground/[0.06]" style={{ top: yPx(t.value) }} />
         ))}
       </div>
       {/* x axis */}
@@ -267,7 +267,7 @@ const Gestures = ({ onPick }: { onPick?: (pick: PlanePick) => void }) => {
     <div ref={ref} className="absolute inset-0 cursor-crosshair touch-none">
       {box && (
         <div
-          className="pointer-events-none absolute border border-sky-300/80 bg-sky-300/10"
+          className="pointer-events-none absolute border border-info/80 bg-info/10"
           style={{
             left: Math.min(box.a.px, box.b.px),
             top: Math.min(box.a.py, box.b.py),

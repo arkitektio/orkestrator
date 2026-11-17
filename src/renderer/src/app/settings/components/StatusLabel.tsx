@@ -9,15 +9,15 @@ import { cn } from "@/core/util/utils";
 export type Tone = "good" | "warn" | "bad" | "muted";
 
 export const TONE_TEXT: Record<Tone, string> = {
-  good: "text-emerald-600 dark:text-emerald-400",
-  warn: "text-amber-600 dark:text-amber-400",
+  good: "text-success",
+  warn: "text-warning",
   bad: "text-destructive",
   muted: "text-muted-foreground",
 };
 
 const TONE_DOT: Record<Tone, string> = {
-  good: "bg-emerald-500",
-  warn: "bg-amber-500",
+  good: "bg-success",
+  warn: "bg-warning",
   bad: "bg-destructive",
   muted: "bg-muted-foreground/40",
 };

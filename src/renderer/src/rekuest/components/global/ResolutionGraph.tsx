@@ -271,19 +271,19 @@ const DependencyGroupNode = ({
   targetPosition?: Position;
 }) => {
   return (
-    <div className="w-full h-full bg-orange-100/50 dark:bg-orange-900/20 border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-lg p-2 relative group">
+    <div className="w-full h-full bg-warning-soft/50 border-2 border-dashed border-warning/40 rounded-lg p-2 relative group">
       <Handle
         type="target"
         position={targetPosition}
-        className="w-3 h-3 !bg-orange-500"
+        className="w-3 h-3 !bg-warning"
       />
       <div className="flex justify-between items-start ">
         <div>
-          <div className="text-xs font-bold text-orange-500 mb-1 uppercase tracking-wider">
+          <div className="text-xs font-bold text-warning mb-1 uppercase tracking-wider">
             {data.label}
           </div>
           {data.description && (
-            <div className="text-[10px] text-orange-400 dark:text-orange-300 italic max-w-[150px]">
+            <div className="text-[10px] text-warning italic max-w-[150px]">
               {data.description}
             </div>
           )}
@@ -291,14 +291,14 @@ const DependencyGroupNode = ({
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={data.onAutoAdd}
-            className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-[10px]"
+            className="p-1 bg-warning text-warning-foreground rounded hover:bg-warning/80 text-[10px]"
             title="Magic Auto Add"
           >
             Auto
           </button>
           <button
             onClick={data.onAdd}
-            className="p-1 bg-chart-3 text-white rounded hover:bg-chart-3/80 text-[10px]"
+            className="p-1 bg-primary text-primary-foreground rounded hover:bg-primary/80 text-[10px]"
             title="Add Agent"
           >
             +

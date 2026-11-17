@@ -281,7 +281,7 @@ export const UploadIsland: React.FC = () => {
             >
               <div className="relative flex min-w-0 items-center gap-2">
                 {u.status === "completed" ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
                 ) : u.status === "error" ? (
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
                 ) : (

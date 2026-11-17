@@ -52,8 +52,8 @@ const LatestArrayDatasetsWidget = () => {
                         <Boxes className="w-4 h-4 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 bg-black/50 px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[9px] text-white truncate">
+                    <div className="dark absolute inset-x-0 bottom-0 bg-background/50 px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-[9px] text-foreground truncate">
                         {dataset.name}
                       </p>
                     </div>

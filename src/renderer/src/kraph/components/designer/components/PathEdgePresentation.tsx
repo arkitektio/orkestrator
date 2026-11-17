@@ -38,7 +38,7 @@ export const PathEdgePresentation = ({
   const pathColor = pathColorRaw ? rgbToCSS(pathColorRaw) : undefined;
 
   // Border color: path color > gray (no blue default)
-  const borderColor = pathColor || 'rgba(100, 100, 100, 0.3)';
+  const borderColor = pathColor || 'color-mix(in oklab, var(--muted-foreground) 30%, transparent)';
   const borderWidth = pathColor ? '2px' : '1px';
 
   return (
@@ -51,8 +51,8 @@ export const PathEdgePresentation = ({
         boxShadow: pathColor
           ? `0 0 12px 2px ${pathColor}`
           : isPossible
-            ? '0 0 8px 1px rgba(59, 130, 246, 0.4)'
-            : '0 0 5px 1px rgba(100, 100, 100, 0.2)',
+            ? '0 0 8px 1px color-mix(in oklab, var(--primary) 40%, transparent)'
+            : '0 0 5px 1px color-mix(in oklab, var(--muted-foreground) 20%, transparent)',
         borderColor: borderColor,
         borderWidth: borderWidth,
         filter: !isPossible && !pathColor ? 'grayscale(0.8)' : 'none'
@@ -75,12 +75,12 @@ export const useEdgeStrokeStyle = (edgeId: string) => {
 
   return {
     opacity: isPossible ? 1 : 0.15,
-    stroke: pathColor || (isPossible ? 'rgb(59, 130, 246)' : 'rgb(100, 100, 100)'),
+    stroke: pathColor || (isPossible ? 'var(--primary)' : 'var(--muted-foreground)'),
     strokeWidth: pathColor ? 4 : isPossible ? 3 : 1,
     filter: pathColor
       ? `drop-shadow(0 0 8px ${pathColor}) drop-shadow(0 0 16px ${pathColor})`
       : isPossible
-        ? 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.6))'
+        ? 'drop-shadow(0 0 4px color-mix(in oklab, var(--primary) 60%, transparent))'
         : 'none',
     transition: 'all 0.3s ease'
   };

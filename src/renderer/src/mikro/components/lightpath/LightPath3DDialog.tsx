@@ -155,7 +155,7 @@ const Stand = ({
           center
           zIndexRange={[10, 0]}
           className={cn(
-            "pointer-events-none whitespace-nowrap font-mono text-[10px] text-white",
+            "dark pointer-events-none whitespace-nowrap font-mono text-[10px] text-foreground",
             hovered === node.id ? "opacity-100" : "opacity-60",
           )}
         >
@@ -207,7 +207,7 @@ export const LightPath3DDialog = ({
       </DialogHeader>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="relative min-w-0 flex-1 overflow-hidden rounded-md bg-neutral-950">
+        <div className="dark relative min-w-0 flex-1 overflow-hidden rounded-md bg-popover text-foreground">
           <Canvas
             frameloop="demand"
             dpr={[1, 2]}

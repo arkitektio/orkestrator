@@ -98,7 +98,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 <p className="mt-1 text-sm font-medium">
                   {data.blok.module.name}
                   {!data.blok.module.isRegistered && (
-                    <span className="ml-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="ml-2 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs text-muted-foreground">
                       not registered
                     </span>
                   )}
@@ -145,7 +145,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                     <span
                       className={cn(
                         "size-2 shrink-0 rounded-full",
-                        agent.connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+                        agent.connected ? "bg-success" : "bg-muted-foreground/40",
                       )}
                       title={agent.connected ? "Connected" : "Offline"}
                     />
@@ -158,7 +158,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             )}
 
             {data.blok.diagnostics.length > 0 && (
-              <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                   Diagnostics
                 </p>

@@ -78,8 +78,8 @@ export const VectorLayerCard = memo(
       >
         {/* ------------------------------------------------ header --------- */}
         <div className="flex items-center gap-1.5 px-2 py-1.5">
-          <LayerTile tint="bg-teal-400/15">
-            <Wind className="h-3 w-3 text-teal-700 dark:text-teal-300" />
+          <LayerTile tint="bg-spectrum-cyan/15">
+            <Wind className="h-3 w-3 text-spectrum-cyan" />
           </LayerTile>
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground/90">
             {layer.name?.trim() || layer.lens.dataset.name?.trim() || `Vectors ${layer.id}`}
@@ -108,7 +108,7 @@ export const VectorLayerCard = memo(
                 onClick={() => persist({ glyph: glyph.value })}
                 className={`h-6 flex-1 rounded border text-[10px] transition-colors ${
                   layer.glyph === glyph.value
-                    ? "border-teal-300/40 bg-teal-400/15 text-teal-700 dark:text-teal-200"
+                    ? "border-spectrum-cyan/40 bg-spectrum-cyan/15 text-spectrum-cyan"
                     : "border-foreground/10 bg-background/30 text-foreground/60 hover:text-foreground/90"
                 }`}
               >

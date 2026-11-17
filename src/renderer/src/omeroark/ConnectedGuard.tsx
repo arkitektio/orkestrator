@@ -81,7 +81,7 @@ export const EnsureMeForm = () => {
               placeholder="Enter username"
             />
             {errors.username && (
-              <p className="text-sm text-red-500">{errors.username.message}</p>
+              <p className="text-sm text-destructive">{errors.username.message}</p>
             )}
           </div>
 
@@ -94,7 +94,7 @@ export const EnsureMeForm = () => {
               placeholder="Enter password"
             />
             {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
@@ -106,7 +106,7 @@ export const EnsureMeForm = () => {
               placeholder="Enter host"
             />
             {errors.host && (
-              <p className="text-sm text-red-500">{errors.host.message}</p>
+              <p className="text-sm text-destructive">{errors.host.message}</p>
             )}
           </div>
 
@@ -124,7 +124,7 @@ export const EnsureMeForm = () => {
               placeholder="Enter port"
             />
             {errors.port && (
-              <p className="text-sm text-red-500">{errors.port.message}</p>
+              <p className="text-sm text-destructive">{errors.port.message}</p>
             )}
           </div>
 

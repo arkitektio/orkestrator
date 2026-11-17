@@ -52,7 +52,7 @@ const DetailPage = asDetailQueryRoute(
           <div className="relative h-full w-full">
             <Scene.Viewport inCanvas={<Registration.CanvasLayer />} />
             <div className="dark text-foreground pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-0.5">
-              <div className="text-xs font-medium uppercase tracking-wide text-amber-400">Aligning layers</div>
+              <div className="text-xs font-medium uppercase tracking-wide text-warning">Aligning layers</div>
               {/* The way back: the scene itself. */}
               <MikroScene.DetailLink
                 object={data.scene}

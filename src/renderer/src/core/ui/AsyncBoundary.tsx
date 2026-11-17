@@ -54,12 +54,12 @@ const DefaultLoadingFallback = () => (
 );
 
 const DefaultErrorFallback = ({ error, reset }: { error: Error; reset: () => void }) => (
-  <div style={{ padding: '1rem', border: '1px solid #f87171', borderRadius: '4px', color: '#b91c1c', backgroundColor: '#fef2f2' }}>
-    <h3 style={{ marginTop: 0 }}>Something went wrong</h3>
+  <div className="rounded border border-destructive/40 bg-destructive/10 p-4 text-destructive">
+    <h3 className="mt-0">Something went wrong</h3>
     <p>{error.message}</p>
     <button
       onClick={reset}
-      style={{ padding: '0.5rem 1rem', cursor: 'pointer', backgroundColor: '#b91c1c', color: 'white', border: 'none', borderRadius: '4px' }}
+      className="cursor-pointer rounded bg-destructive px-4 py-2 text-white"
     >
       Try Again
     </button>

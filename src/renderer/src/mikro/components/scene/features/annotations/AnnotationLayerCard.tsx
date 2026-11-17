@@ -119,8 +119,8 @@ export const AnnotationLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<SquareDashed className="h-3 w-3 text-amber-700 dark:text-amber-300" />}
-        tile="bg-amber-400/15"
+        icon={<SquareDashed className="h-3 w-3 text-warning" />}
+        tile="bg-warning/15"
         title={
           collection?.name?.trim() ||
           (collection ? `Annotations ${collection.id}` : "Annotations (no collection)")
@@ -142,7 +142,7 @@ export const AnnotationLayerCard = memo(
           total > 0 ? (
             <span
               className={`shrink-0 font-mono text-[9px] ${
-                inView === 0 ? "text-amber-700/80 dark:text-amber-300/80" : "text-foreground/50"
+                inView === 0 ? "text-warning/80" : "text-foreground/50"
               }`}
               title={
                 inView === 0
@@ -217,7 +217,7 @@ export const AnnotationLayerCard = memo(
             <>
               <span
                 className={`font-mono text-[9px] ${
-                  inView === 0 ? "text-amber-700/80 dark:text-amber-300/80" : "text-foreground/50"
+                  inView === 0 ? "text-warning/80" : "text-foreground/50"
                 }`}
                 title={
                   inView === 0

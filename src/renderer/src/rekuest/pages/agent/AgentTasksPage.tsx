@@ -57,6 +57,8 @@ export const AgentTasksPage = asDetailQueryRoute(
         title={`${data?.agent?.name} — Tasks`}
         help={REKUEST_HELP.agentTasks}
         object={data.agent}
+        // The breadcrumb reads the agent's name, not its number.
+        crumbs={{ [data.agent.id]: data.agent.name }}
         pageActions={
           <DateTimeRangePicker
             initialDateFrom={createdAfter ?? undefined}

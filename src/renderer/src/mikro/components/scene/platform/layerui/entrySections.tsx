@@ -162,7 +162,7 @@ const ColorByRow = memo(function ColorByRow({
         <>
           {entryLabel(entry)}
           {(isJoinedEntry(entry) || !isColumnColorBy(entry)) && (
-            <span className="ml-1 text-amber-700/70 dark:text-amber-300/70">*</span>
+            <span className="ml-1 text-warning/70">*</span>
           )}
         </>
       }
@@ -412,7 +412,7 @@ const FilterByRow = memo(function FilterByRow({
       label={
         <>
           {entryLabel(entry)}
-          {isJoinedEntry(entry) && <span className="ml-1 text-amber-700/70 dark:text-amber-300/70">*</span>}
+          {isJoinedEntry(entry) && <span className="ml-1 text-warning/70">*</span>}
         </>
       }
       detail={`${entry.exclude ? "drop" : "keep"} where ${describeFilterRule(entry)}`}
@@ -663,7 +663,7 @@ export const FilterBySection = memo(function FilterBySection({
       }
       hint={
         ruleError ? (
-          <span className="text-amber-700/80 dark:text-amber-300/80">{ruleError}</span>
+          <span className="text-warning/80">{ruleError}</span>
         ) : filterBys.length === 0 ? (
           "nothing added — every object draws"
         ) : activeFilterBys.length === 0 ? (

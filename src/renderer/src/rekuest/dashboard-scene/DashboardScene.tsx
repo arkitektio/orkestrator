@@ -133,7 +133,7 @@ const useDashboardScene = () => {
 const DashboardDynamicLoader = ({ blok }: { blok: MaterializedBlokFragment }) => {
   return (
     // The blok scrolls itself; the dock panel frames it already.
-    <div className="h-full p-3 @container">
+    <div className="blok-plain h-full p-3 @container">
       <MaterializedBlokRenderer
         surfaceId={blok.id}
         materializedBlok={blok}
@@ -676,7 +676,7 @@ export const DashboardScene = () => {
             Dashboard
           </span>
           <div className="flex items-center gap-1.5">
-            <Circle className="h-2 w-2 fill-current text-green-500" />
+            <Circle className="h-2 w-2 fill-current text-success" />
             <span className="text-xs text-muted-foreground">{panelCount} panels open</span>
           </div>
           <div className="flex items-center gap-1.5">

@@ -29,15 +29,15 @@ export const StreamDisplay = (props: DisplayWidgetProps) => {
 
   if (!stream) {
     return (
-      <div className={cn("flex aspect-video w-full items-center justify-center bg-black text-white/60", props.className)}>
+      <div className={cn("dark flex aspect-video w-full items-center justify-center bg-background text-foreground/60", props.className)}>
         <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
   return (
-    <div className={cn("relative aspect-video w-full overflow-hidden rounded-lg bg-black", props.className)}>
+    <div className={cn("dark relative aspect-video w-full overflow-hidden rounded-lg bg-background text-foreground", props.className)}>
       <StreamVideo stream={stream} />
-      <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs text-white backdrop-blur">
+      <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-md bg-background/60 px-1.5 py-0.5 text-xs text-foreground backdrop-blur">
         <LiveDot live={stream.live} />
         <span className="truncate">{stream.title}</span>
       </div>

@@ -177,7 +177,7 @@ export const TravelBar = ({
     <div
       className={cn(
         "flex items-center gap-1.5 rounded-md border bg-background/80 px-1.5 py-1 shadow-md backdrop-blur-sm",
-        travelling && "border-amber-500/50",
+        travelling && "border-warning/50",
         className,
       )}
       // The bar may lie over a 3D scene: a press on it is never a press on the scene.
@@ -305,7 +305,7 @@ export const TravelBar = ({
 
       {missing.length > 0 && (
         <span
-          className="max-w-40 shrink truncate text-xs text-amber-500"
+          className="max-w-40 shrink truncate text-xs text-warning"
           title={`Nothing was recorded at this time for ${missing.join(", ")}`}
         >
           Nothing recorded for {missing.join(", ")}
@@ -331,7 +331,7 @@ export const TravelBar = ({
 
       {travelling ? (
         <>
-          <span className="shrink-0 rounded-md border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500">
+          <span className="shrink-0 rounded-md border border-warning/60 bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
             PAST
           </span>
           <Button variant="outline" size="sm" className="shrink-0" onClick={travel.goLive} title="Back to the present">
@@ -340,10 +340,10 @@ export const TravelBar = ({
           </Button>
         </>
       ) : (
-        <span className="flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+        <span className="flex shrink-0 items-center gap-1.5 rounded-md border border-success/60 bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-success" />
           </span>
           LIVE
         </span>

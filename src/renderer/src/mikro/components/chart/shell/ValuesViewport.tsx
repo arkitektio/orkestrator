@@ -67,11 +67,11 @@ export const ValuesViewport = ({ embedded = false }: { embedded?: boolean }) => 
           className={cn(
             "grid h-full w-full",
             panels.length > 1 &&
-              "auto-rows-[minmax(16rem,1fr)] grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] gap-px overflow-y-auto bg-white/10",
+              "auto-rows-[minmax(16rem,1fr)] grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] gap-px overflow-y-auto bg-foreground/10",
           )}
         >
           {panels.map((panel) => (
-            <div key={panel.key} className="relative min-h-0 min-w-0 bg-black">
+            <div key={panel.key} className="relative min-h-0 min-w-0 bg-background">
               <ValuesPanel panel={panel} visible={visible} />
             </div>
           ))}
@@ -89,7 +89,7 @@ export const ValuesViewport = ({ embedded = false }: { embedded?: boolean }) => 
           axis plot keeps its mode controls: bottom right, above the x axis —
           the top right is each panel's legend. */}
       {!embedded && (
-        <div className="pointer-events-auto absolute bottom-12 right-3 z-30 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+        <div className="pointer-events-auto absolute bottom-12 right-3 z-30 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
           <LayoutModeToggle modes={VALUES_MODES} titles={VALUES_TITLES} onChange={(mode) => void writeLayout(mode)} />
         </div>
       )}

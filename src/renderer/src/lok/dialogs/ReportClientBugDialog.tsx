@@ -206,7 +206,7 @@ const ReportForm = ({
           />
 
           {!issueUrl && (
-            <div className="text-sm text-red-500">
+            <div className="text-sm text-destructive">
               Warning: No issue URL configured for this client
             </div>
           )}

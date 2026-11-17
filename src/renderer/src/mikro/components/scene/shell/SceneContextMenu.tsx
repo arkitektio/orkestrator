@@ -4,7 +4,6 @@ import { useThree } from "@react-three/fiber";
 
 import { registerSmartNode, unregisterSmartNode } from "@/core/smart/nodeRegistry";
 import type { Structure } from "@/core/types";
-import { exceedsDragThreshold } from "../features/annotations/drawGesture";
 import { useRoiSelectionStoreApi } from "../features/annotations/roiSelectionStore";
 import { useLayerRunStoreApi, type LayerRunAnchor } from "../features/layerRun/layerRunSlice";
 import { runnableLayers, type LayerRunSnapshot } from "../features/layerRun/layerRunSnapshot";
@@ -14,6 +13,7 @@ import { effectiveDataLayerId } from "../platform/probe/probeTargeting";
 import { readControlsTarget } from "../platform/probe/probeWorld";
 import { useModeStoreApi } from "../platform/stores/modeStore";
 import { useSceneStoreApi } from "../platform/stores/sceneStore";
+import { createContextGesture } from "./sceneContextGesture";
 import { sceneContextTarget, type SceneContextHit } from "./sceneContextTarget";
 
 /**
@@ -32,7 +32,9 @@ import { sceneContextTarget, type SceneContextHit } from "./sceneContextTarget";
  * tool modes), so the menu opens on release, and only when the pointer
  * stayed put. That is also why the native `contextmenu` event is not used —
  * it fires on press on Linux, before anyone can tell a click from a drag
- * (and OrbitControls cancels it anyway).
+ * (and OrbitControls cancels it anyway). What counts as that click, macOS's
+ * Control-click and a release that is never reported included, is
+ * `sceneContextGesture`.
  *
  * The mesh is resolved by a one-shot id-buffer pick, not by handlers on the
  * mesh layer: a handler prop would put every mounted cell into R3F's raycast
@@ -83,16 +85,7 @@ export const SceneContextMenu = () => {
       );
     };
 
-    let pressedAt: { x: number; y: number } | null = null;
-    const onPointerDown = (event: PointerEvent) => {
-      pressedAt = event.button === 2 ? { x: event.clientX, y: event.clientY } : null;
-    };
-    const onPointerUp = (event: PointerEvent) => {
-      const start = pressedAt;
-      pressedAt = null;
-      if (event.button !== 2 || !start) return;
-      const { clientX, clientY } = event;
-      if (exceedsDragThreshold(start, { x: clientX, y: clientY })) return; // a pan / orbit
+    const onClick = ({ x: clientX, y: clientY }: { x: number; y: number }) => {
       // Read at resolve time: the pick answers a frame later.
       const resolve = (hoveredRoi: Parameters<typeof sceneContextTarget>[0]["hoveredRoi"], pickedLayerId: string | null) =>
         sceneContextTarget({
@@ -174,11 +167,21 @@ export const SceneContextMenu = () => {
     const raycaster = new THREE.Raycaster();
     const plane = new THREE.Plane();
 
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointerup", onPointerUp);
+    const gesture = createContextGesture({
+      mac: /mac/i.test(navigator.platform),
+      onClick,
+    });
+    // Moves and releases are heard on the window: the press may be captured
+    // elsewhere, and the release may come as a move with no button held.
+    canvas.addEventListener("pointerdown", gesture.down);
+    window.addEventListener("pointermove", gesture.move);
+    window.addEventListener("pointerup", gesture.up);
+    window.addEventListener("pointercancel", gesture.cancel);
     return () => {
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointerdown", gesture.down);
+      window.removeEventListener("pointermove", gesture.move);
+      window.removeEventListener("pointerup", gesture.up);
+      window.removeEventListener("pointercancel", gesture.cancel);
       unregisterSmartNode(anchor);
       anchor.remove();
     };

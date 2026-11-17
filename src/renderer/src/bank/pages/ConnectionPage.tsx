@@ -87,8 +87,8 @@ const ProviderProblem = ({
   const provider = connection.bankProvider;
   if (provider?.enabled) return null;
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-      <Unplug className="h-4 w-4 shrink-0 text-amber-500" />
+    <div className="flex flex-wrap items-center gap-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+      <Unplug className="h-4 w-4 shrink-0 text-warning" />
       <span className="flex-1">
         {provider
           ? `${provider.name}, the provider this connection goes through, is disabled. It cannot sync until it is enabled again.`

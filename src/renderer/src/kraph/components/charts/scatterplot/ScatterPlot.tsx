@@ -191,7 +191,7 @@ const ScatterPlot = (props: {
             onClick={() => setIsLassoMode(!isLassoMode)}
             className={`px-3 py-1 rounded text-sm font-medium ${
               isLassoMode
-                ? "bg-chart-3 text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-muted text-foreground hover:bg-accent"
             }`}
           >
@@ -303,17 +303,17 @@ const ScatterPlot = (props: {
 
               return (
                 <div key={index} className="flex-shrink-0 w-64">
-                  <div className="grid gap-1.5 rounded-lg border-2 border-red-500 bg-background px-3 py-2 text-xs shadow-lg">
+                  <div className="grid gap-1.5 rounded-lg border-2 border-destructive bg-background px-3 py-2 text-xs shadow-lg">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-red-600 flex items-center gap-1">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs">
+                      <div className="font-semibold text-destructive flex items-center gap-1">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-destructive text-white text-xs">
                           {index + 1}
                         </span>
                         Pinned Point
                       </div>
                       <button
                         onClick={() => removePinnedItem(index)}
-                        className="text-red-500 hover:text-red-700 font-bold"
+                        className="text-destructive hover:text-destructive/80 font-bold"
                         title="Remove pin"
                       >
                         ✕

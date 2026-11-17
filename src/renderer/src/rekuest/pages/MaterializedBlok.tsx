@@ -69,7 +69,7 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
             <span
               className={cn(
                 "size-2 shrink-0 rounded-full",
-                mapping.agent.connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+                mapping.agent.connected ? "bg-success" : "bg-muted-foreground/40",
               )}
               title={mapping.agent.connected ? "Connected" : "Offline"}
             />
@@ -243,7 +243,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       }
     >
       <div className="flex h-full w-full flex-col">
-        <div className="min-h-0 flex-1">
+        <div className="blok-plain min-h-0 flex-1">
           {/* Around the renderer, not in it: the cards a scene opens are bloks of their own and follow the same clock. */}
           {asking ? (
             <BlokArgsForm

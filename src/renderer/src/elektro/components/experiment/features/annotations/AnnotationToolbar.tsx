@@ -45,7 +45,7 @@ export const AnnotationToolbar = () => {
 
   return (
     <div className="pointer-events-auto absolute bottom-14 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-1">
-      <span className="text-[10px] text-white/50">{toolSpec(active).hint}</span>
+      <span className="text-[10px] text-foreground/50">{toolSpec(active).hint}</span>
       <ButtonGroup>
         {ANNOTATE_TOOLS.map(({ tool, label, shortcut, scope }) => {
           const Icon = ICONS[tool];
@@ -55,7 +55,7 @@ export const AnnotationToolbar = () => {
               key={tool}
               variant={active === tool ? "default" : "outline"}
               size="xs"
-              className={active === tool ? undefined : "bg-black"}
+              className={active === tool ? undefined : "bg-background"}
               disabled={disabled}
               aria-pressed={active === tool}
               title={

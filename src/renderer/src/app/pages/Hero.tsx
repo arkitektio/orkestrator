@@ -134,9 +134,9 @@ const addWidgetPanel = (
 // ── Service health dots ──
 
 const statusColor: Record<string, string> = {
-  ready: "text-green-500",
-  checking: "text-yellow-500",
-  configured: "text-blue-500",
+  ready: "text-success",
+  checking: "text-warning",
+  configured: "text-info",
   unconfigured: "text-muted-foreground/40",
   invalid: "text-destructive",
 };

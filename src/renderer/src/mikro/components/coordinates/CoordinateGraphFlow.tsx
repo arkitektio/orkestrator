@@ -334,7 +334,7 @@ const Legend = ({
       {systems} systems · {residents} residents · {transformations}{" "}
       transformations
       {dropped > 0 && (
-        <span className="text-amber-500">
+        <span className="text-warning">
           {" "}
           · {dropped} not drawn (endpoint outside the walk)
         </span>

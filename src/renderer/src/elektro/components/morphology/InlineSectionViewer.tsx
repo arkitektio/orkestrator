@@ -62,7 +62,7 @@ export const InlineSectionViewer = ({
       )}
       <div className="min-h-0 flex-1 overflow-hidden rounded-md">
         {message || !model ? (
-          <div className="flex h-full items-center justify-center bg-black p-4 text-center text-muted-foreground">
+          <div className="dark flex h-full items-center justify-center bg-background p-4 text-center text-muted-foreground">
             {message}
           </div>
         ) : (

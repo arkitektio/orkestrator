@@ -173,7 +173,7 @@ const StopsEditor = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-red-700 dark:hover:text-red-300"
+            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
             title={stops.length <= 2 ? "A gradient needs at least two stops" : "Remove stop"}
             disabled={stops.length <= 2}
             onClick={() => commit(stops.filter((_, i) => i !== index))}

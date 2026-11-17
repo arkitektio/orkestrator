@@ -13,7 +13,7 @@ export const AgentStreams = ({ streams, className }: { streams: ListStreamFragme
     <div className={cn("grid gap-3 sm:grid-cols-2", className)}>
       {streams.map((stream) => (
         <div key={stream.id} className="flex flex-col gap-1.5">
-          <div className="aspect-video overflow-hidden rounded-lg bg-black">
+          <div className="dark aspect-video overflow-hidden rounded-lg bg-background text-foreground">
             <StreamVideo stream={stream} />
           </div>
           <div className="flex items-center gap-1.5 text-sm">

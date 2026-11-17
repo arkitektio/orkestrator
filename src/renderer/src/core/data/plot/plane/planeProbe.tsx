@@ -109,7 +109,7 @@ export const PlaneTooltip = ({ maxPx = 24, xLabel, yLabel }: { maxPx?: number; x
   if (!hover) return null;
   if (!hit) {
     return (
-      <div className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-foreground/60">
+      <div className="absolute bottom-1 right-1 rounded bg-background/60 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-foreground/60">
         {xLabel ? `${xLabel} ` : "x "}
         {formatSiValue(hover.x)} · {yLabel ? `${yLabel} ` : "y "}
         {formatSiValue(hover.y)}
@@ -125,12 +125,12 @@ export const PlaneTooltip = ({ maxPx = 24, xLabel, yLabel }: { maxPx?: number; x
     <>
       {ring && (
         <div
-          className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.6)]"
+          className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground shadow-[0_0_0_1px_rgba(0,0,0,0.6)]"
           style={{ left: ring.px, top: ring.py }}
         />
       )}
       <div
-        className="absolute z-10 min-w-36 max-w-72 rounded-md border border-white/10 bg-zinc-950/90 px-2 py-1.5 text-[11px] shadow-lg backdrop-blur"
+        className="absolute z-10 min-w-36 max-w-72 rounded-md border border-foreground/10 bg-popover/90 px-2 py-1.5 text-[11px] shadow-lg backdrop-blur"
         style={{
           left: left ? undefined : hover.px + 14,
           right: left ? size.width - hover.px + 14 : undefined,
@@ -144,7 +144,7 @@ export const PlaneTooltip = ({ maxPx = 24, xLabel, yLabel }: { maxPx?: number; x
         </div>
         <Pairs rows={hit.rows} />
         {detail && detail.length > 0 && (
-          <div className="mt-1 border-t border-white/10 pt-1">
+          <div className="mt-1 border-t border-foreground/10 pt-1">
             <Pairs rows={detail} muted />
           </div>
         )}

@@ -45,7 +45,7 @@ export const LoadingClickChip = () => {
   return (
     <div
       ref={place}
-      className="pointer-events-none invisible absolute z-30 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/80 backdrop-blur-sm"
+      className="pointer-events-none invisible absolute z-30 rounded-md bg-background/60 px-2 py-1 text-[10px] text-foreground/80 backdrop-blur-sm"
     >
       Still loading here
     </div>

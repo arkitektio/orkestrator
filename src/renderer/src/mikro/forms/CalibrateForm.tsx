@@ -181,7 +181,7 @@ const CalibrateFormBody = (props: {
               className={`flex items-start gap-2 text-xs ${
                 issue.level === "error"
                   ? "text-destructive"
-                  : "text-amber-600 dark:text-amber-500"
+                  : "text-warning"
               }`}
             >
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />

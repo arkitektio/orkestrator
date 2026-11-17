@@ -51,7 +51,7 @@ const RoiTargetAttributes = ({
     return (
       <div className="flex items-center gap-1.5">
         {label}
-        <span className="text-[10px] text-red-700/70 dark:text-red-300/70">{error ?? "lookup failed"}</span>
+        <span className="text-[10px] text-destructive/70">{error ?? "lookup failed"}</span>
       </div>
     );
   }

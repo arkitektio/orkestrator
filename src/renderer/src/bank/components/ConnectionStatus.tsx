@@ -2,9 +2,9 @@ import { Badge } from "@/core/ui/badge";
 import { LinkStep, ConnectionStatus as Status } from "../api/graphql";
 
 const TONE: Record<Status, string> = {
-  [Status.Active]: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  [Status.Pending]: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  [Status.Expired]: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  [Status.Active]: "bg-success/15 text-success",
+  [Status.Pending]: "bg-warning/15 text-warning",
+  [Status.Expired]: "bg-warning/15 text-warning",
   [Status.Revoked]: "bg-muted text-muted-foreground",
   [Status.Failed]: "bg-destructive/15 text-destructive",
   [Status.Cancelled]: "bg-muted text-muted-foreground",

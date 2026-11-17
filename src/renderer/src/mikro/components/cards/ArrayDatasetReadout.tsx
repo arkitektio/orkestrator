@@ -17,13 +17,13 @@ const AxisChip = ({ axis, muted }: { axis: ArrayDatasetAxis; muted?: boolean }) 
     <span
       className={
         muted
-          ? 'text-xs font-medium tabular-nums text-white/70'
+          ? 'text-xs font-medium tabular-nums text-foreground/70'
           : 'text-base font-semibold tabular-nums'
       }
     >
       {axis.extent}
     </span>
-    <span className="text-[10px] font-light uppercase text-white/70">{axis.name}</span>
+    <span className="text-[10px] font-light uppercase text-foreground/70">{axis.name}</span>
   </span>
 )
 
@@ -68,7 +68,7 @@ export const ArrayDatasetReadout = ({
   return (
     <div className="flex h-full flex-col justify-between gap-2 px-3 py-2">
       <div className="flex min-w-0 flex-row items-start gap-2">
-        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-white/70" aria-label={spatial?.label} />
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" aria-label={spatial?.label} />
         <CardTitle className="min-w-0 break-words text-sm leading-tight line-clamp-2">
           {title}
         </CardTitle>
@@ -87,7 +87,7 @@ export const ArrayDatasetReadout = ({
           >
             <Badge
               variant="outline"
-              className="max-w-24 gap-1 border-white/40 px-1 py-0 text-[10px] font-normal text-white"
+              className="max-w-24 gap-1 border-foreground/40 px-1 py-0 text-[10px] font-normal text-foreground"
             >
               <Clapperboard className="h-3 w-3 shrink-0" />
               <span className="truncate">{defaultScene.name}</span>
@@ -106,7 +106,7 @@ export const ArrayDatasetReadout = ({
             ))}
           </div>
         ) : (
-          <span className="text-xs text-white/70">no spatial extent</span>
+          <span className="text-xs text-foreground/70">no spatial extent</span>
         )}
 
         <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
@@ -125,7 +125,7 @@ export const ArrayDatasetReadout = ({
           {multiscale && (
             <Badge
               variant="outline"
-              className="px-1 py-0 text-[10px] font-normal border-white/40 text-white"
+              className="px-1 py-0 text-[10px] font-normal border-foreground/40 text-foreground"
             >
               multiscale
             </Badge>

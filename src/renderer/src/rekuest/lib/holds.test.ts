@@ -2,7 +2,7 @@
 // (the generated rekuest API module reads `window` on import)
 import { describe, expect, it } from "vitest";
 import { TaskEventKind } from "../api/graphql";
-import { askClosed, decisionFromEvent, holdFromEvent, informFromEvent, pendingHolds } from "./holds";
+import { askClosed, decisionFromEvent, holdFromEvent, holdKey, informFromEvent, pendingHolds } from "./holds";
 
 const ev = (kind: TaskEventKind, value: unknown, createdAt: string, message: string | null = null) => ({
   kind,
@@ -78,6 +78,23 @@ describe("askClosed", () => {
   it("says ended once the task is done, whatever it was doing before", () => {
     expect(askClosed({ isDone: true, latestEventKind: TaskEventKind.Held })).toBe("ended");
     expect(askClosed({ events: [held, { kind: TaskEventKind.Cancelling }, { kind: TaskEventKind.Cancelled }] })).toBe("ended");
+  });
+});
+
+describe("a hold's key", () => {
+  it("differs between a task's own asks, so the next ask gets a fresh card", () => {
+    const first = { ...ev(TaskEventKind.Held, { kind: "self", prompt: { title: "Add another?" } }, "1"), id: "e1" };
+    const answer = { ...ev(TaskEventKind.Decided, { approved: true }, "2"), id: "e2" };
+    const second = { ...ev(TaskEventKind.Held, { kind: "self", prompt: { title: "Move it" } }, "3"), id: "e3" };
+    const before = pendingHolds([first]);
+    const after = pendingHolds([first, answer, second]);
+    expect(after.map((h) => h.title)).toEqual(["Move it"]);
+    expect(after[0].task).toBe(before[0].task);
+    expect(holdKey(after[0])).not.toBe(holdKey(before[0]));
+  });
+
+  it("falls back to the task when the event carries no id", () => {
+    expect(holdKey(holdFromEvent(ev(TaskEventKind.Held, { held: "c1" }, "1"))!)).toBe("c1");
   });
 });
 

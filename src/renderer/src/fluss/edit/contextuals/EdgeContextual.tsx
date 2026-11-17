@@ -65,7 +65,7 @@ export const EdgeContextual = ({ params }: { params: EdgeContextualParams }) => 
           size="icon"
           variant="outline"
           onClick={() => removeEdge(params.edgeId)}
-          className="text-red-800 w-5 h-5"
+          className="text-destructive w-5 h-5"
           tooltip="Remove Edge"
         >
           <X />

@@ -44,7 +44,7 @@ export const PinnedFolders = ({ className }: { className?: string }) => {
                 "hover:border-primary/30 hover:bg-muted/50",
               )}
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
                 <Folder className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">

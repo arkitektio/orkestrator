@@ -134,7 +134,7 @@ const RekuestMapWidgetInner: React.FC<RekuestMapNodeProps> = ({
           )}
         </NodeTitle>
         {status?.kind === RunEventKind.Error && (
-          <NodeDescription className="text-red-300">❌ {status.exception}</NodeDescription>
+          <NodeDescription className="text-destructive">❌ {status.exception}</NodeDescription>
         )}
         <NodeDescription>
           {data.description}

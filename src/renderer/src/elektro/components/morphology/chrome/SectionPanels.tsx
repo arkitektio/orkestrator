@@ -324,7 +324,7 @@ export const PanelOverlay = ({
           >
             {/* First child by contract with PanelProjector: the dot that marks
                 the clicked point, positioned relative to the card each frame. */}
-            <span className="pointer-events-none absolute left-0 top-0 z-10 -ml-[5px] -mt-[5px] h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-black/60" />
+            <span className="pointer-events-none absolute left-0 top-0 z-10 -ml-[5px] -mt-[5px] h-2.5 w-2.5 rounded-full bg-spectrum-red ring-2 ring-background/60" />
             <NeuronPanelCard
               modelId={modelId}
               cellId={cellOf.get(panel.sectionId)}

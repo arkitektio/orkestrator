@@ -163,12 +163,12 @@ export const CenterLodReadout = () => {
 
   return (
     <div
-      className="pointer-events-none absolute bottom-2 left-8 z-10 flex items-center gap-1 rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] tabular-nums text-white"
+      className="pointer-events-none absolute bottom-2 left-8 z-10 flex items-center gap-1 rounded bg-background/40 px-1 py-0.5 font-mono text-[10px] tabular-nums text-foreground"
       title={title}
     >
       <span>LOD {lod.level ?? "—"}</span>
-      <span className="text-white/50">{resolutionLabel}</span>
-      {refining && <span className="text-amber-300">→ {lod.target}</span>}
+      <span className="text-foreground/50">{resolutionLabel}</span>
+      {refining && <span className="text-warning">→ {lod.target}</span>}
     </div>
   );
 };

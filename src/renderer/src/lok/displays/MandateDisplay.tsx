@@ -33,7 +33,7 @@ export const MandateDisplay = ({ id, variant, className }: DisplayWidgetProps) =
         <span
           className={cn(
             "shrink-0 text-xs",
-            status === "live" ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+            status === "live" ? "text-success" : "text-muted-foreground",
           )}
         >
           {MANDATE_STATUS_LABEL[status]}

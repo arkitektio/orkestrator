@@ -15,7 +15,7 @@ const ProvenanceBadge = ({ probe }: { probe: ProbeResult }) => {
   const { source, level } = probe.provenance;
   if (source === "exact") {
     return (
-      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
+      <span className="rounded bg-success/20 px-1 text-[9px] font-medium text-success">
         exact
       </span>
     );

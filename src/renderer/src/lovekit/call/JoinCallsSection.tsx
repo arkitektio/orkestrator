@@ -47,8 +47,8 @@ export const JoinCallsSection = () => {
             return (
               <div key={call.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2" data-testid="join-call">
                 <span className="relative flex size-2 shrink-0">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+                  <span className="relative inline-flex size-2 rounded-full bg-success" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{call.title}</p>

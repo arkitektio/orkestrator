@@ -23,7 +23,7 @@ const Steps = ({ labels, current }: { labels: string[]; current: number }) => (
         <span
           className={cn(
             "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
-            i < current && "border-emerald-500 bg-emerald-500 text-white",
+            i < current && "border-success bg-success text-success-foreground",
             i === current && "border-foreground",
             i > current && "text-muted-foreground",
           )}
@@ -167,7 +167,7 @@ export const AuthFlowPanel = ({ auth, onRestart }: { auth: AuthFlowState; onRest
 
       {phase.kind === "done" && (
         <div className="flex flex-col items-center gap-2 rounded-lg border p-5 text-center text-sm">
-          <Check className="h-8 w-8 text-emerald-500" />
+          <Check className="h-8 w-8 text-success" />
           Linked.
         </div>
       )}

@@ -27,7 +27,7 @@ export const CallInviteNotifications = () => {
         const subject = currentTopic(invite.call);
         return (
           <div key={invite.id} className="flex items-start gap-2 rounded-lg bg-muted/50 p-2" data-testid="call-invite">
-            <Phone className="mt-0.5 size-3 shrink-0 animate-pulse text-emerald-500" />
+            <Phone className="mt-0.5 size-3 shrink-0 animate-pulse text-success" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs">
                 <span className="font-medium text-foreground">

@@ -4,6 +4,7 @@ import {blokCatalogSpec, declareBlokUi, type BlokCatalog, type BlokComponentDefi
 import {addBlokComponents as addToCatalog} from '@arkitektio/bsx/web';
 import {ORKESTRATOR_CATALOG_ID, parseSpecCatalog, setAppBlokCatalog} from '@arkitektio/bsx/spec/catalogs';
 import {hostedStructure} from '@arkitektio/bsx/ports/structure/index';
+import {withAppScene} from './scene';
 
 /**
  * The Orkestrator's catalog: what it draws beyond the base catalog. A blok
@@ -20,14 +21,15 @@ export const UI_CATALOG_DESCRIPTION =
 
 /**
  * Orkestrator's UI: the base catalog whole, drawn with the package's shadcn
- * and three implementations and its structure parts through the port host
+ * and three implementations (the scene's surface is the app's own,
+ * `scene/`) and its structure parts through the port host
  * (`portHost.tsx`). Its modules add their bloks to the catalog at install
  * (`addBlokComponents`): those are its own catalog.
  */
 export const orkestratorUi = declareBlokUi({
   name: UI_CATALOG_NAME,
   description: UI_CATALOG_DESCRIPTION,
-  implements: [shadcnUi, shadcnHtml, shadcnLogo, shadcnExtras, threeScene, hostedStructure],
+  implements: [shadcnUi, shadcnHtml, shadcnLogo, shadcnExtras, withAppScene(threeScene), hostedStructure],
 });
 
 export const defaultBlokCatalog: BlokCatalog = orkestratorUi.catalog;

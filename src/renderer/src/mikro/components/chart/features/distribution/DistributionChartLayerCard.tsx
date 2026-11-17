@@ -136,7 +136,7 @@ export const DistributionChartLayerCard = ({ layer, hidden, onToggleHidden }: La
               value={readout?.total != null ? `${readout.total.toLocaleString()}${readout.loading ? " …" : ""}` : readout?.loading ? "…" : null}
             />
             {readout?.note && <div className="text-[10px] text-foreground/40">{readout.note}</div>}
-            {layer.sourceFailure && <div className="text-[10px] text-amber-300/70">{layer.sourceFailure}</div>}
+            {layer.sourceFailure && <div className="text-[10px] text-warning/70">{layer.sourceFailure}</div>}
           </ChartFacts>
         </>
       )}

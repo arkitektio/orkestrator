@@ -87,10 +87,10 @@ export const LandmarkPanel = () => {
           className="justify-start"
         >
           <ToggleGroupItem value="fixed" className="text-xs" disabled={!fixedLayerId}>
-            <Crosshair className="text-cyan-400" /> fixed
+            <Crosshair className="text-spectrum-cyan" /> fixed
           </ToggleGroupItem>
           <ToggleGroupItem value="moving" className="text-xs">
-            <Crosshair className="text-amber-400" /> moving
+            <Crosshair className="text-warning" /> moving
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -102,7 +102,7 @@ export const LandmarkPanel = () => {
         </div>
       )}
       {pickSide && pickBlocked && (
-        <div className="text-[0.65rem] text-amber-500">
+        <div className="text-[0.65rem] text-warning">
           This scene cannot pick points here: picking rides the probe, which needs an image or label layer.
         </div>
       )}
@@ -119,8 +119,8 @@ export const LandmarkPanel = () => {
                 onMouseLeave={() => api.getState().setHighlightedLandmark(null)}
               >
                 <span className="w-4 text-muted-foreground">{index + 1}</span>
-                <span className={landmark.fixed ? "text-cyan-400" : "text-muted-foreground/40"}>fixed</span>
-                <span className={landmark.moving ? "text-amber-400" : "text-muted-foreground/40"}>moving</span>
+                <span className={landmark.fixed ? "text-spectrum-cyan" : "text-muted-foreground/40"}>fixed</span>
+                <span className={landmark.moving ? "text-warning" : "text-muted-foreground/40"}>moving</span>
                 <span className="flex-1 text-right font-mono">
                   {residual === undefined ? "—" : `${format(residual)} ${unit}`}
                 </span>

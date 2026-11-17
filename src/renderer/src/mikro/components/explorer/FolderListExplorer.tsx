@@ -797,13 +797,13 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
         {canDrop ? (
           <div
             className={cn(
-              "pointer-events-none absolute inset-3 z-20 rounded-2xl border border-dashed border-emerald-500/60 bg-emerald-500/8 transition-opacity",
+              "pointer-events-none absolute inset-3 z-20 rounded-2xl border border-dashed border-success/60 bg-success/8 transition-opacity",
               isOver ? "opacity-100" : "opacity-70",
             )}
           >
-            <div className="absolute inset-x-6 top-6 rounded-xl border border-emerald-500/40 bg-background/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="absolute inset-x-6 top-6 rounded-xl border border-success/40 bg-background/95 px-4 py-3 shadow-lg backdrop-blur">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/15 text-success">
                   <Folder className="h-5 w-5" />
                 </div>
                 <div>
@@ -860,7 +860,7 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
             )}
 
             {error && (
-              <div className="flex items-center justify-center py-12 text-red-500">
+              <div className="flex items-center justify-center py-12 text-destructive">
                 {error.message}
               </div>
             )}

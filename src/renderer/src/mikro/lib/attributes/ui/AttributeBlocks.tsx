@@ -62,7 +62,7 @@ const StatusBadge = ({ state }: { state: PlanRowsState }) => {
   }
   if (state.status === "rows") {
     return state.sampleSource === "exact" ? (
-      <span className="rounded bg-emerald-500/20 px-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
+      <span className="rounded bg-success/20 px-1 text-[9px] font-medium text-success">
         exact
       </span>
     ) : (
@@ -114,7 +114,7 @@ const ReferenceFollowUp = ({
     return <span className="text-[9px] text-foreground/40">…</span>;
   }
   if (state.phase === "error") {
-    return <span className="text-[9px] text-red-700/70 dark:text-red-300/70">lookup failed</span>;
+    return <span className="text-[9px] text-destructive/70">lookup failed</span>;
   }
   return (
     <div className="col-span-2 ml-2 space-y-0.5 border-l border-foreground/10 pl-2">
@@ -256,12 +256,12 @@ export const AttributePlanBlock = ({
             <span className="truncate text-[9px] text-foreground/35">{meta.via}</span>
           )}
           {sparse && (
-            <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-700/80 dark:text-sky-200/80">
+            <span className="rounded bg-info/20 px-1 text-[9px] font-medium text-info/80">
               matrix
             </span>
           )}
           {array && (
-            <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-700/80 dark:text-amber-200/80">
+            <span className="rounded bg-warning/20 px-1 text-[9px] font-medium text-warning/80">
               array
             </span>
           )}
@@ -279,7 +279,7 @@ export const AttributePlanBlock = ({
         <span className="text-[10px] text-foreground/40">background</span>
       )}
       {state.status === "error" && (
-        <span className="text-[10px] text-red-700/70 dark:text-red-300/70">{state.error ?? "failed"}</span>
+        <span className="text-[10px] text-destructive/70">{state.error ?? "failed"}</span>
       )}
       {state.status === "rows" && state.rows.length === 0 && !state.series && !state.lines?.length && (
         <span className="text-[10px] text-foreground/40">

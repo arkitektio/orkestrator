@@ -56,8 +56,8 @@ const STATE_LABEL: Record<PartState, string> = {
 };
 
 const STROKE: Record<PartState, string> = {
-  ok: "text-emerald-500",
-  warning: "text-amber-500",
+  ok: "text-success",
+  warning: "text-warning",
   failed: "text-destructive",
   unknown: "text-muted-foreground/50",
   checking: "text-muted-foreground/70",
@@ -65,8 +65,8 @@ const STROKE: Record<PartState, string> = {
 };
 
 const BORDER: Record<PartState, string> = {
-  ok: "border-emerald-500/40",
-  warning: "border-amber-500/50",
+  ok: "border-success/40",
+  warning: "border-warning/50",
   failed: "border-destructive/60",
   unknown: "border-dashed border-border",
   checking: "border-dashed border-border",
@@ -75,7 +75,7 @@ const BORDER: Record<PartState, string> = {
 
 const REASON: Partial<Record<PartState, string>> = {
   failed: "text-destructive",
-  warning: "text-amber-600 dark:text-amber-400",
+  warning: "text-warning",
 };
 
 const dashed = (state: PartState) => state === "unknown" || state === "absent" || state === "checking";
@@ -366,7 +366,7 @@ const Relay = ({ data }: NodeProps<RelayNode>) => (
             ? "border-destructive/60 text-destructive"
             : data.standby
               ? "border-border text-muted-foreground/70"
-              : "border-amber-500/60 text-amber-600 dark:text-amber-400",
+              : "border-warning/60 text-warning",
         )}
         style={{ pointerEvents: "all" }}
       >
@@ -379,7 +379,7 @@ const Relay = ({ data }: NodeProps<RelayNode>) => (
     }
     title={`DERP ${data.region}`}
     subtitle={data.standby ? "relay, not in use" : "relay"}
-    icon={<Radio className={cn("size-3.5", data.standby ? "text-muted-foreground" : "text-amber-500")} aria-hidden />}
+    icon={<Radio className={cn("size-3.5", data.standby ? "text-muted-foreground" : "text-warning")} aria-hidden />}
   >
     <p className="text-xs text-muted-foreground">{RELAY_NOTE}</p>
   </Hover>
@@ -398,7 +398,7 @@ const aliasWire = (path: AliasPath, state: PartState, group?: { inUse: boolean; 
   if (standby) return { className: "text-muted-foreground/35", style: { stroke: "currentColor", strokeWidth: 1.5 } };
   if (inUse) {
     return {
-      className: path.relay ? "text-amber-400" : "text-emerald-400",
+      className: path.relay ? "text-warning" : "text-success",
       style: { stroke: "currentColor", strokeWidth: 3 },
     };
   }
@@ -569,7 +569,7 @@ const Alias = ({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<Alias
                 <p className={cn("text-xs", path.state === "failed" && !path.standby ? "text-destructive" : "text-muted-foreground")}>
                   {said}
                 </p>
-                {path.relay && <p className="text-xs text-amber-600 dark:text-amber-400">{RELAY_NOTE}</p>}
+                {path.relay && <p className="text-xs text-warning">{RELAY_NOTE}</p>}
               </div>
             </Hover>
           </div>

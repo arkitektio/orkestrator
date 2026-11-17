@@ -23,6 +23,8 @@ export const AgentBloksPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) =
       title={`${data.agent.name} — Bloks`}
       help={REKUEST_HELP.agentBloks}
       object={data.agent}
+      // The breadcrumb reads the agent's name, not its number.
+      crumbs={{ [data.agent.id]: data.agent.name }}
     >
       <div className="p-6">
         <ListRender

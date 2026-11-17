@@ -16,9 +16,9 @@ export type LineMark = { line: number; tone: "running" | "done" | "failed" | "id
 const MARKER_OWNER = "fluss-monty";
 
 const TONE_CLASS: Record<LineMark["tone"], string> = {
-  running: "border-l-4 border-blue-500",
-  done: "border-l-4 border-green-500",
-  failed: "border-l-4 border-red-500",
+  running: "border-l-4 border-info",
+  done: "border-l-4 border-success",
+  failed: "border-l-4 border-destructive",
   idle: "border-l-4 border-muted-foreground/40",
 };
 

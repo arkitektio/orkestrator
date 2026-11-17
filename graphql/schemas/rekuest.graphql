@@ -5059,11 +5059,21 @@ type Patch {
   id: ID!
   interface: String!
 
+  """
+  Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` (a task being stopped, on its way out) or `shutdown` (the agent's shutdown hooks). Said by the agent's runtime.
+  """
+  lifecycle: String
+
   """The value the patch replaced, when the agent reported it."""
   oldValue: Args
   op: String!
   patch: JSONPatch!
   path: String!
+
+  """
+  What the app says the change was for: its own names. Empty when it said nothing.
+  """
+  qualifiers: [String!]!
 
   """The session identifier string this row belongs to."""
   sessionId: String
@@ -7177,10 +7187,21 @@ type StatePatchEvent {
   agentId: ID!
   globalRevision: Int!
   interface: String!
+
+  """
+  Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` or `shutdown`.
+  """
+  lifecycle: String
   op: String!
   path: String!
+
+  """What the app says the change was for: its own names."""
+  qualifiers: [String!]!
   sessionId: String
   stateId: ID!
+
+  """The task that made the change, if one did."""
+  taskId: ID
   timestamp: DateTime
   value: Args!
 }

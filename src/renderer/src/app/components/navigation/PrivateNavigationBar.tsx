@@ -79,9 +79,9 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
       <div>
         <div className="text-xs font-semibold mb-2 flex items-center gap-2">
           {isConnected ? (
-            <CheckCircle className="w-3 h-3 text-green-500" />
+            <CheckCircle className="w-3 h-3 text-success" />
           ) : (
-            <XCircle className="w-3 h-3 text-red-500" />
+            <XCircle className="w-3 h-3 text-destructive" />
           )}
           {serviceState.key}
         </div>
@@ -100,15 +100,15 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
 
       {connectedAlias ? (
         <div>
-          <div className="text-xs font-semibold mb-1 text-green-600 dark:text-green-400">✓ Connected Alias:</div>
-          <div className="text-xs bg-green-500/10 text-green-700 dark:text-green-400 p-2 rounded border border-green-500/20 font-mono">
+          <div className="text-xs font-semibold mb-1 text-success">✓ Connected Alias:</div>
+          <div className="text-xs bg-success/10 text-success p-2 rounded border border-success/20 font-mono">
             {aliasToHttpPath(connectedAlias, "")}
           </div>
         </div>
       ) : (
         <div>
-          <div className="text-xs font-semibold mb-1 text-red-600 dark:text-red-400">✗ No Connected Alias</div>
-          <div className="text-xs bg-red-500/10 text-red-700 dark:text-red-400 p-2 rounded border border-red-500/20">
+          <div className="text-xs font-semibold mb-1 text-destructive">✗ No Connected Alias</div>
+          <div className="text-xs bg-destructive/10 text-destructive p-2 rounded border border-destructive/20">
             Service is not currently connected
           </div>
         </div>
@@ -129,16 +129,16 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
                     className={cn(
                       "text-xs p-2 rounded border font-mono",
                       isConnected
-                        ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                        : "bg-red-500/5 text-muted-foreground border-red-500/20"
+                        ? "bg-success/10 text-success border-success/20"
+                        : "bg-destructive/5 text-muted-foreground border-destructive/20"
                     )}
                   >
-                    {isConnected && <span className="text-green-600 dark:text-green-500 mr-1">✓</span>}
-                    {!isConnected && <span className="text-red-600 dark:text-red-500 mr-1">✗</span>}
+                    {isConnected && <span className="text-success mr-1">✓</span>}
+                    {!isConnected && <span className="text-destructive mr-1">✗</span>}
                     {url}
                   </div>
                   {!isConnected && hasErrors && (
-                    <div className="text-xs text-red-600 dark:text-red-400 pl-3 pt-0.5 italic">
+                    <div className="text-xs text-destructive pl-3 pt-0.5 italic">
                       Failed to connect
                     </div>
                   )}
@@ -151,12 +151,12 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
 
       {hasErrors && (
         <div>
-          <div className="text-xs font-semibold mb-1 text-red-600 dark:text-red-400">Connection Errors:</div>
+          <div className="text-xs font-semibold mb-1 text-destructive">Connection Errors:</div>
           <div className="space-y-1">
             {serviceState.errors.map((error, index) => (
               <div
                 key={index}
-                className="text-xs bg-red-500/10 text-red-700 dark:text-red-400 p-2 rounded border border-red-500/20"
+                className="text-xs bg-destructive/10 text-destructive p-2 rounded border border-destructive/20"
               >
                 {error}
               </div>
@@ -196,7 +196,7 @@ const ModuleConnectionFooter = ({ moduleKey }: { moduleKey: string }) => {
   if (moduleState?.status === "ready" && serviceState?.alias) {
     return (
       <div className="mt-2 flex items-center gap-2 border-t border-border/50 px-1.5 pt-1.5 text-[11px] text-muted-foreground">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
         <span className="min-w-0 truncate font-mono">{aliasToHttpPath(serviceState.alias, "")}</span>
         {retry}
       </div>

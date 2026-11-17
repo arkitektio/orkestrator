@@ -9,8 +9,8 @@ import { Viewport } from "./viewport";
 const Row = ({ label, amount, share }: { label: React.ReactNode; amount: string; share: number }) => (
   <div className="flex items-center justify-between gap-3 py-0.5">
     <span className="min-w-0 truncate">{label}</span>
-    <span className="shrink-0 tabular-nums text-white/70">
-      {(share * 100).toFixed(0)}% · <span className="text-white">{amount}</span>
+    <span className="shrink-0 tabular-nums text-foreground/70">
+      {(share * 100).toFixed(0)}% · <span className="text-foreground">{amount}</span>
     </span>
   </div>
 );
@@ -37,18 +37,18 @@ export const AreaStatsPanel = ({ viewport }: { viewport: Viewport }) => {
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-9 left-2 z-10 flex max-h-[60%] w-72 max-w-[calc(100%-1rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-black/10 bg-black/40 p-3 text-xs text-white backdrop-blur-md"
+      className="dark pointer-events-auto absolute bottom-9 left-2 z-10 flex max-h-[60%] w-72 max-w-[calc(100%-1rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-background/10 bg-background/40 p-3 text-xs text-foreground backdrop-blur-md"
       onWheel={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-white/60">In view · 12 months</span>
-        <span className="text-white/60">{total.count}×</span>
+        <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/60">In view · 12 months</span>
+        <span className="text-foreground/60">{total.count}×</span>
       </div>
       <div className="text-lg font-semibold tabular-nums">{formatMoney(total.expense, total.currency)}</div>
       {merchants.length > 0 && (
         <div className="flex flex-col">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-white/60">Merchants</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/60">Merchants</span>
           {merchants.map((row) => (
             <Row
               key={row.merchant?.id ?? "none"}
@@ -61,7 +61,7 @@ export const AreaStatsPanel = ({ viewport }: { viewport: Viewport }) => {
                     <span className="truncate">{row.merchant.name}</span>
                   </BankMerchant.DetailLink>
                 ) : (
-                  <span className="italic text-white/60">No merchant</span>
+                  <span className="italic text-foreground/60">No merchant</span>
                 )
               }
             />
@@ -70,7 +70,7 @@ export const AreaStatsPanel = ({ viewport }: { viewport: Viewport }) => {
       )}
       {categories.length > 0 && (
         <div className="flex flex-col">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-white/60">Categories</span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/60">Categories</span>
           {categories.map((row) => (
             <Row
               key={row.category?.id ?? "none"}
@@ -80,13 +80,13 @@ export const AreaStatsPanel = ({ viewport }: { viewport: Viewport }) => {
                 row.category ? (
                   <BankCategory.DetailLink object={row.category} className="flex min-w-0 items-center gap-1.5 hover:underline">
                     <span
-                      className="h-2 w-2 shrink-0 rounded-full bg-white/60"
+                      className="h-2 w-2 shrink-0 rounded-full bg-foreground/60"
                       style={row.category.color ? { backgroundColor: row.category.color } : undefined}
                     />
                     <span className="truncate">{row.category.name}</span>
                   </BankCategory.DetailLink>
                 ) : (
-                  <span className="italic text-white/60">Uncategorized</span>
+                  <span className="italic text-foreground/60">Uncategorized</span>
                 )
               }
             />

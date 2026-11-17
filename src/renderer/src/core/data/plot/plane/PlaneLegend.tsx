@@ -14,7 +14,7 @@ export type LegendScale = { title: string; colormap: ColorMap; lo: number; hi: n
 export const PlaneLegend = ({ entries, scale }: { entries: readonly LegendEntry[]; scale?: LegendScale | null }) => {
   if (entries.length <= 1 && !scale) return null;
   return (
-    <div className="pointer-events-auto absolute right-2 top-2 flex max-h-[45%] w-44 flex-col gap-1.5 overflow-y-auto rounded-md border border-white/10 bg-zinc-950/75 p-2 text-[10px] backdrop-blur">
+    <div className="pointer-events-auto absolute right-2 top-2 flex max-h-[45%] w-44 flex-col gap-1.5 overflow-y-auto rounded-md border border-foreground/10 bg-popover/75 p-2 text-[10px] backdrop-blur">
       {entries.length > 1 &&
         entries.map((entry) => (
           <div key={entry.key} className={`flex items-center gap-1.5 ${entry.muted ? "opacity-40" : ""}`}>

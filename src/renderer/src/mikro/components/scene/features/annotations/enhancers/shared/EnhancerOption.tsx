@@ -24,7 +24,7 @@ export const EnhancerOption = ({
 }) => {
   const body = (
     <>
-      <span className="flex h-9 w-14 shrink-0 items-center justify-center rounded bg-black/40">
+      <span className="dark flex h-9 w-14 shrink-0 items-center justify-center rounded bg-background/40 text-foreground">
         {illustration}
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">

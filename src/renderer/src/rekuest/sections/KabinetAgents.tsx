@@ -39,7 +39,7 @@ export const BackendAgents = ({ object }: SectionProps) => {
           className="text-sm font-medium hover:underline"
         >
           <Button variant="ghost" size="sm">
-            {agent.connected ? <span className="text-green-400">● </span> : <span className="text-red-400">● </span>}
+            {agent.connected ? <span className="text-success">● </span> : <span className="text-destructive">● </span>}
             {agent.name || "No Agent"}
           </Button>
         </RekuestAgent.DetailLink>

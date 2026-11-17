@@ -68,7 +68,7 @@ export const OcrOverlay: React.FC<OcrOverlayProps> = ({ page, imageRef, show }) 
           </svg>
           {/* Text label */}
           <div
-            className="absolute text-xs bg-black/70 text-white px-1 py-0.5 rounded pointer-events-none"
+            className="dark absolute text-xs bg-background/70 text-foreground px-1 py-0.5 rounded pointer-events-none"
             style={{
               left: line.bbox[0]?.[0] * scaleX || 0,
               top: (line.bbox[0]?.[1] || 0) * scaleY - 20,

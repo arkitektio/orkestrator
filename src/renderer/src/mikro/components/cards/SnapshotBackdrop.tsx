@@ -29,7 +29,7 @@ export const SnapshotBackdrop = ({
   className?: string
   children?: React.ReactNode
 }) => (
-  <div className={cn('relative overflow-hidden bg-black text-white', className)}>
+  <div className={cn('dark relative overflow-hidden bg-background text-foreground', className)}>
     <WithMikroMediaUrl media={snapshot?.store}>
       {(url) => (
         <img
@@ -42,7 +42,7 @@ export const SnapshotBackdrop = ({
 
     {/* Darkens top and bottom and leaves the middle of the picture alone: the
         two edges are where every card puts its text. */}
-    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-black/80" />
+    <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/20 to-background/80" />
 
     <div className="relative h-full w-full">{children}</div>
   </div>

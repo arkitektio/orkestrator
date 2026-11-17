@@ -164,7 +164,7 @@ const PropertyField = ({
             value={value !== null && value !== undefined ? String(value) : ""}
             onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : null)}
             placeholder={`Enter ${definition.label || definition.key}`}
-            className={error ? "border-red-500" : ""}
+            className={error ? "border-destructive" : ""}
           />
         );
 
@@ -176,7 +176,7 @@ const PropertyField = ({
             value={value !== null && value !== undefined ? String(value) : ""}
             onChange={(e) => onChange(e.target.value ? parseFloat(e.target.value) : null)}
             placeholder={`Enter ${definition.label || definition.key}`}
-            className={error ? "border-red-500" : ""}
+            className={error ? "border-destructive" : ""}
           />
         );
 
@@ -185,7 +185,7 @@ const PropertyField = ({
           <DateTimePicker
             value={value instanceof Date ? value : value ? new Date(String(value)) : undefined}
             onChange={(date) => onChange(date || null)}
-            className={error ? "border-red-500" : ""}
+            className={error ? "border-destructive" : ""}
             locale={enUS}
             weekStartsOn={0}
             showWeekNumber={false}
@@ -201,7 +201,7 @@ const PropertyField = ({
               value={value ? String(value) : ""}
               onChange={(e) => onChange(e.target.value || null)}
               placeholder={`Enter ${definition.label || definition.key}`}
-              className={error ? "border-red-500" : ""}
+              className={error ? "border-destructive" : ""}
               rows={3}
             />
           );
@@ -212,7 +212,7 @@ const PropertyField = ({
             value={value ? String(value) : ""}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder={`Enter ${definition.label || definition.key}`}
-            className={error ? "border-red-500" : ""}
+            className={error ? "border-destructive" : ""}
           />
         );
 
@@ -224,7 +224,7 @@ const PropertyField = ({
             value={value ? String(value) : ""}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder={`Enter ${definition.label || definition.key}`}
-            className={error ? "border-red-500" : ""}
+            className={error ? "border-destructive" : ""}
           />
         );
     }
@@ -240,7 +240,7 @@ const PropertyField = ({
       )}
       {renderInput()}
       {error && (
-        <div className="flex items-center gap-1 text-xs text-red-500">
+        <div className="flex items-center gap-1 text-xs text-destructive">
           <AlertCircle className="h-3 w-3" />
           <span>{error}</span>
         </div>

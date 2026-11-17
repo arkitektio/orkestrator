@@ -181,14 +181,14 @@ export const NeuronModelTree: React.FC<Props> = ({ model, embedded = false }) =>
       <div
         className={
           embedded
-            ? "pointer-events-auto absolute bottom-2 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md"
+            ? "dark text-foreground pointer-events-auto absolute bottom-2 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md"
             : "absolute top-2 left-2 z-10 flex h-10 flex-row items-center gap-2 overflow-hidden rounded-md bg-card px-2"
         }
       >
         <Button
           variant="outline"
           size={embedded ? "xs" : "icon"}
-          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
+          className={embedded ? "h-7 w-8 bg-background p-0" : undefined}
           onClick={() => reactFlowInstance?.zoomIn()}
           title="Zoom in"
         >
@@ -197,7 +197,7 @@ export const NeuronModelTree: React.FC<Props> = ({ model, embedded = false }) =>
         <Button
           variant="outline"
           size={embedded ? "xs" : "icon"}
-          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
+          className={embedded ? "h-7 w-8 bg-background p-0" : undefined}
           onClick={() => reactFlowInstance?.zoomOut()}
           title="Zoom out"
         >
@@ -206,7 +206,7 @@ export const NeuronModelTree: React.FC<Props> = ({ model, embedded = false }) =>
         <Button
           variant="outline"
           size={embedded ? "xs" : "icon"}
-          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
+          className={embedded ? "h-7 w-8 bg-background p-0" : undefined}
           onClick={() => reactFlowInstance?.fitView()}
           title="Fit view (F)"
         >

@@ -97,7 +97,7 @@ const ChildLogRow = memo(function ChildLogRow(props: { child: ChildTask }) {
     <LogLine
       time={child.createdAt}
       label="Call"
-      labelClassName="text-blue-400"
+      labelClassName="text-info"
     >
       <div className="flex min-w-0 items-baseline gap-2 font-sans">
         <div className="min-w-0 flex-1">
@@ -118,10 +118,10 @@ const ChildLogRow = memo(function ChildLogRow(props: { child: ChildTask }) {
 
 /** Between two runs of a workflow: its agent died, the server resent it. */
 const ResumeDivider = (props: { attempt: number }) => (
-  <li className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-    <span className="h-px flex-1 bg-amber-500/30" />
+  <li className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-warning">
+    <span className="h-px flex-1 bg-warning/30" />
     Resumed from journal · run {props.attempt + 1}
-    <span className="h-px flex-1 bg-amber-500/30" />
+    <span className="h-px flex-1 bg-warning/30" />
   </li>
 );
 
@@ -223,7 +223,7 @@ const TaskLogEntry = memo(function TaskLogEntry(props: {
     case TaskEventKind.Lost:
       return (
         <LogRow event={e}>
-          <span className="text-amber-600 dark:text-amber-400">
+          <span className="text-warning">
             {readLostDetails(e.value).reason ??
               e.message ??
               "its agent was lost while it ran"}

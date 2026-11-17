@@ -75,7 +75,7 @@ export const ActionHoverCard = ({ object }: { object: Object }) => {
           label="Recent runs"
           value={
             <span className="inline-flex gap-2">
-              <span className="text-green-500">{done} done</span>
+              <span className="text-success">{done} done</span>
               {failed > 0 && (
                 <span className="text-destructive">{failed} failed</span>
               )}

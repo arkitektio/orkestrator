@@ -88,11 +88,9 @@ export const DragZone: React.FC<{
       {uploadFutures.map((future, index) => (
         <div
           key={index}
-          className="border border-gray-800 cursor-pointer rounded  text-white bg-gray-900 hover:shadow-lg group relative"
+          className="border border-border cursor-pointer rounded text-card-foreground bg-card hover:shadow-lg group relative"
           style={{
-            background: `center bottom linear-gradient(to right, rgba(0,220,0,0.75) ${future.progress && Math.floor(future.progress * 100)
-              }%, rgba(0,0,0,0.95) ${future.progress && Math.floor(future.progress * 100)
-              }% ${future.progress && Math.floor((1 - future.progress) * 100)}%)`,
+            backgroundImage: `linear-gradient(to right, color-mix(in oklab, var(--success) 35%, transparent) ${Math.floor((future.progress ?? 0) * 100)}%, transparent ${Math.floor((future.progress ?? 0) * 100)}%)`,
           }}
         >
           <div className="min-w-0 p-5">
@@ -100,7 +98,7 @@ export const DragZone: React.FC<{
           </div>
           <button
             type="button"
-            className="hidden group-hover:block text-white-500 bg-red-500 rounded-md text px-2 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 b"
+            className="hidden group-hover:block text-white bg-destructive rounded-md px-2 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2"
             onClick={() => future.controller.abort()}
           >
             x

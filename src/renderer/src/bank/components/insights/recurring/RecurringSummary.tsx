@@ -56,7 +56,7 @@ export const RecurringSummary = () => {
 
       {insights.missed.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-destructive">
             Missed · expected more than 3 days ago, not seen since
           </span>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
@@ -87,8 +87,8 @@ export const RecurringSummary = () => {
                         className={cn(
                           "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
                           up
-                            ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-success/10 text-success",
                         )}
                       >
                         {up ? "+" : "−"}

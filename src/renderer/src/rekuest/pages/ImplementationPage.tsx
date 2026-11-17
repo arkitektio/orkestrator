@@ -119,7 +119,7 @@ export const DoForm = ({ id }: { id: string }) => {
       {errorEvent && (
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle className="font-light text-red-800">
+            <CardTitle className="font-light text-destructive">
               Errors
             </CardTitle>
           </CardHeader>
@@ -496,7 +496,7 @@ export const DefaultRenderer = (props: {
             <DynamicCapabilityBadges implementation={i} />
             <span
               className={
-                i.agent.connected ? "text-emerald-500" : "text-muted-foreground"
+                i.agent.connected ? "text-success" : "text-muted-foreground"
               }
             >
               ●

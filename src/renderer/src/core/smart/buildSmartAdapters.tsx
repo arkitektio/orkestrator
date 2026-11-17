@@ -28,6 +28,8 @@ export type SmartModelPage<T extends Object = Object> = {
   chat?: boolean;
   /** What the page also stands for in the ⌘K palette (a container's whole lens). */
   related?: RelatedContext[];
+  /** What a breadcrumb reads as in place of its path segment (an id → the object's name) — see PageLayout. */
+  crumbs?: Readonly<Record<string, React.ReactNode>>;
   callback?: (object: T) => void;
 };
 

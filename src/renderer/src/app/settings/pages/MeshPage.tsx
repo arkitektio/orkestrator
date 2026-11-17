@@ -176,7 +176,7 @@ const Notice = ({
     className={cn(
       "flex items-start gap-2.5 rounded-lg border px-3.5 py-3 text-sm",
       tone === "muted" && "border-dashed text-muted-foreground",
-      tone === "warn" && "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300",
+      tone === "warn" && "border-warning/30 bg-warning/5 text-warning",
       tone === "bad" && "border-destructive/30 bg-destructive/5 text-destructive",
     )}
   >
@@ -601,7 +601,7 @@ const LockCard = ({
 /** Signed: whether this computer may also approve others, and its key for a signer. */
 const LockSigned = ({ lock }: { lock: MeshLockStatus }) => (
   <div className="flex items-center gap-1.5 text-sm">
-    <ShieldCheck className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+    <ShieldCheck className="size-3.5 shrink-0 text-success" />
     <span className="min-w-0 flex-1">
       {lock.trusted ? "On. This computer is a signer and can approve new machines." : "On. This computer is signed."}
     </span>

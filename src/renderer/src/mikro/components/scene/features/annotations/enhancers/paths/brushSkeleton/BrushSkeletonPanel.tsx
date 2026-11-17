@@ -150,7 +150,7 @@ export const BrushSkeletonPanel = () => {
       )}
       <span className="text-[10px] text-muted-foreground">
         {message ? (
-          <span className="text-amber-300/90">{message}</span>
+          <span className="text-warning/90">{message}</span>
         ) : status === "painting" ? (
           "Painting — release to extract the centerline"
         ) : status === "extracting" ? (

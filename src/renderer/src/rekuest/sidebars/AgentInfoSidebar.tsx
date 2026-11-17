@@ -136,7 +136,7 @@ export const AgentFacts = ({ agent }: { agent: AgentFragment }) => {
           <span
             className={cn(
               "h-2 w-2 shrink-0 rounded-full",
-              agent.connected ? "bg-green-500" : "bg-red-500",
+              agent.connected ? "bg-success" : "bg-destructive",
             )}
           />
           <span className="font-medium">{agent.connected ? "Online" : "Offline"}</span>

@@ -59,7 +59,7 @@ const Row = ({
     <div className="flex min-w-0 flex-1 flex-col">
       <span className="truncate text-sm">{title}</span>
       {detail && <span className="truncate font-mono text-[11px] text-muted-foreground">{detail}</span>}
-      {note && <span className="text-[11px] text-amber-500">{note}</span>}
+      {note && <span className="text-[11px] text-warning">{note}</span>}
     </div>
     {action}
   </div>

@@ -39,7 +39,7 @@ export const UnplannableNotice = ({
 
   return (
     <div
-      className="flex items-center gap-2 border-t border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-700 dark:text-amber-200"
+      className="flex items-center gap-2 border-t border-warning/30 bg-warning/10 px-2 py-1 text-[10px] text-warning"
       title={`This layer has no usable multiscale pyramid: keeping its coarsest level resident would need ${formatBytes(info.floorBytes)} of GPU memory (budget ${formatBytes(info.capBytes)}). Provide a pyramidal (multiscale) version of the data to render it in ${info.mode}.`}
     >
       <span className="min-w-0 flex-1 truncate">
@@ -47,7 +47,7 @@ export const UnplannableNotice = ({
       </span>
       {otherViable && (
         <button
-          className="shrink-0 rounded border border-amber-400/40 px-1.5 py-0.5 font-medium transition-colors hover:bg-amber-400/20"
+          className="shrink-0 rounded border border-warning/40 px-1.5 py-0.5 font-medium transition-colors hover:bg-warning/20"
           onClick={() => setDisplayMode(otherMode)}
         >
           switch to {otherMode}

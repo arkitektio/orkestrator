@@ -9,7 +9,7 @@ import { cn } from "@/core/util/utils";
  */
 
 const CELL: Record<StageState, { mark: string; className: string }> = {
-  ok: { mark: "✓", className: "text-emerald-600 dark:text-emerald-400" },
+  ok: { mark: "✓", className: "text-success" },
   failed: { mark: "✗", className: "text-destructive" },
   skipped: { mark: "–", className: "text-muted-foreground/60" },
 };

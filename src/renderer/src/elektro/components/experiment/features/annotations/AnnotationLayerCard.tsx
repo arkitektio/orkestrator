@@ -37,7 +37,7 @@ export const AnnotationLayerCard = ({ layer, hidden, onToggleHidden }: LayerCard
       onToggle={() => onToggleHidden(layer.id, !hidden)}
       aside={<LayerMenu layerId={layer.id} label={layer.label} />}
     >
-      {message && <div className="text-[11px] text-amber-500">{message}</div>}
+      {message && <div className="text-[11px] text-warning">{message}</div>}
       <PlacementFix layer={layer} />
       {marks && (
         <div className="flex flex-col gap-0.5">
@@ -45,7 +45,7 @@ export const AnnotationLayerCard = ({ layer, hidden, onToggleHidden }: LayerCard
           <CardFact label="Epochs" value={marks.epochs.length || null} />
           <CardFact label="Shapes" value={shapeCount(marks) || null} />
           {marks.rowScoped > 0 && (
-            <div className="text-[11px] text-amber-500">
+            <div className="text-[11px] text-warning">
               {marks.rowScoped} row-scoped shape{marks.rowScoped === 1 ? "" : "s"} shown by
               time only — no trace here reads the lens they were drawn over.
             </div>

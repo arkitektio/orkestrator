@@ -63,28 +63,38 @@ export const AutoModeToggle = ({
   auto,
   onChange,
   className,
+  tooltip = true,
 }: {
   auto: boolean;
   onChange: (on: boolean) => void;
   className?: string;
-}) => (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Toggle
-        size="sm"
-        pressed={auto}
-        onPressedChange={onChange}
-        aria-label="Auto-mode"
-        className={className}
-      >
-        <Zap className={auto ? "text-amber-500" : undefined} />
-        Auto
-      </Toggle>
-    </TooltipTrigger>
-    <TooltipContent>
-      {auto
-        ? "Auto-mode: what the agents ask to run, runs without asking you."
-        : "What the agents ask to run waits for your approval. Turn on to let it run without asking."}
-    </TooltipContent>
-  </Tooltip>
-);
+  /**
+   * `false` draws the toggle alone. A dialog hands the focus to it when it
+   * opens, and a tooltip opens on focus: there it would show all the time.
+   */
+  tooltip?: boolean;
+}) => {
+  const toggle = (
+    <Toggle
+      size="sm"
+      pressed={auto}
+      onPressedChange={onChange}
+      aria-label="Auto-mode"
+      className={className}
+    >
+      <Zap className={auto ? "text-warning" : undefined} />
+      Auto
+    </Toggle>
+  );
+  if (!tooltip) return toggle;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{toggle}</TooltipTrigger>
+      <TooltipContent>
+        {auto
+          ? "Auto-mode: what the agents ask to run, runs without asking you."
+          : "What the agents ask to run waits for your approval. Turn on to let it run without asking."}
+      </TooltipContent>
+    </Tooltip>
+  );
+};

@@ -639,7 +639,7 @@ export const streamToReactNode = (
   withLocalDisclaimer?: boolean,
 ) => {
   if (!stream)
-    return <div className="text-red-400 stream-edge">undefinedStream</div>;
+    return <div className="text-destructive stream-edge">undefinedStream</div>;
   return (
     <div className="flex flex-row flex-wrap stream-edge ">
       {stream.length == 0 ? (

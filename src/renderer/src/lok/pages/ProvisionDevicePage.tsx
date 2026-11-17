@@ -489,7 +489,7 @@ const ProvisionStatus = ({ progress }: { progress: ProvisionProgress }) => {
     <div className="flex flex-col gap-3">
       <p className="flex items-center gap-2 font-medium">
         {busy && <Spinner />}
-        {progress.phase === "done" && <Check className="size-4 text-emerald-600" />}
+        {progress.phase === "done" && <Check className="size-4 text-success" />}
         {progress.phase === "failed" && <CircleAlert className="size-4 text-destructive" />}
         {PHASE_TEXT[progress.phase]}
       </p>

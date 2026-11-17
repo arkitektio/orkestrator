@@ -143,7 +143,7 @@ const FitButton = () => {
     <Button
       size="icon"
       variant="ghost"
-      className="absolute left-[72px] top-3 h-6 w-6 border border-white/10 bg-zinc-950/70 p-0 text-foreground/60 hover:text-foreground"
+      className="absolute left-[72px] top-3 h-6 w-6 border border-foreground/10 bg-popover/70 p-0 text-foreground/60 hover:text-foreground"
       title="Fit (double-click the grid)"
       onClick={() => api.getState().fit()}
     >
@@ -191,8 +191,8 @@ const LayerCard = ({ layer }: { layer: GridLayerFragment }) => {
   const source = layer.__typename === "CellsGridLayer" ? `${layer.tableDataset.name} · ${layer.valueColumn}` : (layer.lens.name ?? `${layer.lens.__typename} ${layer.lens.id}`);
   return (
     <LayerCardShell
-      icon={<Grid3x3 className="h-3 w-3 text-sky-300" />}
-      tile="bg-sky-400/15"
+      icon={<Grid3x3 className="h-3 w-3 text-info" />}
+      tile="bg-info/15"
       title={layer.name ?? source}
       hidden={!layer.visible}
       expanded={expanded}
@@ -226,7 +226,7 @@ const LayerCard = ({ layer }: { layer: GridLayerFragment }) => {
         <span className="truncate" title={source}>
           {source}
         </span>
-        {layer.placement !== "PLACED" && <span className="text-amber-300/80">not placed over this grid’s axes ({layer.placement.toLowerCase()})</span>}
+        {layer.placement !== "PLACED" && <span className="text-warning/80">not placed over this grid’s axes ({layer.placement.toLowerCase()})</span>}
         {readout?.loading && <span>reading…</span>}
         {readout?.note && <span>{readout.note}</span>}
         {readout?.error && <span className="text-destructive">{readout.error}</span>}

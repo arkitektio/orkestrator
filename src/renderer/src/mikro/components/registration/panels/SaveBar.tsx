@@ -41,7 +41,7 @@ export const SaveBar = () => {
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-2">
       {previewIssue && (
-        <div className="flex gap-1.5 text-xs text-amber-500">
+        <div className="flex gap-1.5 text-xs text-warning">
           <AlertTriangle className="mt-0.5 size-3 shrink-0" />
           <span>Not previewed: {previewIssue}</span>
         </div>
@@ -51,9 +51,9 @@ export const SaveBar = () => {
           {loading && !plan ? "Checking the registration edge…" : summary}
         </div>
       )}
-      {confirm && plan?.kind !== "noop" && <div className="text-xs text-amber-500">{confirm}</div>}
+      {confirm && plan?.kind !== "noop" && <div className="text-xs text-warning">{confirm}</div>}
       {remap.blocked && (
-        <div className="flex gap-1.5 text-xs text-amber-500">
+        <div className="flex gap-1.5 text-xs text-warning">
           <AlertTriangle className="mt-0.5 size-3 shrink-0" />
           <span>{remap.reason}</span>
         </div>

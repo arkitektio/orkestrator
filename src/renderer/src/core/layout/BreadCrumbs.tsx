@@ -12,7 +12,20 @@ import { NavLink, useNavigate } from "react-router-dom";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 import { detailPatterns, matchIdCrumb, pathWithId, type IdCrumbMatch } from "./idCrumb";
 
-interface IBreadCrumbsProps { }
+interface IBreadCrumbsProps {
+  /** What a crumb reads as in place of its path segment (an id → the object's name), by segment. */
+  labels?: Readonly<Record<string, React.ReactNode>>;
+}
+
+/** The last segment of `pathname`, as it was before the URL encoded it. */
+const lastSegment = (pathname: string): string => {
+  const segment = pathname.split("/").filter(Boolean).pop() ?? "";
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+};
 
 /**
  * The current page's crumb when it is an object's id: a double-click turns it
@@ -65,8 +78,16 @@ const IdCrumb = ({ match, children }: { match: IdCrumbMatch; children: React.Rea
   );
 };
 
-const BreadCrumbs: React.FunctionComponent<IBreadCrumbsProps> = () => {
-  const breadcrumbs = useReactRouterBreadcrumbs();
+const BreadCrumbs: React.FunctionComponent<IBreadCrumbsProps> = ({ labels }) => {
+  const routed = useReactRouterBreadcrumbs();
+  const breadcrumbs = React.useMemo(
+    () =>
+      routed.map((crumb) => {
+        const label = labels?.[lastSegment(crumb.match.pathname)];
+        return label == null || label === "" ? crumb : { ...crumb, breadcrumb: label };
+      }),
+    [routed, labels],
+  );
   const version = useModuleHostVersion();
   const patterns = React.useMemo(
     () => detailPatterns(installedModules().map((definition) => definition.manifest)),

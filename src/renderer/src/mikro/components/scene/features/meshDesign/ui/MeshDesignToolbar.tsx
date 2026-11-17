@@ -142,14 +142,14 @@ export const MeshDesignToolbar = () => {
       {/* The frosted pill is what keeps the bar legible over a bright image:
           it dims and blurs what is behind it, so white-on-translucent still
           reads on a white RGB frame and all but disappears on a dark one. */}
-      <div className="pointer-events-auto flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-black/50 px-2 pb-1.5 pt-1 shadow-lg shadow-black/20 backdrop-blur-xl backdrop-brightness-75 backdrop-saturate-150">
-        <span className="text-[10px] text-white/70">
+      <div className="pointer-events-auto flex flex-col items-center gap-1 rounded-xl border border-foreground/10 bg-background/50 px-2 pb-1.5 pt-1 shadow-lg shadow-black/20 backdrop-blur-xl backdrop-brightness-75 backdrop-saturate-150">
+        <span className="text-[10px] text-foreground/70">
           {message ? (
-            <span className="text-amber-300/90">{message}</span>
+            <span className="text-warning/90">{message}</span>
           ) : needs3D ? (
-            <span className="text-amber-300/90">{`${tool.label} works in the 3D view`}</span>
+            <span className="text-warning/90">{`${tool.label} works in the 3D view`}</span>
           ) : heldTool && tool ? (
-            <span className="text-emerald-300/90">{tool.hint}</span>
+            <span className="text-success/90">{tool.hint}</span>
           ) : tool ? (
             `Hold ${tool.key.toUpperCase()} — ${tool.hint.charAt(0).toLowerCase()}${tool.hint.slice(1)}`
           ) : (

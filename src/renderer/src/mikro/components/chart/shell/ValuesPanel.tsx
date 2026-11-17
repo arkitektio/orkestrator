@@ -132,7 +132,7 @@ const PinnedRing = ({ layerIds }: { layerIds: readonly string[] }) => {
   if (at.px < 0 || at.py < 0 || at.px > size.width || at.py > size.height) return null;
   return (
     <span
-      className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white ring-2 ring-black/60"
+      className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground ring-2 ring-background/60"
       style={{ left: at.px, top: at.py, boxShadow: `0 0 0 4px ${pinned.color}` }}
       title={`Pinned: ${pinned.label}`}
     />
@@ -145,7 +145,7 @@ const PlaneControls = () => {
   const canRedo = usePlaneStore((s) => s.future.length > 0);
   const button = "h-6 w-6 p-0 text-foreground/60 hover:text-foreground";
   return (
-    <div className="absolute left-[72px] top-3 flex gap-0.5 rounded-md border border-white/10 bg-zinc-950/70 p-0.5 backdrop-blur">
+    <div className="absolute left-[72px] top-3 flex gap-0.5 rounded-md border border-foreground/10 bg-popover/70 p-0.5 backdrop-blur">
       <Button size="icon" variant="ghost" className={button} title="Fit the data (double-click the plot)" onClick={() => api.getState().fit()}>
         <Maximize2 className="h-3 w-3" />
       </Button>

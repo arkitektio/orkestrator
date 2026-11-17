@@ -59,7 +59,7 @@ const TileRow = (props: SkinRowProps) => {
       {props.progress ? (
         <span
           aria-hidden
-          className="absolute bottom-0 left-0 h-0.5 bg-emerald-500 transition-[width]"
+          className="absolute bottom-0 left-0 h-0.5 bg-success transition-[width]"
           style={{ width: `${props.progress}%` }}
         />
       ) : null}

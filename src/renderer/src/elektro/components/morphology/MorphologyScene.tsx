@@ -81,7 +81,7 @@ const CloseAllPanels = () => {
     <button
       onClick={closeAll}
       title="Close all section panels (Esc)"
-      className="pointer-events-auto absolute right-2 top-2 z-30 rounded-lg border border-black/10 bg-black/40 px-2.5 py-1 text-xs text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+      className="pointer-events-auto absolute right-2 top-2 z-30 rounded-lg border border-background/10 bg-background/40 px-2.5 py-1 text-xs text-foreground/70 backdrop-blur-md transition-colors hover:bg-foreground/10 hover:text-foreground"
     >
       Close all
     </button>
@@ -172,7 +172,7 @@ const Viewport = ({ showDisplaySwitch = true }: { showDisplaySwitch?: boolean })
       ) : phase === "ready" ? (
         <MorphologyView />
       ) : phase === "unsupported" ? (
-        <div className="absolute inset-0 grid place-items-center p-6 text-center text-xs text-white/60">
+        <div className="absolute inset-0 grid place-items-center p-6 text-center text-xs text-foreground/60">
           {message}
         </div>
       ) : null}
@@ -193,7 +193,7 @@ const MiniViewport = () => {
       {phase === "ready" ? (
         <MorphologyView mini />
       ) : phase === "unsupported" ? (
-        <div className="absolute inset-0 grid place-items-center p-4 text-center text-xs text-white/60">
+        <div className="absolute inset-0 grid place-items-center p-4 text-center text-xs text-foreground/60">
           {message}
         </div>
       ) : null}

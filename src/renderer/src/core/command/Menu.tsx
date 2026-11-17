@@ -27,7 +27,6 @@ import { useCommandPalette } from "./CommandPaletteProvider";
 import { usePaletteGrow } from "./usePaletteGrow";
 import { usePointerSelectionGate } from "./usePointerSelectionGate";
 import { resolveContextObjects } from "./contextObjects";
-import { CyclingPlaceholder } from "./CyclingPlaceholder";
 import { ModulePaletteSources } from "@/core/modules/registries";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
@@ -236,19 +235,11 @@ export const PalettePanel = (props: {
               // Its own slot, so the voice runtime and anything else that
               // wants THE palette's input can find it unambiguously.
               data-slot="palette-input"
-              // The visible placeholder is the fading overlay below; this
-              // one stays for assistive tech.
               placeholder={newTab ? "Open in a new tab…" : "Search, ask or do…"}
               onValueChange={updateQuery}
               value={context.query}
-              className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-transparent"
+              className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-muted-foreground"
             />
-            {!context.query && (
-              <CyclingPlaceholder
-                words={newTab ? ["Open in a new tab…"] : undefined}
-                className="absolute inset-0 flex items-center text-xs text-muted-foreground"
-              />
-            )}
           </div>
           {/* The microphone, while the query is being dictated. */}
           <VoicePaletteBadge />

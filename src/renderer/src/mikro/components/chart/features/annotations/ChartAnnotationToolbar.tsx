@@ -25,7 +25,7 @@ export const ChartAnnotationToolbar = () => {
   if (mode !== "ANNOTATE") return null;
 
   return (
-    <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       {targetId ? (
         <>
           <ButtonGroup>
@@ -34,7 +34,7 @@ export const ChartAnnotationToolbar = () => {
                 key={spec.tool}
                 size="xs"
                 variant={tool === spec.tool ? "default" : "outline"}
-                className={tool === spec.tool ? "h-7" : "h-7 bg-black"}
+                className={tool === spec.tool ? "h-7" : "h-7 bg-background"}
                 title={`${spec.hint} (${spec.shortcut.toUpperCase()})`}
                 aria-pressed={tool === spec.tool}
                 onClick={() => toolApi.getState().setAnnotateTool(spec.tool)}
@@ -49,7 +49,7 @@ export const ChartAnnotationToolbar = () => {
         <Button
           size="xs"
           variant="outline"
-          className="h-7 bg-black"
+          className="h-7 bg-background"
           disabled={loading}
           title="An empty surface over this chart, to draw marks on"
           onClick={() =>

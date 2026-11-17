@@ -9,7 +9,6 @@ import { CallInvitesWatcher } from "./call/invites";
 import { JoinCallsSection } from "./call/JoinCallsSection";
 import { StructureCallsSection } from "./call/StructureCallsSection";
 import { LOVEKIT_DIALOGS } from "./dialogRegistry";
-import { AgentStreamsSection } from "./components/AgentStreamsSection";
 import { AgentDisplay } from "./displays/AgentDisplay";
 import { CallDisplay } from "./displays/CallDisplay";
 import { StreamDisplay } from "./displays/StreamDisplay";
@@ -50,15 +49,6 @@ export const LOVEKIT_MODULE = defineModule({
         slot: "home",
         match: { identifiers: ["@lok/user"] },
         Component: JoinCallsSection,
-      },
-      {
-        // The streams a rekuest agent offers, live, on the agent's page: the
-        // same app instance, found by its client and user.
-        id: "lovekit.agentstreams",
-        title: "Streams",
-        placement: "main",
-        match: { identifiers: ["@rekuest/agent"] },
-        Component: AgentStreamsSection,
       },
       {
         // What is sent to a person: the invitations ringing for them.

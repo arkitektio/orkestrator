@@ -95,7 +95,7 @@ export const TraceLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps
           className={
             layer.placeability.drawable
               ? "text-[11px] text-muted-foreground"
-              : "text-[11px] text-amber-500"
+              : "text-[11px] text-warning"
           }
           title={
             !layer.placeability.drawable ? layer.placeability.detail ?? undefined : undefined
@@ -107,7 +107,7 @@ export const TraceLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps
       )}
       <PlacementFix layer={layer} />
       {!message && layer.sourceFailure && (
-        <div className="text-[11px] text-amber-500">Cannot be drawn ({layer.sourceFailure})</div>
+        <div className="text-[11px] text-warning">Cannot be drawn ({layer.sourceFailure})</div>
       )}
       {layer.source && !hidden && (
         <div className="flex flex-col gap-0.5">

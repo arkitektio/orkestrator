@@ -1384,9 +1384,9 @@ export const QueryBuilderGraph = ({
           {/* Right sidebar overlay - Query Results */}
           {executedGraphQuery && (
             <div className="absolute top-3 right-3 w-96 max-h-[calc(100%-1.5rem)] flex flex-col gap-3 overflow-y-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 rounded-lg border shadow-lg p-4">
-              <div className="bg-card p-3 rounded border flex flex-col gap-2 border-green-500">
+              <div className="bg-card p-3 rounded border flex flex-col gap-2 border-success">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold text-sm text-green-600">
+                  <div className="font-semibold text-sm text-success">
                     Query Results
                   </div>
                   <KraphGraphQuery.DetailLink object={{ id: executedGraphQuery.id }}>

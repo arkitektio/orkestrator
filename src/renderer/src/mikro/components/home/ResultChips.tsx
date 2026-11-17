@@ -10,7 +10,7 @@ const MAX_CHIPS = 3;
 
 const CHIP_SHAPE = "relative z-10 flex h-5 min-w-0 max-w-full items-center gap-1 rounded-full px-1.5 text-[10px] transition-colors";
 /** On a picture's scrim. */
-const CHIP = `${CHIP_SHAPE} bg-black/55 text-white backdrop-blur hover:bg-black/80`;
+const CHIP = `dark ${CHIP_SHAPE} bg-background/55 text-foreground backdrop-blur hover:bg-background/80`;
 /** On a plain card (a table's). */
 const PLAIN_CHIP = `${CHIP_SHAPE} bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground`;
 

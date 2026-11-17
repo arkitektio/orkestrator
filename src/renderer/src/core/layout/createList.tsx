@@ -254,7 +254,7 @@ export const createList = <
     if (error) {
       return (
         <ListLayout.Root>
-          <div className="p-4 text-red-500 border border-red-200 rounded bg-red-50">
+          <div className="p-4 text-destructive border border-destructive/30 rounded bg-destructive/10">
             <div className="font-bold">Error loading data</div>
             <div className="text-sm">{error.message}</div>
           </div>

@@ -133,6 +133,10 @@ fragment AgentHardware on AgentHardware {
 fragment MinimalImplementation on Implementation {
   id
   interface
+  # Whether a run of it asks other actions to do things (a workflow): the keys are enough.
+  dependencies {
+    key
+  }
   estimatedRuntime {
     ...EstimatedRuntime
   }

@@ -146,7 +146,7 @@ const PlaceExperimentLayer = ({ source, world, worldName, label }: PlaceExperime
             </span>
             <Input value={offset} onChange={(e) => setOffset(e.target.value)} placeholder="e.g. 12.5 s" />
           </label>
-          <p className="text-xs text-amber-500">
+          <p className="text-xs text-warning">
             This offset places the whole clock: every layer timed on {offsetClockName} moves with it.
           </p>
         </div>

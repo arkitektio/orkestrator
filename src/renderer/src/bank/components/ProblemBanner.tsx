@@ -35,8 +35,8 @@ export const ProblemBanner = ({
   const showRelink = relink && (problem.fix === "relink" || problem.fix === "login" || problem.fix === "restart");
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-      <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+    <div className="flex items-center gap-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+      <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
       <span className="flex-1">{problem.text}</span>
       {showRelink && (
         <Button size="sm" variant="outline" onClick={() => doRelink(relink)}>

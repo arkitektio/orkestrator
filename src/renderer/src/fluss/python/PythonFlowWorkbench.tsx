@@ -193,7 +193,7 @@ export const PythonFlowWorkbench = ({ base, layout }: { base: PythonFlowFragment
       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking…
     </span>
   ) : validation?.ok ? (
-    <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+    <span className="flex items-center gap-1.5 text-success">
       <CheckCircle2 className="h-3.5 w-3.5" /> Checks out
     </span>
   ) : validation ? (

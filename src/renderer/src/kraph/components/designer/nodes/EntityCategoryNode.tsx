@@ -20,7 +20,7 @@ export const EntityCategoryNode = memo(({ data, id, selected }: NodeProps<Generi
       />
       <Handles self={id} />
       <Card
-        className={`h-full w-full rounded-xl border-emerald-500 bg-card overflow-hidden shadow-sm transition-all ${selected ? "ring-1 ring-primary shadow-lg" : ""}`}
+        className={`h-full w-full rounded-xl border-success bg-card overflow-hidden shadow-sm transition-all ${selected ? "ring-1 ring-primary shadow-lg" : ""}`}
         style={{ zIndex: 10 }}
       >
       <KraphEntityCategory.Smart

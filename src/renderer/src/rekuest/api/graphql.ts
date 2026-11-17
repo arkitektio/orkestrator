@@ -3996,11 +3996,15 @@ export type Patch = {
   globalFutureRevision: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   interface: Scalars['String']['output'];
+  /** Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` (a task being stopped, on its way out) or `shutdown` (the agent's shutdown hooks). Said by the agent's runtime. */
+  lifecycle?: Maybe<Scalars['String']['output']>;
   /** The value the patch replaced, when the agent reported it. */
   oldValue?: Maybe<Scalars['Args']['output']>;
   op: Scalars['String']['output'];
   patch: JsonPatch;
   path: Scalars['String']['output'];
+  /** What the app says the change was for: its own names. Empty when it said nothing. */
+  qualifiers: Array<Scalars['String']['output']>;
   /** The session identifier string this row belongs to. */
   sessionId?: Maybe<Scalars['String']['output']>;
   state: State;
@@ -5990,10 +5994,16 @@ export type StatePatchEvent = {
   agentId: Scalars['ID']['output'];
   globalRevision: Scalars['Int']['output'];
   interface: Scalars['String']['output'];
+  /** Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` or `shutdown`. */
+  lifecycle?: Maybe<Scalars['String']['output']>;
   op: Scalars['String']['output'];
   path: Scalars['String']['output'];
+  /** What the app says the change was for: its own names. */
+  qualifiers: Array<Scalars['String']['output']>;
   sessionId?: Maybe<Scalars['String']['output']>;
   stateId: Scalars['ID']['output'];
+  /** The task that made the change, if one did. */
+  taskId?: Maybe<Scalars['ID']['output']>;
   timestamp?: Maybe<Scalars['DateTime']['output']>;
   value: Scalars['Args']['output'];
 };
@@ -7801,7 +7811,7 @@ export type ImplementationFitFragment = { __typename?: 'ImplementationFit', port
 
 export type AgentHardwareFragment = { __typename?: 'AgentHardware', cpuCount?: number | null, memoryMib?: number | null, gpus: Array<{ __typename?: 'AgentGpu', name: string, memoryMib?: number | null }> };
 
-export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, estimatedRuntime?: (
+export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, dependencies: Array<{ __typename?: 'Dependency', key: string }>, estimatedRuntime?: (
     { __typename?: 'EstimatedRuntime' }
     & EstimatedRuntimeFragment
   ) | null, fits: Array<(
@@ -13135,6 +13145,9 @@ export const MinimalImplementationFragmentDoc = gql`
     fragment MinimalImplementation on Implementation {
   id
   interface
+  dependencies {
+    key
+  }
   estimatedRuntime {
     ...EstimatedRuntime
   }

@@ -15,9 +15,9 @@ const Heading = (props: { children: React.ReactNode }) => (
 );
 
 const LEVEL_COLOR: Partial<Record<LogLevel, string>> = {
-  [LogLevel.Warn]: "text-amber-500",
-  [LogLevel.Error]: "text-red-500",
-  [LogLevel.Critical]: "text-red-500",
+  [LogLevel.Warn]: "text-warning",
+  [LogLevel.Error]: "text-destructive",
+  [LogLevel.Critical]: "text-destructive",
 };
 
 /** What the lane has selected, in words. */

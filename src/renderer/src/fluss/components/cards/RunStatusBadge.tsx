@@ -19,7 +19,7 @@ export const RunStatusBadge = ({
       <span
         className={cn(
           "h-1.5 w-1.5 rounded-full",
-          running ? "bg-green-500 animate-pulse" : "bg-muted-foreground/50",
+          running ? "bg-success animate-pulse" : "bg-muted-foreground/50",
         )}
       />
       {running ? "Running" : "Completed"}

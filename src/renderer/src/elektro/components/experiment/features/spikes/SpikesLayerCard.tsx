@@ -33,10 +33,10 @@ export const SpikesLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProp
       onToggle={() => onToggleHidden(layer.id, !hidden)}
       aside={<LayerMenu layerId={layer.id} label={layer.label} />}
     >
-      {message && <div className="text-[11px] text-amber-500">{message}</div>}
+      {message && <div className="text-[11px] text-warning">{message}</div>}
       <PlacementFix layer={layer} />
       {!message && layer.sourceFailure && (
-        <div className="text-[11px] text-amber-500">Cannot be drawn ({layer.sourceFailure})</div>
+        <div className="text-[11px] text-warning">Cannot be drawn ({layer.sourceFailure})</div>
       )}
       {layer.spikes && !hidden && (
         <div className="flex flex-col gap-0.5">

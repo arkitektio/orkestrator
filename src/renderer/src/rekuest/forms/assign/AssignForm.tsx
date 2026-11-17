@@ -149,6 +149,9 @@ export const AssignForm = ({
   const [fit, setFit] = useState<FitDecision>({});
   const candidates = implementation ? [implementation] : action?.implementations;
   const portFits = useMemo(() => portFitsOf(candidates), [candidates]);
+  // A workflow: a run that asks other actions to do things. Only then is there
+  // anything for auto-mode to let through; an action without dependencies asks for nothing.
+  const workflow = (candidates ?? []).some((c) => c.dependencies.length > 0);
   // Counts refusals: keys the reason so it slides in again on a repeat.
   const [refusals, setRefusals] = useState(0);
 
@@ -448,7 +451,9 @@ export const AssignForm = ({
             implementations={candidates}
             className="shrink-0"
           />
-          <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" />
+          {workflow && (
+            <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" tooltip={false} />
+          )}
           {/* An assign blok that starts the run itself (`assign.start()`) is the start button. */}
           {!(assignBloks && (setup.starts || setup.bare)) && (
             <Tooltip>

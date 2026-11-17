@@ -509,7 +509,7 @@ export const NeuronEditor = ({
             </p>
 
             {rebranchingId && (
-              <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded text-xs flex justify-between items-center gap-2">
+              <div className="bg-warning-soft p-2 rounded text-xs flex justify-between items-center gap-2">
                 <span className="flex items-center gap-1.5">
                   <GitBranch className="w-3 h-3 flex-none" />
                   {rebranchProblem ?? "Select the new parent in the view…"}
@@ -564,7 +564,7 @@ export const NeuronEditor = ({
                   <AccordionTrigger className="text-sm py-2 hover:no-underline">
                     <div className="flex items-center gap-2 min-w-0">
                       <span
-                        className="w-2.5 h-2.5 rounded-full flex-none ring-1 ring-black/10"
+                        className="w-2.5 h-2.5 rounded-full flex-none ring-1 ring-background/10"
                         style={{ background: colorMap.get(section.id) ?? "#888" }}
                       />
                       <span className="font-mono truncate">{section.id.slice(0, 8)}</span>
@@ -683,7 +683,7 @@ export const NeuronEditor = ({
                               />
                               <div className="relative flex-1 pt-5">
                                 <div
-                                  className="pointer-events-none absolute top-0 -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white"
+                                  className="pointer-events-none absolute top-0 -translate-x-1/2 whitespace-nowrap rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
                                   style={{ left: `${parentInfo.location * 100}%` }}
                                   title="Distance from the parent's start"
                                 >
@@ -840,7 +840,7 @@ export const NeuronEditor = ({
           />
         </MorphologyCanvas>
       ) : gate.phase === "unsupported" ? (
-        <div className="absolute inset-0 grid place-items-center p-6 text-center text-xs text-white/60">
+        <div className="absolute inset-0 grid place-items-center p-6 text-center text-xs text-foreground/60">
           {gate.message}
         </div>
       ) : null}

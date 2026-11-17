@@ -241,7 +241,7 @@ const FileCard = ({ file }: { file: HomeFile }) => {
         {hidden > 0 && (
           <MikroFile.DetailLink
             object={file}
-            className="absolute bottom-1.5 right-1.5 z-10 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur hover:bg-black/80"
+            className="dark absolute bottom-1.5 right-1.5 z-10 rounded-full bg-background/60 px-2 py-0.5 text-xs text-foreground backdrop-blur hover:bg-background/80"
           >
             +{hidden} more
           </MikroFile.DetailLink>

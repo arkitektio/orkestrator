@@ -52,7 +52,7 @@ export const UnplaceableNotice = ({ reason }: { reason: UnplaceableReason }) => 
       className={
         copy.quiet
           ? "flex items-center gap-2 rounded-b-lg border border-t-0 border-foreground/10 bg-foreground/5 px-2 py-1 text-[10px] text-foreground/60"
-          : "flex items-center gap-2 rounded-b-lg border border-t-0 border-rose-500/30 bg-rose-500/10 px-2 py-1 text-[10px] text-rose-700 dark:text-rose-200"
+          : "flex items-center gap-2 rounded-b-lg border border-t-0 border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] text-destructive"
       }
       title={copy.title}
     >

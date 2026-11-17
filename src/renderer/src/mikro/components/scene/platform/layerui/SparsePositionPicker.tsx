@@ -86,7 +86,7 @@ const AxisPositionSelect = ({
             />
             <CommandList>
               {loading && <div className="px-3 py-2 text-[10px] text-foreground/40">Reading {axis}…</div>}
-              {error && <div className="px-3 py-2 text-[10px] text-amber-700/80 dark:text-amber-300/80">{error}</div>}
+              {error && <div className="px-3 py-2 text-[10px] text-warning/80">{error}</div>}
               {!loading && !error && shown.length === 0 && (
                 <CommandEmpty className="px-3 py-2 text-[10px]">No {axis} matches.</CommandEmpty>
               )}
@@ -158,7 +158,7 @@ export const SparsePositionPicker = ({
 
   if (source.loading) return <div className="text-[10px] text-foreground/40">Resolving the matrix…</div>;
   if (!source.data) {
-    return <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80">Could not resolve matrix {dataset}.</div>;
+    return <div className="text-[10px] text-warning/80">Could not resolve matrix {dataset}.</div>;
   }
 
   return (

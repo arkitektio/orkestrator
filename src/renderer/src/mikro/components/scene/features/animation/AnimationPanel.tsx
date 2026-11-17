@@ -74,7 +74,7 @@ const TourRow = ({ id, name, waypointCount, durationMs }: {
       <Button
         size="icon"
         variant="ghost"
-        className="h-6 w-6 text-foreground/50 hover:text-red-400"
+        className="h-6 w-6 text-foreground/50 hover:text-destructive"
         title="Delete tour"
         disabled={saving}
         onClick={() => void remove(id).catch(reportErrorAs("Couldn't delete the tour"))}
@@ -128,7 +128,7 @@ const DraftRow = ({ index }: { index: number }) => {
         <Button
           size="icon"
           variant="ghost"
-          className="h-5 w-5 text-foreground/50 hover:text-red-400"
+          className="h-5 w-5 text-foreground/50 hover:text-destructive"
           title="Remove stop"
           onClick={() => removeWaypoint(waypoint.key)}
         >
@@ -160,7 +160,7 @@ const DraftRow = ({ index }: { index: number }) => {
             title="How the camera eases along that travel"
           >
             {Object.values(Easing).map((easing) => (
-              <option key={easing} value={easing} className="bg-zinc-900">
+              <option key={easing} value={easing} className="bg-popover">
                 {EASING_LABELS[easing]}
               </option>
             ))}

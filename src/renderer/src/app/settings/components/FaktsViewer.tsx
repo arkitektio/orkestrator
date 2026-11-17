@@ -26,17 +26,17 @@ export const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:underline flex items-center gap-1"
+            className="text-info hover:underline flex items-center gap-1"
           >
             <Globe className="w-3 h-3" />
             {value}
           </a>
         );
       }
-      return <span className="text-green-400">&quot;{value}&quot;</span>;
+      return <span className="text-success">&quot;{value}&quot;</span>;
     }
     if (typeof value === "number")
-      return <span className="text-orange-400">{value}</span>;
+      return <span className="text-warning">{value}</span>;
     if (Array.isArray(value)) {
       return (
         <div className="ml-4">
@@ -53,7 +53,7 @@ export const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
         <div className="ml-4">
           {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
             <div key={k} className="border-l border-border pl-2 my-1">
-              <span className="text-blue-300 font-medium">{k}:</span>{" "}
+              <span className="text-info font-medium">{k}:</span>{" "}
               {renderValue(v)}
             </div>
           ))}

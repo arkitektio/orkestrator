@@ -94,9 +94,9 @@ export const ImplementationHoverCard = ({ object }: { object: Object }) => {
                 className={cn(
                   "h-1.5 w-1.5 rounded-full shrink-0",
                   impl.agent.active && impl.agent.connected
-                    ? "bg-green-500"
+                    ? "bg-success"
                     : impl.agent.active
-                      ? "bg-yellow-500"
+                      ? "bg-warning"
                       : "bg-muted-foreground/40",
                 )}
               />

@@ -49,8 +49,8 @@ export const SmartDropZone = ({
 
 export const CombineButton = () => {
   return (
-    <div className="absolute bottom-0 w-full h-full flex justify-center items-center z-10 bg-black bg-opacity-75">
-      <div className="font-light text-xs p-2 rounded-full bg-black bg-opacity-100">
+    <div className="absolute bottom-0 w-full h-full flex justify-center items-center z-10 bg-background/75">
+      <div className="font-light text-xs p-2 rounded-full bg-background">
         Drop to Combine
       </div>
     </div>

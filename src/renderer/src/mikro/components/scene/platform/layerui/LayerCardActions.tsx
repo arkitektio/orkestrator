@@ -40,7 +40,7 @@ export const RemoveLayerButton = ({
         <Button
           variant="ghost"
           size="icon"
-          className={`${className} hover:text-red-700 dark:hover:text-red-300`}
+          className={`${className} hover:text-destructive`}
           title="Remove layer from scene"
           onClick={(event) => event.stopPropagation()}
         >

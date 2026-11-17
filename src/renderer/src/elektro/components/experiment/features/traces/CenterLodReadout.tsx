@@ -78,12 +78,12 @@ export const CenterLodReadout = () => {
 
   return (
     <div
-      className="pointer-events-none absolute bottom-14 left-2 z-10 flex items-center gap-1 rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] tabular-nums text-white"
+      className="pointer-events-none absolute bottom-14 left-2 z-10 flex items-center gap-1 rounded bg-background/40 px-1 py-0.5 font-mono text-[10px] tabular-nums text-foreground"
       title={title}
     >
       <span>LOD {level ?? "—"}</span>
-      <span className="text-white/50">{resolutionLabel}</span>
-      {refining && <span className="text-amber-300">→ {target}</span>}
+      <span className="text-foreground/50">{resolutionLabel}</span>
+      {refining && <span className="text-warning">→ {target}</span>}
     </div>
   );
 };

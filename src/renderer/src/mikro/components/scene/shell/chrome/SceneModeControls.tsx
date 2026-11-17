@@ -48,7 +48,7 @@ const DisplayModeSwitch = ({
   <div
     role="radiogroup"
     aria-label="View"
-    className="relative grid h-7 grid-cols-2 rounded-md bg-black/60 p-0.5 ring-1 ring-white/10"
+    className="relative grid h-7 grid-cols-2 rounded-md bg-background/60 p-0.5 ring-1 ring-foreground/10"
   >
     <span
       aria-hidden
@@ -66,7 +66,7 @@ const DisplayModeSwitch = ({
           onClick={() => onChange(mode)}
           className={cn(
             "relative z-10 w-8 text-[11px] font-semibold tracking-tight transition-colors",
-            value === mode ? "text-primary-foreground" : "text-white/55 hover:text-white",
+            value === mode ? "text-primary-foreground" : "text-foreground/55 hover:text-foreground",
           )}
         >
           {mode}
@@ -130,7 +130,7 @@ export const SceneModeControls = () => {
   );
 
   return (
-    <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       {/* Interaction modes — iconified switches. */}
       <ButtonGroup>
         {availableModes.map((mode) => {
@@ -146,7 +146,7 @@ export const SceneModeControls = () => {
               <Button
                 variant={active ? "default" : "outline"}
                 size={"xs"}
-                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
                 onClick={() => setInteractionMode(mode.value)}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -163,7 +163,7 @@ export const SceneModeControls = () => {
           <Button
             variant={probeFollowsCursor ? "default" : "outline"}
             size={"xs"}
-            className={probeFollowsCursor ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+            className={probeFollowsCursor ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
             onClick={() => setProbeFollowsCursor(!probeFollowsCursor)}
           >
             <ScanEye className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ export const SceneModeControls = () => {
           variant={"outline"}
           size={"xs"}
           className={
-            isDefaultView ? "h-7 bg-black text-brand" : "h-7 bg-black text-white/60"
+            isDefaultView ? "h-7 bg-background text-brand" : "h-7 bg-background text-foreground/60"
           }
           onClick={onPinView}
           disabled={saving}

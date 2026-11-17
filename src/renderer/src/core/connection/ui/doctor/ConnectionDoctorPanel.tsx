@@ -38,9 +38,9 @@ import { useMemo, useState } from "react";
 
 const SEVERITY_ICON: Record<FindingSeverity, React.ReactNode> = {
   blocker: <XCircle className="size-4 shrink-0 text-destructive" aria-hidden />,
-  warning: <AlertTriangle className="size-4 shrink-0 text-amber-500" aria-hidden />,
+  warning: <AlertTriangle className="size-4 shrink-0 text-warning" aria-hidden />,
   info: <Info className="size-4 shrink-0 text-muted-foreground" aria-hidden />,
-  ok: <CheckCircle2 className="size-4 shrink-0 text-emerald-500" aria-hidden />,
+  ok: <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />,
 };
 
 const SEVERITY_LABEL: Record<FindingSeverity, string> = {

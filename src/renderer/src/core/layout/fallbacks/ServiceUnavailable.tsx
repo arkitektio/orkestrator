@@ -398,8 +398,11 @@ export const ServiceStatusPanel = ({
             {retrying ? "Retrying…" : `Retrying automatically in ${autoRetry.left}s`}
           </p>
           <div className="mx-auto h-0.5 w-40 overflow-hidden rounded-full bg-muted">
+            {/* Steps once a second, no transition: a width that glides for a
+                whole minute is a frame every vsync for as long as the service
+                is down, and each one re-blurs the cards on this page. */}
             <div
-              className="h-full bg-destructive/60 transition-[width] duration-1000 ease-linear"
+              className="h-full bg-destructive/60"
               style={{ width: `${retrying ? 100 : ((AUTO_RETRY_SECONDS - autoRetry.left) / AUTO_RETRY_SECONDS) * 100}%` }}
             />
           </div>

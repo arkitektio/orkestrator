@@ -1,3 +1,4 @@
+import {cn} from '@/core/util/utils';
 import {ComponentContext} from '../api/graphql';
 import {ActionBlokRenderer} from './ActionBlokRenderer';
 import {useRunTask, useTaskActionBlok} from './useRun';
@@ -14,7 +15,7 @@ export const TaskRunPanel = ({taskId, showAsk = false, className}: {taskId: stri
   if (!shown) return null;
   return (
     // A bounded box the blok fills and scrolls in: an auto-height wrapper would cut the height chain.
-    <div className={className ?? 'h-full'}>
+    <div className={cn('blok-plain', className ?? 'h-full')}>
       <ActionBlokRenderer
         surfaceId={`task-${taskId}-panel`}
         chrome="minimal"

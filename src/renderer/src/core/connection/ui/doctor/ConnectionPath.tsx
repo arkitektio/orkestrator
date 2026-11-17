@@ -12,8 +12,8 @@ import { useState } from "react";
  */
 
 export const STATE_ICON: Record<HopState, ReactNode> = {
-  ok: <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" aria-hidden />,
-  warning: <AlertTriangle className="size-3.5 shrink-0 text-amber-500" aria-hidden />,
+  ok: <CheckCircle2 className="size-3.5 shrink-0 text-success" aria-hidden />,
+  warning: <AlertTriangle className="size-3.5 shrink-0 text-warning" aria-hidden />,
   failed: <XCircle className="size-3.5 shrink-0 text-destructive" aria-hidden />,
   unknown: <CircleDashed className="size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />,
 };

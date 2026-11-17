@@ -89,7 +89,7 @@ export const LayerCardShell = ({
 }: {
   /** The kind glyph, sized by the caller (`h-3 w-3 text-…`). */
   icon: React.ReactNode;
-  /** The icon tile's tint, e.g. `bg-emerald-400/15`. */
+  /** The icon tile's tint, e.g. `bg-success/15`. */
   tile: string;
   title: string;
   /**
@@ -284,7 +284,7 @@ export const RowAction = ({
     onClick={onClick}
     className={`grid h-4 w-4 shrink-0 place-items-center rounded transition-colors ${
       danger
-        ? "text-foreground/60 hover:bg-red-400/10 hover:text-red-700 dark:hover:text-red-300"
+        ? "text-foreground/60 hover:bg-destructive/10 hover:text-destructive"
         : "text-foreground/60 hover:bg-foreground/10 hover:text-foreground/90"
     }`}
   >

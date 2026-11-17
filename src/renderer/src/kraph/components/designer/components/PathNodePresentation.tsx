@@ -72,7 +72,7 @@ export const PathNodePresentation = ({
       const step = 100 / nodePaths.length;
       const start = idx * step;
       const end = (idx + 1) * step;
-      const colorCSS = path.color ? rgbToCSS(path.color) : 'rgb(100, 100, 100)';
+      const colorCSS = path.color ? rgbToCSS(path.color) : 'var(--muted-foreground)';
       return `${colorCSS} ${start}%, ${colorCSS} ${end}%`;
     }).join(', ')})`
     : undefined;
@@ -81,7 +81,7 @@ export const PathNodePresentation = ({
   const pathColor = isInPath && nodePaths.length === 1 ? nodePaths[0].color : undefined;
 
   // Border color: path color for single path, transparent for multiple (using border-image instead)
-  const borderColorCSS = nodePaths.length > 1 ? 'transparent' : (pathColor ? rgbToCSS(pathColor) : 'rgba(100, 100, 100, 0.3)');
+  const borderColorCSS = nodePaths.length > 1 ? 'transparent' : (pathColor ? rgbToCSS(pathColor) : 'color-mix(in oklab, var(--muted-foreground) 30%, transparent)');
 
   // Create lighter glow effect
   const glowColor = pathColor
@@ -133,8 +133,8 @@ export const PathNodePresentation = ({
           boxShadow: isInPath && glowColor
             ? `0 0 8px 2px ${glowColor}`
             : isPossible
-              ? '0 0 6px 1px rgba(59, 130, 246, 0.4)'
-              : '0 0 3px 1px rgba(100, 100, 100, 0.2)',
+              ? '0 0 6px 1px color-mix(in oklab, var(--primary) 40%, transparent)'
+              : '0 0 3px 1px color-mix(in oklab, var(--muted-foreground) 20%, transparent)',
           border: `3px solid ${borderColorCSS}`,
           borderImage: borderImage ? `${borderImage} 1` : undefined,
           borderRadius: borderImage ? '0.5rem' : undefined, // Match Card's rounded-lg

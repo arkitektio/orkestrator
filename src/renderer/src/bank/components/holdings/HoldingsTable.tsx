@@ -7,7 +7,7 @@ const Gain = ({ value, currency, cost }: { value: number | null; currency: strin
   if (value == null) return <span className="text-muted-foreground">—</span>;
   const ratio = cost && cost > 0 ? value / cost : null;
   return (
-    <span className={cn("tabular-nums", value > 0 && "text-emerald-600 dark:text-emerald-400", value < 0 && "text-destructive")}>
+    <span className={cn("tabular-nums", value > 0 && "text-success", value < 0 && "text-destructive")}>
       {formatMoney(value, currency, { signed: true })}
       {ratio != null && (
         <span className="ml-1 text-xs opacity-80">

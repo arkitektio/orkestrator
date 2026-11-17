@@ -660,7 +660,7 @@ export const EntityList = (props: {
   return (
     <div className="w-full h-full bg-card text-card-foreground   border  rounded-xl flex flex-col overflow-hidden">
       {error && (
-        <div className="p-4 bg-red-600 text-white">
+        <div className="p-4 bg-destructive text-white">
           Error loading entities: {error.message}
         </div>
       )}

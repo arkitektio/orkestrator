@@ -448,7 +448,7 @@ describe("the event pulse", () => {
     const pulse = screen.getByTestId("task-event-pulse");
     expect(pulse.className).toContain("animate-task-pulse");
     // A yield flashes purple, as it reads everywhere else.
-    expect(pulse.className).toContain("bg-purple-500/25");
+    expect(pulse.className).toContain("bg-spectrum-violet/25");
   });
 });
 

@@ -50,7 +50,7 @@ export const MorphologySettings = ({ fileName = "morphology" }: { fileName?: str
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="xs" className="h-7 w-8 bg-black p-0" title="View settings">
+        <Button variant="outline" size="xs" className="h-7 w-8 bg-background p-0" title="View settings">
           <Settings2 className="h-3.5 w-3.5" />
         </Button>
       </PopoverTrigger>

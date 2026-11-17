@@ -72,7 +72,7 @@ export const ProfileRow = ({
             <div
               className={cn(
                 "truncate text-[10px]",
-                stale ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                stale ? "text-warning" : "text-muted-foreground",
               )}
             >
               {subtitle}
@@ -82,7 +82,7 @@ export const ProfileRow = ({
         {switching ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : stale ? (
-          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
         ) : active ? (
           <Check className="h-4 w-4 shrink-0" />
         ) : null}

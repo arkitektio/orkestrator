@@ -178,7 +178,7 @@ const ProfileCard = ({
               </span>
             ) : stale ? (
               <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-background p-0.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                <AlertTriangle className="h-3.5 w-3.5 text-warning" />
               </span>
             ) : null}
           </div>
@@ -192,7 +192,7 @@ const ProfileCard = ({
                 className={cn(
                   "truncate text-[10px] font-normal",
                   stale
-                    ? "text-amber-600 dark:text-amber-400"
+                    ? "text-warning"
                     : "text-muted-foreground",
                 )}
               >

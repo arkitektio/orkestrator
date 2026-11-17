@@ -163,6 +163,7 @@ describe("a pill whose replyer waits for the user", () => {
     expect(pill.message).toBe("Round 2...");
     expect(pill.holds).toEqual([
       {
+        id: "e-held",
         task: "c7",
         kind: "assign",
         title: "Delegate to Segmenter",

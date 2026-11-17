@@ -59,8 +59,8 @@ export function PropertyListItem({
       {/* Attribute Badges */}
       <div className="flex items-center gap-2">
         {property.index && (
-          <div className="p-1 rounded bg-emerald-100">
-            <Database className="h-3 w-3 text-emerald-700" />
+          <div className="p-1 rounded bg-success-soft">
+            <Database className="h-3 w-3 text-success" />
           </div>
         )}
         {property.searchable && (

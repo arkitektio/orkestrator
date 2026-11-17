@@ -118,8 +118,8 @@ export const TrackLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Spline className="h-3 w-3 text-sky-700 dark:text-sky-300" />}
-        tile="bg-sky-400/15"
+        icon={<Spline className="h-3 w-3 text-info" />}
+        tile="bg-info/15"
         title={layer.tableDataset?.name?.trim() || `Tracks ${layer.id}`}
         hidden={hidden}
         expanded={expanded}

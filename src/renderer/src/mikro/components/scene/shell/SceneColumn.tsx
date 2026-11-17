@@ -97,7 +97,7 @@ export const SceneColumnTrigger = ({
       variant="outline"
       size="xs"
       className={cn(
-        'pointer-events-auto h-7 w-7 bg-black',
+        'pointer-events-auto h-7 w-7 bg-background',
         side === 'left' ? 'self-start' : 'self-end',
         className
       )}

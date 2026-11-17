@@ -29,7 +29,7 @@ const Outcome = ({
   return (
     <span title={label} aria-label={label}>
       {result.passed ? (
-        <Check className="mx-auto h-4 w-4 text-green-500" />
+        <Check className="mx-auto h-4 w-4 text-success" />
       ) : (
         <X className="mx-auto h-4 w-4 text-destructive" />
       )}

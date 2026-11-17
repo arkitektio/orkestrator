@@ -69,7 +69,7 @@ const InstitutionPicker = ({
     <div className="flex flex-col gap-2">
       {profile.institution && (
         <p className="flex items-center gap-1.5 text-sm">
-          <Check className="size-4 text-emerald-600" />
+          <Check className="size-4 text-success" />
           {profile.institution.name}
           {profile.institution.country && <span className="text-muted-foreground">({profile.institution.country})</span>}
         </p>

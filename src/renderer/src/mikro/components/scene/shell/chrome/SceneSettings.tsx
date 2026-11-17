@@ -917,7 +917,7 @@ const RemapSection = () => {
       </div>
       {active && (
         <Alert className="mt-1">
-          <TriangleAlert className="text-amber-500" />
+          <TriangleAlert className="text-warning" />
           <AlertDescription className="text-[10px] leading-4">
             Display only: lengths along {axisName(slot)} are drawn {factor.toFixed(2)}× and are
             not physical, so the scale bar and grid hide while they would measure it (draw
@@ -1001,7 +1001,7 @@ export const SceneSettings = () => {
           <Button
             variant={isDebug ? "destructive" : "outline"}
             size={"xs"}
-            className={isDebug ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+            className={isDebug ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
           >
             <Settings2 className="h-3.5 w-3.5" />
           </Button>

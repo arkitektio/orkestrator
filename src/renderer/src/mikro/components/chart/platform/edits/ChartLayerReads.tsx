@@ -207,7 +207,7 @@ const SourcePick = ({
             <span className="flex min-w-0 flex-col">
               <span className="truncate">{o.label}</span>
               {refused ? (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400">{refused}</span>
+                <span className="text-[10px] text-warning">{refused}</span>
               ) : (
                 o.detail && (
                   <span className="truncate font-mono text-[10px] text-muted-foreground">{o.detail}</span>

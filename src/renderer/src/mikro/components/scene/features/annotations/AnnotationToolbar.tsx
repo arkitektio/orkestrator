@@ -103,7 +103,7 @@ const EnhancersButton = ({ enhancers }: { enhancers: AnnotationEnhancer[] }) => 
           <Button
             variant={on ? "default" : "outline"}
             size="xs"
-            className={on ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+            className={on ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
           >
             <Sparkles className="h-3.5 w-3.5" />
           </Button>
@@ -147,17 +147,17 @@ export const AnnotationToolbar = () => {
   const enhancers = applicableEnhancers({ tool: activeTool, displayMode });
 
   return (
-    <div className="pointer-events-auto relative flex items-center gap-2 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md">
+    <div className="pointer-events-auto relative flex items-center gap-2 rounded-lg border border-background/10 bg-background/40 p-1 backdrop-blur-md">
       {/* What the armed tool expects, above the bar. A fallen-back enhanced
           edge speaks here too: a straight edge where a traced one was asked
           for has to say why, or the enhancer reads as broken. (The brush
           panel carries its own status line.) The 3D line is not decoration:
           each click places the point the volume probed, so a click off the
           data places nothing. */}
-      <div className="pointer-events-none absolute bottom-full right-0 mb-1.5 w-max max-w-md rounded-md bg-black/50 px-2 py-0.5 text-right backdrop-blur-md">
-        <span className="text-[10px] text-white/70">
+      <div className="pointer-events-none absolute bottom-full right-0 mb-1.5 w-max max-w-md rounded-md bg-background/50 px-2 py-0.5 text-right backdrop-blur-md">
+        <span className="text-[10px] text-foreground/70">
           {enhancerMessage && isEnhanceableTool(activeTool) ? (
-            <span className="text-amber-300/90">{enhancerMessage}</span>
+            <span className="text-warning/90">{enhancerMessage}</span>
           ) : activeTool === "BRUSH" ? (
             "Double-click and drag over the volume to paint a stroke along the structure — drag alone moves the view"
           ) : activeTool !== "SELECT" && !shapeInProgress ? (
@@ -195,7 +195,7 @@ export const AnnotationToolbar = () => {
               <Button
                 variant={active ? "default" : "outline"}
                 size="xs"
-                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+                className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-background p-0"}
                 onClick={() => setActiveTool(tool)}
               >
                 <Icon className="h-3.5 w-3.5" />

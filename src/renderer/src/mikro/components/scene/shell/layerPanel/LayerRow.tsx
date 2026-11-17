@@ -101,7 +101,7 @@ export const LayerRow = ({
       </Name>
       {graphDirty && onSaveGraph && (
         <button
-          className="shrink-0 rounded p-0.5 text-yellow-700/90 dark:text-yellow-300/90 transition-colors hover:text-yellow-700 dark:hover:text-yellow-200 disabled:opacity-50"
+          className="shrink-0 rounded p-0.5 text-warning/90 transition-colors hover:text-warning/80 disabled:opacity-50"
           title="Save changes"
           disabled={savingGraph}
           onClick={(e) => {

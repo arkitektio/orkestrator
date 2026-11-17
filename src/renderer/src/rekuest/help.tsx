@@ -653,7 +653,7 @@ export const REKUEST_HELP = {
     <PageHelp
       intro="A space is a room: where people left each device of the lab, the same for everyone. An action's 3D view places its devices in a room it names."
       steps={[
-        <>Open a run of an action that draws the lab in 3D, press <b>Arrange</b> and move a device. The room is made then, and lists here.</>,
+        <>Open a run of an action that draws the lab in 3D, right-click the scene, choose <b>Arrange devices</b> and move a device. The room is made then, and lists here.</>,
         <>Click a space to see which devices were moved in it, and where they stand.</>,
       ]}
     />

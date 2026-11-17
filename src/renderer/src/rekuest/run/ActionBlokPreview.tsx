@@ -69,6 +69,7 @@ export const ActionBlokPreview = ({
       </div>
       <BindingList binding={binding} />
       {html ? (
+        <div className="blok-plain">
         <ActionBlokRenderer
           surfaceId={`action-${actionId}-preview`}
           chrome="minimal"
@@ -77,6 +78,7 @@ export const ActionBlokPreview = ({
           actionBlok={html}
           run={run}
         />
+        </div>
       ) : null}
       {scene ? (
         <div className="relative h-96 overflow-hidden rounded-xl border">
