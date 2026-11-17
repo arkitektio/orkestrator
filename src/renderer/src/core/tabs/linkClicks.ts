@@ -8,6 +8,8 @@
  *
  *  - ⌘-click (macOS) / Ctrl-click, and middle-click → a new tab in the
  *    background, as in a browser;
+ *  - a plain click on a link that asks for a new tab (`target="_blank"`, what a
+ *    blok's `<Link newTab>` renders) → a new tab in the foreground;
  *  - anything with Shift is NOT claimed: Shift-click and Shift+Ctrl-click are
  *    the smart models' selection gestures (`useSmartModel.handleClick`).
  *
@@ -28,12 +30,15 @@ export type AnchorLike = {
   closest?: (selector: string) => unknown;
 };
 
-/** An app-relative path ("/x"), not a protocol-relative URL ("//x") or an external one. */
+/**
+ * An app-relative path ("/x"), not a protocol-relative URL ("//x") or an external one.
+ * A link to this window or to a new one (`_blank`) counts; one naming another frame does not.
+ */
 export const inAppPath = (anchor: AnchorLike): string | null => {
   const href = anchor.getAttribute("href");
   if (!href || !href.startsWith("/") || href.startsWith("//")) return null;
   const target = anchor.getAttribute("target");
-  if (target && target !== "_self") return null;
+  if (target && target !== "_self" && target !== "_blank") return null;
   if (anchor.hasAttribute("download")) return null;
   // An escape hatch for a link that must keep the default behaviour.
   if (anchor.closest?.("[data-tab-link='off']")) return null;
@@ -57,13 +62,15 @@ export const inAppLinkAt = (
 export const linkClickIntent = (
   event: LinkClickLike,
   anchor: AnchorLike,
-): { to: string; background: true } | null => {
+): { to: string; background: boolean } | null => {
   if (event.shiftKey || event.altKey) return null;
   const middle = event.button === 1;
   const modified = event.button === 0 && (event.metaKey || event.ctrlKey);
-  if (!middle && !modified) return null;
+  // Chromium would open `_blank` as a window, which the main process denies: a tab instead.
+  const newTab = event.button === 0 && !modified && anchor.getAttribute("target") === "_blank";
+  if (!middle && !modified && !newTab) return null;
   const to = inAppPath(anchor);
-  return to ? { to, background: true } : null;
+  return to ? { to, background: !newTab } : null;
 };
 
 /**

@@ -38,6 +38,13 @@ describe("linkClickIntent", () => {
     expect(linkClickIntent(click({ button: 1 }), link)?.to).toBe("/elektro/arraydatasets/5");
   });
 
+  it("opens a link that asks for a new tab in one: in front on a click, behind on ⌘/Ctrl", () => {
+    const blank = anchor({ href: "/mikro/scenes/7", target: "_blank" });
+    expect(linkClickIntent(click(), blank)).toEqual({ to: "/mikro/scenes/7", background: false });
+    expect(linkClickIntent(click({ ctrlKey: true }), blank)).toEqual({ to: "/mikro/scenes/7", background: true });
+    expect(linkClickIntent(click(), anchor({ href: "https://example.org", target: "_blank" }))).toBeNull();
+  });
+
   it("does not claim Shift gestures — they are selection", () => {
     expect(linkClickIntent(click({ shiftKey: true }), link)).toBeNull();
     expect(linkClickIntent(click({ shiftKey: true, ctrlKey: true }), link)).toBeNull();
@@ -53,7 +60,7 @@ describe("linkClickIntent", () => {
     expect(linkClickIntent(ctrl, anchor({ href: "https://example.org" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "//example.org/x" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "#section" }))).toBeNull();
-    expect(linkClickIntent(ctrl, anchor({ href: "/x", target: "_blank" }))).toBeNull();
+    expect(linkClickIntent(ctrl, anchor({ href: "/x", target: "frame" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "/x", download: "" }))).toBeNull();
     expect(linkClickIntent(ctrl, anchor({ href: "/x" }, true))).toBeNull();
   });
