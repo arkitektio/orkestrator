@@ -1,3 +1,10 @@
+# [8.4.0](https://github.com/arkitektio/orkestrator/compare/v8.3.2...v8.4.0) (2026-11-17)
+
+
+### Features
+
+* **scene:** the phasor layer card in the shared card vocabulary ([8b75fa6](https://github.com/arkitektio/orkestrator/commit/8b75fa6bd503c81c80b55158c21b63dffbf95635))
+
 ## [8.3.2](https://github.com/arkitektio/orkestrator/compare/v8.3.1...v8.3.2) (2026-11-17)
 
 
