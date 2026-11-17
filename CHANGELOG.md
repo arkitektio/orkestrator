@@ -1,3 +1,10 @@
+# [8.3.0](https://github.com/arkitektio/orkestrator/compare/v8.2.1...v8.3.0) (2026-11-17)
+
+
+### Features
+
+* **tabs:** an in-app link that asks for a new tab opens one ([3c8fea9](https://github.com/arkitektio/orkestrator/commit/3c8fea918e0293ad5d3079d60566c9eb8a29e53b))
+
 ## [8.2.1](https://github.com/arkitektio/orkestrator/compare/v8.2.0...v8.2.1) (2026-11-17)
 
 
