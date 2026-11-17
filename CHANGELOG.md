@@ -1,3 +1,10 @@
+## [8.3.2](https://github.com/arkitektio/orkestrator/compare/v8.3.1...v8.3.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **theme:** theme tokens instead of hard-coded colours, and a fresh card for each hold ([72380c7](https://github.com/arkitektio/orkestrator/commit/72380c7e120ab56419ff204e3a52f75930727fdc))
+
 ## [8.3.1](https://github.com/arkitektio/orkestrator/compare/v8.3.0...v8.3.1) (2026-11-17)
 
 
