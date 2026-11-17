@@ -1,3 +1,10 @@
+## [8.3.1](https://github.com/arkitektio/orkestrator/compare/v8.3.0...v8.3.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **deps:** bsx 6.4.0, a foreach names each item's position with index ([24a1867](https://github.com/arkitektio/orkestrator/commit/24a1867abb263db74c6240a49796b655b287a5a9))
+
 # [8.3.0](https://github.com/arkitektio/orkestrator/compare/v8.2.1...v8.3.0) (2026-11-17)
 
 
