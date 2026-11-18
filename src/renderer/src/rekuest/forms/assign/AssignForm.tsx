@@ -39,6 +39,7 @@ import { useDependencyTree } from "@arkitektio/bsx/ports/dependencies/useDepende
 import { EstimatedRuntimeHint } from "./EstimatedRuntimeHint";
 import { FitsGuard, portFitsOf, type FitDecision } from "./FitsGuard";
 import { RunsOn } from "./RunsOn";
+import { submitsOnlyByAccident } from "./startKeys";
 import { canTakeWork } from "@/rekuest/assign";
 import { useAssignForm } from "@arkitektio/bsx/ports/engine/useAssignForm";
 import type { AssignTarget, AssignTrack } from "./target";
@@ -372,6 +373,11 @@ export const AssignForm = ({
         onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
         onKeyDownCapture={(e) => {
           if (e.key === "Enter") keepOpenRef.current = e.ctrlKey || e.metaKey;
+        }}
+        // After the fields had it (a search picks its result on Enter): an Enter that would
+        // only submit because a field was focused starts nothing. The button starts the run.
+        onKeyDown={(e) => {
+          if (submitsOnlyByAccident(e)) e.preventDefault();
         }}
         className={cn(
           "flex flex-col gap-4 @container",
