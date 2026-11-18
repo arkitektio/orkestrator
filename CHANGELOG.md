@@ -1,3 +1,10 @@
+# [8.8.0](https://github.com/arkitektio/orkestrator/compare/v8.7.0...v8.8.0) (2026-11-18)
+
+
+### Features
+
+* **fluss:** a graph flow is deployed and run, and binds its stateful steps ([3067219](https://github.com/arkitektio/orkestrator/commit/3067219140960ad1d1d180242c0dce6cea2c9d0d))
+
 # [8.7.0](https://github.com/arkitektio/orkestrator/compare/v8.6.0...v8.7.0) (2026-11-18)
 
 
