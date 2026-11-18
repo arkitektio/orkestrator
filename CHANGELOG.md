@@ -1,3 +1,10 @@
+# [8.6.0](https://github.com/arkitektio/orkestrator/compare/v8.5.0...v8.6.0) (2026-11-18)
+
+
+### Features
+
+* **rekuest:** a stateful action is always sent with its agent ([2e45980](https://github.com/arkitektio/orkestrator/commit/2e459806cd3b3529b6269346936bccb9bb97424c))
+
 # [8.5.0](https://github.com/arkitektio/orkestrator/compare/v8.4.0...v8.5.0) (2026-11-18)
 
 
