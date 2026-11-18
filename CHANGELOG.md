@@ -1,3 +1,10 @@
+# [8.5.0](https://github.com/arkitektio/orkestrator/compare/v8.4.0...v8.5.0) (2026-11-18)
+
+
+### Features
+
+* **state:** a state update is applied whole ([23bfc46](https://github.com/arkitektio/orkestrator/commit/23bfc4652595dfce06cf4d47969b12fd170fa2d7))
+
 # [8.4.0](https://github.com/arkitektio/orkestrator/compare/v8.3.2...v8.4.0) (2026-11-17)
 
 
