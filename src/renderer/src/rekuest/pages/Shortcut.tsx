@@ -26,6 +26,14 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
     [shortcut.savedArgs],
   );
 
+  // A pinned shortcut runs on its agent's implementation; one whose agent is gone is unpinned.
+  const pinned = shortcut.agent
+    ? shortcut.action.implementations.find(
+        (implementation) =>
+          implementation.agent.id === shortcut.agent?.id && implementation.interface === shortcut.interface,
+      )
+    : undefined;
+
   const yieldEvent = latestTask?.events.find(
     (x) => x.kind == TaskEventKind.Yield,
   );
@@ -44,7 +52,7 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
           <CardTitle className="font-light">Arguments</CardTitle>
         </CardHeader>
         <CardContent>
-          <AssignForm target={{ action: shortcut.action.id }} ports={shortcut.args} prepareArgs={withSaved} prefillLatest={false} layout="inline" />
+          <AssignForm target={pinned ? { implementation: pinned.id } : { action: shortcut.action.id }} ports={shortcut.args} prepareArgs={withSaved} prefillLatest={false} layout="inline" />
         </CardContent>
       </Card>
       {yieldReturns ? (
@@ -139,6 +147,9 @@ export const TPage = asDetailQueryRoute(useShortcutQuery, ({ data }) => {
             {description}{" "}
             {data.shortcut.bindNumber ? `(${data.shortcut.bindNumber})` : ""}
           </p>
+          {data.shortcut.agent && (
+            <p className="mt-1 text-sm text-muted-foreground">Runs on {data.shortcut.agent.name}</p>
+          )}
         </div>
         <ShortcutBindings bindings={data.shortcut.bindings} />
         <ShortcutForm shortcut={data.shortcut} />

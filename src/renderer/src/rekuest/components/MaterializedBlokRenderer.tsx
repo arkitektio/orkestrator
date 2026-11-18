@@ -194,8 +194,9 @@ const AgentConnectedSync = ({dependencyKey, connected}: {dependencyKey: string; 
   return null;
 };
 
-const MaterializedBlokRuntimeSync = (props: {
-  materializedBlok: MaterializedBlokData;
+/** Keeps a blok's runtime on its bound agents: whether each is connected, the states and the latest tasks its tree reads. */
+export const MaterializedBlokRuntimeSync = (props: {
+  materializedBlok: Pick<MaterializedBlokData, 'agentMappings'>;
   demandedStates: ReadonlyMap<string, ReadonlySet<string>>;
   demandedTasks: ReadonlyMap<string, ReadonlySet<string>>;
 }) => (

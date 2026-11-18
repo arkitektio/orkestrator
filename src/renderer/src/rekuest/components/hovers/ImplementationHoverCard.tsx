@@ -141,7 +141,7 @@ export const ImplementationHoverCard = ({ object }: { object: Object }) => {
         size="sm"
         variant="outline"
         className="mt-1 w-full gap-2"
-        onClick={() => openDialog("createshortcut", { id: action.id }, {})}
+        onClick={() => openDialog("createshortcut", { id: action.id, implementation: impl.id }, {})}
       >
         <Zap className="h-3.5 w-3.5" />
         Create shortcut

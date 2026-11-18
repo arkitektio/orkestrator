@@ -53,11 +53,14 @@ export type AssignBlokSetup = {
 /**
  * The assign bloks of `actionId`, bound as a run on `implementation` would be
  * with `pinned` (what the form's own dependency picker pins, if anything).
+ * `portBloks`: an argument is drawn by a blok of its own, which reads the same
+ * binding, so the dry run is asked without assign bloks too.
  */
 export const useAssignBloks = (
   actionId: string | null | undefined,
   implementation: {id: string; agent: RunBoundAgent} | null | undefined,
   pinned: readonly ResolvedDependencyInput[] | undefined,
+  portBloks = false,
 ): AssignBlokSetup => {
   const {data} = useActionBloksQuery({variables: {id: actionId ?? ''}, skip: !actionId});
   const declared = data?.action.assignBloks ?? NO_BLOKS;
@@ -69,7 +72,7 @@ export const useAssignBloks = (
   const dryRun = useDependencyTreeQuery({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     variables: React.useMemo(() => ({input: {implementation: implementation?.id ?? '', dependencies: JSON.parse(pinKey)}}), [implementation?.id, pinKey]),
-    skip: !implementation || bloks.length === 0,
+    skip: !implementation || (bloks.length === 0 && !portBloks),
     // Not polled: the agents shown stay the agents prepared, until the viewer asks again.
     fetchPolicy: 'network-only',
   });

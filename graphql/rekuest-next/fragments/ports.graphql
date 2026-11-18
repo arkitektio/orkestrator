@@ -95,6 +95,27 @@ fragment CustomAssignWidget on CustomAssignWidget {
   }
 }
 
+# A port blok is the port's widget written in BSX (`<Blok kind="port">`), drawn
+# where the port's control would be. Its `fallback` is drawn where the blok
+# cannot be; like a custom widget's, it is selected as the plain variants only.
+fragment BlokAssignWidget on BlokAssignWidget {
+  __typename
+  kind
+  followValue
+  source
+  vocab
+  fallback {
+    __typename
+    kind
+    ...StringAssignWidget
+    ...SearchAssignWidget
+    ...SliderAssignWidget
+    ...ChoiceAssignWidget
+    ...ProxyWidget
+    ...StateChoiceAssignWidget
+  }
+}
+
 # Choices live on the port (`ArgPort.choices` / `ReturnPort.choices`); the
 # widget only says how to present them.
 fragment ChoiceAssignWidget on ChoiceAssignWidget {
@@ -367,6 +388,7 @@ fragment AssignWidget on AssignWidget {
   ...ChoiceAssignWidget
   ...ProxyWidget
   ...CustomAssignWidget
+  ...BlokAssignWidget
   ...StateChoiceAssignWidget
 }
 

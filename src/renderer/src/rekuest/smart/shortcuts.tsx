@@ -1,6 +1,6 @@
 import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
-import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
+import { buildAssignInput, canTakeWork, directAssignTarget } from "@/rekuest/assign";
 import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
@@ -86,6 +86,27 @@ const buildShortcutArgs = (
   return keys;
 };
 
+/**
+ * Where a shortcut's run goes. Pinned, to its agent's implementation, whatever else could take
+ * the action. Not pinned, as a direct run of its action (`directAssignTarget`): null when a
+ * stateful action has no one agent to name, and the form then says which.
+ */
+export const shortcutTarget = (shortcut: Pick<ListShortcutFragment, "agent" | "interface" | "action">) =>
+  shortcut.agent && shortcut.interface
+    ? { agent: shortcut.agent.id, interface: shortcut.interface }
+    : directAssignTarget(shortcut.action);
+
+/**
+ * Whether the row can run right now, like an action's (`actionAvailability`): a pinned shortcut
+ * by its own agent, since another agent that could take the action is no use to it.
+ */
+export const shortcutAvailability = (shortcut: Pick<ListShortcutFragment, "agent" | "interface" | "action">) =>
+  shortcut.agent && shortcut.interface
+    ? canTakeWork(shortcut.agent)
+      ? null
+      : { reason: `${shortcut.agent.name} is offline` }
+    : actionAvailability(shortcut.action);
+
 export const ShortcutButton = (
   props: SmartContextProps & { shortcut: ListShortcutFragment },
 ) => {
@@ -154,13 +175,20 @@ export const ShortcutButton = (
         return;
       }
 
-      const target = directAssignTarget(shortcut.action);
+      const target = shortcutTarget(shortcut);
       const unknownKeys = shortcut.args.filter((arg) => arg.key && !keys[arg.key]);
-      // Also a stateful action with no one agent to name (a shortcut stores an action, not an
-      // agent): the form says which it runs on.
+      // Also an unpinned shortcut to a stateful action with no one agent to name: the form says
+      // which it runs on.
       if (unknownKeys.length >= 1 || !target) {
+        // The form of a pinned shortcut is that of the implementation it is pinned to.
+        const pinned = shortcut.agent
+          ? shortcut.action.implementations.find(
+              (implementation) =>
+                implementation.agent.id === shortcut.agent?.id && implementation.interface === shortcut.interface,
+            )
+          : undefined;
         openDialog("assign", {
-          target: { action: shortcut.action.id },
+          target: pinned ? { implementation: pinned.id } : { action: shortcut.action.id },
           args: { ...keys, ...shortcut.savedArgs },
           hidden: { ...keys, ...shortcut.savedArgs },
           track: runTracker(sink, shortcut.returns, doStuff, { action: shortcut.action.id, on: keys }),
@@ -221,7 +249,7 @@ export const ShortcutButton = (
       progress={progress}
       running={doing}
       failure={error ? { title: "Could not run", detail: error } : null}
-      unavailable={actionAvailability(props.shortcut.action)}
+      unavailable={shortcutAvailability(props.shortcut)}
       buttons={
         runsDirectly(props.shortcut.args, props) ? (
           <OpenResultButtons

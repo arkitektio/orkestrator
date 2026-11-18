@@ -26,6 +26,8 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWatch } from "react-hook-form";
 import { AssignBloks, useAssignBloks } from "../../run/AssignBloks";
+import { PortBlokRunProvider } from "../../run/PortBlokRenderer";
+import { usesPortBlok } from "../../run/portBloks";
 import type { AssignParts } from "../../run/ActionBlokRenderer";
 import type { BlokAssignRecord } from "../../components/MaterializedBlokRenderer";
 import { v4 as uuidv4 } from "uuid";
@@ -180,7 +182,9 @@ export const AssignForm = ({
   }, [candidates, fit.pin, implementation, named, target.resolution]);
   const watchedPins = useWatch({ control: fieldsControl, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
   const filling = useWatch({ control: fieldsControl, name: "args" }) as Record<string, unknown> | undefined;
-  const setup = useAssignBloks(bloks ? action?.id : undefined, chosen, pinning ? watchedPins : undefined);
+  // An argument drawn by a blok of its own reads the run's agents like an assign blok does.
+  const portBloks = useMemo(() => usesPortBlok(formPorts), [formPorts]);
+  const setup = useAssignBloks(bloks ? action?.id : undefined, chosen, pinning ? watchedPins : undefined, portBloks);
   const assignBloks = setup.bloks.length > 0;
 
   const onSubmit = async (data: {
@@ -407,6 +411,7 @@ export const AssignForm = ({
 
         <Fields className="flex flex-col gap-4">
         <PortFitsContext.Provider value={portFits}>
+        <PortBlokRunProvider value={setup.run}>
         <DependencyDefinitionsProvider dependencies={pinning?.dependencies || []}>
           {assignBloks && (
             // `contents`: no box of its own, only the mark the submit handler looks for.
@@ -441,6 +446,7 @@ export const AssignForm = ({
           {!bare && drawArgs(restArgs)}
           {!bare && drawDeps(restDeps)}
         </DependencyDefinitionsProvider>
+        </PortBlokRunProvider>
         </PortFitsContext.Provider>
         <DependencyTreeNotice tree={tree} />
 

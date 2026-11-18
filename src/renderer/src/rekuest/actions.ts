@@ -639,7 +639,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         throw new Error('Could not load action for this implementation')
       }
 
-      dialog.openDialog('createshortcut', { id: data.implementation.action.id })
+      dialog.openDialog('createshortcut', { id: data.implementation.action.id, implementation: structure.id })
     },
     collections: ['io'],
   },

@@ -15,6 +15,7 @@
       "MediaStore"
     ],
     "AssignWidget": [
+      "BlokAssignWidget",
       "ChoiceAssignWidget",
       "CustomAssignWidget",
       "ProxyWidget",

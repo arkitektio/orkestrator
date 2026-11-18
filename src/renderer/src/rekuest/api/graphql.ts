@@ -1114,11 +1114,11 @@ export type AssignWidgetInput = {
   dependencies?: InputMaybe<Array<Scalars['String']['input']>>;
   /** (STATE_CHOICE) The agent dependency (by key) whose state provides the choices; omitted: the implementing agent's own state. */
   dependency?: InputMaybe<Scalars['String']['input']>;
-  /** (CUSTOM) Widget to render when the UI has no such component in its catalog. */
+  /** (CUSTOM, BLOK) Widget to render when the UI has no such component in its catalog. */
   fallback?: InputMaybe<AssignWidgetInput>;
   /** (SEARCH) Filter ports whose values are passed to the query as variables named by their keys. */
   filters?: InputMaybe<Array<ArgPortInput>>;
-  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
+  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, BLOK, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
   followValue?: InputMaybe<Scalars['String']['input']>;
   /** Which kind of assign widget this is; decides which other fields are read. */
   kind: AssignWidgetKind;
@@ -1132,6 +1132,8 @@ export type AssignWidgetInput = {
   props?: InputMaybe<Array<ComponentPropInput>>;
   /** (SEARCH) The GraphQL query the ward executes to populate the choices. Must be a single `query` operation declaring `$search: String` and `$values: [ID!]`, plus one variable per filter port key. */
   query?: InputMaybe<Scalars['SearchQuery']['input']>;
+  /** (BLOK) The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source?: InputMaybe<Scalars['String']['input']>;
   /** (STATE_CHOICE) How to read label/description/logo/value out of each state entry; each accessor is a static pointer or a pure call. */
   stateAccessors?: InputMaybe<Array<StateAccessorInput>>;
   /** (STATE_CHOICE) Pure UtilCall returning that pointer dynamically; may reference `state`, `value` and `dependencies`. Mutually exclusive with `state_path`. */
@@ -1146,6 +1148,8 @@ export type AssignWidgetInput = {
   targetDependency?: InputMaybe<Scalars['String']['input']>;
   /** (PROXY) The port key on the targeted action. */
   targetPort?: InputMaybe<Scalars['String']['input']>;
+  /** (BLOK) The blok language version the source speaks; 2 is the only one. */
+  vocab?: InputMaybe<Scalars['Int']['input']>;
   /** (SEARCH) The ward (service) that executes the query. */
   ward?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1286,6 +1290,30 @@ export type BlokAgentMapping = {
 export type BlokAgentMappingInput = {
   agent: Scalars['ID']['input'];
   key: Scalars['String']['input'];
+};
+
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidget = AssignWidget & {
+  __typename?: 'BlokAssignWidget';
+  fallback?: Maybe<AssignWidget>;
+  followValue?: Maybe<Scalars['String']['output']>;
+  kind: AssignWidgetKind;
+  source: Scalars['String']['output'];
+  vocab: Scalars['Int']['output'];
+};
+
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidgetInput = {
+  /** Widget to render where the UI draws no port bloks; the port's own kind's widget when left out. */
+  fallback?: InputMaybe<AssignWidgetInput>;
+  /** Port path of another port whose value this widget follows and mirrors. */
+  followValue?: InputMaybe<Scalars['String']['input']>;
+  /** Which member of AssignWidgetInput this is. */
+  kind: AssignWidgetKind;
+  /** The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source: Scalars['String']['input'];
+  /** The blok language version the source speaks; 2 is the only one. */
+  vocab?: Scalars['Int']['input'];
 };
 
 /** What a preview renders a blok with, mirroring the roots it reads. */
@@ -1928,6 +1956,8 @@ export type CreateScheduleInput = {
 export type CreateShortcutInput = {
   /** The action ID to create a shortcut for */
   action: Scalars['ID']['input'];
+  /** Pin the shortcut to this agent (with `interface`): it then runs there. What a shortcut to a stateful action needs to run without asking. */
+  agent?: InputMaybe<Scalars['ID']['input']>;
   /** Whether to allow quick shortcuts. Quick shorts are shortcuts that can be autorun without scpeific assignment */
   allowQuick?: Scalars['Boolean']['input'];
   /** The arguments to pre-pass to the shortcut. This is used to identify the shortcut in the system. */
@@ -1938,6 +1968,8 @@ export type CreateShortcutInput = {
   bindings?: InputMaybe<ShortcutBindingsInput>;
   /** The description of the shortcut.This can described the shortcut and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** The implementation interface on the pinned agent. */
+  interface?: InputMaybe<Scalars['String']['input']>;
   /** The name of the shortcut. This is used to identify the shortcut in the system. */
   name: Scalars['String']['input'];
   /** The toolbox ID to create the shortcut in. If not provided, the shortcut will be created in the default toolbox. */
@@ -5559,6 +5591,8 @@ export type Shortcut = {
   __typename?: 'Shortcut';
   /** The associated action. */
   action: Action;
+  /** The agent the shortcut is pinned to (with `interface`): it runs there. Null when it is not pinned, or its agent is gone. */
+  agent?: Maybe<Agent>;
   /** Allow quick execution without modification. */
   allowQuick: Scalars['Boolean']['output'];
   /** Input ports for the shortcut's action.dd */
@@ -5573,6 +5607,8 @@ export type Shortcut = {
   id: Scalars['ID']['output'];
   /** Implementation of the action. */
   implementation?: Maybe<Implementation>;
+  /** The implementation interface on the pinned agent. */
+  interface?: Maybe<Scalars['String']['output']>;
   /** Name of the shortcut. */
   name: Scalars['String']['output'];
   /** Whether an admin pinned this shortcut for the caller: one of its bindings matches who they are and where they call from. The caller cannot unpin it. */
@@ -7867,7 +7903,7 @@ export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWi
 
 export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, followValue?: string | null, targetPort: string, targetAction: string, targetDependency?: string | null };
 
-export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
+export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'BlokAssignWidget' } | { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
 
 export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, followValue?: string | null, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
     { __typename?: 'ArgPort' }
@@ -7877,7 +7913,27 @@ export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kin
 export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kind: AssignWidgetKind, followValue?: string | null, component: string, children?: any | null, dependencies?: Array<string> | null, props?: Array<(
     { __typename?: 'ComponentProp' }
     & BlokComponentPropFragment
-  )> | null, fallback?: (
+  )> | null, fallback?: { __typename: 'BlokAssignWidget', kind: AssignWidgetKind } | (
+    { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
+    & ChoiceAssignWidgetFragment
+  ) | { __typename: 'CustomAssignWidget', kind: AssignWidgetKind } | (
+    { __typename: 'ProxyWidget', kind: AssignWidgetKind }
+    & ProxyWidgetFragment
+  ) | (
+    { __typename: 'SearchAssignWidget', kind: AssignWidgetKind }
+    & SearchAssignWidgetFragment
+  ) | (
+    { __typename: 'SliderAssignWidget', kind: AssignWidgetKind }
+    & SliderAssignWidgetFragment
+  ) | (
+    { __typename: 'StateChoiceAssignWidget', kind: AssignWidgetKind }
+    & StateChoiceAssignWidgetFragment
+  ) | (
+    { __typename: 'StringAssignWidget', kind: AssignWidgetKind }
+    & StringAssignWidgetFragment
+  ) | null };
+
+export type BlokAssignWidgetFragment = { __typename: 'BlokAssignWidget', kind: AssignWidgetKind, followValue?: string | null, source: string, vocab: number, fallback?: { __typename: 'BlokAssignWidget', kind: AssignWidgetKind } | (
     { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
     & ChoiceAssignWidgetFragment
   ) | { __typename: 'CustomAssignWidget', kind: AssignWidgetKind } | (
@@ -7900,6 +7956,9 @@ export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kin
 export type ChoiceAssignWidgetFragment = { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null };
 
 export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -7921,6 +7980,9 @@ export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, 
     { __typename?: 'StringAssignWidget' }
     & AssignWidget_StringAssignWidget_Fragment
   ) | null, children?: Array<{ __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, nullable: boolean, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, widget?: (
+      { __typename?: 'BlokAssignWidget' }
+      & AssignWidget_BlokAssignWidget_Fragment
+    ) | (
       { __typename?: 'ChoiceAssignWidget' }
       & AssignWidget_ChoiceAssignWidget_Fragment
     ) | (
@@ -7947,6 +8009,9 @@ export type ArgChildPortNestedFragment = { __typename: 'ArgPort', kind: PortKind
     { __typename?: 'ArgPort' }
     & ArgChildPortDeepFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -7985,6 +8050,9 @@ export type ArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind, key:
     { __typename?: 'ArgPort' }
     & ArgChildPortNestedFragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -8122,6 +8190,11 @@ type PortEffect_MessageEffect_Fragment = (
 
 export type PortEffectFragment = PortEffect_CustomEffect_Fragment | PortEffect_HideEffect_Fragment | PortEffect_MessageEffect_Fragment;
 
+type AssignWidget_BlokAssignWidget_Fragment = (
+  { __typename: 'BlokAssignWidget', kind: AssignWidgetKind }
+  & BlokAssignWidgetFragment
+);
+
 type AssignWidget_ChoiceAssignWidget_Fragment = (
   { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
   & ChoiceAssignWidgetFragment
@@ -8157,7 +8230,7 @@ type AssignWidget_StringAssignWidget_Fragment = (
   & StringAssignWidgetFragment
 );
 
-export type AssignWidgetFragment = AssignWidget_ChoiceAssignWidget_Fragment | AssignWidget_CustomAssignWidget_Fragment | AssignWidget_ProxyWidget_Fragment | AssignWidget_SearchAssignWidget_Fragment | AssignWidget_SliderAssignWidget_Fragment | AssignWidget_StateChoiceAssignWidget_Fragment | AssignWidget_StringAssignWidget_Fragment;
+export type AssignWidgetFragment = AssignWidget_BlokAssignWidget_Fragment | AssignWidget_ChoiceAssignWidget_Fragment | AssignWidget_CustomAssignWidget_Fragment | AssignWidget_ProxyWidget_Fragment | AssignWidget_SearchAssignWidget_Fragment | AssignWidget_SliderAssignWidget_Fragment | AssignWidget_StateChoiceAssignWidget_Fragment | AssignWidget_StringAssignWidget_Fragment;
 
 export type ValidatorFragment = { __typename?: 'Validator', dependencies?: Array<string> | null, label?: string | null, errorMessage?: string | null, source?: string | null, call: (
     { __typename?: 'UtilCall' }
@@ -8174,6 +8247,9 @@ export type ArgPortFragment = { __typename: 'ArgPort', key: string, label?: stri
     { __typename?: 'MessageEffect' }
     & PortEffect_MessageEffect_Fragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -8323,10 +8399,10 @@ export type ListResolutionFragment = { __typename?: 'Resolution', id: string, na
 
 export type SessionFragment = { __typename?: 'Session', id: string, startedAt: any, agent: { __typename?: 'Agent', id: string, name: string }, snapshots: Array<{ __typename?: 'Snapshot', id: string, value: any, timestamp: any }> };
 
-export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: (
+export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, interface?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
-  ), args: Array<(
+  ), agent?: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean } | null, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -8339,10 +8415,10 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
 
 export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, client?: string | null, device?: string | null, createdAt: any, user?: { __typename?: 'User', id: string, sub: string } | null, boundBy: { __typename?: 'User', id: string, sub: string } };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, stateful: boolean, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean } }>, logo?: (
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, interface?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, stateful: boolean, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean } }>, logo?: (
       { __typename?: 'Blok' }
       & BlokLogoFragment
-    ) | null }, args: Array<(
+    ) | null }, agent?: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean } | null, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -11430,6 +11506,30 @@ ${SliderAssignWidgetFragmentDoc}
 ${ChoiceAssignWidgetFragmentDoc}
 ${ProxyWidgetFragmentDoc}
 ${StateChoiceAssignWidgetFragmentDoc}`;
+export const BlokAssignWidgetFragmentDoc = gql`
+    fragment BlokAssignWidget on BlokAssignWidget {
+  __typename
+  kind
+  followValue
+  source
+  vocab
+  fallback {
+    __typename
+    kind
+    ...StringAssignWidget
+    ...SearchAssignWidget
+    ...SliderAssignWidget
+    ...ChoiceAssignWidget
+    ...ProxyWidget
+    ...StateChoiceAssignWidget
+  }
+}
+    ${StringAssignWidgetFragmentDoc}
+${SearchAssignWidgetFragmentDoc}
+${SliderAssignWidgetFragmentDoc}
+${ChoiceAssignWidgetFragmentDoc}
+${ProxyWidgetFragmentDoc}
+${StateChoiceAssignWidgetFragmentDoc}`;
 export const AssignWidgetFragmentDoc = gql`
     fragment AssignWidget on AssignWidget {
   __typename
@@ -11440,6 +11540,7 @@ export const AssignWidgetFragmentDoc = gql`
   ...ChoiceAssignWidget
   ...ProxyWidget
   ...CustomAssignWidget
+  ...BlokAssignWidget
   ...StateChoiceAssignWidget
 }
     ${StringAssignWidgetFragmentDoc}
@@ -11448,6 +11549,7 @@ ${SliderAssignWidgetFragmentDoc}
 ${ChoiceAssignWidgetFragmentDoc}
 ${ProxyWidgetFragmentDoc}
 ${CustomAssignWidgetFragmentDoc}
+${BlokAssignWidgetFragmentDoc}
 ${StateChoiceAssignWidgetFragmentDoc}`;
 export const ArgChildPortDeepFragmentDoc = gql`
     fragment ArgChildPortDeep on ArgPort {
@@ -13460,6 +13562,13 @@ export const ShortcutFragmentDoc = gql`
   action {
     ...DetailAction
   }
+  interface
+  agent {
+    id
+    name
+    kind
+    active
+  }
   bindNumber
   savedArgs
   args {
@@ -13489,6 +13598,7 @@ export const ListShortcutFragmentDoc = gql`
     stateful
     implementations {
       id
+      interface
       agent {
         id
         kind
@@ -13498,6 +13608,13 @@ export const ListShortcutFragmentDoc = gql`
     logo {
       ...BlokLogo
     }
+  }
+  interface
+  agent {
+    id
+    name
+    kind
+    active
   }
   bindNumber
   savedArgs

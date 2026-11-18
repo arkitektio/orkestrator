@@ -28,12 +28,16 @@ import { RoleGuard } from "@/core/connection/roles";
 import { REKUEST_ADMIN } from "../../roles";
 import { ShortcutBindingFields } from "./BindShortcutDialog";
 import { toBindingInput } from "../../lib/shortcutBinding";
+import { soleLiveImplementation } from "../../assign";
+import { PinSelect, type Pin } from "../automation/PinSelect";
 
 const NO_PORTS: never[] = [];
 
 
 export const CreateShortcutDialog = (props: {
   id: string;
+  /** The implementation the dialog was opened from, when it was one. */
+  implementation?: string;
   args?: { [key: string]: any };
   hidden?: { [key: string]: any };
 }) => {
@@ -50,6 +54,18 @@ export const CreateShortcutDialog = (props: {
   const action = actiondata?.action;
 
   const [chosenArgs, setChosenArgs] = React.useState<string[]>([]);
+
+  // The agent every run goes to. A stateful action needs one to run without asking, so it starts
+  // on the implementation the dialog was opened from, else the only one that can take it now.
+  // Undefined until the user chose (also "any"): then theirs stands.
+  const [pickedRunsOn, setRunsOn] = React.useState<Pin | null>();
+  const suggestedRunsOn = useMemo<Pin | null>(() => {
+    if (!action?.stateful) return null;
+    const id = props.implementation ?? soleLiveImplementation(action);
+    const implementation = action.implementations.find((candidate) => candidate.id === id);
+    return implementation ? { agent: implementation.agent.id, interface: implementation.interface } : null;
+  }, [action, props.implementation]);
+  const runsOn = pickedRunsOn === undefined ? suggestedRunsOn : pickedRunsOn;
 
   // The form holds every argument; only the chosen ones are mounted, and
   // the port form validates and submits only what is mounted. Toggling one
@@ -89,6 +105,8 @@ export const CreateShortcutDialog = (props: {
           input: {
             name: name,
             action: props.id,
+            // A pin is both, or neither.
+            ...(runsOn ? { agent: runsOn.agent, interface: runsOn.interface } : {}),
             toolbox: toolbox || null,
             args: rest,
             bindNumber: bindNumber,
@@ -190,6 +208,18 @@ export const CreateShortcutDialog = (props: {
                   )}
                 </div>
               )}
+
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <h3 className="text-sm font-medium">Runs on</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {action.stateful
+                      ? "This action keeps its state on one agent. Pinned to one, the shortcut runs without asking which."
+                      : "Pin the shortcut to one agent, or leave it to whichever implements the action."}
+                  </p>
+                </div>
+                <PinSelect action={props.id} value={runsOn} onChange={setRunsOn} />
+              </div>
 
               <div className="flex flex-col gap-4">
                 <StringField

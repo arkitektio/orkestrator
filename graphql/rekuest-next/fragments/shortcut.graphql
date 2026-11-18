@@ -5,6 +5,14 @@ fragment Shortcut on Shortcut {
   action {
     ...DetailAction
   }
+  # The pin, when it has one: every run goes to this agent's implementation.
+  interface
+  agent {
+    id
+    name
+    kind
+    active
+  }
   bindNumber
   savedArgs
   args {
@@ -47,6 +55,7 @@ fragment ListShortcut on Shortcut {
     stateful
     implementations {
       id
+      interface
       agent {
         id
         kind
@@ -56,6 +65,14 @@ fragment ListShortcut on Shortcut {
     logo {
       ...BlokLogo
     }
+  }
+  # The pin, when it has one: every run goes to this agent's implementation.
+  interface
+  agent {
+    id
+    name
+    kind
+    active
   }
   bindNumber
   savedArgs

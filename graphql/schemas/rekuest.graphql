@@ -1418,7 +1418,7 @@ input AssignWidgetInput {
   dependency: String = null
 
   """
-  (CUSTOM) Widget to render when the UI has no such component in its catalog.
+  (CUSTOM, BLOK) Widget to render when the UI has no such component in its catalog.
   """
   fallback: AssignWidgetInput = null
 
@@ -1428,7 +1428,7 @@ input AssignWidgetInput {
   filters: [ArgPortInput!] = null
 
   """
-  (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors.
+  (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, BLOK, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors.
   """
   followValue: String = null
 
@@ -1457,6 +1457,11 @@ input AssignWidgetInput {
   (SEARCH) The GraphQL query the ward executes to populate the choices. Must be a single `query` operation declaring `$search: String` and `$values: [ID!]`, plus one variable per filter port key.
   """
   query: SearchQuery = null
+
+  """
+  (BLOK) The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent.
+  """
+  source: String = null
 
   """
   (STATE_CHOICE) How to read label/description/logo/value out of each state entry; each accessor is a static pointer or a pure call.
@@ -1489,12 +1494,16 @@ input AssignWidgetInput {
   """(PROXY) The port key on the targeted action."""
   targetPort: String = null
 
+  """(BLOK) The blok language version the source speaks; 2 is the only one."""
+  vocab: Int = null
+
   """(SEARCH) The ward (service) that executes the query."""
   ward: String = null
 }
 
 """The kind of assign widget."""
 enum AssignWidgetKind {
+  BLOK
   CHOICE
   CUSTOM
   PROXY
@@ -1700,6 +1709,41 @@ type BlokAgentMapping {
 input BlokAgentMappingInput {
   agent: ID!
   key: String!
+}
+
+"""
+A port blok as the port's widget: BSX the form draws where the port's control would be.
+"""
+type BlokAssignWidget implements AssignWidget {
+  fallback: AssignWidget
+  followValue: String
+  kind: AssignWidgetKind!
+  source: String!
+  vocab: Int!
+}
+
+"""
+A port blok as the port's widget: BSX the form draws where the port's control would be.
+"""
+input BlokAssignWidgetInput {
+  """
+  Widget to render where the UI draws no port bloks; the port's own kind's widget when left out.
+  """
+  fallback: AssignWidgetInput = null
+
+  """Port path of another port whose value this widget follows and mirrors."""
+  followValue: String = null
+
+  """Which member of AssignWidgetInput this is."""
+  kind: AssignWidgetKind!
+
+  """
+  The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent.
+  """
+  source: String!
+
+  """The blok language version the source speaks; 2 is the only one."""
+  vocab: Int! = 2
 }
 
 """What a preview renders a blok with, mirroring the roots it reads."""
@@ -2601,6 +2645,11 @@ input CreateShortcutInput {
   action: ID!
 
   """
+  Pin the shortcut to this agent (with `interface`): it then runs there. What a shortcut to a stateful action needs to run without asking.
+  """
+  agent: ID = null
+
+  """
   Whether to allow quick shortcuts. Quick shorts are shortcuts that can be autorun without scpeific assignment
   """
   allowQuick: Boolean! = false
@@ -2622,6 +2671,9 @@ input CreateShortcutInput {
   The description of the shortcut.This can described the shortcut and its purpose.
   """
   description: String = null
+
+  """The implementation interface on the pinned agent."""
+  interface: String = null
 
   """
   The name of the shortcut. This is used to identify the shortcut in the system.
@@ -6579,6 +6631,11 @@ type Shortcut {
   """The associated action."""
   action: Action!
 
+  """
+  The agent the shortcut is pinned to (with `interface`): it runs there. Null when it is not pinned, or its agent is gone.
+  """
+  agent: Agent
+
   """Allow quick execution without modification."""
   allowQuick: Boolean!
 
@@ -6603,6 +6660,9 @@ type Shortcut {
 
   """Implementation of the action."""
   implementation: Implementation
+
+  """The implementation interface on the pinned agent."""
+  interface: String
 
   """Name of the shortcut."""
   name: String!

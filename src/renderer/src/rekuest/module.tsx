@@ -1,4 +1,5 @@
 import { TaskHookRunner } from "@/core/modules/taskhooks/TaskHookRunner";
+import { providePortBlokRenderer } from "@/core/blok/portBlokSlot";
 import { defineModule } from "@/core/modules/host/define";
 import { REKUEST_ACTIONS } from "./actions";
 import { ModuleRegistrar } from "./catalog/ModuleRegistrar";
@@ -48,6 +49,11 @@ import { DeviceAgents } from "./sections/DeviceAgents";
 import { BackendAgents, PodActions } from "./sections/KabinetAgents";
 import { RunOnSubmenu } from "./smart/RunOnSubmenu";
 import { REKUEST_SECTIONS } from "./smart/sections";
+import { PortBlokRenderer } from "./run/PortBlokRenderer";
+
+// A port's own blok reads the agents of the run it is drawn for, which are rekuest's to
+// know: the form's host draws it with this (see `core/blok/portBlokSlot.ts`).
+providePortBlokRenderer(PortBlokRenderer);
 
 export const REKUEST_MODULE = defineModule({
   manifest,

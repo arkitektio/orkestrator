@@ -6,7 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const assign = vi.fn(async () => ({}));
 
 vi.mock("@/rekuest/hooks/useAssign", () => ({ useAssign: () => ({ assign }) }));
-vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({ openDialog: vi.fn() }) }));
+const openDialog = vi.fn();
+vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({ openDialog }) }));
 vi.mock("@/rekuest/lib/taskTracker", () => ({ trackTask: () => () => {}, failureFallback: () => "" }));
 vi.mock("./openResult", () => ({
   deliverResults: (_sink: unknown, _ports: unknown, onEvent: unknown) => onEvent,
@@ -17,9 +18,15 @@ vi.mock("./openResult", () => ({
 }));
 vi.mock("./actions", () => ({ actionAvailability: () => null }));
 vi.mock("@/core/smart/extensions/CommandActionRow", () => ({
-  CommandActionRow: (props: { title: string; onSelect: () => void; failure?: { detail: string } | null }) => (
+  CommandActionRow: (props: {
+    title: string;
+    onSelect: () => void;
+    failure?: { detail: string } | null;
+    unavailable?: { reason: string } | null;
+  }) => (
     <div>
       {props.failure ? <span>{props.failure.detail}</span> : null}
+      {props.unavailable ? <span>{props.unavailable.reason}</span> : null}
       <button type="button" onClick={props.onSelect}>
         {props.title}
       </button>
@@ -38,12 +45,25 @@ const shortcut = {
   savedArgs: {},
   returns: [],
   args: [{ key: "image", kind: "STRUCTURE", identifier: "@mikro/arraylens", nullable: false }],
-  action: { id: "a1", assignable: true },
+  action: { id: "a1", assignable: true, stateful: false, implementations: [] },
+  interface: null,
+  agent: null,
 } as never;
+
+/** The same shortcut, pinned to one agent's implementation. */
+const pinnedTo = (active: boolean) =>
+  ({
+    ...(shortcut as object),
+    interface: "segment",
+    agent: { id: "g1", name: "Stage", kind: "WEBSOCKET", active },
+  }) as never;
+
+const objects = [{ identifier: "@mikro/arraylens", id: "1" }];
 
 afterEach(() => {
   cleanup();
   assign.mockClear();
+  openDialog.mockClear();
 });
 
 describe("ShortcutButton", () => {
@@ -59,6 +79,27 @@ describe("ShortcutButton", () => {
     const sent = JSON.stringify((assign.mock.calls as unknown[][])[0][0]);
     expect(sent).toContain('"object":"42"');
     expect(sent).not.toContain("cut:");
+  });
+
+  it("a pinned shortcut runs on its agent's implementation, not by action", async () => {
+    render(<ShortcutButton shortcut={pinnedTo(true)} objects={objects} />);
+
+    fireEvent.click(screen.getByText("Segment"));
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    const sent = (assign.mock.calls as unknown[][])[0][0];
+    expect(sent).toMatchObject({ agent: "g1", interface: "segment" });
+    expect(sent).not.toHaveProperty("action");
+  });
+
+  it("a pinned shortcut whose agent is offline says so on the row, and asks for no other agent", async () => {
+    render(<ShortcutButton shortcut={pinnedTo(false)} objects={objects} />);
+    expect(screen.getByText("Stage is offline")).toBeTruthy();
+
+    // Advisory, like an action nobody can take: choosing it still asks its agent, and the server says why not.
+    fireEvent.click(screen.getByText("Segment"));
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    expect((assign.mock.calls as unknown[][])[0][0]).toMatchObject({ agent: "g1", interface: "segment" });
+    expect(openDialog).not.toHaveBeenCalled();
   });
 
   it("says why when what it runs on cannot be made, and runs nothing", async () => {
