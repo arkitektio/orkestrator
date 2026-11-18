@@ -1885,9 +1885,9 @@ input BlokImplementationInput {
   components: [ComponentNodeInput!] = null
 
   """
-  What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action.
+  What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. A blok sent as its `source` need not say it: it is read off its `<Blok>`. PANEL otherwise.
   """
-  context: ComponentContext! = PANEL
+  context: ComponentContext = null
 
   """
   Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one.
@@ -4123,10 +4123,13 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](https:/
 """
 scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
 
+"""One RFC 6902 operation of a state update."""
 type JSONPatch {
   op: JSONPatchOperation!
   path: String!
-  value: Args!
+
+  """What the operation sets; nothing for a `remove`."""
+  value: Args
 }
 
 enum JSONPatchOperation {
@@ -5050,6 +5053,9 @@ input ParamPair {
   value: String!
 }
 
+"""
+One update of a state: what takes it from one revision to the next. Its operations are applied in order and together.
+"""
 type Patch {
   """Global revision this patch applied to (global_rev - 1)."""
   globalCurrentRevision: Int!
@@ -5064,11 +5070,10 @@ type Patch {
   """
   lifecycle: String
 
-  """The value the patch replaced, when the agent reported it."""
-  oldValue: Args
-  op: String!
-  patch: JSONPatch!
-  path: String!
+  """
+  What the update does, as RFC 6902 operations: apply them in order, and all of them before showing the state.
+  """
+  ops: [JSONPatch!]!
 
   """
   What the app says the change was for: its own names. Empty when it said nothing.
@@ -5080,7 +5085,6 @@ type Patch {
   state: State!
   task: Task
   timestamp: DateTime!
-  value: Args!
 }
 
 """The input for pausing a task."""
@@ -7182,7 +7186,9 @@ input StateImplementationInput {
   key: String = null
 }
 
-"""A plain patch event with no model cross-references."""
+"""
+One update of a state, with no model cross-references. Its operations are applied in order and together: the state is at `globalRevision` once all of them are.
+"""
 type StatePatchEvent {
   agentId: ID!
   globalRevision: Int!
@@ -7192,8 +7198,7 @@ type StatePatchEvent {
   Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` or `shutdown`.
   """
   lifecycle: String
-  op: String!
-  path: String!
+  ops: [JSONPatch!]!
 
   """What the app says the change was for: its own names."""
   qualifiers: [String!]!
@@ -7203,7 +7208,6 @@ type StatePatchEvent {
   """The task that made the change, if one did."""
   taskId: ID
   timestamp: DateTime
-  value: Args!
 }
 
 """

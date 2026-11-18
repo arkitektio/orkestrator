@@ -1402,8 +1402,8 @@ export type BlokImplementationInput = {
   catalogs?: Array<Scalars['String']['input']>;
   /** The UI component tree blueprint for this Blok (one root), unless it is sent as its `source`. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. */
-  context?: ComponentContext;
+  /** What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. A blok sent as its `source` need not say it: it is read off its `<Blok>`. PANEL otherwise. */
+  context?: InputMaybe<ComponentContext>;
   /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
   default?: Scalars['Boolean']['input'];
   /** What a preview renders it with. */
@@ -2932,11 +2932,13 @@ export type InterruptInput = {
   task: Scalars['ID']['input'];
 };
 
+/** One RFC 6902 operation of a state update. */
 export type JsonPatch = {
   __typename?: 'JSONPatch';
   op: JsonPatchOperation;
   path: Scalars['String']['output'];
-  value: Scalars['Args']['output'];
+  /** What the operation sets; nothing for a `remove`. */
+  value?: Maybe<Scalars['Args']['output']>;
 };
 
 export enum JsonPatchOperation {
@@ -3988,6 +3990,7 @@ export type ParamPair = {
   value: Scalars['String']['input'];
 };
 
+/** One update of a state: what takes it from one revision to the next. Its operations are applied in order and together. */
 export type Patch = {
   __typename?: 'Patch';
   /** Global revision this patch applied to (global_rev - 1). */
@@ -3998,11 +4001,8 @@ export type Patch = {
   interface: Scalars['String']['output'];
   /** Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` (a task being stopped, on its way out) or `shutdown` (the agent's shutdown hooks). Said by the agent's runtime. */
   lifecycle?: Maybe<Scalars['String']['output']>;
-  /** The value the patch replaced, when the agent reported it. */
-  oldValue?: Maybe<Scalars['Args']['output']>;
-  op: Scalars['String']['output'];
-  patch: JsonPatch;
-  path: Scalars['String']['output'];
+  /** What the update does, as RFC 6902 operations: apply them in order, and all of them before showing the state. */
+  ops: Array<JsonPatch>;
   /** What the app says the change was for: its own names. Empty when it said nothing. */
   qualifiers: Array<Scalars['String']['output']>;
   /** The session identifier string this row belongs to. */
@@ -4010,7 +4010,6 @@ export type Patch = {
   state: State;
   task?: Maybe<Task>;
   timestamp: Scalars['DateTime']['output'];
-  value: Scalars['Args']['output'];
 };
 
 /** The input for pausing a task. */
@@ -5988,7 +5987,7 @@ export type StateImplementationInput = {
   key?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A plain patch event with no model cross-references. */
+/** One update of a state, with no model cross-references. Its operations are applied in order and together: the state is at `globalRevision` once all of them are. */
 export type StatePatchEvent = {
   __typename?: 'StatePatchEvent';
   agentId: Scalars['ID']['output'];
@@ -5996,8 +5995,7 @@ export type StatePatchEvent = {
   interface: Scalars['String']['output'];
   /** Where in a task's or the agent's life the change was made, when not in its ordinary course: `cleanup` or `shutdown`. */
   lifecycle?: Maybe<Scalars['String']['output']>;
-  op: Scalars['String']['output'];
-  path: Scalars['String']['output'];
+  ops: Array<JsonPatch>;
   /** What the app says the change was for: its own names. */
   qualifiers: Array<Scalars['String']['output']>;
   sessionId?: Maybe<Scalars['String']['output']>;
@@ -6005,7 +6003,6 @@ export type StatePatchEvent = {
   /** The task that made the change, if one did. */
   taskId?: Maybe<Scalars['ID']['output']>;
   timestamp?: Maybe<Scalars['DateTime']['output']>;
-  value: Scalars['Args']['output'];
 };
 
 /** What the agent's state must hold for the task to run: the value at `path` (an RFC 6901 pointer into the state `state`) compared with `value` by `operator`. The agent tests it with the task's locks held; on a mismatch the task ends FAILED with code STATE_PRECONDITION and nothing of it runs. */
@@ -8369,9 +8366,9 @@ export type StateFragment = { __typename?: 'State', id: string, interface: strin
 
 export type StateEventFragment = { __typename?: 'State', id: string, updatedAt: any };
 
-export type PatchFragment = { __typename?: 'Patch', id: string, op: string, path: string, value: any, interface: string, timestamp: any, globalFutureRevision: number };
+export type PatchFragment = { __typename?: 'Patch', id: string, interface: string, timestamp: any, globalFutureRevision: number, ops: Array<{ __typename?: 'JSONPatch', op: JsonPatchOperation, path: string, value?: any | null }> };
 
-export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string };
+export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string, ops: Array<{ __typename?: 'JSONPatch', op: JsonPatchOperation, path: string, value?: any | null }> };
 
 export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
@@ -13535,9 +13532,11 @@ export const StateEventFragmentDoc = gql`
 export const PatchFragmentDoc = gql`
     fragment Patch on Patch {
   id
-  op
-  path
-  value
+  ops {
+    op
+    path
+    value
+  }
   interface
   timestamp
   globalFutureRevision
@@ -13547,9 +13546,11 @@ export const StatePatchEventFragmentDoc = gql`
     fragment StatePatchEvent on StatePatchEvent {
   stateId
   agentId
-  op
-  path
-  value
+  ops {
+    op
+    path
+    value
+  }
   globalRevision
   sessionId
   timestamp

@@ -55,7 +55,11 @@ const patch = (
   path: string,
   value: unknown,
   globalRevision: number,
-): LiveStateEvent => ({ __typename: "StatePatchEvent", op, path, value, globalRevision });
+): LiveStateEvent => ({
+  __typename: "StatePatchEvent",
+  ops: [{ op, path, value }],
+  globalRevision,
+});
 
 const client = { fake: true };
 

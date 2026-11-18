@@ -14,6 +14,7 @@ import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
 import { useRef, useState } from "react";
 import { applyPatch } from "fast-json-patch";
 import { REKUEST_HELP } from "../help";
+import { toOperations } from "../hooks/liveStateStore";
 
 
 /** Display state value through the port widgets */
@@ -89,7 +90,7 @@ const LiveStateDisplay = ({
         if (valueRef.current) {
           const result = applyPatch(
             valueRef.current,
-            [{ op: event.op as "replace" | "add" | "remove", path: event.path, value: event.value }],
+            toOperations(event.ops),
             false,
             false,
           );

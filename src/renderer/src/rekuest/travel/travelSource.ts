@@ -27,12 +27,11 @@ import {
  * schedulers are handed in, so all of this is tested without React or Apollo.
  */
 
+/** One update of a state: its operations are applied in order and together. */
 export type TravelPatch = {
   id: string;
   interface: string;
-  op: string;
-  path: string;
-  value?: unknown;
+  ops: readonly { op: string; path: string; value?: unknown }[];
   timestamp: string;
   globalFutureRevision: number;
   /** Only asked for when the agent is stepped by revision. */
@@ -201,14 +200,19 @@ type BufferedPatch = {
  */
 const sortPatches = (patches: readonly TravelPatch[], byRevision = false): BufferedPatch[] =>
   patches
-    .map((patch, index) => ({
-      index,
-      ms: parseTimestamp(patch.timestamp),
-      revision: patch.globalFutureRevision,
-      session: patch.sessionId ?? null,
-      interface: patch.interface,
-      op: { op: patch.op, path: patch.path, value: patch.value } as Operation,
-    }))
+    // One entry per operation. An update's operations share its time and revision and stay
+    // next to each other in its order, so the clock is never between two of them: they are
+    // counted in, and applied, together.
+    .flatMap((patch, index) =>
+      patch.ops.map((op, part) => ({
+        index: index + part / (patch.ops.length + 1),
+        ms: parseTimestamp(patch.timestamp),
+        revision: patch.globalFutureRevision,
+        session: patch.sessionId ?? null,
+        interface: patch.interface,
+        op: { op: op.op, path: op.path, value: op.value } as Operation,
+      })),
+    )
     .filter((patch) => Number.isFinite(patch.ms))
     .sort((a, b) =>
       byRevision

@@ -10,7 +10,7 @@ import {
   type WatchStateSubscription,
   type WatchStateSubscriptionVariables,
 } from "../api/graphql";
-import { createLiveStateStore, EMPTY_LIVE_STATE } from "./liveStateStore";
+import { createLiveStateStore, EMPTY_LIVE_STATE, toOperations } from "./liveStateStore";
 
 export const useLiveState = ({
   stateID
@@ -52,7 +52,7 @@ export const useLiveState = ({
           if (valueRef.current) {
             const result = applyPatch(
               valueRef.current,
-              [{ op: event.op as "replace" | "add" | "remove", path: event.path, value: event.value }],
+              toOperations(event.ops),
               false,
               false,
             );
@@ -171,7 +171,7 @@ export const useAgentStates = ({
           const currentMap = valueRef.current ?? {};
           const result = applyPatch(
             currentMap[event.stateId] || {},
-            [{ op: event.op as "replace" | "add" | "remove", path: event.path, value: event.value }],
+            toOperations(event.ops),
             false,
             false,
           );

@@ -18,9 +18,11 @@ fragment StateEvent on State {
 
 fragment Patch on Patch {
   id
-  op
-  path
-  value
+  ops {
+    op
+    path
+    value
+  }
   interface
   timestamp
   globalFutureRevision
@@ -29,9 +31,11 @@ fragment Patch on Patch {
 fragment StatePatchEvent on StatePatchEvent {
   stateId
   agentId
-  op
-  path
-  value
+  ops {
+    op
+    path
+    value
+  }
   globalRevision
   sessionId
   timestamp

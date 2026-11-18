@@ -94,9 +94,7 @@ const patch = (
 ): TravelPatch => ({
   id: `${stateInterface}-${revision}`,
   interface: stateInterface,
-  op: "replace",
-  path,
-  value,
+  ops: [{ op: "replace", path, value }],
   timestamp: new Date(ms).toISOString(),
   globalFutureRevision: revision,
 });

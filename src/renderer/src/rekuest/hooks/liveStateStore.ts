@@ -29,11 +29,17 @@ export type LiveStateEvent =
   | { __typename?: "StateSnapshotEvent"; value: any; globalRevision: number }
   | {
       __typename?: "StatePatchEvent";
-      op: string;
-      path: string;
-      value?: any;
+      /** One update of the state: its operations, applied in order and together. */
+      ops: readonly StateOp[];
       globalRevision: number;
     };
+
+/** One RFC 6902 operation of a state update, as the server sends it. */
+export type StateOp = { op: string; path: string; value?: any };
+
+/** An update's operations as `fast-json-patch` takes them. */
+export const toOperations = (ops: readonly StateOp[]): Operation[] =>
+  ops.map((op) => ({ op: op.op, path: op.path, value: op.value }) as Operation);
 
 export type LiveStateVariables = { agentID: string; interface: string };
 
@@ -155,11 +161,9 @@ export const createLiveStateStore = <C>(options: LiveStateStoreOptions<C>) => {
           ? entry.pendingSnapshot !== null
           : entry.snapshot.value !== null;
       if (!hasBase) return;
-      entry.pendingOps.push({
-        op: event.op as "replace" | "add" | "remove",
-        path: event.path,
-        value: event.value,
-      } as Operation);
+      // An update is flushed whole: its operations enter the same frame together, so a
+      // consumer never renders the state between two of them.
+      entry.pendingOps.push(...toOperations(event.ops));
       entry.pendingRevision = event.globalRevision;
       requestFlush(entry);
     }
