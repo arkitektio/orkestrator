@@ -1,3 +1,10 @@
+## [8.8.1](https://github.com/arkitektio/orkestrator/compare/v8.8.0...v8.8.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **rekuest:** a blok's button no longer submits the action's form ([106340a](https://github.com/arkitektio/orkestrator/commit/106340a32f1d904db21a60e4b9355c20f1ce647e))
+
 # [8.8.0](https://github.com/arkitektio/orkestrator/compare/v8.7.0...v8.8.0) (2026-11-18)
 
 
