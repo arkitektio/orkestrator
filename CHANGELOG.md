@@ -1,3 +1,10 @@
+## [8.8.2](https://github.com/arkitektio/orkestrator/compare/v8.8.1...v8.8.2) (2026-11-18)
+
+
+### Bug Fixes
+
+* **rekuest:** the assign dialog starts only from its button ([98c8764](https://github.com/arkitektio/orkestrator/commit/98c8764f78a7912ee8b1aba08e4e0c59ca5779b3))
+
 ## [8.8.1](https://github.com/arkitektio/orkestrator/compare/v8.8.0...v8.8.1) (2026-11-18)
 
 
