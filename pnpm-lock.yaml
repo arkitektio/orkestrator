@@ -175,8 +175,8 @@ importers:
   .:
     dependencies:
       '@arkitektio/bsx':
-        specifier: ^6.6.0
-        version: 6.6.0(84fa2650917480a5cf41673ca67a6ebc)
+        specifier: ^6.6.1
+        version: 6.6.1(84fa2650917480a5cf41673ca67a6ebc)
       '@aws-sdk/client-s3':
         specifier: ^3.1010.0
         version: 3.1048.0
@@ -651,8 +651,8 @@ packages:
     peerDependencies:
       graphql: '*'
 
-  '@arkitektio/bsx@6.6.0':
-    resolution: {integrity: sha512-Wa69sh1eK7BrAHuHPgaPfGGkZ0L7x6QVOqT1nzvZH/cBQoi7RYE/fVC+XedTkA8a7Ew2j6BIoT5tcfy9f4zgxA==}
+  '@arkitektio/bsx@6.6.1':
+    resolution: {integrity: sha512-+Y5dCUOD4mZ5mAIHUnsjh1QWci//TYoxV0uJCZ7zl3JGNL9Muv4NhN5F/x/ILyTISuY3I0Yp8yrn2P5nj6qxNw==}
     peerDependencies:
       '@hookform/resolvers': ^5.2.2
       '@monaco-editor/react': ^4.7.0
@@ -9928,7 +9928,7 @@ snapshots:
       immutable: 5.1.9
       invariant: 2.2.4
 
-  '@arkitektio/bsx@6.6.0(84fa2650917480a5cf41673ca67a6ebc)':
+  '@arkitektio/bsx@6.6.1(84fa2650917480a5cf41673ca67a6ebc)':
     dependencies:
       graphql: 16.14.0
       react: 19.2.7

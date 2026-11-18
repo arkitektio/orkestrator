@@ -367,17 +367,9 @@ export const AssignForm = ({
   return (
     <Form {...form}>
       <form
-        onSubmit={(event) => {
-          // A button an assign blok draws is, inside this form, a submit button: its click would
-          // start the run a second time next to its own `assign.start()` (or start one it never
-          // asked for). What a blok's button does is the blok's to say.
-          const submitter = (event.nativeEvent as SubmitEvent).submitter;
-          if (submitter?.closest("[data-assign-bloks]")) {
-            event.preventDefault();
-            return;
-          }
-          void form.handleSubmit(onSubmit)(event);
-        }}
+        // A button a blok draws is a plain button (bsx 6.6.1), so only the form's own start
+        // submits it; a blok starts the run through `assign.start()`.
+        onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
         onKeyDownCapture={(e) => {
           if (e.key === "Enter") keepOpenRef.current = e.ctrlKey || e.metaKey;
         }}
