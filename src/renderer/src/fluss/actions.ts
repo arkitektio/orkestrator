@@ -15,9 +15,10 @@ import {
 } from "@/rekuest/api/graphql";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import { Archive, Play, Rocket, Send } from "lucide-react";
-import { pythonFlowInterface } from "./utils";
+import { flowInterface, pythonFlowInterface } from "./utils";
 
 const PYTHON_FLOW = "@fluss/pythonflow";
+const FLOW = "@fluss/flow";
 
 const STATUS_LABEL: Record<PythonFlowStatus, string> = {
   [PythonFlowStatus.Draft]: "a draft",
@@ -46,6 +47,24 @@ const refuseUnless = (flow: Structure, allowed: PythonFlowStatus[], verb: string
 };
 
 const onePythonFlow = [{ type: "identifier", identifier: PYTHON_FLOW }, { type: "nopartner" }] as const;
+const oneFlow = [{ type: "identifier", identifier: FLOW }, { type: "nopartner" }] as const;
+
+const selectedFlow = (left: readonly Structure[]) => {
+  const flow = left.find((s) => s.identifier === FLOW);
+  if (!flow) throw new Error("No flow selected");
+  return String(flow.id);
+};
+
+/** Where an interface is deployed: a live agent's implementation first. */
+const deploymentOf = async (services: Record<string, unknown>, deployed: string) => {
+  const rekuest = clientOf(services, "rekuest");
+  const { data } = await rekuest.query<ListImplementationsQuery, ListImplementationsQueryVariables>({
+    query: ListImplementationsDocument,
+    variables: { filters: { interface: { exact: deployed } } },
+    fetchPolicy: "network-only",
+  });
+  return data.implementations.find((impl) => impl.agent.active) ?? data.implementations.at(0);
+};
 
 export const FLUSS_ACTIONS: Record<string, Action> = {
   "publish-pythonflow": {
@@ -103,18 +122,35 @@ export const FLUSS_ACTIONS: Record<string, Action> = {
       const [flow] = selectedFlows(state.left);
       if (!flow) throw new Error("No Python flow selected");
       refuseUnless(flow, [PythonFlowStatus.Published], "run");
-      const rekuest = clientOf(services as Record<string, unknown>, "rekuest");
-      const { data } = await rekuest.query<ListImplementationsQuery, ListImplementationsQueryVariables>({
-        query: ListImplementationsDocument,
-        variables: { filters: { interface: { exact: pythonFlowInterface(String(flow.id)) } } },
-        fetchPolicy: "network-only",
-      });
-      const deployment =
-        data.implementations.find((impl) => impl.agent.active) ?? data.implementations.at(0);
+      const deployment = await deploymentOf(services as Record<string, unknown>, pythonFlowInterface(String(flow.id)));
       if (deployment) {
         dialog.openDialog("assign", { target: { implementation: deployment.id } });
       } else {
         dialog.openDialog("deploypythonflow", { flow: String(flow.id), runAfter: true }, { size: "medium" });
+      }
+    },
+  },
+  "deploy-flow": {
+    title: "Deploy as action…",
+    description: "Make this flow an action on an agent that runs flows",
+    icon: Rocket,
+    conditions: oneFlow,
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog("deployflow", { flow: selectedFlow(state.left) }, { size: "medium" });
+    },
+  },
+  "run-flow": {
+    title: "Run…",
+    description: "Run this flow where it is deployed (deploying it first if it is not)",
+    icon: Play,
+    conditions: oneFlow,
+    execute: async ({ state, dialog, services }) => {
+      const flow = selectedFlow(state.left);
+      const deployment = await deploymentOf(services as Record<string, unknown>, flowInterface(flow));
+      if (deployment) {
+        dialog.openDialog("assign", { target: { implementation: deployment.id } });
+      } else {
+        dialog.openDialog("deployflow", { flow, runAfter: true }, { size: "medium" });
       }
     },
   },

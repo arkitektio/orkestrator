@@ -1,8 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
-import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
-import { Button } from "@/core/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
-import { cn } from "@/core/util/utils";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { PythonFlowStatus, usePythonFlowQuery } from "@/fluss/api/graphql";
 import { PYTHON_RUNNER_INTERFACE, usePythonFlowDeployments, usePythonRunners } from "@/fluss/python/deployments";
 import {
@@ -10,160 +6,64 @@ import {
   pythonFlowInterface,
   pythonFlowStatefulSteps,
   pythonFlowToDefinition,
+  type StepActions,
 } from "@/fluss/utils";
-import {
-  ActionStatefulByHashDocument,
-  ActionStatefulByHashQuery,
-  ActionStatefulByHashQueryVariables,
-  AgentDependencyInput,
-  ListImplementationsDocument,
-  useCreateHigherOrderImplementationMutation,
-} from "@/rekuest/api/graphql";
-import { useRekuest } from "@/rekuest/api/hooks";
-import { Check, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { DeployOnRunnerForm } from "./DeployOnRunnerForm";
+
+const NO_MANIFEST: never[] = [];
 
 /**
  * Make a published Python flow version an action of its own: deployed onto
  * the agent of a `run_python_flow` runner, whose action it wraps with the
- * version bound (fluss's `adeploy_python_flow`). Deploying again to the same
- * agent updates that action in place.
- *
- * Its stateful steps become dependencies of that action: starting the flow
- * binds each to an agent.
+ * version bound (fluss's `adeploy_python_flow`).
  */
 export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }) => {
-  const { openDialog } = useDialog();
-  const { data, loading } = usePythonFlowQuery({ variables: { id: props.flow } });
-  const runners = usePythonRunners();
-  const deployments = usePythonFlowDeployments(props.flow);
-  const [runner, setRunner] = useState<string | null>(null);
-  const [deploy] = useCreateHigherOrderImplementationMutation({
-    refetchQueries: [ListImplementationsDocument],
-  });
-
+  const { data } = usePythonFlowQuery({ variables: { id: props.flow } });
   const flow = data?.pythonFlow;
-  const rekuest = useRekuest();
-  const manifest = flow?.manifest;
+  const manifest = flow?.manifest ?? NO_MANIFEST;
 
-  // Whether a step keeps state is its action's, looked up by hash. A hash names one definition,
-  // so the cache answers the deploy's lookup after the form's own.
-  const lookUpStatefulSteps = useCallback(async () => {
-    if (!rekuest) throw new Error("Rekuest is not available");
-    const hashes = [...new Set((manifest ?? []).map((entry) => entry.actionHash))];
-    const actions = await Promise.all(
-      hashes.map(async (hash) => {
-        const found = await rekuest.query<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>({
-          query: ActionStatefulByHashDocument,
-          variables: { hash },
-        });
-        return [hash, found.data.action] as const;
-      }),
-    );
-    return pythonFlowStatefulSteps(manifest ?? [], Object.fromEntries(actions));
-  }, [rekuest, manifest]);
-
-  const [statefulSteps, setStatefulSteps] = useState<AgentDependencyInput[]>([]);
-  useEffect(() => {
-    let current = true;
-    lookUpStatefulSteps().then(
-      (steps) => current && setStatefulSteps(steps),
-      // Shown only: a step that cannot be looked up fails the deploy, which says why.
-      () => undefined,
-    );
-    return () => {
-      current = false;
-    };
-  }, [lookUpStatefulSteps]);
-  const deployedOn = new Set(deployments.data?.implementations.map((impl) => impl.agent.name) ?? []);
-  const options = runners.data?.implementations ?? [];
-  const chosen = runner ?? options.find((impl) => impl.agent.active)?.id ?? options.at(0)?.id ?? null;
-
-  const { submit, submitting } = useDialogSubmit(
-    async () => {
-      if (!flow || !chosen) throw new Error("Pick an agent to deploy to");
-      const result = await deploy({
-        variables: {
-          input: {
-            lower: chosen,
-            interface: pythonFlowInterface(flow.id),
-            definition: pythonFlowToDefinition(flow),
-            config: pythonFlowDeployConfig(flow.id),
-            // Always sent, empty when there are none: a redeploy says what the manifest holds now.
-            dependencies: await lookUpStatefulSteps(),
-          },
-        },
-      });
-      return result.data?.createHigherOrderImplementation;
-    },
-    {
-      errorTitle: "Couldn't deploy the flow",
-      onSuccess: (implementation) => {
-        if (props.runAfter && implementation) {
-          // The assign dialog replaces this one.
-          setTimeout(() => openDialog("assign", { target: { implementation: implementation.id } }), 0);
-        }
+  const stepHashes = useMemo(() => [...new Set(manifest.map((entry) => entry.actionHash))], [manifest]);
+  const statefulSteps = useCallback((actions: StepActions) => pythonFlowStatefulSteps(manifest, actions), [manifest]);
+  const deployment = useMemo(
+    () =>
+      flow && {
+        interface: pythonFlowInterface(flow.id),
+        definition: pythonFlowToDefinition(flow),
+        config: pythonFlowDeployConfig(flow.id),
       },
-    },
+    [flow],
   );
 
-  const published = flow?.status === PythonFlowStatus.Published;
-
   return (
-    <div className="flex flex-col gap-4">
-      <DialogHeader>
-        <DialogTitle>Deploy {flow?.title ?? "Python flow"}</DialogTitle>
-        <DialogDescription>
-          The flow becomes an action of its own, with the arguments and returns of its{" "}
-          <span className="font-mono">main</span>. It runs on the agent you pick, which hosts fluss&apos;s Python flow runner.
-        </DialogDescription>
-      </DialogHeader>
-
-      {flow && !published && (
-        <div className="text-sm text-destructive">Only a published version can be deployed. Publish this one first.</div>
-      )}
-
-      <div className="flex flex-col gap-1">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Agent</div>
-        {(loading || runners.loading) && options.length === 0 && (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        )}
-        {!runners.loading && options.length === 0 && (
-          <div className="text-sm text-muted-foreground">
-            No agent can run Python flows yet. Start an app that registers fluss&apos;s{" "}
-            <span className="font-mono">{PYTHON_RUNNER_INTERFACE}</span> (the fluss client, with its Python extra).
-          </div>
-        )}
-        {options.map((impl) => (
-          <button
-            key={impl.id}
-            type="button"
-            onClick={() => setRunner(impl.id)}
-            className={cn(
-              "flex items-center gap-2 rounded border px-3 py-2 text-left text-sm",
-              impl.id === chosen ? "border-primary bg-primary/5" : "hover:bg-muted/60",
-            )}
-          >
-            <span className={cn("h-2 w-2 rounded-full", impl.agent.active ? "bg-success" : "bg-muted-foreground/40")} />
-            <span className="flex-1 truncate">{impl.agent.name}</span>
-            {!impl.agent.active && <span className="text-xs text-muted-foreground">offline</span>}
-            {deployedOn.has(impl.agent.name) && <span className="text-xs text-muted-foreground">deployed</span>}
-            {impl.id === chosen && <Check className="h-4 w-4 text-primary" />}
-          </button>
-        ))}
-        {statefulSteps.map((step) => (
-          <div key={step.key} className="text-xs text-muted-foreground">
-            <span className="font-mono">{step.key}</span> runs on one agent, chosen when the flow is started.
-          </div>
-        ))}
-      </div>
-
-      <DialogFooter>
-        <Button onClick={() => void submit()} disabled={!published || !chosen || submitting}>
-          {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-          {props.runAfter ? "Deploy and run" : "Deploy"}
-        </Button>
-      </DialogFooter>
-    </div>
+    <DeployOnRunnerForm
+      header={
+        <DialogHeader>
+          <DialogTitle>Deploy {flow?.title ?? "Python flow"}</DialogTitle>
+          <DialogDescription>
+            The flow becomes an action of its own, with the arguments and returns of its{" "}
+            <span className="font-mono">main</span>. It runs on the agent you pick, which hosts fluss&apos;s Python flow runner.
+          </DialogDescription>
+        </DialogHeader>
+      }
+      refused={
+        flow && flow.status !== PythonFlowStatus.Published
+          ? "Only a published version can be deployed. Publish this one first."
+          : undefined
+      }
+      runners={usePythonRunners()}
+      deployments={usePythonFlowDeployments(props.flow)}
+      noRunner={
+        <>
+          No agent can run Python flows yet. Start an app that registers fluss&apos;s{" "}
+          <span className="font-mono">{PYTHON_RUNNER_INTERFACE}</span> (the fluss client, with its Python extra).
+        </>
+      }
+      stepHashes={stepHashes}
+      statefulSteps={statefulSteps}
+      stepLabel={(step) => <span className="font-mono">{step.key}</span>}
+      deployment={deployment}
+      runAfter={props.runAfter}
+    />
   );
 };

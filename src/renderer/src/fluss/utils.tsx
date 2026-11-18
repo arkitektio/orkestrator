@@ -17,7 +17,6 @@ import {
   ReactiveImplementation,
   ReactiveNodeFragment,
   ReactiveTemplateFragment,
-  RekuestMapActionNodeFragment,
   ReturnPortInput,
   ReturnWidgetInput,
   StreamItemInput,
@@ -27,7 +26,6 @@ import {
 } from "@/fluss/api/graphql";
 import { XYPosition } from "@xyflow/react";
 import {
-  ActionDemandInput,
   ActionKind,
   ArgPortInput as RekuestArgPortInput,
   DefinitionInput,
@@ -655,23 +653,16 @@ export const streamToReactNode = (
   );
 };
 
+/** The interface a deployed graph flow has on its runner's agent. */
+export const flowInterface = (id: string) => `flow:${id}`;
 
-
-
-
-const rekuestNodeToActionDemand = (node: RekuestMapActionNodeFragment): ActionDemandInput => {
-  return {
-    hash: node.hash,
-  }
-}
-
-
-
-
-
-
-
-export const flowToDefinition = (flow: FlowFragment): DefinitionInput => {
+/**
+ * The action a deployed graph flow is, as fluss's `flow_definition` builds it:
+ * its argument node's stream and its globals in, its return node's stream out.
+ * A GENERATOR, as `run_flow` is (a flow yields whenever a value reaches its
+ * return node): rekuest refuses a wrapper of another kind than what it wraps.
+ */
+export const flowToDefinition = (flow: Pick<FlowFragment, "id" | "title" | "description" | "graph">): DefinitionInput => {
   // The ArgNode emits its values as node outs (ReturnPort) — these are the
   // action's input args. The ReturnNode consumes via node ins (ArgPort) — these
   // are the action's returns. fluss inputs are structurally identical to rekuest's.
@@ -690,23 +681,19 @@ export const flowToDefinition = (flow: FlowFragment): DefinitionInput => {
       ?.ins.at(0)
       ?.map(flowPortToReturnSignature) || [];
 
-
-
-
-
-
-
-
-
-
   return {
-    kind: ActionKind.Function,
-    key: flow.id,
-    version: "0.1",
+    name: flow.title,
+    key: `flow_${flow.id}`,
+    version: "1",
+    kind: ActionKind.Generator,
+    description: flow.description || `The flow ${flow.title}`,
     args: [...args, ...kwargs],
     returns: returns,
-    name: flow.title,
-    description: flow.description,
+    stateful: false,
+    isDev: false,
+    collections: [],
+    portGroups: [],
+    isTestFor: [],
   };
 };
 
@@ -749,57 +736,69 @@ export const pythonFlowDeployConfig = (id: string) => ({
   returns_key: "returns",
 });
 
+/**
+ * How rekuest binds a deployed graph flow onto `run_flow` (fluss's
+ * `adeploy_flow`): as a Python flow's version onto its runner.
+ */
+export const flowDeployConfig = pythonFlowDeployConfig;
+
 /** The slot a stateful step is called through, in the dependency that names it (fluss's `STEP_METHOD`). */
-export const PYTHON_FLOW_STEP_METHOD = "step";
+export const STEP_METHOD = "step";
+
+/** What is known of a step's action, by its hash. */
+export type StepActions = Readonly<Record<string, { name: string; stateful: boolean } | undefined>>;
+
+/**
+ * The dependency one stateful step of a deployed flow is, graph or Python
+ * (fluss's `step_dependency`). A stateful action reads or changes the state of
+ * the agent that runs it, so whoever starts the flow binds the step to one.
+ * Named by its hash, the one agent that implements it binds by itself; with
+ * several, the run is refused until one is chosen.
+ */
+export const statefulStepDependency = (key: string, name: string, actionHash: string): AgentDependencyInput => ({
+  key,
+  name,
+  description: `The agent that runs ${name}. The step is stateful, so the run names one.`,
+  autoResolvable: true,
+  optional: false,
+  actionDependencies: [{ key: STEP_METHOD, demand: { hash: actionHash } }],
+});
 
 /**
  * What a deployed Python flow declares of its stateful steps: one dependency
- * each, keyed by its alias (fluss's `stateful_steps`). A stateful action reads
- * or changes the state of the agent that runs it, so whoever starts the flow
- * binds each such step to one. The step is named by its hash: the one agent
- * that implements it binds by itself. Stateless steps are not declared.
+ * each, keyed by its alias (fluss's `stateful_steps`). Stateless steps are not
+ * declared: they run wherever the action is offered.
  */
 export const pythonFlowStatefulSteps = (
   manifest: readonly { alias: string; actionHash: string }[],
-  actionsByHash: Readonly<Record<string, { name: string; stateful: boolean } | undefined>>,
+  actionsByHash: StepActions,
 ): AgentDependencyInput[] =>
   manifest.flatMap((entry) => {
     const action = actionsByHash[entry.actionHash];
-    if (!action?.stateful) return [];
-    return [
-      {
-        key: entry.alias,
-        name: action.name,
-        description: `The agent that runs ${action.name}. The step is stateful, so the run names one.`,
-        autoResolvable: true,
-        optional: false,
-        actionDependencies: [{ key: PYTHON_FLOW_STEP_METHOD, demand: { hash: entry.actionHash } }],
-      },
-    ];
+    return action?.stateful ? [statefulStepDependency(entry.alias, action.name, entry.actionHash)] : [];
   });
 
-export const flowToDependencies = (flow: FlowFragment): AgentDependencyInput[] => {
-  const dependencies =
-    flow.graph?.nodes
-      ?.filter(
-        (node) => node.__typename == "AgentSubFlowNode"
-      )
-      .map((node) => {
+/** The dependency key of a graph node's stateful step: the node, spelled as a key (fluss's `step_key`). */
+export const stepKey = (nodeId: string) => "step_" + nodeId.replace(/[^A-Za-z0-9_]/g, "_");
 
-        const actionDefintions = flow.graph.nodes
-          ?.filter((n) => n.parentNode === node.id && n.__typename === "RekuestMapActionNode")
-          .map((n) => rekuestNodeToActionDemand(n as RekuestMapActionNodeFragment)) || [];
+/** What of a graph node says whether it is a step: the nodes that call a rekuest action carry its hash. */
+type MaybeStepNode = { id: string; title?: string | null; hash?: string };
 
+/** The action hashes of a graph's steps, each once: what to look up before `flowStatefulSteps`. */
+export const flowStepHashes = (nodes: readonly MaybeStepNode[]): string[] => [
+  ...new Set(nodes.flatMap((node) => (node.hash ? [node.hash] : []))),
+];
 
-        return {
-          key: node.id,
-          app: node.appFilter,
-          actionDemands: actionDefintions,
-          autoResolvable: node.autoResolvable || false,
-
-        } as AgentDependencyInput
-
-        }) || [];
-
-  return dependencies;
-};
+/**
+ * What a deployed graph flow declares of its stateful steps: one dependency
+ * per such node (fluss's `flow_stateful_steps`). Per node, not per action: two
+ * nodes that call the same stateful action are two steps, and may be bound to
+ * two agents. Stateless nodes are not declared.
+ */
+export const flowStatefulSteps = (nodes: readonly MaybeStepNode[], actionsByHash: StepActions): AgentDependencyInput[] =>
+  nodes.flatMap((node) => {
+    const action = node.hash ? actionsByHash[node.hash] : undefined;
+    return node.hash && action?.stateful
+      ? [statefulStepDependency(stepKey(node.id), node.title || action.name, node.hash)]
+      : [];
+  });

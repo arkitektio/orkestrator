@@ -9,6 +9,8 @@ import {
   WorkspacesDocument,
 } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
+import { RekuestGuard } from "@/rekuest/api/hooks";
+import { RunFlowButton } from "../components/RunFlowButton";
 import { FLUSS_HELP } from "../help";
 
 export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
@@ -21,6 +23,14 @@ export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
       title={data?.workspace?.title}
       object={data.workspace}
       help={FLUSS_HELP.workspace}
+      pageActions={
+        // The latest saved version runs: what is on the canvas and not saved yet is no flow.
+        data.workspace.latestFlow && (
+          <RekuestGuard fallback={<></>}>
+            <RunFlowButton flow={data.workspace.latestFlow} />
+          </RekuestGuard>
+        )
+      }
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Knowledge">

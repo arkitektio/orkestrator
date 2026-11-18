@@ -1,5 +1,6 @@
 import { needsServices } from "@/core/modules/host/dialogNeeds";
 import { CreateWorkspaceForm } from "./components/forms/CreateWorkspaceForm";
+import { DeployFlowForm } from "./components/forms/DeployFlowForm";
 import { DeployPythonFlowForm } from "./components/forms/DeployPythonFlowForm";
 
 /**
@@ -10,5 +11,6 @@ import { DeployPythonFlowForm } from "./components/forms/DeployPythonFlowForm";
 export const FLUSS_DIALOGS = {
   createworkspace: CreateWorkspaceForm,
   // Deploying is a rekuest higher-order implementation of fluss's runner.
+  deployflow: needsServices(["rekuest"], DeployFlowForm),
   deploypythonflow: needsServices(["rekuest"], DeployPythonFlowForm),
 };
