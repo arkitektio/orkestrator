@@ -1,3 +1,10 @@
+# [8.7.0](https://github.com/arkitektio/orkestrator/compare/v8.6.0...v8.7.0) (2026-11-18)
+
+
+### Features
+
+* **rekuest:** a port's blok is drawn, and a shortcut names the agent it runs on ([55f321c](https://github.com/arkitektio/orkestrator/commit/55f321c1bd4292731b3ad003dc4ed0952aff4821))
+
 # [8.6.0](https://github.com/arkitektio/orkestrator/compare/v8.5.0...v8.6.0) (2026-11-18)
 
 
