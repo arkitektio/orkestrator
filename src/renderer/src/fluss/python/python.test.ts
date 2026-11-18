@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { ActionKind, Effects, PortKind } from "@/fluss/api/graphql";
-import { pythonFlowDeployConfig, pythonFlowToDefinition } from "../utils";
+import { pythonFlowDeployConfig, pythonFlowStatefulSteps, pythonFlowToDefinition } from "../utils";
 import { clearDraft, draftKey, readDraft, writeDraft } from "./draft";
 import {
   aliasFor,
@@ -150,6 +150,31 @@ describe("pythonFlowToDefinition", () => {
     expect(definition.args?.[0]).toMatchObject({ key: "image", identifier: "@mikro/image", kind: PortKind.Structure });
     expect(definition.returns?.[0]).toMatchObject({ key: "return0", kind: PortKind.Int });
     expect(pythonFlowDeployConfig("7")).toEqual({ bound: { flow: "7" }, args_key: "kwargs", returns_key: "returns" });
+  });
+});
+
+describe("pythonFlowStatefulSteps", () => {
+  it("declares one dependency per stateful step, keyed by its alias, and none for the rest", () => {
+    const manifest = [
+      { alias: "move", actionHash: "h-move" },
+      { alias: "segment", actionHash: "h-segment" },
+    ];
+    const steps = pythonFlowStatefulSteps(manifest, {
+      "h-move": { name: "Move stage", stateful: true },
+      "h-segment": { name: "Segment", stateful: false },
+    });
+
+    expect(steps).toEqual([
+      {
+        key: "move",
+        name: "Move stage",
+        description: "The agent that runs Move stage. The step is stateful, so the run names one.",
+        autoResolvable: true,
+        optional: false,
+        actionDependencies: [{ key: "step", demand: { hash: "h-move" } }],
+      },
+    ]);
+    expect(pythonFlowStatefulSteps([manifest[1]], { "h-segment": { name: "Segment", stateful: false } })).toEqual([]);
   });
 });
 

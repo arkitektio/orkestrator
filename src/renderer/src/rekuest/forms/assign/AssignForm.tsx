@@ -36,6 +36,8 @@ import { ActionLogo } from "../../components/logo/ActionLogo";
 import { useDependencyTree } from "@arkitektio/bsx/ports/dependencies/useDependencyTree";
 import { EstimatedRuntimeHint } from "./EstimatedRuntimeHint";
 import { FitsGuard, portFitsOf, type FitDecision } from "./FitsGuard";
+import { RunsOn } from "./RunsOn";
+import { canTakeWork } from "@/rekuest/assign";
 import { useAssignForm } from "@arkitektio/bsx/ports/engine/useAssignForm";
 import type { AssignTarget, AssignTrack } from "./target";
 import { useAssignTarget } from "./useAssignTarget";
@@ -155,15 +157,27 @@ export const AssignForm = ({
   // Counts refusals: keys the reason so it slides in again on a repeat.
   const [refusals, setRefusals] = useState(0);
 
+  // A stateful action keeps its state on one agent, so its run names one (the server refuses it
+  // by action alone, even with one implementation): the only one that can take it now, else the
+  // one picked here.
+  const naming = Boolean(target.action && action?.stateful);
+  const [picked, setPicked] = useState<string>();
+  const live = useMemo(
+    () => (naming ? (candidates ?? []).filter((c) => canTakeWork(c.agent)) : []),
+    [candidates, naming],
+  );
+  const named = live.find((c) => c.id === picked) ?? (live.length === 1 ? live[0] : undefined);
+
   // The action's own interface for starting a run (its assign bloks), bound as a run on the
-  // implementation it would go to: the target's, the one that fits, else the first that can take work.
+  // implementation it would go to: the target's, the named one, the one that fits, else the first
+  // that can take work.
   const chosen = useMemo(() => {
     if (target.resolution) return undefined;
-    const pick = implementation ?? candidates?.find((c) => c.id === fit.pin) ?? candidates?.find((c) => c.agent.active) ?? candidates?.[0];
+    const pick = implementation ?? named ?? candidates?.find((c) => c.id === fit.pin) ?? candidates?.find((c) => c.agent.active) ?? candidates?.[0];
     return pick
       ? { id: pick.id, agent: { id: pick.agent.id, name: pick.agent.name ?? pick.agent.id, connected: pick.agent.active } }
       : undefined;
-  }, [candidates, fit.pin, implementation, target.resolution]);
+  }, [candidates, fit.pin, implementation, named, target.resolution]);
   const watchedPins = useWatch({ control: fieldsControl, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
   const filling = useWatch({ control: fieldsControl, name: "args" }) as Record<string, unknown> | undefined;
   const setup = useAssignBloks(bloks ? action?.id : undefined, chosen, pinning ? watchedPins : undefined);
@@ -193,11 +207,13 @@ export const AssignForm = ({
         hooks: [],
         policy: autoMode.policy,
         // A resolution has bound its agents already.
-        ...(assignBloks && chosen && !implementation
-          ? { implementation: chosen.id }
-          : fit.pin && !target.resolution
-            ? { implementation: fit.pin }
-            : {}),
+        ...(named
+          ? { implementation: named.id }
+          : assignBloks && chosen && !implementation
+            ? { implementation: chosen.id }
+            : fit.pin && !target.resolution
+              ? { implementation: fit.pin }
+              : {}),
       });
       onAssigned?.(task, reference);
       if (layout === "dialog" && !keepOpen) closeDialog();
@@ -289,7 +305,11 @@ export const AssignForm = ({
       ? tree.unmet.length > 1
         ? `${tree.unmet.length} dependencies are not met`
         : "A dependency is not met"
-      : undefined;
+      : naming && !named
+        ? live.length === 0
+          ? "No agent that runs this is online"
+          : "Choose which agent runs this"
+        : undefined;
   // What an assign blok reads as `assign`: what the caller decided, what is still to fill in,
   // and whether the run can start.
   const assignRecord = useMemo<BlokAssignRecord>(() => {
@@ -335,7 +355,7 @@ export const AssignForm = ({
     (key) => !givenKeys.includes(key) && !(assignBloks && setup.argsPlaced(argKeys).has(key)),
   );
   const restDeps = depKeys.filter((key) => !(assignBloks && setup.depsPlaced(depKeys).has(key)));
-  const startDisabled = isSubmitting || tree.satisfied === false || Boolean(fit.refused);
+  const startDisabled = isSubmitting || Boolean(blocked);
   startDisabledRef.current = startDisabled;
   // In a dialog the fields scroll between a header and a footer that stay put.
   const Fields = layout === "dialog" ? DialogBody : "div";
@@ -435,6 +455,8 @@ export const AssignForm = ({
             No agent fits this {fit.refused.port}: {fit.refused.source}
           </div>
         )}
+        {/* Also under `chrome="none"`: nothing else could say which of several it runs on. */}
+        {naming && <RunsOn live={live} value={named?.id} onChange={setPicked} />}
         </Fields>
 
         <DialogFooter className="sm:items-center">

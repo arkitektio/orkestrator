@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { buildAssignInput } from "@/rekuest/assign";
+import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
 import {
   TaskEventFragment,
   TaskEventKind,
@@ -13,7 +13,7 @@ import {
   trackTask,
 } from "../lib/taskTracker";
 import { useAssign } from "./useAssign";
-import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
+import { assignErrorMessage, notifyAssignError, statefulNeedsAgentError } from "../lib/assignError";
 
 export type useActionOptions = {
   hash?: string;
@@ -95,8 +95,12 @@ export const useHashActionWithProgress = (
     untrackRef.current = untrack;
 
     try {
+      // A stateful action runs on the one agent that can take it now. With none or several,
+      // nothing here could ask which: refused as the server would refuse it by action alone.
+      const target = data?.action ? directAssignTarget(data.action) : {};
+      if (!target) throw statefulNeedsAgentError();
       await postAssign(buildAssignInput({
-        action: data?.action.id,
+        ...target,
         args: args,
         reference: reference,
       }));

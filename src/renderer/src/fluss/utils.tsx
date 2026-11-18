@@ -749,6 +749,35 @@ export const pythonFlowDeployConfig = (id: string) => ({
   returns_key: "returns",
 });
 
+/** The slot a stateful step is called through, in the dependency that names it (fluss's `STEP_METHOD`). */
+export const PYTHON_FLOW_STEP_METHOD = "step";
+
+/**
+ * What a deployed Python flow declares of its stateful steps: one dependency
+ * each, keyed by its alias (fluss's `stateful_steps`). A stateful action reads
+ * or changes the state of the agent that runs it, so whoever starts the flow
+ * binds each such step to one. The step is named by its hash: the one agent
+ * that implements it binds by itself. Stateless steps are not declared.
+ */
+export const pythonFlowStatefulSteps = (
+  manifest: readonly { alias: string; actionHash: string }[],
+  actionsByHash: Readonly<Record<string, { name: string; stateful: boolean } | undefined>>,
+): AgentDependencyInput[] =>
+  manifest.flatMap((entry) => {
+    const action = actionsByHash[entry.actionHash];
+    if (!action?.stateful) return [];
+    return [
+      {
+        key: entry.alias,
+        name: action.name,
+        description: `The agent that runs ${action.name}. The step is stateful, so the run names one.`,
+        autoResolvable: true,
+        optional: false,
+        actionDependencies: [{ key: PYTHON_FLOW_STEP_METHOD, demand: { hash: entry.actionHash } }],
+      },
+    ];
+  });
+
 export const flowToDependencies = (flow: FlowFragment): AgentDependencyInput[] => {
   const dependencies =
     flow.graph?.nodes

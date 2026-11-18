@@ -37,6 +37,26 @@ query ActionByHash($hash: ActionHash!) {
 query ActionIdByHash($hash: ActionHash!) {
   action(hash: $hash) {
     id
+    # Where a run of it may go: a stateful action runs on the one agent that can take it.
+    stateful
+    implementations {
+      id
+      agent {
+        id
+        kind
+        active
+      }
+    }
+  }
+}
+
+# Whether an action keeps state, by hash: a deployed Python flow declares its stateful steps.
+query ActionStatefulByHash($hash: ActionHash!) {
+  action(hash: $hash) {
+    id
+    name
+    hash
+    stateful
   }
 }
 

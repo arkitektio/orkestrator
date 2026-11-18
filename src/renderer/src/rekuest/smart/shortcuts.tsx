@@ -1,6 +1,6 @@
 import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
-import { buildAssignInput } from "@/rekuest/assign";
+import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
 import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
@@ -154,8 +154,11 @@ export const ShortcutButton = (
         return;
       }
 
+      const target = directAssignTarget(shortcut.action);
       const unknownKeys = shortcut.args.filter((arg) => arg.key && !keys[arg.key]);
-      if (unknownKeys.length >= 1) {
+      // Also a stateful action with no one agent to name (a shortcut stores an action, not an
+      // agent): the form says which it runs on.
+      if (unknownKeys.length >= 1 || !target) {
         openDialog("assign", {
           target: { action: shortcut.action.id },
           args: { ...keys, ...shortcut.savedArgs },
@@ -177,7 +180,7 @@ export const ShortcutButton = (
 
       try {
         await assign(buildAssignInput({
-          action: shortcut.action.id,
+          ...target,
           args: {
             ...keys,
             ...shortcut.savedArgs,

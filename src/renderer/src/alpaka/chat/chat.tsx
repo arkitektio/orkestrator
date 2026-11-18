@@ -10,7 +10,9 @@ import {
 } from "@/alpaka/roomTalkingAbout";
 import { KabinetGuard } from "@/kabinet/api/hooks";
 import { useRekuest } from "@/rekuest/api/hooks";
-import { buildAssignInput } from "@/rekuest/assign";
+import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
+import { trackTask } from "@/rekuest/lib/taskTracker";
+import { useDialog } from "@/core/dialogs/registry";
 import { useSmartDrop } from "@/core/smart/hooks";
 import {
   Ban,
@@ -558,6 +560,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   const { assign } = useAssignWithCallback({
     onDone: (event) => setActiveTasks((prev) => applyTaskEvent(prev, event)),
   });
+  const { openDialog } = useDialog();
 
   // If the subscription itself dropped the terminal event, the cache that
   // `PillSettler` reads is stale too.
@@ -670,12 +673,36 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       assignArgs[aboutKey] = subjectWire(about);
     }
 
+    const target = directAssignTarget(action);
+    if (!target) {
+      // A stateful replyer with no one agent to name: the assign form says which it runs on,
+      // with everything else decided here. Its pill follows the run like a direct one's.
+      openDialog("assign", {
+        target: { action: action.id },
+        args: assignArgs,
+        hidden: Object.fromEntries(Object.keys(assignArgs).map((key) => [key, true])),
+        prefillLatest: false,
+        track: (reference) => {
+          setActiveTasks((prev) => startTask(prev, reference, action.name));
+          const untrack = trackTask(reference, (event) =>
+            setActiveTasks((prev) => applyTaskEvent(prev, event)),
+          );
+          return () => {
+            untrack();
+            dismissTask(reference);
+          };
+        },
+        onAssigned: (task, reference) => setActiveTasks((prev) => bindTask(prev, reference, task)),
+      });
+      return;
+    }
+
     const reference = uuidv4();
     setActiveTasks((prev) => startTask(prev, reference, action.name));
 
     try {
       const task = await assign(buildAssignInput({
-        action: selectedActionId,
+        ...target,
         args: assignArgs,
         reference,
         policy: autoMode.policy,

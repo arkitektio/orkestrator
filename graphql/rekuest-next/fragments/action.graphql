@@ -199,6 +199,12 @@ fragment PrimaryAction on Action {
   implementations {
     id
     interface
+    # Which of them can take it now: a stateful action runs on the one that can.
+    agent {
+      id
+      kind
+      active
+    }
   }
   args {
     key

@@ -15,7 +15,12 @@ fragment PostmanTask on Task {
     hash
     id
     name
+    stateful
     ...Ports
+  }
+  # The agent it ran on: a rerun of a stateful action names it again.
+  agent {
+    id
   }
   dependencyMethod
   dependency
@@ -64,11 +69,16 @@ fragment LiveTask on Task {
     hash
     id
     name
+    stateful
     args {
       key
       kind
       identifier
     }
+  }
+  # The agent it ran on: a rerun of a stateful action names it again.
+  agent {
+    id
   }
   dependencyMethod
   dependency

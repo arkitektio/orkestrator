@@ -7344,7 +7344,7 @@ export type DetailActionFragment = (
 export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, hasFits: boolean, estimatedRuntimeSeconds?: number | null, description?: string | null, logo?: (
     { __typename?: 'Blok' }
     & BlokLogoFragment
-  ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
+  ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean } }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
 export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, logo?: (
     { __typename?: 'Blok' }
@@ -7814,7 +7814,7 @@ export type MinimalImplementationFragment = { __typename?: 'Implementation', id:
   ) | null, fits: Array<(
     { __typename?: 'ImplementationFit' }
     & ImplementationFitFragment
-  )>, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, hardware?: (
+  )>, agent: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean, hardware?: (
       { __typename?: 'AgentHardware' }
       & AgentHardwareFragment
     ) | null } };
@@ -8339,7 +8339,7 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
 
 export type ShortcutBindingFragment = { __typename?: 'ShortcutBinding', id: string, app?: string | null, client?: string | null, device?: string | null, createdAt: any, user?: { __typename?: 'User', id: string, sub: string } | null, boundBy: { __typename?: 'User', id: string, sub: string } };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, pinned: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, stateful: boolean, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean } }>, logo?: (
       { __typename?: 'Blok' }
       & BlokLogoFragment
     ) | null }, args: Array<(
@@ -8433,14 +8433,14 @@ export type PostmanTaskFragment = { __typename?: 'Task', id: string, policy: Tas
     { __typename?: 'TaskEvent' }
     & TaskEventFragment
   )>, action: (
-    { __typename?: 'Action', hash: any, id: string, name: string }
+    { __typename?: 'Action', hash: any, id: string, name: string, stateful: boolean }
     & PortsFragment
-  ), implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
+  ), agent?: { __typename?: 'Agent', id: string } | null, implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
 
 export type LiveTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
     & TaskEventFragment
-  )>, action: { __typename?: 'Action', hash: any, id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, kind: PortKind, identifier?: any | null }> }, implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
+  )>, action: { __typename?: 'Action', hash: any, id: string, name: string, stateful: boolean, args: Array<{ __typename?: 'ArgPort', key: string, kind: PortKind, identifier?: any | null }> }, agent?: { __typename?: 'Agent', id: string } | null, implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
 
 export type MinimalTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', name: string } } | null };
 
@@ -9197,7 +9197,14 @@ export type ActionIdByHashQueryVariables = Exact<{
 }>;
 
 
-export type ActionIdByHashQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string } };
+export type ActionIdByHashQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, stateful: boolean, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean } }> } };
+
+export type ActionStatefulByHashQueryVariables = Exact<{
+  hash: Scalars['ActionHash']['input'];
+}>;
+
+
+export type ActionStatefulByHashQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, name: string, hash: any, stateful: boolean } };
 
 export type AllActionsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10722,6 +10729,11 @@ export const PrimaryActionFragmentDoc = gql`
   implementations {
     id
     interface
+    agent {
+      id
+      kind
+      active
+    }
   }
   args {
     key
@@ -13154,6 +13166,7 @@ export const MinimalImplementationFragmentDoc = gql`
   agent {
     id
     name
+    kind
     active
     hardware {
       ...AgentHardware
@@ -13210,7 +13223,11 @@ export const PostmanTaskFragmentDoc = gql`
     hash
     id
     name
+    stateful
     ...Ports
+  }
+  agent {
+    id
   }
   dependencyMethod
   dependency
@@ -13469,6 +13486,15 @@ export const ListShortcutFragmentDoc = gql`
   action {
     id
     assignable
+    stateful
+    implementations {
+      id
+      agent {
+        id
+        kind
+        active
+      }
+    }
     logo {
       ...BlokLogo
     }
@@ -13716,11 +13742,15 @@ export const LiveTaskFragmentDoc = gql`
     hash
     id
     name
+    stateful
     args {
       key
       kind
       identifier
     }
+  }
+  agent {
+    id
   }
   dependencyMethod
   dependency
@@ -16433,6 +16463,15 @@ export const ActionIdByHashDocument = gql`
     query ActionIdByHash($hash: ActionHash!) {
   action(hash: $hash) {
     id
+    stateful
+    implementations {
+      id
+      agent {
+        id
+        kind
+        active
+      }
+    }
   }
 }
     `;
@@ -16464,6 +16503,44 @@ export function useActionIdByHashLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type ActionIdByHashQueryHookResult = ReturnType<typeof useActionIdByHashQuery>;
 export type ActionIdByHashLazyQueryHookResult = ReturnType<typeof useActionIdByHashLazyQuery>;
 export type ActionIdByHashQueryResult = Apollo.QueryResult<ActionIdByHashQuery, ActionIdByHashQueryVariables>;
+export const ActionStatefulByHashDocument = gql`
+    query ActionStatefulByHash($hash: ActionHash!) {
+  action(hash: $hash) {
+    id
+    name
+    hash
+    stateful
+  }
+}
+    `;
+
+/**
+ * __useActionStatefulByHashQuery__
+ *
+ * To run a query within a React component, call `useActionStatefulByHashQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionStatefulByHashQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionStatefulByHashQuery({
+ *   variables: {
+ *      hash: // value for 'hash'
+ *   },
+ * });
+ */
+export function useActionStatefulByHashQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>(ActionStatefulByHashDocument, options);
+      }
+export function useActionStatefulByHashLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>(ActionStatefulByHashDocument, options);
+        }
+export type ActionStatefulByHashQueryHookResult = ReturnType<typeof useActionStatefulByHashQuery>;
+export type ActionStatefulByHashLazyQueryHookResult = ReturnType<typeof useActionStatefulByHashLazyQuery>;
+export type ActionStatefulByHashQueryResult = Apollo.QueryResult<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>;
 export const AllActionsDocument = gql`
     query AllActions($pagination: OffsetPaginationInput, $filters: ActionFilter, $ordering: [ActionOrder!]) {
   actions(ordering: $ordering, pagination: $pagination, filters: $filters) {

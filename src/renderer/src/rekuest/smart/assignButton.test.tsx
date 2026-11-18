@@ -91,22 +91,30 @@ describe("AssignButton", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it("runs at once when only one agent could, or the action keeps no state", () => {
-    render(<AssignButton action={action({ stateful: true, liveImplementations: 1 })} objects={objects} />);
+  it("runs at once when only one agent could, or the action keeps no state", async () => {
+    const implementations = [{ id: "i1", interface: "track", agent: { id: "g1", kind: "WEBSOCKET", active: true } }];
+    render(<AssignButton action={action({ stateful: true, liveImplementations: 1, implementations })} objects={objects} />);
     fireEvent.click(screen.getByText("Track"));
     cleanup();
     render(<AssignButton action={action({ stateful: false, liveImplementations: 3 })} objects={objects} />);
     fireEvent.click(screen.getByText("Track"));
 
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(2));
     expect(openFor).not.toHaveBeenCalled();
-    expect(assign).toHaveBeenCalledTimes(2);
+    // A stateful action names its agent (the server refuses it by action alone); the other is takt's to place.
+    const [stateful, stateless] = (assign.mock.calls as unknown[][]).map((call) => call[0]);
+    expect(stateful).toMatchObject({ implementation: "i1" });
+    expect(stateful).not.toHaveProperty("action");
+    expect(stateless).toMatchObject({ action: "a1" });
   });
 
-  it("outside a menu with the picker, it runs", () => {
+  it("outside a menu with the picker, a stateful action several agents could take asks in the assign form", async () => {
     submenu = null;
     render(<AssignButton action={action({ stateful: true, liveImplementations: 2 })} objects={objects} />);
     fireEvent.click(screen.getByText("Track"));
-    expect(assign).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(openDialog).toHaveBeenCalledTimes(1));
+    expect(openDialog.mock.calls[0][1]).toMatchObject({ target: { action: "a1" } });
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it("runs on what the menu materializes, made only when it runs", async () => {

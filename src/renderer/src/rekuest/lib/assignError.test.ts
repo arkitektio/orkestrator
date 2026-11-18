@@ -33,6 +33,20 @@ describe("toAssignError", () => {
     expect(toAssignError(graphQLError("nope", "FORBIDDEN")).message).toBe("You are not allowed to run this.");
   });
 
+  it("says a stateful action wants its agent named, in the user's words", () => {
+    const refusal = "A stateful action is assigned to a named agent: 'Move stage' keeps state on the agent that runs it.";
+    const failure = toAssignError(graphQLError(refusal));
+
+    expect(failure.message).toBe("This action runs on a specific device. Choose which one.");
+    expect(failure.technical).toContain(refusal);
+  });
+
+  it("says a stateful step of a flow wants its agent bound", () => {
+    const failure = toAssignError(graphQLError("A stateful action is bound to one agent: 'move' has 2"));
+
+    expect(failure.message).toBe("A step of this runs on a specific device. Choose which one.");
+  });
+
   it("has a sentence when nothing came back", () => {
     expect(toAssignError(undefined).message).toBe("Rekuest refused the task without saying why.");
   });

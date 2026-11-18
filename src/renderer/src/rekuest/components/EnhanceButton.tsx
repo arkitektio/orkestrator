@@ -1,5 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { buildAssignInput } from "@/rekuest/assign";
+import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
 import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
 import { Button } from "@/core/ui/button";
 import {
@@ -64,8 +64,10 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
     const key = action.args?.at(0)?.key;
     if (!key) return;
 
+    const target = directAssignTarget(action);
     const unknownKeys = action.args.filter((arg) => arg.key && arg.key !== key && arg.nullable == false);
-    if (unknownKeys.length > 0) {
+    // Also a stateful action with no one agent to name: the form says which it runs on.
+    if (unknownKeys.length > 0 || !target) {
       openDialog("assign", {
         target: { action: action.id },
         args: { [key]: props.object },
@@ -80,7 +82,7 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
     try {
       setLoading(true);
       await assign(buildAssignInput({
-        action: action.id,
+        ...target,
         args: {
           [key]: props.object
         },

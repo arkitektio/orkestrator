@@ -43,6 +43,16 @@ fragment ListShortcut on Shortcut {
   action {
     id
     assignable
+    # Where a run of it may go: a stateful action runs on the one agent that can take it.
+    stateful
+    implementations {
+      id
+      agent {
+        id
+        kind
+        active
+      }
+    }
     logo {
       ...BlokLogo
     }

@@ -24,10 +24,21 @@ export class AssignError extends Error {
 }
 
 /**
- * Sentences for the codes rekuest names. Keyed on `extensions.code` only,
- * never on the message text: add a code here once the backend sends it.
+ * Sentences for the codes rekuest names, keyed on `extensions.code`: add a
+ * code here once the backend sends it.
  */
 const CODE_REASONS: Record<string, string> = {};
+
+const STATEFUL_NEEDS_AGENT = "This action runs on a specific device. Choose which one.";
+
+/**
+ * Refusals rekuest words but does not code yet, by how its message starts.
+ * One moves to `CODE_REASONS` once the backend sends a code for it.
+ */
+const MESSAGE_REASONS: readonly (readonly [start: string, reason: string])[] = [
+  ["A stateful action is assigned to a named agent", STATEFUL_NEEDS_AGENT],
+  ["A stateful action is bound to one agent", "A step of this runs on a specific device. Choose which one."],
+];
 
 const NO_REASON = "Rekuest refused the task without saying why.";
 
@@ -52,8 +63,21 @@ export const toAssignError = (error: unknown): AssignError => {
 
   // The server's own words: the first message, without the client's wrapping.
   const first = classified.message.split("\n")[0]?.trim();
+  const worded = MESSAGE_REASONS.find(([start]) => first?.startsWith(start));
+  if (worded) return new AssignError(worded[1], details);
   return new AssignError(!error || !first || first === "Unknown error" ? NO_REASON : first, details);
 };
+
+/**
+ * The refusal of a stateful action that names no agent, for a place that knows it before
+ * asking and has nowhere to let the user choose: the sentence the server's own would get.
+ */
+export const statefulNeedsAgentError = () =>
+  new AssignError(STATEFUL_NEEDS_AGENT, {
+    kind: "unknown",
+    code: null,
+    technical: "Not sent: a stateful action is assigned to a named agent, and none or several could take it.",
+  });
 
 /** The sentence to show for anything an assign threw. */
 export const assignErrorMessage = (error: unknown): string =>

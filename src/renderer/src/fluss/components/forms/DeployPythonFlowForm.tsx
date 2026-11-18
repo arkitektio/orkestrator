@@ -5,19 +5,32 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { cn } from "@/core/util/utils";
 import { PythonFlowStatus, usePythonFlowQuery } from "@/fluss/api/graphql";
 import { PYTHON_RUNNER_INTERFACE, usePythonFlowDeployments, usePythonRunners } from "@/fluss/python/deployments";
-import { pythonFlowDeployConfig, pythonFlowInterface, pythonFlowToDefinition } from "@/fluss/utils";
 import {
+  pythonFlowDeployConfig,
+  pythonFlowInterface,
+  pythonFlowStatefulSteps,
+  pythonFlowToDefinition,
+} from "@/fluss/utils";
+import {
+  ActionStatefulByHashDocument,
+  ActionStatefulByHashQuery,
+  ActionStatefulByHashQueryVariables,
+  AgentDependencyInput,
   ListImplementationsDocument,
   useCreateHigherOrderImplementationMutation,
 } from "@/rekuest/api/graphql";
+import { useRekuest } from "@/rekuest/api/hooks";
 import { Check, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Make a published Python flow version an action of its own: deployed onto
  * the agent of a `run_python_flow` runner, whose action it wraps with the
  * version bound (fluss's `adeploy_python_flow`). Deploying again to the same
  * agent updates that action in place.
+ *
+ * Its stateful steps become dependencies of that action: starting the flow
+ * binds each to an agent.
  */
 export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }) => {
   const { openDialog } = useDialog();
@@ -30,6 +43,38 @@ export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }
   });
 
   const flow = data?.pythonFlow;
+  const rekuest = useRekuest();
+  const manifest = flow?.manifest;
+
+  // Whether a step keeps state is its action's, looked up by hash. A hash names one definition,
+  // so the cache answers the deploy's lookup after the form's own.
+  const lookUpStatefulSteps = useCallback(async () => {
+    if (!rekuest) throw new Error("Rekuest is not available");
+    const hashes = [...new Set((manifest ?? []).map((entry) => entry.actionHash))];
+    const actions = await Promise.all(
+      hashes.map(async (hash) => {
+        const found = await rekuest.query<ActionStatefulByHashQuery, ActionStatefulByHashQueryVariables>({
+          query: ActionStatefulByHashDocument,
+          variables: { hash },
+        });
+        return [hash, found.data.action] as const;
+      }),
+    );
+    return pythonFlowStatefulSteps(manifest ?? [], Object.fromEntries(actions));
+  }, [rekuest, manifest]);
+
+  const [statefulSteps, setStatefulSteps] = useState<AgentDependencyInput[]>([]);
+  useEffect(() => {
+    let current = true;
+    lookUpStatefulSteps().then(
+      (steps) => current && setStatefulSteps(steps),
+      // Shown only: a step that cannot be looked up fails the deploy, which says why.
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [lookUpStatefulSteps]);
   const deployedOn = new Set(deployments.data?.implementations.map((impl) => impl.agent.name) ?? []);
   const options = runners.data?.implementations ?? [];
   const chosen = runner ?? options.find((impl) => impl.agent.active)?.id ?? options.at(0)?.id ?? null;
@@ -44,6 +89,8 @@ export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }
             interface: pythonFlowInterface(flow.id),
             definition: pythonFlowToDefinition(flow),
             config: pythonFlowDeployConfig(flow.id),
+            // Always sent, empty when there are none: a redeploy says what the manifest holds now.
+            dependencies: await lookUpStatefulSteps(),
           },
         },
       });
@@ -103,6 +150,11 @@ export const DeployPythonFlowForm = (props: { flow: string; runAfter?: boolean }
             {deployedOn.has(impl.agent.name) && <span className="text-xs text-muted-foreground">deployed</span>}
             {impl.id === chosen && <Check className="h-4 w-4 text-primary" />}
           </button>
+        ))}
+        {statefulSteps.map((step) => (
+          <div key={step.key} className="text-xs text-muted-foreground">
+            <span className="font-mono">{step.key}</span> runs on one agent, chosen when the flow is started.
+          </div>
         ))}
       </div>
 

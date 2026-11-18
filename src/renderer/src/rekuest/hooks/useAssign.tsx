@@ -14,7 +14,7 @@ import {
   mapReference,
   trackTask,
 } from "../lib/taskTracker";
-import { toAssignError } from "../lib/assignError";
+import { statefulNeedsAgentError, toAssignError } from "../lib/assignError";
 
 /**
  * Passed as the mutation's `onError`: with one present Apollo resolves with
@@ -151,28 +151,35 @@ export type ReassignableTask = {
   args: AssignInput["args"];
   /** A rerun keeps the original's: it waits for approval exactly as that did. */
   policy?: AssignInput["policy"];
-  action: { id: string };
+  action: { id: string; stateful: boolean };
   implementation?: { id: string } | null;
+  /** The agent it ran on. */
+  agent?: { id: string } | null;
   resolvedDependencies?: readonly FrozenDependency[] | null;
 };
 
 /**
  * Re-run a task with its original args: pinned to the same implementation
- * when the task has one, otherwise re-resolved via the action. A pinned
- * rerun binds its dependencies to the same agents again, level by level, as
- * far as the task's fragment selects them.
+ * when the task has one, otherwise re-resolved via the action. A stateful
+ * action is never re-resolved (the server refuses it by action alone): it
+ * goes to the agent it ran on, and is refused here when the task has none.
+ * A pinned rerun binds its dependencies to the same agents again, level by
+ * level, as far as the task's fragment selects them.
  */
 export const useReassignFromTask = () => {
   const { assign } = useAssign();
 
   const reassign = useCallback(
-    (task: ReassignableTask, opts?: { capture?: boolean }) =>
-      assign(
+    async (task: ReassignableTask, opts?: { capture?: boolean }) => {
+      if (!task.implementation && task.action.stateful && !task.agent) throw statefulNeedsAgentError();
+      return assign(
         buildAssignInput({
           args: task.args,
           ...(task.implementation
             ? { implementation: task.implementation.id }
-            : { action: task.action.id }),
+            : task.action.stateful && task.agent
+              ? { action: task.action.id, agent: task.agent.id }
+              : { action: task.action.id }),
           // A task's `dependencies` field is the raw resolution JSON map, NOT
           // the [ResolvedDependencyInput!] list AssignInput expects; its
           // `resolvedDependencies` are the same bindings, read back as pins.
@@ -185,7 +192,8 @@ export const useReassignFromTask = () => {
           capture: opts?.capture ?? false,
           policy: task.policy,
         }),
-      ),
+      );
+    },
     [assign],
   );
 

@@ -7,14 +7,13 @@ import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {
-  AgentKind,
   TaskEventFragment,
   DetailImplementationFragment,
   PortKind,
   PrimaryActionFragment,
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
-import { buildAssignInput } from "@/rekuest/assign";
+import { buildAssignInput, canTakeWork, directAssignTarget } from "@/rekuest/assign";
 import { formatEstimate } from "@/rekuest/lib/estimatedRuntime";
 import { fitsImplementation } from "@/rekuest/lib/fits";
 import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
@@ -63,14 +62,12 @@ const formatAssignErrorToast = (message: string) => ({
 export const actionAvailability = (action: { assignable: boolean }) =>
   action.assignable ? null : { reason: "No agent for it is online" };
 
-/** An implementation's agent can take work now: takt's rule (a webhook, or live). */
-export const canTakeWork = (agent: Pick<DetailImplementationFragment["agent"], "kind" | "active">) =>
-  agent.kind === AgentKind.Webhook || agent.active;
+export { canTakeWork };
 
 /**
  * A stateful action keeps its state on one agent: when more than one could take
  * it now, the user says which ("Run on") rather than takt picking one. With one,
- * takt can only pick that one, and the row just runs.
+ * the row just runs, on that one (`directAssignTarget`).
  */
 export const needsAgentChoice = (
   action: Pick<PrimaryActionFragment, "stateful" | "liveImplementations"> &
@@ -466,8 +463,10 @@ export const AssignButton = (
       return;
     }
 
+    const target = directAssignTarget(action);
     const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
-    if (unknownKeys.length >= 1) {
+    // Also a stateful action with no one agent to name: the form says which it runs on.
+    if (unknownKeys.length >= 1 || !target) {
       openDialog("assign", {
         target: { action: action.id },
         args: keys,
@@ -487,7 +486,7 @@ export const AssignButton = (
 
     try {
       await assign(buildAssignInput({
-        action: action.id,
+        ...target,
         args: keys,
         reference,
         // As the assign form last ran it.
@@ -504,7 +503,7 @@ export const AssignButton = (
   };
 
   const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
-  // Outside a menu with the picker (no `RunOnSubmenu`) the row runs as before.
+  // Outside a menu with the picker (no `RunOnSubmenu`) the row runs, or asks in the assign form.
   const choose = needsAgentChoice(props.action) ? submenu : null;
 
   return (
@@ -585,6 +584,8 @@ export const BatchAssignButton = (
       setDoing(false);
     }
 
+    const target = directAssignTarget(action);
+
     for (const object of run.objects) {
       const keys: Record<string, unknown> = { [key]: toWire(object) };
 
@@ -611,7 +612,8 @@ export const BatchAssignButton = (
       }
 
       const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
-      if (unknownKeys.length >= 1) {
+      // Also a stateful action with no one agent to name: the form says which it runs on.
+      if (unknownKeys.length >= 1 || !target) {
         openDialog("assign", {
           target: { action: action.id },
           args: keys,
@@ -626,7 +628,7 @@ export const BatchAssignButton = (
 
       try {
         await assign(buildAssignInput({
-          action: action.id,
+          ...target,
           args: keys,
           reference,
         }));

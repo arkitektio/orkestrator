@@ -146,6 +146,8 @@ fragment MinimalImplementation on Implementation {
   agent {
     id
     name
+    # With `active`, whether it can take work now: a webhook agent is never connected.
+    kind
     active
     hardware {
       ...AgentHardware
