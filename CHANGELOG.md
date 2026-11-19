@@ -1,3 +1,10 @@
+# [8.9.0](https://github.com/arkitektio/orkestrator/compare/v8.8.2...v8.9.0) (2026-11-19)
+
+
+### Features
+
+* follow the hub owner's alias ranking ([53c8aad](https://github.com/arkitektio/orkestrator/commit/53c8aadd4c40b5532ba0a1d0664ba4ff25b1cf14))
+
 ## [8.8.2](https://github.com/arkitektio/orkestrator/compare/v8.8.1...v8.8.2) (2026-11-18)
 
 
