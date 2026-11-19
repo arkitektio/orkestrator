@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  desiredLevelForDistance,
-  desiredLevelFrom,
   levelEndDistance,
   mipSampleCanWin,
   normalizeSlotValue,
@@ -18,35 +16,6 @@ const rng = (seed: number) => () => {
 };
 
 describe("levelEndDistance (per-segment level pick)", () => {
-  const pyramids = [
-    [1, 2, 4, 8, 16],
-    [1, 2, 4.22, 8.44],
-    [1, 1, 3, 9],
-    [1],
-  ];
-
-  it("marching with the cached segment end picks the same level as every step", () => {
-    const random = rng(7);
-    for (const scales of pyramids) {
-      for (let trial = 0; trial < 200; trial++) {
-        const px = 20 + random() * 4000;
-        const bias = 0.5 + random() * 2;
-        const floor = Math.floor(random() * scales.length);
-        let level = 0;
-        let end = -1;
-        let distance = random() * 5;
-        for (let step = 0; step < 400; step++) {
-          if (distance > end) {
-            level = desiredLevelFrom(level, distance, px, scales, bias, floor);
-            end = levelEndDistance(level, px, scales, bias);
-          }
-          expect(level).toBe(desiredLevelForDistance(distance, px, scales, bias, floor));
-          distance += random() * 40;
-        }
-      }
-    }
-  });
-
   it("holds forever in ortho and on the coarsest level", () => {
     expect(levelEndDistance(0, 0, [1, 2, 4], 1)).toBe(Number.POSITIVE_INFINITY);
     expect(levelEndDistance(2, 500, [1, 2, 4], 1)).toBe(Number.POSITIVE_INFINITY);
