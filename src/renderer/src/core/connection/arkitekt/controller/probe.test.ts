@@ -125,7 +125,7 @@ describe("a strict instance (its hub registered a certificate)", () => {
   const PLAIN = plain("lab+http", "lab.local");
   const PLAIN_MESH = plain("mesh", "mikro.lab.ts.net");
 
-  it("never uses a plain alias off the mesh, even when it is the only one answering", async () => {
+  it("never uses a plain LAN alias, even when it is the only one answering", async () => {
     const probed = answering(PLAIN.host);
     vi.mocked(checkAliasHealth).mockImplementation(async (a) => {
       probed.push(`${a.id}`);
@@ -150,10 +150,76 @@ describe("a strict instance (its hub registered a certificate)", () => {
     expect(probed).toEqual([TLS.host]);
   });
 
+  it("keeps a plain loopback alias and drops a plain LAN one", async () => {
+    const LOOPBACK = plain("loop", "localhost");
+    const LAN_PLAIN: Alias = { ...plain("lan", "192.168.1.4"), reach: "lan" };
+    const probed = answering(LOOPBACK.host, LAN_PLAIN.host);
+    const result = await probeService({ instance: strict(LAN_PLAIN, LOOPBACK), controller: new AbortController(), routed });
+    expect(result.id).toBe("loop");
+    expect(probed).toEqual([LOOPBACK.host]);
+  });
+
+  it("keeps plain aliases lok calls loopback or internal", async () => {
+    const LOOP_REACH: Alias = { ...plain("loop", "lab.local"), reach: "loopback" };
+    const INTERNAL: Alias = { ...plain("internal", "mikro"), reach: "internal" };
+    const DOCKER: Alias = { ...plain("docker", "mikro-docker"), kind: "docker" };
+    const probed = answering();
+    await expect(
+      probeService({ instance: strict(PLAIN, LOOP_REACH, INTERNAL, DOCKER), controller: new AbortController(), routed }),
+    ).rejects.toThrow("No working alias");
+    expect(probed).toEqual(["lab.local", "mikro", "mikro-docker"]);
+  });
+
   it("leaves a plain-HTTP hub alone", async () => {
     answering(PLAIN.host);
     const result = await probeService({ instance: instance(PLAIN), controller: new AbortController(), routed });
     expect(result.id).toBe("lab+http");
+  });
+});
+
+describe("lok's ranking (priority)", () => {
+  const ranked = (id: string, priority: number | null | undefined): Alias => ({ ...alias(id, `${id}.example.org`), priority });
+
+  it("tries the alias lok ranks first, ahead of the cached one and of fakts' order", async () => {
+    const LOW = ranked("low", 10);
+    const HIGH = ranked("high", 0);
+    const probed = answering(LOW.host, HIGH.host);
+    const result = await probeService({ instance: instance(LOW, HIGH), cached: LOW, controller: new AbortController(), routed });
+    expect(result.id).toBe("high");
+    expect(probed[0]).toBe(HIGH.host);
+  });
+
+  it("ranks by priority without a cached alias, and puts aliases without one last", async () => {
+    const NONE = ranked("none", undefined);
+    const LOW = ranked("low", 5);
+    const HIGH = ranked("high", 1);
+    const probed = answering(NONE.host, LOW.host, HIGH.host);
+    const result = await probeService({ instance: instance(NONE, LOW, HIGH), controller: new AbortController(), routed });
+    expect(result.id).toBe("high");
+    expect(probed).toEqual([HIGH.host, LOW.host, NONE.host]);
+  });
+
+  it("lets the cached alias break a tie among equal priorities, with its head start", async () => {
+    const FIRST = ranked("first", 0);
+    const SECOND = ranked("second", 0);
+    const probed = answering(FIRST.host, SECOND.host);
+    const result = await probeService({ instance: instance(FIRST, SECOND), cached: SECOND, controller: new AbortController(), routed });
+    expect(result.id).toBe("second");
+    expect(probed).toEqual([SECOND.host]);
+  });
+
+  it("keeps direct aliases ahead of mesh ones whatever their priority", async () => {
+    const probed = answering(PUBLIC.host, MESH.host);
+    const meshUp = vi.fn(async () => {});
+    const result = await probeService({
+      instance: instance({ ...MESH, priority: 0 }, { ...PUBLIC, priority: 5 }),
+      controller: new AbortController(),
+      routed,
+      meshUp,
+    });
+    expect(result.id).toBe("pub");
+    expect(probed).toEqual([PUBLIC.host]);
+    expect(meshUp).not.toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,6 @@
 import { sameAlias } from "../alias/helpers";
 import { checkAliasHealth, type AliasFailure } from "../alias/resolve";
-import { usableAliases } from "../alias/serviceAlias";
+import { rankAliases, rankedFirst, usableAliases } from "../alias/serviceAlias";
 import type { Alias, Instance } from "../fakts/faktsSchema";
 
 /** One probe of one alias, as it starts and as it ends. */
@@ -35,13 +35,17 @@ export const PROBE_TIE_MS = 150;
  *     service being unreachable, with the doctor to say why.
  *
  * The first answer wins, except that an alias earlier in the preference order
- * (last, direct in fakts' order, mesh in fakts' order) still in flight gets
- * `tieMs` to answer too. A hub whose direct addresses work therefore never
- * asks for the mesh. Rejects only when every usable alias said no, or with
- * the caller's own cancel.
+ * still in flight gets `tieMs` to answer too. That order is lok's: the direct
+ * aliases, then the mesh ones, each ranked by `rankAliases` — the server's
+ * `priority` first, the last alias only among those ranked alike, then fakts'
+ * order. The last alias leads the whole order (and gets step 1's head start)
+ * only when no alias outranks it, which with no priorities at all is always:
+ * then the order is last, direct in fakts' order, mesh in fakts' order. A hub
+ * whose direct addresses work therefore never asks for the mesh. Rejects only
+ * when every usable alias said no, or with the caller's own cancel.
  *
- * `usableAliases` applies: a strict instance's plain aliases are not used off
- * the mesh. `onAttempt` and `onMeshWait` narrate; they never change the race.
+ * `usableAliases` applies: a strict instance's plain aliases are used only on
+ * loopback, the deployment's internal network or the mesh. `onAttempt` and `onMeshWait` narrate; they never change the race.
  */
 export const probeService = ({
   instance,
@@ -78,9 +82,11 @@ export const probeService = ({
     // what lok says of the address, which decides its route. A cached plain
     // alias of an instance that has since become strict is not in `usable`.
     const last = cached ? usable.find((alias) => sameAlias(alias, cached)) : undefined;
-    const direct = usable.filter((alias) => !routed(alias));
-    const behindMesh = usable.filter(routed);
-    const order = [...(last ? [last] : []), ...[...direct, ...behindMesh].filter((alias) => alias !== last)];
+    // A last alias the server ranks below another gets no head start: lok's order stands.
+    const lead = last && rankedFirst(last, usable) ? last : undefined;
+    const direct = rankAliases(usable.filter((alias) => !routed(alias)), last);
+    const behindMesh = rankAliases(usable.filter(routed), last);
+    const order = [...(lead ? [lead] : []), ...[...direct, ...behindMesh].filter((alias) => alias !== lead)];
     const rank = (alias: Alias) => order.indexOf(alias);
 
     // Ours to abort: the losers of the race are cancelled, the caller's controller is not touched.
@@ -186,9 +192,9 @@ export const probeService = ({
     if (controller.signal.aborted) return onAbort();
     controller.signal.addEventListener("abort", onAbort);
 
-    if (last) {
-      if (routed(last)) askMesh();
-      else launch(last);
+    if (lead) {
+      if (routed(lead)) askMesh();
+      else launch(lead);
       after(headStartMs, launchDirect);
     } else {
       direct.forEach(launch);

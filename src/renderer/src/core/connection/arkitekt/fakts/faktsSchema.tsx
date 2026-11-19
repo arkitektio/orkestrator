@@ -18,6 +18,12 @@ export const AliasSchema = z.object({
    */
   kind: z.enum(["absolute", "mesh", "docker"]).optional().catch(undefined),
   reach: z.enum(["loopback", "internal", "lan", "mesh", "public"]).optional().catch(undefined),
+  /**
+   * lok's ranking of the instance's aliases: lower is tried first (the list
+   * also arrives sorted by it). Absent from older servers and stored fakts;
+   * `alias/serviceAlias.ts` (`rankAliases`) reads it.
+   */
+  priority: z.number().nullable().optional().catch(undefined),
 });
 
 // Ed25519 public key for verifying signed alias challenges.
