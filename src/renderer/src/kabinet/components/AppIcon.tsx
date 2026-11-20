@@ -1,25 +1,15 @@
 import { useMarkImage } from "@/kabinet/lib/marks/useMarkImage";
 import { cn } from "@/core/util/utils";
 import { useState } from "react";
+import { identityGradient } from "@/core/ui/identityColor";
 import { hueFor, type AppIdentity } from "../appIdentity";
 import { KabinetBlokLogo } from "./logo/KabinetBlokLogo";
 
-const brandStop = (lightness: number, chroma: number, shift: number, alpha: number) =>
-  `oklch(${lightness.toFixed(3)} calc(var(--brand-chroma) * ${chroma.toFixed(3)}) calc(var(--brand-hue) + ${shift.toFixed(1)}) / ${alpha})`;
-
 /**
  * Soft two-stop gradient for an app, on the brand hue so it repaints with the
- * theme. `seed` (`hueFor`, 0–360) picks the app's step within it: lightness and
- * chroma vary per app, the hue only by a few degrees. Both stops stay dark
- * enough for the white initials in either mode.
+ * theme (core's `identityGradient`, shared with Rekuest's agent cards).
  */
-export const appGradient = (seed: number, alpha = 1) => {
-  const t = (((seed % 360) + 360) % 360) / 360;
-  const lightness = 0.46 + 0.12 * ((t * 3) % 1);
-  const chroma = 0.55 + 0.45 * ((t * 7) % 1);
-  const shift = (t - 0.5) * 24;
-  return `linear-gradient(135deg, ${brandStop(lightness + 0.06, chroma, shift, alpha)}, ${brandStop(lightness - 0.1, chroma * 0.85, shift + 8, alpha)})`;
-};
+export const appGradient = identityGradient;
 
 /**
  * An app's icon, in four tiers.

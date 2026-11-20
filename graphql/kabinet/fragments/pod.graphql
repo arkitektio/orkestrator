@@ -1,6 +1,10 @@
 fragment ListPod on Pod {
   id
   podId
+  # When the pod last reported its logs: the card says how fresh it is, never what.
+  latestLogDump {
+    createdAt
+  }
   backend {
     user {
       sub
@@ -13,6 +17,8 @@ fragment ListPod on Pod {
   deployment {
     id
     flavour {
+      id
+      name
       release {
         id
         version

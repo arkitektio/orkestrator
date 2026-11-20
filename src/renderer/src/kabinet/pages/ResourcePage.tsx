@@ -1,46 +1,83 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ResponsiveContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
-import { Card } from "@/core/ui/card";
-import { KabinetResource } from "@/core/linkers";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { InfoList } from "@/core/ui/info-list";
+import { KabinetBackend, KabinetResource } from "@/core/linkers";
+import { Cpu } from "lucide-react";
 import { useGetResourceQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
+import { StatusTally } from "../components/cards/parts";
+import { CardGrid, DetailSection, FactGrid } from "../components/DetailSection";
+import { IconForBackendKind } from "../components/IconForBackendKind";
 import { KABINET_HELP } from "../help";
+import { qualifierRows } from "../lib/qualifiers";
 
-export const ResourcePage =  asDetailQueryRoute(
+/**
+ * A resource: something a backend schedules pods onto. The body says what it
+ * reports about itself (its qualifiers) and which pods run on it; the Info
+ * rail repeats its backend and ids.
+ */
+export const ResourcePage = asDetailQueryRoute(
   useGetResourceQuery,
   ({ data }) => {
+    const resource = data.resource;
+    const qualifiers = qualifierRows(resource.qualifiers);
+
     return (
       <KabinetResource.ModelPage
-        title={data?.resource?.name}
-        object={data?.resource}
+        title={resource.name}
+        object={resource}
         help={KABINET_HELP.resource}
+        additionalSidebars={
+          <Sidebars.Tab label="Info">
+            <InfoList
+              rows={[
+                [
+                  "Backend",
+                  <KabinetBackend.DetailLink object={resource.backend} className="hover:underline">
+                    {resource.backend.name}
+                  </KabinetBackend.DetailLink>,
+                ],
+                ["Resource ID", <span className="break-all font-mono text-xs">{resource.resourceId}</span>],
+                ["Pods", resource.pods.length],
+              ]}
+            />
+          </Sidebars.Tab>
+        }
       >
-        <div className="p-3">
-          <h1 className="text-2xl font-bold tracking-tight">{data?.resource.name}</h1>
-        </div>
-        <div className="px-3 pb-3">
-          <div className="mt-4 font-light mb-2">Hosted Pods</div>
-          <div className="grid grid-cols-6 gap-2">
-            {data?.resource?.pods.map((pod) => (
-              <PodCard key={pod.id} item={pod} />
-            ))}
-          </div>
-        </div>
-        <div className="px-3 pb-3">
-          <div className="mt-4 font-light mb-2">Qualifiers</div>
-          <ResponsiveContainerGrid>
-            {data?.resource?.qualifiers.map((qualifier) => (
-              <Card
-                key={qualifier.id}
-                className="rounded-md border border-input p-4 truncate"
-              >
-                <h2 className="font-semibold">{qualifier.key}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {qualifier.value}
-                </p>
-              </Card>
-            ))}
-          </ResponsiveContainerGrid>
+        <div className="flex w-full flex-col gap-8 p-3">
+          <ModuleHomeHeader
+            moduleKey="kabinet"
+            icon={<Cpu />}
+            title={resource.name}
+            description={
+              <span className="flex flex-wrap items-center gap-x-1.5">
+                on
+                <IconForBackendKind kind={resource.backend.kind} className="size-3.5" />
+                <KabinetBackend.DetailLink object={resource.backend} className="hover:underline">
+                  {resource.backend.name}
+                </KabinetBackend.DetailLink>
+                <span>·</span>
+                <StatusTally items={resource.pods} empty="no pods" />
+              </span>
+            }
+          />
+
+          <DetailSection title="Qualifiers" count={qualifiers.length}>
+            <FactGrid rows={qualifiers} />
+          </DetailSection>
+
+          <DetailSection
+            title="Pods"
+            count={resource.pods.length}
+            empty="No pod is scheduled onto this resource."
+          >
+            <CardGrid>
+              {resource.pods.map((pod) => (
+                <PodCard key={pod.id} item={pod} />
+              ))}
+            </CardGrid>
+          </DetailSection>
         </div>
       </KabinetResource.ModelPage>
     );
@@ -52,6 +89,5 @@ export const ResourcePage =  asDetailQueryRoute(
     },
   },
 );
-
 
 export default ResourcePage;

@@ -1,5 +1,5 @@
-query ListPod {
-  pods {
+query ListPod($filters: PodFilter, $pagination: OffsetPaginationInput) {
+  pods(filters: $filters, pagination: $pagination) {
     ...ListPod
   }
 }

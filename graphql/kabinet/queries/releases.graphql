@@ -1,5 +1,5 @@
-query ListReleases {
-  releases {
+query ListReleases($filters: ReleaseFilter, $pagination: OffsetPaginationInput) {
+  releases(filters: $filters, pagination: $pagination) {
     ...ListRelease
   }
 }

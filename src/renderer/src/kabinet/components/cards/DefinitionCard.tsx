@@ -1,38 +1,60 @@
-import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import React from "react";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
 import { KabinetDefinition } from "@/core/linkers";
-import { ListDefinitionFragment } from "../../api/graphql";
+import { FunctionSquare } from "lucide-react";
+import { ActionKind, ListDefinitionFragment } from "../../api/graphql";
+import { signature } from "../../lib/ports";
+import { DefinitionLogo } from "../logo/KabinetBlokLogo";
+import { KabinetCard, LeadTile } from "./parts";
 
 interface Props {
   item: ListDefinitionFragment;
-
 }
 
+/**
+ * An action a release declares: what it does, its signature (takes →
+ * returns) on one line, and which apps bring it.
+ */
 const TheCard = ({ item }: Props) => {
+  const apps = [...new Set(item.flavours.map((flavour) => flavour.release.app.identifier))];
+  const line = signature(item.args, item.returns);
+
   return (
-    <KabinetDefinition.Smart object={item} >
-      <Card className="group aspect-square @sm:aspect-[3/2] overflow-hidden">
-        <CardHeader className="flex flex-row items-start gap-3">
-          <DefinitionLogo definition={item} className="size-10 rounded-lg" />
-          <div className="min-w-0">
-            <CardTitle>
-              <KabinetDefinition.DetailLink object={item}>
-                {" "}
-                {item.name}
-              </KabinetDefinition.DetailLink>
-            </CardTitle>
-            <CardDescription>
-              {item?.description}
-            </CardDescription>
-          </div>
-        </CardHeader>
-      </Card>
+    <KabinetDefinition.Smart object={item}>
+      <KabinetCard
+        lead={
+          item.logo ? (
+            <DefinitionLogo definition={item} className="size-9 shrink-0 rounded-lg" />
+          ) : (
+            <LeadTile>
+              <FunctionSquare />
+            </LeadTile>
+          )
+        }
+        title={
+          <KabinetDefinition.DetailLink object={item} className="transition-colors hover:text-primary">
+            {item.name}
+          </KabinetDefinition.DetailLink>
+        }
+        aside={item.kind === ActionKind.Generator ? "generator" : undefined}
+        sub={
+          <span className="font-mono" title={line}>
+            {line}
+          </span>
+        }
+        footer={
+          apps.length > 0 ? (
+            <span className="truncate font-mono" title={apps.join(", ")}>
+              {apps.join(", ")}
+            </span>
+          ) : undefined
+        }
+      >
+        {item.description && (
+          <p className="line-clamp-2 text-xs text-muted-foreground" title={item.description}>
+            {item.description}
+          </p>
+        )}
+      </KabinetCard>
     </KabinetDefinition.Smart>
   );
 };

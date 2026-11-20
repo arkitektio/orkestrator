@@ -1,5 +1,5 @@
-query ListBackends {
-  backends {
+query ListBackends($filters: BackendFilter, $pagination: OffsetPaginationInput) {
+  backends(filters: $filters, pagination: $pagination) {
     ...ListBackend
   }
 }

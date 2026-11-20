@@ -2452,6 +2452,11 @@
         "possibleTypes": [
           {
             "kind": "OBJECT",
+            "name": "BlokAssignWidget",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
             "name": "ChoiceAssignWidget",
             "ofType": null
           },
@@ -2572,7 +2577,7 @@
           },
           {
             "name": "fallback",
-            "description": "(CUSTOM) Widget to render when the UI has no such component in its catalog.",
+            "description": "(CUSTOM, BLOK) Widget to render when the UI has no such component in its catalog.",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "AssignWidgetInput",
@@ -2604,7 +2609,7 @@
           },
           {
             "name": "followValue",
-            "description": "(SLIDER, CHOICE, STRING, SEARCH, CUSTOM, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors.",
+            "description": "(SLIDER, CHOICE, STRING, SEARCH, CUSTOM, BLOK, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors.",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -2692,6 +2697,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "SearchQuery",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "(BLOK) The port blok as v2 BSX: one `<Blok kind=\"port\" context=\"panel\">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "defaultValue": "null",
@@ -2791,6 +2808,18 @@
             "deprecationReason": null
           },
           {
+            "name": "vocab",
+            "description": "(BLOK) The blok language version the source speaks; 2 is the only one.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ward",
             "description": "(SEARCH) The ward (service) that executes the query.",
             "type": {
@@ -2816,6 +2845,12 @@
         "inputFields": null,
         "interfaces": null,
         "enumValues": [
+          {
+            "name": "BLOK",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "CHOICE",
             "description": null,
@@ -3272,6 +3307,180 @@
         "possibleTypes": null
       },
       {
+        "kind": "OBJECT",
+        "name": "BlokAssignWidget",
+        "description": "A port blok as the port's widget: BSX the form draws where the port's control would be.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "fallback",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "INTERFACE",
+              "name": "AssignWidget",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "followValue",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "kind",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "AssignWidgetKind",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [
+          {
+            "kind": "INTERFACE",
+            "name": "AssignWidget",
+            "ofType": null
+          }
+        ],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "BlokAssignWidgetInput",
+        "description": "A port blok as the port's widget: BSX the form draws where the port's control would be.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "fallback",
+            "description": "Widget to render where the UI draws no port bloks; the port's own kind's widget when left out.",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "AssignWidgetInput",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "followValue",
+            "description": "Port path of another port whose value this widget follows and mirrors.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "kind",
+            "description": "Which member of AssignWidgetInput this is.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "AssignWidgetKind",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The port blok as v2 BSX: one `<Blok kind=\"port\" context=\"panel\">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "vocab",
+            "description": "The blok language version the source speaks; 2 is the only one.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": "2",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "INPUT_OBJECT",
         "name": "BlokDemoInput",
         "description": "What a preview renders a blok with, mirroring the roots it reads.",
@@ -3444,17 +3653,13 @@
           },
           {
             "name": "context",
-            "description": "What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action.",
+            "description": "What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. A blok sent as its `source` need not say it: it is read off its `<Blok>`. PANEL otherwise.",
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ComponentContext",
-                "kind": "ENUM",
-                "ofType": null
-              }
+              "kind": "ENUM",
+              "name": "ComponentContext",
+              "ofType": null
             },
-            "defaultValue": "PANEL",
+            "defaultValue": "null",
             "isDeprecated": false,
             "deprecationReason": null
           },

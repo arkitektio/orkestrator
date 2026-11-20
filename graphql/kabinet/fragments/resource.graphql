@@ -1,10 +1,12 @@
 fragment Resource on Resource {
   id
   name
+  resourceId
   qualifiers
   backend {
     id
     name
+    kind
   }
   pods {
     ...ListPod
@@ -18,5 +20,11 @@ fragment ListResource on Resource {
   backend {
     id
     name
+    kind
+  }
+  # The card's health bar and count.
+  pods {
+    id
+    status
   }
 }

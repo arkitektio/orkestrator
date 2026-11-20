@@ -61,7 +61,8 @@ export const KABINET_HELP = {
     <PageHelp
       intro="The GitHub repositories Kabinet reads apps and bloks from. A repository publishes apps (in .arkitekt/deployments.yaml), bloks (in .arkitekt/bloks.yaml), or both."
       steps={[
-        <>Press <b>Add Repo</b> and enter a repository as “user/repo”, or paste its GitHub URL.</>,
+        <>Press <b>Add Repo</b> and enter a repository as “user/repo”, or paste its GitHub URL. <b>Import from registry</b> adds a package published to a container registry instead.</>,
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click a repository to see the builds found in it.</>,
         <>Right-click a repository and choose <b>Rescan Repository</b> to read it again.</>,
         <>Press <b>Rescan Repos</b> to rescan all of them at once.</>,
@@ -134,10 +135,14 @@ export const KABINET_HELP = {
   ),
   definition: (
     <PageHelp
-      intro="One action that an app can provide, with its description and the flavours (builds) that include it."
+      intro="One action that an app can provide, as its releases declare it: what it does, what it takes and returns, and the flavours (builds) that include it."
       steps={[
         <>Read the description to learn what the action does.</>,
+        <>Read <b>Takes</b> and <b>Returns</b> for its inputs and outputs. A type ending in “?” may be left empty.</>,
         <>Click a card under <b>Flavours</b> to open a build that provides this action. From there you can install it.</>,
+      ]}
+      tips={[
+        <>The <b>Info</b> tab of the sidebar shows the action’s hash; press the copy button next to it to copy it.</>,
       ]}
     />
   ),
@@ -145,9 +150,12 @@ export const KABINET_HELP = {
     <PageHelp
       intro="A backend is a machine or container engine that runs deployed apps. This page lists what it is running and the resources it manages."
       steps={[
-        <>Click a card under <b>Managed Pods</b> to open a running app and read its logs.</>,
-        <>Click a card under <b>Managed Resources</b> to see what a resource hosts.</>,
+        <>Click a card under <b>Pods</b> to open a running app and read its logs.</>,
+        <>Click a card under <b>Resources</b> to see what a resource hosts.</>,
         <>Open the menu at the right end of the page header and choose <b>Delete Backend</b> to remove a backend that is no longer in use.</>,
+      ]}
+      tips={[
+        <>The line under the name says the kind of engine, who connected it and how its pods are doing. The <b>Info</b> tab of the sidebar adds its client.</>,
       ]}
     />
   ),
@@ -155,19 +163,19 @@ export const KABINET_HELP = {
     <PageHelp
       intro="A pod is one running copy of an app on a backend. Come here to check that it started and to read what it logged."
       steps={[
-        <>Read <b>Latest Logs</b> to see what the app printed most recently.</>,
-        <>Check the badges under the title for the app, its version and the pod’s status, and <b>Quick Facts</b> for the backend and, under <b>Runs as</b>, the user the app is signed in as.</>,
-        <>Click the approval link next to <b>Runs as</b> to open the permission this pod runs under.</>,
-        <>Click the card under <b>Running On</b> to open the resource that hosts the pod.</>,
+        <>Read the line under the app name for the pod’s status and the backend it runs on.</>,
+        <>Read <b>Latest logs</b> to see what the app printed most recently; press the copy button next to it to copy them.</>,
+        <>Open the <b>Info</b> tab of the sidebar for the backend, resource, deployment, release and flavour; click one to open it.</>,
+        <>Under <b>Runs as</b> in the <b>Info</b> tab, read the user the app is signed in as, and click the approval link to open the permission this pod runs under.</>,
       ]}
     />
   ),
   pods: (
     <PageHelp
-      intro="Every pod: the running copies of your deployed apps. A thin list, useful to see at a glance what is running and where."
+      intro="Every pod: the running copies of your deployed apps. Each card names the app and version, its status, and the backend it runs on."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click a pod to open it and read its logs.</>,
-        <>Read the line under a pod’s name for its status and the backend it runs on.</>,
         <>Right-click a pod and choose <b>Delete Agent</b> to remove it.</>,
       ]}
     />
@@ -176,7 +184,7 @@ export const KABINET_HELP = {
     <PageHelp
       intro="Every app registered with your organization, one card per app with its newest version. Come here to find an app by its identifier; the App Store is where to browse."
       steps={[
-        <>Type into the search field to find an app by its identifier.</>,
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click an app card to open its page with its actions, builds and versions.</>,
         <>Press <b>Get</b> on a card to install the app’s newest release.</>,
         <>Press <b>Add Repo</b> if the app you are looking for is not listed yet.</>,
@@ -188,8 +196,8 @@ export const KABINET_HELP = {
     <PageHelp
       intro="Every deployment: one build of an app installed on one backend. Pods are started from a deployment."
       steps={[
-        <>Type into the search field to find a deployment by its name.</>,
-        <>Read the line under a deployment’s name for its status and the backend it is installed on.</>,
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Read the line under a deployment’s name for its flavour and the backend it is installed on; its status is at the top right.</>,
         <>Click a deployment to open it.</>,
       ]}
     />
@@ -198,8 +206,9 @@ export const KABINET_HELP = {
     <PageHelp
       intro="One deployment: which build of which app is installed on which backend, and who it runs as."
       steps={[
-        <>Click the app, the release, the flavour or the backend in the facts below the header to open them.</>,
+        <>Open the <b>Info</b> tab of the sidebar and click the app, the release, the flavour or the backend to open them.</>,
         <>Read <b>Runs as</b> for the release approval the deployment was installed under; click it to open the approval.</>,
+        <>Press <b>Revoke mandate</b> to withdraw the permission it runs under.</>,
       ]}
     />
   ),
@@ -207,8 +216,8 @@ export const KABINET_HELP = {
     <PageHelp
       intro="The bloks your GitHub repositories publish on their own, in .arkitekt/bloks.yaml. Bloks an app brings come with the app and are shown in the App Store."
       steps={[
-        <>Type into the search field to find a blok.</>,
-        <>Press <b>Panels</b> or <b>Scenes</b> to show only one kind.</>,
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Press <b>Kind</b> in the header and pick <b>Panels</b> or <b>Scenes</b> to show only one kind.</>,
         <>Press <b>Install</b> on a blok to make it a blok of your organization; the dialog asks which agents it draws from.</>,
         <>When its repository has changed a blok you installed, its card says <b>Update</b>. <b>Materialize</b> binds an installed blok to agents again.</>,
         <>Press <b>Add Repo</b> to add a repository that publishes bloks.</>,
@@ -217,10 +226,11 @@ export const KABINET_HELP = {
   ),
   resource: (
     <PageHelp
-      intro="A resource is something a backend runs pods on. This page shows the pods it hosts and the properties it reports."
+      intro="A resource is something a backend runs pods on. This page shows what it reports about itself and the pods it hosts."
       steps={[
-        <>Click a card under <b>Hosted Pods</b> to open a running app.</>,
+        <>Read the line under the name for its backend and how its pods are doing; click the backend to open it.</>,
         <>Read <b>Qualifiers</b> for the properties the resource reports about itself.</>,
+        <>Click a card under <b>Pods</b> to open a running app.</>,
       ]}
       tips={[
         <>The page refreshes itself every 15 seconds while it is visible.</>,
@@ -231,12 +241,13 @@ export const KABINET_HELP = {
     <PageHelp
       intro="An approval is created when someone installs a release: it allows that release to run signed in as them. This page shows who approved, which deployer may start it and on which backends."
       steps={[
-        <>Check the badge next to the app name: <b>Active</b>, <b>Release changed</b> or <b>Revoked</b>.</>,
+        <>Read the line under the app name for its state: <b>Active</b>, <b>Release changed</b> or <b>Revoked</b>.</>,
         <>Press <b>Deploy</b> in the header to start the release on a backend. The button shows only on your own active approval.</>,
-        <>Open the menu at the right end of the page header and choose <b>Revoke approval</b> to withdraw the permission.</>,
+        <>Press <b>Revoke mandate</b>, or open the menu at the right end of the page header and choose <b>Revoke approval</b>, to withdraw the permission.</>,
         <>Click the app name to open the release this approval is for.</>,
       ]}
       tips={[
+        <>The <b>Info</b> tab of the sidebar shows who approved, which deployer may start it, on which backends, and the release digest.</>,
         <><b>Release changed</b> means the release was published again with different permissions, requirements or images. Install it again to approve what it is now.</>,
         <>When revoking, leave <b>Also sign out the pods running under it now</b> switched on to stop running copies too.</>,
       ]}
@@ -246,6 +257,7 @@ export const KABINET_HELP = {
     <PageHelp
       intro="The releases that people in your organization have allowed to run as them. Installing an app from the App Store creates an approval; revoking it takes the permission back."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click an approval to see who approved it, which deployer may start it and on which backends.</>,
         <>Right-click an approval and choose <b>Deploy…</b> to start its release on a backend.</>,
         <>Right-click an approval and choose <b>Revoke approval</b> to stop new deployments under it.</>,
@@ -253,6 +265,52 @@ export const KABINET_HELP = {
       ]}
       tips={[
         <>The word at the top right of a card is its state: <b>Active</b>, <b>Release changed</b> or <b>Revoked</b>.</>,
+      ]}
+    />
+  ),
+  backends: (
+    <PageHelp
+      intro="Every backend: the machines and container engines that run your deployed apps."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a backend to see the pods it runs and the resources it manages.</>,
+      ]}
+    />
+  ),
+  definitions: (
+    <PageHelp
+      intro="Every action the releases of your repositories declare, whether or not an agent runs it yet."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a definition to see what it takes and returns and which builds bring it.</>,
+      ]}
+    />
+  ),
+  flavours: (
+    <PageHelp
+      intro="Every flavour: the builds a release ships, one per kind of hardware. The words at the top right of a card say what it needs, for example CUDA."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a flavour to see its actions, its image and where it is deployed.</>,
+      ]}
+    />
+  ),
+  releases: (
+    <PageHelp
+      intro="Every release: each published version of each app."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a release to see its builds, what it asks for, and to install it.</>,
+      ]}
+      tips={[<>Right-click a release and choose <b>Install…</b> to install it without opening it.</>]}
+    />
+  ),
+  resources: (
+    <PageHelp
+      intro="Every resource the backends report: what pods are scheduled onto. The last line of a card shows what the resource reports about itself."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a resource to see the pods it hosts.</>,
       ]}
     />
   ),

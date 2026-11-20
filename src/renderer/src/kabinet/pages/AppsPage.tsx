@@ -1,10 +1,12 @@
 import { ListRender } from "@/core/layout/ListRender";
 import { KabinetApp } from "@/core/linkers";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { useDebounce } from "@uidotdev/usehooks";
-import { useMemo, useState } from "react";
+import { useDialog } from "@/core/dialogs/registry";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import { PageAction } from "@/core/ui/page-action";
+import { Plus } from "lucide-react";
+import { useMemo } from "react";
 import { useAppCatalogQuery } from "../api/graphql";
-import { ListSearch } from "../components/ListSearch";
+import { useListSearch } from "../components/ListSearch";
 import { AppStoreCard } from "../components/store/AppStoreCard";
 import { groupApps } from "../components/store/storeModel";
 import { KABINET_HELP } from "../help";
@@ -14,10 +16,10 @@ import { KABINET_HELP } from "../help";
  * server ranks a search (substring, then similarity); grouping keeps its order.
  */
 const Page = () => {
-  const [search, setSearch] = useState("");
-  const debounced = useDebounce(search, 200);
+  const { openDialog } = useDialog();
+  const { search, setSearch, filters } = useListSearch();
   const { data, error, refetch } = useAppCatalogQuery({
-    variables: { filters: debounced ? { search: debounced } : undefined },
+    variables: { filters },
     fetchPolicy: "cache-and-network",
   });
   // An app without a release yet has nothing to draw a card from.
@@ -28,13 +30,20 @@ const Page = () => {
       title="Apps"
       help={KABINET_HELP.apps}
       pageActions={
-        <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
-          Add Repo
-        </DialogButton>
+        <>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search apps by identifier…" />
+          <PageAction
+            size="sm"
+            collapse="icon"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => openDialog("createrepo", {})}
+          >
+            Add Repo
+          </PageAction>
+        </>
       }
     >
-      <div className="flex w-full flex-col gap-3 p-3">
-        <ListSearch value={search} onChange={setSearch} placeholder="Search apps by identifier…" />
+      <div className="p-3">
         <ListRender
           array={apps}
           error={error}

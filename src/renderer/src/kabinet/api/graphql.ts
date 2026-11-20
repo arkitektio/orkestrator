@@ -397,11 +397,11 @@ export type AssignWidgetInput = {
   dependencies?: InputMaybe<Array<Scalars['String']['input']>>;
   /** (STATE_CHOICE) The agent dependency (by key) whose state provides the choices; omitted: the implementing agent's own state. */
   dependency?: InputMaybe<Scalars['String']['input']>;
-  /** (CUSTOM) Widget to render when the UI has no such component in its catalog. */
+  /** (CUSTOM, BLOK) Widget to render when the UI has no such component in its catalog. */
   fallback?: InputMaybe<AssignWidgetInput>;
   /** (SEARCH) Filter ports whose values are passed to the query as variables named by their keys. */
   filters?: InputMaybe<Array<ArgPortInput>>;
-  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
+  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, BLOK, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
   followValue?: InputMaybe<Scalars['String']['input']>;
   /** Which kind of assign widget this is; decides which other fields are read. */
   kind: AssignWidgetKind;
@@ -415,6 +415,8 @@ export type AssignWidgetInput = {
   props?: InputMaybe<Array<ComponentPropInput>>;
   /** (SEARCH) The GraphQL query the ward executes to populate the choices. Must be a single `query` operation declaring `$search: String` and `$values: [ID!]`, plus one variable per filter port key. */
   query?: InputMaybe<Scalars['SearchQuery']['input']>;
+  /** (BLOK) The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source?: InputMaybe<Scalars['String']['input']>;
   /** (STATE_CHOICE) How to read label/description/logo/value out of each state entry; each accessor is a static pointer or a pure call. */
   stateAccessors?: InputMaybe<Array<StateAccessorInput>>;
   /** (STATE_CHOICE) Pure UtilCall returning that pointer dynamically; may reference `state`, `value` and `dependencies`. Mutually exclusive with `state_path`. */
@@ -429,12 +431,15 @@ export type AssignWidgetInput = {
   targetDependency?: InputMaybe<Scalars['String']['input']>;
   /** (PROXY) The port key on the targeted action. */
   targetPort?: InputMaybe<Scalars['String']['input']>;
+  /** (BLOK) The blok language version the source speaks; 2 is the only one. */
+  vocab?: InputMaybe<Scalars['Int']['input']>;
   /** (SEARCH) The ward (service) that executes the query. */
   ward?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The kind of assign widget. */
 export enum AssignWidgetKind {
+  Blok = 'BLOK',
   Choice = 'CHOICE',
   Custom = 'CUSTOM',
   Proxy = 'PROXY',
@@ -499,6 +504,30 @@ export type BackendOrder =
   |  { id?: never; lastHeartbeat: Ordering; name?: never; }
   |  { id?: never; lastHeartbeat?: never; name: Ordering; };
 
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidget = AssignWidget & {
+  __typename?: 'BlokAssignWidget';
+  fallback?: Maybe<AssignWidget>;
+  followValue?: Maybe<Scalars['String']['output']>;
+  kind: AssignWidgetKind;
+  source: Scalars['String']['output'];
+  vocab: Scalars['Int']['output'];
+};
+
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidgetInput = {
+  /** Widget to render where the UI draws no port bloks; the port's own kind's widget when left out. */
+  fallback?: InputMaybe<AssignWidgetInput>;
+  /** Port path of another port whose value this widget follows and mirrors. */
+  followValue?: InputMaybe<Scalars['String']['input']>;
+  /** Which member of AssignWidgetInput this is. */
+  kind: AssignWidgetKind;
+  /** The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source: Scalars['String']['input'];
+  /** The blok language version the source speaks; 2 is the only one. */
+  vocab?: Scalars['Int']['input'];
+};
+
 /** What a preview renders a blok with, mirroring the roots it reads. */
 export type BlokDemoInput = {
   /** What it is opened on. */
@@ -525,8 +554,8 @@ export type BlokImplementationInput = {
   catalogs?: Array<Scalars['String']['input']>;
   /** The UI component tree blueprint for this Blok (one root), unless it is sent as its `source`. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. */
-  context?: ComponentContext;
+  /** What draws it, as its `<Blok context=...>` says (the two must agree): PANEL for panels and dashboards, SCENE for a 3D view (one Scene), LOGO for a logo (one Logo): an agent's, or an action's when its kind is action. A blok sent as its `source` need not say it: it is read off its `<Blok>`. PANEL otherwise. */
+  context?: InputMaybe<ComponentContext>;
   /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
   default?: Scalars['Boolean']['input'];
   /** What a preview renders it with. */
@@ -3188,7 +3217,7 @@ export type ApprovableReleaseFragment = { __typename?: 'Release', id: string, na
     & ListReleaseApprovalFragment
   )> };
 
-export type ListBackendFragment = { __typename?: 'Backend', id: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } };
+export type ListBackendFragment = { __typename?: 'Backend', id: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string }, pods: Array<{ __typename?: 'Pod', id: string, status: PodStatus }>, resources: Array<{ __typename?: 'Resource', id: string }> };
 
 export type BackendFragment = { __typename?: 'Backend', id: string, clientId: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string }, pods: Array<(
     { __typename?: 'Pod' }
@@ -3216,7 +3245,7 @@ export type DefinitionFragment = { __typename?: 'Definition', id: string, name: 
     & ListFlavourFragment
   )> };
 
-export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, logo?: (
+export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, identifier?: any | null, nullable: boolean }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, kind: PortKind, identifier?: any | null, nullable: boolean }>, logo?: (
     { __typename?: 'FlavourBlok' }
     & KabinetLogoBlokFragment
   ) | null, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
@@ -3229,7 +3258,7 @@ export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, n
     & KabinetLogoBlokFragment
   ) | null };
 
-export type ListDeploymentFragment = { __typename?: 'Deployment', id: string, localId: string, name: string, status: PodStatus, backend: { __typename?: 'Backend', id: string, name: string, kind: string }, flavour: { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
+export type ListDeploymentFragment = { __typename?: 'Deployment', id: string, localId: string, name: string, status: PodStatus, approval?: { __typename?: 'ReleaseApproval', id: string, isActive: boolean, isStale: boolean, revokedAt?: any | null, approver: { __typename?: 'User', sub: string } } | null, backend: { __typename?: 'Backend', id: string, name: string, kind: string }, flavour: { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
         { __typename?: 'FlavourBlok' }
         & KabinetLogoBlokFragment
       ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } } };
@@ -3254,7 +3283,7 @@ export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: st
   ) | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | (
     { __typename?: 'RocmSelector' }
     & RocmSelectorFragment
-  )> };
+  )>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
 
 export type FlavourFragment = (
   { __typename?: 'Flavour', assets: any, selectors: Array<(
@@ -3291,7 +3320,7 @@ export type FlavourFragment = (
   & ListFlavourFragment
 );
 
-export type ListPodFragment = { __typename?: 'Pod', id: string, podId: string, clientId?: string | null, status: PodStatus, backend: { __typename?: 'Backend', name: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }, deployment: { __typename?: 'Deployment', id: string, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
+export type ListPodFragment = { __typename?: 'Pod', id: string, podId: string, clientId?: string | null, status: PodStatus, latestLogDump?: { __typename?: 'LogDump', createdAt: any } | null, backend: { __typename?: 'Backend', name: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }, deployment: { __typename?: 'Deployment', id: string, flavour: { __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
           { __typename?: 'FlavourBlok' }
           & KabinetLogoBlokFragment
         ) | null, app: { __typename?: 'App', identifier: string } } } }, resource?: { __typename?: 'Resource', id: string, name: string } | null };
@@ -3324,7 +3353,7 @@ export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWi
 
 export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, targetPort: string, targetAction: string, targetDependency?: string | null };
 
-export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
+export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'BlokAssignWidget' } | { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
 
 export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
     { __typename?: 'ArgPort' }
@@ -3334,7 +3363,7 @@ export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kin
 export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kind: AssignWidgetKind, followValue?: string | null, component: string, dependencies?: Array<string> | null, props?: Array<(
     { __typename?: 'ComponentProp' }
     & BlokComponentPropFragment
-  )> | null, fallback?: (
+  )> | null, fallback?: { __typename: 'BlokAssignWidget', kind: AssignWidgetKind } | (
     { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
     & ChoiceAssignWidgetFragment
   ) | { __typename: 'CustomAssignWidget', kind: AssignWidgetKind } | (
@@ -3357,6 +3386,9 @@ export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kin
 export type ChoiceAssignWidgetFragment = { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null };
 
 export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -3378,6 +3410,9 @@ export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, 
     { __typename?: 'StringAssignWidget' }
     & AssignWidget_StringAssignWidget_Fragment
   ) | null, children?: Array<{ __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, nullable: boolean, widget?: (
+      { __typename?: 'BlokAssignWidget' }
+      & AssignWidget_BlokAssignWidget_Fragment
+    ) | (
       { __typename?: 'ChoiceAssignWidget' }
       & AssignWidget_ChoiceAssignWidget_Fragment
     ) | (
@@ -3404,6 +3439,9 @@ export type ArgChildPortNestedFragment = { __typename: 'ArgPort', kind: PortKind
     { __typename?: 'ArgPort' }
     & ArgChildPortDeepFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -3442,6 +3480,9 @@ export type ArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind, key:
     { __typename?: 'ArgPort' }
     & ArgChildPortNestedFragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -3579,6 +3620,8 @@ type PortEffect_MessageEffect_Fragment = (
 
 export type PortEffectFragment = PortEffect_CustomEffect_Fragment | PortEffect_HideEffect_Fragment | PortEffect_MessageEffect_Fragment;
 
+type AssignWidget_BlokAssignWidget_Fragment = { __typename: 'BlokAssignWidget', kind: AssignWidgetKind };
+
 type AssignWidget_ChoiceAssignWidget_Fragment = (
   { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
   & ChoiceAssignWidgetFragment
@@ -3614,7 +3657,7 @@ type AssignWidget_StringAssignWidget_Fragment = (
   & StringAssignWidgetFragment
 );
 
-export type AssignWidgetFragment = AssignWidget_ChoiceAssignWidget_Fragment | AssignWidget_CustomAssignWidget_Fragment | AssignWidget_ProxyWidget_Fragment | AssignWidget_SearchAssignWidget_Fragment | AssignWidget_SliderAssignWidget_Fragment | AssignWidget_StateChoiceAssignWidget_Fragment | AssignWidget_StringAssignWidget_Fragment;
+export type AssignWidgetFragment = AssignWidget_BlokAssignWidget_Fragment | AssignWidget_ChoiceAssignWidget_Fragment | AssignWidget_CustomAssignWidget_Fragment | AssignWidget_ProxyWidget_Fragment | AssignWidget_SearchAssignWidget_Fragment | AssignWidget_SliderAssignWidget_Fragment | AssignWidget_StateChoiceAssignWidget_Fragment | AssignWidget_StringAssignWidget_Fragment;
 
 export type ValidatorFragment = { __typename?: 'Validator', dependencies?: Array<string> | null, label?: string | null, errorMessage?: string | null, source?: string | null, call: (
     { __typename?: 'UtilCall' }
@@ -3631,6 +3674,9 @@ export type ArgPortFragment = { __typename: 'ArgPort', key: string, label?: stri
     { __typename?: 'MessageEffect' }
     & PortEffect_MessageEffect_Fragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & AssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -3790,7 +3836,7 @@ export type ReleaseFragment = { __typename?: 'Release', id: string, name: string
     & StoreFlavourFragment
   )> };
 
-export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, logoBlok?: (
+export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, channel?: string | null, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }>, logoBlok?: (
     { __typename?: 'FlavourBlok' }
     & KabinetLogoBlokFragment
   ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
@@ -3800,7 +3846,7 @@ export type ListReleaseFragment = { __typename?: 'Release', id: string, version:
 
 export type StoreRepoBlokFragment = { __typename?: 'RepoBlok', id: string, key: string, name: string, description?: string | null, context: ComponentContext, hash: string, installHash: string, parseError?: string | null, origin: string, sourcePath?: string | null, repo: { __typename?: 'GithubRepo', id: string, name: string } };
 
-export type ListRepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string };
+export type ListRepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, updatedAt: any, flavours: Array<{ __typename?: 'Flavour', id: string }>, bloks: Array<{ __typename?: 'RepoBlok', id: string }> };
 
 export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, organization: { __typename?: 'Organization', id: string, identifier: string }, flavours: Array<(
     { __typename?: 'Flavour', image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }
@@ -3810,12 +3856,12 @@ export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string
     & StoreRepoBlokFragment
   )> };
 
-export type ResourceFragment = { __typename?: 'Resource', id: string, name: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string }, pods: Array<(
+export type ResourceFragment = { __typename?: 'Resource', id: string, name: string, resourceId: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string, kind: string }, pods: Array<(
     { __typename?: 'Pod' }
     & ListPodFragment
   )> };
 
-export type ListResourceFragment = { __typename?: 'Resource', id: string, name: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string } };
+export type ListResourceFragment = { __typename?: 'Resource', id: string, name: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string, kind: string }, pods: Array<{ __typename?: 'Pod', id: string, status: PodStatus }> };
 
 export type CudaSelectorFragment = { __typename?: 'CudaSelector', cudaVersion?: string | null, cudaCores?: number | null };
 
@@ -3998,7 +4044,10 @@ export type GetApprovableReleaseQuery = { __typename?: 'Query', release: (
     & ApprovableReleaseFragment
   ) };
 
-export type ListBackendsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListBackendsQueryVariables = Exact<{
+  filters?: InputMaybe<BackendFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListBackendsQuery = { __typename?: 'Query', backends: Array<(
@@ -4043,7 +4092,10 @@ export type GetDefinitionQuery = { __typename?: 'Query', definition: (
     & DefinitionFragment
   ) };
 
-export type ListDefinitionsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListDefinitionsQueryVariables = Exact<{
+  filters?: InputMaybe<DefinitionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListDefinitionsQuery = { __typename?: 'Query', definitions: Array<(
@@ -4116,7 +4168,10 @@ export type GetDeploymentQuery = { __typename?: 'Query', deployment: (
     & DeploymentFragment
   ) };
 
-export type ListFlavoursQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListFlavoursQueryVariables = Exact<{
+  filters?: InputMaybe<FlavourFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListFlavoursQuery = { __typename?: 'Query', flavours: Array<(
@@ -4147,7 +4202,10 @@ export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type HomePageStatsQuery = { __typename?: 'Query', githubRepoStats: { __typename?: 'GithubRepoStats', count: number } };
 
-export type ListPodQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListPodQueryVariables = Exact<{
+  filters?: InputMaybe<PodFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListPodQuery = { __typename?: 'Query', pods: Array<(
@@ -4175,7 +4233,10 @@ export type GetPodForAgentQuery = { __typename?: 'Query', podForAgent?: (
     & PodFragment
   ) | null };
 
-export type ListReleasesQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListReleasesQueryVariables = Exact<{
+  filters?: InputMaybe<ReleaseFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListReleasesQuery = { __typename?: 'Query', releases: Array<(
@@ -4239,7 +4300,10 @@ export type ListReposQuery = { __typename?: 'Query', repos: Array<(
     & ListRepoFragment
   )> };
 
-export type ListResourcesQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListResourcesQueryVariables = Exact<{
+  filters?: InputMaybe<ResourceFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListResourcesQuery = { __typename?: 'Query', resources: Array<(
@@ -5150,6 +5214,10 @@ export const ListFlavourFragmentDoc = gql`
     ...CudaSelector
     ...RocmSelector
   }
+  deployments {
+    id
+    status
+  }
 }
     ${KabinetLogoBlokFragmentDoc}
 ${CudaSelectorFragmentDoc}
@@ -5193,6 +5261,15 @@ export const ListDeploymentFragmentDoc = gql`
   localId
   name
   status
+  approval {
+    id
+    isActive
+    isStale
+    revokedAt
+    approver {
+      sub
+    }
+  }
   backend {
     id
     name
@@ -5231,6 +5308,13 @@ export const ListBackendFragmentDoc = gql`
   }
   name
   kind
+  pods {
+    id
+    status
+  }
+  resources {
+    id
+  }
 }
     `;
 export const DeploymentFragmentDoc = gql`
@@ -5252,6 +5336,20 @@ export const ListDefinitionFragmentDoc = gql`
   name
   hash
   description
+  args {
+    key
+    label
+    kind
+    identifier
+    nullable
+  }
+  returns {
+    key
+    label
+    kind
+    identifier
+    nullable
+  }
   logo {
     ...KabinetLogoBlok
   }
@@ -5334,6 +5432,9 @@ export const ListPodFragmentDoc = gql`
     fragment ListPod on Pod {
   id
   podId
+  latestLogDump {
+    createdAt
+  }
   backend {
     user {
       sub
@@ -5346,6 +5447,8 @@ export const ListPodFragmentDoc = gql`
   deployment {
     id
     flavour {
+      id
+      name
       release {
         id
         version
@@ -5374,6 +5477,11 @@ export const ListResourceFragmentDoc = gql`
   backend {
     id
     name
+    kind
+  }
+  pods {
+    id
+    status
   }
 }
     `;
@@ -5478,6 +5586,11 @@ export const ListReleaseFragmentDoc = gql`
     fragment ListRelease on Release {
   id
   version
+  channel
+  deployments {
+    id
+    status
+  }
   logo
   originalLogo
   logoBlok {
@@ -5502,6 +5615,13 @@ export const ListRepoFragmentDoc = gql`
   branch
   user
   repo
+  updatedAt
+  flavours {
+    id
+  }
+  bloks {
+    id
+  }
 }
     `;
 export const StoreRepoBlokFragmentDoc = gql`
@@ -5560,10 +5680,12 @@ export const ResourceFragmentDoc = gql`
     fragment Resource on Resource {
   id
   name
+  resourceId
   qualifiers
   backend {
     id
     name
+    kind
   }
   pods {
     ...ListPod
@@ -6060,8 +6182,8 @@ export type GetApprovableReleaseQueryHookResult = ReturnType<typeof useGetApprov
 export type GetApprovableReleaseLazyQueryHookResult = ReturnType<typeof useGetApprovableReleaseLazyQuery>;
 export type GetApprovableReleaseQueryResult = Apollo.QueryResult<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>;
 export const ListBackendsDocument = gql`
-    query ListBackends {
-  backends {
+    query ListBackends($filters: BackendFilter, $pagination: OffsetPaginationInput) {
+  backends(filters: $filters, pagination: $pagination) {
     ...ListBackend
   }
 }
@@ -6079,6 +6201,8 @@ export const ListBackendsDocument = gql`
  * @example
  * const { data, loading, error } = useListBackendsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -6249,8 +6373,8 @@ export type GetDefinitionQueryHookResult = ReturnType<typeof useGetDefinitionQue
 export type GetDefinitionLazyQueryHookResult = ReturnType<typeof useGetDefinitionLazyQuery>;
 export type GetDefinitionQueryResult = Apollo.QueryResult<GetDefinitionQuery, GetDefinitionQueryVariables>;
 export const ListDefinitionsDocument = gql`
-    query ListDefinitions {
-  definitions {
+    query ListDefinitions($filters: DefinitionFilter, $pagination: OffsetPaginationInput) {
+  definitions(filters: $filters, pagination: $pagination) {
     ...ListDefinition
   }
 }
@@ -6268,6 +6392,8 @@ export const ListDefinitionsDocument = gql`
  * @example
  * const { data, loading, error } = useListDefinitionsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -6512,8 +6638,8 @@ export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQue
 export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
 export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
 export const ListFlavoursDocument = gql`
-    query ListFlavours {
-  flavours {
+    query ListFlavours($filters: FlavourFilter, $pagination: OffsetPaginationInput) {
+  flavours(filters: $filters, pagination: $pagination) {
     ...ListFlavour
   }
 }
@@ -6531,6 +6657,8 @@ export const ListFlavoursDocument = gql`
  * @example
  * const { data, loading, error } = useListFlavoursQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -6649,8 +6777,8 @@ export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQue
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
 export const ListPodDocument = gql`
-    query ListPod {
-  pods {
+    query ListPod($filters: PodFilter, $pagination: OffsetPaginationInput) {
+  pods(filters: $filters, pagination: $pagination) {
     ...ListPod
   }
 }
@@ -6668,6 +6796,8 @@ export const ListPodDocument = gql`
  * @example
  * const { data, loading, error } = useListPodQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -6753,8 +6883,8 @@ export type GetPodForAgentQueryHookResult = ReturnType<typeof useGetPodForAgentQ
 export type GetPodForAgentLazyQueryHookResult = ReturnType<typeof useGetPodForAgentLazyQuery>;
 export type GetPodForAgentQueryResult = Apollo.QueryResult<GetPodForAgentQuery, GetPodForAgentQueryVariables>;
 export const ListReleasesDocument = gql`
-    query ListReleases {
-  releases {
+    query ListReleases($filters: ReleaseFilter, $pagination: OffsetPaginationInput) {
+  releases(filters: $filters, pagination: $pagination) {
     ...ListRelease
   }
 }
@@ -6772,6 +6902,8 @@ export const ListReleasesDocument = gql`
  * @example
  * const { data, loading, error } = useListReleasesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -7009,8 +7141,8 @@ export type ListReposQueryHookResult = ReturnType<typeof useListReposQuery>;
 export type ListReposLazyQueryHookResult = ReturnType<typeof useListReposLazyQuery>;
 export type ListReposQueryResult = Apollo.QueryResult<ListReposQuery, ListReposQueryVariables>;
 export const ListResourcesDocument = gql`
-    query ListResources {
-  resources {
+    query ListResources($filters: ResourceFilter, $pagination: OffsetPaginationInput) {
+  resources(filters: $filters, pagination: $pagination) {
     ...ListResource
   }
 }
@@ -7028,6 +7160,8 @@ export const ListResourcesDocument = gql`
  * @example
  * const { data, loading, error } = useListResourcesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */

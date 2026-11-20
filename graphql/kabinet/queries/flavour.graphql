@@ -1,5 +1,5 @@
-query ListFlavours {
-  flavours {
+query ListFlavours($filters: FlavourFilter, $pagination: OffsetPaginationInput) {
+  flavours(filters: $filters, pagination: $pagination) {
     ...ListFlavour
   }
 }

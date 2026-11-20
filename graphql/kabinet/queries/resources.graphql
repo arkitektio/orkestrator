@@ -1,5 +1,5 @@
-query ListResources {
-  resources {
+query ListResources($filters: ResourceFilter, $pagination: OffsetPaginationInput) {
+  resources(filters: $filters, pagination: $pagination) {
     ...ListResource
   }
 }

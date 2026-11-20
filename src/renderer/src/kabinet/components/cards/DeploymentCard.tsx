@@ -1,42 +1,61 @@
 import React from "react";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { KabinetDeployment } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
-import { ListDeploymentFragment } from "../../api/graphql";
+import { ListDeploymentFragment, PodStatus } from "../../api/graphql";
 import { releaseIdentity } from "../../appIdentity";
-import { POD_STATUS_DOT, podStatusLabel } from "../../lib/podStatus";
+import { APPROVAL_STATUS_DOT, APPROVAL_STATUS_LABEL, approvalStatus } from "../../lib/approvals";
 import { AppIcon } from "../AppIcon";
+import { IconForBackendKind } from "../IconForBackendKind";
+import { KabinetCard, StatusWord } from "./parts";
 
 interface Props {
   item: ListDeploymentFragment;
 }
 
-/** One deployment as a row: the app it runs, its version and build, where, and how it is doing. */
+/**
+ * One deployment: the app and build it installs, on which backend, how it is
+ * doing, and who it runs as (with the state of that approval).
+ */
 const TheCard = ({ item }: Props) => {
   const release = item.flavour.release;
   const app = releaseIdentity({ ...release, flavours: [item.flavour] });
+  const approval = item.approval;
+  const approvalState = approval ? approvalStatus(approval) : null;
 
   return (
-    <KabinetDeployment.Smart object={item} className="[container-type:normal]!">
-      <KabinetDeployment.DetailLink
-        object={item}
-        className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-2.5 transition-colors hover:border-primary/30 hover:bg-muted/50"
-      >
-        <AppIcon app={app} size={36} className="size-9 rounded-lg text-xs" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium leading-tight">
+    <KabinetDeployment.Smart object={item}>
+      <KabinetCard
+        tone={item.status === PodStatus.Failed ? "failed" : undefined}
+        lead={<AppIcon app={app} size={36} className="size-9 rounded-lg text-xs" />}
+        title={
+          <KabinetDeployment.DetailLink object={item} className="transition-colors hover:text-primary">
             {app.name}{" "}
-            <span className="font-normal text-muted-foreground">
-              v{release.version} · {item.flavour.name}
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-            <span className={cn("size-1.5 shrink-0 rounded-full", POD_STATUS_DOT[item.status])} />
-            <span>{podStatusLabel(item.status)}</span>
-            <span>·</span>
+            <span className="font-mono text-xs font-normal text-muted-foreground">v{release.version}</span>
+          </KabinetDeployment.DetailLink>
+        }
+        aside={<StatusWord status={item.status} />}
+        sub={
+          <span className="flex min-w-0 items-center gap-1">
+            {item.flavour.name} on
+            <IconForBackendKind kind={item.backend.kind} className="size-3 shrink-0" />
             <span className="truncate">{item.backend.name}</span>
           </span>
-        </span>
-      </KabinetDeployment.DetailLink>
+        }
+        footer={
+          approval && approvalState ? (
+            <>
+              <span className="flex min-w-0 items-center gap-1 truncate">
+                as <StructureDisplay identifier="@lok/user" id={approval.approver.sub} variant="inline" />
+              </span>
+              <span className="flex shrink-0 items-center gap-1">
+                <span className={cn("size-1.5 rounded-full", APPROVAL_STATUS_DOT[approvalState])} />
+                {APPROVAL_STATUS_LABEL[approvalState]}
+              </span>
+            </>
+          ) : undefined
+        }
+      />
     </KabinetDeployment.Smart>
   );
 };

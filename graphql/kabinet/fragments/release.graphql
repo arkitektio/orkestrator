@@ -40,6 +40,12 @@ fragment Release on Release {
 fragment ListRelease on Release {
   id
   version
+  channel
+  # Where it runs: the card's footer.
+  deployments {
+    id
+    status
+  }
   logo
   originalLogo
   logoBlok {

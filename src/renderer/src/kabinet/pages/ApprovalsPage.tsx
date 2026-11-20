@@ -1,10 +1,10 @@
-import { PageLayout } from "@/core/layout/PageLayout";
-import { ListRender } from "@/core/layout/ListRender";
+import { KabinetApproval } from "@/core/linkers";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import { Label } from "@/core/ui/label";
 import { Switch } from "@/core/ui/switch";
-import React, { useState } from "react";
-import { useListReleaseApprovalsQuery } from "../api/graphql";
-import ApprovalCard from "../components/cards/ApprovalCard";
+import React, { useMemo, useState } from "react";
+import { useListSearch } from "../components/ListSearch";
+import ApprovalList from "../components/lists/ApprovalList";
 import { KABINET_HELP } from "../help";
 
 /**
@@ -14,34 +14,32 @@ import { KABINET_HELP } from "../help";
  */
 const ApprovalsPage: React.FC = () => {
   const [showRevoked, setShowRevoked] = useState(false);
-  const { data, error, loading, refetch } = useListReleaseApprovalsQuery({
-    variables: { filters: showRevoked ? undefined : { revoked: false } },
-  });
+  const { search, setSearch, filters: searchFilters } = useListSearch();
+  const filters = useMemo(
+    () => ({ ...searchFilters, ...(showRevoked ? {} : { revoked: false }) }),
+    [searchFilters, showRevoked],
+  );
 
   return (
-    <PageLayout
+    <KabinetApproval.ListPage
       title="Approvals"
       help={KABINET_HELP.approvals}
       pageActions={
-        <div className="flex items-center gap-2">
-          <Switch id="approvals-revoked" checked={showRevoked} onCheckedChange={setShowRevoked} />
-          <Label htmlFor="approvals-revoked" className="text-xs text-muted-foreground">
-            Revoked
-          </Label>
-        </div>
+        <>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search approvals…" />
+          <div className="flex items-center gap-2">
+            <Switch id="approvals-revoked" checked={showRevoked} onCheckedChange={setShowRevoked} />
+            <Label htmlFor="approvals-revoked" className="text-xs text-muted-foreground">
+              Revoked
+            </Label>
+          </div>
+        </>
       }
     >
       <div className="p-3">
-        <ListRender array={data?.releaseApprovals} error={error} refetch={refetch}>
-          {(item) => <ApprovalCard key={item.id} item={item} />}
-        </ListRender>
-        {!loading && data?.releaseApprovals.length === 0 && (
-          <p className="py-2 text-sm text-muted-foreground">
-            No release is approved to run yet. Installing an app from the App Store approves it.
-          </p>
-        )}
+        <ApprovalList title="" filters={filters} defaultLimit={40} />
       </div>
-    </PageLayout>
+    </KabinetApproval.ListPage>
   );
 };
 

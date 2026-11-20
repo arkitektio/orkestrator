@@ -21,6 +21,11 @@ fragment ListFlavour on Flavour {
     ...CudaSelector
     ...RocmSelector
   }
+  # Where it runs: the card's footer.
+  deployments {
+    id
+    status
+  }
 }
 
 

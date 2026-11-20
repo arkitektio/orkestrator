@@ -1,15 +1,13 @@
 import React from "react";
-import { Badge } from "@/core/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { PageSections } from "@/core/layout/PageSections";
 import { KabinetFlavour } from "@/core/linkers";
 import { ListFlavourFragment } from "../../api/graphql";
 import { logoFor, releaseIdentity } from "../../appIdentity";
 import { AppIcon } from "../AppIcon";
+import { KabinetCard, StatusTally } from "./parts";
 
 interface Props {
   item: ListFlavourFragment;
-
 }
 
 /** What a selector asks of the host, as a badge word. Shared with the repo's Info rail. */
@@ -28,39 +26,41 @@ export const selectorLabel = (
   }
 };
 
+/**
+ * One build of a release: what it needs of the host, which app and version it
+ * is, and where it runs.
+ */
 const TheCard = ({ item }: Props) => {
   // A flavour is one build of an app, so it wears the app's identity — with its
   // own logo preferred, since that is the one specific to this build.
   const app = { ...releaseIdentity(item.release), logo: logoFor(item) ?? undefined };
+  const needs = [...new Set(item.selectors.map(selectorLabel))];
 
   return (
-    <KabinetFlavour.Smart object={item} >
-      {/* `relative isolate`: a card section may paint a fill behind the content. */}
-      <Card className="group relative isolate aspect-square overflow-hidden transition-all duration-300 ease-in-out">
-        <CardHeader className="flex flex-col justify-between h-full">
-          <div>
-            <AppIcon app={app} size={48} className="mb-3 size-12" />
-            <CardTitle>
-              <KabinetFlavour.DetailLink object={item}>
-                {item.name}
-              </KabinetFlavour.DetailLink>
-            </CardTitle>
-            <CardDescription className="mb-2 font-mono text-xs">
-              {item.release.app.identifier}:{item.release.version}
-            </CardDescription>
-            {item.selectors.map((selector, index) => (
-              <Badge key={index} variant="secondary">
-                {selectorLabel(selector)}
-              </Badge>
-            ))}
-          </div>
-
-          <CardTitle>
+    <KabinetFlavour.Smart object={item}>
+      <KabinetCard
+        // `relative isolate`: a card section may paint a fill behind the content.
+        className="relative isolate overflow-hidden"
+        lead={<AppIcon app={app} size={36} className="size-9 rounded-lg text-xs" />}
+        title={
+          <KabinetFlavour.DetailLink object={item} className="transition-colors hover:text-primary">
+            {item.name}
+          </KabinetFlavour.DetailLink>
+        }
+        aside={needs.length > 0 ? needs.join(" · ") : "Any host"}
+        sub={
+          <span className="font-mono">
+            {item.release.app.identifier} · v{item.release.version}
+          </span>
+        }
+        footer={
+          <>
+            <StatusTally items={item.deployments} empty="Not deployed" />
             {/* Other modules on a flavour card. */}
             <PageSections placement="card" identifier="@kabinet/flavour" object={{ id: item.id }} />
-          </CardTitle>
-        </CardHeader>
-      </Card>
+          </>
+        }
+      />
     </KabinetFlavour.Smart>
   );
 };

@@ -10,7 +10,7 @@ import { StoreFlavourFragment, useGetApprovableReleaseQuery } from "../../api/gr
 import { deployableApprovals } from "../../lib/approvals";
 import { selectorLabel, StoreApp } from "./storeModel";
 
-/** A filter toggle, as the store and the list pages draw them. */
+/** A filter toggle, as the App Store draws them. */
 export const Chip = ({
   active,
   onClick,

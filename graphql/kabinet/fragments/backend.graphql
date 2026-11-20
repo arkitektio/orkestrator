@@ -9,6 +9,14 @@ fragment ListBackend on Backend {
 
   name
   kind
+  # The card's health bar and counts: scalars only, never the pods themselves.
+  pods {
+    id
+    status
+  }
+  resources {
+    id
+  }
 }
 
 fragment Backend on Backend {

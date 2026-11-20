@@ -1,42 +1,17 @@
-import { ListRender } from "@/core/layout/ListRender";
+import { createList } from "@/core/layout/createList";
 import { KabinetRepo } from "@/core/linkers";
-import {
-  GithubRepoFilter,
-  OffsetPaginationInput,
-  useListReposQuery,
-} from "../../api/graphql";
+import { useListReposQuery } from "../../api/graphql";
 import RepoCard from "../cards/RepoCard";
 
-export type Props = {
-  filters?: GithubRepoFilter;
-  pagination?: OffsetPaginationInput;
-};
-
-const RepoList = ({ filters, pagination }: Props) => {
-  const { data, error, refetch } = useListReposQuery({
-    variables: {
-      filters,
-      pagination,
-    },
-  });
-
-  return (
-    <ListRender
-      array={data?.repos}
-      title={
-        <KabinetRepo.ListLink className="flex-0 mb-5">
-          <h2 className="text-2xl font-bold">Repos</h2>
-          <div className="text-muted-foreground text-xs mb-3">
-            {data?.repos.length || 0} repositories connected to Kabinet
-          </div>
-        </KabinetRepo.ListLink>
-      }
-      refetch={refetch}
-      error={error}
-    >
-      {(repo) => <RepoCard key={repo.id} item={repo} />}
-    </ListRender>
-  );
-};
+const RepoList = createList({
+  useHook: useListReposQuery,
+  dataKey: "repos",
+  ItemComponent: RepoCard,
+  title: "Repos",
+  smart: KabinetRepo,
+  emptyTitle: "No repository",
+  emptyDescription: "Add a GitHub repository or import one from a registry to list the apps it declares.",
+  minItemWidth: 272,
+});
 
 export default RepoList;

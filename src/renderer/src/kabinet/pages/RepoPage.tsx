@@ -1,13 +1,12 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/layout/ListRender";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { Badge } from "@/core/ui/badge";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
-import { KabinetFlavour, KabinetRepo } from "@/core/linkers";
-import { GitBranch, Github, RefreshCw, ShieldAlert } from "lucide-react";
+import { KabinetRepo } from "@/core/linkers";
+import { Github, RefreshCw, ShieldAlert } from "lucide-react";
 import { reportErrorAs } from "@/core/notify";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
+import { CardGrid, DetailSection } from "../components/DetailSection";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
 import { RepoBlokGrid } from "../components/store/RepoBlokCard";
 import { KABINET_HELP } from "../help";
@@ -18,7 +17,7 @@ import { KABINET_HELP } from "../help";
  * the repo IS (branch, owner, links, when it was scanned) is the Info rail's
  * job, as on the mikro detail pages, so it is not repeated here.
  */
-const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
+const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data }) => {
   const repo = data.repo;
   // `ScanRepo` selects the full Repo, so the page updates from the cache.
   const [scan, { loading: scanning }] = useScanRepoMutation({
@@ -68,44 +67,19 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
         </>
       }
     >
-      <div className="p-3 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Github className="h-4 w-4" />
-          <span className="break-all">
-            {repo.user}/{repo.repo}
-          </span>
-          <Badge variant="secondary" className="gap-1 rounded-full px-2 py-0.5">
-            <GitBranch className="h-3 w-3" />
-            {repo.branch}
-          </Badge>
-        </div>
+      <div className="flex flex-col gap-6 p-3">
+        <DetailSection title="Flavours" count={repo.flavours.length}>
+          <CardGrid>
+            {repo.flavours.map((flavour) => (
+              <FlavourCard key={flavour.id} item={flavour} />
+            ))}
+          </CardGrid>
+        </DetailSection>
 
-        <ListRender
-          array={repo.flavours}
-          title={
-            <KabinetFlavour.ListLink className="flex-0 mb-5">
-              <h2 className="text-2xl font-bold">Flavours</h2>
-              <div className="text-muted-foreground text-xs mb-3">
-                {repo.flavours.length} flavours discovered in this repository
-              </div>
-            </KabinetFlavour.ListLink>
-          }
-          refetch={refetch}
-        >
-          {(flavour) => <FlavourCard key={flavour.id} item={flavour} />}
-        </ListRender>
-
-        {repo.bloks.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-2xl font-bold">Bloks</h2>
-              <div className="text-xs text-muted-foreground">
-                {repo.bloks.length} bloks published in <code>.arkitekt/bloks.yaml</code>
-              </div>
-            </div>
-            <RepoBlokGrid bloks={repo.bloks} />
-          </section>
-        )}
+        {/* Published in `.arkitekt/bloks.yaml`, apart from any app. */}
+        <DetailSection title="Bloks" count={repo.bloks.length}>
+          <RepoBlokGrid bloks={repo.bloks} />
+        </DetailSection>
       </div>
     </KabinetRepo.ModelPage>
   );

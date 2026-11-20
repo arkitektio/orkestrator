@@ -1,46 +1,57 @@
 import React from "react";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
-import { Badge } from "@/core/ui/badge";
+import Timestamp from "@/core/ui/timestamp";
 import { KabinetRepo } from "@/core/linkers";
-import { GitBranch, Github, Package2 } from "lucide-react";
+import { GitBranch, Github } from "lucide-react";
 import { ListRepoFragment } from "../../api/graphql";
+import { KabinetCard, LeadTile, plural } from "./parts";
 
 interface Props {
   item: ListRepoFragment;
 }
 
+/**
+ * A repository Kabinet reads apps from: where it lives and which branch, what
+ * it held when last read, and when that was.
+ */
 const RepoCard = ({ item }: Props) => {
+  const held = [
+    item.flavours.length > 0 && plural(item.flavours.length, "flavour"),
+    item.bloks.length > 0 && plural(item.bloks.length, "blok"),
+  ].filter(Boolean);
+
   return (
     <KabinetRepo.Smart object={item}>
-      <Card className="group overflow-hidden">
-        <CardHeader className="gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <CardTitle className="truncate">
-                <KabinetRepo.DetailLink object={item}>{item.name}</KabinetRepo.DetailLink>
-              </CardTitle>
-              <CardDescription className="mt-1 flex items-center gap-2 truncate text-xs">
-                <Github className="h-3.5 w-3.5" />
-                <span className="truncate">
-                  {item.user}/{item.repo}
-                </span>
-              </CardDescription>
-            </div>
-            <Package2 className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary" className="gap-1 rounded-full px-2 py-0.5">
-              <GitBranch className="h-3 w-3" />
-              {item.branch}
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <KabinetCard
+        lead={
+          <LeadTile>
+            <Github />
+          </LeadTile>
+        }
+        title={
+          <KabinetRepo.DetailLink object={item} className="transition-colors hover:text-primary">
+            {item.name}
+          </KabinetRepo.DetailLink>
+        }
+        aside={
+          <span className="flex items-center gap-1">
+            <GitBranch className="size-3" />
+            {item.branch}
+          </span>
+        }
+        sub={
+          <span className="font-mono">
+            {item.user}/{item.repo}
+          </span>
+        }
+        footer={
+          <>
+            <span className="truncate">{held.length > 0 ? held.join(" · ") : "Nothing found yet"}</span>
+            <span className="shrink-0">
+              scanned <Timestamp date={item.updatedAt} relative />
+            </span>
+          </>
+        }
+      />
     </KabinetRepo.Smart>
   );
 };

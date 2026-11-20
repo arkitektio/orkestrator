@@ -1,26 +1,45 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Badge } from "@/core/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
 import { PageSections } from "@/core/layout/PageSections";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
-import { KabinetApproval, KabinetDeployment, KabinetFlavour, KabinetPod, KabinetRelease } from "@/core/linkers";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
+import Timestamp from "@/core/ui/timestamp";
+import {
+  KabinetApproval,
+  KabinetBackend,
+  KabinetDeployment,
+  KabinetFlavour,
+  KabinetPod,
+  KabinetRelease,
+  KabinetResource,
+} from "@/core/linkers";
+import { cn } from "@/core/util/utils";
 import { useGetPodQuery } from "../api/graphql";
-import ResourceCard from "../components/cards/ResourceCard";
+import { releaseIdentity } from "../appIdentity";
+import { AppIcon } from "../components/AppIcon";
+import { DetailSection } from "../components/DetailSection";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
+import { POD_STATUS_DOT, podStatusLabel } from "../lib/podStatus";
 import { KABINET_HELP } from "../help";
 
+const LINK = "hover:underline";
+
+/**
+ * A pod: one running copy of an app. The body is what it said (its latest
+ * logs); where it runs, what it was started from and who it acts as are the
+ * Info rail's.
+ */
 const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
   const pod = data.pod;
+  const { deployment } = pod;
+  const release = deployment.flavour.release;
+  const app = releaseIdentity(release);
+  const logs = pod.latestLogDump;
 
   return (
     <KabinetPod.ModelPage
-      title={pod.backend.name}
+      title={`${app.name} on ${pod.backend.name}`}
       object={pod}
       help={KABINET_HELP.pod}
       pageActions={
@@ -31,162 +50,108 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
           object={{ id: pod.id, clientId: pod.backend.clientId, backendName: pod.backend.name }}
         />
       }
-    >
-      <div className="space-y-4 p-3">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-          <div className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-muted/40 p-4 shadow-sm">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                <span>{pod.deployment.flavour.release.app.identifier}</span>
-                <span>•</span>
-                <span>{pod.deployment.flavour.release.version}</span>
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                {pod.backend.name}
-              </h1>
-              <CardDescription className="text-sm">
-                Live pod for {pod.deployment.flavour.release.app.identifier} on{" "}
-                {pod.backend.name}. The log stream and deployment details below
-                summarise the current runtime state.
-              </CardDescription>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="rounded-full px-3 py-1">
-                {pod.deployment.flavour.release.app.identifier}
-              </Badge>
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                {pod.deployment.flavour.release.version}
-              </Badge>
-              <Badge variant="secondary" className="rounded-full px-3 py-1">
-                {pod.status || "Unknown status"}
-              </Badge>
-            </div>
-          </div>
-
-          <Card className="border-dashed bg-muted/20">
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Facts</CardTitle>
-              <CardDescription>Current pod runtime details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
-                <div className="text-muted-foreground">Backend</div>
-                <div className="font-medium break-all">{pod.backend.name}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Deployment</div>
-                <KabinetDeployment.DetailLink
-                  object={pod.deployment}
-                  className="font-medium break-all hover:text-primary"
-                >
-                  {pod.deployment.name}
-                </KabinetDeployment.DetailLink>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Flavour</div>
-                <KabinetFlavour.DetailLink
-                  object={pod.deployment.flavour}
-                  className="font-medium break-all hover:text-primary"
-                >
-                  {pod.deployment.flavour.name}
-                </KabinetFlavour.DetailLink>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Release</div>
-                <KabinetRelease.DetailLink
-                  object={pod.deployment.flavour.release}
-                  className="font-medium break-all hover:text-primary"
-                >
-                  v{pod.deployment.flavour.release.version}
-                </KabinetRelease.DetailLink>
-              </div>
-              {pod.deployment.approval && (
-                <div>
-                  <div className="text-muted-foreground">Runs as</div>
-                  <div className="flex flex-wrap items-center gap-2 font-medium">
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              [
+                "Status",
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("size-1.5 rounded-full", POD_STATUS_DOT[pod.status])} />
+                  {podStatusLabel(pod.status)}
+                </span>,
+              ],
+              [
+                "Backend",
+                <KabinetBackend.DetailLink object={pod.backend} className={LINK}>
+                  {pod.backend.name}
+                </KabinetBackend.DetailLink>,
+              ],
+              [
+                "Resource",
+                pod.resource && (
+                  <KabinetResource.DetailLink object={pod.resource} className={LINK}>
+                    {pod.resource.name}
+                  </KabinetResource.DetailLink>
+                ),
+              ],
+              [
+                "Deployment",
+                <KabinetDeployment.DetailLink object={deployment} className={cn(LINK, "break-all")}>
+                  {deployment.name}
+                </KabinetDeployment.DetailLink>,
+              ],
+              [
+                "Release",
+                <KabinetRelease.DetailLink object={release} className={cn(LINK, "font-mono")}>
+                  {release.app.identifier} v{release.version}
+                </KabinetRelease.DetailLink>,
+              ],
+              [
+                "Flavour",
+                <KabinetFlavour.DetailLink object={deployment.flavour} className={LINK}>
+                  {deployment.flavour.name}
+                </KabinetFlavour.DetailLink>,
+              ],
+              [
+                "Runs as",
+                deployment.approval && (
+                  <span className="flex flex-col items-start gap-0.5">
                     <StructureDisplay
                       identifier="@lok/user"
-                      id={pod.deployment.approval.approver.sub}
-                      variant="chip"
+                      id={deployment.approval.approver.sub}
+                      variant="inline"
                     />
                     <KabinetApproval.DetailLink
-                      object={pod.deployment.approval}
-                      className="text-xs font-normal text-muted-foreground hover:text-primary"
+                      object={deployment.approval}
+                      className="text-xs text-muted-foreground hover:text-foreground"
                     >
-                      approval {APPROVAL_STATUS_LABEL[approvalStatus(pod.deployment.approval)].toLowerCase()}
+                      approval {APPROVAL_STATUS_LABEL[approvalStatus(deployment.approval)].toLowerCase()}
                     </KabinetApproval.DetailLink>
-                  </div>
-                </div>
-              )}
-              <div>
-                <div className="text-muted-foreground">Resource</div>
-                <div className="font-medium break-all">
-                  {pod.resource?.name || "No resource attached"}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Latest Logs</CardTitle>
-              <CardDescription>
-                The newest log dump emitted by this pod.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <pre className="max-h-[28rem] overflow-auto rounded-2xl bg-muted/30 p-4 text-xs leading-6 whitespace-pre-wrap break-words">
-                {pod.latestLogDump?.logs || "No logs available yet."}
-              </pre>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            {pod.resource && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Running On</CardTitle>
-                  <CardDescription>
-                    The resource currently hosting this pod.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <ResourceCard item={pod.resource} />
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Deployment Path</CardTitle>
-                <CardDescription>
-                  The release and flavour stack used for this pod.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <div className="text-muted-foreground">App</div>
-                  <div className="font-medium break-all">
-                    {pod.deployment.flavour.release.app.identifier}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">Release</div>
-                  <div className="font-medium break-all">
-                    {pod.deployment.flavour.release.version}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">Backend</div>
-                  <div className="font-medium break-all">{pod.backend.name}</div>
-                </div>
-              </CardContent>
-            </Card>
+                  </span>
+                ),
+              ],
+              ["Pod", <span className="break-all font-mono text-xs">{pod.podId}</span>],
+              ["Client", pod.clientId && <span className="break-all font-mono text-xs">{pod.clientId}</span>],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
+    >
+      <div className="flex flex-col gap-6 p-3">
+        <header className="flex items-center gap-3">
+          <AppIcon app={app} size={40} className="size-10 rounded-xl" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              {app.name}
+              <span className="font-mono text-xs font-normal text-muted-foreground">v{release.version}</span>
+            </div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={cn("size-1.5 rounded-full", POD_STATUS_DOT[pod.status])} />
+              {podStatusLabel(pod.status)} on {pod.backend.name}
+            </p>
           </div>
-        </div>
+        </header>
+
+        {logs?.logs && (
+          <DetailSection
+            title="Latest logs"
+            action={
+              <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                <Timestamp date={logs.createdAt} relative />
+                <CopyButton value={logs.logs} title="Copy logs" />
+              </span>
+            }
+          >
+            <pre className="overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 p-3 font-mono text-xs leading-5">
+              {logs.logs}
+            </pre>
+          </DetailSection>
+        )}
+
+        {/* Other modules on a pod. */}
+        <PageSections placement="main" identifier="@kabinet/pod" object={{ id: pod.id }} />
       </div>
     </KabinetPod.ModelPage>
   );

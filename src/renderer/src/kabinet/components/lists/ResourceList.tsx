@@ -1,23 +1,17 @@
-import { ListRender } from "@/core/layout/ListRender";
+import { createList } from "@/core/layout/createList";
 import { KabinetResource } from "@/core/linkers";
-import { useListResourcesQuery } from "@/kabinet/api/graphql";
+import { useListResourcesQuery } from "../../api/graphql";
 import ResourceCard from "../cards/ResourceCard";
 
-const List = () => {
-  const { data, loading, error, refetch } = useListResourcesQuery();
+const ResourceList = createList({
+  useHook: useListResourcesQuery,
+  dataKey: "resources",
+  ItemComponent: ResourceCard,
+  title: "Resources",
+  smart: KabinetResource,
+  emptyTitle: "No resource",
+  emptyDescription: "Backends report the resources they run pods on.",
+  minItemWidth: 272,
+});
 
-  return (
-    <ListRender
-      array={data?.resources}
-      loading={loading}
-      error={error}
-      title={<KabinetResource.ListLink className="flex-0">Resources</KabinetResource.ListLink>}
-      // The query takes no variables, so paging has nothing to send.
-      refetch={() => refetch()}
-    >
-      {(item) => <ResourceCard key={item.id} item={item} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default ResourceList;

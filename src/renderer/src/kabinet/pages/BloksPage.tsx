@@ -1,15 +1,24 @@
+import { useDialog } from "@/core/dialogs/registry";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { DialogButton } from "@/core/ui/dialog-button";
+import { Badge } from "@/core/ui/badge";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/core/ui/dropdown-menu";
+import { ActionLabel, ActionTrigger, PageAction } from "@/core/ui/page-action";
 import { Skeleton } from "@/core/ui/skeleton";
 import { ErrorNote } from "@/core/ui/error-note";
-import { useDebounce } from "@uidotdev/usehooks";
-import { Box, LayoutPanelTop, Shapes, type LucideIcon } from "lucide-react";
+import { Box, LayoutPanelTop, Plus, Shapes, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { ComponentContext, useRepoBloksQuery } from "../api/graphql";
-import { ListSearch } from "../components/ListSearch";
+import { useListSearch } from "../components/ListSearch";
 import { BLOK_GRID } from "../components/store/BlokStoreCard";
 import { RepoBlokGrid } from "../components/store/RepoBlokCard";
-import { Chip } from "../components/store/StoreParts";
 import { KABINET_HELP } from "../help";
 
 const CONTEXTS: { value: ComponentContext | null; label: string; icon: LucideIcon }[] = [
@@ -20,10 +29,11 @@ const CONTEXTS: { value: ComponentContext | null; label: string; icon: LucideIco
 
 /** The bloks your GitHub repositories publish on their own (`.arkitekt/bloks.yaml`). */
 const Page = () => {
-  const [search, setSearch] = useState("");
+  const { openDialog } = useDialog();
+  const { search, setSearch, filters: searchFilters, searching } = useListSearch();
   const [context, setContext] = useState<ComponentContext | null>(null);
-  const debounced = useDebounce(search, 200);
-  const filters = debounced || context ? { search: debounced || undefined, context: context ?? undefined } : undefined;
+  const filters = searching || context ? { ...searchFilters, context: context ?? undefined } : undefined;
+  const picked = CONTEXTS.find((entry) => entry.value === context);
   const { data, error, loading } = useRepoBloksQuery({
     variables: { filters },
     fetchPolicy: "cache-and-network",
@@ -35,21 +45,51 @@ const Page = () => {
       title="Bloks"
       help={KABINET_HELP.bloks}
       pageActions={
-        <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
-          Add Repo
-        </DialogButton>
+        <>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search bloks…" />
+          <PageAction.Slot collapse="icon" priority={-5}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ActionTrigger aria-label="Kind">
+                  <Shapes className="h-4 w-4" />
+                  <ActionLabel>
+                    Kind
+                    {picked?.value && (
+                      <Badge variant="secondary">{picked.label}</Badge>
+                    )}
+                  </ActionLabel>
+                </ActionTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuRadioGroup
+                  value={context ?? "all"}
+                  onValueChange={(value) =>
+                    setContext(value === "all" ? null : (value as ComponentContext))
+                  }
+                >
+                  {CONTEXTS.map(({ value, label, icon: Icon }) => (
+                    <DropdownMenuRadioItem key={label} value={value ?? "all"}>
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PageAction.Slot>
+          <PageAction
+            size="sm"
+            collapse="icon"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => openDialog("createrepo", {})}
+          >
+            Add Repo
+          </PageAction>
+        </>
       }
     >
-      <div className="flex w-full flex-col gap-3 p-3">
-        <ListSearch value={search} onChange={setSearch} placeholder="Search bloks…" />
-        <div className="flex flex-wrap gap-1.5">
-          {CONTEXTS.map(({ value, label, icon: Icon }) => (
-            <Chip key={label} active={context === value} onClick={() => setContext(value)}>
-              <Icon />
-              {label}
-            </Chip>
-          ))}
-        </div>
+      <div className="flex w-full flex-col gap-6 p-3">
+        <ModuleHomeHeader moduleKey="kabinet" icon={<Shapes />} title="Bloks" description="The panels and scenes your repositories publish on their own." />
         {error && !data ? (
           <ErrorNote error={error} title="Couldn't load the bloks" />
         ) : loading && !data ? (
@@ -60,7 +100,7 @@ const Page = () => {
           </div>
         ) : bloks.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {debounced || context
+            {searching || context
               ? "No blok matches."
               : "No repository publishes a blok yet. A repository lists its bloks in .arkitekt/bloks.yaml."}
           </p>

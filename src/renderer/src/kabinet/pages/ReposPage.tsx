@@ -1,44 +1,63 @@
 import { reportErrorAs } from "@/core/notify";
-import { PageLayout } from "@/core/layout/PageLayout";
+import { KabinetRepo } from "@/core/linkers";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import { PageAction } from "@/core/ui/page-action";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { Separator } from "@/core/ui/separator";
+import { useDialog } from "@/core/dialogs/registry";
+import { PackageOpen, Plus, RefreshCw } from "lucide-react";
 import { ListDefinitionsDocument, ListReleasesDocument, useRescanReposMutation } from "../api/graphql";
+import { useListSearch } from "../components/ListSearch";
 import RepoList from "../components/lists/RepoList";
 import { KABINET_HELP } from "../help";
 
+/** Every repository Kabinet reads apps from. */
 const ReposPage = () => {
+  const { openDialog } = useDialog();
+  const { search, setSearch, filters } = useListSearch();
   const [rescan, { loading }] = useRescanReposMutation({
     refetchQueries: [ListReleasesDocument, ListDefinitionsDocument],
   });
 
   return (
-    <PageLayout
+    <KabinetRepo.ListPage
       title="Repos"
       help={KABINET_HELP.repos}
       pageActions={
         <>
-          <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search repos…" />
+          <PageAction
+            alwaysShow
+            size="sm"
+            collapse="icon"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => openDialog("createrepo", {})}
+          >
             Add Repo
-          </DialogButton>
-          <DialogButton alwaysShow name="importocirepo" variant="outline" size="sm" dialogProps={{}}>
+          </PageAction>
+          <PageAction
+            size="sm"
+            collapse="icon"
+            icon={<PackageOpen className="h-4 w-4" />}
+            onClick={() => openDialog("importocirepo", {})}
+          >
             Import from registry
-          </DialogButton>
+          </PageAction>
           <PageAction
             priority={-10}
-            onClick={() => rescan().catch(reportErrorAs("Couldn't rescan the repositories"))}
             size="sm"
+            collapse="icon"
+            icon={<RefreshCw className={"h-4 w-4" + (loading ? " animate-spin" : "")} />}
+            disabled={loading}
+            onClick={() => rescan().catch(reportErrorAs("Couldn't rescan the repositories"))}
           >
-            {loading ? "Rescanning..." : "Rescan Repos"}
+            Rescan Repos
           </PageAction>
         </>
       }
     >
       <div className="p-3">
-        <RepoList />
-        <Separator className="mt-8 mb-2" />
+        <RepoList title="" filters={filters} defaultLimit={40} />
       </div>
-    </PageLayout>
+    </KabinetRepo.ListPage>
   );
 };
 

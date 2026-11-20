@@ -1,5 +1,7 @@
 import { PageSections } from "@/core/layout/PageSections";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { InfoList } from "@/core/ui/info-list";
 import {
   KabinetApp,
   KabinetBackend,
@@ -7,27 +9,22 @@ import {
   KabinetFlavour,
   KabinetRelease,
 } from "@/core/linkers";
-import { Badge } from "@/core/ui/badge";
 import { cn } from "@/core/util/utils";
-import React from "react";
 import { useGetDeploymentQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import ApprovalCard from "../components/cards/ApprovalCard";
+import { DetailSection } from "../components/DetailSection";
 import { RevokeApprovalButton } from "../components/RevokeApprovalButton";
 import { KABINET_HELP } from "../help";
 import { POD_STATUS_DOT, podStatusLabel } from "../lib/podStatus";
 
-const Fact = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="flex min-w-0 flex-col gap-0.5">
-    <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">{label}</span>
-    <span className="truncate text-sm">{children}</span>
-  </div>
-);
+const LINK = "hover:underline";
 
 /**
  * One deployment: which build of which app is installed on which backend, how
- * it is doing, and the approval it acts under.
+ * it is doing, and the approval it acts under. The body is who it runs as; the
+ * app, release, flavour and backend are the Info rail's.
  */
 export const DeploymentPage = asDetailQueryRoute(useGetDeploymentQuery, ({ data }) => {
   const deployment = data.deployment;
@@ -43,63 +40,78 @@ export const DeploymentPage = asDetailQueryRoute(useGetDeploymentQuery, ({ data 
         // Other modules' actions on a deployment.
         <PageSections placement="actions" identifier="@kabinet/deployment" object={{ id: deployment.id }} />
       }
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              [
+                "Status",
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("size-1.5 rounded-full", POD_STATUS_DOT[deployment.status])} />
+                  {podStatusLabel(deployment.status)}
+                </span>,
+              ],
+              [
+                "App",
+                release.app.id ? (
+                  <KabinetApp.DetailLink object={{ id: release.app.id }} className={cn(LINK, "font-mono")}>
+                    {release.app.identifier}
+                  </KabinetApp.DetailLink>
+                ) : (
+                  <span className="font-mono">{release.app.identifier}</span>
+                ),
+              ],
+              [
+                "Release",
+                <KabinetRelease.DetailLink object={release} className={cn(LINK, "font-mono")}>
+                  v{release.version}
+                </KabinetRelease.DetailLink>,
+              ],
+              [
+                "Flavour",
+                <KabinetFlavour.DetailLink object={deployment.flavour} className={LINK}>
+                  {deployment.flavour.name}
+                </KabinetFlavour.DetailLink>,
+              ],
+              [
+                "Backend",
+                <span>
+                  <KabinetBackend.DetailLink object={deployment.backend} className={LINK}>
+                    {deployment.backend.name}
+                  </KabinetBackend.DetailLink>
+                  <span className="text-muted-foreground"> · {deployment.backend.kind}</span>
+                </span>,
+              ],
+              ["Local ID", <span className="break-all font-mono text-xs">{deployment.localId}</span>],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
     >
-      <div className="flex w-full flex-col gap-4 p-3">
-        <header className="flex items-center gap-4">
-          <AppIcon app={app} size={56} className="size-14 rounded-2xl" />
+      <div className="flex flex-col gap-6 p-3">
+        <header className="flex items-center gap-3">
+          <AppIcon app={app} size={40} className="size-10 rounded-xl" />
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{app.name}</h1>
-              <Badge variant="secondary" className="rounded-full font-mono">
-                v{release.version}
-              </Badge>
-              <Badge variant="outline" className="gap-1.5 rounded-full">
-                <span className={cn("size-1.5 rounded-full", POD_STATUS_DOT[deployment.status])} />
-                {podStatusLabel(deployment.status)}
-              </Badge>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              {app.name}
+              <span className="font-mono text-xs font-normal text-muted-foreground">v{release.version}</span>
             </div>
-            <p className="truncate font-mono text-xs text-muted-foreground">{deployment.name}</p>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={cn("size-1.5 rounded-full", POD_STATUS_DOT[deployment.status])} />
+              {podStatusLabel(deployment.status)} · {deployment.flavour.name} on {deployment.backend.name}
+            </p>
           </div>
         </header>
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3 rounded-xl border p-3">
-          <Fact label="App">
-            {release.app.id ? (
-              <KabinetApp.DetailLink object={{ id: release.app.id }} className="hover:text-primary">
-                {release.app.identifier}
-              </KabinetApp.DetailLink>
-            ) : (
-              release.app.identifier
-            )}
-          </Fact>
-          <Fact label="Release">
-            <KabinetRelease.DetailLink object={release} className="font-mono hover:text-primary">
-              v{release.version}
-            </KabinetRelease.DetailLink>
-          </Fact>
-          <Fact label="Flavour">
-            <KabinetFlavour.DetailLink object={deployment.flavour} className="hover:text-primary">
-              {deployment.flavour.name}
-            </KabinetFlavour.DetailLink>
-          </Fact>
-          <Fact label="Backend">
-            <KabinetBackend.DetailLink object={deployment.backend} className="hover:text-primary">
-              {deployment.backend.name}
-            </KabinetBackend.DetailLink>
-            <span className="text-muted-foreground"> · {deployment.backend.kind}</span>
-          </Fact>
-          <Fact label="Local ID">
-            <span className="font-mono">{deployment.localId}</span>
-          </Fact>
-        </div>
-
-        <section className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Runs as</h2>
-            {deployment.approval && <RevokeApprovalButton approval={deployment.approval} label="Revoke mandate" />}
-          </div>
+        <DetailSection
+          title="Runs as"
+          action={
+            deployment.approval && <RevokeApprovalButton approval={deployment.approval} label="Revoke mandate" />
+          }
+        >
           {deployment.approval ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-3">
               <ApprovalCard item={deployment.approval} />
             </div>
           ) : (
@@ -107,7 +119,7 @@ export const DeploymentPage = asDetailQueryRoute(useGetDeploymentQuery, ({ data 
               This deployment was not installed under a release approval.
             </p>
           )}
-        </section>
+        </DetailSection>
 
         {/* Other modules on a deployment. */}
         <PageSections placement="main" identifier="@kabinet/deployment" object={{ id: deployment.id }} />

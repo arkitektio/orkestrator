@@ -5,6 +5,16 @@ fragment ListDeployment on Deployment {
   localId
   name
   status
+  # Who it acts as, for the card's footer.
+  approval {
+    id
+    isActive
+    isStale
+    revokedAt
+    approver {
+      sub
+    }
+  }
   backend {
     id
     name

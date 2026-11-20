@@ -4,8 +4,8 @@ query GetDefinition($id: ID!) {
   }
 }
 
-query ListDefinitions {
-  definitions {
+query ListDefinitions($filters: DefinitionFilter, $pagination: OffsetPaginationInput) {
+  definitions(filters: $filters, pagination: $pagination) {
     ...ListDefinition
   }
 }

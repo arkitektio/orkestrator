@@ -4,6 +4,14 @@ fragment ListRepo on GithubRepo {
   branch
   user
   repo
+  # When it was last read, and what it held then: the card's footer.
+  updatedAt
+  flavours {
+    id
+  }
+  bloks {
+    id
+  }
 }
 
 fragment Repo on GithubRepo {

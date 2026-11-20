@@ -1,20 +1,30 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Card, CardContent } from "@/core/ui/card";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
 import { PageSections } from "@/core/layout/PageSections";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { InfoList } from "@/core/ui/info-list";
 import { KabinetBackend } from "@/core/linkers";
-import { Separator } from "@radix-ui/react-dropdown-menu";
 import { useGetBackendQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
 import ResourceCard from "../components/cards/ResourceCard";
+import { StatusTally } from "../components/cards/parts";
+import { CardGrid, DetailSection } from "../components/DetailSection";
 import { IconForBackendKind } from "../components/IconForBackendKind";
 import { KABINET_HELP } from "../help";
 
+/**
+ * A backend: what it runs (its pods) and what it runs them on (its
+ * resources). What the backend IS — its kind, its client, who connected it —
+ * is the Info rail's.
+ */
+export const BackendPage = asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
+  const backend = data.backend;
 
-export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
   return (
     <KabinetBackend.ModelPage
-      title={data?.backend?.name}
-      object={data?.backend}
+      title={backend.name}
+      object={backend}
       help={KABINET_HELP.backend}
       pageActions={
         <>
@@ -22,53 +32,63 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
           <PageSections
             placement="actions"
             identifier="@kabinet/backend"
-            object={{ id: data.backend.id, clientId: data.backend.clientId }}
+            object={{ id: backend.id, clientId: backend.clientId }}
           />
-          <KabinetBackend.ObjectButton alwaysShow object={data.backend} />
+          <KabinetBackend.ObjectButton alwaysShow object={backend} />
         </>
       }
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              [
+                "Kind",
+                <span className="flex items-center gap-1.5">
+                  <IconForBackendKind kind={backend.kind} className="size-3.5 text-muted-foreground" />
+                  {backend.kind}
+                </span>,
+              ],
+              ["Connected by", <StructureDisplay identifier="@lok/user" id={backend.user.sub} variant="inline" />],
+              ["Client", <span className="break-all font-mono text-xs">{backend.clientId}</span>],
+              ["Pods", backend.pods.length],
+              ["Resources", backend.resources.length],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
     >
-      <div className="p-3">
-        <div className="grid grid-cols-6">
-          <div className="col-span-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                {data?.backend?.name}
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground flex flex-row">
-                <IconForBackendKind
-                  kind={data?.backend.kind}
-                  className="h-4 w-4 mr-2 my-auto"
-                />
-                {data?.backend?.kind}
-              </p>
-            </div>
-          </div>
-          <div className="col-span-2">
-            <div className="p-1">
-              <Card>
-                <CardContent className="flex aspect-[3/2] items-center justify-center p-6">
-                  <span className="text-4xl font-semibold">{1}</span>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-        <Separator className="mt-4 mb-2" />
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="kabinet"
+          icon={<IconForBackendKind kind={backend.kind} />}
+          title={backend.name}
+          description={
+            <span className="flex flex-wrap items-center gap-x-1.5">
+              {backend.kind} · connected by
+              <StructureDisplay identifier="@lok/user" id={backend.user.sub} variant="inline" />
+              <span>·</span>
+              <StatusTally items={backend.pods} empty="no pods" />
+            </span>
+          }
+        />
 
-        <div className="mt-4 font-light mb-2">Managed Pods</div>
-        <div className="grid grid-cols-6 gap-2">
-          {data?.backend?.pods.map((pod) => (
-            <PodCard key={pod.id} item={pod} />
-          ))}
-        </div>
-        <div className="mt-4 font-light mb-2">Managed Resources</div>
-        <div className="grid grid-cols-6 gap-2">
-          {data?.backend?.resources.map((re) => (
-            <ResourceCard key={re.id} item={re} />
-          ))}
-        </div>
+        <DetailSection title="Pods" count={backend.pods.length} empty="No pod runs on this backend.">
+          <CardGrid>
+            {backend.pods.map((pod) => (
+              <PodCard key={pod.id} item={pod} />
+            ))}
+          </CardGrid>
+        </DetailSection>
+        <DetailSection title="Resources" count={backend.resources.length}>
+          <CardGrid>
+            {backend.resources.map((resource) => (
+              <ResourceCard key={resource.id} item={resource} />
+            ))}
+          </CardGrid>
+        </DetailSection>
       </div>
     </KabinetBackend.ModelPage>
   );
 });
+
+export default BackendPage;
