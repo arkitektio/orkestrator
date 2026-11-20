@@ -355,11 +355,19 @@ export const HomeFilterBar = ({ filters }: { filters: HomeFilters }) => {
             value={state.axis}
             onValueChange={(next) => next && setAxis(next as TimeAxis)}
             aria-label="Date is"
+            // A pill, like the filters beside it: round ends, the chosen half tinted.
+            className="rounded-full!"
           >
-            <ToggleGroupItem value="acquired" className="h-8 px-2.5 text-xs">
+            <ToggleGroupItem
+              value="acquired"
+              className="h-8 rounded-l-full! px-3! text-xs/relaxed font-normal text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
+            >
               Acquired
             </ToggleGroupItem>
-            <ToggleGroupItem value="created" className="h-8 px-2.5 text-xs">
+            <ToggleGroupItem
+              value="created"
+              className="h-8 rounded-r-full! px-3! text-xs/relaxed font-normal text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
+            >
               Created
             </ToggleGroupItem>
           </ToggleGroup>

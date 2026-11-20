@@ -20,7 +20,7 @@ export const VerticalListRender = <T,>({
     <div>
       <span
         className={cn(
-          "text-sm font-semibold uppercase tracking-wider text-muted-foreground",
+          "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
           titleClassName,
         )}
       >

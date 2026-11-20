@@ -21,6 +21,10 @@ Root.displayName = "ListLayout.Root";
 /**
  * The top bar containing the Title and Actions.
  * Handles responsive wrapping automatically.
+ *
+ * The title is the small uppercase label of a home page's blocks
+ * (`HomeSectionHeading`: mikro's "Recent data", "Pinned folders"), the same
+ * one `ListTitle` draws: every list in the app is titled alike.
  */
 interface HeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   actions?: React.ReactNode;
@@ -31,16 +35,14 @@ const Header = React.forwardRef<HTMLDivElement, HeaderProps>(
     <div
       ref={ref}
       className={cn(
-        "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1 ml-1 font-bold",
+        "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1 px-0.5",
         className
       )}
       {...props}
     >
-      <div className="flex flex-col space-x-0 ">
-        <h3 className="font-light leading-none tracking-tight text-md">
-          {children}
-        </h3>
-      </div>
+      <h2 className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {children}
+      </h2>
       {actions && (
         <div className="flex items-center gap-1 self-end sm:self-auto">
           {actions}

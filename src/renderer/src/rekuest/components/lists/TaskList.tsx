@@ -26,7 +26,7 @@ const List = ({ filters, order, pagination, title }: Props) => {
         array={data?.tasks}
         title={
           <RekuestTask.ListLink className="flex-0">
-            {title ?? "Latest Tasks"}
+            {title ?? "Latest tasks"}
           </RekuestTask.ListLink>
         }
         refetch={refetch}

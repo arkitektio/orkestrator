@@ -172,9 +172,9 @@ const Page = () => {
         <section className="space-y-6">
           <TaskList
             title={
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Ongoing Tasks
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Ongoing tasks
               </span>
             }
             filters={{ isDone: false, rootIsnull: true }}
