@@ -20,7 +20,9 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
         </>
       }
     >
-      <FileList defaultLimit={30} />
+      <div className="p-3">
+        <FileList defaultLimit={30} />
+      </div>
     </MikroFile.ListPage>
   );
 };

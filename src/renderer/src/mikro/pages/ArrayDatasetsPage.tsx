@@ -1,4 +1,3 @@
-import { Explainer } from "@/core/layout/Explainer";
 import { MikroArrayDataset } from "@/core/linkers";
 import React from "react";
 import { useArrayDatasetFilterBar } from "../components/filter/ArrayDatasetFilterBar";
@@ -13,10 +12,6 @@ const Page: React.FC<IArrayDatasetsScreenProps> = () => {
   return (
     <MikroArrayDataset.ListPage title="Spatial Datasets" pageActions={actions} help={MIKRO_HELP.arrayDatasets}>
       <div className="p-3 flex flex-col gap-3">
-        <Explainer
-          title="Spatial Datasets"
-          description="N-dimensional arrays with named dimensions. trinsic coordinate system, their physical units on the calibrated spaces they also live in, and their pyramid levels are data arrays."
-        />
         <ArrayDatasetList filters={filters} ordering={ordering} />
       </div>
     </MikroArrayDataset.ListPage>

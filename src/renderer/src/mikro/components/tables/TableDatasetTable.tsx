@@ -16,7 +16,16 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpDown,
-  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  Columns3,
+  Copy,
+  Equal,
+  EqualApproximately,
+  EqualNot,
+  FilterX,
+  ListFilter,
+  SquareCheck,
   Tags,
   X,
 } from "lucide-react";
@@ -24,13 +33,23 @@ import * as React from "react";
 
 import { Button } from "@/core/ui/button";
 import { Checkbox } from "@/core/ui/checkbox";
+import { Skeleton } from "@/core/ui/skeleton";
+import { FilterClear, FilterSearchField, FilterTrigger } from "@/core/ui/filter-bar";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/core/ui/context-menu";
+import { reportErrorAs, toast } from "@/core/notify";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { Input } from "@/core/ui/input";
 import {
   Table,
   TableBody,
@@ -59,10 +78,18 @@ import {
 import { TableAnchorsOverlay, type ThinTableAnchor } from "./TableAnchorsOverlay";
 import { anchorCaption, partitionTableAnchors } from "./tableAnchors";
 import {
-  type DuckDbColumnFilters,
   rowsToCsv,
   useDuckDbTable,
 } from "./useDuckDbTable";
+import {
+  cellFilterActions,
+  clearFilter,
+  describeFilter,
+  hasActiveFilters,
+  setFilter,
+  type TableColumnFilter,
+  type TableColumnFilters,
+} from "./tableFilters";
 import { formatUnit } from "@/core/util/units";
 
 export type Item = Record<string, unknown>;
@@ -131,6 +158,17 @@ export const mergeRowSelection = (
 const SELECT_REVEAL_CLASSES =
   "border-border bg-background opacity-0 ring-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100";
 
+// The checkbox and row-number columns are the sheet's gutter, not data: a
+// faint fill and a rule on the right set them apart from the first column,
+// as a spreadsheet's row headers are.
+/** A button in the filter row, shaped like its pills (`core/ui/filter-bar`). */
+const PILL_BUTTON = "h-8 gap-1.5 rounded-full font-normal";
+
+const GUTTER_COLUMNS = new Set(["select", "index"]);
+const GUTTER_CLASSES = "bg-muted/40 group-hover/row:bg-muted/60";
+const gutterClasses = (columnId: string) =>
+  GUTTER_COLUMNS.has(columnId) ? cn(GUTTER_CLASSES, columnId === "index" && "border-r") : undefined;
+
 const createSelectColumn = (): ColumnDef<Item> => ({
   id: "select",
   header: ({ table }) => {
@@ -175,13 +213,13 @@ const createIndexColumn = (
   anchorLabelsForRow: (rowKey: string) => readonly string[],
 ): ColumnDef<Item> => ({
   id: "index",
-  header: () => <div className="text-center font-medium">#</div>,
+  header: () => <div className="pr-3 text-right font-medium">#</div>,
   cell: ({ row }) => {
     // `row.id` is already the value key (`getRowId`), so no second hash here.
     const labels = anchorLabelsForRow(row.id);
 
     return (
-      <div className="flex items-center justify-center gap-0.5 text-sm text-muted-foreground">
+      <div className="flex items-center justify-end gap-0.5 text-xs tabular-nums text-muted-foreground">
         <span>{rowIndexOffset + row.index + 1}</span>
         <span
           className="inline-flex h-2.5 w-2.5 shrink-0 items-center"
@@ -212,8 +250,10 @@ const ColumnHeader = (props: {
   sortDirection: SortDirection;
   onSort: (direction: SortDirection) => void;
   onHide: () => void;
+  filter?: TableColumnFilter;
+  onFilter: (filter: TableColumnFilter | null) => void;
 }) => {
-  const { column, store, sortDirection, onSort, onHide } = props;
+  const { column, store, sortDirection, onSort, onHide, filter, onFilter } = props;
 
   // Cycle asc → desc → none so the one arrow drives all three states.
   const toggleSort = () =>
@@ -231,14 +271,19 @@ const ColumnHeader = (props: {
       <ColumnInfoPopover
         column={column}
         store={store}
-        actions={{ sortDirection, onSort, onHide }}
+        actions={{ sortDirection, onSort, onHide, filter, onFilter }}
       >
         <button
           type="button"
           title={`${column.dtype}${formatUnit(column.unit as string | null) ? ` · ${formatUnit(column.unit as string | null)}` : ""}`}
-          className="flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-center font-medium transition-colors hover:bg-accent"
+          className={cn(
+            "flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-center font-semibold text-foreground/90 transition-colors hover:bg-accent",
+            // A filtered column says so where it is named, like the filter row's pills.
+            filter && "bg-primary/10 text-foreground ring-1 ring-primary/40",
+          )}
         >
           <ColumnAxisGlyph column={column} />
+          {filter && <ListFilter className="h-3 w-3 shrink-0 text-primary" aria-label="filtered" />}
           <span className="max-w-40 truncate">
             {column.longName ?? column.name}
           </span>
@@ -270,6 +315,120 @@ const ColumnHeader = (props: {
   );
 };
 
+/** How many skeleton rows the first load shows: about a screenful. */
+const SKELETON_ROWS = 14;
+
+/** Bar widths a skeleton cell cycles through, so the rows read as values, not stripes. */
+const SKELETON_WIDTHS = ["w-10", "w-16", "w-12", "w-20", "w-14"] as const;
+
+/**
+ * The first page, before it arrives: one row per row to come, laid out like
+ * the real ones (the gutter's number on the right, values centred) and fading
+ * towards the bottom. Bars are narrow and fixed so they never set a column's
+ * width; the columns are fitted once the real rows are in.
+ */
+const SkeletonRows = ({ columnIds, count }: { columnIds: string[]; count: number }) => (
+  <>
+    {Array.from({ length: count }, (_, rowIndex) => (
+      <TableRow
+        key={rowIndex}
+        aria-hidden
+        className="hover:bg-transparent"
+        style={{ opacity: 1 - (rowIndex / count) * 0.7 }}
+      >
+        {columnIds.map((columnId, columnIndex) => (
+          <TableCell key={columnId} className={gutterClasses(columnId)}>
+            {columnId === "select" ? null : columnId === "index" ? (
+              <Skeleton className="ml-auto h-3 w-5" />
+            ) : (
+              <Skeleton
+                className={cn(
+                  "mx-auto h-3",
+                  SKELETON_WIDTHS[(rowIndex * 3 + columnIndex * 7) % SKELETON_WIDTHS.length],
+                )}
+              />
+            )}
+          </TableCell>
+        ))}
+      </TableRow>
+    ))}
+  </>
+);
+
+const CELL_ACTION_ICON = {
+  same: Equal,
+  similar: EqualApproximately,
+  atLeast: ChevronsRight,
+  atMost: ChevronsLeft,
+  exclude: EqualNot,
+} as const;
+
+/**
+ * What a right-click on a cell offers: keep rows like it (the same value, a
+ * similar one, at least or at most it), drop rows like it, copy it, or tick
+ * its row. The filters land in the filter row as chips.
+ */
+const CellMenu = ({
+  cell,
+  label,
+  current,
+  onFilter,
+  onClearFilter,
+  selected,
+  onToggleRow,
+}: {
+  cell: { column: string; value: unknown };
+  label: string;
+  current: TableColumnFilter | undefined;
+  onFilter: (filter: TableColumnFilter) => void;
+  onClearFilter: () => void;
+  selected: boolean;
+  onToggleRow: () => void;
+}) => {
+  const actions = cellFilterActions(cell.column, cell.value, current, label);
+  const text = formatCellValue(cell.value);
+  return (
+    <ContextMenuContent className="w-64">
+      <ContextMenuLabel className="flex min-w-0 items-baseline gap-1.5 text-xs font-normal">
+        <span className="shrink-0 text-muted-foreground">{label}</span>
+        <span className="min-w-0 truncate font-mono">{text === "" ? "empty" : text}</span>
+      </ContextMenuLabel>
+      <ContextMenuSeparator />
+      {actions.map((action) => {
+        const Icon = CELL_ACTION_ICON[action.key];
+        return (
+          <ContextMenuItem key={action.key} onSelect={() => onFilter(action.filter)}>
+            <Icon className="h-4 w-4" />
+            <span className="min-w-0 truncate">{action.label}</span>
+          </ContextMenuItem>
+        );
+      })}
+      {current && (
+        <ContextMenuItem onSelect={onClearFilter}>
+          <FilterX className="h-4 w-4" />
+          <span className="min-w-0 truncate">Clear the {label} filter</span>
+        </ContextMenuItem>
+      )}
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        onSelect={() => {
+          void navigator.clipboard
+            .writeText(text)
+            .then(() => toast.success("Copied the value"))
+            .catch(reportErrorAs("Couldn't copy the value"));
+        }}
+      >
+        <Copy className="h-4 w-4" />
+        Copy value
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={onToggleRow}>
+        <SquareCheck className="h-4 w-4" />
+        {selected ? "Unselect row" : "Select row"}
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+};
+
 const calculateColumns = (
   columns: TableColumn[],
   options: {
@@ -281,6 +440,8 @@ const calculateColumns = (
       direction: SortDirection,
     ) => void;
     onHideColumn: (columnName: string) => void;
+    columnFilters: TableColumnFilters;
+    onColumnFilterChange: (columnName: string, filter: TableColumnFilter | null) => void;
     anchorLabelsForRow: (rowKey: string) => readonly string[];
     meshLinks?: ReadonlyMap<string, string>;
   },
@@ -314,6 +475,8 @@ const calculateColumns = (
               options.onColumnSortingChange(column.name, direction)
             }
             onHide={() => options.onHideColumn(column.name)}
+            filter={options.columnFilters[column.name]}
+            onFilter={(filter) => options.onColumnFilterChange(column.name, filter)}
           />
         ),
         cell: ({ row }) => {
@@ -369,7 +532,14 @@ export const TableDatasetTable = (props: {
     pageSize: 25,
   });
   const [search, setSearch] = React.useState("");
-  const [columnFilters] = React.useState<DuckDbColumnFilters>({});
+  const [columnFilters, setColumnFilters] = React.useState<TableColumnFilters>({});
+  // The cell a right-click landed on, for the context menu to act on.
+  const [menuCell, setMenuCell] = React.useState<{ column: string; rowKey: string; value: unknown } | null>(null);
+  const handleColumnFilterChange = React.useCallback(
+    (columnName: string, filter: TableColumnFilter | null) =>
+      setColumnFilters((current) => (filter ? setFilter(current, filter) : clearFilter(current, columnName))),
+    [],
+  );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -396,7 +566,7 @@ export const TableDatasetTable = (props: {
   // What the table holds, whatever is searched for: the count a page with no
   // search answered with. Reported, not shown here — the page header says it.
   const { onRowCount } = props;
-  const unfiltered = search.trim() === "";
+  const unfiltered = search.trim() === "" && !hasActiveFilters(columnFilters);
   React.useEffect(() => {
     if (unfiltered && !loading && !error) onRowCount?.(totalRowCount);
   }, [unfiltered, loading, error, totalRowCount, onRowCount]);
@@ -488,6 +658,8 @@ export const TableDatasetTable = (props: {
         sorting,
         onColumnSortingChange: handleColumnSortingChange,
         onHideColumn: handleHideColumn,
+        columnFilters,
+        onColumnFilterChange: handleColumnFilterChange,
         anchorLabelsForRow,
         meshLinks: props.meshLinks,
       }),
@@ -496,6 +668,8 @@ export const TableDatasetTable = (props: {
       anchorLabelsForRow,
       handleColumnSortingChange,
       handleHideColumn,
+      columnFilters,
+      handleColumnFilterChange,
       pagination.pageIndex,
       pagination.pageSize,
       props.table.columns,
@@ -552,7 +726,7 @@ export const TableDatasetTable = (props: {
 
   React.useEffect(() => {
     setPagination((current) => ({ ...current, pageIndex: 0 }));
-  }, [props.table.id, search]);
+  }, [props.table.id, search, columnFilters]);
 
   React.useEffect(() => {
     setSearch("");
@@ -673,80 +847,103 @@ export const TableDatasetTable = (props: {
     downloadCsv(rowsToCsv(selectedRowList, visibleExportColumns), "_selection");
   }, [downloadCsv, selectedRowList, visibleExportColumns]);
 
+  // A column as people read it, for the filter chips and the cell menu.
+  const columnLabels = new Map(props.table.columns.map((column) => [column.name, column.longName ?? column.name]));
+
+  // What the Columns pill counts: data columns only (the gutter cannot hide).
+  const hideableColumns = table.getAllColumns().filter((column) => column.getCanHide());
+  const hiddenColumnCount = hideableColumns.filter((column) => !column.getIsVisible()).length;
+
   return (
     <div className="flex h-full w-full flex-col">
+      {/* The same quiet row of pills as the Mikro home's filters
+          (`core/ui/filter-bar`): what narrows is tinted, what does not is
+          muted, and Clear shows once something narrows. */}
       <div className="flex flex-initial flex-wrap items-center gap-2 pb-3">
-        <div className="relative w-full max-w-sm">
-          <Input
-            placeholder="Search all columns..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="w-full bg-background pr-9"
-          />
-          {search ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1 h-7 w-7"
-              onClick={clearGlobalSearch}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          ) : null}
-        </div>
-        {error && (
-          <div className="text-xs text-destructive">{error.message}</div>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCsv}
-          disabled={loading || exporting || totalRowCount === 0}
-        >
-          <ArrowDownToLine className="mr-2 h-4 w-4" />
-          {exporting
-            ? "Exporting..."
-            : selectedRowList.length
-              ? "Export all rows"
-              : "Export as CSV"}
-        </Button>
-
-        {/* Only worth a control once there is a selection to export — an always
-            visible button that is disabled most of the time reads as broken. */}
-        {selectedRowList.length ? (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleExportSelectionCsv}
-          >
-            <ArrowDownToLine className="mr-2 h-4 w-4" />
-            Export {selectedRowList.length} selected
-          </Button>
-        ) : null}
+        <FilterSearchField value={search} onChange={setSearch} placeholder="Search all columns…" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
+            <FilterTrigger active={hiddenColumnCount > 0} icon={Columns3} aria-label="Columns">
+              {hiddenColumnCount > 0
+                ? `${hideableColumns.length - hiddenColumnCount} of ${hideableColumns.length} columns`
+                : "All columns"}
+            </FilterTrigger>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
+          <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
+            {hideableColumns.map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                className="font-mono text-xs"
+                checked={column.getIsVisible()}
+                // Keep the menu open: hiding several columns is one errand.
+                onSelect={(event) => event.preventDefault()}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
+                {column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* What narrows the rows, one chip per column, in the order set. */}
+        {Object.values(columnFilters).map((filter) => (
+          <span
+            key={filter.column}
+            className={cn(PILL_BUTTON, "inline-flex items-center border border-primary/40 bg-primary/10 pl-2.5 pr-1 text-xs text-foreground")}
+          >
+            <ListFilter className="h-3.5 w-3.5 text-primary" />
+            <span className="max-w-56 truncate">{describeFilter(filter, columnLabels.get(filter.column))}</span>
+            <button
+              type="button"
+              aria-label={`Remove the ${filter.column} filter`}
+              className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
+              onClick={() => handleColumnFilterChange(filter.column, null)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+
+        {(search || hiddenColumnCount > 0 || hasActiveFilters(columnFilters)) && (
+          <FilterClear
+            onClear={() => {
+              clearGlobalSearch();
+              setColumnFilters({});
+              table.resetColumnVisibility();
+            }}
+          />
+        )}
+
+        {error && <div className="text-xs text-destructive">{error.message}</div>}
+
+        {/* Exports trail the filters: they act on what the filters leave. */}
+        <div className="ml-auto flex items-center gap-2">
+          {/* Only worth a control once there is a selection to export — an
+              always visible button that is disabled most of the time reads as
+              broken. */}
+          {selectedRowList.length ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(PILL_BUTTON, "border-primary/40 bg-primary/10 text-foreground hover:bg-primary/15")}
+              onClick={handleExportSelectionCsv}
+            >
+              <ArrowDownToLine className="h-3.5 w-3.5" />
+              Export {selectedRowList.length} selected
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(PILL_BUTTON, "text-muted-foreground")}
+            onClick={handleExportCsv}
+            disabled={loading || exporting || totalRowCount === 0}
+          >
+            <ArrowDownToLine className="h-3.5 w-3.5" />
+            {exporting ? "Exporting…" : selectedRowList.length ? "Export all rows" : "Export as CSV"}
+          </Button>
+        </div>
       </div>
 
       {/* `relative` so the anchors overlay docks to the visible rows area, not
@@ -758,29 +955,53 @@ export const TableDatasetTable = (props: {
         {/* The rows are what scrolls — `min-h-0` lets this shrink below its
             content height so the search bar above and the pager below stay put
             instead of being pushed off the page by a full page of rows. */}
+        {/* One box scrolls the rows both ways, framed like a sheet, so the
+            header row can stick to its top (see `containerClassName`). */}
+        {/* One menu for the whole grid, not one per cell: a right-click
+            records which cell it landed on, and the menu acts on that. */}
+        <ContextMenu onOpenChange={(open) => !open && setMenuCell(null)}>
+        <ContextMenuTrigger asChild>
         <div
           ref={gridRef}
-          className="flex min-h-0 flex-grow flex-col overflow-y-auto"
+          className="flex min-h-0 flex-grow flex-col overflow-auto rounded-lg border bg-background"
+          onContextMenu={(event) => {
+            const cell = (event.target as HTMLElement).closest<HTMLElement>("td[data-column-id]");
+            const column = cell?.dataset.columnId;
+            const rowKey = cell?.dataset.rowKey;
+            // Not on a data cell (a header, the gutter, the empty space under
+            // the rows): no menu.
+            if (!column || !rowKey || GUTTER_COLUMNS.has(column) || !(rowKey in pageRowsByKey)) {
+              event.preventDefault();
+              return;
+            }
+            setMenuCell({ column, rowKey, value: pageRowsByKey[rowKey][column] });
+          }}
         >
           {/* The table's width is the SUM of its columns, not the container's:
               in a fixed layout a 100% table hands its spare width out to the
               columns and quietly undoes what the reader just dragged. */}
           <Table
             className="flex-grow"
+            containerClassName="overflow-visible"
             style={
               fitting
                 ? undefined
                 : { width: table.getTotalSize(), tableLayout: "fixed" }
             }
           >
-            <TableHeader>
+            {/* Sticks to the top of the scroll box while the rows pass under
+                it; opaque enough that a row behind it does not read through. */}
+            <TableHeader className="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm [&_tr]:border-b">
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="group/row">
+                <TableRow key={headerGroup.id} className="group/row hover:bg-transparent">
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
                       data-column-id={header.column.id}
-                      className="relative"
+                      className={cn(
+                        "relative h-9 text-xs text-muted-foreground",
+                        gutterClasses(header.column.id),
+                      )}
                       style={
                         columnSizing[header.column.id] !== undefined
                           ? { width: header.getSize() }
@@ -832,16 +1053,16 @@ export const TableDatasetTable = (props: {
             {/* The previous page stays on screen, dimmed, while the next one
                 loads: swapping twenty-five rows for one "Loading…" line and
                 back is a flash on every sort, and there is nothing in it for
-                the reader. The placeholder is for the very first load only. */}
+                the reader. The skeleton is for the very first load only (and
+                for a filter that emptied the page while the next answer runs). */}
             <TableBody
-              className={cn(loading && rows.length > 0 && "opacity-50")}
+              className={cn("transition-opacity", loading && rows.length > 0 && "opacity-50")}
             >
               {loading && rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+                <SkeletonRows
+                  columnIds={table.getVisibleLeafColumns().map((column) => column.id)}
+                  count={Math.min(pagination.pageSize, SKELETON_ROWS)}
+                />
               ) : table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
@@ -850,7 +1071,15 @@ export const TableDatasetTable = (props: {
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        data-column-id={cell.column.id}
+                        data-row-key={row.id}
+                        className={cn(
+                          gutterClasses(cell.column.id),
+                          menuCell?.rowKey === row.id && menuCell.column === cell.column.id && "bg-primary/10",
+                        )}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
@@ -872,6 +1101,34 @@ export const TableDatasetTable = (props: {
             </TableBody>
           </Table>
         </div>
+        </ContextMenuTrigger>
+        {menuCell && (
+          <CellMenu
+            cell={menuCell}
+            label={columnLabels.get(menuCell.column) ?? menuCell.column}
+            current={columnFilters[menuCell.column]}
+            onFilter={(filter) => handleColumnFilterChange(filter.column, filter)}
+            onClearFilter={() => handleColumnFilterChange(menuCell.column, null)}
+            selected={menuCell.rowKey in selectedRows}
+            onToggleRow={() => {
+              // The page may have moved on while the menu was open; then the
+              // row is gone and there is nothing to tick.
+              try {
+                table.getRow(menuCell.rowKey).toggleSelected();
+              } catch {
+                /* not on this page any more */
+              }
+            }}
+          />
+        )}
+        </ContextMenu>
+        {loading && rows.length > 0 && (
+          // Says "working" while the dimmed page waits for the next one,
+          // under the sticky header so it is seen wherever the rows are scrolled.
+          <div className="pointer-events-none absolute inset-x-px top-9 z-30 h-0.5 overflow-hidden rounded-full">
+            <div className="h-full w-1/3 animate-task-sweep rounded-full bg-primary/70" />
+          </div>
+        )}
         <TableAnchorsOverlay
           tableId={props.table.id}
           anchors={anchors}
@@ -881,9 +1138,13 @@ export const TableDatasetTable = (props: {
 
       <div className="flex flex-initial items-center justify-end space-x-2 pt-3">
         <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            Showing {pageStart}-{pageEnd} of {totalRowCount} rows.
-          </span>
+          {loading && rows.length === 0 ? (
+            <Skeleton className="h-4 w-44" />
+          ) : (
+            <span>
+              Showing {pageStart}-{pageEnd} of {totalRowCount} rows.
+            </span>
+          )}
           {/* Selections survive paging, so the count has to be visible from any
               page — otherwise rows picked earlier are exported unannounced. */}
           {selectedRowList.length ? (

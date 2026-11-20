@@ -64,7 +64,9 @@ describe("resolveCountCacheKey", () => {
     expect(resolveCountCacheKey(TABLE, PARQUET_URL, "", {})).toBe(base);
     expect(resolveCountCacheKey(TABLE, PARQUET_URL, "x", {})).not.toBe(base);
     expect(
-      resolveCountCacheKey(TABLE, PARQUET_URL, "", { label: "b" }),
+      resolveCountCacheKey(TABLE, PARQUET_URL, "", {
+        label: { kind: "values", column: "label", values: ["b"] },
+      }),
     ).not.toBe(base);
     expect(resolveCountCacheKey(TABLE, "s3://other", "", {})).not.toBe(base);
   });

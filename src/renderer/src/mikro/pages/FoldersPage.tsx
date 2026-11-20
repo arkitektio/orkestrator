@@ -1,5 +1,4 @@
 import { reportErrorAs } from "@/core/notify";
-import { Explainer } from "@/core/layout/Explainer";
 import { PageAction } from "@/core/ui/page-action";
 import { MikroFolder } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
@@ -36,10 +35,6 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       }
     >
       <div className="p-3">
-        <Explainer
-          title="Folders"
-          description="Folders group your datasets and files together, just like folders in a file system."
-        />
         <FolderList defaultLimit={30} filters={{ parentless: true }} />
       </div>
     </MikroFolder.ListPage>

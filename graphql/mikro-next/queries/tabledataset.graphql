@@ -105,6 +105,21 @@ query GetTableDatasetDerived($id: ID!) {
   }
 }
 
+# The table list page: the same list, as cards.
+query BrowseTableDatasets(
+  $filters: TableDatasetFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [TableDatasetOrder!]
+) {
+  tableDatasets(
+    filters: $filters
+    pagination: $pagination
+    ordering: $ordering
+  ) {
+    ...BrowseTableDataset
+  }
+}
+
 query GetTableDatasets(
   $filters: TableDatasetFilter
   $pagination: OffsetPaginationInput

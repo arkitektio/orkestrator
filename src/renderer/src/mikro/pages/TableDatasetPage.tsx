@@ -6,7 +6,6 @@ import { useGetTableDatasetQuery } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { AttributeServiceProvider } from "../lib/attributes/AttributeServiceProvider";
 import { TableDatasetInfoSidebar } from "../components/sidebars/TableDatasetInfoSidebar";
-import { TableDatasetHeader } from "../components/tables/TableDatasetHeader";
 import { TableDatasetTable } from "../components/tables/TableDatasetTable";
 import { MIKRO_HELP } from "../help";
 import { wholeLensContexts } from "../lenses";
@@ -68,7 +67,7 @@ export const TableDatasetPage = asDetailQueryRoute(
           additionalSidebars={
             <>
               <Sidebars.Tab label="Info">
-                <TableDatasetInfoSidebar dataset={dataset} />
+                <TableDatasetInfoSidebar dataset={dataset} rowCount={rowCount} />
               </Sidebars.Tab>
               {/* The table owns its coordinate system, so the graph around that
                   system is this table's neighbourhood: what it is registered
@@ -88,13 +87,19 @@ export const TableDatasetPage = asDetailQueryRoute(
           // tab this page did not choose.
           sidebarKey="TableDatasetDetail"
         >
-          {/* `pt-3`: the overlay layout insets the sides and the bottom only
-              (a canvas wants its top edge), and a page of rows wants the same
-              inset all round as every other detail page. */}
-          <div className="flex h-full w-full flex-col gap-3 pt-3">
-            {/* What the table is and what it describes, in flow above the
-                rows — there is no picture to float a title over. */}
-            <TableDatasetHeader dataset={dataset} rowCount={rowCount} />
+          {/* The overlay layout insets the sides and the bottom by 12px only
+              (a canvas wants its edges); a page of rows wants the 24px every
+              other detail page has, all round. */}
+          <div className="flex h-full w-full flex-col gap-4 px-3 pb-3 pt-6">
+            {/* Its name and what it is, then the rows. The facts (what it
+                describes, its size, who made it, where it came from) are the
+                Info rail's. */}
+            <header className="flex min-w-0 flex-col gap-1">
+              <h1 className="break-all text-2xl font-semibold tracking-tight">{dataset.name}</h1>
+              {dataset.description && (
+                <p className="line-clamp-2 max-w-prose text-sm text-muted-foreground">{dataset.description}</p>
+              )}
+            </header>
 
             {/* `min-h-0` so the table's own scroll container is what scrolls:
                 without it the flex item grows to its content and the page scrolls

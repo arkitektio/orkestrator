@@ -816,6 +816,11 @@ type AnnotationLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -824,7 +829,7 @@ type AnnotationLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -839,9 +844,19 @@ type AnnotationLens implements Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
@@ -1418,6 +1433,11 @@ type ArrayLens implements Lens {
   The descriptors `createLens(input: {lens: <this>, annotation:})` would give the lens it returns, without making it: what a crop of this lens to the shape's box provides to an action's port (one plane of a stack is an IMAGE, a pinned channel counts one). Null when the shape has no box or misses this lens -- the cut would be refused
   """
   descriptorsUnder(annotation: ID!): JSON
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -1426,7 +1446,7 @@ type ArrayLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -1444,6 +1464,11 @@ type ArrayLens implements Lens {
   The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors
   """
   nameAnchors: [CoordinateAnchor!]!
+
+  """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
 
   """
   Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument
@@ -1472,6 +1497,11 @@ type ArrayLens implements Lens {
   Which of the lens' axes face screen x, y, z, time and intensity under the default convention (spatial axes by name when named x/y/z, else last is x). A suggestion for a bare lens, before anything places it: a viewer that has the lens' placement reads which axis faces which screen axis off that map and its own view, since the mapping is the view's, not the selection's
   """
   suggestedRenderAxes: RenderAxes!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record
@@ -5662,6 +5692,11 @@ type FixtureLens implements Lens {
   """
   descriptors: JSON!
 
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
+
   """The fixture this lens selects over"""
   fixture: Fixture!
   id: ID!
@@ -5672,7 +5707,7 @@ type FixtureLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -5687,9 +5722,19 @@ type FixtureLens implements Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
@@ -7359,6 +7404,11 @@ interface Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -7367,7 +7417,7 @@ interface Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -7382,9 +7432,19 @@ interface Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 }
 
 """
@@ -8525,6 +8585,11 @@ type MeshLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -8533,7 +8598,7 @@ type MeshLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
   meshCollection: MeshCollection!
@@ -8549,9 +8614,19 @@ type MeshLens implements Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
@@ -9972,6 +10047,11 @@ type NetworkLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -9980,7 +10060,7 @@ type NetworkLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -9996,9 +10076,19 @@ type NetworkLens implements Lens {
   networkCollection: NetworkCollection!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
@@ -12182,13 +12272,23 @@ interface SampleStep {
 }
 
 """
-Input type for one pyramid level: the array backing it, and how it was downsampled. Its scale factor is derived from its actual shape, never supplied
+Input type for one pyramid level: the array backing it, how it was downsampled, and -- from a writer that knows -- where it sits in level 0's grid. Without `scale` and `translation` the level is read as a resize covering all of level 0
 """
 input ScaleInput {
   """The array-like object to create the image from"""
   array: ArrayLike!
   level: Int!
+
+  """
+  This level's absolute scale per axis, in array order: level voxel i sits at scale * i + translation in level-0 voxels. Stated with `translation` or not at all. Checked against the shapes -- the level must hold floor or ceil of level 0's extent over the scale -- and needed whenever the shapes alone mislead: trimmed halvings (36 -> 18 -> 9 -> 4 is 8, not 36/4) and strides. Omitted, the level is read as a resize: scale shape_0 / shape_level, translation (scale - 1) / 2. A categorical axis takes 1
+  """
+  scale: [Float!] = null
   scaleMethod: ScaleMethod = null
+
+  """
+  This level's offset per axis, in level-0 voxels and array order: where its voxel 0's centre sits. 0 for a stride (`[::2]` keeps voxel 0); (scale - 1) / 2 for a block reduction (a mean or max of 2 voxels is centred at 0.5). Stated with `scale` or not at all. A categorical axis takes 0
+  """
+  translation: [Float!] = null
 }
 
 """
@@ -13249,6 +13349,11 @@ type SparseLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -13257,7 +13362,7 @@ type SparseLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -13272,6 +13377,11 @@ type SparseLens implements Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
@@ -13281,6 +13391,11 @@ type SparseLens implements Lens {
   What this selection structurally is: its matrix's `spec` vocabulary, read over what its windows leave free. Materialized when the lens is made, and what the `sparseSpec` filter reads. An axis a window pins to one position (min == max) no longer counts, so one feature of a MATRIX is a VECTOR -- and a SLICE when it pins exactly the axes the matrix identifies itself by and a layout makes the read contiguous, which is what a SPARSE colour or filter picker entry accepts
   """
   spec: [SparseDatasetSpec!]!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
@@ -13813,6 +13928,11 @@ type TableLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none
+  """
+  detail: String!
   id: ID!
 
   """
@@ -13821,7 +13941,7 @@ type TableLens implements Lens {
   kind: LensKind!
 
   """
-  What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option
+  What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead
   """
   label: String!
 
@@ -13836,6 +13956,11 @@ type TableLens implements Lens {
   nameAnchors: [CoordinateAnchor!]!
 
   """
+  The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under
+  """
+  origin: String!
+
+  """
   The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
   """
   scenes: [Scene!]!
@@ -13845,6 +13970,11 @@ type TableLens implements Lens {
   """
   spec: [TableDatasetSpec!]!
   tableDataset: TableDataset!
+
+  """
+  What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`)
+  """
+  title: String!
 
   """
   The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens

@@ -141,7 +141,7 @@ export const useHomeFilters = () => {
 export type HomeFilters = ReturnType<typeof useHomeFilters>;
 
 /** Who made it: the organization's members, "Me" first. */
-const PeopleFilter = ({
+export const PeopleFilter = ({
   value,
   onChange,
   members,

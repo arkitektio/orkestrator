@@ -13,6 +13,7 @@ import { ColumnAxisGlyph, ColumnInfoPopover } from "../tables/ColumnInfoPopover"
 import { DerivedFromSection } from "./DerivedFromSection";
 import { FileLinksSection } from "./FileLinksSection";
 import { ProvenanceSection } from "./ProvenanceSection";
+import { TableDescribesSection, TableMadeSection, TableShownInSection } from "./TableDatasetFacts";
 
 type PageTable = GetTableDatasetQuery["tableDataset"];
 
@@ -33,7 +34,14 @@ type PageTable = GetTableDatasetQuery["tableDataset"];
  * someone opens it. One section fewer than the array's four: nothing on
  * TableDataset points downwards, so there is no "derived tables" to list.
  */
-export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => {
+export const TableDatasetInfoSidebar = ({
+  dataset,
+  rowCount,
+}: {
+  dataset: PageTable;
+  /** The table's own (unfiltered) row count, as the grid learns it; null until then. */
+  rowCount?: number | null;
+}) => {
   // `order` is a field, not a position — the API does not promise order.
   const columns = [...dataset.columns].sort((a, b) => a.order - b.order);
   const coordinateColumns = columns.filter(
@@ -64,6 +72,8 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
         )}
       </div>
 
+      <TableDescribesSection dataset={dataset} />
+
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold">Axes</div>
         <div className="font-mono text-xs text-muted-foreground">
@@ -71,6 +81,12 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
             ? dataset.axisNames.join(" × ")
             : "measurement table"}
         </div>
+        {rowCount != null && (
+          <div className="flex items-baseline gap-2">
+            <span className="text-xs text-muted-foreground">Rows</span>
+            <span className="font-mono text-xs">{rowCount.toLocaleString()}</span>
+          </div>
+        )}
         <div className="flex items-baseline gap-2">
           <span className="text-xs text-muted-foreground">Columns</span>
           <span className="font-mono text-xs">{columns.length}</span>
@@ -85,6 +101,10 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
           </div>
         )}
       </div>
+
+      <TableMadeSection dataset={dataset} />
+
+      <TableShownInSection dataset={dataset} />
 
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold">Coordinate system</div>

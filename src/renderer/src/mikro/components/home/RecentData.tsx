@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FileIcon, Grid3x3, type LucideIcon } from "lucide-react";
+import { FileIcon, Grid3x3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HomeSection } from "@/core/layout/ModuleHome";
 import { MikroArrayDataset, MikroFile } from "@/core/linkers";
@@ -8,6 +8,7 @@ import { Button } from "@/core/ui/button";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
+import { CARD_TONES, CardFrame, type CardTone } from "@/core/ui/card-frame";
 import {
   HomeRootDetailsQuery,
   HomeRootsQuery,
@@ -123,23 +124,10 @@ const GoldenTiles = ({
   );
 };
 
-/**
- * The one frame every recent-data card shares: rounded, lightly tinted, a
- * header with the kind's icon and the name, a muted line of facts, and the
- * card's content filling the rest. The tint is the card's identity, and every
- * tint is a brand-hue token (`primary`, `chart-N`), so the grid repaints with
- * the brand: the kinds differ by the token's lightness and strength, plus their
- * icon, never by a hue of their own. A mixed grid still reads by kind at a
- * glance, and every card lines up with its neighbours.
- */
-const TONES = {
-  file: { frame: "border-primary/15 bg-primary/5 hover:border-primary/30", icon: "text-primary/70" },
-  image: { frame: "border-chart-3/25 bg-chart-3/10 hover:border-chart-3/45", icon: "text-chart-3" },
-  table: { frame: "border-chart-5/25 bg-chart-5/10 hover:border-chart-5/45", icon: "text-chart-5" },
-  geometry: { frame: "border-chart-1/30 bg-chart-1/10 hover:border-chart-1/50", icon: "text-chart-4" },
-} as const;
-
-type Tone = keyof typeof TONES;
+// The frame and its tints are core's (`core/ui/card-frame`): the table list and
+// rekuest's agents draw the same cards.
+const TONES = CARD_TONES;
+type Tone = CardTone;
 
 const TONE_BY_KIND: Partial<Record<LineageNodeKind, Tone>> = {
   [LineageNodeKind.File]: "file",
@@ -150,48 +138,6 @@ const TONE_BY_KIND: Partial<Record<LineageNodeKind, Tone>> = {
   [LineageNodeKind.NetworkCollection]: "geometry",
 };
 
-const CardFrame = ({
-  tone,
-  icon: Icon,
-  iconLabel,
-  title,
-  facts,
-  menu,
-  children,
-}: {
-  tone: Tone;
-  icon: LucideIcon;
-  iconLabel?: string;
-  /** The name, as the link that opens it. */
-  title: React.ReactNode;
-  facts: (string | React.ReactNode)[];
-  /** The card's menu burger sits in the header's corner: keep the name clear of it. */
-  menu?: boolean;
-  children?: React.ReactNode;
-}) => (
-  <div
-    className={cn(
-      "relative flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-2xl border p-2 transition-colors",
-      TONES[tone].frame,
-    )}
-  >
-    <div className={cn("flex min-w-0 items-center gap-2 px-1 pt-0.5 text-sm font-medium", menu && "pr-7")}>
-      <Icon className={cn("h-4 w-4 shrink-0", TONES[tone].icon)} aria-label={iconLabel} />
-      {title}
-    </div>
-    {facts.length > 0 && (
-      <div className="flex min-w-0 items-center gap-1.5 px-1 text-xs tabular-nums text-muted-foreground">
-        {facts.map((fact, index) => (
-          <span key={index} className={cn("flex shrink-0 items-center gap-1.5", typeof fact === "string" && "min-w-0 truncate")}>
-            {index > 0 && <span aria-hidden>·</span>}
-            {fact}
-          </span>
-        ))}
-      </div>
-    )}
-    {children && <div className="relative min-h-0 flex-1">{children}</div>}
-  </div>
-);
 
 /**
  * One file as a card, tinted with the brand colour so a file reads apart from

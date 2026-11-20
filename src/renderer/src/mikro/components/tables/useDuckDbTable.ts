@@ -17,6 +17,7 @@ import {
 } from "@/mikro/api/graphql";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
+import { filterPredicates, type TableColumnFilters } from "./tableFilters";
 
 // The minimal shape the DuckDB reader needs from a parquet-backed model: a
 // ParquetStore id to request an access grant against, and the declared column
@@ -39,7 +40,9 @@ type DuckDbTableState = {
   error: Error | null;
 };
 
-export type DuckDbColumnFilters = Record<string, string>;
+// The grid's per-column filters (a range, or values to keep or drop); see
+// `tableFilters.ts` for the SQL each compiles to.
+export type DuckDbColumnFilters = TableColumnFilters;
 
 export type DuckDbHistogramBucket = {
   value: string;
@@ -195,16 +198,7 @@ const buildWhereClause = (
     predicates.push(globalSearchClause.replace(/^WHERE\s+/u, ""));
   }
 
-  Object.entries(columnFilters).forEach(([columnName, rawValue]) => {
-    const trimmedValue = rawValue.trim();
-    if (!trimmedValue) {
-      return;
-    }
-
-    predicates.push(
-      `TRY_CAST(${escapeSqlIdentifier(columnName)} AS VARCHAR) ILIKE ${escapeSqlLiteral(`%${trimmedValue}%`)}`,
-    );
-  });
+  predicates.push(...filterPredicates(columnFilters));
 
   return predicates.length ? `WHERE ${predicates.join(" AND ")}` : "";
 };

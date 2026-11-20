@@ -121,7 +121,9 @@ export const MIKRO_HELP = {
     <PageHelp
       intro="Table datasets hold measurements as rows and columns. Their coordinate columns say where each row sits in space, so a table can be shown next to the images it was measured on."
       steps={[
-        <>Click a table to browse its rows.</>,
+        <>Narrow the list with the row over it: type a name into <b>Search tables…</b>, pick who made it, pick a <b>kind</b> (how its rows are placed, and whether they are timed, tracked, keyed…), or a date range. <b>Clear filters</b> undoes them; the filters stay in the page’s address, so a narrowed list can be shared.</>,
+        <>Use the sort pill to show the oldest first or order by name, and <b>Show more</b> at the foot to load further tables.</>,
+        <>Each card shows the table’s first columns, coordinates first; click it to browse its rows.</>,
         <>Drag a table onto a coordinate system and choose <b>Register Table Here</b> to place it in that space.</>,
         <>Drag a table onto a folder and choose <b>Move Tables to Folder</b> to file it away.</>,
       ]}
@@ -129,12 +131,14 @@ export const MIKRO_HELP = {
   ),
   tableDataset: (
     <PageHelp
-      intro="The rows of one table dataset. The line under the name says how many rows and columns it has and who made it; Describes names the mask or meshes whose objects the rows are. Everything else about the table (its columns, axes, joins and where it came from) is in the Info tab of the sidebar."
+      intro="The rows of one table dataset. Everything about the table itself (what it describes, how many rows and columns it has, who made it, its columns, axes, joins and where it came from) is in the Info tab of the sidebar."
       steps={[
-        <>Click a source next to <b>Describes</b> to open the mask or meshes this table measures.</>,
-        <>Type into <b>Search all columns...</b> to filter the rows.</>,
+        <>Open the <b>Info</b> tab and click a source under <b>Describes</b> to open the mask or meshes this table measures.</>,
+        <>Type into <b>Search all columns…</b> to filter the rows.</>,
         <>Click the sort arrow in a column header to order by that column.</>,
-        <>Open <b>Columns</b> to hide the columns you do not need.</>,
+        <>Click a column’s name to see its values. On a number column, drag across the bars (or type the bounds) to keep only that range; on any other column, click values to keep only their rows. Each filter shows as a chip next to the search; press its × to remove it.</>,
+        <>Right-click a cell to keep only rows with the same value, a similar one (±10%), at least or at most it, or to exclude it. You can also copy the value or select the row from there.</>,
+        <>Press <b>All columns</b> to hide the columns you do not need; it then says how many are shown. <b>Clear filters</b> brings the search and every column back.</>,
         <>Press <b>Export as CSV</b> to download the table with the columns currently shown.</>,
         <>Tick the checkboxes of some rows, then press <b>Export … selected</b> to download just those.</>,
       ]}

@@ -11,6 +11,9 @@ import {
 import { Skeleton } from "@/core/ui/skeleton";
 import { describeColumnStatsError, type ColumnStatsFailure } from "@/core/data/parquet/columnStats";
 import { HistogramSparkline } from "@/core/data/scene/metadata/MetadataChrome";
+import { RangeFilterHistogram } from "./RangeFilterHistogram";
+import type { TableColumnFilter } from "./tableFilters";
+import { controlForRole } from "../scene/platform/layerui/columnOptions";
 import { cn } from "@/core/util/utils";
 import { MikroTableDataset } from "@/core/linkers";
 import {
@@ -58,6 +61,10 @@ export type ColumnInfoActions = {
   sortDirection: SortDirection;
   onSort: (direction: SortDirection) => void;
   onHide: () => void;
+  /** The column's filter in the grid, if any. */
+  filter?: TableColumnFilter;
+  /** Set the column's filter; null clears it. */
+  onFilter: (filter: TableColumnFilter | null) => void;
 };
 
 /** The one glyph a COORDINATE column keeps outside the popover, so the axes
@@ -81,7 +88,16 @@ type ValuesState =
   | { status: "ready"; stats: ColumnValueStats }
   | { status: "error"; failure: ColumnStatsFailure };
 
-const ColumnValues = ({ column, store }: { column: Column; store: Store }) => {
+const ColumnValues = ({
+  column,
+  store,
+  filtering,
+}: {
+  column: Column;
+  store: Store;
+  /** From the table header only: the values become the column's filter. */
+  filtering?: Pick<ColumnInfoActions, "filter" | "onFilter">;
+}) => {
   const service = useAttributeServiceOrNull();
   const [state, setState] = React.useState<ValuesState>({ status: "loading" });
 
@@ -128,9 +144,19 @@ const ColumnValues = ({ column, store }: { column: Column; store: Store }) => {
           <>
             <HoverRow label="Min" value={formatStat(stats.domain.min)} />
             <HoverRow label="Max" value={formatStat(stats.domain.max)} />
-            {stats.histogram && (
-              <HistogramSparkline histogram={stats.histogram} />
-            )}
+            {stats.histogram &&
+              (filtering ? (
+                <RangeFilterHistogram
+                  histogram={stats.histogram}
+                  domain={stats.domain}
+                  value={filtering.filter?.kind === "range" ? filtering.filter : undefined}
+                  onChange={(range) =>
+                    filtering.onFilter(range ? { kind: "range", column: column.name, ...range } : null)
+                  }
+                />
+              ) : (
+                <HistogramSparkline histogram={stats.histogram} />
+              ))}
           </>
         ) : (
           <p className="text-muted-foreground">No numeric values.</p>
@@ -142,14 +168,18 @@ const ColumnValues = ({ column, store }: { column: Column; store: Store }) => {
           )}
           {stats.distinct && stats.distinct.values.length > 0 ? (
             <div className="flex flex-wrap gap-1 pt-0.5">
-              {stats.distinct.values.map((value) => (
-                <span
-                  key={value}
-                  className="max-w-full truncate rounded bg-muted/60 px-1 py-px font-mono text-[10px]"
-                >
-                  {value}
-                </span>
-              ))}
+              {stats.distinct.values.map((value) =>
+                filtering ? (
+                  <DistinctValueToggle key={value} column={column.name} value={value} filtering={filtering} />
+                ) : (
+                  <span
+                    key={value}
+                    className="max-w-full truncate rounded bg-muted/60 px-1 py-px font-mono text-[10px]"
+                  >
+                    {value}
+                  </span>
+                ),
+              )}
               {stats.distinct.truncated && (
                 <span className="text-[10px] text-muted-foreground">
                   {stats.summary
@@ -164,6 +194,42 @@ const ColumnValues = ({ column, store }: { column: Column; store: Store }) => {
         </>
       )}
     </div>
+  );
+};
+
+/**
+ * One distinct value that keeps (or stops keeping) its rows when clicked:
+ * the column's filter is the set of values clicked on. An exclude filter set
+ * from a cell is replaced by the first value clicked here.
+ */
+const DistinctValueToggle = ({
+  column,
+  value,
+  filtering,
+}: {
+  column: string;
+  value: string;
+  filtering: Pick<ColumnInfoActions, "filter" | "onFilter">;
+}) => {
+  const { filter, onFilter } = filtering;
+  const kept = filter?.kind === "values" && !filter.exclude ? filter.values : [];
+  const on = kept.includes(value);
+  const toggle = () => {
+    const next = on ? kept.filter((entry) => entry !== value) : [...kept, value];
+    onFilter(next.length ? { kind: "values", column, values: next } : null);
+  };
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={toggle}
+      className={cn(
+        "max-w-full truncate rounded px-1 py-px font-mono text-[10px] transition-colors",
+        on ? "bg-primary/15 text-foreground ring-1 ring-primary/40" : "bg-muted/60 hover:bg-accent",
+      )}
+    >
+      {value}
+    </button>
   );
 };
 
@@ -286,7 +352,14 @@ export const ColumnInfoContent = ({
       </div>
 
       <HoverSectionLabel>Values</HoverSectionLabel>
-      <ColumnValues column={column} store={store} />
+      <ColumnValues column={column} store={store} filtering={actions} />
+      {actions && (
+        <p className="text-[10px] leading-snug text-muted-foreground">
+          {controlForRole(column.role) === ColumnControl.Measure
+            ? "Drag across the bars, or type the bounds, to keep only that range."
+            : "Click values to keep only their rows."}
+        </p>
+      )}
 
       {actions && (
         <div className="mt-1 flex flex-wrap gap-1 border-t border-border/60 pt-1.5">

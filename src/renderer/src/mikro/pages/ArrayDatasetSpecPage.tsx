@@ -1,4 +1,3 @@
-import { Explainer } from "@/core/layout/Explainer";
 import { MikroArrayDataset } from "@/core/linkers";
 import { useParams } from "react-router-dom";
 import { useArrayDatasetFilterBar } from "../components/filter/ArrayDatasetFilterBar";
@@ -32,9 +31,13 @@ const Page = () => {
   }
 
   return (
-    <MikroArrayDataset.ListPage title={entry.label} pageActions={actions} help={MIKRO_HELP.arrayDatasetSpec}>
+    <MikroArrayDataset.ListPage
+      title={entry.label}
+      description={entry.description}
+      pageActions={actions}
+      help={MIKRO_HELP.arrayDatasetSpec}
+    >
       <div className="p-3 flex flex-col gap-3">
-        <Explainer title={entry.label} description={entry.description} />
         {/* Planes, and only planes, get laid out at their own shape: the tiles
             justify into rows whose heights match and whose widths come off each
             dataset's x/y, so a page of them reads as a contact sheet rather than

@@ -1,4 +1,3 @@
-import { Explainer } from "@/core/layout/Explainer";
 import { MikroAnnotation } from "@/core/linkers";
 import React from "react";
 
@@ -14,10 +13,6 @@ const Page: React.FC<IAnnotationsScreenProps> = () => {
   return (
     <MikroAnnotation.ListPage title="Annotations" pageActions={actions} help={MIKRO_HELP.annotations}>
       <div className="p-3 flex flex-col gap-3">
-        <Explainer
-          title="Annotations"
-          description="Human-drawn shapes. An annotation belongs to its collection, not to a scene: the collection owns the coordinate system its vectors are expressed in, and one collection is drawn by one annotation layer per scene. Delete the scene and the annotation survives."
-        />
         <AnnotationList filters={filters} ordering={ordering} />
       </div>
     </MikroAnnotation.ListPage>

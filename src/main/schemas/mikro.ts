@@ -685,17 +685,23 @@ export type AnnotationLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -1120,10 +1126,12 @@ export type ArrayLens = Lens & {
   descriptors: Scalars['JSON']['output'];
   /** The descriptors `createLens(input: {lens: <this>, annotation:})` would give the lens it returns, without making it: what a crop of this lens to the shape's box provides to an action's port (one plane of a stack is an IMAGE, a pinned channel counts one). Null when the shape has no box or misses this lens -- the cut would be refused */
   descriptorsUnder?: Maybe<Scalars['JSON']['output']>;
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A lens that nominates a scene shows that one; a crop that nominates nothing shows its dataset's (its whole lens'), so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
   latestSnapshot?: Maybe<SceneSnapshot>;
@@ -1131,6 +1139,8 @@ export type ArrayLens = Lens & {
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument */
   phasor?: Maybe<PhasorContext>;
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
@@ -1143,6 +1153,8 @@ export type ArrayLens = Lens & {
   spec: Array<ArrayDatasetSpec>;
   /** Which of the lens' axes face screen x, y, z, time and intensity under the default convention (spatial axes by name when named x/y/z, else last is x). A suggestion for a bare lens, before anything places it: a viewer that has the lens' placement reads which axis faces which screen axis off that map and its own view, since the mapping is the view's, not the selection's */
   suggestedRenderAxes: RenderAxes;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
   toParent?: Maybe<Transformation>;
   /** This lens' voxel size: how far one step along each of its axes reaches, read along the edges to the first space with units. The `canonical` one of `voxelSizes` -- decided by the edges' validity, so a person's calibration outranks the pixel size a converter read from the file. Empty when the lens reaches no physical space, or none by a sane route. Every axis the route scales is listed (a time step too); a voxel's spatial size is the SPACE entries. Never raises, so it is the form to put in a fragment */
@@ -4348,19 +4360,25 @@ export type FixtureLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   /** The fixture this lens selects over */
   fixture: Fixture;
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -5803,17 +5821,23 @@ export type Lens = {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
 };
 
 /** A box in any coordinate system an array dataset reaches -- micrometres in a physical space, a sibling dataset's grid through a shared world -- as the selection of a lens: the voxels whose cells the box meets, once the box is composed into the dataset's pixel grid */
@@ -6684,18 +6708,24 @@ export type MeshLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   meshCollection: MeshCollection;
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -8399,18 +8429,24 @@ export type NetworkLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
   networkCollection: NetworkCollection;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -10544,12 +10580,16 @@ export type SampleStep = {
   system: CoordinateSystem;
 };
 
-/** Input type for one pyramid level: the array backing it, and how it was downsampled. Its scale factor is derived from its actual shape, never supplied */
+/** Input type for one pyramid level: the array backing it, how it was downsampled, and -- from a writer that knows -- where it sits in level 0's grid. Without `scale` and `translation` the level is read as a resize covering all of level 0 */
 export type ScaleInput = {
   /** The array-like object to create the image from */
   array: Scalars['ArrayLike']['input'];
   level: Scalars['Int']['input'];
+  /** This level's absolute scale per axis, in array order: level voxel i sits at scale * i + translation in level-0 voxels. Stated with `translation` or not at all. Checked against the shapes -- the level must hold floor or ceil of level 0's extent over the scale -- and needed whenever the shapes alone mislead: trimmed halvings (36 -> 18 -> 9 -> 4 is 8, not 36/4) and strides. Omitted, the level is read as a resize: scale shape_0 / shape_level, translation (scale - 1) / 2. A categorical axis takes 1 */
+  scale?: InputMaybe<Array<Scalars['Float']['input']>>;
   scaleMethod?: InputMaybe<ScaleMethod>;
+  /** This level's offset per axis, in level-0 voxels and array order: where its voxel 0's centre sits. 0 for a stride (`[::2]` keeps voxel 0); (scale - 1) / 2 for a block reduction (a mean or max of 2 voxels is centred at 0.5). Stated with `scale` or not at all. A categorical axis takes 0 */
+  translation?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
 
 /** How a pyramid level's voxels were computed from the level above it. Stated, never derived -- nothing about two arrays says whether one was averaged or picked out of the other -- and it matters because over an array of object ids only NEAREST and MODE are allowed: every other method returns numbers that were not in the input, and an invented id is an object that does not exist. */
@@ -11372,20 +11412,26 @@ export type SparseLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   sparseDataset: SparseDataset;
   /** What this selection structurally is: its matrix's `spec` vocabulary, read over what its windows leave free. Materialized when the lens is made, and what the `sparseSpec` filter reads. An axis a window pins to one position (min == max) no longer counts, so one feature of a MATRIX is a VECTOR -- and a SLICE when it pins exactly the axes the matrix identifies itself by and a layout makes the read contiguous, which is what a SPARSE colour or filter picker entry accepts */
   spec: Array<SparseDatasetSpec>;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -11810,20 +11856,26 @@ export type TableLens = Lens & {
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What this lens selects that its name does not already say, or empty: `y[0:32]` for a crop of the channel named 'GFP', nothing for that channel itself. An axis held to one position at an anchor whose label is in `name` is left out; an unnamed lens keeps its whole selection (`c[1:2], y[0:32]`), a whole lens has none */
+  detail: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** What to call this lens in a list, never empty: its container's name, its `name` when something names it, and what it selects (`cells.zarr · GFP · c[1:2], y[0:32]`); a whole lens is called by its container. What a picker shows for an option */
+  /** What to call this lens in a list on one line, never empty: its `title`, its `origin` when the title is not already it, and its `detail` (`GFP · cells.zarr · y[0:32]`); a whole lens is called by its container. The title comes first because a row is cut at its end. A reader that lays the parts out itself asks for them instead */
   label: Scalars['String']['output'];
   /** What this selection is called, or null when nothing names it: the labels at the positions it pins (a person's `setPositionLabel` over the channel label ingest recorded) and the name of the annotation it was cut to, e.g. 'GFP · nucleus 3'. Derived and kept by the server, never set: naming channel 1 names every lens through channel 1. No part of the lens' identity, which is its container and its selection. `nameAnchors` says where it comes from */
   name?: Maybe<Scalars['String']['output']>;
   /** The coordinate anchors whose labels make up `name`, in the order they appear in it: those of the container whose every pinned axis this lens holds to the same position, the most specific only. Each carries the person's `positionLabel` and the recorded `channelLabel`; the first that says something is the one used. Empty for a lens no position names, and for a kind whose container carries no anchors */
   nameAnchors: Array<CoordinateAnchor>;
+  /** The name of the container this lens selects over, never empty: what `title` falls back to, and what a picker groups a container's lenses under */
+  origin: Scalars['String']['output'];
   /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   /** What this selection structurally is: its table's `spec` vocabulary, read over what its windows leave free. Materialized when the lens is made, and what the `tableSpec` filter reads. A coordinate column a window pins to one value (min == max) no longer counts: one frame of a [POINTS_2D, TIMED, TRACKED] table is [POINTS_2D, TRACKED], and one z-plane of a POINTS_3D table is POINTS_2D. A window that only bounds changes nothing -- the server never scans the rows, so it cannot say they stopped spreading. The whole lens answers what its table does */
   spec: Array<TableDatasetSpec>;
   tableDataset: TableDataset;
+  /** What a layer drawing this lens is called, never empty: its `name` when something names it, else its container's name. The short half of `label`: what a picker's row says under a heading that already names the container (`origin`) */
+  title: Scalars['String']['output'];
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -13790,6 +13842,8 @@ export type TableDatasetColumnFragment = { __typename?: 'Column', id: string, na
 
 export type ListTableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string> };
 
+export type BrowseTableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, spec: Array<TableDatasetSpec>, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, dtype: string, role: ColumnRole, order: number }>, store: { __typename?: 'ParquetStore', id: string, sizeBytes?: any | null }, folder?: { __typename?: 'Folder', id: string, name: string } | null, createdThroughBy?: { __typename?: 'User', sub: string } | null, createdThrough?: { __typename?: 'Task', id: string, createdAt: any } | null };
+
 export type TableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }>, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
 
 export type CreateAnimationMutationVariables = Exact<{
@@ -15590,6 +15644,15 @@ export type GetTableDatasetDerivedQueryVariables = Exact<{
 
 
 export type GetTableDatasetDerivedQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, sourceFiles: Array<{ __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier: string, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'TableDataset', id: string, name: string } }>, exports: Array<{ __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier: string, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'TableDataset', id: string, name: string } }>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> } };
+
+export type BrowseTableDatasetsQueryVariables = Exact<{
+  filters?: InputMaybe<TableDatasetFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<TableDatasetOrder> | TableDatasetOrder>;
+}>;
+
+
+export type BrowseTableDatasetsQuery = { __typename?: 'Query', tableDatasets: Array<{ __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, spec: Array<TableDatasetSpec>, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, dtype: string, role: ColumnRole, order: number }>, store: { __typename?: 'ParquetStore', id: string, sizeBytes?: any | null }, folder?: { __typename?: 'Folder', id: string, name: string } | null, createdThroughBy?: { __typename?: 'User', sub: string } | null, createdThrough?: { __typename?: 'Task', id: string, createdAt: any } | null }> };
 
 export type GetTableDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<TableDatasetFilter>;
@@ -18960,6 +19023,38 @@ export const SparseDatasetFragmentDoc = gql`
 }
     ${CoordinateSystemFragmentDoc}
 ${SparseStoreReadFragmentDoc}`;
+export const BrowseTableDatasetFragmentDoc = gql`
+    fragment BrowseTableDataset on TableDataset {
+  id
+  name
+  description
+  axisNames
+  spec
+  columns {
+    id
+    name
+    longName
+    dtype
+    role
+    order
+  }
+  store {
+    id
+    sizeBytes
+  }
+  folder {
+    id
+    name
+  }
+  createdThroughBy {
+    sub
+  }
+  createdThrough {
+    id
+    createdAt
+  }
+}
+    `;
 export const AnnotationActionDescriptorsFragmentDoc = gql`
     fragment AnnotationActionDescriptors on Annotation {
   id
@@ -21744,6 +21839,13 @@ export const GetTableDatasetDerivedDocument = gql`
 }
     ${ProvenanceEntryFragmentDoc}
 ${FileLinkFragmentDoc}`;
+export const BrowseTableDatasetsDocument = gql`
+    query BrowseTableDatasets($filters: TableDatasetFilter, $pagination: OffsetPaginationInput, $ordering: [TableDatasetOrder!]) {
+  tableDatasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...BrowseTableDataset
+  }
+}
+    ${BrowseTableDatasetFragmentDoc}`;
 export const GetTableDatasetsDocument = gql`
     query GetTableDatasets($filters: TableDatasetFilter, $pagination: OffsetPaginationInput, $ordering: [TableDatasetOrder!]) {
   tableDatasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
@@ -22539,6 +22641,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetTableDatasetDerived(variables: GetTableDatasetDerivedQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetTableDatasetDerivedQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetTableDatasetDerivedQuery>({ document: GetTableDatasetDerivedDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetTableDatasetDerived', 'query', variables);
+    },
+    BrowseTableDatasets(variables?: BrowseTableDatasetsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<BrowseTableDatasetsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<BrowseTableDatasetsQuery>({ document: BrowseTableDatasetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'BrowseTableDatasets', 'query', variables);
     },
     GetTableDatasets(variables?: GetTableDatasetsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetTableDatasetsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetTableDatasetsQuery>({ document: GetTableDatasetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetTableDatasets', 'query', variables);

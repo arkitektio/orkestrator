@@ -1,20 +1,27 @@
-import { Explainer } from "@/core/layout/Explainer";
 import { MikroTableDataset } from "@/core/linkers";
 import React from "react";
-import TableDatasetList from "../components/lists/TableDatasetList";
+import { TableDatasetFilterRow, useTableDatasetFilters } from "../components/filter/TableDatasetFilterRow";
+import { TableDatasetGrid } from "../components/lists/TableDatasetGrid";
 import { MIKRO_HELP } from "../help";
 
-export type ITableDatasetsScreenProps = {};
+/**
+ * Every table dataset, laid out like the Mikro home: the filter row over the
+ * grid it narrows (search, who made it, what kind of table, when, the order),
+ * then the tables as cards with "Show more" at the foot.
+ */
+const Page: React.FC = () => {
+  const tableFilters = useTableDatasetFilters();
 
-const Page: React.FC<ITableDatasetsScreenProps> = () => {
   return (
     <MikroTableDataset.ListPage title="Table Datasets" help={MIKRO_HELP.tableDatasets}>
-      <div className="p-3">
-        <Explainer
-          title="Table Datasets"
-          description="Tables that carry their own coordinate system. Their coordinate columns are the axes of the space their rows live in, while measurement columns hold the values sampled at each position."
+      <div className="flex flex-col gap-3 p-3">
+        <TableDatasetFilterRow filters={tableFilters} />
+        <TableDatasetGrid
+          filters={tableFilters.filters}
+          ordering={tableFilters.ordering}
+          filtered={tableFilters.active}
+          onClear={tableFilters.clear}
         />
-        <TableDatasetList pagination={{ limit: 30 }} />
       </div>
     </MikroTableDataset.ListPage>
   );

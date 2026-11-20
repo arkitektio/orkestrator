@@ -32,6 +32,41 @@ fragment ListTableDataset on TableDataset {
   axisNames
 }
 
+# The table list page's card: what a table is at a glance without opening its
+# parquet — its kind (spec), its columns as a schema peek, its size, who made
+# it and when. Its own fragment so the many pickers on `ListTableDataset` do
+# not carry the columns.
+fragment BrowseTableDataset on TableDataset {
+  id
+  name
+  description
+  axisNames
+  spec
+  columns {
+    id
+    name
+    longName
+    dtype
+    role
+    order
+  }
+  store {
+    id
+    sizeBytes
+  }
+  folder {
+    id
+    name
+  }
+  createdThroughBy {
+    sub
+  }
+  createdThrough {
+    id
+    createdAt
+  }
+}
+
 fragment TableDataset on TableDataset {
   id
   name
