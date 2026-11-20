@@ -1,3 +1,12 @@
+# [8.13.0](https://github.com/arkitektio/orkestrator/compare/v8.12.0...v8.13.0) (2026-11-20)
+
+
+### Features
+
+* **home:** the app's home page is a feed of module slots, not a dashboard ([d34fcf4](https://github.com/arkitektio/orkestrator/commit/d34fcf477d72da060c15ec3b7a5d72db4ab807ce))
+* **mikro:** array dataset filters sit in a row under the title ([0a624bb](https://github.com/arkitektio/orkestrator/commit/0a624bb8617eff9989b4e9521a615dd71759af08))
+* **rekuest:** an agent's tasks and actions pages open like list pages ([66940e6](https://github.com/arkitektio/orkestrator/commit/66940e65f8cab5de0d5c23506d78f998d6232d06))
+
 # [8.12.0](https://github.com/arkitektio/orkestrator/compare/v8.11.0...v8.12.0) (2026-11-20)
 
 
