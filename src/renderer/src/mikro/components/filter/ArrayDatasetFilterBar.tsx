@@ -1,11 +1,5 @@
-import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
-import { CollapsibleSearch } from "@/core/ui/collapsible-search";
-import {
-  ActionLabel,
-  ActionTrigger,
-  PageAction,
-} from "@/core/ui/page-action";
+import { FilterClear, FilterSearchField, FilterTrigger } from "@/core/ui/filter-bar";
 import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
 import {
   DropdownMenu,
@@ -141,9 +135,11 @@ export type UseArrayDatasetFilterBarOptions = {
  * spec, and the three data properties under "Data" — origin (acquired vs
  * derived), resolution (multiscale vs single level) and units (physically
  * calibrated vs bare pixels). Returns the assembled query variables together
- * with the controls to drop into a ListPage's `pageActions`, so a page wires it
- * in three lines rather than restating ~90 lines of dropdowns (which is how the
- * Sort block already ended up copied across three pages).
+ * with `bar`: the controls as one row of pills, the same row the Mikro home
+ * has over its recent data, which the page puts under its header and over the
+ * list it narrows. A page wires it in three lines rather than restating ~90
+ * lines of dropdowns (which is how the Sort block already ended up copied
+ * across three pages).
  *
  * Every one of them filters SERVER-side: they are `ArrayDatasetFilter` fields, so a
  * narrowed list pages through matching rows instead of paging through everything
@@ -308,184 +304,184 @@ export const useArrayDatasetFilterBar = ({
     </>
   );
 
-  const actions = (
-    <>
-      <CollapsibleSearch
-        alwaysShow
+  const filtered =
+    !!search ||
+    !!createdAfter ||
+    !!createdBefore ||
+    picked.length > 0 ||
+    origin !== DEFAULT_ORIGIN ||
+    pyramid !== "any" ||
+    units !== "any" ||
+    isCustomOrder;
+
+  const clear = () => {
+    setSearch(null);
+    setCreatedAfter(null);
+    setCreatedBefore(null);
+    setSpecSlugs(null);
+    setOrigin(null);
+    setPyramid(null);
+    setUnits(null);
+    setSortField(null);
+    setSortDirection(null);
+  };
+
+  const dataChanged = origin !== DEFAULT_ORIGIN || pyramid !== "any" || units !== "any";
+
+  const bar = (
+    <div className="flex flex-wrap items-center gap-2">
+      <FilterSearchField
         value={search}
         onChange={(value) => setSearch(value || null)}
         placeholder="Search array datasets…"
       />
 
-      <PageAction.Slot collapse="icon" priority={-10}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <ActionTrigger aria-label="Data">
-              <SlidersHorizontal className="h-4 w-4" />
-              <ActionLabel>
-                Data
-                {narrowedCount > 0 && (
-                  <Badge variant="secondary">
-                    {/* Name the origin rather than count it: "Acquired only" is on
-                        by default, and a bare number would leave a user wondering
-                        why their derived datasets are missing. */}
-                    {labelOf(ORIGIN_OPTIONS, origin)}
-                    {narrowedCount > 1 ? ` +${narrowedCount - 1}` : ""}
-                  </Badge>
-                )}
-              </ActionLabel>
-            </ActionTrigger>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            {radioGroup(
-              "Origin",
-              ORIGIN_OPTIONS,
-              origin,
-              (next) => setOrigin(next as typeof origin | null),
-              DEFAULT_ORIGIN,
-            )}
-            <DropdownMenuSeparator />
-            {radioGroup(
-              "Resolution",
-              PYRAMID_OPTIONS,
-              pyramid,
-              (next) => setPyramid(next as typeof pyramid | null),
-              "any",
-            )}
-            <DropdownMenuSeparator />
-            {radioGroup(
-              "Units",
-              UNITS_OPTIONS,
-              units,
-              (next) => setUnits(next as typeof units | null),
-              "any",
-            )}
-            {(origin !== DEFAULT_ORIGIN || pyramid !== "any" || units !== "any") && (
-              <>
-                <DropdownMenuSeparator />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setOrigin(null);
-                    setPyramid(null);
-                    setUnits(null);
-                  }}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset
-                </Button>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PageAction.Slot>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          {/* Names the origin rather than counting it: "Acquired only" is on
+              by default, and a bare number would leave a user wondering why
+              their derived datasets are missing. Tinted once it is changed. */}
+          <FilterTrigger active={dataChanged} icon={SlidersHorizontal} aria-label="Data">
+            {labelOf(ORIGIN_OPTIONS, origin)}
+            {narrowedCount > 1 ? ` +${narrowedCount - 1}` : ""}
+          </FilterTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          {radioGroup(
+            "Origin",
+            ORIGIN_OPTIONS,
+            origin,
+            (next) => setOrigin(next as typeof origin | null),
+            DEFAULT_ORIGIN,
+          )}
+          <DropdownMenuSeparator />
+          {radioGroup(
+            "Resolution",
+            PYRAMID_OPTIONS,
+            pyramid,
+            (next) => setPyramid(next as typeof pyramid | null),
+            "any",
+          )}
+          <DropdownMenuSeparator />
+          {radioGroup(
+            "Units",
+            UNITS_OPTIONS,
+            units,
+            (next) => setUnits(next as typeof units | null),
+            "any",
+          )}
+          {dataChanged && (
+            <>
+              <DropdownMenuSeparator />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => {
+                  setOrigin(null);
+                  setPyramid(null);
+                  setUnits(null);
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <PageAction.Slot collapse="icon" priority={-10}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <ActionTrigger aria-label="Spec">
-              <Shapes className="h-4 w-4" />
-              <ActionLabel>
-                Spec
-                {picked.length > 0 && (
-                  <Badge variant="secondary">{picked.length}</Badge>
-                )}
-              </ActionLabel>
-            </ActionTrigger>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            {/* Spatial specs are mutually exclusive server-side — ticking two
-                matches nothing — so they are offered as their own group. */}
-            <DropdownMenuLabel>Spatial (pick one)</DropdownMenuLabel>
-            {spatial.map((entry) => specItem(entry.slug, entry.label, entry.spec))}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Acquisition</DropdownMenuLabel>
-            {modifiers.map((entry) =>
-              specItem(entry.slug, entry.label, entry.spec),
-            )}
-            {picked.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setSpecSlugs(null)}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset
-                </Button>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PageAction.Slot>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <FilterTrigger active={picked.length > 0} icon={Shapes} aria-label="Spec">
+            {picked.length === 0
+              ? lockedSpec
+                ? "Add a spec"
+                : "Any spec"
+              : picked.length === 1
+                ? picked[0].label
+                : `${picked.length} specs`}
+          </FilterTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-52">
+          {/* Spatial specs are mutually exclusive server-side — ticking two
+              matches nothing — so they are offered as their own group. */}
+          <DropdownMenuLabel>Spatial (pick one)</DropdownMenuLabel>
+          {spatial.map((entry) => specItem(entry.slug, entry.label, entry.spec))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Acquisition</DropdownMenuLabel>
+          {modifiers.map((entry) => specItem(entry.slug, entry.label, entry.spec))}
+          {picked.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSpecSlugs(null)}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <PageAction.Slot collapse="icon" priority={-10}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <ActionTrigger aria-label="Sort">
-              <ArrowUpDown className="h-4 w-4" />
-              <ActionLabel>
-                Sort
-                {isCustomOrder && (
-                  <Badge variant="secondary" className="gap-1">
-                    {SORT_FIELD_LABELS[sortField]}
-                    {sortDirection === "ASC" ? (
-                      <ArrowUpWideNarrow />
-                    ) : (
-                      <ArrowDownWideNarrow />
-                    )}
-                  </Badge>
-                )}
-              </ActionLabel>
-            </ActionTrigger>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={sortField}
-              onValueChange={(value) =>
-                setSortField(value as (typeof SORT_FIELDS)[number])
-              }
-            >
-              {SORT_FIELDS.map((field) => (
-                <DropdownMenuRadioItem key={field} value={field}>
-                  {SORT_FIELD_LABELS[field]}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Direction</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={sortDirection}
-              onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
-            >
-              <DropdownMenuRadioItem value="DESC">
-                Descending
+      <DateTimeRangePicker
+        align="start"
+        initialDateFrom={createdAfter || undefined}
+        initialDateTo={createdBefore || undefined}
+        onUpdate={({ range }) => {
+          setCreatedAfter(range.from || null);
+          setCreatedBefore(range.to || null);
+        }}
+      />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <FilterTrigger active={isCustomOrder} icon={ArrowUpDown} aria-label="Sort">
+            {SORT_FIELD_LABELS[sortField]}
+            {sortDirection === "ASC" ? (
+              <ArrowUpWideNarrow className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+            )}
+          </FilterTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={sortField}
+            onValueChange={(value) =>
+              setSortField(value as (typeof SORT_FIELDS)[number])
+            }
+          >
+            {SORT_FIELDS.map((field) => (
+              <DropdownMenuRadioItem key={field} value={field}>
+                {SORT_FIELD_LABELS[field]}
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PageAction.Slot>
+            ))}
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Direction</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={sortDirection}
+            onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
+          >
+            <DropdownMenuRadioItem value="DESC">
+              Descending
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <PageAction.Slot collapse="hide" priority={-20}>
-        <DateTimeRangePicker
-          initialDateFrom={createdAfter || undefined}
-          initialDateTo={createdBefore || undefined}
-          onUpdate={({ range }) => {
-            setCreatedAfter(range.from || null);
-            setCreatedBefore(range.to || null);
-          }}
-        />
-      </PageAction.Slot>
-    </>
+      {filtered && <FilterClear onClear={clear} />}
+    </div>
   );
 
-  return { filters, ordering, actions };
+  return { filters, ordering, bar };
 };

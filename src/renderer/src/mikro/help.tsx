@@ -51,7 +51,7 @@ export const MIKRO_HELP = {
       intro="Every array dataset you can see: images, volumes, time series and other n-dimensional arrays with named axes."
       steps={[
         <>Type into the search field to find a dataset by name.</>,
-        <>Open <b>Spec</b> to keep only one kind of data, and <b>Sort</b> to change the order.</>,
+        <>The filters sit in a row under the title: the origin pill (<b>Acquired only</b> by default, which hides data computed from other data), <b>Any spec</b> to keep one kind of data, the date range, and the sort pill to change the order. <b>Clear filters</b> puts them all back.</>,
         <>Click a dataset to open it in the viewer.</>,
         <>Right-click a dataset and choose <b>Visualize</b> to view it, <b>Calibrate…</b> to give its pixels physical units, or <b>Register Into…</b> to place it in a shared space.</>,
         <>Right-click and choose <b>Move to Folder</b> to file it away.</>,
@@ -63,7 +63,7 @@ export const MIKRO_HELP = {
       intro="Array datasets of one kind only. The kind is fixed by the page; everything else works like the full dataset list."
       steps={[
         <>Type into the search field to find a dataset by name.</>,
-        <>Open <b>Sort</b> to change the order.</>,
+        <>Use the row of filters under the title to narrow the list (origin, further specs, date range) and the sort pill to change the order; <b>Clear filters</b> puts them all back.</>,
         <>Click a dataset to open it, or right-click it for <b>Visualize</b>, <b>Calibrate…</b>, <b>Register Into…</b> and <b>Move to Folder</b>.</>,
       ]}
       tips={[

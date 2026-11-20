@@ -16,7 +16,7 @@ const Page = () => {
   const entry = slug ? ADATASET_SPEC_BY_SLUG[slug] : undefined;
 
   // Unconditional: the early return below must not change the hook count.
-  const { filters, ordering, actions } = useArrayDatasetFilterBar({
+  const { filters, ordering, bar } = useArrayDatasetFilterBar({
     lockedSpec: entry?.spec,
   });
 
@@ -34,10 +34,11 @@ const Page = () => {
     <MikroArrayDataset.ListPage
       title={entry.label}
       description={entry.description}
-      pageActions={actions}
       help={MIKRO_HELP.arrayDatasetSpec}
     >
       <div className="p-3 flex flex-col gap-3">
+        {/* Under the header, over the list it narrows: the Mikro home's filter row. */}
+        {bar}
         {/* Planes, and only planes, get laid out at their own shape: the tiles
             justify into rows whose heights match and whose widths come off each
             dataset's x/y, so a page of them reads as a contact sheet rather than
