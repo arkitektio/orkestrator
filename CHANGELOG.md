@@ -1,3 +1,14 @@
+# [8.12.0](https://github.com/arkitektio/orkestrator/compare/v8.11.0...v8.12.0) (2026-11-20)
+
+
+### Features
+
+* **core:** shared card frame and a list page header drawn from the manifest ([5569b10](https://github.com/arkitektio/orkestrator/commit/5569b1092f7d61426b92b2346fae493e6291efaa))
+* **kabinet:** list and detail pages read like the rest of the app ([ef2b78e](https://github.com/arkitektio/orkestrator/commit/ef2b78e5a7f0ac15da79ef818979438709f2f109))
+* **lok:** list and detail pages in the shared style ([e9d2d2b](https://github.com/arkitektio/orkestrator/commit/e9d2d2b447e99fe11f981387a97cb80bf821f8b6))
+* **mikro:** table datasets browse and filter like the home, list headers ([0f44317](https://github.com/arkitektio/orkestrator/commit/0f44317ce4dbc560cfc9b35f6b420eba1ce39a68))
+* **rekuest:** agent and task cards in the shared frame, list headers ([858c4cb](https://github.com/arkitektio/orkestrator/commit/858c4cb71d3b2653fd9d1e2fbe055a073c589f8b))
+
 # [8.11.0](https://github.com/arkitektio/orkestrator/compare/v8.10.0...v8.11.0) (2026-11-20)
 
 
