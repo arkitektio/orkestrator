@@ -35,6 +35,23 @@ import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
 import type {BlokPersistence} from '@arkitektio/bsx/renderer/persist';
 import {useBlokComponentStore, useBlokPersistence} from './useBlokPersistence';
 import {useBlokViewer} from './useBlokViewer';
+import {BlokRunHostProvider, useBlokRunHost, type BlokRunHost} from '@arkitektio/bsx/renderer/bloks/run/index';
+import {
+  BlokDependencyOptionsSync,
+  BlokDependencyPicker,
+  BlokDependencySeed,
+  dependencyUse,
+  referenceKey,
+  REFERENCE_SEPARATOR,
+  useActionDependencies,
+  useBlokDependencyBindings,
+  usePickedAgents,
+  type ActionDependency,
+  type BlokDependencyBindings,
+  type DeclaredDependencies,
+  type DependencyUse,
+  type PickedAgent,
+} from './blokDependencyBindings';
 
 /** Where a task or action blok reads the task it is about. */
 export const BLOK_TASK_ROOT = 'task';
@@ -64,7 +81,7 @@ export type MaterializedContent = BlokDeclarations & {
 export type MaterializedBlokData = {
   id: string;
   blok: MaterializedContent & {
-    dependencies?: Array<{key: string}> | null;
+    dependencies?: Array<{key: string; id?: string}> | null;
     /** What the blok is opened for, read at `args.<key>`. */
     args?: Array<{key: string}> | null;
   };
@@ -255,6 +272,14 @@ const useMaterializedDispatchAction = (
         return;
       }
 
+      // `with <key>`: the run gets the agents the dependencies declared under that key are
+      // bound to here (`<key>__<dependency>`); one nobody bound resolves as it always does.
+      const given = action.given;
+      const prefix = given ? `${given}${REFERENCE_SEPARATOR}` : null;
+      const pins = prefix
+        ? [...agentIdByDependency].filter(([key]) => key.startsWith(prefix)).map(([key, agent]) => ({key: key.slice(prefix.length), agent}))
+        : [];
+
       const reference = uuidv4();
       silenceTask(reference);
 
@@ -273,6 +298,15 @@ const useMaterializedDispatchAction = (
             interface: action.operation,
             args: action.arguments ?? {},
             reference,
+            ...(pins.length > 0
+              ? {
+                  dependencies: pins.map(pin => ({
+                    key: pin.key,
+                    autoResolve: false,
+                    mappedAgents: [{key: pin.key, agent: pin.agent}],
+                  })),
+                }
+              : {}),
           }),
         ).then(
           task => observe?.({id: task.id, status: 'queued'}),
@@ -385,17 +419,220 @@ const BlokPersistSync = ({persistence}: {persistence: BlokPersistence}) => {
 export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>): MaterializedContent =>
   materializedBlok.revision ?? materializedBlok.blok;
 
+type DependencySet = {declared: DeclaredDependencies; use: DependencyUse; dependencies: readonly ActionDependency[]};
+
+/**
+ * The materialization with the dependencies its tree declares itself bound as this device
+ * has them: each chosen agent among its mappings (as `<key>__<dependency>`), each one the
+ * tree reads that is still open among its unbound.
+ */
+const withBindings = (
+  materializedBlok: MaterializedBlokData,
+  sets: readonly DependencySet[],
+  bindings: BlokDependencyBindings,
+  known: ReadonlyMap<string, {connected: boolean; name: string | null}>,
+): MaterializedBlokData => {
+  const bound: MaterializedBlokData['agentMappings'] = [];
+  const open: string[] = [];
+  for (const set of sets) {
+    const picks = bindings.picks[set.declared.key] ?? {};
+    for (const [name, agent] of Object.entries(picks)) {
+      bound.push({
+        key: referenceKey(set.declared.key, name),
+        agent: {id: agent.id, name: known.get(agent.id)?.name ?? agent.name, connected: known.get(agent.id)?.connected},
+      });
+    }
+    for (const name of set.use.read) if (!picks[name]) open.push(referenceKey(set.declared.key, name));
+  }
+  const prefixes = sets.map(set => referenceKey(set.declared.key, ''));
+  const declared = (key: string) => prefixes.some(prefix => key.startsWith(prefix));
+  return {
+    ...materializedBlok,
+    agentMappings: [...materializedBlok.agentMappings.filter(mapping => !declared(mapping.key)), ...bound],
+    unboundDependencies: [...(materializedBlok.unboundDependencies ?? []).filter(key => !declared(key)), ...open],
+  };
+};
+
+/** Asks which dependencies the action of one `<dependencies>` has, and tells its parent. */
+const DependencySetResolver = (props: {
+  declared: DeclaredDependencies;
+  selfAgentId: string | undefined;
+  onResolved: (key: string, dependencies: readonly ActionDependency[]) => void;
+}) => {
+  const {declared, selfAgentId, onResolved} = props;
+  const dependencies = useActionDependencies(declared, selfAgentId);
+  React.useEffect(() => onResolved(declared.key, dependencies), [declared.key, dependencies, onResolved]);
+  return null;
+};
+
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const shown = shownContent(props.materializedBlok);
   const locals = React.useMemo(() => declaredLocals(shown), [shown]);
   const persistence = useBlokPersistence(props.materializedBlok.id, locals);
-  // The kept locals are read before the first render, so the blok opens as it was left.
-  if (persistence === undefined) return null;
-  return <MaterializedBlokView {...props} persistence={persistence} />;
+  const {roots} = useBlokDocument(shown.componentTree as unknown[] | null);
+  const componentStore = useBlokComponentStore(props.materializedBlok.id);
+  const bindings = useBlokDependencyBindings(roots, componentStore);
+  // The kept locals and bindings are read before the first render, so the blok opens as it was left.
+  if (persistence === undefined || bindings === undefined) return null;
+  if (bindings.declared.length === 0) return <MaterializedBlokView {...props} persistence={persistence} />;
+  return <BoundBlokView {...props} persistence={persistence} bindings={bindings} roots={roots} />;
 };
 
-const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null}) => {
-  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, onControl, assign, persistence, syncs, ...rendererProps} = props;
+/** Draws a blok whose tree declares dependencies, bound, seeded and picked on this device. */
+const BoundBlokView = (
+  props: MaterializedBlokRendererProps & {persistence: BlokPersistence | null; bindings: BlokDependencyBindings; roots: readonly unknown[]},
+) => {
+  const {bindings, roots, syncs, ...viewProps} = props;
+  const {materializedBlok} = props;
+  const outer = useBlokRunHost();
+  const selfAgentId = materializedBlok.agentMappings.find(mapping => mapping.key === 'self')?.agent.id;
+  const [resolved, setResolved] = React.useState<Readonly<Record<string, readonly ActionDependency[]>>>({});
+  const onResolved = React.useCallback(
+    (key: string, dependencies: readonly ActionDependency[]) =>
+      setResolved(current => (current[key] === dependencies ? current : {...current, [key]: dependencies})),
+    [],
+  );
+  const sets = React.useMemo<DependencySet[]>(
+    () => bindings.declared.map(declared => ({declared, use: dependencyUse(roots, declared.key), dependencies: resolved[declared.key] ?? []})),
+    [bindings.declared, resolved, roots],
+  );
+  const known = usePickedAgents(bindings.picks);
+  const bound = React.useMemo(() => withBindings(materializedBlok, sets, bindings, known), [bindings, known, materializedBlok, sets]);
+
+  const picker = React.useCallback(
+    (set: DependencySet, name: string, className?: string) => (
+      <BlokDependencyPicker
+        key={referenceKey(set.declared.key, name)}
+        label={name}
+        dependency={set.dependencies.find(dependency => dependency.key === name)}
+        picked={bindings.picks[set.declared.key]?.[name]}
+        onPick={agent => bindings.pick(set.declared.key, {[name]: agent})}
+        className={className}
+      />
+    ),
+    [bindings],
+  );
+
+  // `<deppicker key="cells.microscope" />` draws that one; `key="cells"` every other one of the set.
+  const host = React.useMemo<BlokRunHost>(
+    () => ({
+      ...outer,
+      renderDepPicker: (written: string) => {
+        const [key, name] = written.split('.', 2);
+        const set = sets.find(each => each.declared.key === key);
+        if (!set) return null;
+        if (name) return picker(set, name);
+        return (
+          <div className="flex flex-col gap-2">
+            {set.dependencies
+              .filter(dependency => !set.use.placed.has(dependency.key))
+              .map(dependency => (
+                <label key={dependency.key} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  {dependency.key}
+                  {picker(set, dependency.key)}
+                </label>
+              ))}
+          </div>
+        );
+      },
+    }),
+    [outer, picker, sets],
+  );
+
+  // `cells.pick(microscope: id)`: the viewer's choice, by agent id.
+  const pickDependencies = React.useCallback(
+    (key: string, picks: Record<string, unknown>) => {
+      const agents: Record<string, PickedAgent> = {};
+      for (const [name, id] of Object.entries(picks)) {
+        if (typeof id === 'string' && id) agents[name] = {id, name: known.get(id)?.name ?? null};
+      }
+      bindings.pick(key, agents);
+    },
+    [bindings, known],
+  );
+
+  // A dependency the tree reads and offers no way to choose is still the viewer's to choose: shown above it.
+  const unoffered = sets.flatMap(set =>
+    set.use.rest ? [] : [...set.use.read].filter(name => !set.use.placed.has(name) && !set.use.listed.has(name)).map(name => ({set, name})),
+  );
+  const boundAs = bound.agentMappings
+    .filter(mapping => mapping.key.includes(REFERENCE_SEPARATOR))
+    .map(mapping => `${mapping.key}=${mapping.agent.id}`)
+    .join('\u0000');
+  const view = (
+    <BlokRunHostProvider value={host}>
+      <MaterializedBlokView
+        {...viewProps}
+        materializedBlok={bound}
+        boundAs={boundAs}
+        pickDependencies={pickDependencies}
+        syncs={
+          <>
+            {syncs}
+            {sets.flatMap(set =>
+              set.dependencies
+                .filter(dependency => set.use.listed.has(dependency.key))
+                .map(dependency => (
+                  <BlokDependencyOptionsSync
+                    key={referenceKey(set.declared.key, dependency.key)}
+                    reference={set.declared.key}
+                    dependency={dependency}
+                    picked={bindings.picks[set.declared.key]?.[dependency.key]}
+                  />
+                )),
+            )}
+          </>
+        }
+      />
+    </BlokRunHostProvider>
+  );
+  return (
+    <>
+      {bindings.declared.map(declared => (
+        <DependencySetResolver key={declared.key} declared={declared} selfAgentId={selfAgentId} onResolved={onResolved} />
+      ))}
+      {sets.flatMap(set =>
+        set.dependencies
+          .filter(dependency => set.use.read.has(dependency.key) && !bindings.picks[set.declared.key]?.[dependency.key])
+          .map(dependency => (
+            <BlokDependencySeed
+              key={referenceKey(set.declared.key, dependency.key)}
+              action={set.declared.action ?? ''}
+              dependency={dependency}
+              selfAgentId={selfAgentId}
+              onSeed={agent => bindings.pick(set.declared.key, {[dependency.key]: agent})}
+            />
+          )),
+      )}
+      {unoffered.length === 0 ? (
+        view
+      ) : (
+        <div className="flex h-full w-full flex-col">
+          <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
+            {unoffered.map(({set, name}) => (
+              <label key={referenceKey(set.declared.key, name)} className="flex items-center gap-2 text-xs text-muted-foreground">
+                {name}
+                {picker(set, name, 'h-8 w-56')}
+              </label>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1">{view}</div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const MaterializedBlokView = (
+  props: MaterializedBlokRendererProps & {
+    persistence: BlokPersistence | null;
+    /** Which agents the dependencies its tree declares are bound to here: a change opens it again. */
+    boundAs?: string;
+    /** What `<key>.pick(...)` calls: binds dependencies the tree declares to agents. */
+    pickDependencies?: (key: string, picks: Record<string, unknown>) => void;
+  },
+) => {
+  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, onControl, assign, persistence, syncs, boundAs, pickDependencies, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelAt = useBlokTravelMoment();
   const travelling = useBlokTravelSource() !== null;
@@ -458,14 +695,14 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
       statuses: pending,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, roots]);
+  }, [shown, roots, boundAs]);
 
   return (
     <RekuestSceneHost>
      <RekuestAssetHost agents={boundAgents}>
       <BlokRenderer
         // Opened again when what it keeps changes: the kept values seed a new runtime.
-        key={persistence ? [...persistence.locals].join('\u0000') : undefined}
+        key={`${persistence ? [...persistence.locals].join('\u0000') : ''}\u0001${boundAs ?? ''}`}
         {...rendererProps}
         uiComponents={roots}
         initialState={initialState}
@@ -485,6 +722,7 @@ const MaterializedBlokView = (props: MaterializedBlokRendererProps & {persistenc
         startRun={onStart}
         // bsx before it knew `task.cancel()` and its kin takes no such prop.
         {...({controlTask: onControl} as object)}
+        pickDependencies={pickDependencies}
         componentState={componentState}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
