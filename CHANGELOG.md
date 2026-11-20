@@ -1,3 +1,11 @@
+# [8.10.0](https://github.com/arkitektio/orkestrator/compare/v8.9.0...v8.10.0) (2026-11-20)
+
+
+### Features
+
+* **mikro:** a table and a table lens open in a viewer ([775261e](https://github.com/arkitektio/orkestrator/commit/775261ec8c192e4d1d38d2f2b22573da4879fd0d))
+* **rekuest:** an agent's blok reads, picks and hands over the dependencies of its own actions ([d8e1215](https://github.com/arkitektio/orkestrator/commit/d8e1215b47dd2695a6703a0966da766605c396d7))
+
 # [8.9.0](https://github.com/arkitektio/orkestrator/compare/v8.8.2...v8.9.0) (2026-11-19)
 
 
