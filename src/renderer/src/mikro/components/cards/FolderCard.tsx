@@ -11,7 +11,7 @@ interface Props {
 
 const TheCard = ({ item, className }: Props) => {
   return (
-    <MikroFolder.Smart object={item} menuButton hover>
+    <MikroFolder.Smart object={item} menuButton>
       <HomeCard className={className}>
         <HomeCardTitle icon={<Folder />}>
           <MikroFolder.DetailLink object={item}>{item.name}</MikroFolder.DetailLink>

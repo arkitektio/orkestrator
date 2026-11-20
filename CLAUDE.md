@@ -39,8 +39,8 @@ Examples in-tree:
   (`core/modules/ModuleRoute.tsx`) wraps every module root in chunk → role →
   service, from the definition's `roles` and `serviceKey`. A module root
   (`<Module>Module.tsx`) is layout + routes and carries no service guard.
-- Builtins the host mounts for a module (displays, hover cards, palette
-  search, background components) are wrapped in that module's guard by the
+- Builtins the host mounts for a module (displays, palette search,
+  background components) are wrapped in that module's guard by the
   host (`moduleGuard` in `core/modules/registries.tsx`, keyed by the
   definition's `serviceKey`); a module does not guard its own builtins.
 - `core/smart/extensions/SectionHost.tsx` wraps each menu section's query
@@ -136,7 +136,7 @@ automatically appears in **both**:
 When adding a model-specific action, register it as a local action with the
 correct `conditions` and confirm it shows up from **both** the context menu and
 the `ObjectButton`. A bespoke button (like the "Create shortcut" button on the
-action hover card) is fine as an extra convenience, but the canonical path is the
+action page) is fine as an extra convenience, but the canonical path is the
 local action. Module-specific `execute` bodies still follow convention #1.
 
 ## 4. The smart context menu is a section registry
@@ -223,7 +223,7 @@ else from it:
 - `service.ts` — its client binding (fakts requirement key + Apollo builder).
 - `module.tsx` — its **builtins**: `defineModule({ manifest, serviceKey, builtins })`
   with `page`, `navLinks` (palette rows + the rail popout), `displays`,
-  `hovers`, `dialogs`, `actions`, `pageSections`, `sections`, `menuWrappers`, `profileSections`,
+  `dialogs`, `actions`, `pageSections`, `sections`, `menuWrappers`, `profileSections`,
   `background`, `railIslands`, `search`, `paletteSources`,
   `paletteHitActions`, `optionSources`, `operations`, `taskHooks`,
   `fileDownloaders`, `authFlow` (see `core/modules/host/define.ts`).

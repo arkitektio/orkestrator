@@ -5,7 +5,6 @@ import { SmartModelProps } from "./types";
 import { useSmartDropZone } from "./useSmartDropZone";
 
 export const SmartDropZone = ({
-  hover: _hover = false,
   className,
   ...props
 }: SmartModelProps) => {

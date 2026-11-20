@@ -18,7 +18,7 @@ interface Props {
  */
 const TheCard = ({ item, className }: Props) => {
   return (
-    <ElektroArrayDataset.Smart object={item} hover>
+    <ElektroArrayDataset.Smart object={item}>
       <HomeCard className={className}>
         <HomeCardTitle>
           <ElektroArrayDataset.DetailLink object={item}>

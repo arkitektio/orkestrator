@@ -23,7 +23,7 @@ const getReadableFileSizeString = (fileSizeInBytes: number | null | undefined) =
 
 const TheCard = ({ item, className }: Props) => {
   return (
-    <ElektroFile.Smart object={item} key={item.id} hover>
+    <ElektroFile.Smart object={item} key={item.id}>
       <Card
         className={cn(
           "px-2 py-2 max-h-40 min-h-10 justify-left flex items-center",

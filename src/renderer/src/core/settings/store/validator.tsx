@@ -13,7 +13,6 @@ export const settingsValidator = zod.object({
   pollInterval: zod.number(),
   defaultZoomLevel: zod.number().min(0.25).max(3.0),
   startAgent: zod.boolean(),
-  showHoverCards: zod.boolean(),
   /** How much drop shadow the right-click menu casts. */
   menuShadow: zod.enum(["none", "soft", "medium", "strong"]),
   agentExpanded: zod.boolean().optional(),
@@ -230,7 +229,6 @@ export const defaultSettings: Settings = {
   pollInterval: 3000,
   defaultZoomLevel: 1,
   startAgent: false,
-  showHoverCards: true,
   menuShadow: "medium",
   agentExpanded: false,
   brandHue: 267.256,

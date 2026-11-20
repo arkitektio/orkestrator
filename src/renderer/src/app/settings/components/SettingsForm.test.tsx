@@ -29,8 +29,8 @@ const Probe = () => {
   return (
     <>
       <output data-testid="gpu">{watch("rendererHardware")?.gpus[0]?.model ?? "none"}</output>
-      <button type="button" onClick={() => setValue("showHoverCards", false)}>
-        hover off
+      <button type="button" onClick={() => setValue("startAgent", true)}>
+        agent on
       </button>
     </>
   );
@@ -72,8 +72,8 @@ describe("SettingsForm", () => {
     act(() => store.getState().setSettings({ ...store.getState().settings!, rendererHardware: RTX }));
     await waitFor(() => expect(screen.getByTestId("gpu").textContent).toBe("RTX 4070"));
 
-    act(() => screen.getByText("hover off").click());
-    await waitFor(() => expect(store.getState().settings?.showHoverCards).toBe(false));
+    act(() => screen.getByText("agent on").click());
+    await waitFor(() => expect(store.getState().settings?.startAgent).toBe(true));
     expect(store.getState().settings?.rendererHardware?.gpus[0].model).toBe("RTX 4070");
   });
 });

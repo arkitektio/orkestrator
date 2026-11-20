@@ -1,11 +1,6 @@
 import { MIKRO_BLOKS } from "./bloks";
 import { defineModule } from "@/core/modules/host/define";
 import { MIKRO_ACTIONS } from "./actions";
-import ArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
-import ChartHoverCard from "./components/hovers/ChartHoverCard";
-import GridHoverCard from "./components/hovers/GridHoverCard";
-import FileHoverCard from "./components/hovers/FileHoverCard";
-import FolderHoverCard from "./components/hovers/FolderHoverCard";
 import { LatestArrayDatasetsDashboardWidget } from "./dashboard/LatestArrayDatasetsDashboardWidget";
 import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
@@ -68,13 +63,6 @@ export const MIKRO_MODULE = defineModule({
     },
     // The scene as parts an app's blok composes (`mikro/bloks`).
     bloks: MIKRO_BLOKS,
-    hovers: {
-      "@mikro/file": FileHoverCard,
-      "@mikro/folder": FolderHoverCard,
-      "@mikro/arraydataset": ArrayDatasetHoverCard,
-      "@mikro/chart": ChartHoverCard,
-      "@mikro/grid": GridHoverCard,
-    },
     dialogs: MIKRO_DIALOGS,
     actions: MIKRO_ACTIONS,
     optionSources: MIKRO_OPTION_SOURCES,

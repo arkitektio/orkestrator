@@ -11,12 +11,11 @@ import { useSmartModel } from "./useSmartModel";
  * The card wrapper: selection, drag source, drop target, and the floating
  * "combine with partner" panel.
  *
- * The right-click menu and the hover card are NOT here. They are delegated to
- * the single `SmartSurface` mounted at the app root, which resolves the card
- * from the `data-*` attributes below and the node registry — a per-card Radix
- * root for each was ~15 component instances and a document listener per card.
- * `data-hover` opts a card into the hover card; `data-partners` and
- * `data-dragging` tell the surface when to stay closed.
+ * The right-click menu is NOT here. It is delegated to the single
+ * `SmartSurface` mounted at the app root, which resolves the card from the
+ * `data-*` attributes below and the node registry — a per-card Radix root was
+ * ~15 component instances and a document listener per card. `data-partners`
+ * and `data-dragging` tell the surface when to stay closed.
  */
 export const SmartModel = ({ ...props }: SmartModelProps) => {
   const {
@@ -51,7 +50,6 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
       ref={ref}
       onClick={handleClick}
       className={cn("relative", props.containerClassName, className)}
-      data-hover={props.hover ? "true" : undefined}
       data-partners={partners.length > 0 ? "true" : undefined}
     >
       {props.children}

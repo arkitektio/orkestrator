@@ -52,7 +52,7 @@ export const RunsTable = <R extends ListTaskFragment>({
             : undefined;
 
           return (
-            <RekuestTask.Smart key={run.id} object={run} hover>
+            <RekuestTask.Smart key={run.id} object={run}>
               <div
                 className={cn(
                   "grid items-center gap-x-4 border-b border-border/40 px-2 py-1.5 hover:bg-muted/40",

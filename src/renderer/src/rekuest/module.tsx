@@ -7,10 +7,6 @@ import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
 import { TaskIsland } from "./components/global/TaskIsland";
-import ActionHoverCard from "./components/hovers/ActionHoverCard";
-import AgentHoverCard from "./components/hovers/AgentHoverCard";
-import ImplementationHoverCard from "./components/hovers/ImplementationHoverCard";
-import TaskHoverCard from "./components/hovers/TaskHoverCard";
 import { LatestTasksDashboardWidget } from "./dashboard/LatestTasksDashboardWidget";
 import { RekuestDashboardWidgets } from "./dashboard/RekuestDashboardWidgets";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
@@ -85,12 +81,6 @@ export const REKUEST_MODULE = defineModule({
       "@rekuest/structure": StructureDisplay,
       "@rekuest/interface": InterfaceDisplay,
       "@rekuest/structurepackage": StructurePackageDisplay,
-    },
-    hovers: {
-      "@rekuest/action": ActionHoverCard,
-      "@rekuest/agent": AgentHoverCard,
-      "@rekuest/task": TaskHoverCard,
-      "@rekuest/implementation": ImplementationHoverCard,
     },
     dialogs: REKUEST_DIALOGS,
     actions: REKUEST_ACTIONS,

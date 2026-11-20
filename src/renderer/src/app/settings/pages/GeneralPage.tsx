@@ -20,11 +20,6 @@ export const GeneralPage = () => (
           <CardDescription>How pages and items behave as you move around.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <SwitchField
-            name="showHoverCards"
-            label="Hover previews"
-            description="Show a detail preview card when hovering over items"
-          />
           <MenuShadowField />
         </CardContent>
       </Card>

@@ -57,10 +57,10 @@ describe("globalPaletteShortcut setting", () => {
     await flush();
     setGlobalShortcut.mockClear();
 
-    store.getState().setSettings({ ...defaultSettings, showHoverCards: false });
+    store.getState().setSettings({ ...defaultSettings, startAgent: true });
     expect(setGlobalShortcut).not.toHaveBeenCalled();
 
-    store.getState().setSettings({ ...defaultSettings, showHoverCards: false, globalPaletteShortcut: null });
+    store.getState().setSettings({ ...defaultSettings, startAgent: true, globalPaletteShortcut: null });
     await flush();
     expect(setGlobalShortcut).toHaveBeenCalledWith(null);
     expect(store.getState().globalShortcutStatus?.status).toBe("off");

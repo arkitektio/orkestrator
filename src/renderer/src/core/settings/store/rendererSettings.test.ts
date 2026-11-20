@@ -53,10 +53,10 @@ describe("renderer settings", () => {
     } = defaultSettings;
     void rendererHardware, rendererGpuBudgetMB, rendererDecodeCacheMB;
     void telemetryDetectHardware, telemetryAttachHardware;
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...old, showHoverCards: false }));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...old, startAgent: true }));
     const store = createSettingsStore();
     store.getState().hydrate();
-    expect(store.getState().settings?.showHoverCards).toBe(false);
+    expect(store.getState().settings?.startAgent).toBe(true);
     expect(store.getState().settings?.rendererHardware).toBeNull();
   });
 

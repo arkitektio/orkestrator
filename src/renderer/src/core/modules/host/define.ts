@@ -115,8 +115,6 @@ export type ModuleBuiltins = {
    * Their definitions must import nothing heavy: the catalog is exported offline.
    */
   bloks?: readonly BlokComponentDefinition[];
-  /** EXTENSION: hover cards, by identifier (the spec renders hovers from `describe`). */
-  hovers?: Record<string, ComponentType<{ object: any }>>;
   /** `dialog` surfaces, by dialog id. */
   dialogs?: Record<string, ComponentType<any>>;
   /** Local actions, by id; become `perform: { kind: "builtin" }` actions. */

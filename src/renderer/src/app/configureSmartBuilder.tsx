@@ -9,12 +9,7 @@ import {
 } from "@/core/smart/buildSmartAdapters";
 import { ObjectButton } from "@/core/smart/extensions/context";
 import { SlotSections } from "@/core/layout/PageSections";
-import { MODULE_HOVERS } from "../core/modules/registries";
 
-// Hover cards are each module's `hovers` builtin, paired with its module guard
-// (app/modules/registries). They run module-specific GraphQL, so the guard wraps
-// the component from the outside: its query hooks only mount once the backend
-// is `ready`, and nothing fires when the module is absent.
 
 
 configureSmartBuilder({
@@ -23,18 +18,6 @@ configureSmartBuilder({
   renderKnowledge: ({ identifier, object }) => (
     <SlotSections slot="knowledge" identifier={identifier} object={object} />
   ),
-  renderHover: ({ identifier, object }) => {
-    const entry = MODULE_HOVERS[identifier];
-    if (!entry) {
-      return null;
-    }
-    const { Component, Guard: ModuleGuard } = entry;
-    return (
-      <ModuleGuard>
-        <Component object={object} />
-      </ModuleGuard>
-    );
-  },
   renderModelPage: ({ identifier, children, ...props }: SmartModelPage & { identifier: string }) => {
     // No Rooms injection here: the tab is gone from ModelPageLayout's defaults
     // too. Conversations start from the "Talk" button in the page header, which

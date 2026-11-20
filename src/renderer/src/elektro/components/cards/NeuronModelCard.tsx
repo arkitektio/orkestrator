@@ -12,7 +12,7 @@ interface Props {
 
 const TheCard = ({ item, className }: Props) => {
   return (
-    <ElektroNeuronModel.Smart object={item} hover>
+    <ElektroNeuronModel.Smart object={item}>
       <HomeCard className={className}>
         <HomeCardTitle icon={<Brain />}>
           <ElektroNeuronModel.DetailLink object={item}>{item.name}</ElektroNeuronModel.DetailLink>

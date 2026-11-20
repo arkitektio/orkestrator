@@ -38,7 +38,7 @@ const AgentImplementationCard = ({ item }: Props) => {
   );
 
   return (
-    <RekuestImplementation.Smart object={item} hover>
+    <RekuestImplementation.Smart object={item}>
       <div
         onClick={onRun}
         className={cn(

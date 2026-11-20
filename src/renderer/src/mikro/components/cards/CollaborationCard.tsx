@@ -12,7 +12,7 @@ interface Props {
 const TheCard = ({ item, className }: Props) => {
   const put = item.items?.filter((entry) => !entry.brought).length;
   return (
-    <MikroCollaboration.Smart object={item} menuButton hover>
+    <MikroCollaboration.Smart object={item} menuButton>
       <HomeCard className={className}>
         <HomeCardTitle icon={<Share2 />}>
           <MikroCollaboration.DetailLink object={item}>{item.name}</MikroCollaboration.DetailLink>

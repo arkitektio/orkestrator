@@ -61,7 +61,7 @@ const TheCard = ({ item }: Props) => {
   const itemNotes = notes(item);
 
   return (
-    <RekuestAction.Smart object={item} hover>
+    <RekuestAction.Smart object={item}>
       <Card className="group flex h-full flex-col gap-2 p-3 ring ring-0 group-data-[selected=true]:ring-1">
         <div className="flex items-start gap-3">
           <LogoTile item={item} />

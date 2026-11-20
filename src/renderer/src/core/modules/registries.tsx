@@ -248,21 +248,6 @@ export const moduleBloks = (): BlokComponentDefinition[] =>
     })),
   );
 
-export type HoverCardEntry = {
-  Component: ComponentType<{ object: any }>;
-  Guard: GuardComponent;
-};
-
-export const MODULE_HOVERS = derivedRecord(() => {
-  const hovers: Record<string, HoverCardEntry> = {};
-  for (const definition of moduleDefinitions() as readonly ModuleDefinition[]) {
-    for (const [identifier, Component] of Object.entries(definition.builtins.hovers ?? {})) {
-      hovers[identifier] = { Component, Guard: moduleGuard(namespaceOf(definition)) };
-    }
-  }
-  return hovers;
-});
-
 export const moduleSections = derived(
   (): SmartContextSection<any>[] => concat((builtins) => builtins.sections),
 );

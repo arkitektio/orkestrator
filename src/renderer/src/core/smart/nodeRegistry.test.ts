@@ -2,9 +2,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  HOVER_OPEN_DELAY_MS,
-  HOVER_WARM_OPEN_DELAY_MS,
-  hoverOpenDelay,
   registerSmartNode,
   smartNodeAt,
   unregisterSmartNode,
@@ -45,10 +42,3 @@ describe("smartNodeAt", () => {
   });
 });
 
-describe("hoverOpenDelay", () => {
-  it("is slow on a cold group and fast while the group is warm", () => {
-    expect(hoverOpenDelay(null, 1000)).toBe(HOVER_OPEN_DELAY_MS);
-    expect(hoverOpenDelay(800, 1000)).toBe(HOVER_WARM_OPEN_DELAY_MS);
-    expect(hoverOpenDelay(0, 1000)).toBe(HOVER_OPEN_DELAY_MS);
-  });
-});

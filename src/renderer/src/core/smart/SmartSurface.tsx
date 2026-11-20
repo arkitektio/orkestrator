@@ -3,29 +3,22 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
 } from "@/core/ui/context-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/core/ui/hover-card";
-import { useSettingsStore } from "@/core/settings/store/SettingsContext";
 import { Structure } from "@/core/types";
 import { cn } from "@/core/util/utils";
 import React from "react";
 import { useSelectionStoreApi } from "../dnd/selection/SelectionContext";
-import { getSmartBuilderAdapters } from "./buildSmartAdapters";
 import { SmartContext } from "./extensions/context";
 import { useMenuChrome } from "./menuChrome";
 import { useSmartPrefetcher } from "./extensions/prefetchContext";
-import { hoverOpenDelay, smartNodeAt, SmartHit } from "./nodeRegistry";
+import { smartNodeAt } from "./nodeRegistry";
 
 /**
- * The one context menu and the one hover card for every smart card on the
- * page.
+ * The one context menu for every smart card on the page (and the prefetch
+ * that warms it).
  *
  * Cards register their node in `nodeRegistry`; this component listens on the
  * document, resolves the card under the pointer, and drives a single Radix
- * root for each surface. Per card that removes two Radix roots (~15 component
+ * root for the menu. Per card that removes a Radix root (and its component
  * instances) and the capture-phase `keydown` listener every Radix `Menu`
  * installs on mount — a 60-card page used to dispatch each keystroke to 60 of
  * them. Mount once, inside the selection and dialog providers (the menu's
@@ -36,7 +29,6 @@ export const SmartSurface = () => {
   return (
     <>
       <SmartContextMenuSurface menuOpenRef={menuOpenRef} />
-      <SmartHoverSurface menuOpenRef={menuOpenRef} />
       <SmartPrefetchSurface menuOpenRef={menuOpenRef} />
     </>
   );
@@ -51,8 +43,7 @@ const SELECTION_PREFETCH_DELAY_MS = 150;
 
 /**
  * Warms the menu's two main queries before it opens: for the hovered card
- * (its own listener — the hover card's is gated on a setting and on
- * `data-hover`), and for the selection whenever it changes. With a selection
+ * (its own listener), and for the selection whenever it changes. With a selection
  * the menu is about the selection, so a hovered card is not prefetched then.
  */
 const SmartPrefetchSurface = ({
@@ -223,172 +214,4 @@ const SmartMenuContent = ({
 
   if (objects.length === 0) return null;
   return <SmartContext objects={objects} partners={partners} />;
-};
-
-/* ------------------------------------------------------------------------ */
-/* Hover card                                                               */
-/* ------------------------------------------------------------------------ */
-
-type HoverTarget = { structure: Structure; rect: DOMRect };
-
-const SmartHoverSurface = ({
-  menuOpenRef,
-}: {
-  menuOpenRef: React.MutableRefObject<boolean>;
-}) => {
-  // Hover cards are opt-out via the user settings (default on).
-  const enabled = useSettingsStore(
-    (state) => state.settings?.showHoverCards ?? true,
-  );
-  const [target, setTarget] = React.useState<HoverTarget | null>(null);
-  const contentRef = React.useRef<HTMLDivElement | null>(null);
-  const hoveredRef = React.useRef<SmartHit | null>(null);
-  const openTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastClosedAt = React.useRef<number | null>(null);
-
-  const clearTimers = React.useCallback(() => {
-    if (openTimer.current) clearTimeout(openTimer.current);
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    openTimer.current = null;
-    closeTimer.current = null;
-  }, []);
-
-  const close = React.useCallback(() => {
-    clearTimers();
-    hoveredRef.current = null;
-    setTarget((current) => {
-      if (current) lastClosedAt.current = Date.now();
-      return null;
-    });
-  }, [clearTimers]);
-
-  React.useEffect(() => {
-    if (!enabled) {
-      close();
-      return;
-    }
-
-    const hoverable = (hit: SmartHit) =>
-      hit.node.dataset.hover === "true" &&
-      hit.node.dataset.dragging !== "true" &&
-      hit.node.dataset.partners !== "true" &&
-      !menuOpenRef.current;
-
-    const onPointerOver = (event: PointerEvent) => {
-      const hit = smartNodeAt(event.target);
-      if (!hit || !hoverable(hit)) return;
-      if (hoveredRef.current?.node === hit.node) {
-        // Moving within the card (or back from its content): keep it open.
-        if (closeTimer.current) {
-          clearTimeout(closeTimer.current);
-          closeTimer.current = null;
-        }
-        return;
-      }
-      clearTimers();
-      hoveredRef.current = hit;
-      const delay = hoverOpenDelay(lastClosedAt.current, Date.now());
-      openTimer.current = setTimeout(() => {
-        openTimer.current = null;
-        if (hoveredRef.current?.node !== hit.node || !hit.node.isConnected) {
-          return;
-        }
-        setTarget({
-          structure: hit.structure,
-          rect: hit.node.getBoundingClientRect(),
-        });
-      }, delay);
-    };
-
-    const onPointerOut = (event: PointerEvent) => {
-      const hovered = hoveredRef.current;
-      if (!hovered) return;
-      const next = event.relatedTarget;
-      if (
-        next instanceof Node &&
-        (hovered.node.contains(next) || contentRef.current?.contains(next))
-      ) {
-        return;
-      }
-      if (openTimer.current) {
-        // Left before it opened: nothing to close, just forget it.
-        clearTimers();
-        hoveredRef.current = null;
-        return;
-      }
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-      closeTimer.current = setTimeout(close, 100);
-    };
-
-    // The anchor is a snapshot of the card's box; it would drift on scroll.
-    const onScroll = () => {
-      if (hoveredRef.current) close();
-    };
-
-    document.addEventListener("pointerover", onPointerOver);
-    document.addEventListener("pointerout", onPointerOut);
-    document.addEventListener("scroll", onScroll, true);
-    return () => {
-      document.removeEventListener("pointerover", onPointerOver);
-      document.removeEventListener("pointerout", onPointerOut);
-      document.removeEventListener("scroll", onScroll, true);
-      clearTimers();
-    };
-  }, [enabled, close, clearTimers, menuOpenRef]);
-
-  // Radix only ever asks us to close (Escape, outside pointer, leaving the
-  // content); opening is ours.
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (!open) close();
-    },
-    [close],
-  );
-
-  if (!enabled) return null;
-
-  const rect = target?.rect;
-
-  return (
-    <HoverCard
-      open={target !== null}
-      onOpenChange={handleOpenChange}
-      openDelay={0}
-      closeDelay={100}
-    >
-      <HoverCardTrigger asChild>
-        <span
-          aria-hidden
-          style={{
-            position: "fixed",
-            top: rect?.top ?? 0,
-            left: rect?.left ?? 0,
-            width: rect?.width ?? 0,
-            height: rect?.height ?? 0,
-            pointerEvents: "none",
-          }}
-        />
-      </HoverCardTrigger>
-      <HoverCardContent
-        ref={contentRef}
-        side="right"
-        align="center"
-        sideOffset={12}
-        className="w-80 max-w-[min(90vw,20rem)] p-0 ring-0 border-0 bg-transparent overflow-visible shadow-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* The same slight brand-coloured border a hovered HomeCard has. Ring and
-            shadow live here (on the actual visible element) so they aren't
-            lost on the transparent portal container. */}
-        <div className="rounded-3xl overflow-hidden bg-popover ring-1 ring-primary/40 dark:ring-primary/50 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)]">
-          {target &&
-            getSmartBuilderAdapters().renderHover({
-              identifier: target.structure.identifier,
-              object: { id: target.structure.id },
-            })}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
 };
