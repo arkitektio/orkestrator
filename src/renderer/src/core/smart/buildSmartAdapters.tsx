@@ -36,6 +36,10 @@ export type SmartModelPage<T extends Object = Object> = {
 export type SmartListPageProps<T extends Object = Object> = {
   children?: React.ReactNode;
   title?: React.ReactNode;
+  /** The list page header's line; defaults to the model's manifest description. */
+  description?: React.ReactNode;
+  /** `false` leaves the list page header out. */
+  header?: boolean;
   help?: React.ReactNode;
   sidebars?: React.ReactNode;
   pageActions?: React.ReactNode;
