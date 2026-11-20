@@ -1,21 +1,17 @@
 import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
-import { SlotSections } from "@/core/layout/PageSections";
-import { useSelf } from "@/core/connection/useSelf";
 import { Link } from "@/core/ui/link";
 import React from "react";
-import { Username } from "../components/Me";
 import { RecentAppsSection } from "../components/sections/RecentAppsSection";
 import { useHomePageStatsQuery } from "../api/graphql";
 
 /**
- * Team's front door: its pages are the sidebar's Overview tab; the stage is what other modules put on your home
- * (kraph: latest mentions, top priority — each behind its own guard), then a
- * few of the organization's apps. The people are on Members.
+ * Team's front door: its pages are the sidebar's Overview tab; the stage is a
+ * few of the organization's apps. The people are on Members. What the other
+ * modules have for the member (calls, tasks, todos) is on the app's home page.
  */
 const Page: React.FC = () => {
-  const { userId } = useSelf();
   const { data: stats } = useHomePageStatsQuery();
   return (
     <PageLayout help={LOK_HELP.overview} title="Team" sidebars={
@@ -30,10 +26,9 @@ const Page: React.FC = () => {
       <ModuleHome
         moduleKey="lok"
         pages={false}
-        title={<>Welcome back, <Username /></>}
-        description="Your organization: its members, the apps acting for you, and what the other modules have for you."
+        title="Team"
+        description="Your organization: its members and the apps acting for you."
       >
-        {userId && <SlotSections slot="home" identifier="@lok/user" object={{ id: userId }} />}
         <RecentAppsSection />
       </ModuleHome>
     </PageLayout>

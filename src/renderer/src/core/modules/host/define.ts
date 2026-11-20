@@ -77,11 +77,18 @@ export type PageSection = {
   /**
    * Host-owned places: the "knowledge" (claims, comments) and "chat"
    * (conversations) sidebars of every page, the "pagebar" (small buttons in
-   * every model page's top bar, right after its breadcrumbs), a member's
-   * "home" dashboard and the "notifications" widget (both matched on
-   * `@lok/user`, the member).
+   * every model page's top bar, right after its breadcrumbs), and the two
+   * places of the app's home page (both matched on `@lok/user`, the member):
+   * "notifications" (what is waiting for them: compact rows under "Needs
+   * you") and "home" (a titled block of the page: what is running, what is
+   * new). A section with nothing to show renders nothing.
    */
   slot?: "knowledge" | "chat" | "pagebar" | "home" | "notifications";
+  /**
+   * Where it stands among the sections of its place: lower first, module
+   * order within a tie. Default 100.
+   */
+  priority?: number;
   /** Which pages: by identifier(s), and/or every datum. Empty = every model page. */
   match: { identifiers?: readonly string[]; datum?: boolean };
   /** Only for users with these roles in the organization (`core/connection/roles`). */

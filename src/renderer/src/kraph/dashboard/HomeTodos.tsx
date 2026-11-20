@@ -1,13 +1,11 @@
-import { Button } from "@/core/ui/button";
-import { Separator } from "@/core/ui/separator";
-import { ListTodo } from "lucide-react";
+import { HomeSection } from "@/core/layout/ModuleHome";
 import { NavLink } from "react-router-dom";
 import { TodoStatus, useTodoItemsQuery } from "../api/graphql";
 import { TodoItemRow } from "../components/todos/TodoItemRow";
 
 const SHOWN = 6;
 
-/** The member's open todo items on their home dashboard (kraph's `home` slot section). Nothing when there are none. */
+/** The member's open todo items on the home page (kraph's `home` slot section). Nothing when there are none. */
 export const HomeTodos = () => {
   const { data } = useTodoItemsQuery({
     variables: { filters: { mine: true, status: [TodoStatus.Todo, TodoStatus.Doing] }, pagination: { limit: SHOWN + 1 } },
@@ -16,20 +14,21 @@ export const HomeTodos = () => {
   if (items.length === 0) return null;
 
   return (
-    <>
-      <section className="flex flex-col gap-2 p-3">
-        <div className="flex items-center gap-2">
-          <ListTodo className="size-5 text-muted-foreground" />
-          <h2 className="font-semibold">My todos</h2>
-          <Button asChild variant="link" size="sm" className="ml-auto">
-            <NavLink to="/kraph/todos">{items.length > SHOWN ? "See all" : "Open"}</NavLink>
-          </Button>
-        </div>
+    <HomeSection
+      title={
+        <>
+          <span>My todos</span>
+          <NavLink to="/kraph/todos" className="ml-auto font-normal normal-case tracking-normal hover:text-foreground">
+            {items.length > SHOWN ? "See all →" : "Open board →"}
+          </NavLink>
+        </>
+      }
+    >
+      <div className="grid gap-2 xl:grid-cols-2">
         {items.slice(0, SHOWN).map((item) => (
           <TodoItemRow key={item.id} item={item} compact />
         ))}
-      </section>
-      <Separator />
-    </>
+      </div>
+    </HomeSection>
   );
 };

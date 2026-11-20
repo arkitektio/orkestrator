@@ -1,7 +1,7 @@
 import { defineModule } from "@/core/modules/host/define";
 import { LOK_ACTIONS } from "./actions";
 import { LOK_DIALOGS } from "./dialogRegistry";
-import { LokDashboardWidgets } from "./dashboard/LokDashboardWidgets";
+import { MessageNotifications } from "./dashboard/MessageNotifications";
 import { ClientDisplay } from "./displays/ClientDisplay";
 import { DeviceDisplay } from "./displays/DeviceDisplay";
 import { MandateDisplay } from "./displays/MandateDisplay";
@@ -30,7 +30,17 @@ export const LOK_MODULE = defineModule({
     optionSources: LOK_OPTION_SOURCES,
     // Kabinet asks lok for a mandate when a release is approved.
     operations: LOK_OPERATIONS,
-    // The Notifications and Team dashboard widgets.
-    background: [LokDashboardWidgets],
+    pageSections: [
+      {
+        // The messages sent to the member, under "Needs you" on the home page.
+        id: "lok.messagenotifications",
+        title: "Messages",
+        placement: "main",
+        slot: "notifications",
+        priority: 10,
+        match: { identifiers: ["@lok/user"] },
+        Component: MessageNotifications,
+      },
+    ],
   },
 });

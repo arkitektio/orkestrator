@@ -1,8 +1,7 @@
 import { MIKRO_BLOKS } from "./bloks";
 import { defineModule } from "@/core/modules/host/define";
 import { MIKRO_ACTIONS } from "./actions";
-import { LatestArrayDatasetsDashboardWidget } from "./dashboard/LatestArrayDatasetsDashboardWidget";
-import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
+import { HomeDatasets } from "./dashboard/HomeDatasets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
 import { ChartDisplay } from "./displays/ChartDisplay";
@@ -67,7 +66,18 @@ export const MIKRO_MODULE = defineModule({
     actions: MIKRO_ACTIONS,
     optionSources: MIKRO_OPTION_SOURCES,
     profileSections: MIKRO_PROFILE_SECTIONS,
-    background: [MikroDashboardWidgets, LatestArrayDatasetsDashboardWidget],
+    pageSections: [
+      {
+        // The newest datasets on the home page.
+        id: "mikro.homedatasets",
+        title: "Latest datasets",
+        placement: "main",
+        slot: "home",
+        priority: 40,
+        match: { identifiers: ["@lok/user"] },
+        Component: HomeDatasets,
+      },
+    ],
     search: MikroEntitySearch,
     fileDownloaders: MIKRO_FILE_DOWNLOADERS,
   },

@@ -9,7 +9,7 @@ import { currentTopic, fromCallStructure } from "./structureInput";
 import { useOpenCall } from "./useOpenCall";
 
 /**
- * The calls the member was asked into, for the Notifications widget
+ * The calls the member was asked into, for "Needs you" on the home page
  * (lovekit's `notifications` slot section on `@lok/user`). What is sent
  * to a person is this and only this; joining is open to everyone through
  * "Join calls" on the home page.

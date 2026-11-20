@@ -204,7 +204,7 @@ export const AppProvider = ({
                                     <GcOnNavigate />
                                     <ExportHost />
                                     {/* Every module's always-on builtins (updaters,
-                                        dashboard widgets), each behind its guard. */}
+                                        registrars), each behind its guard. */}
                                     {!quick && <ModuleBackground />}
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />

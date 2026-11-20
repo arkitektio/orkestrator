@@ -7,8 +7,7 @@ import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
 import { TaskIsland } from "./components/global/TaskIsland";
-import { LatestTasksDashboardWidget } from "./dashboard/LatestTasksDashboardWidget";
-import { RekuestDashboardWidgets } from "./dashboard/RekuestDashboardWidgets";
+import { HomeTasks } from "./dashboard/HomeTasks";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
 import { ActionDisplay } from "./displays/ActionDisplay";
 import { AgentDisplay } from "./displays/AgentDisplay";
@@ -86,6 +85,16 @@ export const REKUEST_MODULE = defineModule({
     actions: REKUEST_ACTIONS,
     pageSections: [
       {
+        // The latest tasks on the home page.
+        id: "rekuest.hometasks",
+        title: "Latest tasks",
+        placement: "main",
+        slot: "home",
+        priority: 20,
+        match: { identifiers: ["@lok/user"] },
+        Component: HomeTasks,
+      },
+      {
         // Run the "enhance" collection's actions on a category (fill in its
         // description, image, ...).
         id: "rekuest.enhance",
@@ -133,8 +142,6 @@ export const REKUEST_MODULE = defineModule({
       TaskUpdater,
       AgentUpdater,
       ModuleRegistrar,
-      RekuestDashboardWidgets,
-      LatestTasksDashboardWidget,
       TaskHookRunner,
     ],
     search: RekuestEntitySearch,

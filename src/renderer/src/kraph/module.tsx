@@ -25,9 +25,7 @@ import { service } from "./service";
 import { KRAPH_NAV_LINKS } from "./navLinks";
 import { KnowledgeSidebar } from "./components/sidebars/KnowledgeSidebar";
 import { TodoPageTrack } from "./components/todos/TodoPageTrack";
-import { HomeMentions } from "./dashboard/HomeMentions";
 import { HomeTodos } from "./dashboard/HomeTodos";
-import { TodosDashboardWidget } from "./dashboard/TodosDashboardWidget";
 import { MentionNotifications } from "./dashboard/MentionNotifications";
 import { KraphEntitySearch } from "./search";
 import { KRAPH_SECTIONS } from "./smart/sections";
@@ -85,25 +83,17 @@ export const KRAPH_MODULE = defineModule({
         Component: TodoPageTrack,
       },
       {
-        // The member's mentions on their home dashboard …
-        id: "kraph.homementions",
-        title: "Latest mentions",
-        placement: "main",
-        slot: "home",
-        match: { identifiers: ["@lok/user"] },
-        Component: HomeMentions,
-      },
-      {
-        // The member's open todo items on their home dashboard.
+        // The member's open todo items on the home page.
         id: "kraph.hometodos",
         title: "My todos",
         placement: "main",
         slot: "home",
+        priority: 30,
         match: { identifiers: ["@lok/user"] },
         Component: HomeTodos,
       },
       {
-        // … and in the Notifications widget.
+        // The member's mentions, under "Needs you" on the home page.
         id: "kraph.mentionnotifications",
         title: "Mentions",
         placement: "main",
@@ -113,8 +103,6 @@ export const KRAPH_MODULE = defineModule({
       },
     ],
     sections: KRAPH_SECTIONS,
-    // The member's todos and their progress, as a home dashboard widget.
-    background: [TodosDashboardWidget],
     search: KraphEntitySearch,
   },
 });

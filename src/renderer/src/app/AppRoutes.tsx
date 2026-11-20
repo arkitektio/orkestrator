@@ -1,22 +1,18 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
+import { HomePage } from "./pages/HomePage";
 import { NewTabPage } from "./pages/NewTabPage";
 import { ShareGatePage } from "./pages/ShareGatePage";
 import { AuthCallbackPage } from "../core/authflow/AuthCallbackPage";
 import { RelayCallbackRedirect } from "../core/authflow/RelayCallbackRedirect";
 import { SmartLinkPage } from "../core/links/SmartLinkPage";
 import { IntentPage } from "../core/links/IntentPage";
-import { ModuleLoadingFallback } from "../core/layout/fallbacks/ModuleLoading";
 import { ModuleRoute } from "../core/modules/ModuleRoute";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { modulePages } from "../core/modules/registries";
-
-// The dashboard carries dockview; it is the index route, but a deep link into a
-// module should not pay for it.
-const Hero = React.lazy(() => import("@/app/pages/Hero"));
 
 // Each module root is its own chunk: the scene renderer (three.js), DuckDB,
 // Monaco and the flow editor only load when their route is first visited
@@ -44,14 +40,8 @@ export const AppRoutes = () => {
     <>
       <BackNavigationErrorCatcher>
         <Routes>
-          <Route
-            index
-            element={
-              <React.Suspense fallback={<ModuleLoadingFallback />}>
-                <Hero />
-              </React.Suspense>
-            }
-          />
+          {/* Home: what needs you, where you were, what the modules have for you. */}
+          <Route index element={<HomePage />} />
           {/* What ⌘T opens: the search as a page, plus the modules. */}
           <Route path="new" element={<NewTabPage />} />
           {/* Where a scoped share link lands before it becomes a page. Not

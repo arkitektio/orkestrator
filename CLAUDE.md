@@ -265,6 +265,11 @@ Rules:
     and Chat sidebars are the `knowledge` / `chat` slots (`<SlotSections>`),
     and `pagebar` is every model page's top bar (`ModelPageLayout`: small
     buttons right after the breadcrumbs, `PageLayout`'s `besideTitle`).
+    The app's home page (`app/pages/HomePage.tsx`) is made of two slots on
+    `@lok/user`: `notifications` (rows under "Needs you", each reporting its
+    count with `useReportNotificationCount`) and `home` (a titled
+    `HomeSection`, ordered by `priority`); a module puts nothing on home any
+    other way, and a section with nothing to show renders null.
     A page passes only what the section needs (`{ id, clientId }`), not its
     whole fragment.
     When the caller holds a foreign key instead of the model's id, say which

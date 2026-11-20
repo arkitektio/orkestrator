@@ -122,9 +122,7 @@ describe("deriveProfileId", () => {
     );
   });
 
-  it("is the same string the dashboard scopes its layouts by", () => {
-    // Hero.tsx keys dockview layouts by buildScopeKey(baseUrl, userId, orgId);
-    // sharing the string is what re-scopes the dashboard on a switch for free.
+  it("is the scope key of its server, user and organization", () => {
     expect(deriveProfileId(identity)).toBe(
       buildScopeKey("https://lok.test/lok/f", "u1", "o1"),
     );

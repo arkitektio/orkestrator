@@ -347,23 +347,26 @@ export const modulePageSections = derived((): HostPageSection[] =>
   ),
 );
 
-/** The sections that apply to a page of `identifier`, in module order. */
+/** The sections that apply to a page of `identifier`: by `priority`, then in module order. */
 export const pageSectionsFor = (
   identifier: string,
   where: { placement?: PageSection["placement"]; slot?: PageSection["slot"] | null },
   isDatum: boolean,
   roles: readonly string[],
 ): HostPageSection[] =>
-  modulePageSections().filter((section) => {
-    if (!satisfiesRoles(roles, section.roles)) return false;
-    if (where.placement && section.placement !== where.placement) return false;
-    if (where.slot !== undefined && (section.slot ?? null) !== where.slot) return false;
-    const { identifiers, datum } = section.match;
-    const byIdentifier = !!identifiers?.includes(identifier);
-    const byDatum = !!datum && isDatum;
-    const everywhere = !identifiers?.length && !datum;
-    return everywhere || byIdentifier || byDatum;
-  });
+  modulePageSections()
+    .filter((section) => {
+      if (!satisfiesRoles(roles, section.roles)) return false;
+      if (where.placement && section.placement !== where.placement) return false;
+      if (where.slot !== undefined && (section.slot ?? null) !== where.slot) return false;
+      const { identifiers, datum } = section.match;
+      const byIdentifier = !!identifiers?.includes(identifier);
+      const byDatum = !!datum && isDatum;
+      const everywhere = !identifiers?.length && !datum;
+      return everywhere || byIdentifier || byDatum;
+    })
+    // `sort` is stable: sections that name no priority keep their module order.
+    .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
 
 export type ModuleSearch = {
   namespace: string;
@@ -457,8 +460,8 @@ export const ModuleRailIslands = () => {
 };
 
 /**
- * Every module's always-on components (updaters, dashboard widget
- * registrars), each module's behind its guard.
+ * Every module's always-on components (updaters, registrars), each
+ * module's behind its guard.
  */
 export const ModuleBackground = () => {
   useModuleHostVersion();

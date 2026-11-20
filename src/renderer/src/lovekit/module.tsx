@@ -47,6 +47,7 @@ export const LOVEKIT_MODULE = defineModule({
         title: "Join calls",
         placement: "main",
         slot: "home",
+        priority: 10,
         match: { identifiers: ["@lok/user"] },
         Component: JoinCallsSection,
       },

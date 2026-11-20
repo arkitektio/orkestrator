@@ -21,7 +21,7 @@ import { Modifier } from "./ExtensionContext";
  *
  * `CommandMenu` used to own its own state AND its own hotkey listener, and was
  * mounted per page — in `ListPageLayout`, `ModelPageLayout` and five module home
- * pages. Two consequences, both bad: on the Hero dashboard (which uses neither
+ * pages. Two consequences, both bad: on the home page (which uses neither
  * layout) the palette did not exist at all, and on any screen with two mounts
  * both listeners fired and the dialog toggled twice, i.e. not at all.
  *

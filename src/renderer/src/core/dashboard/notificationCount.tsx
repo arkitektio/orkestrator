@@ -1,10 +1,10 @@
 import React from "react";
 
 /**
- * How many notifications each contributor to the Notifications widget is
- * showing, so the widget can say "No new notifications" once for all of
- * them. Contributors (a module's `notifications` slot section) report with
- * `useReportNotificationCount`; the widget reads the total.
+ * How many notifications each contributor to "Needs you" on the home page is
+ * showing, so the block is drawn only when one of them shows any.
+ * Contributors (a module's `notifications` slot section) report with
+ * `useReportNotificationCount`; the home page reads the total.
  */
 type Counts = { report: (key: string, count: number) => void };
 

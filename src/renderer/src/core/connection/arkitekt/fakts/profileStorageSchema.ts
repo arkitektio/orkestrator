@@ -182,11 +182,11 @@ export const normalizeBaseUrl = (baseUrl: string): string =>
   baseUrl.trim().replace(/\/+$/, "").toLowerCase();
 
 /**
- * The scope key shared by the profile book and the dashboard layout store.
+ * The scope key the profile book derives a profile's id from.
  *
- * `Hero.tsx` has keyed its dockview layouts by exactly this string since before
- * profiles existed; making the profile id the same value means a switch re-scopes
- * the dashboard for free.
+ * The old home dashboard keyed its dockview layouts by exactly this string
+ * before profiles existed (those `home-dashboard-layout-*` entries are no
+ * longer read); the profile id kept the same value.
  *
  * The HUB is a fourth component, appended only when one is known. That is not
  * cosmetic: lok lets the same user approve the same app on the same device into

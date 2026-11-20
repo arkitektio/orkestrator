@@ -13,7 +13,7 @@ import {
 
 /**
  * The invitations ringing on this device: lovekit's answer to "who asked me
- * into a call", shared by the rail island and the Notifications widget
+ * into a call", shared by the rail island and "Needs you" on the home page
  * through the Apollo cache. `CallInvitesWatcher` keeps it live.
  */
 export const useCallInvites = () => {
