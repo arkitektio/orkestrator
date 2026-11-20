@@ -1,3 +1,10 @@
+# [8.11.0](https://github.com/arkitektio/orkestrator/compare/v8.10.0...v8.11.0) (2026-11-20)
+
+
+### Features
+
+* **home:** every module's home keeps its pages in the sidebar ([36bf545](https://github.com/arkitektio/orkestrator/commit/36bf545ad3e0266deff409df2a3f7317345fa9c7))
+
 # [8.10.0](https://github.com/arkitektio/orkestrator/compare/v8.9.0...v8.10.0) (2026-11-20)
 
 
