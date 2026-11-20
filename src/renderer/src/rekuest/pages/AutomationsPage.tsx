@@ -1,6 +1,6 @@
+import { RekuestSchedule } from "@/core/linkers";
 import { useDialog } from "@/core/dialogs/registry";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { PageLayout } from "@/core/layout/PageLayout";
 import { Button } from "@/core/ui/button";
 import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
@@ -98,8 +98,9 @@ const Page = () => {
   );
 
   return (
-    <PageLayout
+    <RekuestSchedule.ListPage
       title="Automations"
+      description="Actions that run on a clock, and actions that run when a service announces that data changed."
       help={REKUEST_HELP.automations}
       pageActions={
         <>
@@ -138,10 +139,7 @@ const Page = () => {
         </>
       }
     >
-      <div className="max-w-3xl p-6">
-        <h1 className="mb-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Automations
-        </h1>
+      <div className="max-w-3xl p-3">
 
         {error && !loaded ? (
           <QueryError
@@ -207,7 +205,7 @@ const Page = () => {
           </>
         )}
       </div>
-    </PageLayout>
+    </RekuestSchedule.ListPage>
   );
 };
 

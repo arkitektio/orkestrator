@@ -66,7 +66,8 @@ describe("AgentFacts", () => {
     expect(screen.getByText("dev-9")).toBeTruthy();
     expect(screen.getByText("@lok/client:client-1")).toBeTruthy();
     expect(screen.getByText("@lok/user:user-7")).toBeTruthy();
-    expect(screen.getByText("2")).toBeTruthy();
+    // The count links to the agent's actions page.
+    expect(screen.getByText("2 actions")).toBeTruthy();
     expect(screen.getByText("Online")).toBeTruthy();
   });
 

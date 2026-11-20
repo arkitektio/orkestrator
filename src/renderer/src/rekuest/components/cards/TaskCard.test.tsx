@@ -9,9 +9,9 @@ vi.mock("@/core/linkers", () => {
       Smart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
       DetailLink: Link,
     },
-    RekuestAgent: { DetailLink: Link },
   };
 });
+vi.mock("../logo/BlokLogo", () => ({ BlokLogo: () => <span>logo</span> }));
 vi.mock("@/core/ui/timestamp", () => ({
   default: () => <span>some time ago</span>,
 }));
@@ -27,7 +27,10 @@ const task = (over: Partial<ListTaskFragment>): ListTaskFragment => ({
   isDone: false,
   finishedAt: null,
   createdAt: "2026-09-17T10:00:00.000Z",
-  action: { id: "a1", name: "Segment Cells" },
+  latestProgress: null,
+  latestMessage: null,
+  latestReturns: null,
+  action: { id: "a1", name: "Segment Cells", logo: null, returns: [] },
   implementation: { id: "i1", interface: "segment_cells" },
   agent: { id: "ag1", name: "napari-lab" },
   events: [],
@@ -48,10 +51,29 @@ describe("TaskCard", () => {
     render(<TaskCard item={task({})} />);
     expect(screen.getByText("Segment Cells")).toBeTruthy();
     expect(screen.getByText("napari-lab")).toBeTruthy();
-    expect(screen.getByText("Progress")).toBeTruthy();
+    expect(screen.getByText("Running")).toBeTruthy();
+    // No logo blok: the action's initials stand in.
+    expect(screen.getByText("SC")).toBeTruthy();
   });
 
-  it("shows the newest progress and message of a running task", () => {
+  it("follows a running task by the server's latest progress and message", () => {
+    render(
+      <TaskCard
+        item={task({
+          latestProgress: 70,
+          latestMessage: "Slice 21 of 30",
+          events: [event({ progress: 40, message: "Slice 12 of 30" })],
+        })}
+      />,
+    );
+    expect(screen.getByText("70%")).toBeTruthy();
+    expect(screen.getByText("Slice 21 of 30")).toBeTruthy();
+    // Where it runs stays in the facts; what it says is the line under them.
+    expect(screen.getByText("napari-lab")).toBeTruthy();
+    expect(screen.queryByText("Slice 12 of 30")).toBeNull();
+  });
+
+  it("falls back to the newest event's progress and message", () => {
     render(
       <TaskCard
         item={task({
@@ -80,13 +102,24 @@ describe("TaskCard", () => {
       />,
     );
     expect(screen.getByText("Completed")).toBeTruthy();
-    expect(screen.getByText("42.5 s")).toBeTruthy();
+    expect(screen.getByText("· 42.5 s")).toBeTruthy();
+    expect(screen.getByText("napari-lab")).toBeTruthy();
     expect(screen.queryByText("100%")).toBeNull();
-    expect(screen.queryByText("All good")).toBeNull();
+    // How it ended is the line under its name.
+    expect(screen.getByText("All good")).toBeTruthy();
+  });
+
+  it("says a finished run that said nothing was successfully done", () => {
+    render(
+      <TaskCard
+        item={task({ isDone: true, latestEventKind: TaskEventKind.Completed, finishedAt: "2026-09-17T10:00:01.000Z" })}
+      />,
+    );
+    expect(screen.getByText("Successfully done")).toBeTruthy();
   });
 
   it("surfaces the failure message of a failed task", () => {
-    render(
+    const { container } = render(
       <TaskCard
         item={task({
           latestEventKind: TaskEventKind.Critical,
@@ -96,12 +129,24 @@ describe("TaskCard", () => {
       />,
     );
     expect(screen.getByText("Critical")).toBeTruthy();
-    expect(screen.getByText("CUDA out of memory")).toBeTruthy();
+    expect(screen.getByText("CUDA out of memory").className).toContain("text-destructive");
+    expect(container.querySelector(".bg-destructive\\/15")).toBeTruthy();
+  });
+
+  it("says its state in a coloured pill, and lets a long-finished run step back", () => {
+    const done = (finishedAt: string) =>
+      task({ isDone: true, latestEventKind: TaskEventKind.Completed, finishedAt, createdAt: finishedAt });
+    const { container, rerender } = render(<TaskCard item={done(new Date().toISOString())} />);
+    expect(screen.getByText("Completed").closest(".bg-success\\/15")).toBeTruthy();
+    expect(container.querySelector(".saturate-50")).toBeNull();
+    rerender(<TaskCard item={done("2020-01-01T00:00:00.000Z")} />);
+    expect(container.querySelector(".saturate-50")).toBeTruthy();
   });
 
   it("renders a task that has no agent yet", () => {
     render(<TaskCard item={task({ agent: null, latestEventKind: TaskEventKind.Queued })} />);
     expect(screen.getByText("Queued")).toBeTruthy();
+    expect(screen.getByText("No app yet")).toBeTruthy();
   });
 });
 

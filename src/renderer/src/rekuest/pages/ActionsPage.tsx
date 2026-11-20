@@ -274,17 +274,7 @@ const Page = () => {
         </Sidebars>
       }
     >
-      <div className="p-6">
-        <div className="mb-6 max-w-3xl">
-          <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-            Actions
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Everything your connected apps can do. Find one by what it works on,
-            check that an app providing it is online, and run it.
-          </p>
-        </div>
-
+      <div className="p-3">
         {grouping && (
           <p className="mb-3 text-xs text-muted-foreground">
             Groups cover the {limit} actions loaded per page. Follow a group

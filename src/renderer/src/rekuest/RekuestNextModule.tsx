@@ -48,6 +48,7 @@ import ImplementationsPage from "./pages/ImplementationsPage";
 import { ResolutionPage } from "./pages/ResolutionPage";
 import AgentStatesPage from "./pages/agent/AgentStatesPage";
 import AgentTasksPage from "./pages/agent/AgentTasksPage";
+import AgentActionsPage from "./pages/agent/AgentActionsPage";
 import AgentBloksPage from "./pages/agent/AgentBloksPage";
 import AgentPanelPage from "./pages/agent/AgentPanelPage";
 import StatePage from "./pages/StatePage";
@@ -120,6 +121,7 @@ const Module: React.FC = () => {
         <Route path="agents/:id" element={<AgentPage />} />
         <Route path="agents/:id/states" element={<AgentStatesPage />} />
         <Route path="agents/:id/tasks" element={<AgentTasksPage />} />
+        <Route path="agents/:id/actions" element={<AgentActionsPage />} />
         <Route path="agents/:id/bloks" element={<AgentBloksPage />} />
         <Route path="agents/:id/panels/:panel" element={<AgentPanelPage />} />
         <Route path="spaces" element={<SpacesPage />} />

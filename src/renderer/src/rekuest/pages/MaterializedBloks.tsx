@@ -8,21 +8,9 @@ const Page = () => {
     <RekuestMaterializedBlok.ListPage
       help={REKUEST_HELP.materializedBloks}
       title={"Custom Materialized Bloks"}
+      description="Bloks bound into a dashboard with their agents, made by people from custom bloks."
     >
-      <div className="p-6">
-        <div className="col-span-4 mb-3 grid gap-4 md:grid-cols-2 md:items-center md:gap-8 xl:gap-20">
-          <div>
-            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              Custom Materialized Bloks
-            </h1>
-            <p className="mt-3 text-xl text-muted-foreground">
-              Materialized bloks are deployed instances of a blok bound into a dashboard
-              with concrete agent mappings. These are the ones people made from custom
-              bloks.
-            </p>
-          </div>
-        </div>
-
+      <div className="p-3">
         <MaterializedBlokList filters={{ provided: false }} />
       </div>
     </RekuestMaterializedBlok.ListPage>

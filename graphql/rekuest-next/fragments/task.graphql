@@ -352,9 +352,23 @@ fragment ListTask on Task {
   isDone
   finishedAt
   createdAt
+  # What a card follows a run with (kept by the server as events are recorded).
+  latestProgress
+  latestMessage
+  # What the run last returned, and what the action returns: a finished card
+  # links its first structure.
+  latestReturns
   action {
     id
     name
+    logo {
+      ...BlokLogo
+    }
+    returns {
+      key
+      identifier
+      kind
+    }
   }
   implementation {
     id

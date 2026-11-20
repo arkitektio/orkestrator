@@ -1,3 +1,4 @@
+import { CARD_FRAME_WIDE_MIN_WIDTH } from "@/core/ui/card-frame";
 import { ListRender } from "@/core/layout/ListRender";
 import { RekuestTask } from "@/core/linkers";
 import { TaskFilter, TaskOrder, OffsetPaginationInput, useListTasksQuery } from "@/rekuest/api/graphql";
@@ -30,7 +31,7 @@ const List = ({ filters, order, pagination, title }: Props) => {
         }
         refetch={refetch}
         error={error}
-        minItemWidth={240}
+        minItemWidth={CARD_FRAME_WIDE_MIN_WIDTH}
       >
         {(ex) => (
           <TaskCard key={ex.id} item={ex} />

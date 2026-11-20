@@ -1,5 +1,5 @@
+import { RekuestFiring } from "@/core/linkers";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { PageLayout } from "@/core/layout/PageLayout";
 import { Button } from "@/core/ui/button";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { Skeleton } from "@/core/ui/skeleton";
@@ -63,7 +63,7 @@ const Page = () => {
   );
 
   return (
-    <PageLayout
+    <RekuestFiring.ListPage
       title="Firings"
       help={REKUEST_HELP.firings}
       pageActions={
@@ -111,10 +111,7 @@ const Page = () => {
         </>
       }
     >
-      <div className="max-w-5xl p-6">
-        <h1 className="mb-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Firings
-        </h1>
+      <div className="max-w-5xl p-3">
 
         {error && !firings ? (
           <QueryError error={error} onRetry={() => refetch()} />
@@ -148,7 +145,7 @@ const Page = () => {
           </Button>
         )}
       </div>
-    </PageLayout>
+    </RekuestFiring.ListPage>
   );
 };
 

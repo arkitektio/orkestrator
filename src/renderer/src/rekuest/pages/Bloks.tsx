@@ -11,6 +11,7 @@ const Page = () => {
   return (
     <RekuestBlok.ListPage
       title={"Custom Bloks"}
+      description="Bloks you made or installed: interfaces written in BSX that draw on your agents."
       help={REKUEST_HELP.customBloks}
       pageActions={
         <PageAction alwaysShow size="sm" icon={<FilePlus2 className="h-4 w-4" />} onClick={() => navigate("/rekuest/bloks/new")}>
@@ -18,20 +19,9 @@ const Page = () => {
         </PageAction>
       }
     >
-      <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
-        <div>
-          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-            Custom Bloks
-          </h1>
-          <p className="mt-3 text-xl text-muted-foreground">
-            Bloks are UI elements that can be composed to dashboards, just like
-            LEGO blocks. These are the ones you made, installed from a repository
-            or forked from an app: yours to change and to materialize with any
-            agents.
-          </p>
-        </div>
+      <div className="p-3">
+        <BlokList filters={{ provided: false }} />
       </div>
-      <BlokList filters={{ provided: false }} />
     </RekuestBlok.ListPage>
   );
 };

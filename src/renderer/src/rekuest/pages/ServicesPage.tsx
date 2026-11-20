@@ -1,5 +1,4 @@
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { PageLayout } from "@/core/layout/PageLayout";
 import { RekuestService } from "@/core/linkers";
 import { CommandActionIcon } from "@/core/smart/extensions/CommandActionRow";
 import { Button } from "@/core/ui/button";
@@ -33,7 +32,7 @@ const Page = () => {
   );
 
   return (
-    <PageLayout
+    <RekuestService.ListPage
       title="Services"
       help={REKUEST_HELP.services}
       pageActions={
@@ -45,10 +44,7 @@ const Page = () => {
         />
       }
     >
-      <div className="max-w-3xl p-6">
-        <h1 className="mb-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Services
-        </h1>
+      <div className="max-w-3xl p-3">
 
         {error && !services ? (
           <QueryError error={error} onRetry={() => refetch()} />
@@ -109,7 +105,7 @@ const Page = () => {
           </div>
         )}
       </div>
-    </PageLayout>
+    </RekuestService.ListPage>
   );
 };
 

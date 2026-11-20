@@ -1,3 +1,4 @@
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
 import { ListRender } from "@/core/layout/ListRender";
 import { RekuestAgent } from "@/core/linkers";
 import {
@@ -31,6 +32,7 @@ const List = ({ filters, pagination, order, title }: Props) => {
         )
       }
       refetch={refetch}
+      minItemWidth={CARD_FRAME_MIN_WIDTH}
     >
       {(ex) => <AgentCard key={ex.id} item={ex} />}
     </ListRender>

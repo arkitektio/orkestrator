@@ -65,6 +65,7 @@ const OrgTasksPage = () => {
   return (
     <RekuestTask.ListPage
       title={"Org Tasks"}
+      description="Every task running across the organization, by everyone."
       help={REKUEST_HELP.orgTasks}
       pageActions={
         <DateTimeRangePicker
@@ -77,16 +78,7 @@ const OrgTasksPage = () => {
         />
       }
     >
-      <div className="flex h-full flex-col gap-4 p-6">
-        <div>
-          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-            Organization Tasks
-          </h1>
-          <p className="mt-3 text-xl text-muted-foreground">
-            Every task running across the organization.
-          </p>
-        </div>
-
+      <div className="flex h-full flex-col gap-4 p-3">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-medium text-muted-foreground">

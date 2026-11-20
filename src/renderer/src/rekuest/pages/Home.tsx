@@ -1,3 +1,4 @@
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
 import { ListRender } from "@/core/layout/ListRender";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
@@ -33,6 +34,9 @@ const sortAgents = (agents: ListAgentFragment[]) =>
   [...agents].sort(
     (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
   );
+
+/** How many finished tasks the home shows under the ongoing ones. */
+const RECENTLY_FINISHED = 3;
 
 const Page = () => {
   const filters = useAgentFilters();
@@ -152,6 +156,7 @@ const Page = () => {
                 refetch={refetch}
                 error={error}
                 limit={40}
+                minItemWidth={CARD_FRAME_MIN_WIDTH}
               >
                 {(agent) => <AgentCard key={agent.id} item={agent} />}
               </ListRender>
@@ -160,6 +165,10 @@ const Page = () => {
         }
       >
 
+        {/* What is running now, then only the last few that finished (failed
+            ones included, they are what wants noticing); the whole history is
+            the Tasks page, a click on either title. A section with nothing in
+            it is not drawn. */}
         <section className="space-y-6">
           <TaskList
             title={
@@ -170,11 +179,13 @@ const Page = () => {
             }
             filters={{ isDone: false, rootIsnull: true }}
             order={{ createdAt: Ordering.Desc }}
+            pagination={{ limit: 24 }}
           />
           <TaskList
-            filters={{ rootIsnull: true }}
+            title="Recently finished"
+            filters={{ isDone: true, rootIsnull: true }}
             order={{ createdAt: Ordering.Desc }}
-            pagination={{ limit: 5 }}
+            pagination={{ limit: RECENTLY_FINISHED }}
           />
         </section>
 

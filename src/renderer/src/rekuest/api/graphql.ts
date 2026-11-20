@@ -8570,7 +8570,10 @@ export type ChildTaskEventFragment = { __typename?: 'ChildTaskEvent', create?: (
     & TaskChangeFragment
   ) | null };
 
-export type ListTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null, agent?: { __typename?: 'Agent', id: string, name: string } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> };
+export type ListTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, action: { __typename?: 'Action', id: string, name: string, logo?: (
+      { __typename?: 'Blok' }
+      & BlokLogoFragment
+    ) | null, returns: Array<{ __typename?: 'ReturnPort', key: string, identifier?: any | null, kind: PortKind }> }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null, agent?: { __typename?: 'Agent', id: string, name: string } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> };
 
 export type HoverTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any, finishedAt?: any | null, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string } } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> };
 
@@ -11805,9 +11808,20 @@ export const ListTaskFragmentDoc = gql`
   isDone
   finishedAt
   createdAt
+  latestProgress
+  latestMessage
+  latestReturns
   action {
     id
     name
+    logo {
+      ...BlokLogo
+    }
+    returns {
+      key
+      identifier
+      kind
+    }
   }
   implementation {
     id
@@ -11825,7 +11839,7 @@ export const ListTaskFragmentDoc = gql`
     createdAt
   }
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const AgentPlacementFragmentDoc = gql`
     fragment AgentPlacement on Placement {
   id

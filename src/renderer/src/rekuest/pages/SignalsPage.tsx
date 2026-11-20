@@ -1,5 +1,5 @@
+import { RekuestSignal } from "@/core/linkers";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Button } from "@/core/ui/button";
 import { CollapsibleSearch } from "@/core/ui/collapsible-search";
@@ -81,7 +81,7 @@ const Page = () => {
   );
 
   return (
-    <PageLayout
+    <RekuestSignal.ListPage
       title="Signals"
       help={REKUEST_HELP.signals}
       pageActions={
@@ -131,10 +131,7 @@ const Page = () => {
         </Sidebars>
       }
     >
-      <div className="max-w-5xl p-6">
-        <h1 className="mb-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Signals
-        </h1>
+      <div className="max-w-5xl p-3">
 
         {error && !signals ? (
           <QueryError error={error} onRetry={() => refetch()} />
@@ -168,7 +165,7 @@ const Page = () => {
           </Button>
         )}
       </div>
-    </PageLayout>
+    </RekuestSignal.ListPage>
   );
 };
 

@@ -8,7 +8,7 @@ import { PageHelp } from "@/core/layout/help";
 export const REKUEST_HELP = {
   home: (
     <PageHelp
-      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”) first, then the tasks that are running or just finished. Every Rekuest page is listed in the sidebar, under Overview."
+      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”) first, then the tasks that are running and the last few that finished. Every Rekuest page is listed in the sidebar, under Overview."
       steps={[
         <>Look at <b>Your apps</b> to see which apps are connected. Only online apps are listed at first: press <b>Online</b> in the filter row above the grid to also see the ones that are not reachable right now.</>,
         <>Type into <b>Search apps…</b>, or open <b>Any app</b>, <b>Any device</b> or <b>Any supervisor</b> and pick one, to narrow the grid. A filter that narrows is tinted.</>,
@@ -17,7 +17,7 @@ export const REKUEST_HELP = {
         <>Open the <b>Overview</b> tab of the sidebar to go to a Rekuest page: <b>Actions</b> is the catalog of everything your apps can do, <b>Tasks</b> every task you ran. The numbers next to <b>Actions</b> and <b>Org Tasks</b> count the whole organization.</>,
         <>Right-click an app card for its actions, for example <b>Rename / Update Agent</b> or <b>Pin Agent</b>.</>,
         <>Under <b>Materialized Bloks</b>, click a card to open that view. Each card names the apps it is wired to and how many of them are online.</>,
-        <>Scroll down to <b>Ongoing Tasks</b> and <b>Latest Tasks</b> and click a task to follow it.</>,
+        <>Scroll down to <b>Ongoing tasks</b> for what is running now, and <b>Recently finished</b> for the last three that ended (failed ones included). Click a task to follow it; click either title for every task.</>,
       ]}
       tips={[
         <>No apps yet: start an Arkitekt app and log it into this server. It shows up here as soon as it connects.</>,
@@ -114,6 +114,15 @@ export const REKUEST_HELP = {
       ]}
       tips={[
         <>Every change of a state gets a revision number. <b>Rev</b> on a card is the revision you are looking at.</>,
+      ]}
+    />
+  ),
+  agentActions: (
+    <PageHelp
+      intro="Every action this agent provides: what you can run on it."
+      steps={[
+        <>Press the magnifier in the header and type to find an action by its name, description or interface.</>,
+        <>Click an action to open it; right-click it to run it.</>,
       ]}
     />
   ),

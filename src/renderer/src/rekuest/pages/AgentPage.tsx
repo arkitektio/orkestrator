@@ -354,13 +354,27 @@ export const AgentPage = asDetailQueryRoute(
             object={{ id: data.agent.id, clientId: data.agent.client.clientId, userSub: data.agent.user.sub }}
           />
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <VerticalListRender title="Actions" array={data.agent.implementations}>
+            <VerticalListRender
+              title={
+                <RekuestAgent.DetailLink object={data.agent} subroute="actions" className="hover:underline">
+                  Actions
+                </RekuestAgent.DetailLink>
+              }
+              array={data.agent.implementations}
+            >
               {(item) => <AgentImplementationCard key={item.id} item={item} />}
             </VerticalListRender>
           </div>
 
           <div className="shrink-0">
-            <VerticalListRender title="Recent Tasks" array={recentTasks}>
+            <VerticalListRender
+              title={
+                <RekuestAgent.DetailLink object={data.agent} subroute="tasks" className="hover:underline">
+                  Recent Tasks
+                </RekuestAgent.DetailLink>
+              }
+              array={recentTasks}
+            >
               {(item) => <AgentTaskCard key={item.id} item={item} />}
             </VerticalListRender>
           </div>

@@ -1,3 +1,4 @@
+import { CARD_FRAME_WIDE_MIN_WIDTH } from "@/core/ui/card-frame";
 import { createList } from "@/core/layout/createList";
 import {
   ListTasksQuery,
@@ -30,7 +31,7 @@ const TaskHistoryList = createList<
   ItemComponent: TaskCard,
   title: "History",
   defaultLimit: 12,
-  minItemWidth: 240,
+  minItemWidth: CARD_FRAME_WIDE_MIN_WIDTH,
 });
 
 const NEWEST_FIRST: TaskOrder[] = [{ createdAt: Ordering.Desc }];

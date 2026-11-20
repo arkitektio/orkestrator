@@ -214,7 +214,11 @@ export const AgentFacts = ({ agent }: { agent: AgentFragment }) => {
       </Section>
 
       <Section title="Provides">
-        <Row label="Actions">{agent.implementations.length}</Row>
+        <Row label="Actions">
+          <SubpageLink agent={agent} subroute="actions">
+            {agent.implementations.length} {agent.implementations.length === 1 ? "action" : "actions"}
+          </SubpageLink>
+        </Row>
       </Section>
 
       {/* The agent's own sub-pages: they stand in for the header links. */}

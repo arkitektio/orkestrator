@@ -1,6 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { PageLayout } from "@/core/layout/PageLayout";
 import { RekuestWiregram } from "@/core/linkers";
 import { CommandActionIcon } from "@/core/smart/extensions/CommandActionRow";
 import { Button } from "@/core/ui/button";
@@ -29,7 +28,7 @@ const Page = () => {
   const importOne = () => openDialog("importwiregram", {});
 
   return (
-    <PageLayout
+    <RekuestWiregram.ListPage
       title="Wiregrams"
       help={REKUEST_HELP.wiregrams}
       pageActions={
@@ -38,10 +37,7 @@ const Page = () => {
         </PageAction>
       }
     >
-      <div className="max-w-3xl p-6">
-        <h1 className="mb-6 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Wiregrams
-        </h1>
+      <div className="max-w-3xl p-3">
 
         {error && !wiregrams ? (
           <QueryError error={error} onRetry={() => refetch()} />
@@ -102,7 +98,7 @@ const Page = () => {
           </Button>
         )}
       </div>
-    </PageLayout>
+    </RekuestWiregram.ListPage>
   );
 };
 
