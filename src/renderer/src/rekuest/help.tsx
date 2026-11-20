@@ -121,8 +121,10 @@ export const REKUEST_HELP = {
     <PageHelp
       intro="Every action this agent provides: what you can run on it."
       steps={[
-        <>Press the magnifier in the header and type to find an action by its name, description or interface.</>,
-        <>Click an action to open it; right-click it to run it.</>,
+        <>Type in the search field under the title to find an action by its name, description or interface.</>,
+        <>Press <b>Stateful</b> to keep the actions that work on the agent's state, <b>Own interface</b> to keep the ones that bring their own way of starting a run.</>,
+        <>Press <b>Clear filters</b> to see every action again.</>,
+        <>Click an action's name to open it; press <b>Play</b> on its card to run it.</>,
       ]}
     />
   ),
@@ -130,9 +132,10 @@ export const REKUEST_HELP = {
     <PageHelp
       intro="Every task that ran on this agent, newest first, with filters to find the ones you care about."
       steps={[
-        <>Click <b>Running</b> or <b>Done</b> next to <b>Status:</b> to keep unfinished or finished tasks. Click the chip again to drop it.</>,
-        <>Click one or more chips next to <b>State:</b>, for example <b>Error</b> or <b>Lost</b>, to keep tasks in those states.</>,
-        <>Use the date range in the header to keep tasks created in a period.</>,
+        <>Press <b>Any action</b> under the title and type to find one of the agent's actions; pick it to keep only its tasks.</>,
+        <>Press <b>Running or done</b> and pick <b>Running</b> or <b>Done</b> to keep unfinished or finished tasks.</>,
+        <>Press <b>Any state</b> and pick one, for example <b>Error</b> or <b>Lost</b>, to keep tasks in that state.</>,
+        <>Use the date range next to them to keep tasks created in a period.</>,
         <>Press <b>Clear filters</b> to see everything again.</>,
         <>Click a task to open it.</>,
       ]}
