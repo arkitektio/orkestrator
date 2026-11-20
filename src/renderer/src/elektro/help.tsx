@@ -10,7 +10,7 @@ export const ELEKTRO_HELP = {
     <PageHelp
       intro="The starting point for electrophysiology and neuron modelling: every Elektro page, then your most recent datasets (recorded or simulated traces), neuron models and experiments (timelines that draw datasets together)."
       steps={[
-        <>Use the tiles at the top (<b>Experiments</b>, <b>Neuron models</b>, <b>Datasets</b>, …) to browse, search and sort everything of that kind.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click a page (<b>Experiments</b>, <b>Neuron models</b>, <b>Datasets</b>, …) to browse, search and sort everything of that kind.</>,
         <>Click any card to open that dataset, neuron model or experiment.</>,
         <>Right-click a card for its actions, for example <b>Open on Timeline</b> on a dataset or <b>Create Workspace from Model</b> on a neuron model.</>,
       ]}

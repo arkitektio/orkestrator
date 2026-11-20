@@ -8,10 +8,10 @@ import { PageHelp } from "@/core/layout/help";
 export const BANK_HELP = {
   dashboard: (
     <PageHelp
-      intro="Where to go in Bank, and what changed: every Bank page, then what needs a look, your accounts, the newest transactions and the payments coming up. Before any bank is linked, it only offers to link one."
+      intro="Where to go in Bank, and what changed: what needs a look, your accounts, the newest transactions and the payments coming up. Before any bank is linked, it only offers to link one."
       steps={[
         <>Press <b>Link bank</b> to connect a bank or broker. You give read-only consent at the bank, and its accounts, balances and transactions sync here.</>,
-        <>Use the tiles at the top to open a Bank page; <b>Overview</b> has the totals, the cashflow chart and this month’s spending.</>,
+        <>Open the <b>Overview</b> tab of the sidebar to go to a Bank page; the <b>Overview</b> page has the totals, the cashflow chart and this month’s spending.</>,
         <>Click a chip, for example “… uncategorized this month · review”, to go straight to what needs fixing.</>,
         <>Click an account, a line under <b>Recent transactions</b> or a payment under <b>Coming up</b> to open it.</>,
       ]}

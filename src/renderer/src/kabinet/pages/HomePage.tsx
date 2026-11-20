@@ -3,10 +3,8 @@ import { PageLayout } from "@/core/layout/PageLayout";
 
 import { asParamlessRoute, HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { Sidebars } from "@/core/layout/Sidebars";
-import { HelpSidebar } from "@/core/layout/help";
 import { PageAction } from "@/core/ui/page-action";
-import { HomeEmpty, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { Store } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -16,11 +14,10 @@ import {
   ListReleasesDocument,
   useHomePageQuery,
   useRescanReposMutation,
+  useHomePageStatsQuery,
 } from "../api/graphql";
-import { RunningPods } from "../components/home/RunningPods";
+import { InstalledApps } from "../components/home/InstalledApps";
 import { StoreShelf } from "../components/home/StoreShelf";
-import RepoList from "../components/lists/RepoList";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 import { KABINET_HELP } from "../help";
 
 // The generated `useHomePageQuery` takes no variables at all (`Exact<{}>`),
@@ -37,18 +34,15 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
   const [rescan, { loading }] = useRescanReposMutation({
     refetchQueries: [ListReleasesDocument, ListDefinitionsDocument],
   });
+  const { data: stats } = useHomePageStatsQuery();
   return (
     <PageLayout
       help={KABINET_HELP.home}
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Statistics">
-            <HomePageStatisticsSidebar />
-          </Sidebars.Tab>
-          <Sidebars.Tab label="Help">
-            <HelpSidebar />
-          </Sidebars.Tab>
-        </Sidebars>
+        <ModuleHomeSidebars
+          moduleKey="kabinet"
+          stats={stats ? { "/kabinet/repos": { count: stats.githubRepoStats.count } } : undefined}
+        />
       }
       pageActions={
         <>
@@ -84,6 +78,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
 
       <ModuleHome
         moduleKey="kabinet"
+        pages={false}
         title="Kabinet"
         description="Your organization's app store: install and manage apps from their repositories."
       >
@@ -94,9 +89,9 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
           </HomeEmpty>
         ) : (
           <>
-            <RunningPods />
+            {/* Apps first. The repositories they come from are a page of their own (sidebar). */}
+            <InstalledApps />
             <StoreShelf />
-            <RepoList pagination={{ limit: 6 }} />
           </>
         )}
       </ModuleHome>

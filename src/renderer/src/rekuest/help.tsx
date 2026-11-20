@@ -8,13 +8,13 @@ import { PageHelp } from "@/core/layout/help";
 export const REKUEST_HELP = {
   home: (
     <PageHelp
-      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”) first, then links every Rekuest page, then the tasks that are running or just finished."
+      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”) first, then the tasks that are running or just finished. Every Rekuest page is listed in the sidebar, under Overview."
       steps={[
-        <>Look at <b>Your apps</b> to see which apps are connected. Press <b>Online</b> to hide the ones that are not reachable right now.</>,
-        <>Type into <b>Search apps…</b>, or open <b>Filter</b> and pick <b>By app</b> or <b>By device</b>, to narrow the grid.</>,
-        <>The grid starts with your own apps only. Open <b>Filter</b>, then <b>By user</b>, and pick <b>All users</b> or one person to see theirs. Under <b>By type</b>, pick <b>Webhooks</b> or <b>All types</b> to include webhook agents. <b>Clear filters</b> goes back to your own apps.</>,
+        <>Look at <b>Your apps</b> to see which apps are connected. Only online apps are listed at first: press <b>Online</b> in the filter row above the grid to also see the ones that are not reachable right now.</>,
+        <>Type into <b>Search apps…</b>, or open <b>Any app</b>, <b>Any device</b> or <b>Any supervisor</b> and pick one, to narrow the grid. A filter that narrows is tinted.</>,
+        <>The grid starts with your own apps only. Open <b>Mine</b> and pick <b>Everyone</b> or one person to see theirs. Open <b>Apps</b> and pick <b>Webhooks</b> or <b>All types</b> to include webhook agents. <b>Clear filters</b> goes back to your own online apps. The filters are part of the page address, so a filtered home can be copied as a link.</>,
         <>Click an app card to open the agent and see the actions it can run.</>,
-        <>Use the tiles below the apps to open a Rekuest page: <b>Actions</b> is the catalog of everything your apps can do, <b>Tasks</b> every task you ran.</>,
+        <>Open the <b>Overview</b> tab of the sidebar to go to a Rekuest page: <b>Actions</b> is the catalog of everything your apps can do, <b>Tasks</b> every task you ran. The numbers next to <b>Actions</b> and <b>Org Tasks</b> count the whole organization.</>,
         <>Right-click an app card for its actions, for example <b>Rename / Update Agent</b> or <b>Pin Agent</b>.</>,
         <>Under <b>Materialized Bloks</b>, click a card to open that view. Each card names the apps it is wired to and how many of them are online.</>,
         <>Scroll down to <b>Ongoing Tasks</b> and <b>Latest Tasks</b> and click a task to follow it.</>,

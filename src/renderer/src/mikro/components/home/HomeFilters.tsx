@@ -1,6 +1,5 @@
 import { useSelf } from "@/core/connection/useSelf";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
-import { Button } from "@/core/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -20,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { Input } from "@/core/ui/input";
+import { FilterClear, FilterSearchField, FilterTrigger } from "@/core/ui/filter-bar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import {
@@ -30,9 +29,8 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
-import { cn } from "@/core/util/utils";
 import { useDebounce } from "@uidotdev/usehooks";
-import { Check, ChevronDown, Handshake, Search, Shapes, Users, X } from "lucide-react";
+import { Check, Handshake, Shapes, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArrayDatasetSpec, RootFilter, useHomeFilterOptionsQuery } from "../../api/graphql";
 import { ADATASET_SPEC_BY_SLUG, ADATASET_SPECS } from "../../specs";
@@ -142,56 +140,6 @@ export const useHomeFilters = () => {
 
 export type HomeFilters = ReturnType<typeof useHomeFilters>;
 
-/** A filter's trigger: quiet while it does not narrow, tinted with the brand once it does. */
-const Trigger = ({
-  active,
-  icon: Icon,
-  children,
-  ...props
-}: React.ComponentProps<typeof Button> & { active: boolean; icon: typeof Users }) => (
-  <Button
-    variant="outline"
-    size="sm"
-    className={cn(
-      "h-8 gap-1.5 rounded-full font-normal",
-      active ? "border-primary/40 bg-primary/10 text-foreground hover:bg-primary/15" : "text-muted-foreground",
-    )}
-    {...props}
-  >
-    <Icon className="h-3.5 w-3.5" />
-    {children}
-    <ChevronDown className="h-3 w-3 opacity-60" />
-  </Button>
-);
-
-/** What it is called: a pill-shaped field matching the triggers beside it. */
-const SearchField = ({ value, onChange }: { value: string; onChange: (next: string) => void }) => (
-  <div className="relative">
-    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-    <Input
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      onKeyDown={(event) => event.key === "Escape" && onChange("")}
-      placeholder="Search by name…"
-      aria-label="Search by name"
-      className={cn(
-        "h-8 w-56 rounded-full pl-8 pr-7 text-sm",
-        value && "border-primary/40 bg-primary/10",
-      )}
-    />
-    {value && (
-      <button
-        type="button"
-        onClick={() => onChange("")}
-        aria-label="Clear search"
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    )}
-  </div>
-);
-
 /** Who made it: the organization's members, "Me" first. */
 const PeopleFilter = ({
   value,
@@ -213,7 +161,7 @@ const PeopleFilter = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Trigger active={!!value} icon={Users} aria-label="Created by">
+        <FilterTrigger active={!!value} icon={Users} aria-label="Created by">
           {value ? (
             value === userId ? (
               "Me"
@@ -223,7 +171,7 @@ const PeopleFilter = ({
           ) : (
             "Anyone"
           )}
-        </Trigger>
+        </FilterTrigger>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-0">
         <Command>
@@ -282,9 +230,9 @@ const CollaborationFilter = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Trigger active={!!value} icon={Handshake} aria-label="Collaboration">
+        <FilterTrigger active={!!value} icon={Handshake} aria-label="Collaboration">
           <span className="max-w-40 truncate">{value ? (picked?.name ?? "Collaboration") : "Any collaboration"}</span>
-        </Trigger>
+        </FilterTrigger>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-0">
         <Command>
@@ -345,11 +293,11 @@ const SpecFilter = ({ value, onChange }: { value: string[]; onChange: (slugs: st
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Trigger active={picked.length > 0} icon={Shapes} aria-label="Spec">
+        <FilterTrigger active={picked.length > 0} icon={Shapes} aria-label="Spec">
           <span className="max-w-48 truncate">
             {picked.length ? picked.map((entry) => entry.label).join(" · ") : "Any spec"}
           </span>
-        </Trigger>
+        </FilterTrigger>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
         <DropdownMenuLabel>Spatial (pick one)</DropdownMenuLabel>
@@ -391,7 +339,7 @@ export const HomeFilterBar = ({ filters }: { filters: HomeFilters }) => {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
-        <SearchField value={state.search} onChange={setSearch} />
+        <FilterSearchField value={state.search} onChange={setSearch} placeholder="Search by name…" />
         <PeopleFilter value={state.user} onChange={setUser} members={members} />
         <CollaborationFilter
           value={state.collaboration}
@@ -424,18 +372,12 @@ export const HomeFilterBar = ({ filters }: { filters: HomeFilters }) => {
           />
         </div>
         {active && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 text-muted-foreground"
-            onClick={() => {
+          <FilterClear
+            onClear={() => {
               clear();
               setPickerKey((key) => key + 1);
             }}
-          >
-            <X className="h-3.5 w-3.5" />
-            Clear filters
-          </Button>
+          />
         )}
       </div>
       {((state.axis === "acquired" && hasRange) || state.specs.length > 0) && (

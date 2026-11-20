@@ -1,7 +1,5 @@
 import { Guard } from "@/core/connection/arkitekt/host";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { Sidebars } from "@/core/layout/Sidebars";
-import { HelpSidebar } from "@/core/layout/help";
 import { Button } from "@/core/ui/button";
 import { Skeleton } from "@/core/ui/skeleton";
 import { Textarea } from "@/core/ui/textarea";
@@ -18,17 +16,16 @@ import {
   Paperclip,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { HomeEmpty, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, HomeSection, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { Link, useNavigate } from "react-router-dom";
 import { reportError } from "@/core/notify";
-import { useCreateRoomMutation, useRecentRoomsQuery } from "../api/graphql";
+import { useCreateRoomMutation, useHomePageStatsQuery, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,
   rankRecentRooms,
   RecentRoom,
   titleFromPrompt,
 } from "../recentRooms";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 import { ALPAKA_HELP } from "../help";
 
 /** The signed-in user's name (host identity, not a lok query). */
@@ -254,23 +251,23 @@ const RecentChats = () => {
   );
 };
 
-const Page: React.FC = () => (
+const Page: React.FC = () => {
+  // The one number alpaka counts sits on the page it counts.
+  const { data: stats } = useHomePageStatsQuery();
+  return (
   <PageLayout
     help={ALPAKA_HELP.home}
     title="Alpaka"
     sidebars={
-      <Sidebars>
-        <Sidebars.Tab label="Statistics">
-          <HomePageStatisticsSidebar />
-        </Sidebars.Tab>
-        <Sidebars.Tab label="Help">
-          <HelpSidebar />
-        </Sidebars.Tab>
-      </Sidebars>
+      <ModuleHomeSidebars
+        moduleKey="alpaka"
+        stats={stats ? { "/alpaka/rooms": { count: stats.roomStats.count } } : undefined}
+      />
     }
   >
     <ModuleHome
       moduleKey="alpaka"
+      pages={false}
       title={
         <>
           {greeting()}
@@ -285,6 +282,7 @@ const Page: React.FC = () => (
       <RecentChats />
     </ModuleHome>
   </PageLayout>
-);
+  );
+};
 
 export default Page;

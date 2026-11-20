@@ -2,29 +2,9 @@ import { ListRender } from "@/core/layout/ListRender";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { HelpSidebar } from "@/core/layout/help";
-import { Badge } from "@/core/ui/badge";
-import { Button } from "@/core/ui/button";
 import { HomeSectionHeading, ModuleHome } from "@/core/layout/ModuleHome";
-import { CollapsibleSearch } from "@/core/ui/collapsible-search";
-import {
-  ActionLabel,
-  ActionTrigger,
-  PageAction,
-  PageActionPolicy,
-} from "@/core/ui/page-action";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/core/ui/dropdown-menu";
+import { Button } from "@/core/ui/button";
+import { FilterClear } from "@/core/ui/filter-bar";
 import {
   Empty,
   EmptyDescription,
@@ -32,223 +12,16 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/core/ui/empty";
-import { parseAsBoolean, parseAsString, useQueryState } from "@/core/util/hooks/use-search-param-state";
 import { RekuestAgent } from "@/core/linkers";
-import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions";
-import { useSelf } from "@/core/connection/useSelf";
-import { AgentKind, ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
+import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import TaskList from "@/rekuest/components/lists/TaskList";
-import { Filter, Loader2, Podcast, Wifi, X } from "lucide-react";
+import { Loader2, Podcast } from "lucide-react";
 import { useMemo } from "react";
+import { AgentFilterBar, useAgentFilters } from "../components/home/AgentFilters";
 import { OrgTasksUpdater } from "../components/updaters/OrgTasksUpdater";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { HomeOverviewSidebar } from "../sidebars/HomeOverviewSidebar";
 import { REKUEST_HELP } from "../help";
-
-const ALL = "__all__";
-/** Radio value of the default "mine" choice; the URL just omits `user`. */
-const MINE = "__mine__";
-
-/**
- * `user` and `kind` have a default that is NOT "everything": null means the
- * signed-in user's agents / the non-hook ones, and `ALL` lifts the filter.
- */
-type Filters = {
-  user: string | null;
-  app: string | null;
-  device: string | null;
-  kind: string | null;
-  /** The app the agents say supervises them (`Agent.supervisor`). */
-  supervisor: string | null;
-};
-
-const DEFAULT_KIND = AgentKind.Websocket;
-const KIND_LABELS: Record<AgentKind, string> = {
-  [AgentKind.Websocket]: "Apps",
-  [AgentKind.Webhook]: "Webhooks",
-};
-
-/**
- * One dropdown for every agent filter (type / user / app / device / supervisor). The
- * active selections are echoed as badges on the trigger so the reader always
- * knows why the grid looks the way it does.
- */
-const FilterMenu = ({
-  filters,
-  onChange,
-}: PageActionPolicy & {
-  filters: Filters;
-  onChange: (next: Partial<Filters>) => void;
-}) => {
-  // Lok's users, apps and devices, answered by lok (its option sources).
-  const users = useStructureOptionList("@lok/user");
-  const apps = useStructureOptionList("@lok/app", "identifier");
-  const devices = useStructureOptionList("@lok/device", "nodeId");
-
-  const userLabel =
-    filters.user === ALL
-      ? "Everyone"
-      : filters.user === null
-        ? "Mine"
-        : (users.find((u) => u.value === filters.user)?.label ?? filters.user);
-  const deviceLabel = devices.find((d) => d.value === filters.device)?.label;
-  const kindLabel =
-    filters.kind === ALL ? "All" : KIND_LABELS[(filters.kind as AgentKind | null) ?? DEFAULT_KIND];
-  // Only what departs from the defaults counts as an active filter.
-  const active = [filters.user, filters.app, filters.device, filters.kind, filters.supervisor].filter(
-    Boolean,
-  ).length;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <ActionTrigger aria-label="Filter">
-          <Filter className="h-4 w-4" />
-          <ActionLabel>
-            Filter
-            {active > 0 && <Badge variant="secondary">{active}</Badge>}
-          </ActionLabel>
-        </ActionTrigger>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Show apps</DropdownMenuLabel>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="flex-1">By type</span>
-            <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-              {kindLabel}
-            </span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup
-              value={filters.kind ?? DEFAULT_KIND}
-              onValueChange={(v) => onChange({ kind: v === DEFAULT_KIND ? null : v })}
-            >
-              <DropdownMenuRadioItem value={AgentKind.Websocket}>
-                {KIND_LABELS[AgentKind.Websocket]}
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value={AgentKind.Webhook}>
-                {KIND_LABELS[AgentKind.Webhook]}
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value={ALL}>All types</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="flex-1">By app</span>
-            {filters.app && (
-              <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-                {filters.app}
-              </span>
-            )}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
-            <DropdownMenuRadioGroup
-              value={filters.app ?? ALL}
-              onValueChange={(v) => onChange({ app: v === ALL ? null : v })}
-            >
-              <DropdownMenuRadioItem value={ALL}>All apps</DropdownMenuRadioItem>
-              {apps.map((a) => (
-                <DropdownMenuRadioItem key={a.value} value={a.value}>
-                  {a.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="flex-1">By user</span>
-            <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-              {userLabel}
-            </span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
-            <DropdownMenuRadioGroup
-              value={filters.user ?? MINE}
-              onValueChange={(v) => onChange({ user: v === MINE ? null : v })}
-            >
-              <DropdownMenuRadioItem value={MINE}>Mine</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value={ALL}>All users</DropdownMenuRadioItem>
-              {users.map((u) => (
-                <DropdownMenuRadioItem key={u.value} value={u.value}>
-                  {u.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="flex-1">By device</span>
-            {filters.device && (
-              <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-                {deviceLabel ?? filters.device}
-              </span>
-            )}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
-            <DropdownMenuRadioGroup
-              value={filters.device ?? ALL}
-              onValueChange={(v) => onChange({ device: v === ALL ? null : v })}
-            >
-              <DropdownMenuRadioItem value={ALL}>All devices</DropdownMenuRadioItem>
-              {devices.map((d) => (
-                <DropdownMenuRadioItem key={d.value} value={d.value}>
-                  {d.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="flex-1">By supervisor</span>
-            {filters.supervisor && (
-              <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-                {filters.supervisor}
-              </span>
-            )}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
-            {/* A supervisor is an app (e.g. plugin_engine), named by its identifier. */}
-            <DropdownMenuRadioGroup
-              value={filters.supervisor ?? ALL}
-              onValueChange={(v) => onChange({ supervisor: v === ALL ? null : v })}
-            >
-              <DropdownMenuRadioItem value={ALL}>Any or none</DropdownMenuRadioItem>
-              {apps.map((a) => (
-                <DropdownMenuRadioItem key={a.value} value={a.value}>
-                  {a.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        {active > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-muted-foreground"
-              onSelect={() =>
-                onChange({ user: null, app: null, device: null, kind: null, supervisor: null })
-              }
-            >
-              Clear filters
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
 
 /**
  * Live apps first, then recently active ones, then the rest; by name within
@@ -262,33 +35,14 @@ const sortAgents = (agents: ListAgentFragment[]) =>
   );
 
 const Page = () => {
-  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
-  const [user, setUser] = useQueryState("user", parseAsString);
-  const [app, setApp] = useQueryState("app", parseAsString);
-  const [device, setDevice] = useQueryState("device", parseAsString);
-  const [kind, setKind] = useQueryState("kind", parseAsString);
-  const [supervisor, setSupervisor] = useQueryState("supervisor", parseAsString);
-  const [onlineOnly, setOnlineOnly] = useQueryState("online", parseAsBoolean.withDefault(false));
-
-  const filters: Filters = { user, app, device, kind, supervisor };
-  const setFilters = (next: Partial<Filters>) => {
-    if ("user" in next) setUser(next.user ?? null);
-    if ("app" in next) setApp(next.app ?? null);
-    if ("device" in next) setDevice(next.device ?? null);
-    if ("kind" in next) setKind(next.kind ?? null);
-    if ("supervisor" in next) setSupervisor(next.supervisor ?? null);
-  };
-  const hasFilter = Boolean(search || user || app || device || kind || supervisor || onlineOnly);
-
-  // No `user` in the URL means the signed-in user's own agents.
-  const { userId } = useSelf();
-  const userFilter = user === ALL ? null : (user ?? userId);
-  const kindFilter = kind === ALL ? null : (kind ?? DEFAULT_KIND);
+  const filters = useAgentFilters();
+  const { search, user: userFilter, kind: kindFilter, app, device, supervisor, onlineOnly } = filters.resolved;
+  const hasFilter = filters.active;
 
   const { data, error, refetch } = useAgentsQuery({
     variables: {
       filters: {
-        search: search.trim() || undefined,
+        search: search || undefined,
         user: userFilter ?? undefined,
         appIdentifier: app ?? undefined,
         deviceId: device ?? undefined,
@@ -296,8 +50,7 @@ const Page = () => {
       },
       ordering: [{ lastSeen: Ordering.Desc }],
     },
-    // "Mine" before the identity is known would list everyone's agents.
-    skip: user === null && !userId,
+    skip: filters.pending,
   });
 
   // The server has no kind filter, and a newly connected agent is inserted
@@ -324,36 +77,11 @@ const Page = () => {
     <PageLayout
       title="Rekuest"
       help={REKUEST_HELP.home}
-      pageActions={
-        <>
-          <CollapsibleSearch
-            alwaysShow
-            value={search}
-            onChange={(value) => setSearch(value || null)}
-            placeholder="Search apps…"
-          />
-          <PageAction
-            priority={10}
-            collapse="icon"
-            icon={<Wifi className="h-4 w-4" />}
-            menuLabel="Online"
-            variant={onlineOnly ? "default" : "outline"}
-            className="gap-2"
-            onClick={() => setOnlineOnly(onlineOnly ? null : true)}
-            aria-pressed={onlineOnly}
-          >
-            Online
-            {onlineCount > 0 && (
-              <Badge variant={onlineOnly ? "outline" : "secondary"}>{onlineCount}</Badge>
-            )}
-          </PageAction>
-          <FilterMenu collapse="icon" filters={filters} onChange={setFilters} />
-        </>
-      }
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Statistics">
-            <HomePageStatisticsSidebar />
+        <Sidebars defaultTab="Overview">
+          {/* rekuest's pages live here, with their numbers, so the stage is the apps and tasks. */}
+          <Sidebars.Tab label="Overview">
+            <HomeOverviewSidebar />
           </Sidebars.Tab>
           <Sidebars.Tab label="Help">
             <HelpSidebar />
@@ -365,6 +93,7 @@ const Page = () => {
       <ModuleHome
         moduleKey="rekuest"
         title="Rekuest"
+        pages={false}
         description="Run what your apps can do: actions, tasks and the apps that carry them out."
         // The apps come first: what is connected is what can run anything.
         lead={
@@ -381,6 +110,10 @@ const Page = () => {
                 <RekuestAgent.ListLink className="hover:text-foreground">All agents →</RekuestAgent.ListLink>
               </span>
             </HomeSectionHeading>
+            {/* The filter row belongs to the grid it narrows, not to the page. */}
+            <div className="mb-3">
+              <AgentFilterBar filters={filters} onlineCount={onlineCount} />
+            </div>
   
             {loaded && agents.length === 0 ? (
               <Empty className="border py-12">
@@ -389,28 +122,28 @@ const Page = () => {
                     <Podcast />
                   </EmptyMedia>
                   <EmptyTitle>
-                    {hasFilter ? "No apps match your filters" : "No apps connected yet"}
+                    {hasFilter
+                      ? "No apps match your filters"
+                      : visible.length > 0
+                        ? "None of your apps is online"
+                        : "No apps connected yet"}
                   </EmptyTitle>
                   <EmptyDescription>
                     {hasFilter
                       ? "Try a different search or clear the active filters."
-                      : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are under Filter."}
+                      : visible.length > 0
+                        ? "Only online apps are listed. Turn Online off to see the ones that are not reachable right now."
+                        : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are in the filter row."}
                   </EmptyDescription>
                 </EmptyHeader>
-                {hasFilter && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => {
-                      setSearch(null);
-                      setOnlineOnly(null);
-                      setFilters({ user: null, app: null, device: null, kind: null });
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                    Clear filters
-                  </Button>
+                {hasFilter ? (
+                  <FilterClear onClear={filters.clear} />
+                ) : (
+                  visible.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => filters.setOnlineOnly(false)}>
+                      Show offline apps
+                    </Button>
+                  )
                 )}
               </Empty>
             ) : (

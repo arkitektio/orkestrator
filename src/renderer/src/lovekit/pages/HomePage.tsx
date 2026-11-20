@@ -1,18 +1,20 @@
 import { PageLayout } from "@/core/layout/PageLayout";
-import { ModuleHome } from "@/core/layout/ModuleHome";
+import { ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import React from "react";
 import StreamList from "../components/lists/StreamList";
 import { LOVEKIT_HELP } from "../help";
 
-/** Lovekit's front door: its pages, then the streams the organization's apps offer. */
+/** Lovekit's front door: the streams the organization's apps offer. */
 const Page: React.FC = () => {
   return (
     <PageLayout
       help={LOVEKIT_HELP.home}
       title="Lovekit"
+      sidebars={<ModuleHomeSidebars moduleKey="lovekit" />}
     >
       <ModuleHome
         moduleKey="lovekit"
+        pages={false}
         title="Lovekit"
         description="Live video: the streams apps offer, and calls."
       >

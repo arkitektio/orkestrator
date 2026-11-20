@@ -8,9 +8,9 @@ import { PageHelp } from "@/core/layout/help";
 export const LOVEKIT_HELP = {
   home: (
     <PageHelp
-      intro="Lovekit carries live video. This page links every Lovekit page and lists the streams the apps of your organization offer."
+      intro="Lovekit carries live video. This page lists the streams the apps of your organization offer; every Lovekit page is in the sidebar, under Overview."
       steps={[
-        <>Use the <b>Streams</b> and <b>Calls</b> tiles at the top to open those pages.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click <b>Streams</b> or <b>Calls</b> to open those pages.</>,
         <>Click a stream below to open it and watch it. A green dot means it is live.</>,
         <>Press ⌘K / Ctrl+K and type “Streams” to get there from anywhere.</>,
       ]}

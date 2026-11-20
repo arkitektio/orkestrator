@@ -6,14 +6,18 @@ import { useRef, useState } from "react";
 
 type CollapsibleSearchSize = "sm" | "default" | "lg";
 
-/** Height/spacing tokens mirroring the Button `size` variants (default = h-7). */
+/**
+ * Height/spacing tokens mirroring the Button `size` variants (default = h-7).
+ * The padding is important: `Input`'s `px-2` survives the merge and a blok's
+ * runtime stylesheet can re-emit it after ours (see `FilterSearchField`).
+ */
 const SIZES: Record<
   CollapsibleSearchSize,
   { height: string; collapsed: string; padding: string; icon: string }
 > = {
-  sm: { height: "h-6", collapsed: "w-6", padding: "pl-7 pr-6", icon: "size-3" },
-  default: { height: "h-7", collapsed: "w-7", padding: "pl-8 pr-7", icon: "size-3.5" },
-  lg: { height: "h-8", collapsed: "w-8", padding: "pl-9 pr-8", icon: "size-4" },
+  sm: { height: "h-6", collapsed: "w-6", padding: "pl-7! pr-6!", icon: "size-3" },
+  default: { height: "h-7", collapsed: "w-7", padding: "pl-8! pr-7!", icon: "size-3.5" },
+  lg: { height: "h-8", collapsed: "w-8", padding: "pl-9! pr-8!", icon: "size-4" },
 };
 
 interface CollapsibleSearchProps extends PageActionPolicy {

@@ -8,19 +8,18 @@ import { PageHelp } from "@/core/layout/help";
 export const KABINET_HELP = {
   home: (
     <PageHelp
-      intro="Kabinet is your organization’s app store. Apps come from GitHub repositories you add; this page links every Kabinet page, then shows your pods, the newest apps in the App Store and your repositories."
+      intro="Kabinet is your organization’s app store. Apps come from GitHub repositories you add; this page shows the apps you installed and the newest apps in the App Store, and every Kabinet page is in the sidebar, under Overview."
       steps={[
-        <>Use the tiles at the top (<b>App Store</b>, <b>Repos</b>, <b>Releases</b>, <b>Pods</b>, …) to open those pages.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click a page (<b>App Store</b>, <b>Repos</b>, <b>Releases</b>, <b>Pods</b>, …) to open it.</>,
         <>Press <b>App Store</b> to browse every app and pick one to install.</>,
         <>Press <b>Add Repo</b> and enter a GitHub repository as “user/repo” (or paste its URL). Kabinet reads the repository and lists the apps it declares.</>,
         <>Press <b>Rescan Repos</b> to read all repositories again and pick up releases published since.</>,
-        <>Look at <b>Pods</b> for what runs on your engines right now, running ones first; click one to see its logs, or <b>All pods</b> for the rest.</>,
-        <>Click an app under <b>Fresh in the App Store</b> to open it and install it, or <b>Open App Store</b> to browse and search every app.</>,
-        <>Click a repository card to open its page.</>,
+        <>Look at <b>Your apps</b> for the apps you installed, running ones first; click one to open its page, or <b>All pods</b> to see what runs on your engines and read the logs.</>,
+        <>Under <b>Fresh in the App Store</b>, the newest app you do not have yet is shown large: press <b>Install</b> to get it or <b>Explore</b> to open its page. Press <b>Get</b> on a card below it to install that app, or <b>Open App Store</b> to browse and search every app.</>,
       ]}
       tips={[
         <>Adding a repository installs nothing on your machine. It only makes its apps available here.</>,
-        <>The <b>Statistics</b> tab of the sidebar counts the repositories Kabinet knows.</>,
+        <>The number next to <b>Repos</b> in the sidebar counts the repositories Kabinet knows.</>,
       ]}
     />
   ),

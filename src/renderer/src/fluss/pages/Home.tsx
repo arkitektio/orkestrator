@@ -1,8 +1,6 @@
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HelpSidebar } from "@/core/layout/help";
 import { Badge } from "@/core/ui/badge";
-import { HomeEmpty, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { FlussWorkspace } from "@/core/linkers";
 import {
@@ -18,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import RunCard from "../components/cards/RunCard";
 import RunList from "../components/lists/RunList";
 import WorkspaceList from "../components/lists/WorkspaceList";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 import { FLUSS_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 
@@ -87,7 +84,7 @@ const RECENT_RUNS: RunOrder[] = [{ createdAt: Ordering.Desc }];
 const RECENT_WORKSPACES: WorkspaceOrder[] = [{ createdAt: Ordering.Desc }];
 
 /**
- * Fluss' front door: its pages, then what is running, the newest workspaces
+ * Fluss' front door (its pages are the sidebar's Overview tab): what is running, the newest workspaces
  * and the newest runs. Search, sort and date ranges are the list pages'.
  */
 const Page = () => {
@@ -100,18 +97,15 @@ const Page = () => {
       help={FLUSS_HELP.home}
       pageActions={<CreateWorkspaceButton variant="outline" />}
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Statistics">
-            <HomePageStatisticsSidebar />
-          </Sidebars.Tab>
-          <Sidebars.Tab label="Help">
-            <HelpSidebar />
-          </Sidebars.Tab>
-        </Sidebars>
+        <ModuleHomeSidebars
+          moduleKey="fluss"
+          stats={stats ? { "/fluss/workspaces": { count: stats.workspaceStats.count } } : undefined}
+        />
       }
     >
       <ModuleHome
         moduleKey="fluss"
+        pages={false}
         title="Fluss"
         description="Wire actions together into reactive workflows, and run them as tasks."
       >

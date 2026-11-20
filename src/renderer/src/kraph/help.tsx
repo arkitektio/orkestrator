@@ -8,13 +8,13 @@ import { PageHelp } from "@/core/layout/help";
 export const KRAPH_HELP = {
   home: (
     <PageHelp
-      intro="The starting page of the knowledge graph module. A graph collects what you know about your samples: the things you track (entities), what was measured on them, and how they relate. This page links every Kraph page and shows every graph you have."
+      intro="The starting page of the knowledge graph module. A graph collects what you know about your samples: the things you track (entities), what was measured on them, and how they relate. This page shows every graph you have; every Kraph page is in the sidebar, under Overview."
       steps={[
-        <>Use the tiles at the top (<b>Terms</b>, <b>Graphs</b>, the categories, <b>Scatter Plots</b>, …) to open those pages.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click a page (<b>Terms</b>, <b>Graphs</b>, the categories, <b>Scatter Plots</b>, …) to open it.</>,
         <>If you have no graph yet, press <b>Create your first graph</b>, give it a name and a description, and confirm. You land on the new graph.</>,
         <>Click a graph card to open it and see its schema as a diagram.</>,
         <>Right-click a graph card for its actions, for example <b>Create Protocol Event Category</b> or <b>Delete Graph</b>.</>,
-        <>Open the <b>Statistics</b> tab of the sidebar to see how many graphs exist.</>,
+        <>The number next to <b>Graphs</b> in the sidebar says how many graphs exist.</>,
       ]}
       tips={[
         <>Once at least one graph exists the create button is gone from this page. Further graphs are created on the <b>Graphs</b> page.</>,

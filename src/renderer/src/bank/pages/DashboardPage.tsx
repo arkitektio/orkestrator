@@ -1,5 +1,5 @@
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HomeEmpty, HomeError, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, HomeError, HomeSection, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankAccount, BankRecurring } from "@/bank/linkers";
 import {
@@ -94,6 +94,7 @@ const DashboardPage = () => {
     <PageLayout
       help={BANK_HELP.dashboard}
       title="Bank"
+      sidebars={<ModuleHomeSidebars moduleKey="bank" />}
       pageActions={
         <DialogButton name="banklink" size="sm" variant="outline" dialogProps={{}} options={{ size: "medium" }}>
           Link bank
@@ -102,6 +103,7 @@ const DashboardPage = () => {
     >
       <ModuleHome
         moduleKey="bank"
+        pages={false}
         title="Bank"
         description="Your accounts, bookings and budgets, synced read-only from your banks."
       >

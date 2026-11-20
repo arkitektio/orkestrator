@@ -8,10 +8,10 @@ import { PageHelp } from "@/core/layout/help";
 export const ALPAKA_HELP = {
   home: (
     <PageHelp
-      intro="Alpaka is where you chat with language models about your data. This page starts a new chat, links every Alpaka page and lists the chats you had most recently."
+      intro="Alpaka is where you chat with language models about your data. This page starts a new chat and lists the chats you had most recently; every Alpaka page is in the sidebar, under Overview."
       steps={[
         <>Type a question into the box at the top and press Enter to start a new chat. Shift + Enter adds a new line instead.</>,
-        <>Use the <b>Rooms</b>, <b>Collections</b>, <b>Models</b> and <b>Providers</b> tiles to open those pages; <b>Rooms</b> lists and searches every chat.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click <b>Rooms</b>, <b>Collections</b>, <b>Models</b> or <b>Providers</b> to open those pages; <b>Rooms</b> lists and searches every chat, and shows how many there are.</>,
         <>Click the <b>Continue chat</b> card to go back to the chat you used last.</>,
         <>Press <b>New</b> next to <b>Recent chats</b> to open an empty chat without a first question, or <b>All chats</b> to see the rest.</>,
       ]}

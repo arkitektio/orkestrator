@@ -1,5 +1,5 @@
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HomeEmpty, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, HomeSection, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { useDialog } from "@/core/dialogs/registry";
 import { PageAction } from "@/core/ui/page-action";
 import { PenSquare } from "lucide-react";
@@ -54,7 +54,7 @@ const ThreadSection = ({
 };
 
 /**
- * Kuvert's front door: its pages, then what is unread and flagged across
+ * Kuvert's front door (its pages are the sidebar's Overview tab): what is unread and flagged across
  * every mailbox, and the mailboxes themselves. Reading happens in the
  * mailboxes, one tile away.
  */
@@ -67,6 +67,7 @@ const HomePage = () => {
     <PageLayout
       title="Kuvert"
       help={KUVERT_HELP.home}
+      sidebars={<ModuleHomeSidebars moduleKey="kuvert" />}
       pageActions={
         <PageAction
           size="sm"
@@ -80,6 +81,7 @@ const HomePage = () => {
     >
       <ModuleHome
         moduleKey="kuvert"
+        pages={false}
         title="Kuvert"
         description="Your mail and the tasks it brings, across every mailbox."
       >

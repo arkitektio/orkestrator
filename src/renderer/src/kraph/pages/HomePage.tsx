@@ -1,16 +1,13 @@
 import { ResponsiveContainerGrid } from "@arkitektio/bsx/ports/layout/ContainerGrid";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HelpSidebar } from "@/core/layout/help";
-import { HomeEmpty, HomeError, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, HomeError, HomeSection, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { KraphGraph } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useHomePageQuery } from "../api/graphql";
+import { useHomePageQuery, useHomePageStatsQuery } from "../api/graphql";
 import GraphCard from "../components/cards/GraphCard";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = Record<string, never>;
@@ -18,6 +15,7 @@ export type IRepresentationScreenProps = Record<string, never>;
 const Page: React.FC<IRepresentationScreenProps> = () => {
   const { data, loading, error, refetch } = useHomePageQuery();
 
+  const { data: stats } = useHomePageStatsQuery();
   const navigate = useNavigate();
 
   return (
@@ -25,19 +23,16 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       help={KRAPH_HELP.home}
       title="Kraph"
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Statistics">
-            <HomePageStatisticsSidebar />
-          </Sidebars.Tab>
-          <Sidebars.Tab label="Help">
-            <HelpSidebar />
-          </Sidebars.Tab>
-        </Sidebars>
+        <ModuleHomeSidebars
+          moduleKey="kraph"
+          stats={stats ? { "/kraph/graphs": { count: stats.graphStats.count } } : undefined}
+        />
       }
     >
 
       <ModuleHome
         moduleKey="kraph"
+        pages={false}
         title="Kraph"
         description="Knowledge graphs over your data: what you track, what you did and what you measured."
       >

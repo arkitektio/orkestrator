@@ -4,6 +4,8 @@ import type React from "react";
 import type { CatalogRoute } from "@/core/command/sources/routeCatalog";
 import { useModuleNav } from "@/core/modules/hooks/useModuleNav";
 import { matchIcon } from "@/core/modules/moduleIcons";
+import { HelpSidebar } from "@/core/layout/help";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { RetryButton } from "@/core/layout/fallbacks/statusActions";
 import { DroppableNavLink } from "@/core/ui/link";
@@ -162,6 +164,30 @@ export const ModulePageList = ({
     </div>
   );
 };
+
+/**
+ * A module home page's sidebar, every module the same: its pages under
+ * Overview (with `stats`, the module's numbers, next to the pages they count),
+ * then Help. Goes with `<ModuleHome pages={false}>`, so what is new takes the
+ * whole stage. A home with more to say in its sidebar composes `Sidebars`
+ * and `ModulePageList` itself.
+ */
+export const ModuleHomeSidebars = ({
+  moduleKey,
+  stats,
+}: {
+  moduleKey: string;
+  stats?: Partial<Record<string, ModulePageStat>>;
+}) => (
+  <Sidebars defaultTab="Overview">
+    <Sidebars.Tab label="Overview">
+      <ModulePageList moduleKey={moduleKey} stats={stats} className="p-2" />
+    </Sidebars.Tab>
+    <Sidebars.Tab label="Help">
+      <HelpSidebar />
+    </Sidebars.Tab>
+  </Sidebars>
+);
 
 /** The small uppercase label over a block of a module's home page. */
 export const HomeSectionHeading = ({ children, className }: { children: React.ReactNode; className?: string }) => (

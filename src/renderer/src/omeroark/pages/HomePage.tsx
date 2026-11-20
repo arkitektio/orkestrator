@@ -1,14 +1,11 @@
-import { Sidebars } from "@/core/layout/Sidebars";
-import { ModuleHome } from "@/core/layout/ModuleHome";
+import { ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HelpSidebar } from "@/core/layout/help";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { useNavigate } from "react-router-dom";
 import ProjectList from "../components/lists/ProjectList";
 import { DeleteMeButton } from "../ConnectedGuard";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 import { OMEROARK_HELP } from "../help";
 
 
@@ -43,17 +40,11 @@ const Page = () => {
       </DialogButton>
 
     </>} sidebars={
-      <Sidebars>
-        <Sidebars.Tab label="Statistics">
-          <HomePageStatisticsSidebar />
-        </Sidebars.Tab>
-        <Sidebars.Tab label="Help">
-          <HelpSidebar />
-        </Sidebars.Tab>
-      </Sidebars>
+      <ModuleHomeSidebars moduleKey="omeroark" />
     }>
       <ModuleHome
         moduleKey="omeroark"
+        pages={false}
         title="Omero Ark"
         description="The projects, datasets and images of your OMERO server."
       >

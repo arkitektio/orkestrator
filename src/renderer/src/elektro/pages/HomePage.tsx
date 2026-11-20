@@ -1,9 +1,7 @@
 import { asParamlessRoute, HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { Sidebars } from "@/core/layout/Sidebars";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { HelpSidebar } from "@/core/layout/help";
-import { HomeEmpty, ModuleHome } from "@/core/layout/ModuleHome";
+import { HomeEmpty, ModuleHome, ModuleHomeSidebars } from "@/core/layout/ModuleHome";
 import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
 import ExperimentList from "../components/lists/ExperimentList";
 import NeuronModelList from "../components/lists/NeuronModelList";
@@ -25,7 +23,7 @@ const useHomePageQueryAsHookFunction = useHomePageQuery as unknown as HookFuncti
 const RECENT = [{ createdAt: Ordering.Desc }];
 
 /**
- * Elektro's front door: its pages, then the newest datasets, neuron models
+ * Elektro's front door (its pages are the sidebar's Overview tab): the newest datasets, neuron models
  * and experiments. Search, sort and date ranges are the list pages'.
  */
 const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
@@ -36,15 +34,12 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
       title="Elektro"
       help={ELEKTRO_HELP.home}
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Help">
-            <HelpSidebar />
-          </Sidebars.Tab>
-        </Sidebars>
+        <ModuleHomeSidebars moduleKey="elektro" />
       }
     >
       <ModuleHome
         moduleKey="elektro"
+        pages={false}
         title="Elektro"
         description="Electrophysiology and modelling: recordings on timelines, neuron models and simulations."
       >

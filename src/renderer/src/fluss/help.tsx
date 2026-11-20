@@ -8,16 +8,16 @@ import { PageHelp } from "@/core/layout/help";
 export const FLUSS_HELP = {
   home: (
     <PageHelp
-      intro="Fluss wires actions together into workflows. A workspace is where you design one workflow; each save becomes a flow (a version of it), and each execution of a flow is a run. This page links every Fluss page, then shows what is running, your newest workspaces and the newest runs."
+      intro="Fluss wires actions together into workflows. A workspace is where you design one workflow; each save becomes a flow (a version of it), and each execution of a flow is a run. This page shows what is running, your newest workspaces and the newest runs; every Fluss page is in the sidebar, under Overview."
       steps={[
-        <>Use the <b>Workspaces</b>, <b>Runs</b> and <b>Flows</b> tiles at the top to browse, search and sort everything of that kind.</>,
+        <>Open the <b>Overview</b> tab of the sidebar and click <b>Workspaces</b>, <b>Runs</b> or <b>Flows</b> to browse, search and sort everything of that kind.</>,
         <>Press <b>New workspace</b>, give it a name and press <b>Create</b>. The new workspace opens with an empty canvas.</>,
         <>Click a workspace card to continue working on its workflow.</>,
         <>Look at <b>Running now</b> for the runs that are still executing, and click one to follow it.</>,
       ]}
       tips={[
         <><b>Running now</b> only appears while something is running, and updates by itself every few seconds.</>,
-        <>The <b>Statistics</b> tab of the sidebar counts your workspaces.</>,
+        <>The number next to <b>Workspaces</b> in the sidebar counts your workspaces.</>,
       ]}
     />
   ),
