@@ -1,42 +1,41 @@
-import { Explainer } from "@/core/layout/Explainer";
-import { LOK_HELP } from "../help";
-import { PageLayout } from "@/core/layout/PageLayout";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import { PlusIcon } from "lucide-react";
-import React from "react";
+import { LokService } from "@/core/linkers";
+import { useListSearch } from "@/core/layout/useListSearch";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import { PageAction } from "@/core/ui/page-action";
+import { useDialog } from "@/core/dialogs/registry";
+import { Plus } from "lucide-react";
 import ServiceList from "../components/lists/ServiceList";
+import { LOK_HELP } from "../help";
 
-export type IRepresentationScreenProps = {};
+/** The kinds of service a server can run. */
+const Page = () => {
+  const { search, setSearch, filters } = useListSearch();
+  const { openDialog } = useDialog();
 
-const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
-    <PageLayout
+    <LokService.ListPage
+      title="Services"
       help={LOK_HELP.services}
-      title="Lok"
       pageActions={
         <>
-          <DialogButton
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search services…" />
+          {/* Registers a running instance of one of these services. */}
+          <PageAction
             alwaysShow
-            name="createserviceinstance"
-            variant={"outline"}
-            size={"sm"}
-            dialogProps={{}}
+            size="sm"
+            collapse="icon"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => openDialog("createserviceinstance", {})}
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New Service
-          </DialogButton>
+            New Instance
+          </PageAction>
         </>
       }
     >
-      <Explainer
-        title="Services"
-        description="Services are the building blocks of every arkitekt server. They define data endpoints, that your apps can interact with. These as the currently available services in your federation."
-      />
-      <ServiceList />
-
-      <Separator />
-    </PageLayout>
+      <div className="p-3">
+        <ServiceList title="" filters={filters} />
+      </div>
+    </LokService.ListPage>
   );
 };
 

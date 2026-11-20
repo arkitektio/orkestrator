@@ -1,50 +1,60 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { LOK_HELP } from "../help";
-import { Card, CardContent } from "@/core/ui/card";
-import { Image } from "@/core/ui/image";
-import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
 import { LokLayer } from "@/core/linkers";
-import {
-  useDetailLayerQuery
-} from "../api/graphql";
+import { Layers } from "lucide-react";
+import { useDetailLayerQuery } from "../api/graphql";
+import { LogoOrIcon } from "../components/DetailParts";
 
+/**
+ * One layer: a connection layer between services and apps. Its name, logo
+ * and what it is for in the header; its identifier and id are the Info rail's.
+ */
 export const LayerPage = asDetailQueryRoute(useDetailLayerQuery, ({ data }) => {
-  const resolve = useLokResolve();
+  const layer = data.layer;
 
   return (
     <LokLayer.ModelPage
       help={LOK_HELP.layer}
-      object={data.layer}
-      actions={<LokLayer.Actions object={data?.layer} />}
-      title={data?.layer?.name}
-      sidebars={<LokLayer.Knowledge object={data?.layer} />}
+      object={layer}
+      actions={<LokLayer.Actions object={layer} />}
+      title={layer.name}
+      additionalSidebars={
+        <>
+          <Sidebars.Tab label="Info">
+            <InfoList
+              rows={[
+                [
+                  "Identifier",
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="truncate font-mono text-xs">{layer.identifier}</span>
+                    <CopyButton value={layer.identifier} title="Copy identifier" />
+                  </span>,
+                ],
+                ["Layer ID", <span className="break-all font-mono text-xs">{layer.id}</span>],
+              ]}
+            />
+          </Sidebars.Tab>
+          <Sidebars.Tab label="Knowledge">
+            <LokLayer.Knowledge object={layer} />
+          </Sidebars.Tab>
+        </>
+      }
+      defaultSidebar="Info"
     >
-      <div className="grid grid-cols-6">
-        <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
-          <div>
-            <div className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              {data.layer.name}
-            </div>
-          </div>
-        </div>
-        <div className="col-span-2">
-          <div className="p-1">
-            <Card>
-              <CardContent className="flex aspect-[3/2] items-center justify-center p-6 max-h-[200px]">
-                {data.layer?.logo?.presignedUrl && (
-                  <Image
-                    src={resolve(data?.layer?.logo?.presignedUrl)}
-                    className="my-auto"
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="lok"
+          icon={<LogoOrIcon src={layer.logo?.presignedUrl} fallback={<Layers />} />}
+          title={layer.name}
+          description={layer.description || <span className="font-mono">{layer.identifier}</span>}
+        />
       </div>
     </LokLayer.ModelPage>
   );
 });
-
 
 export default LayerPage;

@@ -1,61 +1,72 @@
 import React from "react";
-import { Card } from "@/core/ui/card";
 import Timestamp from "@/core/ui/timestamp";
+import { CARD_FRAME_SIZE, CardFrame, StatusPill, type CardFact, type CardStatus } from "@/core/ui/card-frame";
 import { LokMandate } from "@/core/linkers";
-import { cn } from "@/core/util/utils";
+import { Clock, Cpu, KeyRound, MonitorPlay, Tag } from "lucide-react";
 import { ListMandateFragment } from "../../api/graphql";
-import { MANDATE_STATUS_LABEL, mandateHolder, mandateStatus, mandateSubject } from "../../lib/mandateLabels";
+import {
+  MANDATE_STATUS_LABEL,
+  type MandateStatus,
+  mandateHolder,
+  mandateStatus,
+  mandateSubject,
+} from "../../lib/mandateLabels";
 
 interface Props {
   item: ListMandateFragment;
 }
 
+/** The colour of each state's pill. */
+const STATUS_TONE: Record<MandateStatus, CardStatus["tone"]> = {
+  live: "good",
+  paused: "attention",
+  expired: "idle",
+  revoked: "idle",
+};
+
 /**
- * One app allowed to act as its grantor: what runs (the subject), who
- * signs it in (an agent app or a key holder), and how many instances are signed in right now.
+ * One app allowed to act as its grantor: what runs (the subject) and its
+ * version, who signs it in (an agent app or a key holder) and on which
+ * device, how many instances are signed in right now, and its state as a pill
+ * at the bottom right. A revoked one steps back.
  */
 const TheCard = ({ item }: Props) => {
   const subject = mandateSubject(item);
   const status = mandateStatus(item);
+  const device = item.agentDevice ? (item.agentDevice.name ?? item.agentDevice.deviceId) : item.subject.deviceId;
+  const facts: CardFact[] = [
+    ...(subject.version ? [{ icon: Tag, content: <span className="font-mono">v{subject.version}</span>, title: "Version" }] : []),
+    { icon: KeyRound, content: `run by ${mandateHolder(item)}`, title: "Signed in by" },
+    ...(device ? [{ icon: Cpu, content: device, title: "Device" }] : []),
+    ...(status !== "revoked"
+      ? [
+          {
+            icon: MonitorPlay,
+            title: "Instances signed in under this mandate",
+            content: `${item.clients.length}${item.maxClients != null ? ` / ${item.maxClients}` : ""} running`,
+          },
+        ]
+      : []),
+    { icon: Clock, content: <Timestamp date={item.createdAt} relative />, title: "Granted", at: "end" },
+  ];
 
   return (
-    <LokMandate.Smart object={item}>
-      <Card className={cn("flex h-full flex-col gap-1.5 p-3", status === "revoked" && "opacity-60")}>
-        <div className="flex items-baseline justify-between gap-2">
-          <LokMandate.DetailLink
-            object={item}
-            className="min-w-0 truncate text-sm font-medium leading-tight hover:text-primary transition-colors"
-          >
+    <LokMandate.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
+      <CardFrame
+        tone="brand"
+        quiet={status === "revoked"}
+        icon={KeyRound}
+        watermark={<KeyRound strokeWidth={1.25} />}
+        title={
+          <LokMandate.DetailLink object={item} className="min-w-0 truncate hover:underline">
             {subject.identifier}
           </LokMandate.DetailLink>
-          <span
-            className={cn(
-              "shrink-0 text-xs",
-              status === "live" ? "text-success" : "text-muted-foreground",
-            )}
-          >
-            {MANDATE_STATUS_LABEL[status]}
-          </span>
-        </div>
-
-        <p className="truncate text-xs text-muted-foreground">
-          {subject.version && <span className="font-mono">v{subject.version}</span>}
-          {subject.version && " · "}
-          run by {mandateHolder(item)}
-          {item.agentDevice && ` on ${item.agentDevice.name ?? item.agentDevice.deviceId}`}
-          {!item.agentDevice && item.subject.deviceId && ` on ${item.subject.deviceId}`}
-        </p>
-
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-muted-foreground/60">
-          <Timestamp date={item.createdAt} relative />
-          {status !== "revoked" && (
-            <span className="tabular-nums" title="Instances signed in under this mandate">
-              {item.clients.length}
-              {item.maxClients != null && ` / ${item.maxClients}`} running
-            </span>
-          )}
-        </div>
-      </Card>
+        }
+        facts={facts}
+        stacked
+        footer={<StatusPill tone={STATUS_TONE[status]}>{MANDATE_STATUS_LABEL[status]}</StatusPill>}
+        menu
+      />
     </LokMandate.Smart>
   );
 };

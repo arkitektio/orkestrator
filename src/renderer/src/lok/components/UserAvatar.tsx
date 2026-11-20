@@ -32,27 +32,39 @@ export const UserAvatar = (props: { sub: string, className?: string }) => {
  * per-card `deviceByDeviceId` lookup that hangs on "Loading" when the id cannot
  * be resolved — and fall back to the raw id so the pill never stalls.
  */
-export const DeviceImprint = (props: { deviceId: string, className?: string }) => {
+/** What a device is called on a card: its name, or "Unnamed". */
+export const deviceLabel = (device?: { name?: string | null } | null) => device?.name?.trim() || "Unnamed";
+
+/**
+ * The device an agent runs on, found by its node id. `inline` is the bare
+ * name (an agent's card draws the glyph beside it); otherwise a badge. Always
+ * visible, and named even when the device is not: its node id is the title.
+ */
+export const DeviceImprint = (props: { deviceId: string; className?: string; inline?: boolean }) => {
   const { data, loading } = useListDevicesQuery();
 
   if (loading && !data) return null;
 
   const device = data?.devices.find((d) => d.nodeId === props.deviceId);
-  const badge = (
-    <Badge
-      className={cn(
-        "text-xs font-mono truncate group-hover:opacity-100 opacity-0 transition-opacity",
-        props.className,
-      )}
-      title={device?.name ?? props.deviceId}
-    >
-      {device?.name || props.deviceId}
+  const label = deviceLabel(device);
+  const title = device?.name ? `${device.name} · ${props.deviceId}` : props.deviceId;
+  const face = props.inline ? (
+    <span className={cn("min-w-0 break-words", !device?.name && "italic", props.className)} title={title}>
+      {label}
+    </span>
+  ) : (
+    <Badge className={cn("truncate font-mono text-xs", props.className)} title={title}>
+      {label}
     </Badge>
   );
 
-  if (!device) return badge;
+  if (!device) return face;
 
-  return <LokDevice.DetailLink object={device}>{badge}</LokDevice.DetailLink>;
+  return (
+    <LokDevice.DetailLink object={device} className={props.inline ? "min-w-0 hover:text-foreground hover:underline" : undefined}>
+      {face}
+    </LokDevice.DetailLink>
+  );
 };
 
 export const JustUsername = (props: { sub: string }) => {

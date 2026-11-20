@@ -1,42 +1,27 @@
-import { Explainer } from "@/core/layout/Explainer";
-import { LOK_HELP } from "../help";
-import { PageLayout } from "@/core/layout/PageLayout";
-import { DialogButton } from "@/core/ui/dialog-button";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import { PlusIcon } from "lucide-react";
-import React from "react";
+import { LokLayer } from "@/core/linkers";
+import { useListSearch } from "@/core/layout/useListSearch";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import LayerList from "../components/lists/LayerList";
+import { LOK_HELP } from "../help";
 
-export type IRepresentationScreenProps = {};
+/** The connection layers between services and apps. */
+const Page = () => {
+  const { search, setSearch, filters } = useListSearch();
 
-const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
-    <PageLayout
-      help={LOK_HELP.layers}
+    <LokLayer.ListPage
       title="Layers"
+      help={LOK_HELP.layers}
       pageActions={
         <>
-          <DialogButton
-            alwaysShow
-            name="createserviceinstance"
-            variant={"outline"}
-            size={"sm"}
-            dialogProps={{}}
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New Layer
-          </DialogButton>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search layers…" />
         </>
       }
     >
-      <Explainer
-        title="Layers"
-        description="Layers represent connection layers between services and apps. If services are defined within a specific layer, only apps that have access to that layer can access the service."
-      />
-      <LayerList />
-
-      <Separator />
-    </PageLayout>
+      <div className="p-3">
+        <LayerList title="" filters={filters} />
+      </div>
+    </LokLayer.ListPage>
   );
 };
 

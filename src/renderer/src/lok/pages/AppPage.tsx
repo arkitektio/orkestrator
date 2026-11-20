@@ -1,60 +1,75 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { LOK_HELP } from "../help";
-import { ListRender } from "@/core/layout/ListRender";
-import { Card, CardContent } from "@/core/ui/card";
-import { Image } from "@/core/ui/image";
-import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
 import { LokApp } from "@/core/linkers";
+import { AppWindow } from "lucide-react";
 import { useDetailAppQuery } from "../api/graphql";
 import ReleaseCard from "../components/cards/ReleaseCard";
 import { BugReportTable } from "../components/bugreports/BugReportTable";
+import { DetailGrid, DetailSection, LogoOrIcon } from "../components/DetailParts";
 import { ADMIN_ROLE, RoleGuard } from "@/core/connection/roles";
 
+/**
+ * One app: its identifier and logo in the header, its releases in the body,
+ * and (for admins) what people reported from it. Its ids are the Info rail's.
+ */
 export const AppPage = asDetailQueryRoute(useDetailAppQuery, ({ data }) => {
-  const resolve = useLokResolve();
+  const app = data.app;
+  const latest = app.releases.at(0)?.version;
 
   return (
     <LokApp.ModelPage
       help={LOK_HELP.app}
-      object={data.app}
-      pageActions={<LokApp.Actions object={data?.app} />}
-      title={data?.app?.identifier}
+      object={app}
+      pageActions={<LokApp.Actions object={app} />}
+      title={app.identifier}
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              [
+                "Identifier",
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-mono text-xs">{app.identifier}</span>
+                  <CopyButton value={app.identifier} title="Copy identifier" />
+                </span>,
+              ],
+              ["Releases", app.releases.length],
+              ["App ID", <span className="break-all font-mono text-xs">{app.id}</span>],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
     >
-      <div className="grid grid-cols-6">
-        <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
-          <div>
-            <div className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              {data.app.identifier}
-            </div>
-          </div>
-        </div>
-        <div className="col-span-2">
-          <div className="p-1">
-            <Card>
-              <CardContent className="flex aspect-[3/2] items-center justify-center p-6 max-h-[200px]">
-                {data.app.logo && (
-                  <Image
-                    src={resolve(data?.app?.logo.presignedUrl)}
-                    className="my-auto"
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="lok"
+          icon={<LogoOrIcon src={app.logo?.presignedUrl} fallback={<AppWindow />} />}
+          title={app.identifier}
+          description={[
+            `${app.releases.length} ${app.releases.length === 1 ? "release" : "releases"}`,
+            ...(latest ? [`latest ${latest}`] : []),
+          ].join(" · ")}
+        />
 
-      <ListRender array={data?.app?.releases}>
-        {(item) => <ReleaseCard item={item} />}
-      </ListRender>
-      <RoleGuard require={ADMIN_ROLE}>
-        <div className="p-4">
-          <BugReportTable title="Bug reports" filters={{ app: data.app.id }} hideWhenEmpty />
-        </div>
-      </RoleGuard>
+        <DetailSection title="Releases" count={app.releases.length}>
+          <DetailGrid>
+            {app.releases.map((release) => (
+              <ReleaseCard key={release.id} item={release} />
+            ))}
+          </DetailGrid>
+        </DetailSection>
+
+        <RoleGuard require={ADMIN_ROLE}>
+          <BugReportTable title="Bug reports" filters={{ app: app.id }} hideWhenEmpty />
+        </RoleGuard>
+      </div>
     </LokApp.ModelPage>
   );
 });
-
 
 export default AppPage;

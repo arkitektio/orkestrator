@@ -74,6 +74,7 @@ export const LOK_HELP = {
     <PageHelp
       intro="Every user account on the server."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click a user to open their profile.</>,
         <>Right-click a user and choose <b>Add to organization</b>, pick the <b>Roles</b> and confirm with <b>Add</b> to make them a member of your organization.</>,
         <>Right-click a user and choose <b>Notify + send message</b>, write the <b>Message</b> and press <b>Send</b> to reach their registered phones.</>,
@@ -88,6 +89,7 @@ export const LOK_HELP = {
     <PageHelp
       intro="The applications registered with your organization. An app is a program that connects to the platform, for example a microscope control or an analysis tool."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click an app to open it and see its releases.</>,
       ]}
       tips={[
@@ -98,10 +100,13 @@ export const LOK_HELP = {
   ),
   app: (
     <PageHelp
-      intro="One application, with its logo and the releases (versions) of it that have registered with the server."
+      intro="One application: its logo and identifier, the releases (versions) of it that have registered with the server, and, for admins, what people reported from it."
       steps={[
-        <>Look through the list of versions to see which releases of this app exist.</>,
+        <>Look under <b>Releases</b> to see which versions of this app exist.</>,
         <>Click a version to open that release and see the clients running it.</>,
+      ]}
+      tips={[
+        <>The <b>Info</b> tab of the sidebar shows its identifier (with a copy button) and how many releases it has.</>,
       ]}
     />
   ),
@@ -111,17 +116,18 @@ export const LOK_HELP = {
       steps={[
         <>Read each client card to see the user it runs as and the device it runs on.</>,
         <>Click a client to open it, for example to report a bug against it.</>,
+        <>Click the app’s name in the <b>Info</b> tab of the sidebar to open the app.</>,
       ]}
       tips={[
-        <>The “Clients” list is hidden while no client of this version exists.</>,
+        <>The <b>Clients</b> section is hidden while no client of this version exists.</>,
       ]}
     />
   ),
   client: (
     <PageHelp
-      intro="One client: a single installation of an app version, signed in as a particular user. The header shows the app, its version, the user, the device it runs on and its client ID."
+      intro="One client: a single installation of an app version, signed in as a particular user. The header shows the app and its version; the line under it, the user, the device and the kind of client; the Info tab of the sidebar has its client ID (with a copy button), role and whether it is public."
       steps={[
-        <>Click the device name to open the device this client runs on.</>,
+        <>Click the device in the <b>Info</b> tab of the sidebar to open the device this client runs on.</>,
         <>Press <b>Report Bug</b> in the header to file a problem with this app: fill in <b>Issue Title</b> and <b>Description</b>, then press <b>Create GitHub Issue</b> to open the pre-filled issue in your browser.</>,
         <>Press one of the source buttons next to it, when the app provides any, to open the app’s public source in your browser.</>,
         <>Check “Critical Failures” for tasks that failed badly on this client, and click one to open the task.</>,
@@ -137,12 +143,15 @@ export const LOK_HELP = {
     <PageHelp
       intro="The devices registered with your server: the computers and virtual machines that apps run on and that carry out tasks."
       steps={[
+        <>Narrow the list with the row over it: type a name into <b>Search devices…</b>, or pick a group under <b>Any group</b>. <b>Clear filters</b> undoes them; the filters stay in the page’s address, so a narrowed list can be shared.</>,
+        <>Use the sort pill to order by name or show the newest first.</>,
+        <>Each card says which groups the device is in and how many apps are registered on it; its ID is at the foot.</>,
         <>Click a device to open it and see which agents run on it.</>,
         <>Open a device and use the pencil icon in its header to give it a readable name.</>,
       ]}
       tips={[
         <>This page is only available to administrators.</>,
-        <>A device without a name is listed by its node ID.</>,
+        <>A device without a name is listed as <i>Unnamed</i>.</>,
       ]}
     />
   ),
@@ -151,10 +160,13 @@ export const LOK_HELP = {
       intro="One device: a computer or virtual machine that apps run on. The page lists what is running on it."
       steps={[
         <>Click the pencil icon in the header, change the <b>Name</b> and press <b>Update</b> to rename the device.</>,
-        <>Look under “Agents running here” for the apps on this device that can currently take tasks.</>,
+        <>Read the line under the name for the groups it is in and how many apps are registered on it.</>,
+        <>Look under <b>Apps</b> for the apps registered on this device, and under “Agents running here” for the ones that can currently take tasks.</>,
+        <>Open the <b>Info</b> tab of the sidebar for its device ID; press the copy button next to it to copy it.</>,
       ]}
       tips={[
-        <>A note tells you when this is the device you are connected from right now.</>,
+        <>The line under the name says when this is the device you are connected through right now.</>,
+        <>A device without a name reads <i>Unnamed</i>.</>,
       ]}
     />
   ),
@@ -162,6 +174,8 @@ export const LOK_HELP = {
     <PageHelp
       intro="The service instances of your server. A service is a kind of backend (for example image storage); an instance is one running deployment of it that apps can be connected to."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Read a card for the service’s version and how many users it lets in or keeps out.</>,
         <>Click an instance to open it and see who may use it and which clients are connected.</>,
         <>Press <b>New Instance</b>, enter the <b>Service identifier</b> and confirm with <b>Change</b> to register a new instance of that service.</>,
       ]}
@@ -172,16 +186,17 @@ export const LOK_HELP = {
   ),
   serviceInstance: (
     <PageHelp
-      intro="One service instance: which service it provides, who is allowed or denied to use it, and which clients are connected to it."
+      intro="One service instance: which service and version it provides, who is allowed or denied to use it, and how it is composed."
       steps={[
-        <>Read the lists “Allowed Users”, “Denied Users”, “Allowed Groups” and “Denied Groups” to see who can reach this instance.</>,
+        <>Read <b>Allowed users</b>, <b>Denied users</b>, <b>Allowed groups</b> and <b>Denied groups</b> to see who can reach this instance.</>,
         <>Press <b>Update Service</b>, pick users and groups in the four fields and confirm with <b>Change</b> to adjust who has access.</>,
-        <>Look at the diagram at the bottom: the instance sits in the middle, the clients using it around it.</>,
+        <>Look at the diagram under <b>Composition</b>: the instance sits in the middle, the clients using it around it.</>,
         <>Click a client in the diagram to open it.</>,
       ]}
       tips={[
         <>A list that has no entries is not shown.</>,
         <>Changing access needs the administrator role.</>,
+        <>The <b>Info</b> tab of the sidebar shows its service, version, mappings, aliases and ID.</>,
       ]}
     />
   ),
@@ -189,8 +204,9 @@ export const LOK_HELP = {
     <PageHelp
       intro="The kinds of services your server knows. Services are the backends apps talk to; each one can have one or more running instances."
       steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click a service to open it and read its description.</>,
-        <>Press <b>New Service</b>, enter the <b>Service identifier</b> and confirm with <b>Change</b> to register an instance of that service.</>,
+        <>Press <b>New Instance</b>, enter the <b>Service identifier</b> and confirm with <b>Change</b> to register an instance of that service.</>,
       ]}
       tips={[
         <>This page is only available to administrators.</>,
@@ -203,7 +219,8 @@ export const LOK_HELP = {
       intro="One kind of service, with its identifier, description and logo."
       steps={[
         <>Read the description to learn what this service provides.</>,
-        <>Press <b>New Service</b> and confirm with <b>Change</b> to register a new instance of this service.</>,
+        <>Press <b>New Instance</b> and confirm with <b>Change</b> to register a new instance of this service.</>,
+        <>Open the <b>Info</b> tab of the sidebar for its identifier; press the copy button to copy it.</>,
       ]}
       tips={[
         <>Registering an instance needs the administrator role.</>,
@@ -214,15 +231,16 @@ export const LOK_HELP = {
     <PageHelp
       intro="Layers are connection layers between services and apps. A service defined in a layer can only be reached by apps that have access to that layer."
       steps={[
-        <>Look through the list to see which layers exist.</>,
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
         <>Click a layer to open it.</>,
       ]}
     />
   ),
   layer: (
     <PageHelp
-      intro="One layer, a connection layer between services and apps. The page shows only its name and logo."
+      intro="One layer, a connection layer between services and apps: its name, logo and what it is for."
       steps={[
+        <>Open the <b>Info</b> tab of the sidebar for its identifier; press the copy button to copy it.</>,
         <>Open the <b>Chat</b> tab of the sidebar to start a conversation about this layer.</>,
       ]}
     />
@@ -263,6 +281,7 @@ export const LOK_HELP = {
       intro="One bug report: what the person wrote, the app and installation it came from, the screenshot, and what the app recorded before it was filed."
       steps={[
         <>Read “What happened”, then open the parts under “What the app recorded” (“Recent errors”, “Failed requests”, “Steps before the report”, “Console”) for the details.</>,
+        <>Read the line under the title for who reported it and when; the <b>Info</b> tab of the sidebar shows the app, client, system and page it came from.</>,
         <>Press <b>Resolve</b> to close the report; add a <b>Note</b> if you want to say how it was dealt with.</>,
         <>Press <b>Forward to GitHub</b> to open a pre-filled issue in the tracker of the app the report came from. The report is then marked “Forwarded”.</>,
         <>Press <b>Reopen</b> on a resolved report to put it back among the open ones.</>,
@@ -274,11 +293,28 @@ export const LOK_HELP = {
       ]}
     />
   ),
+  clients: (
+    <PageHelp
+      intro="Every app signed in to your organization: which app and version, whose account it uses, and the device it runs on."
+      steps={[
+        <>Press the magnifier in the header and type to narrow the list; the search stays in the page’s address, so a narrowed list can be shared.</>,
+        <>Click a client to open it and see what it may do.</>,
+      ]}
+      tips={[<>This page is only available to administrators.</>]}
+    />
+  ),
+  releases: (
+    <PageHelp
+      intro="The versions of your apps that registered with this server, each with the app it belongs to."
+      steps={[<>Click a release to open it and see which clients run it.</>]}
+      tips={[<>This page is only available to administrators.</>]}
+    />
+  ),
   mandates: (
     <PageHelp
       intro="The apps allowed to act as you. A mandate is your approval for one exact app version to be started and signed in under your name, for example by an app installer on a lab computer."
       steps={[
-        <>Read a card to see which app and version it covers, who starts it, and how many instances are running.</>,
+        <>Read a card to see which app and version it covers, who starts it, on which device, and how many instances are running; its state is the pill at the bottom right.</>,
         <>Click a mandate to open it and see what it is allowed to do.</>,
         <>Right-click a mandate, choose <b>Revoke mandate</b> and confirm with <b>Revoke</b> to sign out every app started under it and stop new ones.</>,
         <>Switch on <b>Revoked</b> in the header to also show the mandates you have withdrawn.</>,
@@ -294,7 +330,7 @@ export const LOK_HELP = {
     <PageHelp
       intro="One mandate: your approval for an app version to run signed in as the person who granted it. The page shows who granted it, who may start the app, what it may do and which instances are running."
       steps={[
-        <>Read the facts at the top: who granted it, which app starts it, any device or operator it is limited to, and when it expires.</>,
+        <>Read the line under the title for who it signs the app in as, then the <b>Info</b> tab of the sidebar for who granted it, which app starts it, any device or operator it is limited to, and when it expires.</>,
         <>Check “Allowed to” for the permissions the app has while acting for the grantor.</>,
         <>Click an instance’s name to open that client.</>,
         <>Open the menu button at the right end of the header and choose <b>Revoke mandate</b> to withdraw the approval entirely.</>,

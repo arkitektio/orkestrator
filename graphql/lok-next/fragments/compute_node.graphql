@@ -3,8 +3,13 @@ fragment DetailDevice on Device {
   id
   name
   nodeId
+  deviceId
   deviceGroups {
     ...ListDeviceGroup
+  }
+  # The apps registered on it, for the page body.
+  clients {
+    ...ListClient
   }
 }
 
@@ -12,4 +17,19 @@ fragment ListDevice on Device {
   id
   name
   nodeId
+}
+
+# The device list page's card: what the device belongs to and runs, as counts
+# and names. Its own fragment, so every device picker does not carry them.
+fragment BrowseDevice on Device {
+  id
+  name
+  deviceId
+  deviceGroups {
+    id
+    name
+  }
+  clients {
+    id
+  }
 }

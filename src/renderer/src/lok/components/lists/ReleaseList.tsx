@@ -1,3 +1,4 @@
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
 import { ListRender } from "@/core/layout/ListRender";
 import { LokRelease } from "@/core/linkers";
 import { useReleasesQuery } from "@/lok/api/graphql";
@@ -14,6 +15,7 @@ const List = () => {
       title={<LokRelease.ListLink className="flex-0">Releases</LokRelease.ListLink>}
       // The query takes no variables, so paging has nothing to send.
       refetch={() => refetch()}
+      minItemWidth={CARD_FRAME_MIN_WIDTH}
     >
       {(item) => <ReleaseCard key={item.id} item={item} />}
     </ListRender>

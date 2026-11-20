@@ -1,26 +1,33 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { LOK_HELP } from "../help";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Badge } from "@/core/ui/badge";
 import { PageAction } from "@/core/ui/page-action";
-import { Image } from "@/core/ui/image";
-import { Separator } from "@/core/ui/separator";
-import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
 import { PageSections } from "@/core/layout/PageSections";
-import { LokClient, LokDevice } from "@/core/linkers";
-import {
-  Bug,
-  ExternalLink,
-  Server,
-  User,
-} from "lucide-react";
+import { LokClient, LokDevice, LokRelease } from "@/core/linkers";
+import { Bug, ExternalLink, Plug } from "lucide-react";
 import { useDetailClientQuery } from "../api/graphql";
 import { clientAppIdentifier } from "../lib/clientLabels";
 import { BugReportTable } from "../components/bugreports/BugReportTable";
+import { LogoOrIcon } from "../components/DetailParts";
+import { deviceLabel } from "../components/UserAvatar";
+
+/** `RELYING_PARTY` → "Relying party". */
+const kindLabel = (value: string) => value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, " ");
 import { ADMIN_ROLE, RoleGuard } from "@/core/connection/roles";
 
+/**
+ * One client: an installation of an app, signed in for one operator on one
+ * device. Its app and version in the header, who runs it where on the line
+ * under it; its ids and settings in the Info rail; what other modules show
+ * about it (rekuest: its failed tasks) and, for admins, its bug reports in
+ * the body.
+ */
 export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
-  const resolve = useLokResolve();
+  const client = data.client;
   const { openDialog } = useDialog();
 
   const handleReportClientBug = () => {
@@ -64,77 +71,76 @@ export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
         </>
       }
       title={data?.client && clientAppIdentifier(data.client)}
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              ["Name", client.name],
+              [
+                "Release",
+                client.release && (
+                  <LokRelease.DetailLink object={client.release} className="font-mono hover:underline">
+                    {client.release.version}
+                  </LokRelease.DetailLink>
+                ),
+              ],
+              ["Operator", client.user ? `@${client.user.username}` : "Unknown"],
+              [
+                "Device",
+                client.node ? (
+                  <LokDevice.DetailLink object={client.node} className="hover:underline">
+                    {deviceLabel(client.node)}
+                  </LokDevice.DetailLink>
+                ) : (
+                  "Unassigned"
+                ),
+              ],
+              ["Kind", kindLabel(client.kind)],
+              ["Role", kindLabel(client.role)],
+              ["Public", client.public ? "Yes" : "No"],
+              [
+                "Client ID",
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-mono text-xs">{client.clientId}</span>
+                  <CopyButton value={client.clientId} title="Copy client ID" />
+                </span>,
+              ],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
     >
-      <div className="space-y-8 p-4">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
-          <div className="flex gap-6">
-            {data.client.logo?.presignedUrl && (
-              <div className="h-24 w-24 shrink-0 rounded-xl overflow-hidden border bg-muted shadow-sm">
-                <Image
-                  src={resolve(data?.client?.logo.presignedUrl)}
-                  className="object-contain w-full h-full"
-                  alt="Client Logo"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-bold tracking-tight">
-                  {clientAppIdentifier(data.client)}
-                </h1>
-                {data.client.release && (
-                  <Badge variant="secondary" className="text-sm px-2 py-0.5">
-                    v{data.client.release.version}
-                  </Badge>
-                )}
-              </div>
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="lok"
+          icon={<LogoOrIcon src={client.logo?.presignedUrl} fallback={<Plug />} />}
+          title={
+            <span className="flex flex-wrap items-baseline gap-2">
+              {clientAppIdentifier(client)}
+              {client.release && (
+                <span className="font-mono text-lg font-normal text-muted-foreground">{client.release.version}</span>
+              )}
+            </span>
+          }
+          description={[
+            client.user ? `by @${client.user.username}` : "operator unknown",
+            client.node ? `on ${deviceLabel(client.node)}` : "on no device",
+            kindLabel(client.kind),
+          ].join(" · ")}
+        />
 
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>@{data.client.user?.username || "Unknown"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Server className="h-4 w-4" />
-                  {data.client.node ? (
-                    <LokDevice.DetailLink
-                      object={data.client.node}
-                      className="hover:underline font-medium"
-                    >
-                      {data.client.node.name}
-                    </LokDevice.DetailLink>
-                  ) : (
-                    "Unassigned"
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">
-                    {data.client.clientId}
-                  </span>
-                </div>
-              </div>
-
-
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-
-        {/* Failed Tasks Section */}
         {/* What other modules show about a client (rekuest: its failed tasks),
             given the client's OAuth id to filter by. */}
         <PageSections
           placement="main"
           identifier="@lok/client"
-          object={{ id: data.client.id, clientId: data.client.clientId }}
+          object={{ id: client.id, clientId: client.clientId }}
         />
 
         {/* What people reported from inside this installation. */}
         <RoleGuard require={ADMIN_ROLE}>
-          <BugReportTable title="Bug reports" filters={{ client: data.client.id }} hideWhenEmpty />
+          <BugReportTable title="Bug reports" filters={{ client: client.id }} hideWhenEmpty />
         </RoleGuard>
       </div>
     </LokClient.ModelPage>

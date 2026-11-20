@@ -1,44 +1,21 @@
-import { ListRender } from "@/core/layout/ListRender";
-import { LokService } from "@/core/linkers";
-
-import {
-  OffsetPaginationInput,
-  ServiceFilter,
-  useListServiceInstancesQuery
-} from "@/lok/api/graphql";
-import { PlusIcon } from "lucide-react";
+import { createList } from "@/core/layout/createList";
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
+import { LokServiceInstance } from "@/core/linkers";
+import { useListServiceInstancesQuery } from "@/lok/api/graphql";
 import ServiceInstanceCard from "../cards/ServiceInstanceCard";
 
-export type Props = {
-  filters?: ServiceFilter;
-  pagination?: OffsetPaginationInput;
-};
+const InstancesList = createList({
+  useHook: useListServiceInstancesQuery,
+  dataKey: "serviceInstances",
+  ItemComponent: ServiceInstanceCard,
+  title: "Instances",
+  smart: LokServiceInstance,
+  // A page of its own says so when there is nothing, instead of going blank.
+  autoHide: false,
+  emptyTitle: "No instance",
+  emptyDescription: "An instance is a service deployed on this server; press New Instance to add one.",
+  minItemWidth: CARD_FRAME_MIN_WIDTH,
+  defaultLimit: 40,
+});
 
-const List = ({ filters, pagination }: Props) => {
-  const { data, error, refetch } = useListServiceInstancesQuery({
-    variables: { pagination, filters },
-  });
-
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-
-  return (
-    <ListRender
-      array={data?.serviceInstances}
-      title={
-        <LokService.ListLink className="flex-0">Services</LokService.ListLink>
-      }
-      refetch={refetch}
-      actions={
-        <>
-          <PlusIcon></PlusIcon>
-        </>
-      }
-    >
-      {(ex) => <ServiceInstanceCard key={ex.id} item={ex} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default InstancesList;

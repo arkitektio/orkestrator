@@ -2268,12 +2268,17 @@ export type DetailClientFragment = { __typename?: 'Client', id: string, clientId
 
 export type ListClientFragment = { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
 
-export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<(
+export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceId: string, deviceGroups: Array<(
     { __typename?: 'DeviceGroup' }
     & ListDeviceGroupFragment
+  )>, clients: Array<(
+    { __typename?: 'Client' }
+    & ListClientFragment
   )> };
 
 export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string };
+
+export type BrowseDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }>, clients: Array<{ __typename?: 'Client', id: string }> };
 
 export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> }, hub?: { __typename?: 'Hub', id: string, name: string, identifier: any } | null };
 
@@ -2776,6 +2781,23 @@ export type IsMemberOfQueryVariables = Exact<{
 
 
 export type IsMemberOfQuery = { __typename?: 'Query', mycontext: { __typename?: 'Context', memberOf: boolean } };
+
+export type BrowseDevicesQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  filters?: InputMaybe<DeviceFilter>;
+  ordering?: InputMaybe<Array<DeviceOrdering> | DeviceOrdering>;
+}>;
+
+
+export type BrowseDevicesQuery = { __typename?: 'Query', devices: Array<(
+    { __typename?: 'Device' }
+    & BrowseDeviceFragment
+  )> };
+
+export type DeviceFilterOptionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DeviceFilterOptionsQuery = { __typename?: 'Query', deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string, devices: Array<{ __typename?: 'Device', id: string }> }> };
 
 export type ListDevicesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3312,16 +3334,66 @@ export const ListDeviceGroupFragmentDoc = gql`
   name
 }
     `;
+export const ListClientFragmentDoc = gql`
+    fragment ListClient on Client {
+  id
+  user {
+    id
+    username
+  }
+  logo {
+    presignedUrl
+  }
+  node {
+    id
+    name
+  }
+  name
+  kind
+  release {
+    version
+    logo {
+      presignedUrl
+    }
+    app {
+      id
+      identifier
+      logo {
+        presignedUrl
+      }
+    }
+  }
+}
+    `;
 export const DetailDeviceFragmentDoc = gql`
     fragment DetailDevice on Device {
   id
   name
   nodeId
+  deviceId
   deviceGroups {
     ...ListDeviceGroup
   }
+  clients {
+    ...ListClient
+  }
 }
-    ${ListDeviceGroupFragmentDoc}`;
+    ${ListDeviceGroupFragmentDoc}
+${ListClientFragmentDoc}`;
+export const BrowseDeviceFragmentDoc = gql`
+    fragment BrowseDevice on Device {
+  id
+  name
+  deviceId
+  deviceGroups {
+    id
+    name
+  }
+  clients {
+    id
+  }
+}
+    `;
 export const ContextFragmentDoc = gql`
     fragment Context on Context {
   organization {
@@ -3678,37 +3750,6 @@ export const MembershipRequestFragmentDoc = gql`
   user {
     id
     username
-  }
-}
-    `;
-export const ListClientFragmentDoc = gql`
-    fragment ListClient on Client {
-  id
-  user {
-    id
-    username
-  }
-  logo {
-    presignedUrl
-  }
-  node {
-    id
-    name
-  }
-  name
-  kind
-  release {
-    version
-    logo {
-      presignedUrl
-    }
-    app {
-      id
-      identifier
-      logo {
-        presignedUrl
-      }
-    }
   }
 }
     `;
@@ -5198,6 +5239,81 @@ export function useIsMemberOfLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type IsMemberOfQueryHookResult = ReturnType<typeof useIsMemberOfQuery>;
 export type IsMemberOfLazyQueryHookResult = ReturnType<typeof useIsMemberOfLazyQuery>;
 export type IsMemberOfQueryResult = Apollo.QueryResult<IsMemberOfQuery, IsMemberOfQueryVariables>;
+export const BrowseDevicesDocument = gql`
+    query BrowseDevices($pagination: OffsetPaginationInput, $filters: DeviceFilter, $ordering: [DeviceOrdering!]) {
+  devices(pagination: $pagination, filters: $filters, ordering: $ordering) {
+    ...BrowseDevice
+  }
+}
+    ${BrowseDeviceFragmentDoc}`;
+
+/**
+ * __useBrowseDevicesQuery__
+ *
+ * To run a query within a React component, call `useBrowseDevicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBrowseDevicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBrowseDevicesQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function useBrowseDevicesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BrowseDevicesQuery, BrowseDevicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BrowseDevicesQuery, BrowseDevicesQueryVariables>(BrowseDevicesDocument, options);
+      }
+export function useBrowseDevicesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BrowseDevicesQuery, BrowseDevicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BrowseDevicesQuery, BrowseDevicesQueryVariables>(BrowseDevicesDocument, options);
+        }
+export type BrowseDevicesQueryHookResult = ReturnType<typeof useBrowseDevicesQuery>;
+export type BrowseDevicesLazyQueryHookResult = ReturnType<typeof useBrowseDevicesLazyQuery>;
+export type BrowseDevicesQueryResult = Apollo.QueryResult<BrowseDevicesQuery, BrowseDevicesQueryVariables>;
+export const DeviceFilterOptionsDocument = gql`
+    query DeviceFilterOptions {
+  deviceGroups {
+    id
+    name
+    devices {
+      id
+    }
+  }
+}
+    `;
+
+/**
+ * __useDeviceFilterOptionsQuery__
+ *
+ * To run a query within a React component, call `useDeviceFilterOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeviceFilterOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeviceFilterOptionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useDeviceFilterOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<DeviceFilterOptionsQuery, DeviceFilterOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DeviceFilterOptionsQuery, DeviceFilterOptionsQueryVariables>(DeviceFilterOptionsDocument, options);
+      }
+export function useDeviceFilterOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DeviceFilterOptionsQuery, DeviceFilterOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DeviceFilterOptionsQuery, DeviceFilterOptionsQueryVariables>(DeviceFilterOptionsDocument, options);
+        }
+export type DeviceFilterOptionsQueryHookResult = ReturnType<typeof useDeviceFilterOptionsQuery>;
+export type DeviceFilterOptionsLazyQueryHookResult = ReturnType<typeof useDeviceFilterOptionsLazyQuery>;
+export type DeviceFilterOptionsQueryResult = Apollo.QueryResult<DeviceFilterOptionsQuery, DeviceFilterOptionsQueryVariables>;
 export const ListDevicesDocument = gql`
     query ListDevices($pagination: OffsetPaginationInput, $filters: DeviceFilter) {
   devices(pagination: $pagination, filters: $filters) {

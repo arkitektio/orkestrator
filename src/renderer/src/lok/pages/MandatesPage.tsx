@@ -1,4 +1,5 @@
-import { PageLayout } from "@/core/layout/PageLayout";
+import { LokMandate } from "@/core/linkers";
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
 import { LOK_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 import { Label } from "@/core/ui/label";
@@ -22,7 +23,7 @@ const MandatesPage: React.FC = () => {
   );
 
   return (
-    <PageLayout
+    <LokMandate.ListPage
       help={LOK_HELP.mandates}
       title="Mandates"
       pageActions={
@@ -35,7 +36,7 @@ const MandatesPage: React.FC = () => {
       }
     >
       <div className="p-3">
-        <ListRender array={mandates} error={error} refetch={refetch}>
+        <ListRender array={mandates} error={error} refetch={refetch} minItemWidth={CARD_FRAME_MIN_WIDTH}>
           {(item) => <MandateCard key={item.id} item={item} />}
         </ListRender>
         {!loading && mandates?.length === 0 && (
@@ -44,7 +45,7 @@ const MandatesPage: React.FC = () => {
           </p>
         )}
       </div>
-    </PageLayout>
+    </LokMandate.ListPage>
   );
 };
 

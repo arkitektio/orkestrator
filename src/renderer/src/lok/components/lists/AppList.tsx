@@ -1,33 +1,21 @@
-import { ListRender } from "@/core/layout/ListRender";
-
-import {
-  AppFilter,
-  OffsetPaginationInput,
-  useAppsQuery
-} from "@/lok/api/graphql";
+import { createList } from "@/core/layout/createList";
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
+import { LokApp } from "@/core/linkers";
+import { useAppsQuery } from "@/lok/api/graphql";
 import AppCard from "../cards/AppCard";
 
-export type Props = {
-  filters?: AppFilter;
-  pagination?: OffsetPaginationInput;
-};
+const AppList = createList({
+  useHook: useAppsQuery,
+  dataKey: "apps",
+  ItemComponent: AppCard,
+  title: "Apps",
+  smart: LokApp,
+  // A page of its own says so when there is nothing, instead of going blank.
+  autoHide: false,
+  emptyTitle: "No app",
+  emptyDescription: "Apps appear once they register with your organization.",
+  minItemWidth: CARD_FRAME_MIN_WIDTH,
+  defaultLimit: 40,
+});
 
-const List = ({ filters, pagination }: Props) => {
-  const { data, refetch } = useAppsQuery({
-    variables: { filters, pagination },
-  });
-
-  return (
-    <ListRender
-      array={data?.apps} // changed from clients to apps  here
-      title={
-        <div className="flex-0">Apps</div>
-      }
-      refetch={refetch}
-    >
-      {(ex) => <AppCard key={ex.id} item={ex} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default AppList;

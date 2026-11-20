@@ -1,73 +1,47 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
-import { Badge } from "@/core/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
-import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { Cpu, Plug, Tag, User } from "lucide-react";
+import { CARD_FRAME_SIZE, CardFrame, type CardFact } from "@/core/ui/card-frame";
 import { LokClient } from "@/core/linkers";
-import { Server, User } from "lucide-react";
 import { ListClientFragment } from "../../api/graphql";
 import { clientAppIdentifier } from "@/lok/lib/clientLabels";
+import { CardLogo } from "./CardLogo";
 
 interface Props {
   item: ListClientFragment;
-
 }
 
+/**
+ * A client (an app signed in somewhere): its app and version, whose it is,
+ * and at the foot the device it runs on.
+ */
 const ClientCard = ({ item }: Props) => {
-  const resolve = useLokResolve();
+  const logo = item.logo?.presignedUrl ?? item.release?.logo?.presignedUrl;
+  const facts: CardFact[] = [
+    ...(item.release ? [{ icon: Tag, content: `v${item.release.version}`, title: "Version" }] : []),
+    { icon: User, content: item.user?.username ?? "No user", title: "Signed in as" },
+    {
+      icon: Cpu,
+      title: "Device",
+      at: "end",
+      content: item.node ? (item.node.name?.trim() || <span className="italic">Unnamed</span>) : <span className="italic">No device</span>,
+    },
+  ];
 
   return (
-    <LokClient.Smart object={item} >
-      <LokClient.DetailLink object={item} className="block h-full">
-        <Card className="h-full hover:bg-muted/50 transition-colors group">
-          <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-3">
-            <Avatar className="h-10 w-10 rounded-lg border bg-muted">
-              <AvatarImage
-                src={resolve(item.logo?.presignedUrl)}
-                alt={clientAppIdentifier(item)}
-                className="object-contain"
-              />
-              <AvatarFallback className="rounded-lg">
-                {clientAppIdentifier(item).slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1 overflow-hidden">
-              <CardTitle className="text-base font-semibold truncate leading-none flex items-center gap-2">
-                <span className="truncate">{clientAppIdentifier(item)}</span>
-              </CardTitle>
-              {item.release && (
-                <CardDescription className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
-                    v{item.release.version}
-                  </Badge>
-                </CardDescription>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
-                <User className="h-3.5 w-3.5" />
-                <span className="truncate">
-                  {item.user?.username || "Unknown User"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
-                <Server className="h-3.5 w-3.5" />
-                <span className="truncate">
-                  {item.node?.name || "Unassigned Node"}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </LokClient.DetailLink>
+    <LokClient.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
+      <CardFrame
+        tone="brand"
+        leading={<CardLogo url={logo} icon={Plug} className="h-4 w-4 shrink-0 rounded" />}
+        watermark={<CardLogo url={logo} icon={Plug} />}
+        title={
+          <LokClient.DetailLink object={item} className="min-w-0 truncate hover:underline">
+            {clientAppIdentifier(item)}
+          </LokClient.DetailLink>
+        }
+        facts={facts}
+        stacked
+        menu
+      />
     </LokClient.Smart>
   );
 };

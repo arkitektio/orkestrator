@@ -1,3 +1,26 @@
+# The device list page: its filter row narrows server-side (search; a group's
+# members as ids), and its sort is the server's.
+query BrowseDevices(
+  $pagination: OffsetPaginationInput
+  $filters: DeviceFilter
+  $ordering: [DeviceOrdering!]
+) {
+  devices(pagination: $pagination, filters: $filters, ordering: $ordering) {
+    ...BrowseDevice
+  }
+}
+
+# What the device list's filter row offers: the groups, with their members.
+query DeviceFilterOptions {
+  deviceGroups {
+    id
+    name
+    devices {
+      id
+    }
+  }
+}
+
 query ListDevices(
   $pagination: OffsetPaginationInput
   $filters: DeviceFilter

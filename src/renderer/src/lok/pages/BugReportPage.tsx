@@ -7,7 +7,11 @@ import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { PageAction } from "@/core/ui/page-action";
 import Timestamp from "@/core/ui/timestamp";
-import { CheckCircle2, ExternalLink, Github, RotateCcw } from "lucide-react";
+import { Bug, CheckCircle2, ExternalLink, Github, RotateCcw } from "lucide-react";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
 import type { ReactNode } from "react";
 import {
   useDetailBugReportQuery,
@@ -23,13 +27,20 @@ const openExternal = (url: string) => {
   return Promise.resolve();
 };
 
-const Fact = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="min-w-0">
-    <dt className="text-xs text-muted-foreground">{label}</dt>
-    <dd className="truncate text-sm">{children}</dd>
-  </div>
+/** A plain section of the report's body: a heading and what it says. */
+const Part = ({ title, children }: { title: string; children: ReactNode }) => (
+  <section className="flex flex-col gap-2">
+    <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
+    {children}
+  </section>
 );
 
+/**
+ * One bug report: its title and state in the header, who reported it when on
+ * the line under it; the app, client, system and page it came from in the Info
+ * rail; and in the body what happened, what was expected, how it was resolved
+ * or forwarded, the screenshot and what the app recorded.
+ */
 export const BugReportPage = asDetailQueryRoute(useDetailBugReportQuery, ({ data }) => {
   const report = data.bugReport;
   const { openDialog } = useDialog();
@@ -50,6 +61,62 @@ export const BugReportPage = asDetailQueryRoute(useDetailBugReportQuery, ({ data
       help={LOK_HELP.bugReport}
       object={report}
       title={report.title}
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              ["Status", report.isResolved ? "Resolved" : "Open"],
+              [
+                "Reported by",
+                report.reporter ? (
+                  <LokUser.DetailLink object={report.reporter} className="hover:underline">
+                    {report.reporter.username}
+                  </LokUser.DetailLink>
+                ) : (
+                  "Unknown"
+                ),
+              ],
+              ["When", <Timestamp date={report.createdAt} relative />],
+              [
+                "App",
+                report.release ? (
+                  <span>
+                    <LokApp.DetailLink object={report.release.app} className="hover:underline">
+                      {report.release.app.identifier}
+                    </LokApp.DetailLink>{" "}
+                    <LokRelease.DetailLink object={report.release} className="text-muted-foreground hover:underline">
+                      {report.release.version}
+                    </LokRelease.DetailLink>
+                  </span>
+                ) : (
+                  "Unknown"
+                ),
+              ],
+              [
+                "Client",
+                report.client ? (
+                  <LokClient.DetailLink object={report.client} className="hover:underline">
+                    {report.client.node?.name ?? report.client.name}
+                  </LokClient.DetailLink>
+                ) : (
+                  "No longer registered"
+                ),
+              ],
+              ["Version it says it runs", report.appVersion ?? "Unknown"],
+              ["System", report.platform ?? "Unknown"],
+              ["Page", <span className="break-all font-mono text-xs">{report.route ?? "Unknown"}</span>],
+              [
+                "Report ID",
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-mono text-xs">{report.id}</span>
+                  <CopyButton value={report.id} title="Copy report ID" />
+                </span>,
+              ],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
       pageActions={
         <RoleGuard require={ADMIN_ROLE}>
           <PageAction
@@ -88,68 +155,35 @@ export const BugReportPage = asDetailQueryRoute(useDetailBugReportQuery, ({ data
         </RoleGuard>
       }
     >
-      <div className="space-y-6 p-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{report.title}</h1>
-            <Badge variant={report.isResolved ? "secondary" : "outline"}>{report.isResolved ? "Resolved" : "Open"}</Badge>
-            {report.forwardedAt && <Badge variant="secondary">Forwarded</Badge>}
-          </div>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
-            <Fact label="Reported by">
-              {report.reporter ? (
-                <LokUser.DetailLink object={report.reporter} className="hover:underline">
-                  {report.reporter.username}
-                </LokUser.DetailLink>
-              ) : (
-                "Unknown"
-              )}
-            </Fact>
-            <Fact label="When">
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="lok"
+          icon={<Bug />}
+          title={
+            <span className="flex flex-wrap items-center gap-2">
+              {report.title}
+              <Badge variant={report.isResolved ? "secondary" : "outline"}>{report.isResolved ? "Resolved" : "Open"}</Badge>
+              {report.forwardedAt && <Badge variant="secondary">Forwarded</Badge>}
+            </span>
+          }
+          description={
+            <>
+              {report.reporter ? `Reported by ${report.reporter.username}` : "Reporter unknown"}
+              {" · "}
               <Timestamp date={report.createdAt} relative />
-            </Fact>
-            <Fact label="App">
-              {report.release ? (
-                <>
-                  <LokApp.DetailLink object={report.release.app} className="hover:underline">
-                    {report.release.app.identifier}
-                  </LokApp.DetailLink>{" "}
-                  <LokRelease.DetailLink object={report.release} className="text-muted-foreground hover:underline">
-                    {report.release.version}
-                  </LokRelease.DetailLink>
-                </>
-              ) : (
-                "Unknown"
-              )}
-            </Fact>
-            <Fact label="Client">
-              {report.client ? (
-                <LokClient.DetailLink object={report.client} className="hover:underline">
-                  {report.client.node?.name ?? report.client.name}
-                </LokClient.DetailLink>
-              ) : (
-                "No longer registered"
-              )}
-            </Fact>
-            <Fact label="Version it says it runs">{report.appVersion ?? "Unknown"}</Fact>
-            <Fact label="System">{report.platform ?? "Unknown"}</Fact>
-            <Fact label="Page">
-              <span className="font-mono text-xs">{report.route ?? "Unknown"}</span>
-            </Fact>
-          </dl>
-        </div>
+              {report.release && ` · ${report.release.app.identifier} ${report.release.version}`}
+            </>
+          }
+        />
 
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">What happened</h2>
+        <Part title="What happened">
           <p className="whitespace-pre-wrap text-sm">{report.description}</p>
-        </section>
+        </Part>
         {report.expected && (
-          <section className="space-y-1">
-            <h2 className="text-sm font-medium">What was expected</h2>
+          <Part title="What was expected">
             <p className="whitespace-pre-wrap text-sm">{report.expected}</p>
-          </section>
+          </Part>
         )}
-
         {report.isResolved && (
           <section className="rounded-md border px-3 py-2 text-sm">
             Resolved{report.resolvedBy ? ` by ${report.resolvedBy.username}` : ""}
@@ -180,14 +214,12 @@ export const BugReportPage = asDetailQueryRoute(useDetailBugReportQuery, ({ data
         )}
 
         {report.screenshot && (
-          <section className="space-y-1">
-            <h2 className="text-sm font-medium">Screenshot</h2>
+          <Part title="Screenshot">
             <img src={report.screenshot} alt="The window when the report was filed" className="max-w-full rounded-md border" />
-          </section>
+          </Part>
         )}
 
-        <section className="space-y-1">
-          <h2 className="text-sm font-medium">What the app recorded</h2>
+        <Part title="What the app recorded">
           {isBugReport(report.diagnostics) ? (
             <ReportView report={report.diagnostics} />
           ) : (
@@ -195,7 +227,7 @@ export const BugReportPage = asDetailQueryRoute(useDetailBugReportQuery, ({ data
               {JSON.stringify(report.diagnostics, null, 2)}
             </pre>
           )}
-        </section>
+        </Part>
       </div>
     </LokBugReport.ModelPage>
   );

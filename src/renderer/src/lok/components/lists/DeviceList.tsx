@@ -1,36 +1,20 @@
-import { ListRender } from "@/core/layout/ListRender";
+import { createList } from "@/core/layout/createList";
+import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
 import { LokDevice } from "@/core/linkers";
-
-import {
-  DeviceFilter,
-  OffsetPaginationInput,
-  useListDevicesQuery
-} from "@/lok/api/graphql";
+import { useBrowseDevicesQuery } from "@/lok/api/graphql";
 import DeviceCard from "../cards/DeviceCard";
 
-export type Props = {
-  filters?: DeviceFilter;
-  pagination?: OffsetPaginationInput;
-};
+const DeviceList = createList({
+  useHook: useBrowseDevicesQuery,
+  dataKey: "devices",
+  ItemComponent: DeviceCard,
+  title: "Devices",
+  smart: LokDevice,
+  autoHide: false,
+  emptyTitle: "No device",
+  emptyDescription: "A device appears once it is provisioned and registers with your organization.",
+  minItemWidth: CARD_FRAME_MIN_WIDTH,
+  defaultLimit: 40,
+});
 
-const List = ({ filters, pagination }: Props) => {
-  const { data, refetch } = useListDevicesQuery({
-    variables: { filters, pagination },
-  });
-
-  return (
-    <ListRender
-      array={data?.devices}
-      title={
-        <LokDevice.ListLink className="flex-0">
-          Clients
-        </LokDevice.ListLink>
-      }
-      refetch={refetch}
-    >
-      {(ex) => <DeviceCard key={ex.id} item={ex} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default DeviceList;

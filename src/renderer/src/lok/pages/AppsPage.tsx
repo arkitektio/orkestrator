@@ -1,24 +1,26 @@
-import { Explainer } from "@/core/layout/Explainer";
-import { LOK_HELP } from "../help";
 import { LokApp } from "@/core/linkers";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import React from "react";
+import { useListSearch } from "@/core/layout/useListSearch";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import AppList from "../components/lists/AppList";
-export type IRepresentationScreenProps = {};
+import { LOK_HELP } from "../help";
 
-const Page: React.FC<IRepresentationScreenProps> = () => {
+/** Every app registered with the organization. */
+const Page = () => {
+  const { search, setSearch, filters } = useListSearch();
+
   return (
     <LokApp.ListPage
-      help={LOK_HELP.apps}
       title="Applications"
+      help={LOK_HELP.apps}
+      pageActions={
+        <>
+          <CollapsibleSearch alwaysShow value={search} onChange={setSearch} placeholder="Search apps…" />
+        </>
+      }
     >
-      <Explainer
-        title="Applications"
-        description="Applications are your workhorses. They are the main way you interact with your data and services. Here you see all applications that are available within your Organisation"
-      />
-      <AppList />
-
-      <Separator />
+      <div className="p-3">
+        <AppList title="" filters={filters} />
+      </div>
     </LokApp.ListPage>
   );
 };

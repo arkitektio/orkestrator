@@ -1,115 +1,115 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { LOK_HELP } from "../help";
-import { ListRender } from "@/core/layout/ListRender";
-import { PageLayout } from "@/core/layout/PageLayout";
-import { Card, CardContent } from "@/core/ui/card";
+import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { CopyButton } from "@/core/ui/copy-button";
+import { InfoList } from "@/core/ui/info-list";
 import { SheetButton } from "@/core/ui/sheetbutton";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import { PlusIcon } from "lucide-react";
+import { LokService, LokServiceInstance } from "@/core/linkers";
+import { Boxes, Pencil } from "lucide-react";
 import { useGetServiceInstanceQuery } from "../api/graphql";
 import GroupCard from "../components/cards/GroupCard";
 import UserCard from "../components/cards/UserCard";
 import InstanceCompositionGraph from "../components/graphs/InstanceCompositionGraph";
+import { DetailGrid, DetailSection, LogoOrIcon } from "../components/DetailParts";
 
-import { Image } from "@/core/ui/image";
-import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
-
-export type IRepresentationScreenProps = {};
-
+/**
+ * One deployed service: which service and version it provides in the header;
+ * who may and may not use it in the body, then how it is composed. Its
+ * service, version, counts and id are the Info rail's.
+ */
 const Page = asDetailQueryRoute(useGetServiceInstanceQuery, ({ data }) => {
-  const resolve = useLokResolve();
+  const instance = data.serviceInstance;
+  const service = instance.release.service;
+
   return (
-    <PageLayout
+    <LokServiceInstance.ModelPage
       help={LOK_HELP.serviceInstance}
-      title="Lok"
+      object={instance}
+      title={service.name || service.identifier}
       pageActions={
-        <>
-          <SheetButton
-            alwaysShow
-            name="updateserviceinstance"
-            variant={"outline"}
-            size={"sm"}
-            dialogProps={{ instance: data.serviceInstance }}
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Update Service
-          </SheetButton>
-        </>
+        <SheetButton
+          alwaysShow
+          name="updateserviceinstance"
+          variant={"outline"}
+          size={"sm"}
+          dialogProps={{ instance }}
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Update Service
+        </SheetButton>
       }
+      additionalSidebars={
+        <Sidebars.Tab label="Info">
+          <InfoList
+            rows={[
+              [
+                "Service",
+                <LokService.DetailLink object={service} className="hover:underline">
+                  {service.name || service.identifier}
+                </LokService.DetailLink>,
+              ],
+              ["Version", <span className="font-mono">{instance.release.version}</span>],
+              ["Mappings", instance.mappings.length],
+              ["Aliases", instance.aliases.length],
+              [
+                "Instance ID",
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-mono text-xs">{instance.id}</span>
+                  <CopyButton value={instance.id} title="Copy instance ID" />
+                </span>,
+              ],
+            ]}
+          />
+        </Sidebars.Tab>
+      }
+      defaultSidebar="Info"
     >
-      <div className="grid grid-cols-6">
-        <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
-          <div>
-            <div className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl flex flex-col">
-              {data.serviceInstance.release.service.identifier}
-              <div className="text-lg text-muted-foreground">
-                {data.serviceInstance.release.service.identifier}
-              </div>
-              <div className="text-lg text-foreground font-light">
-                Provides {data.serviceInstance.release.service.identifier}
-              </div>
-              <div className="text-lg text-foreground font-light">
-                {data.serviceInstance.release.service.description}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="col-span-2">
-          <div className="p-1">
-            <Card>
-              <CardContent className="flex aspect-[3/2] items-center justify-center p-6 max-h-[200px]">
-                {data.serviceInstance.logo && (
-                  <Image
-                    src={resolve(data?.serviceInstance?.logo.presignedUrl)}
-                    className="my-auto"
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+      <div className="flex w-full flex-col gap-8 p-3">
+        <ModuleHomeHeader
+          moduleKey="lok"
+          icon={<LogoOrIcon src={instance.logo?.presignedUrl} fallback={<Boxes />} />}
+          title={service.name || service.identifier}
+          description={[
+            `Provides ${service.identifier} ${instance.release.version}`,
+            ...(service.description ? [service.description] : []),
+          ].join(" · ")}
+        />
+
+        <DetailSection title="Allowed users" count={instance.allowedUsers.length}>
+          <DetailGrid>
+            {instance.allowedUsers.map((user) => (
+              <UserCard key={user.id} item={user} />
+            ))}
+          </DetailGrid>
+        </DetailSection>
+        <DetailSection title="Denied users" count={instance.deniedUsers.length}>
+          <DetailGrid>
+            {instance.deniedUsers.map((user) => (
+              <UserCard key={user.id} item={user} />
+            ))}
+          </DetailGrid>
+        </DetailSection>
+        <DetailSection title="Allowed groups" count={instance.allowedGroups.length}>
+          <DetailGrid>
+            {instance.allowedGroups.map((group) => (
+              <GroupCard key={group.id} item={group} />
+            ))}
+          </DetailGrid>
+        </DetailSection>
+        <DetailSection title="Denied groups" count={instance.deniedGroups.length}>
+          <DetailGrid>
+            {instance.deniedGroups.map((group) => (
+              <GroupCard key={group.id} item={group} />
+            ))}
+          </DetailGrid>
+        </DetailSection>
+
+        <DetailSection title="Composition">
+          <InstanceCompositionGraph service={instance} />
+        </DetailSection>
       </div>
-
-      <ListRender
-        array={data?.serviceInstance?.allowedUsers}
-        title="Allowed Users"
-      >
-        {(item, index) => {
-          return <UserCard item={item} key={index} />;
-        }}
-      </ListRender>
-
-      <ListRender
-        array={data?.serviceInstance?.deniedUsers}
-        title="Denied Users"
-      >
-        {(item, index) => {
-          return <UserCard item={item} key={index} />;
-        }}
-      </ListRender>
-
-      <ListRender
-        array={data?.serviceInstance?.allowedGroups}
-        title="Allowed Groups"
-      >
-        {(item, index) => {
-          return <GroupCard item={item} key={index} />;
-        }}
-      </ListRender>
-
-      <ListRender
-        array={data?.serviceInstance?.deniedGroups}
-        title="Denied Groups"
-      >
-        {(item, index) => {
-          return <GroupCard item={item} key={index} />;
-        }}
-      </ListRender>
-
-      <InstanceCompositionGraph service={data.serviceInstance} />
-
-      <Separator />
-    </PageLayout>
+    </LokServiceInstance.ModelPage>
   );
 });
 
