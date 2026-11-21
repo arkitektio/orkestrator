@@ -1,3 +1,5 @@
+// What this app offers an assistant designing a blok (registered with the app's own agent).
+import "./agentTools";
 import { TaskHookRunner } from "@/core/modules/taskhooks/TaskHookRunner";
 import { providePortBlokRenderer } from "@/core/blok/portBlokSlot";
 import { defineModule } from "@/core/modules/host/define";

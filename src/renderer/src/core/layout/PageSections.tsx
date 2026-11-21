@@ -53,3 +53,10 @@ export const SlotSections = ({
     </>
   );
 };
+
+/** Whether any module fills a host slot for this model: a tab that would be empty is not drawn. */
+export const useHasSlotSections = (identifier: Identifier, slot: NonNullable<PageSection["slot"]>): boolean => {
+  useModuleHostVersion();
+  const { roles } = useRoles();
+  return pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier), roles).length > 0;
+};

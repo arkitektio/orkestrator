@@ -93,12 +93,34 @@ import {
   RevokeAllowanceMutationVariables,
   WiregramDocument,
   WiregramQuery,
-  WiregramQueryVariables
+  WiregramQueryVariables,
+  AgentForProtocolDocument,
+  AgentForProtocolQuery,
+  AgentForProtocolQueryVariables,
+  ComponentContext,
+  CreateBlokDocument,
+  CreateBlokMutation,
+  CreateBlokMutationVariables,
+  ListBloksDocument,
+  ListBloksQuery,
+  ListBloksQueryVariables,
+  MaterializeBlokDocument,
+  MaterializeBlokMutation,
+  MaterializeBlokMutationVariables,
+  BlokEditorDocument,
+  BlokEditorQuery,
+  BlokEditorQueryVariables
 } from '@/rekuest/api/graphql'
+import { scaffoldAgentsBlok } from './lib/agentBlokScaffold'
+import { printBsx } from '@arkitektio/bsx/bsx/index'
+import type { BlokComponentNode } from '@arkitektio/bsx/renderer/runtime/types'
+import { declarationsDraft } from './components/editor/blokDeclarationsDraft'
+import { dependencyDraft } from './components/editor/blokDependencies'
+import { downloadBlokFile } from './components/editor/blokFile'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Blocks, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { REKUEST_ADMIN } from './roles'
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
@@ -179,6 +201,120 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       }
 
       dialog.openDialog('updateagent', { agent: data.agent })
+    },
+    collections: ['io'],
+  },
+  'rekuest-create-blok-from-agent': {
+    title: 'Create Blok from Agent',
+    description: 'Make a custom blok from its states and actions, bound to this agent, and open it to change; several selected agents make one blok of them all',
+    icon: Blocks,
+    conditions: only('@rekuest/agent'),
+    execute: async ({ services, state, navigate }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const client = services.rekuest.client
+      // Every selected agent, once: several make one blok with a part for each.
+      const ids = [
+        ...new Set(
+          state.left.filter((item) => item.identifier === '@rekuest/agent' && item.id).map((item) => String(item.id)),
+        ),
+      ]
+      if (ids.length === 0) {
+        throw new Error('No agent selected')
+      }
+      const [agents, existing] = await Promise.all([
+        Promise.all(
+          ids.map((id) =>
+            client.query<AgentForProtocolQuery, AgentForProtocolQueryVariables>({
+              query: AgentForProtocolDocument,
+              variables: { id },
+              fetchPolicy: 'network-only',
+            }),
+          ),
+        ),
+        // A blok created under a name in use would change that blok: the new one takes a free name.
+        client.query<ListBloksQuery, ListBloksQueryVariables>({
+          query: ListBloksDocument,
+          variables: { filters: { provided: false } },
+          fetchPolicy: 'network-only',
+        }),
+      ])
+      if (agents.some((result) => !result.data?.agent)) {
+        throw new Error(ids.length > 1 ? 'One of these agents could not be read' : 'This agent could not be read')
+      }
+      const scaffold = scaffoldAgentsBlok(
+        agents.map((result) => result.data.agent),
+        existing.data.bloks.map((blok) => blok.name),
+      )
+      const created = await client.mutate<CreateBlokMutation, CreateBlokMutationVariables>({
+        mutation: CreateBlokDocument,
+        variables: {
+          input: {
+            name: scaffold.name,
+            description: scaffold.description,
+            context: ComponentContext.Panel,
+            source: scaffold.source,
+            vocab: 2,
+            demo: scaffold.demo,
+            dependencies: scaffold.dependencies,
+          },
+        },
+        refetchQueries: ['ListBloks'],
+      })
+      const blok = created.data?.createBlok
+      if (!blok) {
+        throw new Error('Rekuest did not create the blok')
+      }
+      // Bound to the agent it was made from, so the editor can show it live.
+      let materialized: string | undefined
+      let unbound: unknown
+      try {
+        const result = await client.mutate<MaterializeBlokMutation, MaterializeBlokMutationVariables>({
+          mutation: MaterializeBlokDocument,
+          variables: {
+            input: { blok: blok.id, agentMappings: scaffold.bindings.map(({ key, agent }) => ({ key, agent })) },
+          },
+          refetchQueries: ['GetBlok', 'ListMaterializedBloks'],
+        })
+        materialized = result.data?.materializeBlok.id
+      } catch (error) {
+        unbound = error
+      }
+      // The blok exists either way: it is opened, and a failed binding said after.
+      navigate(`/rekuest/bloks/${blok.id}/edit${materialized ? `?shown=${materialized}` : ''}`)
+      if (unbound) {
+        console.warn('Materializing the new blok failed', unbound)
+        throw new Error(`${blok.name} was created, but could not be bound to ${ids.length > 1 ? 'these agents' : 'this agent'}. Materialize it from its page.`)
+      }
+    },
+    collections: ['io'],
+  },
+  'rekuest-export-blok': {
+    title: 'Export Blok…',
+    description: 'Save it as a file (its BSX, demo and the agents it declares) to import elsewhere',
+    icon: Share,
+    conditions: only('@rekuest/blok'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<BlokEditorQuery, BlokEditorQueryVariables>({
+        query: BlokEditorDocument,
+        variables: { id: selected(state, '@rekuest/blok') },
+        fetchPolicy: 'network-only',
+      })
+      const roots = (data.blok.componentTree ?? []) as BlokComponentNode[]
+      if (roots.length !== 1) {
+        throw new Error(`${data.blok.name} cannot be written as BSX, so it cannot be exported`)
+      }
+      downloadBlokFile({
+        name: data.blok.name,
+        description: data.blok.description ?? '',
+        source: printBsx(roots[0]),
+        dependencies: data.blok.dependencies.map(dependencyDraft),
+        declarations: declarationsDraft(data.blok),
+      })
     },
     collections: ['io'],
   },

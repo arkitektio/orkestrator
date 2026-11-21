@@ -13,23 +13,28 @@ import { useDialog } from "@/core/dialogs/registry";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { SlotSections, useHasSlotSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestBlok } from "@/core/linkers";
 import { useTheme } from "@/core/settings/theme/ThemeProvider";
 import { Button } from "@/core/ui/button";
+import { MonacoGate } from "@/core/ui/code/monaco";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { PageAction } from "@/core/ui/page-action";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/core/ui/resizable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
 import { Textarea } from "@/core/ui/textarea";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
+import { cn } from "@/core/util/utils";
 import { Editor } from "@monaco-editor/react";
-import { Code, GitFork } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Code, Columns2, Download, Eye, GitFork } from "lucide-react";
+import type { ImperativePanelHandle } from "react-resizable-panels";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArgPortFragment,
   ComponentContext,
@@ -37,20 +42,26 @@ import {
   useBlokEditorQuery,
   useCreateEditorBlokMutation,
   useEditBlokMutation,
+  useGetBlokQuery,
   useUpdateEditorBlokMutation,
   type BlokEditorFragment,
+  type ListMaterializedBlokFragment,
 } from "../api/graphql";
 import { ArgPortRows, SignatureColumn } from "../components/action/ActionSignature";
 import DemoBlokRenderer from "../components/DemoBlokRenderer";
+import MaterializedBlokRenderer, { type MaterializedBlokData } from "../components/MaterializedBlokRenderer";
+import { BlokMaterializedPicker } from "../components/editor/BlokMaterializedPicker";
 import {
   scopeDependency,
   dependencyDraft,
   dependencyInput,
   dependencyProblems,
-  type DependencyDraft,
 } from "../components/editor/blokDependencies";
 import { BlokHistory } from "../components/editor/BlokHistory";
-import { DependencyListEditor } from "../components/editor/DependencyListEditor";
+import { DependencyListEditor, type BoundAgent } from "../components/editor/DependencyListEditor";
+import { describeAgents } from "../components/editor/blokAssist";
+import { downloadBlokFile, type BlokFileDraft } from "../components/editor/blokFile";
+import { registerOpenBlokEditor } from "../components/editor/openBlokEditors";
 import { diagnosticMarkers, refusalMarkers } from "../components/editor/serverMarkers";
 import { useServerCheck, type ServerCheck } from "../components/editor/useServerCheck";
 import { REKUEST_HELP } from "../help";
@@ -60,19 +71,11 @@ import {
   declarationsDraft,
   draftResolvedLocals,
   emptyDeclarationsDraft,
-  type DeclarationsDraft,
 } from "../components/editor/blokDeclarationsDraft";
 import type { BlokDeclaredLocal, BlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
 
-type EditorDraft = {
-  name: string;
-  description: string;
-  /** The BSX: its `<Blok kind context>` says what it is, its `<local>`/`<query>`/`<subscription>` what it owns. */
-  source: string;
-  dependencies: DependencyDraft[];
-  /** The demo: what the blok declares beside its tree. */
-  declarations: DeclarationsDraft;
-};
+/** What the editor holds of a blok: also what a blok file carries (`blokFile.ts`). */
+type EditorDraft = BlokFileDraft;
 
 /** The blok language a save writes. */
 const VOCAB = 2;
@@ -80,6 +83,22 @@ const VOCAB = 2;
 /** What a new custom blok starts as: a panel. */
 const STARTER =
   '<Blok kind="custom" context="panel">\n  <Card className="p-4">\n    <CardContent>\n      <Text>Hello</Text>\n    </CardContent>\n  </Card>\n</Blok>\n';
+
+const BLOK_IDENTIFIER = "@rekuest/blok";
+
+type EditorLayout = "source" | "split" | "preview";
+const LAYOUT_KEY = "rekuest-blok-editor-layout";
+const LAYOUTS: { id: EditorLayout; label: string; icon: typeof Code }[] = [
+  { id: "source", label: "Code", icon: Code },
+  { id: "split", label: "Split", icon: Columns2 },
+  { id: "preview", label: "Preview", icon: Eye },
+];
+const readLayout = (): EditorLayout => {
+  const saved = localStorage.getItem(LAYOUT_KEY);
+  return saved === "source" || saved === "preview" ? saved : "split";
+};
+
+const EMPTY_MATERIALIZED: readonly ListMaterializedBlokFragment[] = [];
 
 /** The kind every blok made or saved here is: a provided blok's first save forks it into a custom one. */
 const CUSTOM_KIND = "custom";
@@ -96,13 +115,15 @@ const DemoEditor = (props: { value: string; error: string | null; onChange: (val
         <span className="font-mono">agents.robot.arm.mode</span>. Locals start at their defaults.
       </p>
       <div className="min-h-64 flex-1 overflow-hidden rounded-md border">
-        <Editor
-          language="json"
-          value={props.value}
-          onChange={(value) => props.onChange(value ?? "")}
-          theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-          options={{ minimap: { enabled: false }, fontSize: 12, scrollBeyondLastLine: false, automaticLayout: true, tabSize: 2 }}
-        />
+        <MonacoGate>
+          <Editor
+            language="json"
+            value={props.value}
+            onChange={(value) => props.onChange(value ?? "")}
+            theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
+            options={{ minimap: { enabled: false }, fontSize: 12, scrollBeyondLastLine: false, automaticLayout: true, tabSize: 2 }}
+          />
+        </MonacoGate>
       </div>
       {props.error && <p className="text-xs text-destructive">{props.error}</p>}
     </div>
@@ -155,26 +176,140 @@ const ArgsPanel = ({ args }: { args: ArgPortFragment[] }) => (
   </div>
 );
 
-const Preview = (props: { blokId?: string; tree: BlokComponentNode | null; declarations: BlokDeclarations }) => (
-  <div className="h-full p-3">
-    {props.tree ? (
-      <ErrorBoundary
-        resetKeys={[props.tree, props.declarations]}
-        fallbackRender={({ error }) => (
-          <ErrorNote error={error} title="The preview could not draw this" />
+/** The preview's own value for "its demo", beside the materializations' ids. */
+const DEMO = "__demo__";
+
+/** The materialization the preview runs the draft on: its agents, and what to call it. */
+type LiveTarget = { id: string; name: string; agentMappings: ListMaterializedBlokFragment["agentMappings"] };
+
+const Preview = (props: {
+  blokId?: string;
+  tree: BlokComponentNode | null;
+  declarations: BlokDeclarations;
+  /** Run the draft on this materialization's agents instead of its demo. */
+  live: LiveTarget | null;
+  /** The blok's materializations, to switch to from the preview itself. */
+  targets: readonly LiveTarget[];
+  onShow: (id: string | null) => void;
+  dependencyKeys: readonly string[];
+  args: ArgPortFragment[];
+}) => {
+  const { live, tree, declarations, dependencyKeys, args } = props;
+  // The draft as that materialization would show it once saved: its own tree
+  // and declarations, on the agents the materialization binds.
+  const materialized = useMemo<MaterializedBlokData | null>(() => {
+    if (!live || !tree) return null;
+    const bound = new Set(live.agentMappings.map((mapping) => mapping.key));
+    return {
+      id: live.id,
+      blok: {
+        componentTree: [tree],
+        ...declarations,
+        dependencies: dependencyKeys.map((key) => ({ key })),
+        args: args.map((arg) => ({ key: arg.key })),
+      },
+      revision: null,
+      agentMappings: live.agentMappings,
+      // A key the draft declares that this materialization never bound.
+      unboundDependencies: dependencyKeys.filter((key) => !bound.has(key)),
+    };
+  }, [live, tree, declarations, dependencyKeys, args]);
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3 text-xs">
+        <span className="font-medium text-muted-foreground">Preview</span>
+        {props.targets.length > 0 ? (
+          <Select value={live?.id ?? DEMO} onValueChange={(value) => props.onShow(value === DEMO ? null : value)}>
+            <SelectTrigger size="sm" className="h-7 min-w-0 max-w-64 gap-1.5 text-xs" aria-label="What the preview runs on">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={DEMO}>Demo values</SelectItem>
+              {props.targets.map((target) => (
+                <SelectItem key={target.id} value={target.id}>
+                  {target.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="text-muted-foreground">Demo values</span>
         )}
-      >
-        <DemoBlokRenderer
-          surfaceId={`${props.blokId ?? "new"}-bsx-preview`}
-          blok={{ id: props.blokId ?? "new", componentTree: [props.tree], ...props.declarations }}
-          debug
-        />
-      </ErrorBoundary>
-    ) : (
-      <p className="text-sm text-muted-foreground">The preview shows once the source parses.</p>
-    )}
-  </div>
-);
+        {live && (
+          <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground" title="Values are live, and a button here does what it says">
+            <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-success" />
+            <span className="truncate">
+              live on {[...new Set(live.agentMappings.map((mapping) => mapping.agent.name))].join(", ") || "no agent"}
+            </span>
+          </span>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 p-3">
+        {tree ? (
+          <ErrorBoundary
+            resetKeys={[tree, declarations, live?.id]}
+            fallbackRender={({ error }) => <ErrorNote error={error} title="The preview could not draw this" />}
+          >
+            {materialized ? (
+              <MaterializedBlokRenderer
+                key={materialized.id}
+                surfaceId={`${props.blokId ?? "new"}-bsx-live-${materialized.id}`}
+                materializedBlok={materialized}
+              />
+            ) : (
+              <DemoBlokRenderer
+                surfaceId={`${props.blokId ?? "new"}-bsx-preview`}
+                blok={{ id: props.blokId ?? "new", componentTree: [tree], ...declarations }}
+                debug
+              />
+            )}
+          </ErrorBoundary>
+        ) : (
+          <p className="text-sm text-muted-foreground">The preview shows once the source parses.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * The line under the source: whether it would save (and the first reason it
+ * would not), what the server made of it, and whether the draft is saved.
+ */
+const EditorStatus = (props: {
+  problems: string[];
+  warnings: number;
+  server: string;
+  agentProblems: number;
+  saved: string;
+  dirty: boolean;
+}) => {
+  const blocked = props.problems.length > 0;
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-3 border-t px-3 text-xs text-muted-foreground">
+      <span className={cn("flex min-w-0 items-center gap-1.5", blocked && "text-destructive")} title={props.problems.join("\n") || undefined}>
+        <span className={cn("size-1.5 shrink-0 rounded-full", blocked ? "bg-destructive" : "bg-success")} />
+        <span className="truncate">
+          {blocked
+            ? `${props.problems.length} ${props.problems.length === 1 ? "problem" : "problems"}: ${props.problems[0]}`
+            : "No problems"}
+        </span>
+      </span>
+      {props.warnings > 0 && (
+        <span className="shrink-0 text-warning">
+          {props.warnings} {props.warnings === 1 ? "warning" : "warnings"}
+        </span>
+      )}
+      {props.agentProblems > 0 && <span className="shrink-0 text-destructive">Agents tab: {props.agentProblems} to fix</span>}
+      <span className="ml-auto shrink-0">{props.server}</span>
+      <span className={cn("flex shrink-0 items-center gap-1.5", props.dirty && "text-foreground")}>
+        {props.dirty && <span className="size-1.5 rounded-full bg-warning" />}
+        {props.saved}
+      </span>
+    </div>
+  );
+};
 
 const SERVER_STATUS: Record<ServerCheck["status"], string> = {
   idle: "",
@@ -207,6 +342,41 @@ const BlokEditorWorkspace = (props: {
   onReload?: () => void;
 }) => {
   const navigate = useNavigate();
+  // What the preview runs on: a materialization of this blok (asked for by id
+  // in `?shown=`, as "Create blok from agent" does), else its demo.
+  const [searchParams] = useSearchParams();
+  const [shown, setShown] = useState<string | null>(() => searchParams.get("shown"));
+  const materializedQuery = useGetBlokQuery({ variables: { id: props.blokId ?? "" }, skip: !props.blokId });
+  const materializations = materializedQuery.data?.blok.materializedBloks ?? EMPTY_MATERIALIZED;
+  const targets = useMemo<LiveTarget[]>(
+    () =>
+      materializations.map((found) => ({ id: found.id, name: found.name ?? found.blok.name, agentMappings: found.agentMappings })),
+    [materializations],
+  );
+  const live = useMemo(() => targets.find((candidate) => candidate.id === shown) ?? null, [targets, shown]);
+  // Where the preview runs live: the agent each dependency key is bound to there.
+  const bound = useMemo(
+    () => (live ? new Map<string, BoundAgent>(live.agentMappings.map((mapping) => [mapping.key, mapping.agent])) : null),
+    [live],
+  );
+  // What of the workspace is shown: the source, the preview, or both side by
+  // side. Kept across bloks, and switched by collapsing a panel (not by
+  // unmounting it), so the source keeps its undo history and its cursor.
+  const [layout, setLayoutState] = useState<EditorLayout>(readLayout);
+  const sourcePanel = useRef<ImperativePanelHandle>(null);
+  const previewPanel = useRef<ImperativePanelHandle>(null);
+  const setLayout = useCallback((next: EditorLayout) => {
+    setLayoutState(next);
+    localStorage.setItem(LAYOUT_KEY, next);
+  }, []);
+  useEffect(() => {
+    if (layout === "preview") sourcePanel.current?.collapse();
+    else sourcePanel.current?.expand();
+    if (layout === "source") previewPanel.current?.collapse();
+    else previewPanel.current?.expand();
+  }, [layout]);
+  // An assistant (alpaka's chat, when a module fills the chat slot) helps design it.
+  const chattable = useHasSlotSections(BLOK_IDENTIFIER, "chat") && !!props.blokId;
   const [draft, setDraft] = useState(props.initial);
   const [saved, setSaved] = useState(props.initial);
   const [head, setHead] = useState<Head>(props.head ?? null);
@@ -230,6 +400,10 @@ const BlokEditorWorkspace = (props: {
 
   const dependencies = useMemo(() => draft.dependencies.map(scopeDependency), [draft.dependencies]);
   const argKeys = useMemo(() => props.args.map((arg) => arg.key), [props.args]);
+  const dependencyKeys = useMemo(
+    () => draft.dependencies.map((dependency) => dependency.key.trim()).filter(Boolean),
+    [draft.dependencies],
+  );
   // Mounted as a custom blok on the dependencies declared here, as the server checks a save.
   const scope = useMemo((): BlokCheckScope => mountedBlokScope([CUSTOM_KIND], dependencies, argKeys), [dependencies, argKeys]);
   const locked = draft.dependencies.some((dependency) => dependency.locked);
@@ -304,6 +478,26 @@ const BlokEditorWorkspace = (props: {
     ],
     [analysis.markers, check, saveError, draft.source],
   );
+
+  // The draft as something outside this page may read and replace: the app's
+  // own agent, asked by the assistant in the Chat tab (`rekuest/agentTools.ts`).
+  const assistRef = useRef({ draft, scope });
+  assistRef.current = { draft, scope };
+  useEffect(() => {
+    if (!props.blokId) return;
+    return registerOpenBlokEditor(props.blokId, {
+      read: () => ({
+        name: assistRef.current.draft.name,
+        source: assistRef.current.draft.source,
+        scope: assistRef.current.scope,
+        agents: describeAgents(assistRef.current.draft.dependencies),
+      }),
+      write: (next) => {
+        setSaveError(null);
+        setDraft((current) => ({ ...current, source: next }));
+      },
+    });
+  }, [props.blokId]);
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const blocked = !draft.name.trim() || !parses || context === null || !valid || (checkDependencies && problems.size > 0);
@@ -383,6 +577,34 @@ const BlokEditorWorkspace = (props: {
       help={REKUEST_HELP.blokEditor}
       pageActions={
         <>
+          <PageAction.Slot alwaysShow>
+            <div className="flex items-center rounded-md border p-0.5" role="group" aria-label="What the workspace shows">
+              {LAYOUTS.map(({ id, label, icon: Icon }) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-pressed={layout === id}
+                  title={label}
+                  className={cn("h-6 gap-1.5 px-2 text-xs", layout === id && "bg-muted text-foreground")}
+                  onClick={() => setLayout(id)}
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </PageAction.Slot>
+          <PageAction
+            size="sm"
+            variant="ghost"
+            icon={<Download className="h-4 w-4" />}
+            disabled={!parses}
+            onClick={() => downloadBlokFile(draft)}
+          >
+            Export
+          </PageAction>
           {props.blokId && (
             <PageAction size="sm" variant="ghost" onClick={() => navigate(RekuestBlok.linkBuilder(props.blokId!))}>
               Open blok
@@ -434,6 +656,8 @@ const BlokEditorWorkspace = (props: {
               dependencies={draft.dependencies}
               problems={checkDependencies ? problems : new Map()}
               disabled={locked}
+              source={source}
+              bound={bound}
               onChange={(next) => {
                 setDependenciesTouched(true);
                 change({ dependencies: next });
@@ -450,6 +674,22 @@ const BlokEditorWorkspace = (props: {
           <Sidebars.Tab label="Args">
             <ArgsPanel args={props.args} />
           </Sidebars.Tab>
+          {chattable && props.blokId ? (
+            <Sidebars.Tab label="Chat">
+              {/* The host's chat slot: whichever module fills it (alpaka), behind its own guard. */}
+              <SlotSections slot="chat" identifier={BLOK_IDENTIFIER} object={{ id: props.blokId }} />
+            </Sidebars.Tab>
+          ) : null}
+          {props.blokId && !props.provided ? (
+            <Sidebars.Tab label="Materialized">
+              <BlokMaterializedPicker
+                blokId={props.blokId}
+                materialized={materializations}
+                shown={live?.id ?? null}
+                onShow={setShown}
+              />
+            </Sidebars.Tab>
+          ) : null}
           {props.blokId && !props.provided ? (
             <Sidebars.Tab label="History">
               <BlokHistory blokId={props.blokId} dirty={dirty} onRestored={props.onReload} />
@@ -480,24 +720,40 @@ const BlokEditorWorkspace = (props: {
           <ErrorNote error={saveError} title="Couldn't save the blok" variant="line" className="px-3 py-2" />
         ) : null}
         <ResizablePanelGroup direction="horizontal" className="min-h-0 flex-1">
-          <ResizablePanel defaultSize={55} minSize={25}>
+          <ResizablePanel ref={sourcePanel} defaultSize={55} minSize={25} collapsible collapsedSize={0}>
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
-                <BsxEditor
-                  value={draft.source}
-                  onChange={(next) => change({ source: next })}
-                  environment={environment}
-                  markers={markers}
-                />
+                <MonacoGate>
+                  <BsxEditor
+                    value={draft.source}
+                    onChange={(next) => change({ source: next })}
+                    environment={environment}
+                    markers={markers}
+                  />
+                </MonacoGate>
               </div>
-              {SERVER_STATUS[check.status] && (
-                <div className="shrink-0 border-t px-3 py-1 text-xs text-muted-foreground">{SERVER_STATUS[check.status]}</div>
-              )}
+              <EditorStatus
+                problems={markers.filter((marker) => marker.severity === "error").map((marker) => marker.message)}
+                warnings={markers.filter((marker) => marker.severity !== "error").length}
+                server={SERVER_STATUS[check.status]}
+                agentProblems={checkDependencies ? problems.size : 0}
+                saved={!props.blokId ? "Not created yet" : dirty ? "Unsaved changes" : head ? `Saved · rev ${head.number}` : "Saved"}
+                dirty={!props.blokId || dirty}
+              />
             </div>
           </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={45} minSize={20}>
-            <Preview blokId={props.blokId} tree={lastTree.current} declarations={lastDeclarations.current} />
+          <ResizableHandle withHandle className={cn(layout !== "split" && "hidden")} />
+          <ResizablePanel ref={previewPanel} defaultSize={45} minSize={20} collapsible collapsedSize={0}>
+            <Preview
+              blokId={props.blokId}
+              tree={lastTree.current}
+              declarations={lastDeclarations.current}
+              live={live}
+              targets={targets}
+              onShow={setShown}
+              dependencyKeys={dependencyKeys}
+              args={props.args}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -505,20 +761,22 @@ const BlokEditorWorkspace = (props: {
   );
 };
 
-/** A new custom blok, from a starter. */
-export const NewBlokEditorPage = () => (
-  <BlokEditorWorkspace
-    title="New Blok"
-    args={[]}
-    initial={{
-      name: "",
-      description: "",
-      source: STARTER,
-      dependencies: [],
-      declarations: emptyDeclarationsDraft(),
-    }}
-  />
-);
+/** A new custom blok: from a starter, or from a blok file the list page read (`location.state.draft`). */
+export const NewBlokEditorPage = () => {
+  const imported = (useLocation().state as { draft?: EditorDraft } | null)?.draft;
+  const initial = useMemo<EditorDraft>(
+    () =>
+      imported ?? {
+        name: "",
+        description: "",
+        source: STARTER,
+        dependencies: [],
+        declarations: emptyDeclarationsDraft(),
+      },
+    [imported],
+  );
+  return <BlokEditorWorkspace title={imported?.name ? `Import ${imported.name}` : "New Blok"} args={[]} initial={initial} />;
+};
 
 const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () => Promise<unknown> }) => {
   // Bumped to start over from what the server holds now.

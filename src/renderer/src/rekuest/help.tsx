@@ -87,6 +87,7 @@ export const REKUEST_HELP = {
         <>Press <b>Pin</b> to pin the agent, and <b>Unpin</b> to undo it.</>,
         <>Press <b>Bounce</b> to send the agent a bounce request.</>,
         <>Press <b>Copy Python</b> to copy a Python declaration of this agent’s actions to the clipboard.</>,
+        <>Right-click the agent and choose <b>Create Blok from Agent</b> to get a custom blok made from its states and actions, already bound to this agent; it opens in the editor for you to change. With several agents selected, the same makes one blok with a part for each of them.</>,
       ]}
       tips={[
         <>The dot next to the name is green when the agent is online and red when it is offline, with the time it was last seen.</>,
@@ -166,6 +167,7 @@ export const REKUEST_HELP = {
         <>Press <b>New Blok</b> in the header to write one in BSX, or right-click a blok and choose <b>Edit Blok</b> to change it.</>,
         <>Open a blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
         <>Right-click a blok and choose <b>Delete Blok</b> to remove it.</>,
+        <>Right-click a blok and choose <b>Export Blok…</b> to save it as a file. Press <b>Import</b> in the header to open such a file as a new blok: it is created only when you press <b>Create blok</b> in the editor.</>,
       ]}
       tips={[
         <>The bloks your apps bring along are on the <b>App-provided Bloks</b> page.</>,
@@ -180,8 +182,14 @@ export const REKUEST_HELP = {
         <>Inside a tag, start typing to see its props; hover a tag or a prop to read what it does.</>,
         <>An attribute in quotes is a literal (<b>label=&quot;Go&quot;</b>); one in braces is an expression: <b>{"{agents.stage.position.x}"}</b> reads a state of an agent the blok is bound to, <b>{"{args.image}"}</b> what the blok is opened for, <b>{"{str.upper(x)}"}</b> calls a function. Text between tags fills the component's text prop: <b>&lt;Button&gt;Go&lt;/Button&gt;</b>.</>,
         <>A callback does exactly one thing: <b>{"onClick={agents.stage.move(x: event.value) into move}"}</b> calls an action and keeps its task as <b>move</b> (read <b>move.running</b>, <b>move.returns</b>); <b>{"queries.<name>.refetch()"}</b>, <b>ui.copy</b> and <b>task.answer</b> are the other things it may do.</>,
-        <>Declare the agents it is bound to in the <b>Agents</b> tab: a key (read as <b>agents.&lt;key&gt;</b>), the app, and the actions and states it uses. Completion offers exactly those.</>,
+        <>Declare the agents it is bound to in the <b>Agents</b> tab: press <b>Add agent</b> and pick one, then open it and click the actions and states it should use from what that agent offers. Completion offers exactly those; hover one and press the copy button to copy how it is written (<b>agents.&lt;key&gt;.&lt;name&gt;</b>).</>,
+        <>A green dot before an action or a state means the source uses it. A yellow row is something the source names but nothing declares: click it to declare it.</>,
+        <>Press <b>Code</b>, <b>Split</b> or <b>Preview</b> at the top to show the source, the preview, or both; the choice is kept.</>,
+        <>Open the <b>Chat</b> tab (shown when Alpaka is installed) to design the blok with an assistant: it reads the source as it stands in the editor and writes its changes into it, where you see them in the preview. Nothing it writes is saved until you press <b>Save</b>.</>,
+        <>Press <b>Export</b> to save the blok as a file; on the <b>Custom Bloks</b> page, <b>Import</b> opens such a file as a new blok for you to create.</>,
+        <>Switch what the preview runs on with the select over it: <b>Demo values</b>, or one of the blok’s materialized bloks. The line under the source says whether it would save, and why not.</>,
         <>Everything is inside one <b>&lt;Blok kind=&quot;custom&quot; context=&quot;panel&quot;&gt;</b> (or <b>context=&quot;scene&quot;</b>). Declare form state with <b>{'<local name="x" default={3} persist />'}</b> as the first children of the element it is for (a control binds it with <b>{"bind={x}"}</b>; <b>persist</b> keeps it on this device), and reads as children of the <b>&lt;Blok&gt;</b>: <b>{'<query name="q" service="mikro" document="...">'}</b> with <b>&lt;var key value /&gt;</b> children, read as <b>queries.&lt;name&gt;</b> (pass <b>then</b> as a variable to read the moment viewed while time-travelling).</>,
+        <>Open the <b>Materialized</b> tab and click one of the blok’s materialized bloks to run the draft on its agents while you type, with live values; click <b>Demo values</b> to go back. The line over the preview says which one is shown.</>,
         <>Fill the <b>Demo</b> tab with JSON to see the preview with values: <b>{"{deps, args, task, queries}"}</b>, as the blok reads them.</>,
         <>Press <b>Create blok</b> or <b>Save</b>, say in a sentence what changed if you like, and press <b>Save revision</b>. Every save is a revision of its own.</>,
         <>A moment after you stop typing the server checks the draft too: the line under the editor says what it found, and its warnings are underlined.</>,
@@ -209,19 +217,20 @@ export const REKUEST_HELP = {
   ),
   blok: (
     <PageHelp
-      intro="One blok: a preview of its interface with demo values, the agents it is bound to, and the materialized copies that are connected to real agents."
+      intro="One blok: what it looks like, drawn large with its demo values, and the materialized copies that are connected to real agents."
       steps={[
         <>Press <b>Materialize Blok</b>, choose an agent for each one it is bound to and press <b>Submit</b> to make a working copy.</>,
         <>For a blok an app provides, press <b>Fork Blok</b> instead, give the copy a name and press <b>Fork</b>. The new custom blok opens.</>,
-        <>Click an entry in <b>Materialized Blok Index</b> to open a working copy.</>,
-        <>Look at <b>Preview Workspace</b> to see what the blok looks like before connecting it.</>,
+        <>Look at the blok itself at the top of the page to see what it looks like before connecting it; a 3D scene can be turned and framed.</>,
+        <>Click a card under <b>Materialized</b> to open a working copy.</>,
+        <>Open the <b>Info</b> tab of the sidebar for its kind, module, revision and the agents it asks for.</>,
         <>Press <b>Delete Blok</b> to remove a custom blok. You are taken back to the list.</>,
         <>Press <b>Pin</b> to pin the blok for yourself: it is listed first, and shows on the Rekuest home and in ⌘K. Press <b>Unpin</b> to undo it.</>,
       ]}
       tips={[
         <>The preview is filled with demo state, not with live values from an agent.</>,
-        <>A <b>Diagnostics</b> box lists problems found in the blok’s definition.</>,
-        <><b>Provided by</b> names the app whose agents provide the blok and lists those agents, with a green dot for the connected ones.</>,
+        <>A yellow note above the blok lists problems found in its definition.</>,
+        <><b>Provided by</b> in the <b>Info</b> tab names the app whose agents provide the blok, and <b>Its agents</b> lists them, with a green dot for the connected ones.</>,
       ]}
     />
   ),

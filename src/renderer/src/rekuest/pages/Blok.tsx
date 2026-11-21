@@ -3,11 +3,17 @@ import { useDialog } from "@/core/dialogs/registry";
 import { registry } from "@/core/smart/localactions/registry";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { LocalActionButton } from "@/core/ui/localactionbutton";
-import { RekuestAgent, RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
+import { RekuestAgent, RekuestBlok } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { ArgPortRows, SignatureColumn } from "@/rekuest/components/action/ActionSignature";
-import { useGetBlokQuery } from "../api/graphql";
+import { ComponentContext, useGetBlokQuery, useLogoBlokQuery, type GetBlokQuery } from "../api/graphql";
+import { ErrorNote } from "@/core/ui/error-note";
+import { InfoList } from "@/core/ui/info-list";
+import { ErrorBoundary } from "react-error-boundary";
+import MaterializedBlokCard from "../components/cards/MaterializedBlokCard";
+import { BLOK_CONTEXTS, isLogoContext } from "../components/blokContexts";
+import { BlokLogo } from "../components/logo/BlokLogo";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { GitFork } from "lucide-react";
@@ -15,25 +21,120 @@ import { BlokHistory } from "../components/editor/BlokHistory";
 import { PinBlokAction } from "../components/PinBlokActions";
 import { REKUEST_HELP } from "../help";
 
+type DetailBlok = GetBlokQuery["blok"];
+
+const STAGE = "overflow-hidden rounded-xl border border-border/60 bg-muted/20";
+
+/** A logo is a drawing with no size of its own: shown large, centred, on its own. */
+const LogoStage = ({ id }: { id: string }) => {
+  const { data } = useLogoBlokQuery({ variables: { id } });
+  const hash = data?.blok?.hash;
+  return (
+    <div className={cn(STAGE, "flex h-72 items-center justify-center")}>
+      {hash && <BlokLogo blok={{ id, hash }} className="size-40" />}
+    </div>
+  );
+};
+
+/**
+ * What the blok looks like: the blok itself, drawn with its demo values and
+ * bound to no agent, taking most of the page. A scene can be turned and
+ * framed; a panel is the panel, as wide as the page.
+ */
+const BlokStage = ({ blok }: { blok: DetailBlok }) => {
+  if (isLogoContext(blok.context)) return <LogoStage id={blok.id} />;
+  const scene = blok.context === ComponentContext.Scene;
+  return (
+    <figure className="flex flex-col gap-1.5">
+      <div className={cn(STAGE, "h-[min(72vh,52rem)] min-h-80")}>
+        <ErrorBoundary
+          resetKeys={[blok.componentTree]}
+          fallbackRender={({ error }) => <ErrorNote error={error} title="The preview could not draw this blok" />}
+        >
+          <DemoBlokRenderer surfaceId={`${blok.id}-page`} blok={blok} sceneControls={scene} />
+        </ErrorBoundary>
+      </div>
+      <figcaption className="text-xs text-muted-foreground">
+        Shown with its demo values, bound to no agent. Materialize it to connect it to real ones.
+      </figcaption>
+    </figure>
+  );
+};
+
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const { openDialog } = useDialog();
   // An app's agents keep a provided blok in step with their registrations:
   // it is forked, never edited, materialized or deleted by hand.
-  const provided = data.blok.provided;
+  const blok = data.blok;
+  const provided = blok.provided;
+  const context = BLOK_CONTEXTS[blok.context];
 
   return (
     <RekuestBlok.ModelPage
-      title={data.blok.name || "New Blok"}
+      title={blok.name || "New Blok"}
       help={REKUEST_HELP.blok}
       object={data.blok}
-      sidebars={
-        provided ? undefined : (
-          <Sidebars>
+      additionalSidebars={
+        <>
+          <Sidebars.Tab label="Info">
+            <InfoList
+              rows={[
+                ["Kind", context?.label],
+                [
+                  "Module",
+                  <span>
+                    {blok.module.name}
+                    {!blok.module.isRegistered && <span className="text-warning"> · not registered</span>}
+                  </span>,
+                ],
+                ["Revision", blok.head && <span className="tabular-nums">#{blok.head.number}</span>],
+                [
+                  "Agents",
+                  blok.dependencies.length > 0 && (
+                    <ul className="flex flex-col gap-1">
+                      {blok.dependencies.map((dependency) => (
+                        <li key={dependency.id} className="flex flex-col">
+                          <span className="font-mono text-xs">{dependency.key}</span>
+                          {dependency.description && (
+                            <span className="text-xs text-muted-foreground">{dependency.description}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ),
+                ],
+                ["Provided by", provided && <span className="font-mono text-xs">{blok.app?.identifier}</span>],
+                [
+                  "Its agents",
+                  provided && blok.providers.length > 0 && (
+                    <ul className="flex flex-col gap-1">
+                      {blok.providers.map((agent) => (
+                        <li key={agent.id} className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "size-1.5 shrink-0 rounded-full",
+                              agent.connected ? "bg-success" : "bg-muted-foreground/40",
+                            )}
+                            title={agent.connected ? "Connected" : "Offline"}
+                          />
+                          <RekuestAgent.DetailLink object={agent} className="truncate hover:underline">
+                            {agent.name || agent.id}
+                          </RekuestAgent.DetailLink>
+                        </li>
+                      ))}
+                    </ul>
+                  ),
+                ],
+                ["Installed from", blok.origin && <span className="break-all font-mono text-xs">{blok.origin}</span>],
+              ]}
+            />
+          </Sidebars.Tab>
+          {!provided && (
             <Sidebars.Tab label="History">
-              <BlokHistory blokId={data.blok.id} />
+              <BlokHistory blokId={blok.id} />
             </Sidebars.Tab>
-          </Sidebars>
-        )
+          )}
+        </>
       }
       pageActions={provided ? (
         <>
@@ -41,7 +142,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
         <PageAction.Slot alwaysShow>
           <Button
             variant="default"
-            onClick={() => openDialog("forkblok", { id: data.blok.id, name: data.blok.name })}
+            onClick={() => openDialog("forkblok", { id: blok.id, name: blok.name })}
           >
             <GitFork className="h-4 w-4" />
             Fork Blok
@@ -57,7 +158,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                   left: [
                     {
                       identifier: '@rekuest/blok',
-                      id: data.blok.id,
+                      id: blok.id,
                     },
                   ],
                   isCommand: false,
@@ -70,7 +171,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                   left: [
                     {
                       identifier: '@rekuest/blok',
-                      id: data.blok.id,
+                      id: blok.id,
                     },
                   ],
                   isCommand: false,
@@ -78,181 +179,71 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             />
 
             <PageAction.Slot alwaysShow>
-              <Button variant="default" onClick={() => openDialog("materializeblok", { id: data.blok.id })}>
+              <Button variant="default" onClick={() => openDialog("materializeblok", { id: blok.id })}>
                 Materialize Blok
               </Button>
             </PageAction.Slot>
         </>
       )}
     >
-      <div className="relative flex h-full w-full flex-col gap-4 p-4">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <section className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/25 p-4 shadow-sm">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Blok State
-              </h2>
-              <p className="mt-2 text-2xl font-semibold tracking-tight">{data.blok.name}</p>
-            </div>
-
-            <div className="grid gap-3 rounded-2xl border border-border/60 bg-background/70 p-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Module
-                </p>
-                <p className="mt-1 text-sm font-medium">
-                  {data.blok.module.name}
-                  {!data.blok.module.isRegistered && (
-                    <span className="ml-2 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs text-muted-foreground">
-                      not registered
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Agents
-                </p>
-                <p className="mt-1 text-sm font-medium">{data.blok.dependencies.length}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Materializations
-                </p>
-                <p className="mt-1 text-sm font-medium">{data.blok.materializedBloks.length}</p>
-              </div>
-            </div>
-
-            {data.blok.args.length > 0 && (
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <SignatureColumn title="Opened for">
-                  <ArgPortRows ports={data.blok.args} />
-                </SignatureColumn>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Offered under "Tailored Interfaces" on what these take, and read at <span className="font-mono">args.&lt;key&gt;</span>.
-                </p>
-              </div>
+      <div className="flex w-full flex-col gap-6 p-3">
+        {(context || blok.description) && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            {context && (
+              <span className="flex items-center gap-1.5 text-foreground">
+                <context.icon className="size-3.5" />
+                {context.label}
+              </span>
             )}
+            {context && blok.description && <span>·</span>}
+            {blok.description}
+          </p>
+        )}
 
-            {provided && (
-              <div className="grid gap-2 rounded-2xl border border-border/60 bg-background/70 p-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Provided by
-                  </p>
-                  <p className="mt-1 text-sm font-medium">{data.blok.app?.identifier}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    It follows its agents' registrations. Fork it to change it.
-                  </p>
-                </div>
-                {data.blok.providers.map((agent) => (
-                  <div key={agent.id} className="flex items-center gap-2 text-sm">
-                    <span
-                      className={cn(
-                        "size-2 shrink-0 rounded-full",
-                        agent.connected ? "bg-success" : "bg-muted-foreground/40",
-                      )}
-                      title={agent.connected ? "Connected" : "Offline"}
-                    />
-                    <RekuestAgent.DetailLink object={agent} className="truncate">
-                      {agent.name || agent.id}
-                    </RekuestAgent.DetailLink>
-                  </div>
-                ))}
-              </div>
-            )}
+        {blok.diagnostics.length > 0 && (
+          <ul className="flex flex-col gap-1 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+            {blok.diagnostics.map((diagnostic, index) => (
+              <li key={`${diagnostic.code}-${index}`} className="flex flex-wrap items-baseline gap-x-2">
+                <span>{diagnostic.message}</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {diagnostic.code}
+                  {diagnostic.path ? ` @ ${diagnostic.path}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-            {data.blok.diagnostics.length > 0 && (
-              <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Diagnostics
-                </p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  {data.blok.diagnostics.map((diagnostic, index) => (
-                    <li key={`${diagnostic.code}-${index}`}>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {diagnostic.code}
-                        {diagnostic.path ? ` @ ${diagnostic.path}` : ""}
-                      </span>
-                      <span className="ml-2">{diagnostic.message}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {/* The page is about this: the blok itself, as large as the page allows. */}
+        <BlokStage blok={blok} />
 
-            <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
-              The preview is built from the blok component tree and seeded with the demo state through the blok renderer.
+        {blok.args.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <SignatureColumn title="Opened for">
+              <ArgPortRows ports={blok.args} />
+            </SignatureColumn>
+            <p className="text-xs text-muted-foreground">
+              Offered under "Tailored Interfaces" on what these take, and read at{" "}
+              <span className="font-mono">args.&lt;key&gt;</span>.
+            </p>
+          </section>
+        )}
+
+        {blok.materializedBloks.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              Materialized
+              <span className="ml-1.5 font-normal tabular-nums text-muted-foreground/60">
+                {blok.materializedBloks.length}
+              </span>
+            </h2>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-3">
+              {blok.materializedBloks.map((materialized) => (
+                <MaterializedBlokCard key={materialized.id} item={materialized} />
+              ))}
             </div>
           </section>
-
-          <section className="rounded-3xl border border-border/70 bg-background/70 p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">Materialized Blok Index</h2>
-                <p className="text-sm text-muted-foreground">
-                  All materialized instances for this blok, ready to open.
-                </p>
-              </div>
-              <div className="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-                {data.blok.materializedBloks.length}
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {data.blok.materializedBloks.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-                  No materialized bloks yet.
-                </div>
-              ) : (
-                data.blok.materializedBloks.map((materializedBlok) => (
-                  <div
-                    key={materializedBlok.id}
-                    className="rounded-2xl border border-border/60 bg-background/80 p-4 transition-colors hover:border-border"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                          Materialized Blok
-                        </p>
-                        <p className="mt-1 truncate text-sm font-semibold text-foreground">
-                          <RekuestMaterializedBlok.DetailLink object={materializedBlok}>
-                            {materializedBlok.id}
-                          </RekuestMaterializedBlok.DetailLink>
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">
-                        {materializedBlok.blok.name}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-
-        <section className="flex flex-col gap-3 rounded-3xl border border-border/70 bg-gradient-to-br from-background via-background to-muted/35 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">Preview Workspace</h2>
-              <p className="text-sm text-muted-foreground">
-                Expanded preview area for inspecting the blok layout below the state summary.
-              </p>
-            </div>
-            <div className="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-              {data.blok.id}
-            </div>
-          </div>
-
-          <div className="h-[36rem]">
-            <DemoBlokRenderer
-              surfaceId={`${data.blok.id}-expanded`}
-              blok={data.blok}
-              debug
-            />
-          </div>
-        </section>
+        )}
       </div>
     </RekuestBlok.ModelPage>
   );
