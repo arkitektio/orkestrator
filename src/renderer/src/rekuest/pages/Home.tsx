@@ -20,6 +20,7 @@ import TaskList from "@/rekuest/components/lists/TaskList";
 import { Loader2, Podcast } from "lucide-react";
 import { useMemo } from "react";
 import { AgentFilterBar, useAgentFilters } from "../components/home/AgentFilters";
+import { PinnedSection } from "../components/home/PinnedSection";
 import { OrgTasksUpdater } from "../components/updaters/OrgTasksUpdater";
 import { HomeOverviewSidebar } from "../sidebars/HomeOverviewSidebar";
 import { REKUEST_HELP } from "../help";
@@ -169,6 +170,7 @@ const Page = () => {
             ones included, they are what wants noticing); the whole history is
             the Tasks page, a click on either title. A section with nothing in
             it is not drawn. */}
+        <PinnedSection />
         <section className="space-y-6">
           <TaskList
             title={

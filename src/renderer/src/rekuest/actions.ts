@@ -31,6 +31,12 @@ import {
   PinMaterializedBlokDocument,
   PinMaterializedBlokMutation,
   PinMaterializedBlokMutationVariables,
+  PinMaterializedBlokRevisionDocument,
+  PinMaterializedBlokRevisionMutation,
+  PinMaterializedBlokRevisionMutationVariables,
+  PinBlokDocument,
+  PinBlokMutation,
+  PinBlokMutationVariables,
   DeleteMaterializedBlokMutation,
   DeleteMaterializedBlokMutationVariables,
   DeleteScheduleDocument,
@@ -92,11 +98,12 @@ import {
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { REKUEST_ADMIN } from './roles'
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
 import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
+import { PIN_REFETCH } from './lib/pins'
 
 type RekuestAction = Action<ModuleServices<"rekuest">>
 
@@ -220,10 +227,52 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       navigate(`/rekuest/bloks/${data.materializedBlok.blok.id}/edit`)
     },
   },
+  'rekuest-pin-blok': {
+    title: 'Pin Blok',
+    description: 'Pin or unpin this blok for yourself',
+    icon: Pin,
+    conditions: only('@rekuest/blok'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/blok')
+      const { data } = await services.rekuest.client.query<GetBlokQuery, GetBlokQueryVariables>({
+        query: GetBlokDocument,
+        variables: { id },
+      })
+      await services.rekuest.client.mutate<PinBlokMutation, PinBlokMutationVariables>({
+        mutation: PinBlokDocument,
+        variables: { input: { id, pin: !data.blok.pinned } },
+        refetchQueries: PIN_REFETCH,
+      })
+    },
+  },
   'rekuest-pin-materialized-blok': {
+    title: 'Pin Materialized Blok',
+    description: 'Pin or unpin this materialized blok for yourself',
+    icon: Pin,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/materialized_blok')
+      const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
+        query: MaterializedBlokDocument,
+        variables: { id },
+      })
+      await services.rekuest.client.mutate<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>({
+        mutation: PinMaterializedBlokDocument,
+        variables: { input: { id, pin: !data.materializedBlok.pinned } },
+        refetchQueries: PIN_REFETCH,
+      })
+    },
+  },
+  'rekuest-choose-revision': {
     title: 'Choose Revision',
     description: "Keep a materialized blok at one revision of its blok, or let it follow the latest",
-    icon: Pin,
+    icon: History,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ state, dialog }) => {
       dialog.openDialog('pinrevision', { id: selected(state, '@rekuest/materialized_blok') })
@@ -231,7 +280,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
   },
   'rekuest-follow-latest-revision': {
     title: 'Follow Latest Revision',
-    description: 'Let a pinned materialized blok show its blok\'s latest revision again',
+    description: 'Let a materialized blok held at one revision show its blok\'s latest revision again',
     icon: RotateCcw,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ services, state }) => {
@@ -247,8 +296,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       if (!data.materializedBlok.pinnedRevision) {
         throw new Error(`${data.materializedBlok.name || data.materializedBlok.blok.name} already follows the latest revision`)
       }
-      await services.rekuest.client.mutate<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>({
-        mutation: PinMaterializedBlokDocument,
+      await services.rekuest.client.mutate<PinMaterializedBlokRevisionMutation, PinMaterializedBlokRevisionMutationVariables>({
+        mutation: PinMaterializedBlokRevisionDocument,
         variables: { input: { id, revision: null } },
       })
     },
@@ -479,6 +528,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
               pin: !data.agent.pinned,
             },
           },
+          refetchQueries: ['Pinned'],
         })
       }
     },

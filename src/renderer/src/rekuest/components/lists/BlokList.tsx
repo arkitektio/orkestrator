@@ -12,19 +12,28 @@ export type Props = {
   pagination?: OffsetPaginationInput;
 };
 
+/** The bloks `filters` selects, the ones you pinned first. */
 const List = ({ filters, pagination }: Props) => {
-  const { data, refetch } = useListBloksQuery({ variables: { filters, pagination } });
+  const pinned = useListBloksQuery({ variables: { filters: { ...filters, pinned: true } } });
+  const { data, refetch } = useListBloksQuery({ variables: { filters: { ...filters, pinned: false }, pagination } });
 
   return (
-    <ListRender
-      array={data?.bloks}
-      title={
-        <RekuestBlok.ListLink className="flex-0">Bloks</RekuestBlok.ListLink>
-      }
-      refetch={() => refetch()}
-    >
-      {(ex) => <BlokCard key={ex.id} item={ex} />}
-    </ListRender>
+    <div className="flex flex-col gap-4">
+      {(pinned.data?.bloks.length ?? 0) > 0 && (
+        <ListRender array={pinned.data?.bloks} title="Pinned" refetch={() => pinned.refetch()}>
+          {(ex) => <BlokCard key={ex.id} item={ex} />}
+        </ListRender>
+      )}
+      <ListRender
+        array={data?.bloks}
+        title={
+          <RekuestBlok.ListLink className="flex-0">Bloks</RekuestBlok.ListLink>
+        }
+        refetch={() => refetch()}
+      >
+        {(ex) => <BlokCard key={ex.id} item={ex} />}
+      </ListRender>
+    </div>
   );
 };
 

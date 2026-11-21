@@ -15,7 +15,7 @@ import Timestamp from "@/core/ui/timestamp";
 import {
   useBlokRevisionsQuery,
   useMaterializedBlokQuery,
-  usePinMaterializedBlokMutation,
+  usePinMaterializedBlokRevisionMutation,
 } from "@/rekuest/api/graphql";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -26,7 +26,7 @@ const Choices = (props: { materializedBlokId: string; blokId: string; pinned: st
   const { closeDialog } = useDialog();
   const { data, error, refetch } = useBlokRevisionsQuery({ variables: { id: props.blokId, limit: 20, offset: 0 } });
   const [choice, setChoice] = useState(props.pinned ?? LATEST);
-  const [pin] = usePinMaterializedBlokMutation();
+  const [pin] = usePinMaterializedBlokRevisionMutation();
   const { submit, submitting } = useDialogSubmit(
     () => pin({ variables: { input: { id: props.materializedBlokId, revision: choice === LATEST ? null : choice } } }),
     { errorTitle: "Couldn't change the revision" },

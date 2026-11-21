@@ -12,23 +12,32 @@ export type Props = {
   pagination?: OffsetPaginationInput;
 };
 
+/** The materializations `filters` selects, the ones you pinned first. */
 const MaterializedBlokList = ({ filters, pagination }: Props) => {
+  const pinned = useListMaterializedBloksQuery({ variables: { filters: { ...filters, pinned: true } } });
   const { data, refetch } = useListMaterializedBloksQuery({
-    variables: filters || pagination ? { filters, pagination } : undefined,
+    variables: { filters: { ...filters, pinned: false }, pagination },
   });
 
   return (
-    <ListRender
-      array={data?.materializedBloks}
-      title={
-        <RekuestMaterializedBlok.ListLink className="flex-0">
-          Materialized Bloks
-        </RekuestMaterializedBlok.ListLink>
-      }
-      refetch={refetch}
-    >
-      {(item) => <MaterializedBlokCard key={item.id} item={item} />}
-    </ListRender>
+    <div className="flex flex-col gap-4">
+      {(pinned.data?.materializedBloks.length ?? 0) > 0 && (
+        <ListRender array={pinned.data?.materializedBloks} title="Pinned" refetch={pinned.refetch}>
+          {(item) => <MaterializedBlokCard key={item.id} item={item} />}
+        </ListRender>
+      )}
+      <ListRender
+        array={data?.materializedBloks}
+        title={
+          <RekuestMaterializedBlok.ListLink className="flex-0">
+            Materialized Bloks
+          </RekuestMaterializedBlok.ListLink>
+        }
+        refetch={refetch}
+      >
+        {(item) => <MaterializedBlokCard key={item.id} item={item} />}
+      </ListRender>
+    </div>
   );
 };
 

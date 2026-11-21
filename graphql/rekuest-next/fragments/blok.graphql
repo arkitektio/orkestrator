@@ -126,6 +126,8 @@ fragment BlokDiagnostic on Diagnostic {
 fragment Blok on Blok {
   id
   name
+  # Pinned by the caller (a favourite; not a revision).
+  pinned
   description
   origin
   originHash
@@ -211,6 +213,8 @@ fragment Blok on Blok {
 fragment MaterializedBlok on MaterializedBlok {
   id
   name
+  # Pinned by the caller (a favourite); `pinnedRevision` is what holds its content.
+  pinned
   isDefault
   createdAt
   # The agent this materialization belongs to, for a blok its app provides.
@@ -286,6 +290,7 @@ fragment MaterializedBlok on MaterializedBlok {
 fragment ListBlok on Blok {
   id
   name
+  pinned
   description
   context
   hash
@@ -302,6 +307,7 @@ fragment ListBlok on Blok {
 fragment ListMaterializedBlok on MaterializedBlok {
   id
   name
+  pinned
   description
   isDefault
   updatedAt

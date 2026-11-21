@@ -70,9 +70,25 @@ mutation RevertBlok($input: RevertBlokInput!) {
 }
 
 # Keep a materialization at one revision, or (revision null) follow the head again.
-mutation PinMaterializedBlok($input: PinMaterializedBlokInput!) {
-  pinMaterializedBlok(input: $input) {
+mutation PinMaterializedBlokRevision($input: PinMaterializedBlokRevisionInput!) {
+  pinMaterializedBlokRevision(input: $input) {
     ...MaterializedBlok
+  }
+}
+
+# Pin a materialization of any kind for yourself, or unpin it.
+mutation PinMaterializedBlok($input: PinInput!) {
+  pinMaterializedBlok(input: $input) {
+    id
+    pinned
+  }
+}
+
+# Pin a blok of any kind for yourself, or unpin it.
+mutation PinBlok($input: PinInput!) {
+  pinBlok(input: $input) {
+    id
+    pinned
   }
 }
 

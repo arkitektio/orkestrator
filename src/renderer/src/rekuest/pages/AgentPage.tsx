@@ -44,7 +44,7 @@ import { REKUEST_HELP } from "../help";
 import { agentPanelLink } from "./agent/AgentPanelPage";
 
 export const PinAgent = (props: { agent: AgentFragment }) => {
-  const [pin] = usePinAgentMutation();
+  const [pin] = usePinAgentMutation({ refetchQueries: ["Pinned"] });
 
   return (
     <Button

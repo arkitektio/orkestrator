@@ -510,7 +510,7 @@ input ActionFilter {
   protocols: [String!]
 
   """
-  Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking.
   """
   search: String
   stateful: Boolean
@@ -1659,6 +1659,9 @@ type Blok {
   """
   originHash: String
 
+  """Whether the caller pinned this blok."""
+  pinned: Boolean!
+
   """Whether an app's agents provide this blok (see `app`)."""
   provided: Boolean!
 
@@ -1893,6 +1896,9 @@ input BlokFilter {
 
   """Only bloks installed from one of these origins."""
   origins: [String!]
+
+  """Only bloks the caller pinned (true) or did not (false)."""
+  pinned: Boolean
 
   """
   Only bloks an app provides (true) or only custom bloks users made (false).
@@ -3622,7 +3628,7 @@ input HostedStructureFilter {
   package: String
 
   """
-  Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking.
   """
   search: String
 
@@ -3706,7 +3712,7 @@ type Implementation {
   agent: Agent!
 
   """
-  A hash of the implementation's code; a workflow is only resumed by an implementation with the same hash.
+  A hash of the implementation's code; a resumed workflow is told whether it changed since its run started.
   """
   codeHash: String
 
@@ -3931,7 +3937,7 @@ input ImplementationInput {
   asks: [AskBlokInput!] = null
 
   """
-  A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash.
+  A hash of the implementation's code. A resumed workflow is told whether it changed since its run started.
   """
   codeHash: String = null
 
@@ -4510,6 +4516,11 @@ type MaterializedBlok {
   name: String
 
   """
+  Whether the caller pinned this materialization (not `pinnedRevision`, which holds its content).
+  """
+  pinned: Boolean!
+
+  """
   The revision this materialization stays at; null when it follows its blok's head.
   """
   pinnedRevision: BlokRevision
@@ -4563,6 +4574,9 @@ input MaterializedBlokFilter {
 
   """Filter by IDs"""
   ids: [ID!]
+
+  """Only materializations the caller pinned (true) or did not (false)."""
+  pinned: Boolean
 
   """
   Only agents' own materializations of the bloks they provide (true) or only ones users made (false).
@@ -4943,10 +4957,16 @@ type Mutation {
   """Pin an agent to the user."""
   pinAgent(input: PinInput!): Agent!
 
+  """Pin a blok of any kind for the caller, or unpin it."""
+  pinBlok(input: PinInput!): Blok!
+
+  """Pin a materialization of any kind for the caller, or unpin it."""
+  pinMaterializedBlok(input: PinInput!): MaterializedBlok!
+
   """
   Keep a materialization at one revision of its blok, or let it follow the head again.
   """
-  pinMaterializedBlok(input: PinMaterializedBlokInput!): MaterializedBlok!
+  pinMaterializedBlokRevision(input: PinMaterializedBlokRevisionInput!): MaterializedBlok!
 
   """
   Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks).
@@ -5165,7 +5185,7 @@ input PinInput {
 """
 Keep a materialization at one revision of its blok, or let it follow the head.
 """
-input PinMaterializedBlokInput {
+input PinMaterializedBlokRevisionInput {
   """The materialization."""
   id: ID!
 
@@ -5799,7 +5819,7 @@ type Query {
     identifier: String = null
 
     """
-    Keep signals whose identifier or description contains this text, or whose description means something close to it; substring matches first, then by similarity
+    Keep signals whose identifier or description contains this text, or whose description means something close to it; ranked: an exact identifier, then a prefix, then other substring matches by trigram similarity, then by meaning
     """
     search: String = null
   ): [SignalDeclaration!]!
@@ -7459,7 +7479,7 @@ input StructureDescriptorFilter {
   package: String
 
   """
-  Keep descriptors whose key or description contains this text, or whose description means something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  Keep descriptors whose key or description contains this text, or whose description means something close to it. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking.
   """
   search: String
 

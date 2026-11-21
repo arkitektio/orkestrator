@@ -216,6 +216,7 @@ export const REKUEST_HELP = {
         <>Click an entry in <b>Materialized Blok Index</b> to open a working copy.</>,
         <>Look at <b>Preview Workspace</b> to see what the blok looks like before connecting it.</>,
         <>Press <b>Delete Blok</b> to remove a custom blok. You are taken back to the list.</>,
+        <>Press <b>Pin</b> to pin the blok for yourself: it is listed first, and shows on the Rekuest home and in ⌘K. Press <b>Unpin</b> to undo it.</>,
       ]}
       tips={[
         <>The preview is filled with demo state, not with live values from an agent.</>,
@@ -319,6 +320,7 @@ export const REKUEST_HELP = {
       ]}
       tips={[
         <>This page lists the ones people made. The agents’ own materializations of the bloks their app provides are on their own page.</>,
+        <>The ones you pinned come first, under <b>Pinned</b>.</>,
       ]}
     />
   ),
@@ -342,7 +344,8 @@ export const REKUEST_HELP = {
         <>Press <b>Revisions</b> in that bar to go through the past one recorded change of an agent at a time instead: the arrows go to the revision before or after, the slider runs over all revisions since the agent started, and typing a number into <b>Revision</b> and pressing Enter goes straight to it. With more than one agent, choose whose revisions to step through. Press <b>Time</b> to get the slider back.</>,
         <>Press <b>Reinstantiate</b> to choose again what the blok is opened for. The form starts from what it shows now; press <b>Open</b> to show the new items, or <b>Cancel</b> to keep them.</>,
         <>Press <b>Rematerialize</b> to make a new materialization of the original blok, with the current agents filled in. A blok an app provides is forked first, so name the copy and press <b>Fork</b>. The new one opens; this one stays as it is.</>,
-        <>Press the <b>Rev</b> button in the header to choose which revision of its blok this shows: the latest, which follows every save, or one it stays at while the blok changes on.</>,
+        <>Press the <b>Rev</b> button in the header to choose which revision of its blok this shows: the latest, which follows every save, or one it stays at while the blok changes on. It reads <b>Held at rev</b> while it stays at one.</>,
+        <>Press <b>Pin</b> to pin it for yourself: it is listed first, and shows on the Rekuest home and in ⌘K. Press <b>Unpin</b> to undo it.</>,
         <>Press <b>Delete Materialized Blok</b> to remove it. You are taken back to the list.</>,
       ]}
       tips={[

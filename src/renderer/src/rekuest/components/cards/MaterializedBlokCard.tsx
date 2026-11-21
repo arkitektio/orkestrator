@@ -1,5 +1,6 @@
 import React from "react";
 import { Badge } from "@/core/ui/badge";
+import { Pin } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -44,6 +45,11 @@ const MaterializedBlokCard = ({ item }: Props) => {
             <Badge variant="secondary" className="gap-1 shadow-sm">
               <context.icon className="h-3 w-3" />
               {context.label}
+            </Badge>
+          )}
+          {item.pinned && (
+            <Badge variant="outline" className="bg-card/80 shadow-sm" title="You pinned it">
+              <Pin className="h-3 w-3" />
             </Badge>
           )}
           {item.isDefault && (

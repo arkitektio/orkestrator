@@ -1,5 +1,6 @@
 import React from "react";
 import { Badge } from "@/core/ui/badge";
+import { Pin } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { RekuestBlok } from "@/core/linkers";
 
@@ -17,7 +18,7 @@ const TheCard = ({ item }: Props) => {
     <RekuestBlok.Smart object={item}>
       <Card className="relative isolate h-full min-h-48 justify-between">
         <BlokCardBackdrop blok={item} />
-        {(context || item.app) && (
+        {(context || item.app || item.pinned) && (
           <div className="flex flex-wrap items-center gap-1.5 px-4">
             {context && (
               <Badge variant="secondary" className="gap-1 shadow-sm">
@@ -28,6 +29,11 @@ const TheCard = ({ item }: Props) => {
             {item.app && (
               <Badge variant="outline" className="bg-card/80 shadow-sm" title="Provided by this app's agents">
                 {item.app.identifier}
+              </Badge>
+            )}
+            {item.pinned && (
+              <Badge variant="outline" className="bg-card/80 shadow-sm" title="You pinned it">
+                <Pin className="h-3 w-3" />
               </Badge>
             )}
           </div>

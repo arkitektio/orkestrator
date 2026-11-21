@@ -25,7 +25,8 @@ import { TravelBar } from "@/rekuest/travel/TravelBar";
 import { BlokRunHostProvider } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { treeHolds } from "@/rekuest/run/ActionBlokRenderer";
 import { useBlokTravel } from "@/rekuest/travel/useBlokTravel";
-import { History, Pin, SlidersHorizontal } from "lucide-react";
+import { History, SlidersHorizontal } from "lucide-react";
+import { PinMaterializedBlokAction } from "../components/PinBlokActions";
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
@@ -170,6 +171,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       object={materializedBlok}
       pageActions={(
         <>
+          <PinMaterializedBlokAction materializedBlok={materializedBlok} />
           <PageAction
             size="sm"
             variant={travel.open ? "secondary" : "outline"}
@@ -202,9 +204,9 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
                   : "It follows its blok's latest revision. Keep it at one instead."
               }
             >
-              <Pin className="h-4 w-4" />
+              <History className="h-4 w-4" />
               {materializedBlok.pinnedRevision
-                ? `Pinned · rev ${materializedBlok.pinnedRevision.number}`
+                ? `Held at rev ${materializedBlok.pinnedRevision.number}`
                 : `Rev ${materializedBlok.revision.number} · latest`}
             </PageAction>
           )}

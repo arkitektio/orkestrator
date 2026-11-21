@@ -12,6 +12,7 @@ import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { GitFork } from "lucide-react";
 import { BlokHistory } from "../components/editor/BlokHistory";
+import { PinBlokAction } from "../components/PinBlokActions";
 import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
@@ -35,6 +36,8 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
         )
       }
       pageActions={provided ? (
+        <>
+        <PinBlokAction blok={data.blok} />
         <PageAction.Slot alwaysShow>
           <Button
             variant="default"
@@ -44,8 +47,10 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             Fork Blok
           </Button>
         </PageAction.Slot>
+        </>
       ) : (
         <>
+            <PinBlokAction blok={data.blok} />
             <LocalActionButton
                 name={"rekuest-edit-blok" as keyof typeof registry}
                 state={{

@@ -1,0 +1,12 @@
+# What you pinned, of every kind: rekuest's Home and the command palette.
+query Pinned {
+  agents(filters: { pinned: true }) {
+    ...ListAgent
+  }
+  bloks(filters: { pinned: true }) {
+    ...ListBlok
+  }
+  materializedBloks(filters: { pinned: true }) {
+    ...ListMaterializedBlok
+  }
+}

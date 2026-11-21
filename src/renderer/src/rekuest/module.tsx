@@ -39,6 +39,7 @@ import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
 import { REKUEST_PROFILE_SECTIONS } from "./profile/sections";
 import { RekuestEntitySearch } from "./search";
+import { PinnedSource } from "./palette/PinnedSource";
 import { ClientFailedTasks } from "./sections/ClientFailedTasks";
 import { DeviceAgents } from "./sections/DeviceAgents";
 import { BackendAgents, PodActions } from "./sections/KabinetAgents";
@@ -145,6 +146,8 @@ export const REKUEST_MODULE = defineModule({
       TaskHookRunner,
     ],
     search: RekuestEntitySearch,
+    // What you pinned, on an empty ⌘K.
+    paletteSources: [PinnedSource],
     railIslands: [TaskIsland],
   },
 });

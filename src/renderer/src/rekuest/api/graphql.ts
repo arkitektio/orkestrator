@@ -434,7 +434,7 @@ export type ActionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   objectDemands?: InputMaybe<Array<PortDemandInput>>;
   protocols?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   stateful?: InputMaybe<Scalars['Boolean']['input']>;
   usedAfter?: InputMaybe<Scalars['DateTime']['input']>;
@@ -1239,6 +1239,8 @@ export type Blok = {
   origin?: Maybe<Scalars['String']['output']>;
   /** The hash its origin gave what it draws when it was installed. When the origin's hash differs now, it has an update. */
   originHash?: Maybe<Scalars['String']['output']>;
+  /** Whether the caller pinned this blok. */
+  pinned: Scalars['Boolean']['output'];
   /** Whether an app's agents provide this blok (see `app`). */
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
@@ -1412,6 +1414,8 @@ export type BlokFilter = {
   hasOrigin?: InputMaybe<Scalars['Boolean']['input']>;
   /** Only bloks installed from one of these origins. */
   origins?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Only bloks the caller pinned (true) or did not (false). */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Only bloks an app provides (true) or only custom bloks users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by name */
@@ -2630,7 +2634,7 @@ export type HostedStructureFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep the structures of this package, e.g. 'mikro' */
   package?: InputMaybe<Scalars['String']['input']>;
-  /** Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  /** Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Keep the structures this service hosts, by its name */
   service?: InputMaybe<Scalars['String']['input']>;
@@ -2678,7 +2682,7 @@ export type Implementation = {
   action: Action;
   /** Agent running this implementation. */
   agent: Agent;
-  /** A hash of the implementation's code; a workflow is only resumed by an implementation with the same hash. */
+  /** A hash of the implementation's code; a resumed workflow is told whether it changed since its run started. */
   codeHash?: Maybe<Scalars['String']['output']>;
   /** Dependencies required by this action. */
   dependencies: Array<Dependency>;
@@ -2830,7 +2834,7 @@ export type ImplementationFit = {
 export type ImplementationInput = {
   /** The bloks this implementation asks a person through, declared up front: a task asks one by its key. */
   asks?: InputMaybe<Array<AskBlokInput>>;
-  /** A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash. */
+  /** A hash of the implementation's code. A resumed workflow is told whether it changed since its run started. */
   codeHash?: InputMaybe<Scalars['String']['input']>;
   /** The definition of the implementation. This is used to uniquely identify the implementation */
   definition: DefinitionInput;
@@ -3196,6 +3200,8 @@ export type MaterializedBlok = {
   /** Whether this is its declaring agent's default blok for the blok's context. */
   isDefault: Scalars['Boolean']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  /** Whether the caller pinned this materialization (not `pinnedRevision`, which holds its content). */
+  pinned: Scalars['Boolean']['output'];
   /** The revision this materialization stays at; null when it follows its blok's head. */
   pinnedRevision?: Maybe<BlokRevision>;
   /** The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none. */
@@ -3233,6 +3239,8 @@ export type MaterializedBlokFilter = {
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only materializations the caller pinned (true) or did not (false). */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Only agents' own materializations of the bloks they provide (true) or only ones users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by name */
@@ -3511,8 +3519,12 @@ export type Mutation = {
   pauseProbe: Probe;
   /** Pin an agent to the user. */
   pinAgent: Agent;
-  /** Keep a materialization at one revision of its blok, or let it follow the head again. */
+  /** Pin a blok of any kind for the caller, or unpin it. */
+  pinBlok: Blok;
+  /** Pin a materialization of any kind for the caller, or unpin it. */
   pinMaterializedBlok: MaterializedBlok;
+  /** Keep a materialization at one revision of its blok, or let it follow the head again. */
+  pinMaterializedBlokRevision: MaterializedBlok;
   /** Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks). */
   probe: Probe;
   /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
@@ -3827,8 +3839,20 @@ export type MutationPinAgentArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationPinBlokArgs = {
+  input: PinInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationPinMaterializedBlokArgs = {
-  input: PinMaterializedBlokInput;
+  input: PinInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationPinMaterializedBlokRevisionArgs = {
+  input: PinMaterializedBlokRevisionInput;
 };
 
 
@@ -4065,7 +4089,7 @@ export type PinInput = {
 };
 
 /** Keep a materialization at one revision of its blok, or let it follow the head. */
-export type PinMaterializedBlokInput = {
+export type PinMaterializedBlokRevisionInput = {
   /** The materialization. */
   id: Scalars['ID']['input'];
   /** The revision to stay at; null follows the head again. */
@@ -6181,7 +6205,7 @@ export type StructureDescriptorFilter = {
   key?: InputMaybe<Scalars['String']['input']>;
   /** Keep the descriptors of structures in this package, e.g. 'mikro' */
   package?: InputMaybe<Scalars['String']['input']>;
-  /** Keep descriptors whose key or description contains this text, or whose description means something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  /** Keep descriptors whose key or description contains this text, or whose description means something close to it. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Keep the descriptors declared by this service, by its name */
   service?: InputMaybe<Scalars['String']['input']>;
@@ -7614,7 +7638,7 @@ export type ResolvedBlokLocalFragment = { __typename?: 'ResolvedBlokLocal', node
 
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, module: { __typename?: 'Module', id: string, name: string, description?: string | null, isRegistered: boolean }, resolvedLocals: Array<(
@@ -7637,7 +7661,7 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, args: any, taskRole?: TaskBlokRole | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, args: any, taskRole?: TaskBlokRole | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
     { __typename?: 'Blok', hash: string }
     & BlokFragment
   ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, vocab: number, catalogs: Array<string>, resolvedLocals: Array<(
@@ -7651,9 +7675,9 @@ export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: st
         & BlokArgumentFragment
       )> }> } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
-export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
+export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
-export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type OpenableBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean }> } };
 
@@ -9000,15 +9024,29 @@ export type RevertBlokMutation = { __typename?: 'Mutation', revertBlok: (
     & BlokRevisionListItemFragment
   ) };
 
-export type PinMaterializedBlokMutationVariables = Exact<{
-  input: PinMaterializedBlokInput;
+export type PinMaterializedBlokRevisionMutationVariables = Exact<{
+  input: PinMaterializedBlokRevisionInput;
 }>;
 
 
-export type PinMaterializedBlokMutation = { __typename?: 'Mutation', pinMaterializedBlok: (
+export type PinMaterializedBlokRevisionMutation = { __typename?: 'Mutation', pinMaterializedBlokRevision: (
     { __typename?: 'MaterializedBlok' }
     & MaterializedBlokFragment
   ) };
+
+export type PinMaterializedBlokMutationVariables = Exact<{
+  input: PinInput;
+}>;
+
+
+export type PinMaterializedBlokMutation = { __typename?: 'Mutation', pinMaterializedBlok: { __typename?: 'MaterializedBlok', id: string, pinned: boolean } };
+
+export type PinBlokMutationVariables = Exact<{
+  input: PinInput;
+}>;
+
+
+export type PinBlokMutation = { __typename?: 'Mutation', pinBlok: { __typename?: 'Blok', id: string, pinned: boolean } };
 
 export type ForkBlokMutationVariables = Exact<{
   input: ForkBlokInput;
@@ -10097,6 +10135,20 @@ export type MemoryShelveQuery = { __typename?: 'Query', memoryShelve: (
     { __typename?: 'MemoryShelve' }
     & MemoryShelveFragment
   ) };
+
+export type PinnedQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PinnedQuery = { __typename?: 'Query', agents: Array<(
+    { __typename?: 'Agent' }
+    & ListAgentFragment
+  )>, bloks: Array<(
+    { __typename?: 'Blok' }
+    & ListBlokFragment
+  )>, materializedBloks: Array<(
+    { __typename?: 'MaterializedBlok' }
+    & ListMaterializedBlokFragment
+  )> };
 
 export type PlacementsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -12035,6 +12087,7 @@ export const ListMaterializedBlokFragmentDoc = gql`
     fragment ListMaterializedBlok on MaterializedBlok {
   id
   name
+  pinned
   description
   isDefault
   updatedAt
@@ -12389,6 +12442,7 @@ export const ListBlokFragmentDoc = gql`
     fragment ListBlok on Blok {
   id
   name
+  pinned
   description
   context
   hash
@@ -12570,6 +12624,7 @@ export const BlokFragmentDoc = gql`
     fragment Blok on Blok {
   id
   name
+  pinned
   description
   origin
   originHash
@@ -12657,6 +12712,7 @@ export const MaterializedBlokFragmentDoc = gql`
     fragment MaterializedBlok on MaterializedBlok {
   id
   name
+  pinned
   isDefault
   createdAt
   declaredBy {
@@ -15626,13 +15682,47 @@ export function useRevertBlokMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type RevertBlokMutationHookResult = ReturnType<typeof useRevertBlokMutation>;
 export type RevertBlokMutationResult = Apollo.MutationResult<RevertBlokMutation>;
 export type RevertBlokMutationOptions = Apollo.BaseMutationOptions<RevertBlokMutation, RevertBlokMutationVariables>;
-export const PinMaterializedBlokDocument = gql`
-    mutation PinMaterializedBlok($input: PinMaterializedBlokInput!) {
-  pinMaterializedBlok(input: $input) {
+export const PinMaterializedBlokRevisionDocument = gql`
+    mutation PinMaterializedBlokRevision($input: PinMaterializedBlokRevisionInput!) {
+  pinMaterializedBlokRevision(input: $input) {
     ...MaterializedBlok
   }
 }
     ${MaterializedBlokFragmentDoc}`;
+export type PinMaterializedBlokRevisionMutationFn = Apollo.MutationFunction<PinMaterializedBlokRevisionMutation, PinMaterializedBlokRevisionMutationVariables>;
+
+/**
+ * __usePinMaterializedBlokRevisionMutation__
+ *
+ * To run a mutation, you first call `usePinMaterializedBlokRevisionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinMaterializedBlokRevisionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinMaterializedBlokRevisionMutation, { data, loading, error }] = usePinMaterializedBlokRevisionMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function usePinMaterializedBlokRevisionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PinMaterializedBlokRevisionMutation, PinMaterializedBlokRevisionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PinMaterializedBlokRevisionMutation, PinMaterializedBlokRevisionMutationVariables>(PinMaterializedBlokRevisionDocument, options);
+      }
+export type PinMaterializedBlokRevisionMutationHookResult = ReturnType<typeof usePinMaterializedBlokRevisionMutation>;
+export type PinMaterializedBlokRevisionMutationResult = Apollo.MutationResult<PinMaterializedBlokRevisionMutation>;
+export type PinMaterializedBlokRevisionMutationOptions = Apollo.BaseMutationOptions<PinMaterializedBlokRevisionMutation, PinMaterializedBlokRevisionMutationVariables>;
+export const PinMaterializedBlokDocument = gql`
+    mutation PinMaterializedBlok($input: PinInput!) {
+  pinMaterializedBlok(input: $input) {
+    id
+    pinned
+  }
+}
+    `;
 export type PinMaterializedBlokMutationFn = Apollo.MutationFunction<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>;
 
 /**
@@ -15659,6 +15749,40 @@ export function usePinMaterializedBlokMutation(baseOptions?: ApolloReactHooks.Mu
 export type PinMaterializedBlokMutationHookResult = ReturnType<typeof usePinMaterializedBlokMutation>;
 export type PinMaterializedBlokMutationResult = Apollo.MutationResult<PinMaterializedBlokMutation>;
 export type PinMaterializedBlokMutationOptions = Apollo.BaseMutationOptions<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>;
+export const PinBlokDocument = gql`
+    mutation PinBlok($input: PinInput!) {
+  pinBlok(input: $input) {
+    id
+    pinned
+  }
+}
+    `;
+export type PinBlokMutationFn = Apollo.MutationFunction<PinBlokMutation, PinBlokMutationVariables>;
+
+/**
+ * __usePinBlokMutation__
+ *
+ * To run a mutation, you first call `usePinBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinBlokMutation, { data, loading, error }] = usePinBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function usePinBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PinBlokMutation, PinBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PinBlokMutation, PinBlokMutationVariables>(PinBlokDocument, options);
+      }
+export type PinBlokMutationHookResult = ReturnType<typeof usePinBlokMutation>;
+export type PinBlokMutationResult = Apollo.MutationResult<PinBlokMutation>;
+export type PinBlokMutationOptions = Apollo.BaseMutationOptions<PinBlokMutation, PinBlokMutationVariables>;
 export const ForkBlokDocument = gql`
     mutation ForkBlok($input: ForkBlokInput!) {
   forkBlok(input: $input) {
@@ -19657,6 +19781,48 @@ export function useMemoryShelveLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type MemoryShelveQueryHookResult = ReturnType<typeof useMemoryShelveQuery>;
 export type MemoryShelveLazyQueryHookResult = ReturnType<typeof useMemoryShelveLazyQuery>;
 export type MemoryShelveQueryResult = Apollo.QueryResult<MemoryShelveQuery, MemoryShelveQueryVariables>;
+export const PinnedDocument = gql`
+    query Pinned {
+  agents(filters: {pinned: true}) {
+    ...ListAgent
+  }
+  bloks(filters: {pinned: true}) {
+    ...ListBlok
+  }
+  materializedBloks(filters: {pinned: true}) {
+    ...ListMaterializedBlok
+  }
+}
+    ${ListAgentFragmentDoc}
+${ListBlokFragmentDoc}
+${ListMaterializedBlokFragmentDoc}`;
+
+/**
+ * __usePinnedQuery__
+ *
+ * To run a query within a React component, call `usePinnedQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePinnedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePinnedQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function usePinnedQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PinnedQuery, PinnedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PinnedQuery, PinnedQueryVariables>(PinnedDocument, options);
+      }
+export function usePinnedLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PinnedQuery, PinnedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PinnedQuery, PinnedQueryVariables>(PinnedDocument, options);
+        }
+export type PinnedQueryHookResult = ReturnType<typeof usePinnedQuery>;
+export type PinnedLazyQueryHookResult = ReturnType<typeof usePinnedLazyQuery>;
+export type PinnedQueryResult = Apollo.QueryResult<PinnedQuery, PinnedQueryVariables>;
 export const PlacementsDocument = gql`
     query Placements($pagination: OffsetPaginationInput, $filters: PlacementFilter, $ordering: [PlacementOrder!]) {
   placements(ordering: $ordering, pagination: $pagination, filters: $filters) {
