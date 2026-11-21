@@ -1,3 +1,10 @@
+# [8.17.0](https://github.com/arkitektio/orkestrator/compare/v8.16.0...v8.17.0) (2026-11-21)
+
+
+### Features
+
+* **rekuest:** pin bloks and materialized bloks of every kind ([5711655](https://github.com/arkitektio/orkestrator/commit/571165546df9f5256aa53e59e886b27136fbc735))
+
 # [8.16.0](https://github.com/arkitektio/orkestrator/compare/v8.15.0...v8.16.0) (2026-11-21)
 
 

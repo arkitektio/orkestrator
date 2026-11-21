@@ -3,13 +3,13 @@
   "bank": "9.4.0",
   "dokuments": "6.4.0",
   "elektro": "9.4.0",
-  "fluss": "11.6.0",
-  "kabinet": "14.6.0",
+  "fluss": "11.7.0",
+  "kabinet": "14.7.0",
   "kraph": "7.5.0",
   "kuvert": "9.4.0",
-  "lok": "10.14.1",
+  "lok": "10.14.2",
   "lokate": "6.3.0",
   "lovekit": "9.0.0",
   "mikro": "15.9.1",
-  "rekuest": "22.7.0"
+  "rekuest": "22.9.0"
 }
