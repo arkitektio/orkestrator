@@ -5,8 +5,9 @@ import { Loader2, Mic, VideoOff } from "lucide-react";
 
 import { Guard, useLivekit } from "@/core/connection/arkitekt/host";
 import { cn } from "@/core/util/utils";
-import { StreamKind, useWatchAgentMutation } from "../api/graphql";
+import { StreamKind, useWatchAgentMutation, type DataFormatFragment } from "../api/graphql";
 import { useAgentRoom, useWatchedTrack, type Connector } from "../agentRoom";
+import { StreamPlot } from "./StreamPlot";
 
 /** What a view needs of a stream to show it. */
 export type ShownStream = {
@@ -14,21 +15,22 @@ export type ShownStream = {
   title: string;
   kind: StreamKind;
   live?: boolean | null;
+  format?: DataFormatFragment | null;
   agent: { id: string };
 };
 
-/** How this window joins agent rooms: the deployment's LiveKit, and a `watchAgent` token. */
+/** How this window joins agent rooms: the deployment's LiveKit, and a `watchAgent` connection. */
 const useConnector = (): Connector => {
   const { url } = useLivekit();
   const [watchAgent] = useWatchAgentMutation();
   return useMemo(
     () => ({
       url,
-      token: async (agent: string) => {
+      connect: async (agent: string) => {
         const result = await watchAgent({ variables: { input: { agent } } });
-        const token = result.data?.watchAgent;
-        if (!token) throw new Error("lovekit handed out no token");
-        return token;
+        const connection = result.data?.watchAgent;
+        if (!connection) throw new Error("lovekit handed out no connection");
+        return connection;
       },
     }),
     [url, watchAgent],
@@ -41,7 +43,21 @@ const Notice = ({ children, className }: { children: React.ReactNode; className?
   </div>
 );
 
-/** The stream's track in the joined room, or why there is none. */
+/** The stream in the joined room, as its kind is shown. */
+const Published = ({ room, stream, className }: { room: Room; stream: ShownStream; className?: string }) => {
+  switch (stream.kind) {
+    case StreamKind.Data:
+      if (!stream.format) return <Notice className={className}>{stream.title} declares no format.</Notice>;
+      return <StreamPlot room={room} stream={{ ...stream, format: stream.format }} className={className} />;
+    case StreamKind.Audio:
+    case StreamKind.Video:
+      return <PublishedTrack room={room} stream={stream} className={className} />;
+    default:
+      return <Notice className={className}>This Orkestrator cannot show a {String(stream.kind).toLowerCase()} stream.</Notice>;
+  }
+};
+
+/** The media track of a video or audio stream, or why there is none. */
 const PublishedTrack = ({ room, stream, className }: { room: Room; stream: ShownStream; className?: string }) => {
   const sources = stream.kind === StreamKind.Audio ? [Track.Source.Microphone] : [Track.Source.Camera];
   const tracks = useTracks(sources, { room, onlySubscribed: true });
@@ -70,7 +86,8 @@ const PublishedTrack = ({ room, stream, className }: { room: Room; stream: Shown
 const Connected = ({ stream, className }: { stream: ShownStream; className?: string }) => {
   const connector = useConnector();
   const room = useAgentRoom(stream.agent.id, connector);
-  useWatchedTrack(stream.agent.id, stream.key);
+  // A data stream's track is read by its plot; only media tracks are subscribed here.
+  useWatchedTrack(stream.agent.id, stream.kind === StreamKind.Data ? undefined : stream.key);
 
   if (!room?.room) {
     return (
@@ -80,16 +97,17 @@ const Connected = ({ stream, className }: { stream: ShownStream; className?: str
       </Notice>
     );
   }
-  return <PublishedTrack room={room.room} stream={stream} className={className} />;
+  return <Published room={room.room} stream={stream} className={className} />;
 };
 
 /**
- * One stream, live: the track named by its key in its agent's room. Every
- * view of the same agent shares one connection (`agentRoom`), and only the
- * tracks on screen are subscribed. Behind the host's LiveKit guard: lovekit
- * mints the tokens, the deployment's media server carries the stream.
+ * One stream, live, whatever it carries: the track named by its key in its
+ * agent's room, as a picture, a sound or a plot. Every view of the same agent
+ * shares one connection (`agentRoom`), and only the tracks on screen are
+ * subscribed. Behind the host's LiveKit guard: lovekit hands out the
+ * connections, the deployment's media server carries the stream.
  */
-export const StreamVideo = ({ stream, className }: { stream: ShownStream; className?: string }) => (
+export const StreamView = ({ stream, className }: { stream: ShownStream; className?: string }) => (
   <Guard.Livekit fallback={<Notice className={className}>No media server is configured.</Notice>}>
     <Connected stream={stream} className={className} />
   </Guard.Livekit>

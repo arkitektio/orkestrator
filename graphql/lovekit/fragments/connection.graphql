@@ -1,0 +1,4 @@
+fragment Connection on Connection {
+  transport
+  credential
+}

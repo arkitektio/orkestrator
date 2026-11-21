@@ -1,15 +1,24 @@
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { cn } from "@/core/util/utils";
-import { Mic, Video } from "lucide-react";
+import { Activity, Mic, Video, type LucideIcon } from "lucide-react";
 import { AgentOwnerFragment, StreamKind } from "../api/graphql";
 
-/** Video or audio, as an icon. */
+const KINDS: Record<StreamKind, { icon: LucideIcon; label: string }> = {
+  [StreamKind.Video]: { icon: Video, label: "Video" },
+  [StreamKind.Audio]: { icon: Mic, label: "Audio" },
+  [StreamKind.Data]: { icon: Activity, label: "Data" },
+};
+
+/** The icon of what a stream carries. */
+export const streamKindIcon = (kind: StreamKind): LucideIcon => KINDS[kind]?.icon ?? Video;
+
+/** Video, audio or data, as an icon. */
 export const StreamKindIcon = ({ kind, className }: { kind: StreamKind; className?: string }) => {
-  const Icon = kind === StreamKind.Audio ? Mic : Video;
+  const Icon = (KINDS[kind] ?? KINDS[StreamKind.Video]).icon;
   return <Icon className={cn("size-3.5 shrink-0", className)} aria-hidden />;
 };
 
-export const streamKindLabel = (kind: StreamKind) => (kind === StreamKind.Audio ? "Audio" : "Video");
+export const streamKindLabel = (kind: StreamKind) => KINDS[kind]?.label ?? String(kind);
 
 /** The person the agent runs for: lok's avatar and name, their username until it loads. */
 export const AgentUser = ({ agent, className }: { agent: AgentOwnerFragment; className?: string }) => (

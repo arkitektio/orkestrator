@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { describeError } from "@/core/notify";
-import { useJoinCallMutation } from "@/lovekit/api/graphql";
+import { Transport, useJoinCallMutation } from "@/lovekit/api/graphql";
 import { callStore, useCallState, type ActiveCall } from "./store";
 
 /**
@@ -21,9 +21,10 @@ export const useJoinCall = () => {
       setError(null);
       try {
         const result = await joinCall({ variables: { input: { call: call.id } } });
-        const token = result.data?.joinCall;
-        if (!token) throw new Error("The call handed out no token");
-        callStore.getState().start(call, token);
+        const connection = result.data?.joinCall;
+        if (!connection) throw new Error("The call handed out no connection");
+        if (connection.transport !== Transport.Livekit) throw new Error(`This Orkestrator does not speak the ${connection.transport} transport`);
+        callStore.getState().start(call, connection.credential);
       } catch (nextError) {
         setError(`Couldn't join the call: ${describeError(nextError).message}`);
       } finally {

@@ -2,7 +2,7 @@ import { cn } from "@/core/util/utils";
 import { LovekitStream } from "@/core/linkers";
 import { ListStreamFragment } from "../api/graphql";
 import { LiveDot } from "./agent";
-import { StreamVideo } from "./StreamVideo";
+import { StreamView } from "./StreamView";
 
 /** An agent's streams side by side, each live, each linking to its page. */
 export const AgentStreams = ({ streams, className }: { streams: ListStreamFragment[]; className?: string }) => {
@@ -14,7 +14,7 @@ export const AgentStreams = ({ streams, className }: { streams: ListStreamFragme
       {streams.map((stream) => (
         <div key={stream.id} className="flex flex-col gap-1.5">
           <div className="dark aspect-video overflow-hidden rounded-lg bg-background text-foreground">
-            <StreamVideo stream={stream} />
+            <StreamView stream={stream} />
           </div>
           <div className="flex items-center gap-1.5 text-sm">
             <LiveDot live={stream.live} />

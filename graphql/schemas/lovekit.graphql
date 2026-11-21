@@ -53,6 +53,64 @@ type App {
   identifier: String!
 }
 
+"""One axis of a data stream's frames"""
+type Axis {
+  name: String!
+  type: AxisType!
+}
+
+"""
+One axis of a data stream's frames: its name and its semantic kind. Units belong to a calibration
+"""
+input AxisInput {
+  """The name of the axis, e.g. 'wavelength'"""
+  name: String!
+
+  """The semantic kind of the axis"""
+  type: AxisType!
+}
+
+"""The semantic kind of an axis, as mikro's coordinate systems name them"""
+enum AxisType {
+  CATEGORY
+  CHANNEL
+  COORDINATE
+  DISPLACEMENT
+  INDEX
+  MICROTIME
+  SPACE
+  SPECTRUM
+  TIME
+  VALUE
+}
+
+"""
+What a step along one axis measures: position = offset + scale * index, in unit
+"""
+type Calibration {
+  axis: String!
+  offset: Float!
+  scale: Float!
+  unit: String!
+}
+
+"""
+What a step along one axis measures: position = offset + scale * index, in unit
+"""
+input CalibrationInput {
+  """The name of the axis this calibrates"""
+  axis: String!
+
+  """The position of the first value"""
+  offset: Float! = 0
+
+  """The step between two neighbouring values"""
+  scale: Float! = 1
+
+  """The unit of the calibrated position, e.g. 'nm'"""
+  unit: String!
+}
+
 type Call {
   """
   The structures this call is about, oldest first: the last one is what it turned to most recently.
@@ -182,10 +240,63 @@ input CollaborationObjectInput {
   object: ID!
 }
 
+"""
+What it takes to reach an agent's streams or a call: the carrier, and what lets the caller in. Where the carrier is, the client knows from its own configuration
+"""
+type Connection {
+  """What lets the caller in: for LIVEKIT, the access token of its room"""
+  credential: String!
+  transport: Transport!
+}
+
 """A new collaboration"""
 input CreateCollaborationInput {
   description: String = null
   name: String!
+}
+
+"""What every frame of a data stream holds"""
+type DataFormat {
+  """One axis per dimension of the shape, in its order"""
+  axes: [Axis!]!
+  calibration: [Calibration!]!
+
+  """The type of one value, as numpy names it"""
+  dtype: String!
+
+  """
+  The space the axes are in, named as mikro names a coordinate system's reference
+  """
+  reference: String
+  shape: [Int!]!
+
+  """The unit of the values themselves"""
+  unit: String
+}
+
+"""What every frame of a data stream holds"""
+input DataFormatInput {
+  """One axis per dimension of the shape, in its order"""
+  axes: [AxisInput!]!
+
+  """The axes that measure something, and what"""
+  calibration: [CalibrationInput!]! = []
+
+  """
+  The type of one value, as numpy names it: uint8, int16, float16, float32, ...
+  """
+  dtype: String!
+
+  """
+  The space the axes are in, named as mikro names a coordinate system's reference: stored data of the same reference is in the same space
+  """
+  reference: String = null
+
+  """The shape of one frame; a frame is at most 1024 bytes"""
+  shape: [Int!]!
+
+  """The unit of the values themselves, e.g. 'counts'"""
+  unit: String = null
 }
 
 """Date with time (isoformat)"""
@@ -260,26 +371,26 @@ type Mutation {
   """Ask users into a call; their open apps ring"""
   inviteToCall(input: InviteToCallInput!): Call!
 
-  """Join a call and return the token for it"""
-  joinCall(input: JoinCallInput!): String!
+  """Join a call: what its room is reached with"""
+  joinCall(input: JoinCallInput!): Connection!
 
   """
-  A token for the caller's agent to publish its streams; a newer connection replaces an older one
+  What the caller's agent publishes its streams with; a newer connection replaces an older one
   """
-  publishToken: String!
+  publisherConnection: Connection!
 
   """Take an agent or a stream out of a collaboration"""
   removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """
-  A token to watch every stream of an agent. A guest needs the agent in one of their collaborations
+  What every stream of an agent is watched with. A guest needs the agent in one of their collaborations
   """
-  watchAgent(input: WatchAgentInput!): String!
+  watchAgent(input: WatchAgentInput!): Connection!
 
   """
-  A token to watch a stream: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations
+  What a stream is watched with: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations
   """
-  watchStream(input: WatchStreamInput!): String!
+  watchStream(input: WatchStreamInput!): Connection!
 }
 
 input OffsetPaginationInput {
@@ -345,7 +456,9 @@ type Release {
   version: String!
 }
 
-"""One live source an agent offers: a camera, a detector, a microphone"""
+"""
+One live source an agent offers: a camera, a detector, a microphone, a spectrometer
+"""
 type Stream {
   agent: Agent!
   createdAt: DateTime!
@@ -355,6 +468,9 @@ type Stream {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@lovekit/stream_kind`). The keys are the ones lovekit declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """What a frame holds; only a data stream has one."""
+  format: DataFormat
   id: ID!
 
   """
@@ -375,12 +491,15 @@ input StreamDeclarationInput {
   """What the stream shows"""
   description: String = null
 
+  """What a frame holds: needed for a data stream, refused for any other"""
+  format: DataFormatInput = null
+
   """
   The agent's own name for the stream, the same on every start; its LiveKit track is published under this name
   """
   key: String!
 
-  """Whether it is video or audio"""
+  """Whether it is video, audio or data"""
   kind: StreamKind! = VIDEO
 
   """What the stream is called; the key when not given"""
@@ -432,6 +551,7 @@ input StreamFilter {
 """What a stream carries"""
 enum StreamKind {
   AUDIO
+  DATA
   VIDEO
 }
 
@@ -465,6 +585,11 @@ type Subscription {
   Streams your organization's agents declare, change and drop, as they do
   """
   streams: StreamEvent!
+}
+
+"""How a stream is carried from its agent to whoever watches"""
+enum Transport {
+  LIVEKIT
 }
 
 type User {

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Room, RoomEvent } from "livekit-client";
+import { Room, RoomEvent, type RemoteDataTrack } from "livekit-client";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
@@ -8,7 +8,7 @@ import { createStore } from "zustand/vanilla";
  * however many of its streams are on screen.
  *
  * Every stream of an agent is a track of the agent's room, named by the
- * stream's key. A view asks for the room (`useAgentRoom`) and for the track
+ * stream's key: a media track for video and audio, a data track for data. A view asks for the room (`useAgentRoom`) and for the track
  * it shows (`useWatchedTrack`); the room is joined on the first ask and left
  * a little after the last one is gone, so moving between pages that show the
  * same agent keeps the connection. Only the tracks someone looks at are
@@ -31,8 +31,11 @@ type Entry = {
 
 export type AgentRoomsState = { rooms: Record<string, Entry> };
 
-/** Mints a watching token for an agent's room (`watchAgent`), and where LiveKit is. */
-export type Connector = { token: (agentId: string) => Promise<string>; url: string };
+/** The transport this module speaks, as lovekit names it. */
+const LIVEKIT = "LIVEKIT";
+
+/** What lovekit hands out to watch an agent (`watchAgent`), and where LiveKit is. */
+export type Connector = { connect: (agentId: string) => Promise<{ transport: string; credential: string }>; url: string };
 
 /** How long an unwatched room stays joined, for a view that comes right back. */
 const LINGER_MS = 5_000;
@@ -75,8 +78,9 @@ const join = async (agentId: string, connector: Connector, generation: number, a
   update(agentId, { status: "connecting", error: null });
   const room = new Room({ adaptiveStream: true });
   try {
-    const token = await connector.token(agentId);
-    await room.connect(connector.url, token, { autoSubscribe: false });
+    const connection = await connector.connect(agentId);
+    if (connection.transport !== LIVEKIT) throw new Error(`this Orkestrator does not speak the ${connection.transport} transport`);
+    await room.connect(connector.url, connection.credential, { autoSubscribe: false });
   } catch (error) {
     void room.disconnect();
     if (!current()) return;
@@ -170,4 +174,35 @@ export const useWatchedTrack = (agentId: string | undefined, key: string | undef
     want(agentId, key, 1);
     return () => want(agentId, key, -1);
   }, [agentId, key]);
+};
+
+/**
+ * Read the data track named `key` in a joined room until the returned stop is
+ * called: every frame's bytes, newest only (a slow reader skips, it never
+ * queues). A track the agent publishes again is read again.
+ */
+export const watchData = (room: Room, key: string, onPayload: (payload: Uint8Array) => void) => {
+  const abort = new AbortController();
+  const read = async (track: RemoteDataTrack) => {
+    if (track.info.name !== key || abort.signal.aborted) return;
+    try {
+      const reader = track.subscribe({ signal: abort.signal, bufferSize: 1 }).getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        onPayload(value.payload);
+      }
+    } catch {
+      // Stopped, or the track went away: one published again is read again.
+    }
+  };
+  for (const participant of room.remoteParticipants.values()) {
+    const track = participant.dataTracks.get(key);
+    if (track) void read(track);
+  }
+  room.on(RoomEvent.DataTrackPublished, read);
+  return () => {
+    abort.abort();
+    room.off(RoomEvent.DataTrackPublished, read);
+  };
 };

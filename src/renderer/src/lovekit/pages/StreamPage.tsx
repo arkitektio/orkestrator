@@ -4,7 +4,7 @@ import { LovekitAgent, LovekitStream } from "@/core/linkers";
 import { InfoList } from "@/core/ui/info-list";
 import { useGetStreamQuery } from "../api/graphql";
 import { AgentApp, AgentUser, LiveDot, streamKindLabel } from "../components/agent";
-import { StreamVideo } from "../components/StreamVideo";
+import { StreamView } from "../components/StreamView";
 import { LOVEKIT_HELP } from "../help";
 
 export default asDetailQueryRoute(
@@ -46,7 +46,7 @@ export default asDetailQueryRoute(
         }
       >
         <div className="dark flex h-full w-full items-center justify-center bg-background text-foreground">
-          <StreamVideo stream={stream} />
+          <StreamView stream={stream} />
         </div>
       </LovekitStream.ModelPage>
     );

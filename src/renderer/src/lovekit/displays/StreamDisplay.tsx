@@ -1,10 +1,10 @@
 import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
 import { showsCard, type DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
-import { StreamKind, useGetStreamQuery } from "@/lovekit/api/graphql";
-import { Loader2, Mic, Video } from "lucide-react";
-import { AgentApp, LiveDot, streamKindLabel } from "../components/agent";
-import { StreamVideo } from "../components/StreamVideo";
+import { useGetStreamQuery } from "@/lovekit/api/graphql";
+import { Loader2, Video } from "lucide-react";
+import { AgentApp, LiveDot, streamKindIcon, streamKindLabel } from "../components/agent";
+import { StreamView } from "../components/StreamView";
 
 /**
  * `@lovekit/stream`: the live picture where there is room for it ("card"),
@@ -19,7 +19,7 @@ export const StreamDisplay = (props: DisplayWidgetProps) => {
     return (
       <DisplayLine
         {...props}
-        icon={stream.kind === StreamKind.Audio ? Mic : Video}
+        icon={streamKindIcon(stream.kind)}
         leading={<LiveDot live={stream.live} />}
         title={stream.title}
         meta={[streamKindLabel(stream.kind), <AgentApp agent={stream.agent} />]}
@@ -36,7 +36,7 @@ export const StreamDisplay = (props: DisplayWidgetProps) => {
   }
   return (
     <div className={cn("dark relative aspect-video w-full overflow-hidden rounded-lg bg-background text-foreground", props.className)}>
-      <StreamVideo stream={stream} />
+      <StreamView stream={stream} />
       <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-md bg-background/60 px-1.5 py-0.5 text-xs text-foreground backdrop-blur">
         <LiveDot live={stream.live} />
         <span className="truncate">{stream.title}</span>

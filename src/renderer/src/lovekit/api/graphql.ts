@@ -74,6 +74,56 @@ export type App = {
   identifier: Scalars['String']['output'];
 };
 
+/** One axis of a data stream's frames */
+export type Axis = {
+  __typename?: 'Axis';
+  name: Scalars['String']['output'];
+  type: AxisType;
+};
+
+/** One axis of a data stream's frames: its name and its semantic kind. Units belong to a calibration */
+export type AxisInput = {
+  /** The name of the axis, e.g. 'wavelength' */
+  name: Scalars['String']['input'];
+  /** The semantic kind of the axis */
+  type: AxisType;
+};
+
+/** The semantic kind of an axis, as mikro's coordinate systems name them */
+export enum AxisType {
+  Category = 'CATEGORY',
+  Channel = 'CHANNEL',
+  Coordinate = 'COORDINATE',
+  Displacement = 'DISPLACEMENT',
+  Index = 'INDEX',
+  Microtime = 'MICROTIME',
+  Space = 'SPACE',
+  Spectrum = 'SPECTRUM',
+  Time = 'TIME',
+  Value = 'VALUE'
+}
+
+/** What a step along one axis measures: position = offset + scale * index, in unit */
+export type Calibration = {
+  __typename?: 'Calibration';
+  axis: Scalars['String']['output'];
+  offset: Scalars['Float']['output'];
+  scale: Scalars['Float']['output'];
+  unit: Scalars['String']['output'];
+};
+
+/** What a step along one axis measures: position = offset + scale * index, in unit */
+export type CalibrationInput = {
+  /** The name of the axis this calibrates */
+  axis: Scalars['String']['input'];
+  /** The position of the first value */
+  offset?: Scalars['Float']['input'];
+  /** The step between two neighbouring values */
+  scale?: Scalars['Float']['input'];
+  /** The unit of the calibrated position, e.g. 'nm' */
+  unit: Scalars['String']['input'];
+};
+
 export type Call = {
   __typename?: 'Call';
   /** The structures this call is about, oldest first: the last one is what it turned to most recently. */
@@ -183,10 +233,49 @@ export type CollaborationObjectInput = {
   object: Scalars['ID']['input'];
 };
 
+/** What it takes to reach an agent's streams or a call: the carrier, and what lets the caller in. Where the carrier is, the client knows from its own configuration */
+export type Connection = {
+  __typename?: 'Connection';
+  /** What lets the caller in: for LIVEKIT, the access token of its room */
+  credential: Scalars['String']['output'];
+  transport: Transport;
+};
+
 /** A new collaboration */
 export type CreateCollaborationInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+};
+
+/** What every frame of a data stream holds */
+export type DataFormat = {
+  __typename?: 'DataFormat';
+  /** One axis per dimension of the shape, in its order */
+  axes: Array<Axis>;
+  calibration: Array<Calibration>;
+  /** The type of one value, as numpy names it */
+  dtype: Scalars['String']['output'];
+  /** The space the axes are in, named as mikro names a coordinate system's reference */
+  reference?: Maybe<Scalars['String']['output']>;
+  shape: Array<Scalars['Int']['output']>;
+  /** The unit of the values themselves */
+  unit?: Maybe<Scalars['String']['output']>;
+};
+
+/** What every frame of a data stream holds */
+export type DataFormatInput = {
+  /** One axis per dimension of the shape, in its order */
+  axes: Array<AxisInput>;
+  /** The axes that measure something, and what */
+  calibration?: Array<CalibrationInput>;
+  /** The type of one value, as numpy names it: uint8, int16, float16, float32, ... */
+  dtype: Scalars['String']['input'];
+  /** The space the axes are in, named as mikro names a coordinate system's reference: stored data of the same reference is in the same space */
+  reference?: InputMaybe<Scalars['String']['input']>;
+  /** The shape of one frame; a frame is at most 1024 bytes */
+  shape: Array<Scalars['Int']['input']>;
+  /** The unit of the values themselves, e.g. 'counts' */
+  unit?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Every stream an agent offers */
@@ -235,16 +324,16 @@ export type Mutation = {
   ensureCall: Call;
   /** Ask users into a call; their open apps ring */
   inviteToCall: Call;
-  /** Join a call and return the token for it */
-  joinCall: Scalars['String']['output'];
-  /** A token for the caller's agent to publish its streams; a newer connection replaces an older one */
-  publishToken: Scalars['String']['output'];
+  /** Join a call: what its room is reached with */
+  joinCall: Connection;
+  /** What the caller's agent publishes its streams with; a newer connection replaces an older one */
+  publisherConnection: Connection;
   /** Take an agent or a stream out of a collaboration */
   removeFromCollaboration: Collaboration;
-  /** A token to watch every stream of an agent. A guest needs the agent in one of their collaborations */
-  watchAgent: Scalars['String']['output'];
-  /** A token to watch a stream: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations */
-  watchStream: Scalars['String']['output'];
+  /** What every stream of an agent is watched with. A guest needs the agent in one of their collaborations */
+  watchAgent: Connection;
+  /** What a stream is watched with: its agent's room, where it is the track named by its key. A guest needs the agent in one of their collaborations */
+  watchStream: Connection;
 };
 
 
@@ -404,7 +493,7 @@ export type Release = {
   version: Scalars['String']['output'];
 };
 
-/** One live source an agent offers: a camera, a detector, a microphone */
+/** One live source an agent offers: a camera, a detector, a microphone, a spectrometer */
 export type Stream = {
   __typename?: 'Stream';
   agent: Agent;
@@ -412,6 +501,8 @@ export type Stream = {
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@lovekit/stream_kind`). The keys are the ones lovekit declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** What a frame holds; only a data stream has one. */
+  format?: Maybe<DataFormat>;
   id: Scalars['ID']['output'];
   /** The agent's name for the stream, the same across its restarts: the name of the LiveKit track it is published as */
   key: Scalars['String']['output'];
@@ -425,9 +516,11 @@ export type Stream = {
 export type StreamDeclarationInput = {
   /** What the stream shows */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** What a frame holds: needed for a data stream, refused for any other */
+  format?: InputMaybe<DataFormatInput>;
   /** The agent's own name for the stream, the same on every start; its LiveKit track is published under this name */
   key: Scalars['String']['input'];
-  /** Whether it is video or audio */
+  /** Whether it is video, audio or data */
   kind?: StreamKind;
   /** What the stream is called; the key when not given */
   title?: InputMaybe<Scalars['String']['input']>;
@@ -465,6 +558,7 @@ export type StreamFilter = {
 /** What a stream carries */
 export enum StreamKind {
   Audio = 'AUDIO',
+  Data = 'DATA',
   Video = 'VIDEO'
 }
 
@@ -494,6 +588,11 @@ export type Subscription = {
   /** Streams your organization's agents declare, change and drop, as they do */
   streams: StreamEvent;
 };
+
+/** How a stream is carried from its agent to whoever watches */
+export enum Transport {
+  Livekit = 'LIVEKIT'
+}
 
 export type User = {
   __typename?: 'User';
@@ -571,12 +670,22 @@ export type CallInviteFragment = { __typename?: 'CallInvite', id: string, create
     & ListCallFragment
   ), inviter: { __typename?: 'User', id: string, sub: string, preferredUsername: string } };
 
-export type StreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, description?: string | null, createdAt: any, live: boolean, agent: (
+export type ConnectionFragment = { __typename?: 'Connection', transport: Transport, credential: string };
+
+export type DataFormatFragment = { __typename?: 'DataFormat', dtype: string, shape: Array<number>, unit?: string | null, reference?: string | null, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType }>, calibration: Array<{ __typename?: 'Calibration', axis: string, unit: string, scale: number, offset: number }> };
+
+export type StreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, description?: string | null, createdAt: any, live: boolean, format?: (
+    { __typename?: 'DataFormat' }
+    & DataFormatFragment
+  ) | null, agent: (
     { __typename?: 'Agent' }
     & AgentOwnerFragment
   ) };
 
-export type ListStreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, live: boolean, agent: (
+export type ListStreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, live: boolean, format?: (
+    { __typename?: 'DataFormat' }
+    & DataFormatFragment
+  ) | null, agent: (
     { __typename?: 'Agent' }
     & AgentOwnerFragment
   ) };
@@ -606,7 +715,10 @@ export type JoinCallMutationVariables = Exact<{
 }>;
 
 
-export type JoinCallMutation = { __typename?: 'Mutation', joinCall: string };
+export type JoinCallMutation = { __typename?: 'Mutation', joinCall: (
+    { __typename?: 'Connection' }
+    & ConnectionFragment
+  ) };
 
 export type InviteToCallMutationVariables = Exact<{
   input: InviteToCallInput;
@@ -627,14 +739,20 @@ export type WatchStreamMutationVariables = Exact<{
 }>;
 
 
-export type WatchStreamMutation = { __typename?: 'Mutation', watchStream: string };
+export type WatchStreamMutation = { __typename?: 'Mutation', watchStream: (
+    { __typename?: 'Connection' }
+    & ConnectionFragment
+  ) };
 
 export type WatchAgentMutationVariables = Exact<{
   input: WatchAgentInput;
 }>;
 
 
-export type WatchAgentMutation = { __typename?: 'Mutation', watchAgent: string };
+export type WatchAgentMutation = { __typename?: 'Mutation', watchAgent: (
+    { __typename?: 'Connection' }
+    & ConnectionFragment
+  ) };
 
 export type GetAgentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -797,6 +915,24 @@ export const AgentOwnerFragmentDoc = gql`
   }
 }
     `;
+export const DataFormatFragmentDoc = gql`
+    fragment DataFormat on DataFormat {
+  dtype
+  shape
+  unit
+  reference
+  axes {
+    name
+    type
+  }
+  calibration {
+    axis
+    unit
+    scale
+    offset
+  }
+}
+    `;
 export const ListStreamFragmentDoc = gql`
     fragment ListStream on Stream {
   id
@@ -804,11 +940,15 @@ export const ListStreamFragmentDoc = gql`
   title
   kind
   live
+  format {
+    ...DataFormat
+  }
   agent {
     ...AgentOwner
   }
 }
-    ${AgentOwnerFragmentDoc}`;
+    ${DataFormatFragmentDoc}
+${AgentOwnerFragmentDoc}`;
 export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   ...AgentOwner
@@ -890,6 +1030,12 @@ export const CallInviteFragmentDoc = gql`
   }
 }
     ${ListCallFragmentDoc}`;
+export const ConnectionFragmentDoc = gql`
+    fragment Connection on Connection {
+  transport
+  credential
+}
+    `;
 export const StreamFragmentDoc = gql`
     fragment Stream on Stream {
   id
@@ -899,11 +1045,15 @@ export const StreamFragmentDoc = gql`
   description
   createdAt
   live
+  format {
+    ...DataFormat
+  }
   agent {
     ...AgentOwner
   }
 }
-    ${AgentOwnerFragmentDoc}`;
+    ${DataFormatFragmentDoc}
+${AgentOwnerFragmentDoc}`;
 export const EnsureCallDocument = gql`
     mutation EnsureCall($input: EnsureCallInput!) {
   ensureCall(input: $input) {
@@ -972,9 +1122,11 @@ export type AddToCallMutationResult = Apollo.MutationResult<AddToCallMutation>;
 export type AddToCallMutationOptions = Apollo.BaseMutationOptions<AddToCallMutation, AddToCallMutationVariables>;
 export const JoinCallDocument = gql`
     mutation JoinCall($input: JoinCallInput!) {
-  joinCall(input: $input)
+  joinCall(input: $input) {
+    ...Connection
+  }
 }
-    `;
+    ${ConnectionFragmentDoc}`;
 export type JoinCallMutationFn = Apollo.MutationFunction<JoinCallMutation, JoinCallMutationVariables>;
 
 /**
@@ -1067,9 +1219,11 @@ export type DismissCallInviteMutationResult = Apollo.MutationResult<DismissCallI
 export type DismissCallInviteMutationOptions = Apollo.BaseMutationOptions<DismissCallInviteMutation, DismissCallInviteMutationVariables>;
 export const WatchStreamDocument = gql`
     mutation WatchStream($input: WatchStreamInput!) {
-  watchStream(input: $input)
+  watchStream(input: $input) {
+    ...Connection
+  }
 }
-    `;
+    ${ConnectionFragmentDoc}`;
 export type WatchStreamMutationFn = Apollo.MutationFunction<WatchStreamMutation, WatchStreamMutationVariables>;
 
 /**
@@ -1098,9 +1252,11 @@ export type WatchStreamMutationResult = Apollo.MutationResult<WatchStreamMutatio
 export type WatchStreamMutationOptions = Apollo.BaseMutationOptions<WatchStreamMutation, WatchStreamMutationVariables>;
 export const WatchAgentDocument = gql`
     mutation WatchAgent($input: WatchAgentInput!) {
-  watchAgent(input: $input)
+  watchAgent(input: $input) {
+    ...Connection
+  }
 }
-    `;
+    ${ConnectionFragmentDoc}`;
 export type WatchAgentMutationFn = Apollo.MutationFunction<WatchAgentMutation, WatchAgentMutationVariables>;
 
 /**
