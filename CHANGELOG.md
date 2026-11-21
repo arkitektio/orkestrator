@@ -1,3 +1,13 @@
+# [8.18.0](https://github.com/arkitektio/orkestrator/compare/v8.17.0...v8.18.0) (2026-11-21)
+
+
+### Features
+
+* **editor:** Monaco is bundled, in the app's colours, with its own clipboard keys ([19614a3](https://github.com/arkitektio/orkestrator/commit/19614a31e46332368208b5f2b8410a5b3d52d638))
+* **kabinet:** a pod's page says what it is and shows its log, refreshed on request ([c3c50b2](https://github.com/arkitektio/orkestrator/commit/c3c50b2e22734a5f79e444c5a4487b7dc53fd38c))
+* **mikro:** the image's float lists what was derived from it, and one time readout ([e0e988e](https://github.com/arkitektio/orkestrator/commit/e0e988e799b36f2c692668427d18a96ba25c2c28))
+* **rekuest:** a blok from an agent, and an editor to design it in ([92945c3](https://github.com/arkitektio/orkestrator/commit/92945c3261bd349f3ce9ff8f8ad2e2a8cb9b59df))
+
 # [8.17.0](https://github.com/arkitektio/orkestrator/compare/v8.16.0...v8.17.0) (2026-11-21)
 
 
