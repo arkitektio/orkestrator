@@ -1,3 +1,10 @@
+# [8.19.0](https://github.com/arkitektio/orkestrator/compare/v8.18.0...v8.19.0) (2026-11-21)
+
+
+### Features
+
+* **rekuest:** blok cards on the shared frame, their preview a screen in the card ([dd5e33e](https://github.com/arkitektio/orkestrator/commit/dd5e33e920dd3223762dfb32819a115d0e183bfe))
+
 # [8.18.0](https://github.com/arkitektio/orkestrator/compare/v8.17.0...v8.18.0) (2026-11-21)
 
 
