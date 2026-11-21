@@ -1,119 +1,93 @@
 import React from "react";
-import { Badge } from "@/core/ui/badge";
 import { Pin } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
-import Timestamp from "@/core/ui/timestamp";
+import { CARD_FRAME_SIZE, CardFrame, LeadWithBead } from "@/core/ui/card-frame";
+import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
 import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 
 import { ListMaterializedBlokFragment } from "@/rekuest/api/graphql";
 import { BLOK_CONTEXTS } from "@/rekuest/components/blokContexts";
-import { BlokCardBackdrop } from "@/rekuest/components/preview/RekuestBlokPreview";
+import { BlokScreen } from "./BlokScreen";
 
 interface Props {
   item: ListMaterializedBlokFragment;
 }
 
+/** How many of its agents can answer, as the bead on its glyph says it. */
+export const boundPresence = (agents: readonly { connected: boolean }[]): { online: number; label: string; dot: string } => {
+  const online = agents.filter((agent) => agent.connected).length;
+  if (agents.length === 0) return { online, label: "Bound to no agent", dot: "bg-muted-foreground/50" };
+  if (online === agents.length) return { online, label: agents.length === 1 ? "Its agent is online" : "All its agents are online", dot: "bg-success" };
+  if (online === 0) return { online, label: agents.length === 1 ? "Its agent is offline" : "None of its agents is online", dot: "bg-muted-foreground/50" };
+  return { online, label: `${online} of ${agents.length} agents online`, dot: "bg-warning" };
+};
+
+/**
+ * A materialized blok: a blok bound to agents. The same card as its blok's
+ * (the interface tone, the small screen), plus what binding adds: whether its
+ * agents can answer, as a bead on its glyph, and the blok it is of. One whose
+ * agents are all away steps back, as an offline agent's card does.
+ */
 const MaterializedBlokCard = ({ item }: Props) => {
   const context = BLOK_CONTEXTS[item.blok.context];
-  const description = item.description ?? item.blok.description;
-  // One row per app, however many of the blok's dependencies it answers.
-  const agents = [
-    ...new Map(
-      item.agentMappings.map((mapping) => [mapping.agent.id, mapping.agent]),
-    ).values(),
-  ];
-  const online = agents.filter((agent) => agent.connected).length;
+  // One per app, however many of the blok's dependencies it answers.
+  const agents = [...new Map(item.agentMappings.map((mapping) => [mapping.agent.id, mapping.agent])).values()];
+  const presence = boundPresence(agents);
   // The preview loads its models and images from the agents this blok is bound to.
   const bound = React.useMemo(
     () => new Map(item.agentMappings.map((mapping) => [mapping.key, mapping.agent.id])),
     [item.agentMappings],
   );
+  const Icon = context?.icon;
+  const name = item.name ?? item.blok.name;
+  const agentNames = agents.map((agent) => agent.name).join(", ");
 
   return (
-    <RekuestMaterializedBlok.Smart object={item}>
-      <Card className="group relative isolate h-full min-h-56">
-        <BlokCardBackdrop blok={item.blok} agents={bound} />
-        <div className="flex flex-wrap items-center gap-1.5 px-4">
-          {context && (
-            <Badge variant="secondary" className="gap-1 shadow-sm">
-              <context.icon className="h-3 w-3" />
-              {context.label}
-            </Badge>
-          )}
-          {item.pinned && (
-            <Badge variant="outline" className="bg-card/80 shadow-sm" title="You pinned it">
-              <Pin className="h-3 w-3" />
-            </Badge>
-          )}
-          {item.isDefault && (
-            <Badge variant="outline" className="bg-card/80 shadow-sm">
-              Default
-            </Badge>
-          )}
-          {item.declaredBy && (
-            <Badge
-              variant="outline"
-              className="max-w-40 truncate bg-card/80 shadow-sm"
-              title="Its agent keeps it in step with its registrations"
-            >
-              {item.declaredBy.name}
-            </Badge>
-          )}
-        </div>
-        <CardHeader className="mt-auto gap-1">
-          <CardTitle className="text-base">
-            <RekuestMaterializedBlok.DetailLink object={item}>
-              {item.name ?? item.blok.name}
-            </RekuestMaterializedBlok.DetailLink>
-          </CardTitle>
-          <CardDescription className="flex flex-col gap-1 text-sm">
-            {description && <span className="line-clamp-2">{description}</span>}
-            <span className="text-xs">
-              Blok{" "}
-              <RekuestBlok.DetailLink object={item.blok}>
-                {item.blok.name}
-              </RekuestBlok.DetailLink>
+    <RekuestMaterializedBlok.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
+      <CardFrame
+        tone="interface"
+        quiet={agents.length > 0 && presence.online === 0}
+        leading={
+          Icon && (
+            <LeadWithBead label={presence.label} bead={<span className={cn("h-1.5 w-1.5 rounded-full", presence.dot)} />}>
+              <Icon className="h-4 w-4 text-chart-4" aria-label={context.label} />
+            </LeadWithBead>
+          )
+        }
+        title={
+          <RekuestMaterializedBlok.DetailLink
+            object={item}
+            className="block min-w-0 hover:underline"
+            title={item.description ?? item.blok.description ?? undefined}
+          >
+            <Name>{name}</Name>
+          </RekuestMaterializedBlok.DetailLink>
+        }
+        badge={
+          (item.pinned || item.isDefault) && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              {item.isDefault && <span title="Its agent's default for this kind">default</span>}
+              {item.pinned && <Pin className="h-3 w-3" aria-label="You pinned it" />}
             </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-xs text-muted-foreground">
-          {agents.length > 0 ? (
-            <ul className="flex flex-col gap-1">
-              {agents.slice(0, 3).map((agent) => (
-                <li key={agent.id} className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "h-2 w-2 shrink-0 rounded-full",
-                      agent.connected ? "bg-success" : "bg-muted-foreground/40",
-                    )}
-                  />
-                  <span className="truncate">{agent.name}</span>
-                </li>
-              ))}
-              {agents.length > 3 && <li>+{agents.length - 3} more</li>}
-            </ul>
-          ) : (
-            <span>No apps connected</span>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            {agents.length > 0 && (
-              <span>
-                {online} of {agents.length} online
-              </span>
-            )}
-            <span className="ml-auto">
-              <Timestamp date={item.updatedAt} relative />
+          )
+        }
+        facts={[
+          // Named after its blok unless it was given a name of its own.
+          name !== item.blok.name && (
+            <RekuestBlok.DetailLink object={item.blok} className="hover:underline">
+              {item.blok.name}
+            </RekuestBlok.DetailLink>
+          ),
+          agents.length > 0 && (
+            <span title={agentNames}>
+              {agents.length === 1 ? agents[0].name : `${presence.online}/${agents.length} online`}
             </span>
-          </div>
-        </CardContent>
-      </Card>
+          ),
+        ].filter(Boolean)}
+        menu
+      >
+        <BlokScreen blok={item.blok} agents={bound} />
+      </CardFrame>
     </RekuestMaterializedBlok.Smart>
   );
 };

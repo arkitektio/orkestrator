@@ -75,22 +75,4 @@ export const RekuestBlokPreview = ({
   );
 };
 
-/**
- * A blok's preview as the background of a card: it fills the card, and fades
- * into the card's colour towards the bottom, where the card's text sits. The
- * card is `relative isolate` and lays its text out from the bottom.
- */
-export const BlokCardBackdrop = ({
-  blok,
-  agents,
-}: {
-  blok: PreviewedBlok;
-  agents?: ReadonlyMap<string, string>;
-}) => (
-  <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-    <RekuestBlokPreview blok={blok} agents={agents} fit="cover" className="absolute inset-0" />
-    <div className="absolute inset-0 bg-gradient-to-t from-card from-35% via-card/70 to-card/0" />
-  </div>
-);
-
 export default RekuestBlokPreview;

@@ -237,7 +237,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 {blok.materializedBloks.length}
               </span>
             </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
               {blok.materializedBloks.map((materialized) => (
                 <MaterializedBlokCard key={materialized.id} item={materialized} />
               ))}

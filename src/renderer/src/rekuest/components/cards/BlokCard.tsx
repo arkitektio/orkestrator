@@ -1,50 +1,41 @@
 import React from "react";
-import { Badge } from "@/core/ui/badge";
 import { Pin } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { CARD_FRAME_SIZE, CardFrame } from "@/core/ui/card-frame";
+import { Name } from "@/core/ui/name";
 import { RekuestBlok } from "@/core/linkers";
 
 import { ListBlokFragment } from "@/rekuest/api/graphql";
 import { BLOK_CONTEXTS } from "@/rekuest/components/blokContexts";
-import { BlokCardBackdrop } from "@/rekuest/components/preview/RekuestBlokPreview";
+import { BlokScreen } from "./BlokScreen";
 
 interface Props {
   item: ListBlokFragment;
 }
 
+/**
+ * A blok in the shared card frame, in the interface tone: its kind's glyph
+ * and its name, what kind it is and whose (the app that provides it), and
+ * what it looks like as a small screen in the card's body.
+ */
 const TheCard = ({ item }: Props) => {
   const context = BLOK_CONTEXTS[item.context];
   return (
-    <RekuestBlok.Smart object={item}>
-      <Card className="relative isolate h-full min-h-48 justify-between">
-        <BlokCardBackdrop blok={item} />
-        {(context || item.app || item.pinned) && (
-          <div className="flex flex-wrap items-center gap-1.5 px-4">
-            {context && (
-              <Badge variant="secondary" className="gap-1 shadow-sm">
-                <context.icon className="h-3 w-3" />
-                {context.label}
-              </Badge>
-            )}
-            {item.app && (
-              <Badge variant="outline" className="bg-card/80 shadow-sm" title="Provided by this app's agents">
-                {item.app.identifier}
-              </Badge>
-            )}
-            {item.pinned && (
-              <Badge variant="outline" className="bg-card/80 shadow-sm" title="You pinned it">
-                <Pin className="h-3 w-3" />
-              </Badge>
-            )}
-          </div>
-        )}
-        <CardHeader className="gap-1">
-          <CardTitle className="text-base">
-            <RekuestBlok.DetailLink object={item}>{item.name}</RekuestBlok.DetailLink>
-          </CardTitle>
-          {item.description && <CardDescription className="line-clamp-2">{item.description}</CardDescription>}
-        </CardHeader>
-      </Card>
+    <RekuestBlok.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
+      <CardFrame
+        tone="interface"
+        icon={context?.icon}
+        iconLabel={context?.label}
+        title={
+          <RekuestBlok.DetailLink object={item} className="block min-w-0 hover:underline" title={item.description ?? undefined}>
+            <Name>{item.name}</Name>
+          </RekuestBlok.DetailLink>
+        }
+        badge={item.pinned ? <Pin className="h-3 w-3 text-muted-foreground" aria-label="You pinned it" /> : undefined}
+        facts={[context?.label, item.app && <span title="Provided by this app's agents">{item.app.identifier}</span>].filter(Boolean)}
+        menu
+      >
+        <BlokScreen blok={item} />
+      </CardFrame>
     </RekuestBlok.Smart>
   );
 };

@@ -19,6 +19,8 @@ export const CARD_TONES = {
   geometry: { frame: "border-chart-1/30 bg-chart-1/10 hover:border-chart-1/50", icon: "text-chart-4" },
   /** An app or an agent: something that runs, rather than data. */
   app: { frame: "border-chart-2/25 bg-chart-2/10 hover:border-chart-2/45", icon: "text-chart-2" },
+  /** An interface (a blok): something to look at and use, neither data nor a thing that runs. */
+  interface: { frame: "border-chart-4/25 bg-chart-4/10 hover:border-chart-4/45", icon: "text-chart-4" },
   /** The theme colour itself: tasks, connected agents. */
   brand: { frame: "border-primary/25 bg-primary/10 hover:border-primary/45", icon: "text-primary" },
   /** No tint: a plain card (tasks), where only a status pill carries colour. */
