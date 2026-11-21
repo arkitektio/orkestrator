@@ -10,12 +10,13 @@ import { cn } from "@/core/util/utils";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useApprovalInstallersQuery } from "@/rekuest/api/graphql";
 import { useAssign } from "@/rekuest/hooks/useAssign";
-import { CheckCircle2, Rocket, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Rocket, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useGetApprovableReleaseQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import { deployableApprovals, deployerApps, hostsOf, isApprovalInstaller } from "../lib/approvals";
+import { lapseReason, splitByMandate, useMandateStatuses } from "../lib/mandates";
 import { NoPluginEngine, Section } from "./parts";
 import { AssignErrorNote } from "@/rekuest/components/AssignErrorNote";
 
@@ -29,6 +30,11 @@ const APPROVAL_IDENTIFIER = "@kabinet/approval";
  * this is the step that sends it to a backend. Without an approval there is
  * nothing to deploy under, so it offers to authorize first; without any
  * deployer there is nowhere to send it, which is the admin's to fix.
+ *
+ * An approval is only offered while lok says the mandate behind it still
+ * works: kabinet's record stays "active" when the mandate expired or was
+ * withdrawn in lok, and a deploy under it would be refused by the deployer.
+ * Such an approval reads as "authorize again".
  *
  * Every deployer app is offered, not only those you approved: one you have
  * not approved yet is authorized first (back to `installrelease`'s first
@@ -50,10 +56,13 @@ export const DeployReleaseDialog = (props: {
   const { assign } = useAssign();
 
   const release = data?.release;
-  const approvals = useMemo(
+  const owned = useMemo(
     () => deployableApprovals(release?.approvals ?? [], self.userId),
     [release, self.userId],
   );
+  // Undefined while lok is asked; nothing is deployed before it answered.
+  const mandates = useMandateStatuses(owned);
+  const { live: approvals, lapsed } = useMemo(() => splitByMandate(owned, mandates), [owned, mandates]);
 
   const [chosenApproval, setChosenApproval] = useState<string | undefined>(props.approval);
   const approval =
@@ -106,7 +115,7 @@ export const DeployReleaseDialog = (props: {
   if (error) {
     return <ErrorNote error={error} title="Couldn't load the release" />;
   }
-  if (!release) {
+  if (!release || !mandates) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
@@ -158,6 +167,19 @@ export const DeployReleaseDialog = (props: {
           </span>
         </p>
       )}
+
+      {lapsed
+        .filter((dead) => !approvals.some((candidate) => candidate.agent === dead.agent))
+        .map((dead) => (
+          <p key={dead.id} className="flex items-start gap-2 text-sm">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+            <span>
+              Your authorization for <span className="font-mono">{dead.agent}</span>{" "}
+              {lapseReason(mandates[dead.mandateId]) === "expired" ? "has expired" : "was withdrawn"}. Authorize it
+              again to deploy with it.
+            </span>
+          </p>
+        ))}
 
       {noDeployers ? (
         <NoPluginEngine />

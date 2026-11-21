@@ -9,10 +9,11 @@ import {
   ScanRepoMutationVariables,
 } from '@/kabinet/api/graphql'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
-import { Download, RefreshCw, Rocket, ShieldOff } from 'lucide-react'
+import { Download, RefreshCw, Rocket, ScrollText, ShieldOff } from 'lucide-react'
 import type { Service } from '@/core/connection/arkitekt/types'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
+import { POD_IDENTIFIER, refreshPodLogs } from './lib/podLogs'
 
 const REPO_IDENTIFIER = '@kabinet/repo'
 const RELEASE_IDENTIFIER = '@kabinet/release'
@@ -94,6 +95,38 @@ export const KABINET_ACTIONS: Record<string, Action> = {
         .filter((structure) => structure.identifier === APPROVAL_IDENTIFIER)
         .map((structure) => String(structure.id))
       dialog.openDialog('revokeapproval', { ids }, { size: 'small' })
+    }
+  },
+  'refresh-pod-logs': {
+    title: 'Refresh logs',
+    description: 'Ask its backend to read what the pod logged since',
+    icon: ScrollText,
+    conditions: [
+      { type: 'identifier', identifier: POD_IDENTIFIER },
+      { type: 'nopartner' }
+    ],
+    execute: async ({ services, state, abortSignal, onProgress }) => {
+      const kabinet = (services.kabinet as unknown as Service | undefined)
+        ?.client as ApolloClient<NormalizedCache> | undefined
+      if (!kabinet) {
+        throw new Error('Kabinet service not available')
+      }
+      // The logs are read by the backend's agent, which rekuest reaches.
+      const rekuest = (services.rekuest as unknown as Service | undefined)
+        ?.client as ApolloClient<NormalizedCache> | undefined
+      if (!rekuest) {
+        throw new Error('Rekuest is needed to ask a backend for logs, and is not available')
+      }
+      const pods = state.left.filter(
+        (structure) => structure.identifier === POD_IDENTIFIER && structure.id
+      )
+      if (pods.length === 0) {
+        throw new Error('No pod selected')
+      }
+      for (const [index, pod] of pods.entries()) {
+        await refreshPodLogs({ kabinet, rekuest, pod: String(pod.id), signal: abortSignal })
+        onProgress?.(((index + 1) / pods.length) * 100)
+      }
     }
   },
   'delete-pod': buildDeleteAction({

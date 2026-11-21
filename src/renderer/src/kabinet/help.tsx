@@ -164,9 +164,10 @@ export const KABINET_HELP = {
       intro="A pod is one running copy of an app on a backend. Come here to check that it started and to read what it logged."
       steps={[
         <>Read the line under the app name for the pod’s status and the backend it runs on.</>,
-        <>Read <b>Latest logs</b> to see what the app printed most recently; press the copy button next to it to copy them.</>,
-        <>Open the <b>Info</b> tab of the sidebar for the backend, resource, deployment, release and flavour; click one to open it.</>,
-        <>Under <b>Runs as</b> in the <b>Info</b> tab, read the user the app is signed in as, and click the approval link to open the permission this pod runs under.</>,
+        <>Under <b>About</b>, read the backend, resource, release, flavour and deployment; click one to open it. The <b>Info</b> tab of the sidebar adds the pod’s ids.</>,
+        <>Under <b>Runs as</b>, read the user the app is signed in as, and click the approval link to open the permission this pod runs under.</>,
+        <>Read <b>Logs</b> to see what the app printed when its backend last read them; type in <b>Filter lines</b> to narrow them, or press the copy button to copy them.</>,
+        <>Press <b>Refresh</b> (or right-click the pod and choose <b>Refresh logs</b>) to ask the backend for the newest logs; they appear when it has sent them.</>,
       ]}
     />
   ),

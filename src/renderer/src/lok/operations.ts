@@ -9,6 +9,9 @@ import {
   type CollaborationLinksQuery,
   type CollaborationLinkFragment,
   CreateMandateDocument,
+  GetMandateDocument,
+  type GetMandateQuery,
+  type GetMandateQueryVariables,
   type CreateMandateMutation,
   type CreateMandateMutationVariables,
   IsMemberOfDocument,
@@ -87,6 +90,43 @@ const revokeMandate: OperationHandler = {
       variables: { id },
     });
     return { id };
+  },
+};
+
+/**
+ * `lok.mandateStatus`: do these mandates still work? Asked before something
+ * is started under one (kabinet, before deploying under a release approval:
+ * its own record does not know that the mandate expired or was withdrawn in
+ * lok). Args `{ ids }`; answers `{ [id]: { live, expiresAt, revokedAt } }`,
+ * read fresh. A mandate lok does not show the caller is left out: unknown,
+ * not dead.
+ */
+const mandateStatus: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const ids = Array.isArray(args.ids) ? args.ids.filter((id): id is string => typeof id === "string") : [];
+    const answers = await Promise.all(
+      [...new Set(ids)].map((id) =>
+        client
+          .query<GetMandateQuery, GetMandateQueryVariables>({
+            query: GetMandateDocument,
+            variables: { id },
+            fetchPolicy: "network-only",
+          })
+          .then((result) => result.data?.mandate)
+          .catch(() => undefined),
+      ),
+    );
+    const statuses: JSONObject = {};
+    for (const mandate of answers) {
+      if (!mandate) continue;
+      statuses[mandate.id] = {
+        live: mandate.isLive,
+        expiresAt: mandate.expiresAt ?? null,
+        revokedAt: mandate.revokedAt ?? null,
+      };
+    }
+    return statuses;
   },
 };
 
@@ -254,6 +294,7 @@ export const LOK_OPERATIONS: Record<string, OperationHandler> = {
   "lok.revokeLink": revokeLink,
   "lok.createMandate": createMandate,
   "lok.revokeMandate": revokeMandate,
+  "lok.mandateStatus": mandateStatus,
   "lok.isMemberOf": isMemberOf,
   "lok.requestMembership": requestMembership,
 };

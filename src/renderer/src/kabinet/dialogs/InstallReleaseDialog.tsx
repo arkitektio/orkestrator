@@ -35,6 +35,7 @@ import {
   releaseRequirements,
   reusableApproval,
 } from "../lib/approvals";
+import { splitByMandate, useMandateStatuses } from "../lib/mandates";
 import { DeployReleaseDialog } from "./DeployReleaseDialog";
 import { NoPluginEngine, Section } from "./parts";
 
@@ -206,9 +207,16 @@ export const InstallReleaseDialog = (
 
   const release = data?.release;
   // Awaited, a deployer already found none it may use: a new one is made.
-  const existing =
-    !approveOnly && release && agent ? reusableApproval(release.approvals, agent, self.userId) : undefined;
-  const authorized = deployableApprovals(release?.approvals ?? [], self.userId).length > 0;
+  // Only approvals whose lok mandate still works count: one that expired or
+  // was withdrawn in lok still reads "active" here, and is authorized anew.
+  const owned = useMemo(
+    () => deployableApprovals(release?.approvals ?? [], self.userId),
+    [release, self.userId],
+  );
+  const mandates = useMandateStatuses(owned);
+  const usable = useMemo(() => splitByMandate(owned, mandates).live, [owned, mandates]);
+  const existing = !approveOnly && release && agent ? reusableApproval(usable, agent, self.userId) : undefined;
+  const authorized = usable.length > 0;
 
   const maxClientsValue = maxClients.trim() === "" ? null : Number(maxClients);
   const maxClientsInvalid = maxClientsValue !== null && (!Number.isInteger(maxClientsValue) || maxClientsValue < 1);
@@ -269,7 +277,7 @@ export const InstallReleaseDialog = (
   if (error) {
     return <ErrorNote error={error} title="Couldn't load the release" />;
   }
-  if (!release) {
+  if (!release || !mandates) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 

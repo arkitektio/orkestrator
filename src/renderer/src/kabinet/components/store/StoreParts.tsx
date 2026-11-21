@@ -112,6 +112,9 @@ export const InstallButton = ({
         variant={variant}
         className={cn("rounded-full", className)}
         onClick={(e) => {
+          // On a card that is a link: without the Link's own click handler
+          // (stopped here) the anchor would navigate natively, a full reload.
+          e.preventDefault();
           e.stopPropagation();
           openDialog("installrelease", { release: release.id, authorize });
         }}
