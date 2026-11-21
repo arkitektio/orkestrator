@@ -4,6 +4,7 @@ import {
   CropIcon,
   DatabaseIcon,
   EyeIcon,
+  GitForkIcon,
   InfoIcon,
   LayersIcon,
   PinIcon,
@@ -21,7 +22,13 @@ import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { structure } from "@/core/smart/structure";
 import { Button } from "@/core/ui/button";
 import { useMikro } from "@/mikro/api/funcs";
-import { useGetSlicedDescriptorsQuery } from "@/mikro/api/graphql";
+import {
+  LineageNodeKind,
+  useGetSlicedDescriptorsQuery,
+  useSceneDerivedDetailsQuery,
+  useSceneDerivedQuery,
+} from "@/mikro/api/graphql";
+import { detailIds, nodeKey, type ChildDetail } from "@/mikro/forms/addLayer/derived";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 
 import { FloatMenu, type FloatMenuEntry } from "../../platform/float/FloatMenu";
@@ -33,7 +40,10 @@ import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useRoiSelectionStoreApi } from "../annotations/roiSelectionStore";
 import { StagedPane, useFloatStaging, type FloatStaging } from "../staging/FloatStaging";
+import { DerivedGroup } from "../staging/DerivedItem";
+import { ResidentItem } from "../staging/DerivedResidents";
 import { FloatStagingScope } from "../staging/StageToggle";
+import { LAYER_DERIVED_DOWN, layerDerived, layerDerivedCount, type LayerDerived } from "./layerDerived";
 import { useLayerRunStore, useLayerRunStoreApi, type LayerRunMenuRequest } from "./layerRunSlice";
 import { scopedSelectionAt } from "./layerRunSnapshot";
 import {
@@ -93,6 +103,9 @@ const BUTTON_POINTER_OFFSET_PX = 12;
  *   lens would provide (`ArrayDataset.descriptorsSliced`), so a port's
  *   `Requires` narrows the list as on a real lens; the lens is made when an
  *   action runs (`materialize`), as "On the crop to this shape" makes its crop.
+ * - **Derived**: what was made from the layer's dataset (a mask, a
+ *   projection, its measurements, its surfaces), each stageable, as a shape's
+ *   card lists what was made from the shape.
  * - **Details**: what the cut keeps along every axis.
  *
  * One float at a time: a shape's card or a mesh's replaces it, and it closes
@@ -265,6 +278,11 @@ const LayerRunFloatMenu = ({
   }, [sceneApi, layerId, view]);
   const size = cutSize(kept, spatial);
   const staged = staging.entries.length;
+  // Asked here, once, so the row can say how much its pane holds.
+  const datasetId = useSceneStore(
+    (s) => s.layers.find((candidate) => candidate.id === layerId)?.lens.dataset.id ?? null,
+  );
+  const derived = useLayerDerived(datasetId);
 
   // One Run row per scope the layer has here, the view's first: a layer
   // drawing several channels has no "this channel" row.
@@ -306,6 +324,13 @@ const LayerRunFloatMenu = ({
     },
     ...runRows,
     {
+      id: "derived",
+      label: "Derived",
+      icon: GitForkIcon,
+      hint: derived.data ? layerDerivedCount(derived.data) : "…",
+      content: () => <DerivedPane derived={derived} />,
+    },
+    {
       id: "details",
       label: "Details",
       icon: InfoIcon,
@@ -342,6 +367,101 @@ const LayerRunFloatMenu = ({
         ) : undefined
       }
     />
+  );
+};
+
+type LayerDerivedState = { data: LayerDerived | null; error?: unknown; retry: () => void };
+
+/**
+ * What was made from the layer's dataset: the server's lineage walk from it
+ * (the one the scene's "Add derived" reads), and each child's whole lens, the
+ * thing staging draws. `cache-and-network`: the usual reason to open the
+ * float twice is that something was just made.
+ */
+const useLayerDerived = (datasetId: string | null): LayerDerivedState => {
+  const starts = useMemo(() => (datasetId ? [{ kind: LineageNodeKind.Dataset, id: datasetId }] : []), [datasetId]);
+  const walk = useSceneDerivedQuery({
+    variables: { starts, down: LAYER_DERIVED_DOWN },
+    skip: starts.length === 0,
+    fetchPolicy: "cache-and-network",
+  });
+  const descendants = walk.data?.descendants;
+  const ids = useMemo(() => detailIds(descendants ?? []), [descendants]);
+  const detailsQuery = useSceneDerivedDetailsQuery({
+    variables: {
+      ...ids,
+      hasDatasets: ids.datasets.length > 0,
+      hasTables: ids.tables.length > 0,
+      hasMeshes: ids.meshes.length > 0,
+      hasNetworks: ids.networks.length > 0,
+      hasAnnotations: ids.annotations.length > 0,
+    },
+    skip: !descendants,
+    fetchPolicy: "cache-and-network",
+  });
+  // Only what staging needs: the whole lens of a dataset or a surface.
+  const details = useMemo(() => {
+    const data = detailsQuery.data;
+    if (!data) return null;
+    const map = new Map<string, ChildDetail>();
+    for (const row of data.arrayDatasets ?? []) {
+      map.set(nodeKey("DATASET", row.id), { wholeLens: row.fullLens?.id ?? null, space: null });
+    }
+    for (const row of data.meshCollections ?? []) {
+      map.set(nodeKey("MESH_COLLECTION", row.id), { wholeLens: row.fullLens?.id ?? null, space: null });
+    }
+    return map;
+  }, [detailsQuery.data]);
+  const data = useMemo(() => (descendants ? layerDerived(descendants, details) : null), [descendants, details]);
+  const refetchWalk = walk.refetch;
+  const refetchDetails = detailsQuery.refetch;
+  const retry = useCallback(() => {
+    void refetchWalk();
+    void refetchDetails();
+  }, [refetchWalk, refetchDetails]);
+  return { data, error: walk.error ?? detailsQuery.error, retry };
+};
+
+/** Derived: what was made from the layer's dataset, as a shape's card lists what was made from it. */
+const DerivedPane = ({ derived }: { derived: LayerDerivedState }) => {
+  const { data } = derived;
+  if (!data) {
+    return derived.error ? (
+      <StatusPage
+        variant="compact"
+        icon={TriangleAlert}
+        tone="warning"
+        title="Could not read what was made from this"
+        description={classifyError(derived.error as Error).message}
+        actions={<RetryButton onRetry={derived.retry} />}
+      />
+    ) : (
+      <p className="px-3 py-3 text-xs text-muted-foreground" aria-busy>
+        Looking for derived data…
+      </p>
+    );
+  }
+  if (layerDerivedCount(data) === 0) {
+    return <p className="px-3 py-3 text-xs text-muted-foreground">Nothing made from this image yet.</p>;
+  }
+  return (
+    <div className="flex flex-col px-1.5 pb-2">
+      {data.direct.length > 0 && (
+        <DerivedGroup caption="From this image">
+          {data.direct.map((resident) => (
+            <ResidentItem key={`${resident.__typename}:${resident.id}`} resident={resident} />
+          ))}
+        </DerivedGroup>
+      )}
+      {data.further.length > 0 && (
+        <DerivedGroup caption="Further down">
+          {data.further.map((resident) => (
+            <ResidentItem key={`${resident.__typename}:${resident.id}`} resident={resident} />
+          ))}
+        </DerivedGroup>
+      )}
+      {data.more && <p className="px-2.5 pt-1.5 text-[11px] text-muted-foreground">More lies below these.</p>}
+    </div>
   );
 };
 

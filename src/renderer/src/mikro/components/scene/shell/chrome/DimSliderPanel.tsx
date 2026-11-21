@@ -234,27 +234,16 @@ export const DimSliderPanel = ({
                 'text-[10px] tabular-nums text-muted-foreground select-none',
                 !vertical && 'w-14'
               )}
+              // One readout; each layer's own frame is a hover away, not a
+              // row of numbers per layer beside the slider.
+              title={
+                scrubber.perLayer.length > 1
+                  ? scrubber.perLayer.map((entry) => `${entry.index}/${entry.maxIndex}`).join(' · ')
+                  : undefined
+              }
             >
               {value}/{scrubber.maxIndex}
             </span>
-            {scrubber.perLayer.length > 1 && (
-              <span
-                className={cn(
-                  'tabular-nums text-muted-foreground select-none text-[9px]',
-                  vertical && 'flex flex-col items-center'
-                )}
-              >
-                {vertical
-                  ? scrubber.perLayer.map((entry) => (
-                      <span key={entry.id}>
-                        {entry.index}/{entry.maxIndex}
-                      </span>
-                    ))
-                  : scrubber.perLayer
-                      .map((entry) => `${entry.index}/${entry.maxIndex}`)
-                      .join(' · ')}
-              </span>
-            )}
           </div>
         )
       })}
@@ -354,34 +343,25 @@ const WorldScrubberTray = ({
       </button>
       <span
         className={cn('text-[10px] tabular-nums text-muted-foreground select-none', !vertical && 'w-24')}
-        title={
+        // The one readout. Where each series stands (its frame, and when it
+        // starts) is this tooltip's, one line per layer: beside the slider it
+        // was a run of numbers per layer.
+        title={[
           clock
             ? `${clock.toISOString()} — ${formatCoordinate(shown, span)} ${unitLabel} after the space's epoch`
-            : undefined
-        }
+            : null,
+          ...starts.map(
+            (layer) =>
+              `frame ${frameOf(layer.id) ?? '–'}/${layer.count - 1}` +
+              (layer.first === undefined
+                ? ''
+                : `, starts ${layer.at ? formatClock(layer.at) : `+${formatCoordinate(layer.first, span)} ${unitLabel}`}`)
+          )
+        ]
+          .filter(Boolean)
+          .join('\n')}
       >
         {clock ? formatClock(clock) : `${formatCoordinate(shown, span)}${unitLabel ? ` ${unitLabel}` : ''}`}
-      </span>
-      <span
-        className={cn(
-          'tabular-nums text-muted-foreground select-none text-[9px]',
-          vertical && 'flex flex-col items-center'
-        )}
-      >
-        {starts.map((layer, index) => (
-          <span
-            key={layer.id}
-            title={
-              layer.first === undefined
-                ? undefined
-                : `starts at ${formatCoordinate(layer.first, span)} ${unitLabel}${layer.at ? ` (${layer.at.toISOString()})` : ''}`
-            }
-          >
-            {index > 0 && !vertical ? ' · ' : ''}
-            {frameOf(layer.id) ?? '–'}/{layer.count - 1}
-            {layer.first === undefined ? '' : ` @${layer.at ? formatClock(layer.at) : `+${formatCoordinate(layer.first, span)}`}`}
-          </span>
-        ))}
       </span>
     </div>
   )
