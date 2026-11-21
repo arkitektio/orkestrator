@@ -17,6 +17,21 @@ describe("rematerializeMappings", () => {
     ]);
   });
 
+  it("binds a fork's app agent under the key the fork gave it", () => {
+    expect(
+      rematerializeMappings(
+        [
+          { key: "self", agent: { id: "a1" } },
+          { key: "stage", agent: { id: "a2" } },
+        ],
+        [{ key: "openuc2" }, { key: "stage" }],
+      ),
+    ).toEqual([
+      { key: "stage", agent: "a2" },
+      { key: "openuc2", agent: "a1" },
+    ]);
+  });
+
   it("drops keys the blok no longer declares", () => {
     expect(
       rematerializeMappings([{ key: "gone", agent: { id: "a1" } }], [{ key: "self" }]),

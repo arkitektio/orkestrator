@@ -2,7 +2,6 @@ import {
   analyzeBsx,
   blokHeader,
   BsxPrintError,
-  KIND_ATTRIBUTE,
   mountedBlokScope,
   parseBsxPartial,
   printBsx,
@@ -10,6 +9,7 @@ import {
 } from "@arkitektio/bsx/bsx/index";
 import { BsxEditor } from "@arkitektio/bsx/editor/BsxEditor";
 import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/types";
+import { useDialog } from "@/core/dialogs/registry";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
@@ -84,11 +84,6 @@ const STARTER =
 /** The kind every blok made or saved here is: a provided blok's first save forks it into a custom one. */
 const CUSTOM_KIND = "custom";
 
-/** `tree` with its `<Blok>` saying `kind="custom"`: what the fork of a provided blok becomes. */
-const asCustom = (tree: BlokComponentNode): BlokComponentNode => ({
-  ...tree,
-  props: (tree.props ?? []).map((prop) => (prop.key === KIND_ATTRIBUTE ? { ...prop, static_value: CUSTOM_KIND } : prop)),
-});
 
 const DemoEditor = (props: { value: string; error: string | null; onChange: (value: string) => void }) => {
   const { resolvedTheme } = useTheme();
@@ -97,8 +92,8 @@ const DemoEditor = (props: { value: string; error: string | null; onChange: (val
       <p className="text-xs text-muted-foreground">
         What the preview shows, mirroring what the blok reads: JSON{" "}
         <span className="font-mono">{"{deps, args, task, queries, subscriptions}"}</span>, e.g.{" "}
-        <span className="font-mono">{'{"deps": {"robot": {"arm": {"mode": "idle"}}}}'}</span>. Locals start at their
-        defaults.
+        <span className="font-mono">{'{"deps": {"robot": {"arm": {"mode": "idle"}}}}'}</span> for what the blok reads as{" "}
+        <span className="font-mono">agents.robot.arm.mode</span>. Locals start at their defaults.
       </p>
       <div className="min-h-64 flex-1 overflow-hidden rounded-md border">
         <Editor
@@ -434,7 +429,7 @@ const BlokEditorWorkspace = (props: {
           <Sidebars.Tab label="Details">
             <DetailsPanel draft={draft} context={context} onChange={change} />
           </Sidebars.Tab>
-          <Sidebars.Tab label="Dependencies">
+          <Sidebars.Tab label="Agents">
             <DependencyListEditor
               dependencies={draft.dependencies}
               problems={checkDependencies ? problems : new Map()}
@@ -536,13 +531,12 @@ const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () =>
     const roots = (blok.componentTree ?? []) as BlokComponentNode[];
     if (roots.length !== 1) return { error: `BSX holds one root; this blok has ${roots.length}.` };
     try {
-      // A provided blok's first save forks it into a custom one: it is written as one from the start.
-      return { source: printBsx(blok.provided ? asCustom(roots[0]) : roots[0]) };
+      return { source: printBsx(roots[0]) };
     } catch (error) {
       if (error instanceof BsxPrintError) return { error: error.message };
       throw error;
     }
-  }, [blok.componentTree, blok.provided]);
+  }, [blok.componentTree]);
   const initial = useMemo<EditorDraft | null>(
     () =>
       printed.source === undefined
@@ -587,7 +581,26 @@ const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () =>
   );
 };
 
+/**
+ * A blok an app provides is its agents' to change. A fork is not the same text: the app's own
+ * agent (`self`) becomes one the copy is bound to, so the copy is made first and edited then.
+ */
+const ForkToEdit = ({ blok }: { blok: BlokEditorFragment }) => {
+  const { openDialog } = useDialog();
+  return (
+    <PageLayout title={`Edit ${blok.name}`} help={REKUEST_HELP.blokEditor}>
+      <StatusPage
+        variant="compact"
+        icon={GitFork}
+        title="This blok belongs to its app"
+        description="Its agents keep it in step with what they register, so it is not changed by hand. Fork it to get a copy of your own: the copy reads the app's agent as one it is bound to, and opens ready to edit."
+        actions={<Button onClick={() => openDialog("forkblok", { id: blok.id, name: blok.name })}>Fork</Button>}
+      />
+    </PageLayout>
+  );
+};
+
 /** An existing blok, printed back to BSX: the server keeps the tree, not the text. */
-export const EditBlokEditorPage = asDetailQueryRoute(useBlokEditorQuery, ({ data, refetch }) => (
-  <EditorFor blok={data.blok} refetch={refetch} />
-));
+export const EditBlokEditorPage = asDetailQueryRoute(useBlokEditorQuery, ({ data, refetch }) =>
+  data.blok.provided ? <ForkToEdit blok={data.blok} /> : <EditorFor blok={data.blok} refetch={refetch} />,
+);

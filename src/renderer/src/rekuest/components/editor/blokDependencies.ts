@@ -228,7 +228,7 @@ export const dependencyProblems = (drafts: readonly DependencyDraft[]): Map<stri
   for (const draft of drafts) {
     const key = draft.key.trim();
     if (!NAME.test(key)) problems.set(draft.uid, "A key is a name: letters, digits and _, not starting with a digit.");
-    else if (key === "self") problems.set(draft.uid, "'self' is the blok's own agent, not a dependency key.");
+    else if (key === "self") problems.set(draft.uid, "'self' is an agent blok's own agent, not a key a custom blok binds.");
     else if ((seen.get(key) ?? 0) > 1) problems.set(draft.uid, `'${key}' is declared twice.`);
     else if (
       draft.minViableInstances != null &&

@@ -106,7 +106,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Dependencies
+                  Agents
                 </p>
                 <p className="mt-1 text-sm font-medium">{data.blok.dependencies.length}</p>
               </div>

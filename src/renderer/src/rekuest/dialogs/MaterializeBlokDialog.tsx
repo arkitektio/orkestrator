@@ -48,7 +48,7 @@ export const MaterializeBlokDialog = (props: { id: string }) => {
         <DialogDescription>
           {blok.dependencies.length > 0
             ? "Choose the agents it draws from, then materialize it."
-            : "It depends on no agent, so it is ready to materialize."}
+            : "It is bound to no agent, so it is ready to materialize."}
         </DialogDescription>
       </DialogHeader>
       <MaterializeBlokForm

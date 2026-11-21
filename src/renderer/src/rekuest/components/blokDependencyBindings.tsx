@@ -29,8 +29,10 @@ export const referenceKey = (key: string, name: string) => `${key}${REFERENCE_SE
 /** A `<dependencies>` of the tree. */
 export type DeclaredDependencies = {
   key: string;
-  /** The action of the blok's own agent whose dependencies they are; null when `like` does not say. */
+  /** The action whose dependencies they are; null when `like` does not say. */
   action: string | null;
+  /** Whose action: `self` (an agent blok's own agent), or the key a custom blok is bound to it by. */
+  owner: string;
 };
 
 /** One dependency of that action, as the server has it. */
@@ -56,8 +58,10 @@ export const declaredDependencies = (roots: readonly unknown[]): DeclaredDepende
     if (child.component !== 'dependencies') return [];
     const key = literal(child, 'key');
     if (!key) return [];
+    // `self.<action>`; a custom blok's `agents.<name>.<action>` is stored `deps.<name>.<action>`.
     const parts = literal(child, 'like')?.split('.') ?? [];
-    return [{key, action: parts.length === 2 && parts[0] === 'self' && parts[1] ? parts[1] : null}];
+    if (parts.length === 3 && parts[0] === 'deps' && parts[1] && parts[2]) return [{key, action: parts[2], owner: parts[1]}];
+    return [{key, action: parts.length === 2 && parts[0] === 'self' && parts[1] ? parts[1] : null, owner: 'self'}];
   });
 
 /** What the tree does with the dependencies declared as `key`. */

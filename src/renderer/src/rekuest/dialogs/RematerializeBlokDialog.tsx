@@ -89,7 +89,7 @@ const MaterializeStep = (props: {
           {props.forked ? "Forked. " : ""}
           {props.blok.dependencies.length > 0
             ? "The agents it was bound to are filled in; change any, then materialize it."
-            : "It depends on no agent, so it is ready to materialize."}
+            : "It is bound to no agent, so it is ready to materialize."}
         </DialogDescription>
       </DialogHeader>
       <MaterializeBlokForm

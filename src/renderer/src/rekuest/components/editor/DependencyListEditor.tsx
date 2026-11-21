@@ -103,7 +103,7 @@ const DependencyRow = (props: {
         {draft.locked ? (
           <Lock className="size-4 shrink-0 text-muted-foreground" aria-label="Kept as it is" />
         ) : (
-          <Button type="button" variant="ghost" size="icon" disabled={disabled} aria-label="Remove dependency" onClick={props.onRemove}>
+          <Button type="button" variant="ghost" size="icon" disabled={disabled} aria-label="Remove agent" onClick={props.onRemove}>
             <Trash2 className="size-4" />
           </Button>
         )}
@@ -217,7 +217,7 @@ export const DependencyListEditor = (props: {
     <div className="flex flex-col p-3">
       {props.dependencies.length === 0 && (
         <p className="pb-2 text-sm text-muted-foreground">
-          No dependencies: the blok calls no agent. Add one to name it in BSX, e.g. <span className="font-mono">@stage.move()</span>.
+          No agents: the blok is bound to none. Add one to read and call it in BSX, e.g. <span className="font-mono">agents.stage.move()</span>.
         </p>
       )}
       <div className="flex flex-col divide-y divide-border">

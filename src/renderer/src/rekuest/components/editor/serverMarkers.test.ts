@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { diagnosticMarkers, rangeForServerPath, refusalMarkers } from "./serverMarkers";
 
-const source = '<Blok kind="custom" context="panel"><Card>\n  <Button label="Gö" onClick={deps.stage.move()} />\n</Card></Blok>';
+const source = '<Blok kind="custom" context="panel"><Card>\n  <Button label="Gö" onClick={agents.stage.move()} />\n</Card></Blok>';
 const slice = (range: { start: number; end: number }) => source.slice(range.start, range.end);
 
 describe("server markers", () => {
   it("places a diagnostic by node id and prop", () => {
     expect(slice(rangeForServerPath(source, "Blok[0]/Card[0]/Button[0]"))).toBe("Button");
-    expect(slice(rangeForServerPath(source, "Blok[0]/Card[0]/Button[0].props.onClick"))).toBe("deps.stage.move()");
+    expect(slice(rangeForServerPath(source, "Blok[0]/Card[0]/Button[0].props.onClick"))).toBe("agents.stage.move()");
   });
 
   it("falls back to the root tag", () => {

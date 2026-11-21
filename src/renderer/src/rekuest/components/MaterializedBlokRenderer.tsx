@@ -485,7 +485,8 @@ const BoundBlokView = (
   const {bindings, roots, syncs, ...viewProps} = props;
   const {materializedBlok} = props;
   const outer = useBlokRunHost();
-  const selfAgentId = materializedBlok.agentMappings.find(mapping => mapping.key === 'self')?.agent.id;
+  // The agent whose action a declaration names: the blok's own, or one a custom blok is bound to.
+  const ownerAgentId = (owner: string): string | undefined => materializedBlok.agentMappings.find(mapping => mapping.key === owner)?.agent.id;
   const [resolved, setResolved] = React.useState<Readonly<Record<string, readonly ActionDependency[]>>>({});
   const onResolved = React.useCallback(
     (key: string, dependencies: readonly ActionDependency[]) =>
@@ -589,7 +590,7 @@ const BoundBlokView = (
   return (
     <>
       {bindings.declared.map(declared => (
-        <DependencySetResolver key={declared.key} declared={declared} selfAgentId={selfAgentId} onResolved={onResolved} />
+        <DependencySetResolver key={declared.key} declared={declared} selfAgentId={ownerAgentId(declared.owner)} onResolved={onResolved} />
       ))}
       {sets.flatMap(set =>
         set.dependencies
@@ -599,7 +600,7 @@ const BoundBlokView = (
               key={referenceKey(set.declared.key, dependency.key)}
               action={set.declared.action ?? ''}
               dependency={dependency}
-              selfAgentId={selfAgentId}
+              selfAgentId={ownerAgentId(set.declared.owner)}
               onSeed={agent => bindings.pick(set.declared.key, {[dependency.key]: agent})}
             />
           )),

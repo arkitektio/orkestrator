@@ -178,9 +178,9 @@ export const REKUEST_HELP = {
       steps={[
         <>Type <b>&lt;</b> to see the components that fit where the cursor is; a part of its parent (a <b>SelectItem</b> in a <b>Select</b>) comes first. Accepting one fills in the props it needs.</>,
         <>Inside a tag, start typing to see its props; hover a tag or a prop to read what it does.</>,
-        <>An attribute in quotes is a literal (<b>label=&quot;Go&quot;</b>); one in braces is an expression: <b>{"{deps.stage.position.x}"}</b> reads a state, <b>{"{args.image}"}</b> what the blok is opened for, <b>{"{str.upper(x)}"}</b> calls a function. Text between tags fills the component's text prop: <b>&lt;Button&gt;Go&lt;/Button&gt;</b>.</>,
-        <>A callback does exactly one thing: <b>{"onClick={deps.stage.move(x: event.value) into move}"}</b> calls an action and keeps its task as <b>move</b> (read <b>move.running</b>, <b>move.returns</b>); <b>{"queries.<name>.refetch()"}</b>, <b>ui.copy</b> and <b>task.answer</b> are the other things it may do.</>,
-        <>Declare the agents it draws from in the <b>Dependencies</b> tab: a key, the app, and the actions and states it uses. Completion offers exactly those.</>,
+        <>An attribute in quotes is a literal (<b>label=&quot;Go&quot;</b>); one in braces is an expression: <b>{"{agents.stage.position.x}"}</b> reads a state of an agent the blok is bound to, <b>{"{args.image}"}</b> what the blok is opened for, <b>{"{str.upper(x)}"}</b> calls a function. Text between tags fills the component's text prop: <b>&lt;Button&gt;Go&lt;/Button&gt;</b>.</>,
+        <>A callback does exactly one thing: <b>{"onClick={agents.stage.move(x: event.value) into move}"}</b> calls an action and keeps its task as <b>move</b> (read <b>move.running</b>, <b>move.returns</b>); <b>{"queries.<name>.refetch()"}</b>, <b>ui.copy</b> and <b>task.answer</b> are the other things it may do.</>,
+        <>Declare the agents it is bound to in the <b>Agents</b> tab: a key (read as <b>agents.&lt;key&gt;</b>), the app, and the actions and states it uses. Completion offers exactly those.</>,
         <>Everything is inside one <b>&lt;Blok kind=&quot;custom&quot; context=&quot;panel&quot;&gt;</b> (or <b>context=&quot;scene&quot;</b>). Declare form state with <b>{'<local name="x" default={3} persist />'}</b> as the first children of the element it is for (a control binds it with <b>{"bind={x}"}</b>; <b>persist</b> keeps it on this device), and reads as children of the <b>&lt;Blok&gt;</b>: <b>{'<query name="q" service="mikro" document="...">'}</b> with <b>&lt;var key value /&gt;</b> children, read as <b>queries.&lt;name&gt;</b> (pass <b>then</b> as a variable to read the moment viewed while time-travelling).</>,
         <>Fill the <b>Demo</b> tab with JSON to see the preview with values: <b>{"{deps, args, task, queries}"}</b>, as the blok reads them.</>,
         <>Press <b>Create blok</b> or <b>Save</b>, say in a sentence what changed if you like, and press <b>Save revision</b>. Every save is a revision of its own.</>,
@@ -189,9 +189,9 @@ export const REKUEST_HELP = {
         <>Open the <b>History</b> tab to see every revision, who made it and when. Hover one and press <b>Restore</b> to make it the latest again; that is a revision too, so nothing is lost.</>,
       ]}
       tips={[
-        <>A red underline marks what will not save: BSX that does not parse, a prop the component does not have, or a name no dependency declares.</>,
+        <>A red underline marks what will not save: BSX that does not parse, a prop the component does not have, or an agent the <b>Agents</b> tab does not declare.</>,
         <>Wrap what loads in <b>&lt;suspense&gt;</b> with a <b>&lt;fallback&gt;</b> and an <b>&lt;error&gt;</b>; without one each component shows its own skeleton.</>,
-        <>A blok an app provides can be edited too: its first save makes a copy of your own, and the editor moves to the copy.</>,
+        <>A blok an app provides is forked first: the copy is yours, and reads the app&apos;s agent as <b>agents.&lt;app&gt;</b>, one it is bound to.</>,
       ]}
     />
   ),
@@ -209,9 +209,9 @@ export const REKUEST_HELP = {
   ),
   blok: (
     <PageHelp
-      intro="One blok: a preview of its interface with demo values, what it depends on, and the materialized copies that are connected to real agents."
+      intro="One blok: a preview of its interface with demo values, the agents it is bound to, and the materialized copies that are connected to real agents."
       steps={[
-        <>Press <b>Materialize Blok</b>, choose an agent for each dependency and press <b>Submit</b> to make a working copy.</>,
+        <>Press <b>Materialize Blok</b>, choose an agent for each one it is bound to and press <b>Submit</b> to make a working copy.</>,
         <>For a blok an app provides, press <b>Fork Blok</b> instead, give the copy a name and press <b>Fork</b>. The new custom blok opens.</>,
         <>Click an entry in <b>Materialized Blok Index</b> to open a working copy.</>,
         <>Look at <b>Preview Workspace</b> to see what the blok looks like before connecting it.</>,

@@ -20,7 +20,7 @@ describe('the dependencies a blok declares', () => {
   it('are read off its stored tree: what it reads, lists and places a picker for', () => {
     const roots = [parseBsx(SOURCE).tree];
 
-    expect(declaredDependencies(roots)).toEqual([{key: 'cells', action: 'analyze'}]);
+    expect(declaredDependencies(roots)).toEqual([{key: 'cells', action: 'analyze', owner: 'self'}]);
     const use = dependencyUse(roots, 'cells');
     expect([...use.read].sort()).toEqual(['camera', 'microscope']);
     expect([...use.listed]).toEqual(['microscope']);
