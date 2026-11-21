@@ -53,3 +53,6 @@ patchedDependencies:
 minimumReleaseAgeExclude:
   - hyparquet-writer@0.16.9
   - '@arkitektio/bsx'
+  - '@livekit/components-core@0.12.17'
+  - '@livekit/components-react@2.9.26'
+  - livekit-client@2.25.0
