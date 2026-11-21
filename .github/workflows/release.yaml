@@ -29,9 +29,22 @@ jobs:
       - name: Export blok catalog
         run: pnpm catalog:export
       # The release's test: every service's documents against the schema a released build of
-      # it serves. Writes src/renderer/src/tested.json, which the release commit carries.
+      # it serves. Writes src/renderer/src/tested.json, which the release commit carries. Skipped while
+      # the documents are those of the last release: its stamp still holds.
+      - name: Have the documents changed since the last release?
+        id: documents
+        run: |
+          last="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -n "$last" ] && grep -q '"' src/renderer/src/tested.json \
+            && git diff --quiet "$last" HEAD -- graphql scripts/tested.mjs scripts/tested_hub.py; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: astral-sh/setup-uv@v6
+        if: steps.documents.outputs.changed == 'true'
       - name: Validate the documents against released services
+        if: steps.documents.outputs.changed == 'true'
         env:
           SERVICE_TAG: ${{ vars.SERVICE_TAG || 'latest' }}
         run: uv run --with konstruktor scripts/tested_hub.py
