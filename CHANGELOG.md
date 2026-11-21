@@ -1,3 +1,10 @@
+# [8.15.0](https://github.com/arkitektio/orkestrator/compare/v8.14.0...v8.15.0) (2026-11-21)
+
+
+### Features
+
+* a release wants the service versions its documents were validated against ([b529df7](https://github.com/arkitektio/orkestrator/commit/b529df798d0336083fc1a883effb96b290096006))
+
 # [8.14.0](https://github.com/arkitektio/orkestrator/compare/v8.13.0...v8.14.0) (2026-11-21)
 
 
