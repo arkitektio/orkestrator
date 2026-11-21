@@ -27,6 +27,16 @@ describe("decodeFrame", () => {
     expect(Array.from(frame!.values)).toEqual([1, -2, 0.5, 2 ** -24]);
   });
 
+  it("reads a frame as the Python client writes it", () => {
+    // The same bytes as GOLDEN in the lovekit client's tests/test_frames.py.
+    const golden = "010000002a000000401261018b600600003c00c000380064";
+    const bytes = Uint8Array.from(golden.match(/../g)!, (byte) => parseInt(byte, 16));
+    const frame = decodeFrame(bytes, "float16");
+    expect(frame?.sequence).toBe(42);
+    expect(frame?.sentAt).toBeCloseTo(1_795_000_000_123.456, 3);
+    expect(Array.from(frame!.values)).toEqual([1, -2, 0.5, 1024]);
+  });
+
   it("reads nothing from a version or a type it does not know", () => {
     const bytes = packet(1, 0n, new Uint8Array([1, 2]));
     expect(decodeFrame(bytes, "complex64")).toBeNull();
