@@ -1,3 +1,10 @@
+# [8.14.0](https://github.com/arkitektio/orkestrator/compare/v8.13.0...v8.14.0) (2026-11-21)
+
+
+### Features
+
+* **lovekit:** data streams as a live plot, and connections instead of tokens ([07a188e](https://github.com/arkitektio/orkestrator/commit/07a188eacd455a7338cfc7bba9627247b31fe437))
+
 # [8.13.0](https://github.com/arkitektio/orkestrator/compare/v8.12.0...v8.13.0) (2026-11-20)
 
 
