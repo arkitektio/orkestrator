@@ -1,4 +1,5 @@
 import { Manifest, Requirement } from "./fakts/manifestSchema";
+import { TESTED, wanted } from "./tested";
 import type {
   AppContext,
   ModuleRegistry,
@@ -165,6 +166,7 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
       service: s.service,
       key: s.key,
       optional: s.optional,
+      version: wanted(TESTED[s.key]),
     }))
     : [];
 

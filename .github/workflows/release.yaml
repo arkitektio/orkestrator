@@ -28,6 +28,13 @@ jobs:
       # dist/catalog/*.json as assets of the release it is about to cut.
       - name: Export blok catalog
         run: pnpm catalog:export
+      # The release's test: every service's documents against the schema a released build of
+      # it serves. Writes src/renderer/src/tested.json, which the release commit carries.
+      - uses: astral-sh/setup-uv@v6
+      - name: Validate the documents against released services
+        env:
+          SERVICE_TAG: ${{ vars.SERVICE_TAG || 'latest' }}
+        run: uv run --with konstruktor scripts/tested_hub.py
       - name: Run semantic-release
         id: semantic-release
         env:

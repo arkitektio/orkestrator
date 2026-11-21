@@ -8,6 +8,7 @@ import {
   type HubHealthFacts,
 } from "@/core/connection/arkitekt/doctor/hubHealth";
 import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
+import { TESTED, wanted } from "@/core/connection/arkitekt/tested";
 import { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { serviceRoute, type ServiceRoute } from "@/core/connection/mesh/route";
 import { cn } from "@/core/util/utils";
@@ -170,6 +171,15 @@ export const ServiceCard: React.FC<{
           <Fact label="Instance">
             <span className="font-mono">{service.instance?.identifier || "none"}</span>
           </Fact>
+          {(service.instance?.version || TESTED[service.key]) && (
+            <Fact label="Release">
+              <span className={cn(service.instance?.satisfies === false && "text-warning")}>
+                {service.instance?.version ?? "not reported"}
+                {TESTED[service.key] && ` · this app was tested against ${TESTED[service.key]}`}
+                {service.instance?.satisfies === false && ` (wants ${wanted(TESTED[service.key])})`}
+              </span>
+            </Fact>
+          )}
         </dl>
 
         {hub && <HubLine service={service} hub={hub} />}

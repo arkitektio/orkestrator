@@ -4,6 +4,8 @@ export const RequirementSchema = z.object({
   key: z.string(),
   service: z.string(),
   optional: z.boolean().optional(),
+  /** A PEP 440 specifier of the service's release, e.g. `>=22.7,<23`. Advisory. */
+  version: z.string().optional(),
 });
 
 /** Where the app can be found. lok reads a client's issue tracker off the `github` one. */
