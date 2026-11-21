@@ -1,3 +1,10 @@
+# [8.16.0](https://github.com/arkitektio/orkestrator/compare/v8.15.0...v8.16.0) (2026-11-21)
+
+
+### Features
+
+* **blok:** a custom blok's agents, and a fork that works ([e9b7752](https://github.com/arkitektio/orkestrator/commit/e9b775246e603ca0cd0718e072b2d16a8b0c6689))
+
 # [8.15.0](https://github.com/arkitektio/orkestrator/compare/v8.14.0...v8.15.0) (2026-11-21)
 
 
