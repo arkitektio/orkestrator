@@ -1,6 +1,7 @@
 import { useTheme } from "@/core/settings/theme/ThemeProvider";
 import type { ListActionFragment } from "@/rekuest/api/graphql";
 import { Editor, Monaco, OnMount } from "@monaco-editor/react";
+import { useAppMonaco } from "@/core/ui/code/monaco";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { aliasFor } from "./manifest";
 import { callSnippet, parseStubs, ParsedStubs } from "./stubs";
@@ -71,6 +72,7 @@ export type PythonSourceEditorProps = {
  * latest props through refs; each answers only for its own model.
  */
 export const PythonSourceEditor = (props: PythonSourceEditorProps) => {
+  const monacoReady = useAppMonaco();
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<CodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -245,6 +247,9 @@ export const PythonSourceEditor = (props: PythonSourceEditorProps) => {
         })),
     );
   }, [props.lineMarks, props.value]);
+
+  // The bundled Monaco first: mounted before it, the editor would fetch its own.
+  if (!monacoReady) return null;
 
   return (
     <Editor
