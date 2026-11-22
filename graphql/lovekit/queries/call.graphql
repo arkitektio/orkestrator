@@ -4,6 +4,13 @@ query GetCall($id: ID!) {
   }
 }
 
+# A call where another module shows one: its title and how many are in it.
+query DisplayCall($id: ID!) {
+  call(id: $id) {
+    ...ListCall
+  }
+}
+
 query ListCalls($filter: CallFilter, $pagination: OffsetPaginationInput) {
   calls(filters: $filter, pagination: $pagination, order: { createdAt: DESC }) {
     ...ListCall

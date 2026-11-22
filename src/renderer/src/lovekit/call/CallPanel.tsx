@@ -3,7 +3,15 @@ import { Button } from "@/core/ui/button";
 import { Spinner } from "@/core/ui/spinner";
 import { useElementSize } from "@/core/util/useElementSize";
 import { cn } from "@/core/util/utils";
-import { type CallFragment, useCallParticipantsQuery, useWatchCallParticipantsSubscription } from "@/lovekit/api/graphql";
+import {
+  CallParticipantsDocument,
+  type CallFragment,
+  type CallParticipantsQuery,
+  type CallParticipantsQueryVariables,
+  useCallParticipantsQuery,
+  useWatchCallParticipantsSubscription,
+} from "@/lovekit/api/graphql";
+import { applyParticipantEvent } from "./participants";
 import { RoomContext, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { AlertCircle, Phone, Users } from "lucide-react";
@@ -59,11 +67,24 @@ const Stage = () => {
 /** Who is in the call now, asked of lovekit and re-asked as people join and leave. */
 const Lobby = ({ call }: { call: CallFragment }) => {
   const { join, joining, error, active } = useJoinCall();
-  const { data, refetch } = useCallParticipantsQuery({
+  const { data } = useCallParticipantsQuery({
     variables: { id: call.id },
     fetchPolicy: "cache-and-network",
   });
-  useWatchCallParticipantsSubscription({ variables: { call: call.id }, onData: () => void refetch() });
+  // The event carries who joined (all of them) or left (their identity): the
+  // list changes in the cache, without asking lovekit again.
+  useWatchCallParticipantsSubscription({
+    variables: { call: call.id },
+    onData: ({ client, data: event }) => {
+      const change = event.data?.callParticipants;
+      if (!change) return;
+      client.cache.updateQuery<CallParticipantsQuery, CallParticipantsQueryVariables>(
+        { query: CallParticipantsDocument, variables: { id: call.id } },
+        (current) =>
+          current ? { call: { ...current.call, participants: applyParticipantEvent(current.call.participants, change) } } : current,
+      );
+    },
+  });
   const participants = data?.call.participants ?? call.participants;
   // One person may be in from two devices; they are one name with a count.
   const devices = new Map<string, number>();

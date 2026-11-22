@@ -1,11 +1,11 @@
 import { showsCard, type DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
-import { useGetCallQuery } from "@/lovekit/api/graphql";
+import { useDisplayCallQuery } from "@/lovekit/api/graphql";
 import { Phone, Users } from "lucide-react";
 
 /** A call as another module's UI embeds it: its title and who is in it. */
 export const CallDisplay = ({ id, variant = "card", className }: DisplayWidgetProps) => {
-  const { data } = useGetCallQuery({ variables: { id } });
+  const { data } = useDisplayCallQuery({ variables: { id } });
   const call = data?.call;
   if (!call) return null;
 
@@ -17,7 +17,7 @@ export const CallDisplay = ({ id, variant = "card", className }: DisplayWidgetPr
       <span className="min-w-0 flex-1 truncate">{call.title}</span>
       <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
         <Users className="size-3" />
-        {call.participants.length}
+        {call.participantCount}
       </span>
     </div>
   );
