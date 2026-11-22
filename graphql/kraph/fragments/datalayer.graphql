@@ -23,6 +23,15 @@ fragment MediaAccessGrant on MediaAccessGrant {
   bucket
 }
 
+fragment GeneralMediaAccessGrant on GeneralMediaAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  bucket
+}
+
 
 
 

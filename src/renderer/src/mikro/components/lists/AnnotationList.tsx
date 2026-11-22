@@ -7,7 +7,8 @@ import AnnotationCard from "../cards/AnnotationCard";
 /**
  * The browse list. On `GetAnnotations` rather than the renderer's
  * `GetSceneAnnotations`: the card needs its collection and the scene to link
- * to, which the polled scene query deliberately does not select.
+ * to, which the scene query (fetched once per scene, kept lean for the
+ * renderer) deliberately does not select.
  *
  * `autoHide: false` — the factory's default renders nothing for an empty
  * result, which on a filtered page reads as a broken page rather than as

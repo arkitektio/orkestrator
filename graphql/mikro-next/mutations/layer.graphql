@@ -113,11 +113,8 @@ mutation UpdateMeshLayer($input: UpdateMeshLayerInput!) {
 # Adds a konnektion collection (a traced arbor, a vessel tree, a connectome) to
 # a scene. Same placement rule as a mesh collection: the collection's own
 # coordinate system is the layer's space and must already have a path to the
-# scene's world.
-#
-# NOTE: `NetworkCollection` is not yet a member of the `Resident` union, so the
-# Add Layer picker cannot list one. Until the backend adds it, this mutation is
-# reached by id — see the plan's Landing 2.
+# scene's world. The Add Layer picker lists a collection like any other
+# `Resident` (`addLayer/candidates.ts`) and offers its lenses.
 mutation CreateNetworkLayer($input: CreateNetworkLayerInput!) {
   createNetworkLayer(input: $input) {
     ...SceneLayer

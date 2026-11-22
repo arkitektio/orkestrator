@@ -30,8 +30,9 @@ type PageDataset = GetArrayDatasetQuery["arrayDataset"];
  * THROUGH another, which the bootstrap resolves on its own.
  *
  * One small round trip, shared through the Apollo cache by every caller on the
- * page (the backdrop, the header button, and the Info tab's pixel sizes), so
- * mounting them together costs one request, not three.
+ * page (the backdrop and the header button), so mounting them together costs
+ * one request, not two. The Info tab's pixel sizes are not read off these
+ * edges: the server answers them (`fullLens.voxelSizes`) along every route.
  */
 export const useDatasetWorlds = (dataset: PageDataset) =>
   useGridWorlds(dataset.intrinsicSystem?.id);

@@ -1,13 +1,10 @@
 import { MikroCoordinateSystem } from "@/core/linkers";
 import { GetArrayDatasetQuery } from "../../api/graphql";
-import { useDatasetWorlds } from "../arraydataset/DatasetBackdrop";
 import {
   formatPixelSize,
-  pixelSizeEntries,
   spatialPixelSizes,
-  type PixelSizeEdge,
+  type PixelSizeEntry,
 } from "../coordinates/pixelSize";
-import { isPhysicalUnit } from "../scene/platform/coords/sceneUnits";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
@@ -15,37 +12,44 @@ type PageDataset = GetArrayDatasetQuery["arrayDataset"];
  * How big a voxel actually is.
  *
  * The dataset's own grid is unit-free — it indexes pixels, and a pixel has no
- * size until something says so. What says so is an edge out of that grid into a
- * space whose axes carry units, and the edge's own parameters ARE the pixel
- * size. So this lists one block per calibrated space the dataset transforms
- * through, rather than a single "pixel size": a dataset can be calibrated into
- * more than one space, and they can disagree.
+ * size until something says so. What says so is the edges out of that grid
+ * into spaces whose axes carry units. So this lists one block per physical
+ * space the whole lens reaches, rather than a single "pixel size": a dataset
+ * can be calibrated into more than one space, and they can disagree.
  *
- * Reuses `useDatasetWorlds`, which the backdrop already runs — one graph query
- * shared through the Apollo cache, not a second round trip.
+ * The server answers it (`ArrayLens.voxelSizes`): it follows each route past
+ * the first hop, ranks rival calibrations by validity (canonical first, so a
+ * person's calibration sits above the size a converter read from the file),
+ * and leaves out axes in `a.u.`, which measure nothing. Reading one edge's
+ * parameters here instead missed every calibration more than one hop away.
  */
 export const DatasetCalibrationSection = ({
   dataset,
 }: {
   dataset: PageDataset;
 }) => {
-  const worlds = useDatasetWorlds(dataset);
-
-  const calibrations = worlds
-    .map(({ system, edge }) => ({
+  const calibrations = (dataset.fullLens?.voxelSizes ?? [])
+    // A route with a `problem` cannot be a calibration (it measures space in
+    // another kind of axis, or does not compose): there is no size to state.
+    .filter((voxelSize) => !voxelSize.problem)
+    .map(({ system, axes }) => ({
       system,
-      // SPACE axes only: the edge also scales the time and spectral axes, but
+      // SPACE axes only: the route also scales the time and spectral axes, but
       // those are sampling intervals — a pixel's SIZE is a spatial fact.
       entries: spatialPixelSizes(
-        pixelSizeEntries(edge as PixelSizeEdge, system.axes),
+        axes.map(
+          (entry): PixelSizeEntry => ({
+            // Labelled by the physical axis it lands on, like the edge's
+            // output axis was: that is where the unit lives.
+            axis: entry.physicalAxis,
+            value: entry.size,
+            unit: entry.unit,
+            type: entry.type,
+          }),
+        ),
       ),
     }))
-    // Units are the test, not "has a scale edge": a pyramid level maps into its
-    // dataset's grid by a scale too, but into unitless pixels — that is a
-    // resolution, not a pixel size.
-    .filter(({ entries }) =>
-      entries.some((entry) => entry.unit && isPhysicalUnit(entry.unit)),
-    );
+    .filter(({ entries }) => entries.length > 0);
 
   if (calibrations.length === 0) return null;
 

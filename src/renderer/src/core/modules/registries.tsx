@@ -19,6 +19,7 @@ import { installedModules, useModuleHostVersion } from "@/core/modules/host/host
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
 import { preloadable, type Preloadable } from "@/core/util/preloadable";
 import type { ProfileSection } from "@/core/connection/profile/section";
+import type { ProfileFeedSource } from "@/core/connection/profile/feed";
 import type { AuthFlowHandler } from "@/core/authflow/types";
 import type { IntentDecl } from "@/core/links/intents";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
@@ -326,6 +327,20 @@ export const moduleNavLinks = derived(() =>
 
 export const moduleProfileSections = derived(
   (): ProfileSection[] => concat((builtins) => builtins.profileSections),
+);
+
+/** A module's profile feed source, with the guard the host mounts it in. */
+export type ModuleProfileFeedSource = ProfileFeedSource & { namespace: string; Guard: GuardComponent };
+
+/** Every module's `profileFeed` sources, in module order, each behind its module's guard. */
+export const moduleProfileFeed = derived((): ModuleProfileFeedSource[] =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+    (definition.builtins.profileFeed ?? []).map((source) => ({
+      ...source,
+      namespace: namespaceOf(definition),
+      Guard: moduleGuard(namespaceOf(definition)),
+    })),
+  ),
 );
 
 export const moduleTaskHooks = derived((): TaskHook[] => concat((builtins) => builtins.taskHooks));

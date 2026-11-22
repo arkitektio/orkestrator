@@ -7881,6 +7881,8 @@ export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', access
 
 export type MediaAccessGrantFragment = { __typename?: 'MediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
 
+export type GeneralMediaAccessGrantFragment = { __typename?: 'GeneralMediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
+
 export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: string, bucket: string };
 
 type BaseEdge_Classification_Fragment = { __typename?: 'Classification', id: string, label: string, sourceId: string, targetId: string };
@@ -9776,6 +9778,16 @@ export type RequestMediaUploadMutation = { __typename?: 'Mutation', requestMedia
     & MediaUploadGrantFragment
   ) };
 
+export type RequestGeneralMediaAccessMutationVariables = Exact<{
+  input: RequestGeneralMediaAccessInput;
+}>;
+
+
+export type RequestGeneralMediaAccessMutation = { __typename?: 'Mutation', requestGeneralMediaAccess: (
+    { __typename?: 'GeneralMediaAccessGrant' }
+    & GeneralMediaAccessGrantFragment
+  ) };
+
 export type ListApplicableMeasurementCategoriesQueryVariables = Exact<{
   sourceIdentifier?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
@@ -9790,6 +9802,7 @@ export type ListApplicableMeasurementCategoriesQuery = { __typename?: 'Query', m
 
 export type ListCandidateRelationCategoriesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
+  graph: Scalars['ID']['input'];
 }>;
 
 
@@ -10187,6 +10200,20 @@ export type ListNodesQuery = { __typename?: 'Query', nodes: Array<(
   ) | (
     { __typename?: 'ProtocolEvent' }
     & ListNode_ProtocolEvent_Fragment
+  )> };
+
+export type ProfileTodoListsQueryVariables = Exact<{
+  assignee: Scalars['ID']['input'];
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileTodoListsQuery = { __typename?: 'Query', todoLists: Array<(
+    { __typename?: 'TodoList', project: (
+      { __typename?: 'Project' }
+      & ListProjectFragment
+    ) }
+    & ListTodoListFragment
   )> };
 
 export type ProjectsQueryVariables = Exact<{
@@ -11317,6 +11344,16 @@ export const MediaAccessGrantFragmentDoc = gql`
   region
   path
   key
+  bucket
+}
+    `;
+export const GeneralMediaAccessGrantFragmentDoc = gql`
+    fragment GeneralMediaAccessGrant on GeneralMediaAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
   bucket
 }
     `;
@@ -15744,6 +15781,39 @@ export function useRequestMediaUploadMutation(baseOptions?: ApolloReactHooks.Mut
 export type RequestMediaUploadMutationHookResult = ReturnType<typeof useRequestMediaUploadMutation>;
 export type RequestMediaUploadMutationResult = Apollo.MutationResult<RequestMediaUploadMutation>;
 export type RequestMediaUploadMutationOptions = Apollo.BaseMutationOptions<RequestMediaUploadMutation, RequestMediaUploadMutationVariables>;
+export const RequestGeneralMediaAccessDocument = gql`
+    mutation RequestGeneralMediaAccess($input: RequestGeneralMediaAccessInput!) {
+  requestGeneralMediaAccess(input: $input) {
+    ...GeneralMediaAccessGrant
+  }
+}
+    ${GeneralMediaAccessGrantFragmentDoc}`;
+export type RequestGeneralMediaAccessMutationFn = Apollo.MutationFunction<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>;
+
+/**
+ * __useRequestGeneralMediaAccessMutation__
+ *
+ * To run a mutation, you first call `useRequestGeneralMediaAccessMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestGeneralMediaAccessMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestGeneralMediaAccessMutation, { data, loading, error }] = useRequestGeneralMediaAccessMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestGeneralMediaAccessMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>(RequestGeneralMediaAccessDocument, options);
+      }
+export type RequestGeneralMediaAccessMutationHookResult = ReturnType<typeof useRequestGeneralMediaAccessMutation>;
+export type RequestGeneralMediaAccessMutationResult = Apollo.MutationResult<RequestGeneralMediaAccessMutation>;
+export type RequestGeneralMediaAccessMutationOptions = Apollo.BaseMutationOptions<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>;
 export const ListApplicableMeasurementCategoriesDocument = gql`
     query ListApplicableMeasurementCategories($sourceIdentifier: String, $search: String, $graph: ID) {
   measurementCategories(
@@ -15784,8 +15854,8 @@ export type ListApplicableMeasurementCategoriesQueryHookResult = ReturnType<type
 export type ListApplicableMeasurementCategoriesLazyQueryHookResult = ReturnType<typeof useListApplicableMeasurementCategoriesLazyQuery>;
 export type ListApplicableMeasurementCategoriesQueryResult = Apollo.QueryResult<ListApplicableMeasurementCategoriesQuery, ListApplicableMeasurementCategoriesQueryVariables>;
 export const ListCandidateRelationCategoriesDocument = gql`
-    query ListCandidateRelationCategories($search: String) {
-  relationCategories(filters: {search: $search}) {
+    query ListCandidateRelationCategories($search: String, $graph: ID!) {
+  relationCategories(filters: {search: $search, graph: {id: $graph}}) {
     ...ListRelationCategory
     graph {
       id
@@ -15808,10 +15878,11 @@ export const ListCandidateRelationCategoriesDocument = gql`
  * const { data, loading, error } = useListCandidateRelationCategoriesQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      graph: // value for 'graph'
  *   },
  * });
  */
-export function useListCandidateRelationCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>) {
+export function useListCandidateRelationCategoriesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return ApolloReactHooks.useQuery<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>(ListCandidateRelationCategoriesDocument, options);
       }
@@ -17217,6 +17288,50 @@ export function useListNodesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListNodesQueryHookResult = ReturnType<typeof useListNodesQuery>;
 export type ListNodesLazyQueryHookResult = ReturnType<typeof useListNodesLazyQuery>;
 export type ListNodesQueryResult = Apollo.QueryResult<ListNodesQuery, ListNodesQueryVariables>;
+export const ProfileTodoListsDocument = gql`
+    query ProfileTodoLists($assignee: ID!, $pagination: OffsetPaginationInput) {
+  todoLists(
+    filters: {assignee: $assignee}
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListTodoList
+    project {
+      ...ListProject
+    }
+  }
+}
+    ${ListTodoListFragmentDoc}
+${ListProjectFragmentDoc}`;
+
+/**
+ * __useProfileTodoListsQuery__
+ *
+ * To run a query within a React component, call `useProfileTodoListsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileTodoListsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileTodoListsQuery({
+ *   variables: {
+ *      assignee: // value for 'assignee'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileTodoListsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>(ProfileTodoListsDocument, options);
+      }
+export function useProfileTodoListsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>(ProfileTodoListsDocument, options);
+        }
+export type ProfileTodoListsQueryHookResult = ReturnType<typeof useProfileTodoListsQuery>;
+export type ProfileTodoListsLazyQueryHookResult = ReturnType<typeof useProfileTodoListsLazyQuery>;
+export type ProfileTodoListsQueryResult = Apollo.QueryResult<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>;
 export const ProjectsDocument = gql`
     query Projects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
   projects(

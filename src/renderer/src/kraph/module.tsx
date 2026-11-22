@@ -29,6 +29,7 @@ import { HomeTodos } from "./dashboard/HomeTodos";
 import { MentionNotifications } from "./dashboard/MentionNotifications";
 import { KraphEntitySearch } from "./search";
 import { KRAPH_SECTIONS } from "./smart/sections";
+import { KRAPH_PROFILE_SECTIONS } from "./profile/sections";
 
 export const KRAPH_MODULE = defineModule({
   manifest,
@@ -103,6 +104,8 @@ export const KRAPH_MODULE = defineModule({
       },
     ],
     sections: KRAPH_SECTIONS,
+    // A member's projects and todo lists, in their profile's sidebar.
+    profileSections: KRAPH_PROFILE_SECTIONS,
     search: KraphEntitySearch,
   },
 });

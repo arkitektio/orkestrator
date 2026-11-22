@@ -2,47 +2,9 @@ import { ElektroGuard } from "@/elektro/api/funcs";
 import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
 import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
 import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
-import { ElektroExperiment, ElektroNeuronModel } from "@/core/linkers";
-import { formatDistanceToNow } from "date-fns";
-import { BsLightning } from "react-icons/bs";
+import { ElektroNeuronModel } from "@/core/linkers";
 import { Network } from "lucide-react";
-import {
-  Ordering,
-  useListExperimentsQuery,
-  useListNeuronModelsQuery,
-} from "../api/graphql";
-
-const Experiments = ({ sub }: ProfileContext) => {
-  const { data } = useListExperimentsQuery({
-    variables: {
-      filters: { createdBy: sub },
-      ordering: [{ createdAt: Ordering.Desc }],
-      pagination: { limit: 6 },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  const experiments = data?.experiments ?? [];
-  if (experiments.length === 0) return null;
-
-  return (
-    <ProfileSectionFrame>
-      <ProfileRows>
-        {experiments.map((experiment) => (
-          <ElektroExperiment.Smart key={experiment.id} object={experiment}>
-            <ElektroExperiment.DetailLink object={experiment} className="block hover:text-primary">
-              <ProfileRow
-                icon={<BsLightning />}
-                title={experiment.name}
-                meta={formatDistanceToNow(new Date(experiment.createdAt), { addSuffix: true })}
-              />
-            </ElektroExperiment.DetailLink>
-          </ElektroExperiment.Smart>
-        ))}
-      </ProfileRows>
-    </ProfileSectionFrame>
-  );
-};
+import { Ordering, useListNeuronModelsQuery } from "../api/graphql";
 
 const NeuronModels = ({ sub }: ProfileContext) => {
   const { data } = useListNeuronModelsQuery({
@@ -72,18 +34,7 @@ const NeuronModels = ({ sub }: ProfileContext) => {
   );
 };
 
-const ElektroIcon = ({ className }: { className?: string }) => <BsLightning className={className} />;
-
 export const ELEKTRO_PROFILE_SECTIONS: ProfileSection[] = [
-  {
-    id: "elektro.experiments",
-    module: "elektro",
-    title: "Experiments",
-    icon: ElektroIcon,
-    priority: 40,
-    Guard: ElektroGuard,
-    Component: Experiments,
-  },
   {
     id: "elektro.models",
     module: "elektro",

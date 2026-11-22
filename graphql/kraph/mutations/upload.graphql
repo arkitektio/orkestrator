@@ -3,3 +3,10 @@ mutation RequestMediaUpload($input: RequestMediaUploadInput!) {
     ...MediaUploadGrant
   }
 }
+
+
+mutation RequestGeneralMediaAccess($input: RequestGeneralMediaAccessInput!) {
+  requestGeneralMediaAccess(input: $input) {
+    ...GeneralMediaAccessGrant
+  }
+}

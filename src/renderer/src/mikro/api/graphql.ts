@@ -18029,7 +18029,7 @@ export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
       { __typename?: 'Scene' }
       & ListSceneFragment
     ) | null, fullLens?: (
-      { __typename?: 'ArrayLens' }
+      { __typename?: 'ArrayLens', voxelSizes: Array<{ __typename?: 'VoxelSize', canonical: boolean, problem?: string | null, system: { __typename?: 'CoordinateSystem', id: string, name: string }, axes: Array<{ __typename?: 'AxisVoxelSize', axis: string, physicalAxis: string, size: number, unit: string, type: AxisType }> }> }
       & ListLens_ArrayLens_Fragment
     ) | null, lenses: Array<(
       { __typename?: 'ArrayLens' }
@@ -18527,6 +18527,14 @@ export type CoordinateSystemOptionsQueryVariables = Exact<{
 
 export type CoordinateSystemOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'CoordinateSystem', value: string, label: string }> };
 
+export type RegisterTargetOptionsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  exclude: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type RegisterTargetOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'CoordinateSystem', value: string, label: string }> };
+
 export type RegisterSourceCandidatesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -18927,10 +18935,11 @@ export type HomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { _
 
 export type PeerHomePageStatsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
+  since: Scalars['DateTime']['input'];
 }>;
 
 
-export type PeerHomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { __typename?: 'ArrayDatasetStats', count: number, series: Array<{ __typename?: 'TimeBucket', count: number }> } };
+export type PeerHomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { __typename?: 'ArrayDatasetStats', count: number }, recentArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number } };
 
 export type HomeRootsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -19527,6 +19536,15 @@ export type PermissionOptionsQueryVariables = Exact<{
 
 
 export type PermissionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'PermissionOption', value: string, label: string }> };
+
+export type ProfileFeedRootsQueryVariables = Exact<{
+  kinds: Array<LineageNodeKind> | LineageNodeKind;
+  filters?: InputMaybe<RootFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedRootsQuery = { __typename?: 'Query', roots: Array<{ __typename?: 'RootNode', key: string, kind: LineageNodeKind, id: string, name: string, createdAt?: any | null }> };
 
 export type RowPlanQueryVariables = Exact<{
   table: Scalars['ID']['input'];
@@ -28494,6 +28512,21 @@ export const GetArrayDatasetDocument = gql`
     }
     fullLens {
       ...ListLens
+      voxelSizes {
+        canonical
+        problem
+        system {
+          id
+          name
+        }
+        axes {
+          axis
+          physicalAxis
+          size
+          unit
+          type
+        }
+      }
     }
     lenses(sliced: true) {
       ...ListLens
@@ -29727,6 +29760,46 @@ export function useCoordinateSystemOptionsLazyQuery(baseOptions?: ApolloReactHoo
 export type CoordinateSystemOptionsQueryHookResult = ReturnType<typeof useCoordinateSystemOptionsQuery>;
 export type CoordinateSystemOptionsLazyQueryHookResult = ReturnType<typeof useCoordinateSystemOptionsLazyQuery>;
 export type CoordinateSystemOptionsQueryResult = Apollo.QueryResult<CoordinateSystemOptionsQuery, CoordinateSystemOptionsQueryVariables>;
+export const RegisterTargetOptionsDocument = gql`
+    query RegisterTargetOptions($search: String, $exclude: [ID!]!) {
+  options: coordinateSystems(
+    filters: {search: $search, NOT: {ids: $exclude}}
+    pagination: {limit: 10}
+  ) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useRegisterTargetOptionsQuery__
+ *
+ * To run a query within a React component, call `useRegisterTargetOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRegisterTargetOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRegisterTargetOptionsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      exclude: // value for 'exclude'
+ *   },
+ * });
+ */
+export function useRegisterTargetOptionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RegisterTargetOptionsQuery, RegisterTargetOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RegisterTargetOptionsQuery, RegisterTargetOptionsQueryVariables>(RegisterTargetOptionsDocument, options);
+      }
+export function useRegisterTargetOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RegisterTargetOptionsQuery, RegisterTargetOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RegisterTargetOptionsQuery, RegisterTargetOptionsQueryVariables>(RegisterTargetOptionsDocument, options);
+        }
+export type RegisterTargetOptionsQueryHookResult = ReturnType<typeof useRegisterTargetOptionsQuery>;
+export type RegisterTargetOptionsLazyQueryHookResult = ReturnType<typeof useRegisterTargetOptionsLazyQuery>;
+export type RegisterTargetOptionsQueryResult = Apollo.QueryResult<RegisterTargetOptionsQuery, RegisterTargetOptionsQueryVariables>;
 export const RegisterSourceCandidatesDocument = gql`
     query RegisterSourceCandidates($search: String) {
   arrayDatasets(filters: {search: $search}, pagination: {limit: 20}) {
@@ -30830,12 +30903,14 @@ export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQue
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
 export const PeerHomePageStatsDocument = gql`
-    query PeerHomePageStats($id: ID!) {
+    query PeerHomePageStats($id: ID!, $since: DateTime!) {
   arrayDatasetsStats(filters: {owner: $id}) {
     count
-    series(by: DAY, field: PK, timestampField: CREATED_AT) {
-      count
-    }
+  }
+  recentArrayDatasets: arrayDatasetsStats(
+    filters: {owner: $id, createdAfter: $since}
+  ) {
+    count
   }
 }
     `;
@@ -30853,6 +30928,7 @@ export const PeerHomePageStatsDocument = gql`
  * const { data, loading, error } = usePeerHomePageStatsQuery({
  *   variables: {
  *      id: // value for 'id'
+ *      since: // value for 'since'
  *   },
  * });
  */
@@ -31991,6 +32067,47 @@ export function usePermissionOptionsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type PermissionOptionsQueryHookResult = ReturnType<typeof usePermissionOptionsQuery>;
 export type PermissionOptionsLazyQueryHookResult = ReturnType<typeof usePermissionOptionsLazyQuery>;
 export type PermissionOptionsQueryResult = Apollo.QueryResult<PermissionOptionsQuery, PermissionOptionsQueryVariables>;
+export const ProfileFeedRootsDocument = gql`
+    query ProfileFeedRoots($kinds: [LineageNodeKind!]!, $filters: RootFilter, $pagination: OffsetPaginationInput) {
+  roots(kinds: $kinds, filters: $filters, pagination: $pagination) {
+    key
+    kind
+    id
+    name
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useProfileFeedRootsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedRootsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedRootsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedRootsQuery({
+ *   variables: {
+ *      kinds: // value for 'kinds'
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedRootsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ProfileFeedRootsQuery, ProfileFeedRootsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedRootsQuery, ProfileFeedRootsQueryVariables>(ProfileFeedRootsDocument, options);
+      }
+export function useProfileFeedRootsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedRootsQuery, ProfileFeedRootsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedRootsQuery, ProfileFeedRootsQueryVariables>(ProfileFeedRootsDocument, options);
+        }
+export type ProfileFeedRootsQueryHookResult = ReturnType<typeof useProfileFeedRootsQuery>;
+export type ProfileFeedRootsLazyQueryHookResult = ReturnType<typeof useProfileFeedRootsLazyQuery>;
+export type ProfileFeedRootsQueryResult = Apollo.QueryResult<ProfileFeedRootsQuery, ProfileFeedRootsQueryVariables>;
 export const RowPlanDocument = gql`
     query RowPlan($table: ID!, $maxJoinDepth: Int! = 2) {
   rowPlan(table: $table, maxJoinDepth: $maxJoinDepth) {

@@ -8689,6 +8689,17 @@ export type ClockPickerQueryVariables = Exact<{
 
 export type ClockPickerQuery = { __typename?: 'Query', coordinateSystems: Array<{ __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType, unit?: Unit | null }> }> };
 
+export type ProfileFeedWorkspacesQueryVariables = Exact<{
+  filters?: InputMaybe<ModelWorkspaceFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedWorkspacesQuery = { __typename?: 'Query', modelWorkspaces: Array<(
+    { __typename?: 'ModelWorkspace', createdAt: any }
+    & ListModelWorkspaceFragment
+  )> };
+
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -12807,6 +12818,47 @@ export function useClockPickerLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type ClockPickerQueryHookResult = ReturnType<typeof useClockPickerQuery>;
 export type ClockPickerLazyQueryHookResult = ReturnType<typeof useClockPickerLazyQuery>;
 export type ClockPickerQueryResult = Apollo.QueryResult<ClockPickerQuery, ClockPickerQueryVariables>;
+export const ProfileFeedWorkspacesDocument = gql`
+    query ProfileFeedWorkspaces($filters: ModelWorkspaceFilter, $pagination: OffsetPaginationInput) {
+  modelWorkspaces(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListModelWorkspace
+    createdAt
+  }
+}
+    ${ListModelWorkspaceFragmentDoc}`;
+
+/**
+ * __useProfileFeedWorkspacesQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedWorkspacesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedWorkspacesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedWorkspacesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedWorkspacesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>(ProfileFeedWorkspacesDocument, options);
+      }
+export function useProfileFeedWorkspacesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>(ProfileFeedWorkspacesDocument, options);
+        }
+export type ProfileFeedWorkspacesQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesQuery>;
+export type ProfileFeedWorkspacesLazyQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesLazyQuery>;
+export type ProfileFeedWorkspacesQueryResult = Apollo.QueryResult<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets: arrayDatasets(

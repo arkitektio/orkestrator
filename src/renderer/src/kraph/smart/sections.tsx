@@ -193,22 +193,17 @@ const useEntityRelationItems = (ctx: SmartSectionContext): SectionItems<Relation
     return undefined;
   }, [source.data, target.data]);
 
+  // Only that graph's relation categories are candidates; the server narrows
+  // to it, so the probe never sees another graph's schema.
   const skip = !shared;
   const result = useListCandidateRelationCategoriesQuery({
     ...QUERY_OPTIONS,
-    variables: searchVariables(ctx.filter),
+    variables: { ...searchVariables(ctx.filter), graph: shared?.graphId ?? "" },
     skip,
   });
   const candidates = useStableData(result, skip);
-  const inGraph = React.useMemo(
-    () =>
-      (candidates.data?.relationCategories ?? NO_CANDIDATES).filter(
-        (category) => category.graph.id === shared?.graphId,
-      ),
-    [candidates.data, shared],
-  );
   const probe = useApplicableRelationCategories(
-    inGraph,
+    candidates.data?.relationCategories,
     shared?.sourceCategoryId,
     shared?.targetCategoryId,
   );

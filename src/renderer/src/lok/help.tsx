@@ -8,33 +8,20 @@ import { PageHelp } from "@/core/layout/help";
 export const LOK_HELP = {
   teamHome: (
     <PageHelp
-      intro="Your organization and the people in it. The banner shows the organization's name, logo and member count; below it is one card per member, with you first."
+      intro="Your organization and the people in it. The header shows its name and logo; an administrator first sees what waits on them, then everyone sees the members, grouped by their role here."
       steps={[
         <>Click a member card to open that person’s profile and see their roles and recent work.</>,
+        <>Type in <b>Search members…</b> to find someone by name or role, or pick a role under <b>Any role</b> to see only its holders. <b>Clear filters</b> shows everyone again.</>,
         <>Right-click a member and choose <b>Notify + send message</b> to push a short message to their registered phones.</>,
         <>Press <b>Invite</b> to create an invite link: set <b>Expires in (days)</b>, tick the roles the newcomer should get and confirm with <b>Create Invite</b>.</>,
-        <>Open the <b>Invites</b> tab of the sidebar and click a link to copy it, then send it to the person you are inviting.</>,
-        <>Open the <b>Requests</b> tab to see who asked to join after following a shared link. Click a request, pick their <b>Roles</b> and press <b>Approve</b>, or press <b>Decline</b>.</>,
+        <>Under <b>Needs you</b>, click an invite’s link to copy it and send it to the person you are inviting, or press <b>Cancel</b> to stop the link from working.</>,
+        <>Under <b>Needs you</b>, click a request to join, pick their <b>Roles</b> and press <b>Approve</b>, or press <b>Decline</b>.</>,
         <>Hover the organization’s logo and click <b>Change</b>, or drop an image on it, to replace the logo.</>,
       ]}
       tips={[
-        <>The <b>Invite</b> button, the <b>Invites</b> and <b>Requests</b> tabs and the <b>Add to organization</b> menu entry are only shown to administrators.</>,
-        <>The line under each name lists that member’s roles in this organization.</>,
-        <>The <b>Statistics</b> tab shows the total number of users.</>,
-      ]}
-    />
-  ),
-  overview: (
-    <PageHelp
-      intro="The start page of the Team module: a greeting, every Team page, what other modules have to tell you (for example your latest mentions), and a handful of the apps registered in your organization."
-      steps={[
-        <>Open the <b>Overview</b> tab of the sidebar to go to a Team page: <b>Members</b> lists everyone in your organization, <b>Me</b> is your own profile.</>,
-        <>Click an app under <b>Recent apps</b> to open it and see its releases.</>,
-        <>The number next to <b>Users</b> in the sidebar says how many users your organization has.</>,
-        <>Press <b>Record</b> in the header to open the Morse code recorder.</>,
-      ]}
-      tips={[
-        <>Sections from other modules only appear when that module is available on your server.</>,
+        <>Each member is listed once, under their highest role (administrator roles first); the line at the foot of a card names all of their roles.</>,
+        <>The <b>Invite</b> button, <b>Needs you</b>, the <b>Invites</b> tab and the <b>Add to organization</b> menu entry are only shown to administrators. <b>Needs you</b> is hidden when nothing is waiting.</>,
+        <>The <b>Invites</b> tab of the sidebar keeps every invite, including the ones already accepted. The <b>Overview</b> tab lists Team’s other pages.</>,
       ]}
     />
   ),
@@ -55,16 +42,18 @@ export const LOK_HELP = {
   ),
   user: (
     <PageHelp
-      intro="A member’s profile in this organization: who they are, which roles they hold here, and their recent work as the other modules see it."
+      intro="A member’s profile in this organization: their portrait and name at the top, then what they made, across every service, newest first. The rest of who they are is in the sidebar’s Profile tab."
       steps={[
-        <>Read the badges next to the organization’s name to see the member’s roles.</>,
-        <>Scroll down for the sections other modules add, such as <b>Latest images</b> or <b>Agents</b>.</>,
-        <>Open the <b>About</b> tab of the sidebar for username, name, email and user ID.</>,
+        <>Type in <b>Search their work…</b> to find something they made by name, in every service at once.</>,
+        <>Click a type, such as <b>Images</b> or <b>Experiments</b>, to hide it or show it again; <b>Clear filters</b> brings everything back.</>,
+        <>Click a card to open it, or right-click it for what you can do with it. Press <b>Show more</b> at the bottom for older work.</>,
+        <>Open the <b>Profile</b> tab of the sidebar for their roles, bio, email and user ID, and for what the modules list for them there: their <b>Projects</b>, the <b>Todo lists</b> assigned to them and their <b>Agents</b>.</>,
         <>Open the menu button at the right end of the header and choose <b>Notify + send message</b> to push a message to this person’s registered phones.</>,
-        <>On your own profile, hover your portrait and click <b>Change</b>, or drop an image on it, to set a new avatar.</>,
+        <>On your own profile, hover your portrait next to your name and click <b>Change</b>, or drop an image on it, to set a new avatar.</>,
       ]}
       tips={[
-        <>Your own profile is marked “you” next to the name; only there can the portrait be changed.</>,
+        <>The search and the hidden types are part of the page’s address, so a filtered profile can be shared as a link.</>,
+        <>Only services that can tell who made something take part, and a type only shows while its service is reachable.</>,
         <>A message can only be delivered to someone who has registered a phone.</>,
         <>Administrators also find <b>Add to organization</b> in the menu, which adds the user with the roles you pick.</>,
       ]}

@@ -46,14 +46,20 @@ query HomePageStats{
   }
 }
 
-query PeerHomePageStats($id: ID!){
+# A peer's sidebar: their datasets in all, and how many came in since `since`
+# (a week back). The week is a filter, not a slice of the daily series: the
+# series buckets the whole history, so summing it counted every dataset again.
+query PeerHomePageStats($id: ID!, $since: DateTime!){
   arrayDatasetsStats(filters: {
     owner: $id
   }) {
     count
-    series(by: DAY, field: PK, timestampField: CREATED_AT) {
-      count
-    }
+  }
+  recentArrayDatasets: arrayDatasetsStats(filters: {
+    owner: $id
+    createdAfter: $since
+  }) {
+    count
   }
 }
 

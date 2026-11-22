@@ -44,6 +44,8 @@ const claims = (builtins: ModuleBuiltins): Record<string, string[]> => ({
   "page section": (builtins.pageSections ?? []).map((section) => section.id),
   "menu section": (builtins.sections ?? []).map((section) => section.id),
   "profile section": (builtins.profileSections ?? []).map((section) => section.id),
+  "profile feed source": (builtins.profileFeed ?? []).map((source) => source.id),
+  "profile feed kind": (builtins.profileFeed ?? []).flatMap((source) => source.kinds.map((kind) => kind.id)),
   operation: Object.keys(builtins.operations ?? {}),
   intent: (builtins.intents ?? []).map((intent) => intent.name),
 });

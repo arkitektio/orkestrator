@@ -11,7 +11,7 @@ import { Input } from "@/core/ui/input";
 import { useState } from "react";
 import {
   CoordinateSystemFragment,
-  useCoordinateSystemOptionsLazyQuery,
+  useRegisterTargetOptionsLazyQuery,
   useGetDatasetSystemsQuery,
   useGetRegistrationSystemsQuery,
   useGetTableDatasetSystemQuery,
@@ -245,13 +245,13 @@ const TargetPicker = (props: {
   onPick: (id: string) => void;
 }) => {
   const [search, setSearch] = useState("");
-  const [runSearch, { data, loading }] = useCoordinateSystemOptionsLazyQuery();
+  const [runSearch, { data, loading }] = useRegisterTargetOptionsLazyQuery();
+  const exclude = props.excludeId ? [props.excludeId] : [];
 
-  // The options query is lazy (it is shaped for GraphQLSearchField), so drive
-  // it from the search box directly.
-  const options = (data?.options ?? []).filter(
-    (option) => option.value !== props.excludeId,
-  );
+  // The options query is lazy (it is shaped like GraphQLSearchField's), so
+  // drive it from the search box directly. The source is left out by the
+  // server, not dropped from the page here.
+  const options = data?.options ?? [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -260,9 +260,9 @@ const TargetPicker = (props: {
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
-          runSearch({ variables: { search: e.target.value || undefined } });
+          runSearch({ variables: { search: e.target.value || undefined, exclude } });
         }}
-        onFocus={() => runSearch({ variables: { search: search || undefined } })}
+        onFocus={() => runSearch({ variables: { search: search || undefined, exclude } })}
       />
       <DialogBody className="gap-1">
         {options.map((option) => (

@@ -14927,7 +14927,7 @@ export type GetArrayDatasetQueryVariables = Exact<{
 }>;
 
 
-export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, scenes: Array<{ __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, fullLens?: { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, shape: Array<number>, axisNames: Array<string>, arraySpec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean, name: string, axisNames: Array<string>, shape: Array<number> }, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }> } | null, lenses: Array<{ __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, shape: Array<number>, axisNames: Array<string>, arraySpec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean, name: string, axisNames: Array<string>, shape: Array<number> }, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }> }>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } };
+export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, scenes: Array<{ __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, fullLens?: { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, shape: Array<number>, axisNames: Array<string>, arraySpec: Array<ArrayDatasetSpec>, voxelSizes: Array<{ __typename?: 'VoxelSize', canonical: boolean, problem?: string | null, system: { __typename?: 'CoordinateSystem', id: string, name: string }, axes: Array<{ __typename?: 'AxisVoxelSize', axis: string, physicalAxis: string, size: number, unit: string, type: AxisType }> }>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean, name: string, axisNames: Array<string>, shape: Array<number> }, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }> } | null, lenses: Array<{ __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, shape: Array<number>, axisNames: Array<string>, arraySpec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean, name: string, axisNames: Array<string>, shape: Array<number> }, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string }, defaultScene?: { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }> }>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null, toParent?: { __typename: 'AffineTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'RotationTransformation', affine: Array<Array<number>>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'ScaleTransformation', scale: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'SequenceTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }>, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'TranslationTransformation', translation: Array<number>, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | null, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null } }> } };
 
 export type GetListArrayDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15148,6 +15148,14 @@ export type CoordinateSystemOptionsQueryVariables = Exact<{
 
 export type CoordinateSystemOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'CoordinateSystem', value: string, label: string }> };
 
+export type RegisterTargetOptionsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  exclude: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type RegisterTargetOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'CoordinateSystem', value: string, label: string }> };
+
 export type RegisterSourceCandidatesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -15359,10 +15367,11 @@ export type HomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { _
 
 export type PeerHomePageStatsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
+  since: Scalars['DateTime']['input'];
 }>;
 
 
-export type PeerHomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { __typename?: 'ArrayDatasetStats', count: number, series: Array<{ __typename?: 'TimeBucket', count: number }> } };
+export type PeerHomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { __typename?: 'ArrayDatasetStats', count: number }, recentArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number } };
 
 export type HomeRootsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -15569,6 +15578,15 @@ export type PermissionOptionsQueryVariables = Exact<{
 
 
 export type PermissionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'PermissionOption', value: string, label: string }> };
+
+export type ProfileFeedRootsQueryVariables = Exact<{
+  kinds: Array<LineageNodeKind> | LineageNodeKind;
+  filters?: InputMaybe<RootFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedRootsQuery = { __typename?: 'Query', roots: Array<{ __typename?: 'RootNode', key: string, kind: LineageNodeKind, id: string, name: string, createdAt?: any | null }> };
 
 export type RowPlanQueryVariables = Exact<{
   table: Scalars['ID']['input'];
@@ -20469,6 +20487,21 @@ export const GetArrayDatasetDocument = gql`
     }
     fullLens {
       ...ListLens
+      voxelSizes {
+        canonical
+        problem
+        system {
+          id
+          name
+        }
+        axes {
+          axis
+          physicalAxis
+          size
+          unit
+          type
+        }
+      }
     }
     lenses(sliced: true) {
       ...ListLens
@@ -20893,6 +20926,17 @@ export const CoordinateSystemOptionsDocument = gql`
   }
 }
     `;
+export const RegisterTargetOptionsDocument = gql`
+    query RegisterTargetOptions($search: String, $exclude: [ID!]!) {
+  options: coordinateSystems(
+    filters: {search: $search, NOT: {ids: $exclude}}
+    pagination: {limit: 10}
+  ) {
+    value: id
+    label: name
+  }
+}
+    `;
 export const RegisterSourceCandidatesDocument = gql`
     query RegisterSourceCandidates($search: String) {
   arrayDatasets(filters: {search: $search}, pagination: {limit: 20}) {
@@ -21199,12 +21243,14 @@ export const HomePageStatsDocument = gql`
 }
     `;
 export const PeerHomePageStatsDocument = gql`
-    query PeerHomePageStats($id: ID!) {
+    query PeerHomePageStats($id: ID!, $since: DateTime!) {
   arrayDatasetsStats(filters: {owner: $id}) {
     count
-    series(by: DAY, field: PK, timestampField: CREATED_AT) {
-      count
-    }
+  }
+  recentArrayDatasets: arrayDatasetsStats(
+    filters: {owner: $id, createdAfter: $since}
+  ) {
+    count
   }
 }
     `;
@@ -21633,6 +21679,17 @@ export const PermissionOptionsDocument = gql`
   ) {
     value
     label
+  }
+}
+    `;
+export const ProfileFeedRootsDocument = gql`
+    query ProfileFeedRoots($kinds: [LineageNodeKind!]!, $filters: RootFilter, $pagination: OffsetPaginationInput) {
+  roots(kinds: $kinds, filters: $filters, pagination: $pagination) {
+    key
+    kind
+    id
+    name
+    createdAt
   }
 }
     `;
@@ -22453,6 +22510,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     CoordinateSystemOptions(variables?: CoordinateSystemOptionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CoordinateSystemOptionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<CoordinateSystemOptionsQuery>({ document: CoordinateSystemOptionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CoordinateSystemOptions', 'query', variables);
     },
+    RegisterTargetOptions(variables: RegisterTargetOptionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RegisterTargetOptionsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<RegisterTargetOptionsQuery>({ document: RegisterTargetOptionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RegisterTargetOptions', 'query', variables);
+    },
     RegisterSourceCandidates(variables?: RegisterSourceCandidatesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RegisterSourceCandidatesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<RegisterSourceCandidatesQuery>({ document: RegisterSourceCandidatesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RegisterSourceCandidates', 'query', variables);
     },
@@ -22611,6 +22671,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     PermissionOptions(variables: PermissionOptionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<PermissionOptionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<PermissionOptionsQuery>({ document: PermissionOptionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'PermissionOptions', 'query', variables);
+    },
+    ProfileFeedRoots(variables: ProfileFeedRootsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ProfileFeedRootsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ProfileFeedRootsQuery>({ document: ProfileFeedRootsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ProfileFeedRoots', 'query', variables);
     },
     RowPlan(variables: RowPlanQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RowPlanQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<RowPlanQuery>({ document: RowPlanDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RowPlan', 'query', variables);

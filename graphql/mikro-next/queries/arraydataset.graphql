@@ -20,6 +20,24 @@ query GetArrayDataset($id: ID!) {
     # null only for a dataset with no pixel grid.
     fullLens {
       ...ListLens
+      # The info rail's "Pixel size": every physical space the whole lens
+      # reaches, each by its best route, canonical first. The server walks the
+      # edges and ranks them by validity; the page only prints the answer.
+      voxelSizes {
+        canonical
+        problem
+        system {
+          id
+          name
+        }
+        axes {
+          axis
+          physicalAxis
+          size
+          unit
+          type
+        }
+      }
     }
     # The selections people cut out of it. Sliced only: a dataset carries
     # several interchangeable unsliced lenses, and each of them is this page.

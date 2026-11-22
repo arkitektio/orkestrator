@@ -49,37 +49,6 @@ export const BrandBanner = ({
   );
 };
 
-/**
- * Banner + the identity that overlaps its lower edge: a round portrait, a
- * name, and whatever lines the page puts under it.
- */
-export const BannerHeader = ({
-  banner,
-  portrait,
-  title,
-  children,
-  aside,
-}: {
-  banner: React.ReactNode;
-  portrait: React.ReactNode;
-  title: React.ReactNode;
-  children?: React.ReactNode;
-  /** Right-aligned, level with the title: counts, a status. */
-  aside?: React.ReactNode;
-}) => (
-  <div className="relative mb-8">
-    {banner}
-    <div className="-mt-16 flex flex-row items-end gap-5 px-6">
-      <div className="relative shrink-0">{portrait}</div>
-      <div className="min-w-0 flex-1 space-y-1.5 pb-1">
-        <h1 className="truncate text-3xl font-semibold tracking-tight">{title}</h1>
-        {children}
-      </div>
-      {aside && <div className="shrink-0 pb-2">{aside}</div>}
-    </div>
-  </div>
-);
-
 /** The round portrait: an image when there is one, the initial otherwise. */
 export const Portrait = ({
   src,

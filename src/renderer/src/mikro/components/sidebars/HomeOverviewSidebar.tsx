@@ -11,7 +11,7 @@ const HOUR = 60 * 60 * 1000;
  * holds still between renders (and between visits within the hour) and the
  * cache keeps answering.
  */
-const useWeekAgo = () => useMemo(() => new Date(Math.floor((Date.now() - WEEK) / HOUR) * HOUR).toISOString(), []);
+export const useWeekAgo = () => useMemo(() => new Date(Math.floor((Date.now() - WEEK) / HOUR) * HOUR).toISOString(), []);
 
 const newThisWeek = (count: number) => (count > 0 ? `${count.toLocaleString()} new this week` : "Nothing new this week");
 

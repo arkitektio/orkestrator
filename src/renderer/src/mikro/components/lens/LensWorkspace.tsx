@@ -32,12 +32,10 @@ export { SCENE_PARAM } from "../scene/workspaceScene";
  * are one thing), so "Make default" there re-tiles the dataset; for a cut they
  * are the cut's alone.
  *
- * **Only an array lens can list its scenes.** The other kinds know the one
- * scene they nominate and nothing else, so their switcher holds that scene,
- * plus whichever scene a link names (`?scene=`) once it is seen to draw this
- * lens. A scene staged from a whole table and never nominated is therefore
- * reachable from the scene list, not from here, until the backend can list a
- * lens' scenes for every kind.
+ * Every kind of lens lists its scenes (`scenes`, derived by the server from
+ * the coordinate graph), so the switcher holds every scene drawing this lens
+ * or a selection within it, whatever the container — a scene staged from a
+ * whole table and never nominated is reachable from here too.
  *
  * An array lens passes its `dataset` alongside for what only that container
  * knows: the pyramid behind the backdrop, the spaces it is registered into, its

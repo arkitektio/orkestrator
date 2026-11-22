@@ -7,16 +7,20 @@ import {
   Boxes,
   TrendingUp
 } from "lucide-react";
+import { useWeekAgo } from "./HomeOverviewSidebar";
 
 export const PeerStatisticsSidebar = (props: { sub: string }) => {
+    const since = useWeekAgo();
     const { data, error, loading } = usePeerHomePageStatsQuery({
-        variables: { id: props.sub }
+        variables: { id: props.sub, since }
     });
 
-    // Calculate additional metrics from available data
+    // The week is counted by the server (`createdAfter` a week back), so the
+    // average is over exactly the seven days it covers.
     const totalDatasets = data?.arrayDatasetsStats?.count || 0;
-    const recentActivity = data?.arrayDatasetsStats?.series?.reduce((sum, bucket) => sum + bucket.count, 0) || 0;
-    const averageDaily = recentActivity > 0 ? Math.round(recentActivity / 7) : 0; // Assuming 7 days of data
+    const recentActivity = data?.recentArrayDatasets?.count || 0;
+    // One decimal: a handful a week rounds to 0 as a whole number.
+    const averageDaily = Math.round((recentActivity / 7) * 10) / 10;
 
     const statsCards = [
         {
@@ -38,7 +42,7 @@ export const PeerStatisticsSidebar = (props: { sub: string }) => {
         {
             title: "Daily Average",
             value: loading ? "..." : averageDaily,
-            description: "Average images created per day",
+            description: "Average datasets created per day this week",
             icon: TrendingUp,
             color: "text-chart-3",
             bgColor: "bg-chart-3/10",
@@ -46,7 +50,7 @@ export const PeerStatisticsSidebar = (props: { sub: string }) => {
         {
             title: "This Week",
             value: loading ? "..." : recentActivity,
-            description: "Total new images added this week",
+            description: "Total new datasets added this week",
             icon: Calendar,
             color: "text-chart-4",
             bgColor: "bg-chart-4/10",

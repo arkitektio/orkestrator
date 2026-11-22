@@ -31,8 +31,10 @@ query ListApplicableMeasurementCategories(
   }
 }
 
-query ListCandidateRelationCategories($search: String) {
-  relationCategories(filters: { search: $search }) {
+# Relation categories live in one graph's schema, and a pair can only be related
+# in a graph that draws both ends: the caller names that graph.
+query ListCandidateRelationCategories($search: String, $graph: ID!) {
+  relationCategories(filters: { search: $search, graph: { id: $graph } }) {
     ...ListRelationCategory
     graph {
       id

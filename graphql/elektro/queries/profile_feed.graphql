@@ -1,0 +1,8 @@
+# A member's profile feed: the model workspaces they made, newest first.
+# `ListModelWorkspace` has no creation time, which the feed sorts by.
+query ProfileFeedWorkspaces($filters: ModelWorkspaceFilter, $pagination: OffsetPaginationInput) {
+  modelWorkspaces(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListModelWorkspace
+    createdAt
+  }
+}

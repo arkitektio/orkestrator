@@ -117,6 +117,19 @@ query CoordinateSystemOptions($search: String, $values: [ID!]) {
   }
 }
 
+# The registration target picker: the same rows, minus the systems an edge
+# cannot point at (the source itself). Excluded on the server, so the page of
+# ten holds ten real candidates rather than nine and a gap.
+query RegisterTargetOptions($search: String, $exclude: [ID!]!) {
+  options: coordinateSystems(
+    filters: { search: $search, NOT: { ids: $exclude } }
+    pagination: { limit: 10 }
+  ) {
+    value: id
+    label: name
+  }
+}
+
 # Step-1 candidates for the registration source picker.
 #
 # Mesh and network collections are searched by their label (`search` matches

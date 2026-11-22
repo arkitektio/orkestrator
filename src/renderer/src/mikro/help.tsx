@@ -93,6 +93,7 @@ export const MIKRO_HELP = {
     <PageHelp
       intro="Coordinate systems are the spaces your data lives in: a dataset’s own pixel grid, the calibrated physical space derived from it, and the shared world spaces that scenes are built over."
       steps={[
+        <>Type in <b>Search coordinate systems…</b> to find one by name. Pick <b>Holds data</b> or <b>Reference frames</b> under <b>Any space</b>, a person under <b>Anyone</b>, or a creation date range to narrow the list; <b>Clear filters</b> shows everything again.</>,
         <>Click a coordinate system to see what is registered into it and what it maps into.</>,
         <>Right-click one and choose <b>Visualize</b> to view what resides in it: as a chart when it has a single measured axis, as a scene otherwise.</>,
         <>Right-click one and choose <b>Register…</b> to place a dataset, a table or another space into it.</>,

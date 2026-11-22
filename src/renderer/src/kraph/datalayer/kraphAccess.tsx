@@ -1,7 +1,13 @@
-import { ApolloClient, gql } from "@apollo/client";
+import { ApolloClient } from "@apollo/client";
 import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useKraph } from "@/kraph/api/funcs";
-import { MediaStoreFragment } from "@/kraph/api/graphql";
+import {
+  GeneralMediaAccessGrantFragment,
+  MediaStoreFragment,
+  RequestGeneralMediaAccessDocument,
+  RequestGeneralMediaAccessMutation,
+  RequestGeneralMediaAccessMutationVariables,
+} from "@/kraph/api/graphql";
 import React from "react";
 import { presignS3Url, S3SigningCredentials, stampGrant } from "@/core/data/s3/s3request";
 import { useNearViewport } from "@/core/data/s3/useNearViewport";
@@ -11,37 +17,9 @@ import { useNearViewport } from "@/core/data/s3/useNearViewport";
  * `mikroAccess.tsx`. The server-side `MediaStore.presignedUrl` is a
  * compatibility field that only returns the object path now, so nothing
  * here reads it: the client asks for one general grant per profile and
- * signs each object URL itself.
- *
- * The `requestGeneralMediaAccess` mutation is not in the kraph schema yet —
- * it is being added server-side to mirror mikro's. Until it lands this
- * document is hand-written (the generated api must not be edited); once
- * `graphql/schemas/kraph.graphql` carries it, move the mutation into
- * `graphql/kraph/mutations/` and swap this for the generated document.
+ * signs each object URL itself (`requestGeneralMediaAccess`, as mikro's).
  */
-const REQUEST_GENERAL_MEDIA_ACCESS = gql`
-  mutation RequestGeneralMediaAccess($input: RequestGeneralMediaAccessInput!) {
-    requestGeneralMediaAccess(input: $input) {
-      accessKey
-      secretKey
-      sessionToken
-      expiresIn
-      region
-      bucket
-    }
-  }
-`;
-
-type GeneralMediaAccessGrant = {
-  accessKey: string;
-  secretKey: string;
-  sessionToken: string;
-  expiresIn: number;
-  region: string;
-  bucket: string;
-};
-
-export type KraphMediaCredentials = GeneralMediaAccessGrant & { signedAt: number; expiresAt: number };
+export type KraphMediaCredentials = GeneralMediaAccessGrantFragment & { signedAt: number; expiresAt: number };
 
 /**
  * The profile's kraph media grant on `datalayer`, shared by every window and
@@ -57,10 +35,10 @@ const getCredentials = (
     mediaGrantKey("kraph", profileId ?? "", datalayer),
     async () => {
       const { data } = await client.mutate<
-        { requestGeneralMediaAccess: GeneralMediaAccessGrant },
-        { input: Record<string, never> }
+        RequestGeneralMediaAccessMutation,
+        RequestGeneralMediaAccessMutationVariables
       >({
-        mutation: REQUEST_GENERAL_MEDIA_ACCESS,
+        mutation: RequestGeneralMediaAccessDocument,
         variables: { input: {} },
       });
       const grant = data?.requestGeneralMediaAccess;

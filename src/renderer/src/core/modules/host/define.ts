@@ -16,6 +16,7 @@ import type { IntentDecl } from "@/core/links/intents";
 import type { OperationHandler } from "./operations";
 import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/core/connection/profile/section";
+import type { ProfileFeedSource } from "@/core/connection/profile/feed";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
 import type { SmartContextSection, SmartMenuWrapperProps } from "@/core/smart/extensions/section";
 import type { PassDownProps } from "@/core/smart/extensions/types";
@@ -156,6 +157,11 @@ export type ModuleBuiltins = {
   sections?: readonly SmartContextSection<any>[];
   /** EXTENSION: sections of a member's profile page. */
   profileSections?: readonly ProfileSection[];
+  /**
+   * EXTENSION: what a member made in this module, for their profile's feed
+   * (newest first across modules). The host guards each source.
+   */
+  profileFeed?: readonly ProfileFeedSource[];
   /** EXTENSION: always-mounted components, inside the module's guard (updaters, widget registrars). */
   background?: readonly ComponentType[];
   /** EXTENSION: the palette's entity search (spec: `search`, by operation). */

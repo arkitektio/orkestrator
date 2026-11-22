@@ -1,0 +1,16 @@
+# A member's profile feed: their newest parentless data of the kinds its type
+# toggles leave on, newest first (a `search` ranks by match; the feed re-sorts
+# by `createdAt`). Keys only -- the thumbnails come from `HomeRootDetails`.
+query ProfileFeedRoots(
+  $kinds: [LineageNodeKind!]!
+  $filters: RootFilter
+  $pagination: OffsetPaginationInput
+) {
+  roots(kinds: $kinds, filters: $filters, pagination: $pagination) {
+    key
+    kind
+    id
+    name
+    createdAt
+  }
+}

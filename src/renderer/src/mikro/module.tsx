@@ -20,7 +20,7 @@ import { manifest } from "./manifest";
 import { MIKRO_OPTION_SOURCES } from "./options";
 import { service } from "./service";
 import { MIKRO_NAV_LINKS } from "./navLinks";
-import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
+import { MIKRO_PROFILE_FEED } from "./profile/feed";
 import { MikroEntitySearch } from "./search";
 import {
   ArrayDatasetViewer,
@@ -65,7 +65,8 @@ export const MIKRO_MODULE = defineModule({
     dialogs: MIKRO_DIALOGS,
     actions: MIKRO_ACTIONS,
     optionSources: MIKRO_OPTION_SOURCES,
-    profileSections: MIKRO_PROFILE_SECTIONS,
+    // Their data, in the profile's newest-first feed.
+    profileFeed: MIKRO_PROFILE_FEED,
     pageSections: [
       {
         // The newest datasets on the home page.
