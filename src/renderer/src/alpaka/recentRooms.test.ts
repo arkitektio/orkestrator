@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RecentRoomFragment } from "./api/graphql";
-import { bucketFor, groupByBucket, rankRecentRooms, titleFromPrompt } from "./recentRooms";
+import { bucketFor, groupByBucket, toRecentRooms, titleFromPrompt } from "./recentRooms";
 
 const room = (
   id: string,
@@ -11,19 +11,21 @@ const room = (
   id,
   title: `Room ${id}`,
   createdAt,
+  lastActivity: latestAt ?? createdAt,
   latest: latestAt ? [{ id: `m${id}`, text, createdAt: latestAt, attachedStructures: [] }] : [],
 });
 
 describe("recentRooms", () => {
-  it("ranks by latest message, falling back to creation time", () => {
-    const ranked = rankRecentRooms([
-      room("1", "2026-09-01T10:00:00Z", "2026-09-15T10:00:00Z"),
-      room("2", "2026-09-14T10:00:00Z"),
+  it("keeps the server's order and reads its last activity and the preview", () => {
+    const rooms = toRecentRooms([
       room("3", "2026-09-10T10:00:00Z", "2026-09-16T08:00:00Z", "  latest  "),
+      room("2", "2026-09-14T10:00:00Z"),
     ]);
-    expect(ranked.map((r) => r.id)).toEqual(["3", "1", "2"]);
-    expect(ranked[0].preview).toBe("latest");
-    expect(ranked[2].preview).toBeNull();
+    expect(rooms.map((r) => r.id)).toEqual(["3", "2"]);
+    expect(rooms[0].lastActivity).toBe(new Date("2026-09-16T08:00:00Z").getTime());
+    expect(rooms[0].preview).toBe("latest");
+    expect(rooms[1].lastActivity).toBe(new Date("2026-09-14T10:00:00Z").getTime());
+    expect(rooms[1].preview).toBeNull();
   });
 
   it("buckets by day", () => {
@@ -33,7 +35,7 @@ describe("recentRooms", () => {
     expect(bucketFor(new Date(2026, 8, 11).getTime(), now)).toBe("This week");
     expect(bucketFor(new Date(2026, 7, 1).getTime(), now)).toBe("Earlier");
     const groups = groupByBucket(
-      rankRecentRooms([
+      toRecentRooms([
         room("a", new Date(2026, 8, 16, 9).toISOString()),
         room("b", new Date(2026, 7, 1).toISOString()),
       ]),

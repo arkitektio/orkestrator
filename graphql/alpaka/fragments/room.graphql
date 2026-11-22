@@ -22,6 +22,10 @@ fragment Room on Room {
   messages {
     ...ListMessage
   }
+  talkingAbout {
+    identifier
+    object
+  }
 }
 
 fragment ListRoom on Room {
@@ -35,6 +39,7 @@ fragment RecentRoom on Room {
   title
   description
   createdAt
+  lastActivity
   latest: messages(ordering: [{ createdAt: DESC }], pagination: { limit: 1 }) {
     id
     text

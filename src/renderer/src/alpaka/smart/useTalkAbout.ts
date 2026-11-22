@@ -6,10 +6,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { titleFromPrompt } from "../recentRooms";
-import {
-  storeRoomTalkingAbout,
-  toStructureInputs,
-} from "../roomTalkingAbout";
+import { toStructureInputs } from "../roomTalkingAbout";
 
 export type TalkableStructure = {
   identifier: string;
@@ -123,7 +120,6 @@ export const useTalkAbout = (options: {
         const roomId = result.data?.createRoom.id;
         if (!roomId) throw new Error("Failed to create room");
 
-        storeRoomTalkingAbout(roomId, talkingAbout);
         onDone?.();
 
         const promptText =

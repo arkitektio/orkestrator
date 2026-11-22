@@ -1287,9 +1287,13 @@ export type Room = {
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@alpaka/is_reply`). The keys are the ones alpaka declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
+  /** When the room last saw a message, or when it was created if it has none. `RoomOrder.lastMessageAt` sorts by the same time */
+  lastActivity: Scalars['DateTime']['output'];
   messages: Array<Message>;
   /** The organization this room belongs to */
   organization: Organization;
+  /** The objects this room is about: the structures it was opened with (`CreateRoomInput.talkingAbout`), the ones `RoomFilter.talkingAbout` matches */
+  talkingAbout: Array<Structure>;
   /** The Title of the Room */
   title: Scalars['String']['output'];
 };
@@ -1351,8 +1355,10 @@ export type RoomFilter = {
 };
 
 export type RoomOrder =
-  { createdAt: Ordering; title?: never; }
-  |  { createdAt?: never; title: Ordering; };
+  { createdAt: Ordering; lastMessageAt?: never; title?: never; }
+  |  /** By the newest message, or the room's creation when it has none: DESC lists the rooms with recent activity first */
+  { createdAt?: never; lastMessageAt: Ordering; title?: never; }
+  |  { createdAt?: never; lastMessageAt?: never; title: Ordering; };
 
 export type RoomStats = {
   __typename?: 'RoomStats';
@@ -1762,11 +1768,11 @@ export type ChatResponseFragment = { __typename?: 'ChatResponse', id: string, ob
 export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, identifier: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
     { __typename?: 'Message' }
     & ListMessageFragment
-  )> };
+  )>, talkingAbout: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
 
 export type ListRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null };
 
-export type RecentRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, latest: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> };
+export type RecentRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, lastActivity: any, latest: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> };
 
 export type ChatMutationVariables = Exact<{
   input: ChatInput;
@@ -2258,6 +2264,10 @@ export const RoomFragmentDoc = gql`
   messages {
     ...ListMessage
   }
+  talkingAbout {
+    identifier
+    object
+  }
 }
     ${ListMessageFragmentDoc}`;
 export const ListRoomFragmentDoc = gql`
@@ -2273,6 +2283,7 @@ export const RecentRoomFragmentDoc = gql`
   title
   description
   createdAt
+  lastActivity
   latest: messages(ordering: [{createdAt: DESC}], pagination: {limit: 1}) {
     id
     text
@@ -3306,7 +3317,11 @@ export type RoomsLazyQueryHookResult = ReturnType<typeof useRoomsLazyQuery>;
 export type RoomsQueryResult = Apollo.QueryResult<RoomsQuery, RoomsQueryVariables>;
 export const RecentRoomsDocument = gql`
     query RecentRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
-  rooms(filters: $filter, pagination: $pagination, ordering: [{createdAt: DESC}]) {
+  rooms(
+    filters: $filter
+    pagination: $pagination
+    ordering: [{lastMessageAt: DESC}]
+  ) {
     ...RecentRoom
   }
 }

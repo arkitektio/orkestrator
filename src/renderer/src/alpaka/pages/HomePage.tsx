@@ -22,7 +22,7 @@ import { reportError } from "@/core/notify";
 import { useCreateRoomMutation, useHomePageStatsQuery, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,
-  rankRecentRooms,
+  toRecentRooms,
   RecentRoom,
   titleFromPrompt,
 } from "../recentRooms";
@@ -31,11 +31,6 @@ import { ALPAKA_HELP } from "../help";
 /** The signed-in user's name (host identity, not a lok query). */
 const Username = () => <>{useSelf().username}</>;
 
-/**
- * The server orders rooms by creation, not by their latest message, so a
- * wider window is fetched and ranked here; the page shows the first few.
- */
-const RECENT_LIMIT = 50;
 /** The big card plus a few rows: the Rooms page has the rest. */
 const RECENT_SHOWN = 13;
 
@@ -182,12 +177,12 @@ const RoomRow = ({ room }: { room: RecentRoom }) => {
  */
 const RecentChats = () => {
   const { data, loading, error } = useRecentRoomsQuery({
-    variables: { pagination: { limit: RECENT_LIMIT } },
+    variables: { pagination: { limit: RECENT_SHOWN } },
     fetchPolicy: "cache-and-network",
   });
   const { start, loading: starting } = useStartChat();
 
-  const rooms = useMemo(() => rankRecentRooms(data?.rooms ?? []).slice(0, RECENT_SHOWN), [data]);
+  const rooms = useMemo(() => toRecentRooms(data?.rooms ?? []), [data]);
 
   if (loading && !data) {
     return (

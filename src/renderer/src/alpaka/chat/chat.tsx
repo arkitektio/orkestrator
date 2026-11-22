@@ -5,7 +5,7 @@ import {
 } from "@/alpaka/api/graphql";
 import {
   firstMessageAttachments,
-  getRoomTalkingAbout,
+  roomTalkingAbout,
   toStructureInputs,
 } from "@/alpaka/roomTalkingAbout";
 import { KabinetGuard } from "@/kabinet/api/hooks";
@@ -507,8 +507,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   // The structure the conversation is on: replyers that also take one of its
   // kind are listed first, and handed it.
   const about = useMemo(
-    () => (talkingAbout && talkingAbout.length > 0 ? talkingAbout : getRoomTalkingAbout(room.id)),
-    [talkingAbout, room.id],
+    () => (talkingAbout && talkingAbout.length > 0 ? talkingAbout : roomTalkingAbout(room)),
+    [talkingAbout, room],
   );
   const subject = useMemo(
     () => replyerSubject({ staged: stagedStructures, messages: room.messages, about }),

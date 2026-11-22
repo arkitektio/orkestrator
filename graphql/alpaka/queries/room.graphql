@@ -32,7 +32,7 @@ query Rooms {
 }
 
 query RecentRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
-  rooms(filters: $filter, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+  rooms(filters: $filter, pagination: $pagination, ordering: [{ lastMessageAt: DESC }]) {
     ...RecentRoom
   }
 }

@@ -8556,6 +8556,22 @@
             "deprecationReason": null
           },
           {
+            "name": "lastActivity",
+            "description": "When the room last saw a message, or when it was created if it has none. `RoomOrder.lastMessageAt` sorts by the same time",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "messages",
             "description": null,
             "args": [
@@ -8639,6 +8655,30 @@
                 "name": "Organization",
                 "kind": "OBJECT",
                 "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "talkingAbout",
+            "description": "The objects this room is about: the structures it was opened with (`CreateRoomInput.talkingAbout`), the ones `RoomFilter.talkingAbout` matches",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Structure",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,
@@ -8924,6 +8964,18 @@
           {
             "name": "createdAt",
             "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "Ordering",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "lastMessageAt",
+            "description": "By the newest message, or the room's creation when it has none: DESC lists the rooms with recent activity first",
             "type": {
               "kind": "ENUM",
               "name": "Ordering",

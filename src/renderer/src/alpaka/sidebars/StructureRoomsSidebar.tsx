@@ -27,7 +27,7 @@ import {
   WatchMessagesSubscriptionVariables,
 } from "../api/graphql";
 import { Chat } from "@/alpaka/chat/chat";
-import { storeRoomTalkingAbout, toStructureInput } from "../roomTalkingAbout";
+import { toStructureInput } from "../roomTalkingAbout";
 
 export type StructureRoomsSidebarProps = {
   identifier: Identifier;
@@ -246,7 +246,6 @@ export const StructureRoomsSidebar = ({
       await refetch();
 
       if (nextRoomId) {
-        storeRoomTalkingAbout(nextRoomId, [talkingAbout]);
         selectRoom(nextRoomId);
       }
     } catch (e) {

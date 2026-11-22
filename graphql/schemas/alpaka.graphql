@@ -1123,10 +1123,20 @@ type Room {
   """
   descriptors: JSON!
   id: ID!
+
+  """
+  When the room last saw a message, or when it was created if it has none. `RoomOrder.lastMessageAt` sorts by the same time
+  """
+  lastActivity: DateTime!
   messages(filters: MessageFilter, ordering: [MessageOrder!]! = [], pagination: OffsetPaginationInput): [Message!]!
 
   """The organization this room belongs to"""
   organization: Organization!
+
+  """
+  The objects this room is about: the structures it was opened with (`CreateRoomInput.talkingAbout`), the ones `RoomFilter.talkingAbout` matches
+  """
+  talkingAbout: [Structure!]!
 
   """The Title of the Room"""
   title: String!
@@ -1183,6 +1193,11 @@ input RoomFilter {
 
 input RoomOrder @oneOf {
   createdAt: Ordering
+
+  """
+  By the newest message, or the room's creation when it has none: DESC lists the rooms with recent activity first
+  """
+  lastMessageAt: Ordering
   title: Ordering
 }
 

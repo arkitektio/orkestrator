@@ -1,7 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   firstMessageAttachments,
-  storeRoomTalkingAbout,
   toStructureInput,
   toStructureInputs,
 } from "./roomTalkingAbout";
@@ -58,40 +57,16 @@ describe("toStructureInputs", () => {
 describe("firstMessageAttachments", () => {
   const image = { identifier: "@mikro/image", object: 42 };
 
-  const stubStorage = () => {
-    const store = new Map<string, string>();
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => void store.set(key, value),
-      },
-    });
-  };
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("attaches what the surface says the chat is about", () => {
-    expect(firstMessageAttachments({ id: "1", messages: [] }, [image])).toEqual([
-      image,
-    ]);
+    expect(firstMessageAttachments({ messages: [], talkingAbout: [] }, [image])).toEqual([image]);
   });
 
-  it("falls back to what was remembered when the room was created", () => {
-    stubStorage();
-    storeRoomTalkingAbout("7", [image]);
-
-    expect(firstMessageAttachments({ id: "7", messages: [] })).toEqual([image]);
-    expect(firstMessageAttachments({ id: "8", messages: [] })).toEqual([]);
+  it("falls back to what the room was opened about", () => {
+    expect(firstMessageAttachments({ messages: [], talkingAbout: [image] })).toEqual([image]);
+    expect(firstMessageAttachments({ messages: [], talkingAbout: [] })).toEqual([]);
   });
 
   it("attaches nothing once the room has messages", () => {
-    stubStorage();
-    storeRoomTalkingAbout("7", [image]);
-
-    expect(firstMessageAttachments({ id: "7", messages: [{}] }, [image])).toEqual(
-      [],
-    );
+    expect(firstMessageAttachments({ messages: [{}], talkingAbout: [image] }, [image])).toEqual([]);
   });
 });

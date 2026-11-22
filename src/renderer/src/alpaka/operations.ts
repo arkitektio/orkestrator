@@ -8,7 +8,7 @@ import {
   type SendMessageMutation,
   type SendMessageMutationVariables,
 } from "./api/graphql";
-import { storeRoomTalkingAbout, toStructureInputs } from "./roomTalkingAbout";
+import { toStructureInputs } from "./roomTalkingAbout";
 
 const aboutOf = (value: unknown): { identifier: string; id: string }[] =>
   Array.isArray(value)
@@ -45,7 +45,6 @@ const startRoom: OperationHandler = {
     });
     const roomId = room.data?.createRoom.id;
     if (!roomId) throw new Error("Failed to create room");
-    if (talkingAbout.length > 0) storeRoomTalkingAbout(roomId, talkingAbout);
 
     const message = await client.mutate<SendMessageMutation, SendMessageMutationVariables>({
       mutation: SendMessageDocument,

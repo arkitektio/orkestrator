@@ -1,7 +1,7 @@
 import type { RecentRoomFragment } from "./api/graphql";
 
-export type RecentRoom = RecentRoomFragment & {
-  /** Latest message time, or the room's creation time for empty rooms. */
+export type RecentRoom = Omit<RecentRoomFragment, "lastActivity"> & {
+  /** Latest message time, or the room's creation time for empty rooms (the server's `lastActivity`). */
   lastActivity: number;
   preview: string | null;
 };
@@ -13,18 +13,17 @@ const toTime = (value: unknown): number => {
   return Number.isFinite(time) ? time : 0;
 };
 
-/** Rooms ordered by their latest message, newest conversation first. */
-export const rankRecentRooms = (rooms: readonly RecentRoomFragment[]): RecentRoom[] =>
-  rooms
-    .map((room) => {
-      const latest = room.latest[0];
-      return {
-        ...room,
-        lastActivity: latest ? toTime(latest.createdAt) : toTime(room.createdAt),
-        preview: latest?.text?.trim() || null,
-      };
-    })
-    .sort((a, b) => b.lastActivity - a.lastActivity);
+/**
+ * Rooms as the home page lists them. The server orders them by their latest message
+ * (`RoomOrder.lastMessageAt`) and says when that was (`lastActivity`), so a room with
+ * new activity is found however old it is; this only reads the time and the preview.
+ */
+export const toRecentRooms = (rooms: readonly RecentRoomFragment[]): RecentRoom[] =>
+  rooms.map((room) => ({
+    ...room,
+    lastActivity: toTime(room.lastActivity),
+    preview: room.latest[0]?.text?.trim() || null,
+  }));
 
 export const bucketFor = (time: number, now: Date = new Date()): RoomBucket => {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
