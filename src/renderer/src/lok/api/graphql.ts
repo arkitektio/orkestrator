@@ -2341,7 +2341,7 @@ export type MembershipFragment = { __typename?: 'Membership', id: string, brandH
 
 export type MembershipRequestFragment = { __typename?: 'MembershipRequest', id: string, reason?: string | null, status: string, createdAt: any, user: { __typename?: 'User', id: string, username: string } };
 
-export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string, isAdminRole: boolean, isDefaultRole: boolean }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, user: { __typename?: 'User', id: string, username: string, firstName?: string | null, lastName?: string | null, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
 
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
@@ -2541,6 +2541,13 @@ export type RevokeCollaborationLinkMutationVariables = Exact<{
 
 
 export type RevokeCollaborationLinkMutation = { __typename?: 'Mutation', cancelInvite: { __typename?: 'Invite', id: string } };
+
+export type CancelInviteMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CancelInviteMutation = { __typename?: 'Mutation', cancelInvite: { __typename?: 'Invite', id: string, status: string, valid: boolean } };
 
 export type CreateMandateMutationVariables = Exact<{
   input: CreateMandateInput;
@@ -2880,11 +2887,6 @@ export type GroupsQuery = { __typename?: 'Query', groups: Array<(
     { __typename?: 'Group' }
     & ListGroupFragment
   )> };
-
-export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type HomePageStatsQuery = { __typename?: 'Query', userStats: { __typename?: 'UserStats', count: number } };
 
 export type MyHubHealthQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3568,18 +3570,22 @@ export const OrganizationFragmentDoc = gql`
   id
   name
   slug
+  description
   brandHue
   brandChroma
   roles {
     id
     identifier
     description
+    isAdminRole
+    isDefaultRole
   }
   avatar {
     presignedUrl
   }
   profile {
     id
+    bio
     avatar {
       presignedUrl
     }
@@ -3587,11 +3593,14 @@ export const OrganizationFragmentDoc = gql`
   memberships {
     id
     roles {
+      id
       identifier
     }
     user {
       id
       username
+      firstName
+      lastName
       profile {
         id
         avatar {
@@ -3601,6 +3610,13 @@ export const OrganizationFragmentDoc = gql`
     }
   }
   invites {
+    id
+    createdAt
+    valid
+    roles {
+      id
+      identifier
+    }
     acceptedBy {
       id
       username
@@ -4385,6 +4401,41 @@ export function useRevokeCollaborationLinkMutation(baseOptions?: ApolloReactHook
 export type RevokeCollaborationLinkMutationHookResult = ReturnType<typeof useRevokeCollaborationLinkMutation>;
 export type RevokeCollaborationLinkMutationResult = Apollo.MutationResult<RevokeCollaborationLinkMutation>;
 export type RevokeCollaborationLinkMutationOptions = Apollo.BaseMutationOptions<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>;
+export const CancelInviteDocument = gql`
+    mutation CancelInvite($id: ID!) {
+  cancelInvite(input: {id: $id}) {
+    id
+    status
+    valid
+  }
+}
+    `;
+export type CancelInviteMutationFn = Apollo.MutationFunction<CancelInviteMutation, CancelInviteMutationVariables>;
+
+/**
+ * __useCancelInviteMutation__
+ *
+ * To run a mutation, you first call `useCancelInviteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCancelInviteMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cancelInviteMutation, { data, loading, error }] = useCancelInviteMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useCancelInviteMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CancelInviteMutation, CancelInviteMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CancelInviteMutation, CancelInviteMutationVariables>(CancelInviteDocument, options);
+      }
+export type CancelInviteMutationHookResult = ReturnType<typeof useCancelInviteMutation>;
+export type CancelInviteMutationResult = Apollo.MutationResult<CancelInviteMutation>;
+export type CancelInviteMutationOptions = Apollo.BaseMutationOptions<CancelInviteMutation, CancelInviteMutationVariables>;
 export const CreateMandateDocument = gql`
     mutation CreateMandate($input: CreateMandateInput!) {
   createMandate(input: $input) {
@@ -5600,40 +5651,6 @@ export function useGroupsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookO
 export type GroupsQueryHookResult = ReturnType<typeof useGroupsQuery>;
 export type GroupsLazyQueryHookResult = ReturnType<typeof useGroupsLazyQuery>;
 export type GroupsQueryResult = Apollo.QueryResult<GroupsQuery, GroupsQueryVariables>;
-export const HomePageStatsDocument = gql`
-    query HomePageStats {
-  userStats {
-    count
-  }
-}
-    `;
-
-/**
- * __useHomePageStatsQuery__
- *
- * To run a query within a React component, call `useHomePageStatsQuery` and pass it any options that fit your needs.
- * When your component renders, `useHomePageStatsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useHomePageStatsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useHomePageStatsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<HomePageStatsQuery, HomePageStatsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<HomePageStatsQuery, HomePageStatsQueryVariables>(HomePageStatsDocument, options);
-      }
-export function useHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomePageStatsQuery, HomePageStatsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<HomePageStatsQuery, HomePageStatsQueryVariables>(HomePageStatsDocument, options);
-        }
-export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQuery>;
-export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
-export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
 export const MyHubHealthDocument = gql`
     query MyHubHealth {
   mycontext {

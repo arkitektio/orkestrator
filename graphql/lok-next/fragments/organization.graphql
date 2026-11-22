@@ -2,12 +2,16 @@ fragment Organization on Organization {
   id
   name
   slug
+  description
   brandHue
   brandChroma
+  # The Team page groups its members by these, admin roles first.
   roles {
     id
     identifier
     description
+    isAdminRole
+    isDefaultRole
   }
   # Deprecated: mirrors `profile.avatar`, read only as a fallback.
   avatar {
@@ -15,6 +19,7 @@ fragment Organization on Organization {
   }
   profile {
     id
+    bio
     avatar {
       presignedUrl
     }
@@ -22,11 +27,14 @@ fragment Organization on Organization {
   memberships {
     id
     roles {
+      id
       identifier
     }
     user {
       id
       username
+      firstName
+      lastName
       profile {
         id
         avatar {
@@ -36,6 +44,13 @@ fragment Organization on Organization {
     }
   }
   invites {
+    id
+    createdAt
+    valid
+    roles {
+      id
+      identifier
+    }
     acceptedBy {
       id
       username

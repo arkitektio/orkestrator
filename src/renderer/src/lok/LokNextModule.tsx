@@ -8,7 +8,6 @@ import AppsPage from "./pages/AppsPage";
 import ClientPage from "./pages/ClientPage";
 import DevicePage from "./pages/DevicePage";
 import DevicesPage from "./pages/DevicesPage";
-import HomePage from "./pages/HomePage";
 import InstancesPage from "./pages/InstancesPage";
 import LayerPage from "./pages/LayerPage";
 import LayersPage from "./pages/LayersPage";
@@ -65,9 +64,9 @@ export const LokNextModule: React.FC<Props> = () => {
           path="serviceinstances/:id"
           element={<ServiceInstancePage />}
         />
-        <Route path="home" element={<HomePage />} />
-        {/* The old address of the Team home, kept for open and pinned tabs. */}
-        <Route path="overview" element={<Navigate replace to="/lok/home" />} />
+        {/* Old addresses of Team's start page, kept for open and pinned tabs. */}
+        <Route path="home" element={<Navigate replace to="/lok" />} />
+        <Route path="overview" element={<Navigate replace to="/lok" />} />
         <Route index element={<TeamHomePage />} />
         <Route path="clients" element={<RoleRoute roles={ADMIN_ROLE}><ClientsPage /></RoleRoute>} />
         <Route path="releases" element={<RoleRoute roles={ADMIN_ROLE}><ReleasesPage /></RoleRoute>} />

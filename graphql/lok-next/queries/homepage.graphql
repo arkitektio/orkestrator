@@ -1,5 +1,0 @@
-query HomePageStats {
-  userStats {
-    count
-  }
-}

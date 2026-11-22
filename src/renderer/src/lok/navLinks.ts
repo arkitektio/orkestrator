@@ -1,15 +1,16 @@
-import { AppWindow, Bluetooth, Boxes, Bug, Cpu, Home, KeyRound, Plug, Server, Tag, User, UserCircle, Users } from "lucide-react";
+import { AppWindow, Bluetooth, Boxes, Bug, Cpu, KeyRound, Plug, Radio, Server, Tag, User, UserCircle, Users } from "lucide-react";
 
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** lok's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
 export const LOK_NAV_LINKS: NavLinkDecl[] = [
-  { label: "Home", route: "/lok/home", keywords: ["team", "welcome"], group: "Team", icon: Home, home: true },
-  { label: "Members", route: "/lok", keywords: ["people", "organization", "users"], group: "Team", icon: Users, description: "Everyone in the organization" },
+  // The organization and its people: what the Team rail tile opens.
+  { label: "Team", route: "/lok", keywords: ["members", "people", "organization", "users", "home", "invites", "roles"], group: "Team", icon: Users, description: "Everyone in the organization", home: true },
   { label: "Me", route: "/lok/me", keywords: ["profile", "account"], group: "Team", icon: UserCircle, description: "Your profile" },
   { label: "Mandates", route: "/lok/mandates", keywords: ["approvals", "installed apps", "act as me", "revoke"], group: "Team", icon: KeyRound, description: "Apps allowed to act as you" },
   { label: "Bug reports", route: "/lok/bugreports", keywords: ["issues", "problems", "feedback", "errors"], group: "Team", icon: Bug, description: "What people reported from inside an app" },
+  { label: "Morse recorder", route: "/lok/record", keywords: ["morse", "record", "space bar"], group: "Tools", icon: Radio, description: "Tap Morse code, read it as text" },
   { label: "Users", route: "/lok/users", group: "Admin", icon: User, description: "Every account", roles: ADMIN_ROLE },
   { label: "Apps", route: "/lok/apps", keywords: ["clients"], group: "Admin", icon: AppWindow, description: "Registered clients", roles: ADMIN_ROLE },
   { label: "Services", route: "/lok/services", group: "Admin", icon: Server, description: "Known service types", roles: ADMIN_ROLE },

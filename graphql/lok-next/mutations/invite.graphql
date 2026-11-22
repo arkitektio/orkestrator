@@ -15,3 +15,12 @@ mutation RevokeCollaborationLink($id: ID!) {
     id
   }
 }
+
+# Takes back an open invite to become a member: its link stops working.
+mutation CancelInvite($id: ID!) {
+  cancelInvite(input: { id: $id }) {
+    id
+    status
+    valid
+  }
+}
