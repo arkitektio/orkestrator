@@ -568,9 +568,10 @@ export const ColumnEntrySettings = ({
   const [loadTable, tableResult] = useGetTableDatasetLazyQuery();
   const [loadStats, statsResult] = useTableColumnStatsLazyQuery({ fetchPolicy: "cache-first" });
   const [pinSummary] = usePinColumnSummaryMutation();
-  const [domain, setDomain] = useState<ColumnDomain>(null);
-  const [histogram, setHistogram] = useState<number[] | null>(null);
-  const [distinct, setDistinct] = useState<{ values: string[]; truncated: boolean } | null>(
+  // What was scanned, for a column the server had no summary of yet.
+  const [scannedDomain, setDomain] = useState<ColumnDomain>(null);
+  const [scannedHistogram, setHistogram] = useState<number[] | null>(null);
+  const [scannedDistinct, setDistinct] = useState<{ values: string[]; truncated: boolean } | null>(
     null,
   );
   const [statsError, setStatsError] = useState<ColumnStatsFailure | null>(null);
@@ -592,6 +593,25 @@ export const ColumnEntrySettings = ({
     });
   }, [entry.table, loadTable, loadStats]);
   const known = statsResult.data?.tableDataset.columns.find((candidate) => candidate.name === entry.column);
+  const footerDomain = useMemo(
+    () =>
+      known?.stats?.min != null && known.stats.max != null ? { min: known.stats.min, max: known.stats.max } : null,
+    [known],
+  );
+  /** A measure the server can draw unscanned: the footer's range and a pinned histogram. */
+  const storedMeasure = useMemo(() => {
+    const histogram = known?.summary?.histogram;
+    return control === ColumnControl.Measure && footerDomain && histogram && histogram.length > 0
+      ? { domain: footerDomain, histogram }
+      : null;
+  }, [control, footerDomain, known]);
+  /** A categorical column's pinned distinct values. */
+  const storedDistinct = useMemo(() => {
+    const stored = known?.summary;
+    if (control === ColumnControl.Measure || !stored || !Array.isArray(stored.distinctValues)) return null;
+    const values = (stored.distinctValues as unknown[]).map(String);
+    return { values, truncated: (stored.distinctCount ?? values.length) > values.length };
+  }, [control, known]);
 
   // The values read is gated on the ROLE, which only arrives with the table —
   // a distinct scan over a measure column, or a min/max over a label one, is
@@ -608,26 +628,14 @@ export const ColumnEntrySettings = ({
     if (!table || !column || !control || (!statsResult.data && !statsResult.error)) return;
     let cancelled = false;
     const target = { table: { store: table.store }, column: { name: column.name } };
-    const stored = known?.summary;
-    const footer =
-      known?.stats?.min != null && known.stats.max != null
-        ? { min: known.stats.min, max: known.stats.max }
-        : null;
+    const footer = footerDomain;
     const pin = (summary: Omit<ColumnSummaryInput, "column">) =>
       void pinSummary({ variables: { table: table.id, summary: { column: column.name, ...summary } } }).catch(
         (error: unknown) => console.warn("[layer] could not pin the column summary:", error),
       );
 
-    if (control === ColumnControl.Measure && footer && stored && stored.histogram.length > 0) {
-      setDomain(footer);
-      setHistogram(stored.histogram);
-      return;
-    }
-    if (control !== ColumnControl.Measure && Array.isArray(stored?.distinctValues)) {
-      const values = (stored.distinctValues as unknown[]).map(String);
-      setDistinct({ values, truncated: (stored.distinctCount ?? values.length) > values.length });
-      return;
-    }
+    // The server had it: nothing to scan.
+    if (storedMeasure || storedDistinct) return;
     if (!service) return;
     const read =
       control === ColumnControl.Measure
@@ -662,7 +670,12 @@ export const ColumnEntrySettings = ({
     return () => {
       cancelled = true;
     };
-  }, [service, table, column, control, known, statsResult.data, statsResult.error, pinSummary]);
+  }, [service, table, column, control, footerDomain, storedMeasure, storedDistinct, statsResult.data, statsResult.error, pinSummary]);
+
+  // What the server had wins over a scan; a scan only runs when it had nothing.
+  const domain = storedMeasure?.domain ?? scannedDomain;
+  const histogram = storedMeasure?.histogram ?? scannedHistogram;
+  const distinct = storedDistinct ?? scannedDistinct;
 
   const isFilter = mode === "filter";
   const rule = entry as FilterByEntry;
