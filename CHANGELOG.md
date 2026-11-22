@@ -1,3 +1,28 @@
+## [8.23.1](https://github.com/arkitektio/orkestrator/compare/v8.23.0...v8.23.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **alpaka:** rooms open the newest, lists carry counts not histories ([05e7612](https://github.com/arkitektio/orkestrator/commit/05e7612f5afd08db434edbba235f8a01da6f33f7))
+* **core:** pages past the servers' 100-row cap stay whole ([8beca09](https://github.com/arkitektio/orkestrator/commit/8beca09f0e4ee27b38ecaa7055e95d95b684cf84))
+* **dokuments:** one media grant for a document, pages load on demand ([f20bf0e](https://github.com/arkitektio/orkestrator/commit/f20bf0ed9df52b37738c8895264531dfe1da9d81))
+* **fluss:** runs newest first, a run page sees its run finish ([6b0ebac](https://github.com/arkitektio/orkestrator/commit/6b0ebac110d1536174ff6d8fb4361df6ad45cda0))
+* **kabinet:** registry-only organizations see their apps; lists read counts and filters ([8441856](https://github.com/arkitektio/orkestrator/commit/84418566bd7de9239555f61e549592d07604ab21))
+* **kraph:** graph tables, property edits and new entities show; lists ask for what they show ([05594ed](https://github.com/arkitektio/orkestrator/commit/05594ed1a9ab5946d9b77ff84c3105d23bec1839))
+* **kuvert:** mail and tasks page past 100, pinned tasks first, the unread dot clears ([67cecfc](https://github.com/arkitektio/orkestrator/commit/67cecfc96f6010921ec73b8297312a9f581dbd12))
+* **lokate:** a place lists its visits; visits and trips stop counting every point ([4a32a81](https://github.com/arkitektio/orkestrator/commit/4a32a81e11e08c8cb769fc439276c5967bebe067))
+* **lok:** members and bug reports page past 100; mandates and invites filtered on the server ([ea0c393](https://github.com/arkitektio/orkestrator/commit/ea0c393a580468a3e53804f04e68d845eedd691f))
+
+
+### Performance Improvements
+
+* **bank:** review lists rank only unsettled rows, the portfolio asks once ([36a16f6](https://github.com/arkitektio/orkestrator/commit/36a16f6721bdbea2e6eb0a5b3ab29206f9b9ea85))
+* **elektro:** chips and lists ask for a line, not the scene ([a0dbc80](https://github.com/arkitektio/orkestrator/commit/a0dbc8089f7f7723118acfd259d83cbb1adbb178))
+* **lovekit:** participants and liveness write in place ([f379bc9](https://github.com/arkitektio/orkestrator/commit/f379bc950ffed073c3436c9a1ba96665f37f97c0))
+* **mikro:** the scene follows its layers through the cache, and lists ask for what they show ([ee132b7](https://github.com/arkitektio/orkestrator/commit/ee132b76bc1425fe2dc0bcc3f83f421cf7f2e318))
+* **omero-ark:** previews read counts, detail pages page their children ([ce079a6](https://github.com/arkitektio/orkestrator/commit/ce079a649da78a48dc2d07d54b48420c45b1cc59))
+* **rekuest:** lists page past 100, ordered newest first, and stop refetching what they hold ([9754e1f](https://github.com/arkitektio/orkestrator/commit/9754e1f1a5411e89d68648a020ff73d7a02f8e0b))
+
 # [8.23.0](https://github.com/arkitektio/orkestrator/compare/v8.22.0...v8.23.0) (2026-11-22)
 
 
