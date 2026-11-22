@@ -57,20 +57,11 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ---
 
-## lovekit
-
-### LiveKit webhook on every hub (deployment)
-- lovekit's call, participant and stream events come from LiveKit's webhook. The dev hub's LiveKit sends it; a hub set up by konstruktor needs the same `webhook` block in its LiveKit config, or calls never end and streams never go live there (nothing breaks, the app just stops hearing it).
-
----
-
 ## lok
 
 ### Deferred
 - **Media access grants (cosmetic, unverified):** an access grant on lok's `MediaStore`, as dokuments, kuvert and bank have. Every avatar is a server-signed `presignedUrl` cached in Apollo. `Organization.avatar` (documented "prefer `profile.avatar`") is still read as a fallback, and is the only logo in `ListOrganization`. Deferred: cosmetic, and a new store contract for one service.
 - **Mesh alias push (correctness, connectivity):** a fakts/lok protocol gap, not GraphQL. lok leaves a mesh alias out of fakts while it cannot resolve the hub node, and nothing pushes it back. While a service stays down, `core/connection/arkitekt/controller/controller.ts` forces a token or fakts refresh at most every 5 minutes. Deferred: it belongs to the fakts protocol, not to this list.
-
----
 
 ---
 
