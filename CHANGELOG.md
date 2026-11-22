@@ -1,3 +1,10 @@
+## [8.23.2](https://github.com/arkitektio/orkestrator/compare/v8.23.1...v8.23.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* **boot:** render before preloading the split chunks, or the built app stays blank ([d9d43ea](https://github.com/arkitektio/orkestrator/commit/d9d43ea11a0702377833edf10a00015f3b7034d4))
+
 ## [8.23.1](https://github.com/arkitektio/orkestrator/compare/v8.23.0...v8.23.1) (2026-11-22)
 
 
