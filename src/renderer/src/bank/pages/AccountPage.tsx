@@ -63,8 +63,11 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
   // chosen day (its latest synced day on or before it).
   const depot = account.kind === AccountKind.Depot;
   const [asOf, setAsOf] = useState("");
+  // Only the positions are read: a one-day window keeps the server from
+  // working out the depot's whole valuation history alongside them.
+  const positionsDay = asOf || daysAgo(0);
   const merged = useMergedPositionsQuery({
-    variables: { accounts: [account.id], asOf: asOf || null },
+    variables: { accounts: [account.id], asOf: positionsDay, dateFrom: positionsDay },
     skip: !depot,
   });
   const positions = useMemo(

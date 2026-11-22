@@ -4427,6 +4427,7 @@ export type PortfolioQuery = { __typename?: 'Query', bankAccounts: Array<{ __typ
 export type MergedPositionsQueryVariables = Exact<{
   accounts?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
   asOf?: InputMaybe<Scalars['Date']['input']>;
+  dateFrom?: InputMaybe<Scalars['Date']['input']>;
 }>;
 
 
@@ -8106,8 +8107,8 @@ export type PortfolioQueryHookResult = ReturnType<typeof usePortfolioQuery>;
 export type PortfolioLazyQueryHookResult = ReturnType<typeof usePortfolioLazyQuery>;
 export type PortfolioQueryResult = Apollo.QueryResult<PortfolioQuery, PortfolioQueryVariables>;
 export const MergedPositionsDocument = gql`
-    query MergedPositions($accounts: [ID!], $asOf: Date) {
-  portfolioInsights(accounts: $accounts, asOf: $asOf) {
+    query MergedPositions($accounts: [ID!], $asOf: Date, $dateFrom: Date) {
+  portfolioInsights(accounts: $accounts, asOf: $asOf, dateFrom: $dateFrom) {
     mergedPositions {
       isin
       name
@@ -8140,6 +8141,7 @@ export const MergedPositionsDocument = gql`
  *   variables: {
  *      accounts: // value for 'accounts'
  *      asOf: // value for 'asOf'
+ *      dateFrom: // value for 'dateFrom'
  *   },
  * });
  */

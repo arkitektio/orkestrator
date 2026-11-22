@@ -15,9 +15,10 @@ query Portfolio {
 
 # Positions summed by ISIN and currency on the server, exactly (decimals),
 # largest first: every depot's, or these accounts'; today's, or as of a day
-# (each depot's latest synced day on or before it).
-query MergedPositions($accounts: [ID!], $asOf: Date) {
-  portfolioInsights(accounts: $accounts, asOf: $asOf) {
+# (each depot's latest synced day on or before it). `dateFrom` only trims the
+# valuation history the same answer carries; positions do not depend on it.
+query MergedPositions($accounts: [ID!], $asOf: Date, $dateFrom: Date) {
+  portfolioInsights(accounts: $accounts, asOf: $asOf, dateFrom: $dateFrom) {
     mergedPositions {
       isin
       name
