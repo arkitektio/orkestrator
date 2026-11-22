@@ -6,7 +6,16 @@ import {
   type BlokSceneHost,
 } from '@arkitektio/bsx/renderer/bloks/scene/index';
 import {DEFAULT_MODEL_POLICY, type ModelPolicy} from '@/core/model/glb';
-import {useAssetPolicyQuery, useBloksForModelQuery, useListMaterializedBloksQuery} from '@/rekuest/api/graphql';
+import type {ApolloClient} from '@apollo/client';
+import {
+  BloksForModelsDocument,
+  type BloksForModelsQuery,
+  type BloksForModelsQueryVariables,
+  useAssetPolicyQuery,
+  useListMaterializedBloksQuery,
+} from '@/rekuest/api/graphql';
+import {useRekuest} from '@/rekuest/api/hooks';
+import {createModelBlokBatcher, type ModelBlokBatcher} from './modelBloks';
 
 /**
  * rekuest as the host of 3D scenes: its bloks are what `OnClick open=` and
@@ -37,10 +46,45 @@ const NamedBlok = ({name}: {name: string}) => {
 
 const NO_DECORATIONS: readonly BlokModelDecoration[] = Object.freeze([]);
 
+type ModelBlok = BloksForModelsQuery['bloksForModels'][number];
+
+/** One batcher per client: the models a scene shows in one moment are asked for together. */
+const batchers = new WeakMap<ApolloClient<unknown>, ModelBlokBatcher<ModelBlok>>();
+const batcherFor = (client: ApolloClient<unknown>): ModelBlokBatcher<ModelBlok> => {
+  let batcher = batchers.get(client);
+  if (!batcher) {
+    batcher = createModelBlokBatcher<ModelBlok>(refs =>
+      client
+        .query<BloksForModelsQuery, BloksForModelsQueryVariables>({
+          query: BloksForModelsDocument,
+          variables: {refs},
+          // Asked again whenever a model is shown, as a fresh scene should be.
+          fetchPolicy: 'network-only',
+        })
+        .then(result => result.data.bloksForModels),
+    );
+    batchers.set(client, batcher);
+  }
+  return batcher;
+};
+
 const useModelDecorations = (ref: string): readonly BlokModelDecoration[] => {
-  const {data} = useBloksForModelQuery({variables: {ref}, skip: !ref});
+  const client = useRekuest() as ApolloClient<unknown> | undefined;
+  const [answer, setAnswer] = React.useState<{ref: string; bloks: readonly ModelBlok[]} | null>(null);
+  React.useEffect(() => {
+    if (!ref || !client) return undefined;
+    let current = true;
+    batcherFor(client)(ref).then(
+      bloks => current && setAnswer({ref, bloks}),
+      () => current && setAnswer({ref, bloks: []}),
+    );
+    return () => {
+      current = false;
+    };
+  }, [client, ref]);
+  const data = answer?.ref === ref ? answer : null;
   return React.useMemo(() => {
-    const bloks = data?.bloksForModel ?? [];
+    const bloks = data?.bloks ?? [];
     if (!bloks.length) return NO_DECORATIONS;
     return bloks.flatMap(blok => {
       const materialized = blok.materializedBloks[0];

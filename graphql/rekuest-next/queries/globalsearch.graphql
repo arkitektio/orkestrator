@@ -9,7 +9,10 @@ query GlobalSearch(
 ) {
   actions: actions(filters: { search: $search }, pagination: $pagination)
     @skip(if: $noActions) {
-    ...ListAction
+    ...SearchAction
+    logo {
+      ...BlokLogo
+    }
   }
   agents: agents(filters: { search: $search }, pagination: $pagination)
     @skip(if: $noAgents) {

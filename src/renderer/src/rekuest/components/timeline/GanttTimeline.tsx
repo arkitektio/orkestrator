@@ -66,13 +66,13 @@ const TimelineItemDetail = ({ item }: { item: TimelineItem }) => {
             {item.endTime - item.startTime} ms
           </span>
         </div>
-        {latestEvent && latestEvent.returns && task.action?.returns && (
+        {latestEvent && latestEvent.returns && data?.task.action.returns && (
           <div className="flex flex-col gap-2 mt-2">
             <span className="text-sm font-medium">Latest Result</span>
             <div className="bg-muted p-2 rounded-md">
               <ReturnsContainer
                 registry={registry}
-                ports={task.action.returns}
+                ports={data.task.action.returns}
                 values={latestEvent.returns}
                 showKeys={false}
               />

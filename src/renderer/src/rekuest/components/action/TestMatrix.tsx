@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
 import { RekuestAction, RekuestImplementation } from "@/core/linkers";
 import {
   ActionTestCaseFragment,
-  DetailActionFragment,
+  ActionOverviewFragment,
   ProvidingImplementationFragment,
   TaskEventKind,
 } from "@/rekuest/api/graphql";
@@ -125,7 +125,7 @@ export const TestMatrix = ({
 export const LegacyActionTests = ({
   tests,
 }: {
-  tests: DetailActionFragment["tests"];
+  tests: ActionOverviewFragment["tests"];
 }) => (
   <Card>
     <CardHeader>

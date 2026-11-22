@@ -6,6 +6,7 @@ import {
   useListBloksQuery,
 } from "@/rekuest/api/graphql";
 import BlokCard from "../cards/BlokCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: BlokFilter;
@@ -13,7 +14,7 @@ export type Props = {
 };
 
 /** The bloks `filters` selects, the ones you pinned first. */
-const List = ({ filters, pagination }: Props) => {
+const List = ({ filters, pagination = FIRST_PAGE }: Props) => {
   const pinned = useListBloksQuery({ variables: { filters: { ...filters, pinned: true } } });
   const { data, refetch } = useListBloksQuery({ variables: { filters: { ...filters, pinned: false }, pagination } });
 

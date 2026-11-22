@@ -5,7 +5,9 @@ import {reportErrorAs} from '@/core/notify';
 import {
   ComponentContext,
   SpaceByReferenceDocument,
-  useListMaterializedBloksQuery,
+  ListMaterializedBloksDocument,
+  type ListMaterializedBloksQuery,
+  type ListMaterializedBloksQueryVariables,
   useMaterializedBlokQuery,
   useResetPlacementMutation,
   useSavePlacementMutation,
@@ -13,6 +15,7 @@ import {
   type ListMaterializedBlokFragment,
 } from '@/rekuest/api/graphql';
 import MaterializedBlokRenderer from '@/rekuest/components/MaterializedBlokRenderer';
+import {useAllOffsetPages} from '@/rekuest/hooks/useOffsetPages';
 
 /**
  * The rooms an action's `<Space room=...>` blok places its run's dependencies
@@ -23,9 +26,6 @@ import MaterializedBlokRenderer from '@/rekuest/components/MaterializedBlokRende
  * action's blok. Where someone left each one is the room's: one pose per
  * agent, the same for everyone (`spaceByReference`, `savePlacement`).
  */
-
-/** How many 3D views are asked for: past the server's default page. */
-const VIEW_LIMIT = 500;
 
 /** A URI-shaped room (`room:helsinki-lab`) is the organization's; a plain key the declaring app's. */
 const URI = /^[a-z][a-z0-9+.-]*:/;
@@ -42,10 +42,16 @@ const isPose = (value: unknown): value is BlokPose =>
 const NO_VIEWS: readonly ListMaterializedBlokFragment[] = [];
 
 /** Every 3D view there is: the server narrows by the blok's context. */
+const SCENE_VIEWS = {filters: {contexts: [ComponentContext.Scene]}};
+const selectViews = (data: ListMaterializedBloksQuery) => data.materializedBloks;
+
+/** Every 3D view there is, page by page (the server answers at most 100 at once). */
 const useSceneViews = (): readonly ListMaterializedBlokFragment[] =>
-  useListMaterializedBloksQuery({
-    variables: {filters: {contexts: [ComponentContext.Scene]}, pagination: {limit: VIEW_LIMIT}},
-  }).data?.materializedBloks ?? NO_VIEWS;
+  useAllOffsetPages<ListMaterializedBloksQuery, ListMaterializedBlokFragment, ListMaterializedBloksQueryVariables>({
+    query: ListMaterializedBloksDocument,
+    variables: SCENE_VIEWS,
+    select: selectViews,
+  }).items ?? NO_VIEWS;
 
 /** Whether `view` is one of the agent's own: declared by it, or mapped to it as `self`. */
 const isOwnView = (view: ListMaterializedBlokFragment, agentId: string): boolean =>

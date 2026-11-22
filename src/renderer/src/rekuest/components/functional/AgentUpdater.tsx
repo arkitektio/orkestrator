@@ -2,10 +2,8 @@ import { useRekuest } from "@/rekuest/api/hooks";
 import type { ApolloClient, Reference } from "@apollo/client";
 import { useEffect } from "react";
 import {
+  AgentChangeEventFragment,
   AgentChangeFragment,
-  HydrateAgentDocument,
-  HydrateAgentQuery,
-  HydrateAgentQueryVariables,
   WatchAgentsDocument,
   WatchAgentsSubscription,
   WatchAgentsSubscriptionVariables,
@@ -14,105 +12,116 @@ import {
 type RekuestClient = ApolloClient<unknown>;
 
 /**
+ * The agent lists the server filters (pinned, by dependency, by user, by
+ * client, …). A new agent is not written into them: whether it belongs to
+ * a filtered list is the server's to say, so the lists on screen are asked
+ * again instead.
+ */
+export const AGENT_LIST_QUERIES = [
+  "Agents",
+  "AgentCounts",
+  "Pinned",
+  "ProfileFeedAgents",
+  "AgentForDependency",
+];
+
+/**
+ * The lists whose rows depend on what an agent registered (the agents that
+ * fit a dependency): an agent coming back may bring other implementations.
+ */
+export const AGENT_REGISTRATION_QUERIES = ["AgentForDependency"];
+
+/**
  * An agent `update` is a non-traversable `AgentChange` (`__typename:
  * "AgentChange"`), so it does NOT auto-normalize into the `Agent:<id>` entity.
  * Write its hot scalars onto the normalized agent explicitly — any list/detail
- * query referencing it updates in place.
+ * query referencing it updates in place. Returns whether the agent came
+ * back (was cached as not connected and is connected now).
  */
-const applyAgentScalars = (
+export const applyAgentScalars = (
   client: RekuestClient,
   change: AgentChangeFragment,
-) => {
+): boolean => {
+  let reconnected = false;
   client.cache.modify({
     id: client.cache.identify({ __typename: "Agent", id: change.id }),
     fields: {
       name: () => change.name,
-      connected: () => change.connected,
+      connected: (previous: boolean) => {
+        if (!previous && change.connected) reconnected = true;
+        return change.connected;
+      },
       blocked: () => change.blocked,
       lastSeen: () => change.lastSeen ?? null,
     },
   });
+  return reconnected;
 };
 
-/**
- * A new agent arrives non-traversable, so fetch its full (list-shaped) graph
- * once and insert it into the Agents list cache.
- */
-const hydrateAndInsertAgent = async (client: RekuestClient, id: string) => {
-  let agent;
-  try {
-    const res = await client.query<
-      HydrateAgentQuery,
-      HydrateAgentQueryVariables
-    >({
-      query: HydrateAgentDocument,
-      variables: { id },
-      fetchPolicy: "network-only",
-    });
-    agent = res.data?.agent;
-  } catch (error) {
-    console.error("Failed to hydrate agent", id, error);
-    return;
-  }
-  if (!agent) return;
-
-  // `cache.modify` on the root field reaches EVERY cached `agents(...)`
-  // variant (the list pages query with pagination variables). `updateQuery`
-  // without variables only touched the unpaginated entry, which nothing
-  // displays.
-  const hydrated = agent;
+/** A deleted agent leaves every list: no list can still hold it. */
+export const removeAgentFromLists = (client: RekuestClient, id: string) => {
   client.cache.modify({
     fields: {
-      agents(existing, { readField, toReference }) {
+      agents(existing, { readField }) {
         const list: readonly Reference[] = Array.isArray(existing) ? existing : [];
-        if (list.some((ref) => readField("id", ref) === hydrated.id)) {
-          return list;
-        }
-        const ref = toReference(hydrated, true);
-        return ref ? [...list, ref] : list;
+        return list.filter((ref) => readField("id", ref) !== id);
       },
     },
   });
 };
 
-export const AgentUpdater = (_props: {}) => {
+/**
+ * Which lists an agents-feed event asks again: none for a plain update
+ * (written in place), the registration-dependent ones when an agent comes
+ * back, all of them for a new agent.
+ */
+export const agentListsToRefetch = (
+  event: AgentChangeEventFragment | undefined,
+  reconnected: boolean,
+): readonly string[] => {
+  if (event?.create) return AGENT_LIST_QUERIES;
+  if (event?.update && reconnected) return AGENT_REGISTRATION_QUERIES;
+  return [];
+};
+
+const REFETCH_DEBOUNCE_MS = 750;
+
+export const AgentUpdater = () => {
   const client = useRekuest();
 
   useEffect(() => {
-    if (client) {
-      const subscription = client
-        ?.subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
-          query: WatchAgentsDocument,
-          variables: {},
-        })
-        .subscribe((res) => {
-          const update = res.data?.agents.update;
-          const create = res.data?.agents.create;
-          const deleted = res.data?.agents.delete;
+    if (!client) return undefined;
 
-          if (update) {
-            applyAgentScalars(client, update);
-          }
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const pending = new Set<string>();
+    const scheduleRefetch = (names: readonly string[]) => {
+      if (names.length === 0) return;
+      names.forEach((name) => pending.add(name));
+      if (timeout) return;
+      timeout = setTimeout(() => {
+        timeout = undefined;
+        const include = [...pending];
+        pending.clear();
+        void client.refetchQueries({ include }).catch(() => undefined);
+      }, REFETCH_DEBOUNCE_MS);
+    };
 
-          if (create) {
-            void hydrateAndInsertAgent(client, create.id);
-          }
+    const subscription = client
+      .subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
+        query: WatchAgentsDocument,
+        variables: {},
+      })
+      .subscribe((res) => {
+        const event = res.data?.agents;
+        const reconnected = event?.update ? applyAgentScalars(client, event.update) : false;
+        if (event?.delete) removeAgentFromLists(client, event.delete);
+        scheduleRefetch(agentListsToRefetch(event, reconnected));
+      });
 
-          if (deleted) {
-            client.cache.modify({
-              fields: {
-                agents(existing, { readField }) {
-                  const list: readonly Reference[] = Array.isArray(existing) ? existing : [];
-                  return list.filter((ref) => readField("id", ref) !== deleted);
-                },
-              },
-            });
-          }
-        });
-
-      return () => subscription.unsubscribe();
-    }
-    return undefined;
+    return () => {
+      subscription.unsubscribe();
+      if (timeout) clearTimeout(timeout);
+    };
   }, [client]);
 
   return <></>;

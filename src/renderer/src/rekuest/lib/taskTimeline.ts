@@ -1,4 +1,4 @@
-import { PostmanTaskFragment, TaskEventKind } from "../api/graphql";
+import { ChildTaskFragment, TaskEventKind } from "../api/graphql";
 
 /**
  * Shared timeline-building core for every gantt view of a task's children
@@ -15,7 +15,7 @@ export type TimelineEvent = {
 };
 
 export type TimelineItem = {
-  task: PostmanTaskFragment;
+  task: ChildTaskFragment;
   start: number;
   end: number;
   startTime: number;
@@ -77,7 +77,7 @@ export const dependencyCandidateToLabel = (
 };
 
 /** A task's end for bar-sizing: finishedAt, else its latest event, else now. */
-export const getEndTime = (a: PostmanTaskFragment) => {
+export const getEndTime = (a: { finishedAt?: string | null; events?: ReadonlyArray<{ createdAt: string }> | null }) => {
   if (a.finishedAt) return new Date(a.finishedAt).getTime();
   if (a.events && a.events.length > 0) {
     const times = a.events.map((e) => new Date(e.createdAt).getTime());
@@ -87,7 +87,7 @@ export const getEndTime = (a: PostmanTaskFragment) => {
 };
 
 /** Group children into dependency → method gantt rows on a 0..1 range. */
-export function buildTimeline(children: PostmanTaskFragment[]): {
+export function buildTimeline(children: ChildTaskFragment[]): {
   groups: TimelineDependencyGroup[];
   startTime: number;
   endTime: number;

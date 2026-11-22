@@ -13,6 +13,16 @@ query Implementations(
     ...DetailImplementation
   }
 }
+query RunOnImplementations(
+  $filters: ImplementationFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [ImplementationOrder!]
+) {
+  implementations(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...RunOnImplementation
+  }
+}
+
 query ListImplementations(
   $filters: ImplementationFilter
   $pagination: OffsetPaginationInput
@@ -47,24 +57,6 @@ query ImplementationAt(
   }
 }
 
-query MyImplementationAt(
-  $interface: String
-  $actionId: ID
-) {
-  myImplementationAt(
-    interface: $interface
-    actionId: $actionId
-  ) {
-    ...DetailImplementation
-  }
-}
-
-query ActionImplementationAt($agent: ID!, $actionHash: String!) {
-  implementationAt(agent: $agent, actionHash: $actionHash) {
-    ...DetailImplementation
-  }
-}
-
 query HoverImplementation($id: ID!) {
   implementation(id: $id) {
     ...HoverImplementation
@@ -88,6 +80,8 @@ query ApprovalInstallers {
         ]
       }
     }
+    # Deployers are few; one page of the server's largest size.
+    pagination: { limit: 100 }
   ) {
     ...InstallerImplementation
   }

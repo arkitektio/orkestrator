@@ -61,6 +61,9 @@ import {
   ScheduleDocument,
   ScheduleQuery,
   ScheduleQueryVariables,
+  ScheduleEnabledDocument,
+  ScheduleEnabledQuery,
+  ScheduleEnabledQueryVariables,
   SignalDocument,
   SignalQuery,
   SignalQueryVariables,
@@ -70,6 +73,9 @@ import {
   TriggerDocument,
   TriggerQuery,
   TriggerQueryVariables,
+  TriggerEnabledDocument,
+  TriggerEnabledQuery,
+  TriggerEnabledQueryVariables,
   TriggerScheduleDocument,
   TriggerScheduleMutation,
   TriggerScheduleMutationVariables,
@@ -94,16 +100,16 @@ import {
   WiregramDocument,
   WiregramQuery,
   WiregramQueryVariables,
-  AgentForProtocolDocument,
-  AgentForProtocolQuery,
-  AgentForProtocolQueryVariables,
+  AgentsForProtocolDocument,
+  AgentsForProtocolQuery,
+  AgentsForProtocolQueryVariables,
+  BlokNamesStartingWithDocument,
+  BlokNamesStartingWithQuery,
+  BlokNamesStartingWithQueryVariables,
   ComponentContext,
   CreateBlokDocument,
   CreateBlokMutation,
   CreateBlokMutationVariables,
-  ListBloksDocument,
-  ListBloksQuery,
-  ListBloksQueryVariables,
   MaterializeBlokDocument,
   MaterializeBlokMutation,
   MaterializeBlokMutationVariables,
@@ -223,29 +229,28 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       if (ids.length === 0) {
         throw new Error('No agent selected')
       }
-      const [agents, existing] = await Promise.all([
-        Promise.all(
-          ids.map((id) =>
-            client.query<AgentForProtocolQuery, AgentForProtocolQueryVariables>({
-              query: AgentForProtocolDocument,
-              variables: { id },
-              fetchPolicy: 'network-only',
-            }),
-          ),
-        ),
-        // A blok created under a name in use would change that blok: the new one takes a free name.
-        client.query<ListBloksQuery, ListBloksQueryVariables>({
-          query: ListBloksDocument,
-          variables: { filters: { provided: false } },
-          fetchPolicy: 'network-only',
-        }),
-      ])
-      if (agents.some((result) => !result.data?.agent)) {
+      const { data: read } = await client.query<AgentsForProtocolQuery, AgentsForProtocolQueryVariables>({
+        query: AgentsForProtocolDocument,
+        variables: { ids },
+        fetchPolicy: 'network-only',
+      })
+      // In the order they were selected: the blok's parts follow it.
+      const byId = new Map(read.agents.map((agent) => [agent.id, agent]))
+      const agents = ids.map((id) => byId.get(id))
+      if (agents.some((agent) => !agent)) {
         throw new Error(ids.length > 1 ? 'One of these agents could not be read' : 'This agent could not be read')
       }
+      const readAgents = agents.filter((agent): agent is NonNullable<typeof agent> => !!agent)
+      // A blok created under a name in use would change that blok: the new one takes a free
+      // name, so only the names it could collide with are asked for.
+      const { data: existing } = await client.query<BlokNamesStartingWithQuery, BlokNamesStartingWithQueryVariables>({
+        query: BlokNamesStartingWithDocument,
+        variables: { prefix: scaffoldAgentsBlok(readAgents).name },
+        fetchPolicy: 'network-only',
+      })
       const scaffold = scaffoldAgentsBlok(
-        agents.map((result) => result.data.agent),
-        existing.data.bloks.map((blok) => blok.name),
+        readAgents,
+        existing.bloks.map((blok) => blok.name),
       )
       const created = await client.mutate<CreateBlokMutation, CreateBlokMutationVariables>({
         mutation: CreateBlokDocument,
@@ -953,8 +958,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         throw new Error('Rekuest service not available')
       }
       const id = selected(state, '@rekuest/schedule')
-      const { data } = await services.rekuest.client.query<ScheduleQuery, ScheduleQueryVariables>({
-        query: ScheduleDocument,
+      const { data } = await services.rekuest.client.query<ScheduleEnabledQuery, ScheduleEnabledQueryVariables>({
+        query: ScheduleEnabledDocument,
         variables: { id },
         fetchPolicy: 'network-only',
       })
@@ -1048,8 +1053,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         throw new Error('Rekuest service not available')
       }
       const id = selected(state, '@rekuest/trigger')
-      const { data } = await services.rekuest.client.query<TriggerQuery, TriggerQueryVariables>({
-        query: TriggerDocument,
+      const { data } = await services.rekuest.client.query<TriggerEnabledQuery, TriggerEnabledQueryVariables>({
+        query: TriggerEnabledDocument,
         variables: { id },
         fetchPolicy: 'network-only',
       })

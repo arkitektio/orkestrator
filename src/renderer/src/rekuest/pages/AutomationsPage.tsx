@@ -12,7 +12,16 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
-import { Ordering, useListSchedulesQuery, useListTriggersQuery } from "@/rekuest/api/graphql";
+import {
+  ListSchedulesDocument,
+  ListSchedulesQuery,
+  ListSchedulesQueryVariables,
+  ListTriggersDocument,
+  ListTriggersQuery,
+  ListTriggersQueryVariables,
+  Ordering,
+} from "@/rekuest/api/graphql";
+import { useOffsetPages } from "@/rekuest/hooks/useOffsetPages";
 import {
   AutomationKind,
   scheduleRow,
@@ -21,7 +30,7 @@ import {
 } from "@/rekuest/lib/automation";
 import { useRuleUpdates } from "@/rekuest/lib/automationUpdates";
 import { AlarmClock, AlertTriangle, Plus, Share, Zap } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import AutomationRowItem from "../components/automation/AutomationRow";
 import { REKUEST_HELP } from "../help";
 
@@ -48,30 +57,41 @@ const Page = () => {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
   const [kind, setKind] = useQueryState("kind", parseAsStringLiteral(KINDS));
   const [failing, setFailing] = useQueryState("failing", parseAsBoolean.withDefault(false));
-  const [limit, setLimit] = useState(PAGE);
   const term = useDebounce(search, 250).trim();
 
   const filters = useMemo(
     () => ({ search: term || undefined, failing: failing || undefined }),
     [term, failing],
   );
-  const schedules = useListSchedulesQuery({
-    variables: { filters, ordering: FAILING_FIRST, pagination: { limit } },
+  const schedules = useOffsetPages<
+    ListSchedulesQuery,
+    ListSchedulesQuery["schedules"][number],
+    ListSchedulesQueryVariables
+  >({
+    query: ListSchedulesDocument,
+    variables: { filters, ordering: FAILING_FIRST },
+    select: (data) => data.schedules,
+    pageSize: PAGE,
     skip: kind === "signal",
-    fetchPolicy: "cache-and-network",
   });
-  const triggers = useListTriggersQuery({
-    variables: { filters, ordering: FAILING_FIRST, pagination: { limit } },
+  const triggers = useOffsetPages<
+    ListTriggersQuery,
+    ListTriggersQuery["triggers"][number],
+    ListTriggersQueryVariables
+  >({
+    query: ListTriggersDocument,
+    variables: { filters, ordering: FAILING_FIRST },
+    select: (data) => data.triggers,
+    pageSize: PAGE,
     skip: kind === "clock",
-    fetchPolicy: "cache-and-network",
   });
   useRuleUpdates(() => {
     if (kind !== "signal") schedules.refetch();
     if (kind !== "clock") triggers.refetch();
   });
 
-  const scheduleItems = kind === "signal" ? undefined : schedules.data?.schedules;
-  const triggerItems = kind === "clock" ? undefined : triggers.data?.triggers;
+  const scheduleItems = kind === "signal" ? undefined : schedules.items;
+  const triggerItems = kind === "clock" ? undefined : triggers.items;
 
   const rows = useMemo(
     () =>
@@ -85,8 +105,12 @@ const Page = () => {
 
   const error = (kind !== "signal" && schedules.error) || (kind !== "clock" && triggers.error);
   const loaded =
-    (kind === "signal" || !!schedules.data) && (kind === "clock" || !!triggers.data);
-  const more = (scheduleItems?.length ?? 0) >= limit || (triggerItems?.length ?? 0) >= limit;
+    (kind === "signal" || !!schedules.items) && (kind === "clock" || !!triggers.items);
+  const more = schedules.hasMore || triggers.hasMore;
+  const showMore = () => {
+    if (schedules.hasMore) schedules.loadMore();
+    if (triggers.hasMore) triggers.loadMore();
+  };
   const create = () => openDialog("createautomation", { kind: kind ?? undefined });
 
   const kindButton = (value: AutomationKind | null, label: string, icon?: React.ReactNode) => (
@@ -201,7 +225,7 @@ const Page = () => {
                 variant="ghost"
                 size="sm"
                 className="mt-3 text-muted-foreground"
-                onClick={() => setLimit(limit + PAGE)}
+                onClick={showMore}
               >
                 Show more
               </Button>

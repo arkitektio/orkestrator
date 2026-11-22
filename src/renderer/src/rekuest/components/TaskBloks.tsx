@@ -2,7 +2,7 @@ import * as React from "react";
 import { reportErrorAs } from "@/core/notify";
 import type { Structure } from "@/core/types";
 import { cn } from "@/core/util/utils";
-import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, useDecideMutation, useTaskBloksQuery } from "../api/graphql";
+import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, TaskEventKind, useDecideMutation, useTaskBloksQuery } from "../api/graphql";
 import { useTask } from "../hooks/useTasks";
 import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { openAsks, shownAsk, type TaskRootSource } from "../run/taskRoot";
@@ -121,6 +121,23 @@ export const TaskBlokView = ({
  * `only="latestInform"`: just the live inform, nothing else. `compact`:
  * settled asks as their answer line, the blok behind "Show".
  */
+/** The event kinds that show a blok or settle one: an ask (`HELD`), its answer (`DECIDED`), an inform. */
+const BLOK_EVENT_KINDS: ReadonlySet<TaskEventKind> = new Set([
+  TaskEventKind.Held,
+  TaskEventKind.Decided,
+  TaskEventKind.Inform,
+]);
+
+/**
+ * What the bloks of a live task are read again on: its newest event that shows
+ * or settles a blok, and its end (which settles what it still asks). Progress
+ * and logs move nothing here. Events come newest first.
+ */
+export const blokEventKey = (task: {
+  isDone: boolean;
+  events: ReadonlyArray<{ id: string; kind: TaskEventKind }>;
+}): string => `${task.events.find((event) => BLOK_EVENT_KINDS.has(event.kind))?.id ?? "-"}:${task.isDone}`;
+
 export const TaskBloks = ({
   task,
   alongside,
@@ -141,7 +158,7 @@ export const TaskBloks = ({
   const { data, refetch } = useTaskBloksQuery({ variables: { id: task } });
   // The live copy of the task (the user's own runs) moves with every event: read the bloks again then.
   const live = useTask({ task });
-  const moved = live ? `${live.latestEventKind}:${live.events.length}:${live.isDone}` : null;
+  const moved = live ? blokEventKey(live) : null;
   React.useEffect(() => {
     if (moved) void refetch();
   }, [moved, refetch]);

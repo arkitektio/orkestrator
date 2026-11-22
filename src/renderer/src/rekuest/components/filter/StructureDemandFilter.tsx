@@ -43,7 +43,7 @@ export const StructureDemandFilter = ({
   const search = useCallback<SearchFunction>(
     async ({ search }) => {
       const { data } = await searchStructures({
-        variables: { search: search || undefined },
+        variables: { search: search || undefined, pagination: { limit: 20 } },
       });
       return (data?.structures ?? []).map((s) => ({
         value: s.identifier,

@@ -98,6 +98,72 @@ fragment LiveTask on Task {
   finishedAt
 }
 
+# A call a task made, as its page reads it: the lane, the log, the detail strip
+# and a Python run's trace. Without the action's ports (a workflow makes many
+# calls); a call's own page loads those.
+fragment ChildTask on Task {
+  id
+  reference
+  latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
+  args
+  isDone
+  createdAt
+  finishedAt
+  parentStep
+  callKey
+  events(ordering: {createdAt: DESC}) {
+    ...TaskEvent
+  }
+  action {
+    hash
+    id
+    name
+    stateful
+    args {
+      key
+      kind
+      identifier
+    }
+  }
+  agent {
+    id
+  }
+  dependencyMethod
+  dependency
+  dependencies
+  implementation {
+    id
+    interface
+    higherOrderFor {
+      id
+      action {
+        id
+        key
+      }
+    }
+  }
+}
+
+# A run as a travelled blok reads it (blokLatestTask's LatestTaskSource).
+fragment PastTask on Task {
+  id
+  createdAt
+  implementation {
+    id
+  }
+  events(ordering: {createdAt: DESC}) {
+    id
+    kind
+    progress
+    message
+    returns
+    createdAt
+  }
+}
+
 fragment MinimalTask on Task {
   id
   reference
@@ -155,9 +221,7 @@ fragment DetailTask on Task {
     kind
   }
   children {
-    ...PostmanTask
-    parentStep
-    callKey
+    ...ChildTask
   }
   parent {
     id

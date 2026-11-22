@@ -4,8 +4,8 @@ query GetDashboard($id: ID!) {
   }
 }
 
-query ListDashboards {
-  dashboards {
+query ListDashboards($pagination: OffsetPaginationInput) {
+  dashboards(pagination: $pagination) {
     ...ListDashboard
   }
 }

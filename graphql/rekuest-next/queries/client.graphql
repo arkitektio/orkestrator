@@ -9,9 +9,10 @@ query Clients(
 }
 
 # The clients that called rekuest, for a shortcut binding's app, client and
-# device pickers: the only ones a binding can match today.
-query BindingClients($pagination: OffsetPaginationInput) {
-  clients(pagination: $pagination) {
+# device pickers: the only ones a binding can match today. `search` matches
+# the client id, app identifier, version and device id on the server.
+query BindingClients($search: String, $pagination: OffsetPaginationInput) {
+  clients(filters: { search: $search }, pagination: $pagination) {
     id
     clientId
     release {

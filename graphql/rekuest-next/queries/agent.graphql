@@ -25,11 +25,10 @@ query Agent($id: ID!) {
   }
 }
 
-# Single-agent hydration for the non-traversable subscription `create` path:
-# fetches the list-shaped agent to populate the Agents list cache. See AgentUpdater.
-query HydrateAgent($id: ID!) {
-  agent(id: $id) {
-    ...ListAgent
+# Several agents' protocols in one request (a blok made from a selection).
+query AgentsForProtocol($ids: [ID!]!) {
+  agents(filters: { ids: $ids }, pagination: { limit: 100 }) {
+    ...ProtocolAgent
   }
 }
 

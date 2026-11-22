@@ -20,9 +20,12 @@ query AssetPolicy {
   }
 }
 
-query BloksForModel($ref: String!) {
-  bloksForModel(ref: $ref) {
+# The bloks decorating every model a scene shows, in one request (each names
+# its model in `forModel`): RekuestSceneHost batches the models it is asked for.
+query BloksForModels($refs: [String!]!) {
+  bloksForModels(refs: $refs) {
     ...ModelBlok
+    forModel
   }
 }
 

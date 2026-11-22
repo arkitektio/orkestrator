@@ -8,10 +8,10 @@ import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {
   TaskEventFragment,
-  DetailImplementationFragment,
+  RunOnImplementationFragment,
   PortKind,
   PrimaryActionFragment,
-  useImplementationsQuery,
+  useRunOnImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput, canTakeWork, directAssignTarget } from "@/rekuest/assign";
 import { formatEstimate } from "@/rekuest/lib/estimatedRuntime";
@@ -79,7 +79,7 @@ export const needsAgentChoice = (
  * one. The object goes to the argument of its structure, whose `Fits` is what is tested.
  */
 export const implementationFitsObjects = (
-  implementation: Pick<DetailImplementationFragment, "fits" | "agent">,
+  implementation: Pick<RunOnImplementationFragment, "fits" | "agent">,
   action: Pick<PrimaryActionFragment, "args">,
   objects: readonly { identifier: string; descriptors?: unknown }[],
 ) => {
@@ -110,7 +110,7 @@ const selectionMismatch = (detail: string, action: { id: string }) => {
  * or a blok's (the items "Open in…" opens it for).
  */
 export const buildActionArgs = (
-  action: Pick<PrimaryActionFragment | DetailImplementationFragment["action"], "id"> & {
+  action: { id: string } & {
     args: ReadonlyArray<{ key: string; kind: PortKind }>;
   },
   props: SmartContextProps,
@@ -161,7 +161,7 @@ export const buildActionArgs = (
 export const DirectImplementationAssignment = (
   props: SmartContextProps & { action: PrimaryActionFragment },
 ) => {
-  const implementations = useImplementationsQuery({
+  const implementations = useRunOnImplementationsQuery({
     variables: {
       filters: {
         actionHash: props.action.hash,
@@ -177,7 +177,7 @@ export const DirectImplementationAssignment = (
 
   const onTemplateSelect = async (
     action: PrimaryActionFragment,
-    implementation: DetailImplementationFragment,
+    implementation: RunOnImplementationFragment,
   ) => {
     let run: SmartContextProps;
     try {

@@ -18,8 +18,12 @@ import { Textarea } from "@/core/ui/textarea";
 import {
   useExportWiregramMutation,
   useImportWiregramMutation,
-  useListSchedulesQuery,
-  useListTriggersQuery,
+  ListSchedulesDocument,
+  ListSchedulesQuery,
+  ListSchedulesQueryVariables,
+  ListTriggersDocument,
+  ListTriggersQuery,
+  ListTriggersQueryVariables,
 } from "@/rekuest/api/graphql";
 import {
   describeWiregram,
@@ -29,6 +33,7 @@ import {
 } from "@/rekuest/lib/wiregram";
 import { AlarmClock, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useAllOffsetPages } from "../hooks/useOffsetPages";
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -112,7 +117,9 @@ export const ImportWiregramDialog = (props: { document?: unknown }) => {
   );
 };
 
-const LIMIT = 200;
+const ALL = {};
+const selectSchedules = (data: ListSchedulesQuery) => data.schedules;
+const selectTriggers = (data: ListTriggersQuery) => data.triggers;
 
 /**
  * Write existing rules down as a wiregram document, to import elsewhere.
@@ -128,8 +135,17 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
   const [triggers, setTriggers] = useState(() => new Set(props.triggers ?? []));
   const [document, setDocument] = useState<unknown>(null);
 
-  const scheduleQuery = useListSchedulesQuery({ variables: { pagination: { limit: LIMIT } } });
-  const triggerQuery = useListTriggersQuery({ variables: { pagination: { limit: LIMIT } } });
+  // Every rule, page by page (the server answers at most 100 at once).
+  const scheduleQuery = useAllOffsetPages<
+    ListSchedulesQuery,
+    ListSchedulesQuery["schedules"][number],
+    ListSchedulesQueryVariables
+  >({ query: ListSchedulesDocument, variables: ALL, select: selectSchedules });
+  const triggerQuery = useAllOffsetPages<
+    ListTriggersQuery,
+    ListTriggersQuery["triggers"][number],
+    ListTriggersQueryVariables
+  >({ query: ListTriggersDocument, variables: ALL, select: selectTriggers });
   const [exportWiregram] = useExportWiregramMutation();
 
   const finalKey = key.trim() || keyFromName(name);
@@ -211,13 +227,13 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
         onChange={(e) => setDescription(e.target.value)}
       />
 
-      {loadError && !scheduleQuery.data && !triggerQuery.data ? (
+      {loadError && !scheduleQuery.items && !triggerQuery.items ? (
         <ErrorNote error={loadError} title="Couldn't load the rules" variant="line" />
-      ) : !scheduleQuery.data || !triggerQuery.data ? (
+      ) : !scheduleQuery.items || !triggerQuery.items ? (
         <Skeleton className="h-24 w-full" />
       ) : (
         <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
-          {scheduleQuery.data.schedules.map((schedule) => (
+          {scheduleQuery.items.map((schedule) => (
             <label key={schedule.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
               <Checkbox
                 checked={schedules.has(schedule.id)}
@@ -227,7 +243,7 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
               <span className="min-w-0 truncate">{schedule.name}</span>
             </label>
           ))}
-          {triggerQuery.data.triggers.map((trigger) => (
+          {triggerQuery.items.map((trigger) => (
             <label key={trigger.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
               <Checkbox
                 checked={triggers.has(trigger.id)}

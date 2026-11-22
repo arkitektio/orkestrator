@@ -10,6 +10,14 @@ query ListBloks($filters: BlokFilter, $pagination: OffsetPaginationInput) {
   }
 }
 
+# The custom bloks whose name a new one would take ("X panel", "X panel 2", …).
+query BlokNamesStartingWith($prefix: String!) {
+  bloks(filters: { provided: false, nameStartsWith: $prefix }, pagination: { limit: 100 }) {
+    id
+    name
+  }
+}
+
 # A logo blok's drawing, fetched only when no rendering of its hash is cached.
 query LogoBlok($id: ID!) {
   blok(id: $id) {

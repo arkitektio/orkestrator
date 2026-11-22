@@ -4,35 +4,6 @@ query ConstantAction($id: ID!) {
   }
 }
 
-query AssignAction($implementation: ID, $id: ID, $hash: ActionHash) {
-  action(implementation: $implementation, id: $id, hash: $hash) {
-    name
-    id
-    description
-    ...Ports
-    implementations {
-      id
-      interface
-    }
-    hash
-  }
-}
-
-query ReturnAction($task: ID!) {
-  action(task: $task) {
-    name
-    description
-    ...Ports
-  }
-}
-
-query ActionByHash($hash: ActionHash!) {
-  action(hash: $hash) {
-    id
-    ...Ports
-  }
-}
-
 # Existence/id probe only (useHashActionWithProgress): no ports.
 query ActionIdByHash($hash: ActionHash!) {
   action(hash: $hash) {
@@ -70,6 +41,18 @@ query AllActions(
   }
 }
 
+# The actions a chat replies with. `latestTask` (one lookup per row on the
+# server) is asked only here: a reply starts from the args it last ran with.
+query ReplyerActions($filters: ActionFilter, $pagination: OffsetPaginationInput) {
+  actions(filters: $filters, pagination: $pagination) {
+    ...ListAction
+    latestTask {
+      id
+      args
+    }
+  }
+}
+
 query BrowseActions(
   $pagination: OffsetPaginationInput
   $filters: ActionFilter
@@ -104,62 +87,9 @@ query AllPrimaryActions(
   }
 }
 
-query ActionSearch($filters: ActionFilter, $pagination: OffsetPaginationInput) {
-  actions: actions(filters: $filters, pagination: $pagination) {
-    ...SearchAction
-  }
-}
-
 query DetailAction($id: ID!) {
   action(id: $id) {
     ...DetailAction
-  }
-}
-
-query PrimaryActions(
-  $pagination: OffsetPaginationInput
-  $identifier: String
-  $ordering: [ActionOrder!]
-  $search: String
-) {
-  actions(
-    ordering: $ordering
-    pagination: $pagination
-    filters: {
-      demands: [
-        {
-          kind: ARGS
-          matches: [{ at: 0, kind: STRUCTURE, identifier: $identifier }]
-        }
-      ]
-      search: $search
-    }
-  ) {
-    ...PrimaryAction
-  }
-}
-
-query PrimaryReturnActions(
-  $pagination: OffsetPaginationInput
-  $identifier: String
-  $ordering: [ActionOrder!]
-  $search: String
-) {
-  actions(
-    ordering: $ordering
-    pagination: $pagination
-    filters: {
-      demands: [
-        {
-          kind: RETURNS
-          matches: [{ at: 0, kind: STRUCTURE, identifier: $identifier }]
-        }
-        { kind: ARGS, forceStructureLength: 0 }
-      ]
-      search: $search
-    }
-  ) {
-    ...PrimaryAction
   }
 }
 

@@ -220,8 +220,9 @@ const useCandidates = (dependency: ActionDependency | undefined, picked: PickedA
   const {data} = useAgentForDependencyQuery({
     variables: {dependency: dependency?.id},
     skip: !dependency,
+    // Kept current by the agents feed (AgentUpdater): `connected` and the name
+    // are written onto each agent, a new or returning agent asks this again.
     fetchPolicy: 'cache-and-network',
-    pollInterval: 15_000,
   });
   return React.useMemo(() => {
     const agents: Candidate[] = data?.agents ?? [];
@@ -312,8 +313,9 @@ export const usePickedAgents = (picks: DependencyPicks): ReadonlyMap<string, {co
   const {data} = useAgentForDependencyQuery({
     variables: {values: ids},
     skip: ids.length === 0,
+    // Kept current by the agents feed (AgentUpdater): `connected` and the name
+    // are written onto each agent as they change.
     fetchPolicy: 'cache-and-network',
-    pollInterval: 10_000,
   });
   return React.useMemo(
     () => new Map((data?.agents ?? []).map(agent => [agent.id, {connected: agent.connected, name: agent.name ?? null}] as const)),

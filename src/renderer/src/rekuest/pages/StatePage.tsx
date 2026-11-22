@@ -145,13 +145,15 @@ const CheckoutStateDisplay = ({
   // Derive default without effect
   const effectiveRevision = selectedRevision ?? (maxRevision || null);
 
-  const { data: revData, error, loading } = useCheckoutQuery({
+  // The latest checkout is the latest revision: asked again only for another one.
+  const { data: pickedData, error, loading } = useCheckoutQuery({
     variables: {
       state: state.id,
-      globalRevision: effectiveRevision,
+      globalRevision: selectedRevision,
     },
-    skip: effectiveRevision === null,
+    skip: selectedRevision === null,
   });
+  const revData = selectedRevision === null ? latestData : pickedData;
 
   const displayValue =  revData?.checkout?.value ?? latestData?.checkout?.value
 

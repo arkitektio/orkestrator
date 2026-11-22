@@ -3,23 +3,3 @@ query Modules {
     ...Module
   }
 }
-
-query Module($id: ID!) {
-  module(id: $id) {
-    ...Module
-  }
-}
-
-query BaseCatalog {
-  baseCatalog {
-    name
-    version
-    description
-    operations {
-      ...CatalogOperation
-    }
-    components {
-      ...CatalogComponent
-    }
-  }
-}

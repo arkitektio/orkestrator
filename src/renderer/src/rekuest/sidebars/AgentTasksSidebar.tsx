@@ -1,5 +1,5 @@
 
-import { useListTasksQuery } from "../api/graphql";
+import { Ordering, useListTasksQuery } from "../api/graphql";
 import ListTaskCard from "../components/cards/ListTaskCard";
 
 export const AgentTasksSidebar = (props: { agent: string }) => {
@@ -9,6 +9,7 @@ export const AgentTasksSidebar = (props: { agent: string }) => {
   const { data, error } = useListTasksQuery({
     variables: {
       filter: { agent: props.agent },
+      ordering: [{ createdAt: Ordering.Desc }],
       pagination: { limit: 10, offset: 0 },
     },
     fetchPolicy: "cache-and-network",

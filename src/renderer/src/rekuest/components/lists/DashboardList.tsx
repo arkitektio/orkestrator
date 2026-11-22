@@ -6,6 +6,7 @@ import {
   useListDashboardsQuery,
 } from "@/rekuest/api/graphql";
 import DashboardCard from "../cards/DashboardCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: AgentFilter;
@@ -13,7 +14,7 @@ export type Props = {
 };
 
 const List = (_props: Props) => {
-  const { data, refetch } = useListDashboardsQuery({});
+  const { data, refetch } = useListDashboardsQuery({ variables: { pagination: FIRST_PAGE } });
 
   return (
     <ListRender

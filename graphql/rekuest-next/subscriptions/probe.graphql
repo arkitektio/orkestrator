@@ -1,8 +1,0 @@
-# Caller-scoped, payload-carrying stream for ONE probe. Emits a state snapshot
-# first when events already happened, so there is no arrival-before-hydration
-# race — probes never go through taskTracker/taskCache.
-subscription WatchProbeEvents($probe: ID!) {
-  probeEvents(probe: $probe) {
-    ...ProbeEvent
-  }
-}

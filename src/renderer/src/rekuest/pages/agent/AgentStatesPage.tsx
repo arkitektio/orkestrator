@@ -8,7 +8,6 @@ import {
   StateFragment,
   useAgentQuery,
   useCheckoutAgentQuery,
-  useCheckoutQuery,
 } from "@/rekuest/api/graphql";
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
 import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
@@ -54,13 +53,9 @@ const AgentLiveStateCard = ({
   liveValue?: Record<string, unknown>;
   revision: number | null;
 }) => {
-  const { data: checkoutData, error: checkoutError } = useCheckoutQuery({
-    variables: { state: state.id },
-  });
-
-  const checkoutValue = checkoutData?.checkout?.value as Record<string, unknown> | undefined;
-  const checkoutRevision = checkoutData?.checkout?.globalRevision ?? null;
-  const displayValue = liveValue ?? checkoutValue ?? {};
+  // The agent feed (`watchAgent`) opens with every state's value, so there is
+  // nothing to check out first.
+  const displayValue = liveValue ?? {};
 
   return (
     <AsyncBoundary>
@@ -72,12 +67,9 @@ const AgentLiveStateCard = ({
               <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               Live
             </span>
-            {(revision ?? checkoutRevision) != null && <span>Rev {revision ?? checkoutRevision}</span>}
+            {revision != null && <span>Rev {revision}</span>}
           </div>
         </div>
-        {checkoutError && (
-          <div className="text-xs text-destructive">Error: {checkoutError.message}</div>
-        )}
         <AgentStateValueDisplay state={state} value={displayValue} />
       </div>
     </AsyncBoundary>
@@ -101,13 +93,15 @@ const AgentCheckoutTab = ({
   const [selectedRevision, setSelectedRevision] = useState<number | null>(null);
   const effectiveRevision = selectedRevision ?? (maxRevision || null);
 
-  const { data: revData, error, loading } = useCheckoutAgentQuery({
+  // The latest checkout is the latest revision: asked again only for another one.
+  const { data: pickedData, error, loading } = useCheckoutAgentQuery({
     variables: {
       agent: agentId,
-      globalRevision: effectiveRevision ?? undefined,
+      globalRevision: selectedRevision ?? undefined,
     },
-    skip: effectiveRevision === null,
+    skip: selectedRevision === null,
   });
+  const revData = selectedRevision === null ? latestData : pickedData;
 
 
   return (

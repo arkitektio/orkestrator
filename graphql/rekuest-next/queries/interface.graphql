@@ -4,8 +4,8 @@ query GetInterface($id: ID!) {
   }
 }
 
-query ListInterfaces($search: String) {
-  interfaces(search: $search) {
+query ListInterfaces($search: String, $pagination: OffsetPaginationInput) {
+  interfaces(search: $search, pagination: $pagination) {
     ...ListInterface
   }
 }

@@ -2,6 +2,7 @@ import { ListRender } from "@/core/layout/ListRender";
 import { RekuestImplementation } from "@/core/linkers";
 import { ImplementationFilter, ImplementationOrder, OffsetPaginationInput, useListImplementationsQuery } from "@/rekuest/api/graphql";
 import ImplementationCard from "../cards/ImplementationCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: ImplementationFilter;
@@ -9,7 +10,7 @@ export type Props = {
   pagination?: OffsetPaginationInput;
 };
 
-const List = ({ filters, order, pagination }: Props) => {
+const List = ({ filters, order, pagination = FIRST_PAGE }: Props) => {
   const { data, error, refetch } = useListImplementationsQuery({
     variables: {
       filters: filters,

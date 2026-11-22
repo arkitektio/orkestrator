@@ -9,11 +9,17 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
-import { FiringOutcome, useListFiringsQuery } from "@/rekuest/api/graphql";
-import { useSignalUpdates } from "@/rekuest/lib/automationUpdates";
+import {
+  FiringOutcome,
+  ListFiringsDocument,
+  ListFiringsQuery,
+  ListFiringsQueryVariables,
+} from "@/rekuest/api/graphql";
+import { useOffsetPages } from "@/rekuest/hooks/useOffsetPages";
+import { firingFeedNeedsRefetch, useSignalUpdates } from "@/rekuest/lib/automationUpdates";
 import { OUTCOME_LABELS } from "@/rekuest/lib/firing";
 import { RotateCcw, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { FiringsTable } from "../components/automation/FiringsTable";
 import { REKUEST_HELP } from "../help";
 
@@ -30,7 +36,6 @@ const Page = () => {
   const [replay, setReplay] = useQueryState("replay", parseAsBoolean.withDefault(false));
   const [trigger, setTrigger] = useQueryState("trigger", parseAsString);
   const [signal, setSignal] = useQueryState("signal", parseAsString);
-  const [limit, setLimit] = useState(PAGE);
 
   const filters = useMemo(
     () => ({
@@ -41,14 +46,21 @@ const Page = () => {
     }),
     [outcome, replay, trigger, signal],
   );
-  const { data, error, refetch } = useListFiringsQuery({
-    variables: { filters, pagination: { limit } },
-    fetchPolicy: "cache-and-network",
+  const {
+    items: firings,
+    error,
+    hasMore,
+    loadMore,
+    refetch,
+  } = useOffsetPages<ListFiringsQuery, ListFiringsQuery["firings"][number], ListFiringsQueryVariables>({
+    query: ListFiringsDocument,
+    variables: { filters },
+    select: (data) => data.firings,
+    pageSize: PAGE,
   });
   // a firing follows a signal: the signal feed is what says there is news
-  useSignalUpdates(() => refetch());
+  useSignalUpdates(refetch, firingFeedNeedsRefetch);
 
-  const firings = data?.firings;
   const narrowed = !!outcome || replay || !!trigger || !!signal;
 
   const outcomeButton = (value: FiringOutcome | null, label: string) => (
@@ -134,12 +146,12 @@ const Page = () => {
             hide={trigger ? "trigger" : signal ? "signal" : undefined}
           />
         )}
-        {firings && firings.length >= limit && (
+        {hasMore && (
           <Button
             variant="ghost"
             size="sm"
             className="mt-3 text-muted-foreground"
-            onClick={() => setLimit(limit + PAGE)}
+            onClick={loadMore}
           >
             Show more
           </Button>

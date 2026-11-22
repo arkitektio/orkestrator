@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {useLatestRef} from '@/core/util/hooks/useLatestRef';
 import {
-  ListTasksDetailsDocument,
+  PastTasksDocument,
   Ordering,
-  type ListTasksDetailsQuery,
-  type ListTasksDetailsQueryVariables,
-  type PostmanTaskFragment,
+  type PastTasksQuery,
+  type PastTasksQueryVariables,
+  type PastTaskFragment,
 } from '@/rekuest/api/graphql';
 import {useRekuest} from '@/rekuest/api/hooks';
 import type {TravelSource} from '@/rekuest/travel/travelSource';
@@ -29,13 +29,13 @@ const unwatched = () => () => {};
 export const usePastLatestTasks = (
   source: TravelSource | null,
   implementationId: string | undefined,
-): {at: number; tasks: ReadonlyArray<PostmanTaskFragment>} | null => {
+): {at: number; tasks: ReadonlyArray<PastTaskFragment>} | null => {
   const client = useLatestRef(useRekuest());
   const subscribe = React.useMemo(() => (source ? source.subscribe : unwatched), [source]);
   const getClock = React.useCallback(() => (source ? source.getClock() : null), [source]);
   const at = React.useSyncExternalStore(subscribe, getClock, getClock)?.at ?? null;
 
-  const [held, setHeld] = React.useState<LatestTaskWindow<PostmanTaskFragment> | null>(null);
+  const [held, setHeld] = React.useState<LatestTaskWindow<PastTaskFragment> | null>(null);
   const inflight = React.useRef(false);
   const mounted = React.useRef(false);
   React.useEffect(() => {
@@ -55,10 +55,10 @@ export const usePastLatestTasks = (
     const rekuest = client.current;
     const moment = new Date(at).toISOString();
     const fetchedAt = Date.now();
-    const ask = (variables: ListTasksDetailsQueryVariables) =>
+    const ask = (variables: PastTasksQueryVariables) =>
       rekuest
-        .query<ListTasksDetailsQuery, ListTasksDetailsQueryVariables>({
-          query: ListTasksDetailsDocument,
+        .query<PastTasksQuery, PastTasksQueryVariables>({
+          query: PastTasksDocument,
           variables,
           // Every moment a slider passes would otherwise stay in the cache for good.
           fetchPolicy: 'no-cache',

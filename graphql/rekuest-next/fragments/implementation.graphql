@@ -107,6 +107,31 @@ fragment ListImplementation on Implementation {
   }
 }
 
+# An implementation offered to run something on: who would run it, whether
+# it can take work now, and what it says fits (the "Run on" picker, a pod's
+# actions).
+fragment RunOnImplementation on Implementation {
+  id
+  interface
+  fits {
+    ...ImplementationFit
+  }
+  action {
+    id
+    name
+  }
+  agent {
+    id
+    name
+    kind
+    active
+    connected
+    hardware {
+      ...AgentHardware
+    }
+  }
+}
+
 fragment EstimatedRuntime on EstimatedRuntime {
   callJson
   source

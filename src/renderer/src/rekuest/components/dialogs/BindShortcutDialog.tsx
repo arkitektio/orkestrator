@@ -7,7 +7,12 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { useCallback } from "react";
 import { useForm, useFormContext, useWatch } from "react-hook-form";
-import { BindingClientsDocument, type BindingClientsQuery, useBindShortcutMutation } from "../../api/graphql";
+import {
+  BindingClientsDocument,
+  type BindingClientsQuery,
+  type BindingClientsQueryVariables,
+  useBindShortcutMutation,
+} from "../../api/graphql";
 import { useRekuest } from "../../api/hooks";
 import {
   describeBinding,
@@ -17,6 +22,9 @@ import {
 } from "../../lib/shortcutBinding";
 
 type Option = { value: string; label: string };
+
+/** One page of clients per search: the server answers at most 100. */
+const CLIENT_PAGE = 50;
 
 const narrow = (options: Option[], search?: string, values?: (string | number)[]): Option[] => {
   const wanted = values?.map(String);
@@ -40,18 +48,29 @@ const useBindingSearches = (): { apps: SearchFunction; clients: SearchFunction; 
   const lokApps = useStructureOptions("@lok/app", "identifier");
   const lokDevices = useStructureOptions("@lok/device", "nodeId");
 
-  const called = useCallback(async () => {
-    const { data } = await client.query<BindingClientsQuery>({
-      query: BindingClientsDocument,
-      variables: { pagination: { limit: 500 } },
-    });
-    return data?.clients ?? [];
-  }, [client]);
+  // The server searches the clients (it answers at most a page): for chosen
+  // values, each is looked up by itself.
+  const called = useCallback(
+    async (search?: string, values?: (string | number)[]) => {
+      const terms = values?.length ? values.map(String) : [search || undefined];
+      const pages = await Promise.all(
+        terms.map(async (term) => {
+          const { data } = await client.query<BindingClientsQuery, BindingClientsQueryVariables>({
+            query: BindingClientsDocument,
+            variables: { search: term, pagination: { limit: CLIENT_PAGE } },
+          });
+          return data?.clients ?? [];
+        }),
+      );
+      return pages.flat();
+    },
+    [client],
+  );
 
   const apps: SearchFunction = useCallback(
     async ({ search, values }) => {
       const [clients, registered] = await Promise.all([
-        called(),
+        called(search, values),
         lokApps ? lokApps({ search, values }).catch(() => []) : Promise.resolve([]),
       ]);
       const identifiers = new Set<string>(registered.map((o) => o.value));
@@ -63,7 +82,7 @@ const useBindingSearches = (): { apps: SearchFunction; clients: SearchFunction; 
 
   const clients: SearchFunction = useCallback(
     async ({ search, values }) => {
-      const options = (await called()).map((c) => ({
+      const options = (await called(search, values)).map((c) => ({
         value: c.clientId,
         label: `${c.release ? `${c.release.app.identifier} ${c.release.version}` : "Unknown app"} · ${c.clientId.slice(0, 8)}`,
       }));
@@ -75,7 +94,7 @@ const useBindingSearches = (): { apps: SearchFunction; clients: SearchFunction; 
   const devices: SearchFunction = useCallback(
     async ({ search, values }) => {
       const [clients, registered] = await Promise.all([
-        called(),
+        called(search, values),
         lokDevices ? lokDevices({ search, values }).catch(() => []) : Promise.resolve([]),
       ]);
       // Lok's name wins; a device only rekuest saw shows by its id.

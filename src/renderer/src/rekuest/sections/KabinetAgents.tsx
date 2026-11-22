@@ -7,12 +7,12 @@ import type { Object } from "@/core/types";
 import { buildAssignInput } from "../assign";
 import {
   DemandKind,
-  DetailImplementationFragment,
   PortKind,
+  RunOnImplementationFragment,
   useAgentsQuery,
-  useImplementationsQuery,
+  useRunOnImplementationsQuery,
 } from "../api/graphql";
-import { useImplementationAction } from "../hooks/useImplementationAction";
+import { useAssign } from "../hooks/useAssign";
 import { notifyAssignError } from "../lib/assignError";
 
 /**
@@ -52,11 +52,17 @@ export const BackendAgents = ({ object }: SectionProps) => {
 };
 
 const PodActionButton = (props: { implementation: { id: string; action: { name: string } }; pod: string }) => {
-  const { assign } = useImplementationAction({ id: props.implementation.id });
+  // The list already names the implementation: running it needs nothing else.
+  const { assign } = useAssign();
   return (
     <Button
       onClick={() =>
-        void assign(buildAssignInput({ args: { pod: { __identifier: "@kabinet/pod", object: props.pod } } })).catch((error) =>
+        void assign(
+          buildAssignInput({
+            implementation: props.implementation.id,
+            args: { pod: { __identifier: "@kabinet/pod", object: props.pod } },
+          }),
+        ).catch((error) =>
           notifyAssignError(error, { id: `assign:${props.implementation.id}` }),
         )
       }
@@ -100,7 +106,7 @@ const AgentPodActions = (props: {
 export const PodActions = ({ object }: SectionProps) => {
   const clientId = clientIdOf(object);
   const backendName = typeof object.backendName === "string" ? object.backendName : undefined;
-  const { data, error } = useImplementationsQuery({
+  const { data, error } = useRunOnImplementationsQuery({
     variables: {
       filters: {
         agent: { clientId },
@@ -118,7 +124,7 @@ export const PodActions = ({ object }: SectionProps) => {
   });
 
   const byAgent = useMemo(() => {
-    const groups = new Map<string, DetailImplementationFragment[]>();
+    const groups = new Map<string, RunOnImplementationFragment[]>();
     for (const implementation of data?.implementations ?? []) {
       const group = groups.get(implementation.agent.id);
       if (group) group.push(implementation);

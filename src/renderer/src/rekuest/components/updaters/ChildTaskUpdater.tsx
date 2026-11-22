@@ -12,6 +12,10 @@ import {
 import { mapReference } from "@/rekuest/lib/taskTracker";
 import { useEffect } from "react";
 
+/** Whether a task the `childTasks` feed announces is a child of `taskId` itself, not a grandchild. */
+export const isDirectChild = (change: { parent?: string | null }, taskId: string): boolean =>
+  change.parent != null && String(change.parent) === String(taskId);
+
 export const ChildTaskUpdater = (props: { taskId: string }) => {
   const { taskId } = props;
   const client = useRekuest();
@@ -40,8 +44,12 @@ export const ChildTaskUpdater = (props: { taskId: string }) => {
 
         if (change.create) {
           mapReference(change.create.id, change.create.reference);
-          // Hydrate + append asynchronously; the cache write updates the query.
-          void hydrateChildIntoDetailTask(client, change.create.id, taskId);
+          // The feed carries every descendant (its root's and its parent's
+          // topic); `children` holds the direct ones only.
+          if (isDirectChild(change.create, taskId)) {
+            // Hydrate + append asynchronously; the cache write updates the query.
+            void hydrateChildIntoDetailTask(client, change.create.id, taskId);
+          }
           return prev;
         }
 

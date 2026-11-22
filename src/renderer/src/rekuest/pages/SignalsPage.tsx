@@ -12,11 +12,17 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
-import { SignalKind, useListSignalsQuery } from "@/rekuest/api/graphql";
-import { useSignalUpdates } from "@/rekuest/lib/automationUpdates";
+import {
+  ListSignalsDocument,
+  ListSignalsQuery,
+  ListSignalsQueryVariables,
+  SignalKind,
+} from "@/rekuest/api/graphql";
+import { useOffsetPages } from "@/rekuest/hooks/useOffsetPages";
+import { signalFeedNeedsRefetch, useSignalUpdates } from "@/rekuest/lib/automationUpdates";
 import { KIND_LABELS } from "@/rekuest/lib/triggerConditions";
 import { X, Zap } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import SignalRow from "../components/automation/SignalRow";
 import { REKUEST_HELP } from "../help";
 import { SignalDeclarationsSidebar } from "../sidebars/SignalDeclarationsSidebar";
@@ -40,7 +46,6 @@ const Page = () => {
   const [identifier, setIdentifier] = useQueryState("identifier", parseAsString);
   const [object, setObject] = useQueryState("object", parseAsString);
   const [service, setService] = useQueryState("service", parseAsString);
-  const [limit, setLimit] = useState(PAGE);
   const term = useDebounce(search, 250).trim();
 
   const filters = useMemo(
@@ -54,11 +59,19 @@ const Page = () => {
     }),
     [term, fired, kind, identifier, object, service],
   );
-  const { data, error, refetch } = useListSignalsQuery({
-    variables: { filters, pagination: { limit } },
-    fetchPolicy: "cache-and-network",
+  const {
+    items: signals,
+    error,
+    hasMore,
+    loadMore,
+    refetch,
+  } = useOffsetPages<ListSignalsQuery, ListSignalsQuery["signals"][number], ListSignalsQueryVariables>({
+    query: ListSignalsDocument,
+    variables: { filters },
+    select: (data) => data.signals,
+    pageSize: PAGE,
   });
-  useSignalUpdates(() => refetch());
+  useSignalUpdates(refetch, (event) => signalFeedNeedsRefetch(event, filters));
 
   // What a link narrowed the feed to, each with its way out.
   const chips = [
@@ -68,7 +81,6 @@ const Page = () => {
   ].filter((chip): chip is { label: string; clear: () => void } => !!chip);
   const narrowed = !!term || fired || !!kind || chips.length > 0;
 
-  const signals = data?.signals;
   const kindButton = (value: SignalKind | null, label: string) => (
     <PageAction
       size="sm"
@@ -154,12 +166,12 @@ const Page = () => {
             ))}
           </div>
         )}
-        {signals && signals.length >= limit && (
+        {hasMore && (
           <Button
             variant="ghost"
             size="sm"
             className="mt-3 text-muted-foreground"
-            onClick={() => setLimit(limit + PAGE)}
+            onClick={loadMore}
           >
             Show more
           </Button>

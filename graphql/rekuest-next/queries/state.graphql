@@ -4,15 +4,6 @@ query GetState($id: ID!) {
   }
 }
 
-query GetStateFor($agent: ID!, $stateHash: String, $demand: StateDemandInput) {
-  stateFor(agent: $agent, stateHash: $stateHash, demand: $demand) {
-    ...State
-  }
-}
-
-
-
-
 query Checkout($state: ID!, $globalRevision: Int, $timestamp: DateTime, $sessionId: ID, $forwardPatchCount: Int, $backwardPatchCount: Int) {
   checkout(state: $state, globalRevision: $globalRevision, timestamp: $timestamp, sessionId: $sessionId, forwardPatchCount: $forwardPatchCount, backwardPatchCount: $backwardPatchCount) {
     stateId
@@ -27,7 +18,6 @@ query Checkout($state: ID!, $globalRevision: Int, $timestamp: DateTime, $session
 
   }
 }
-
 
 query CheckoutAgent($agent: ID!, $globalRevision: Int , $timestamp: DateTime, $sessionId: ID, $forwardPatchCount: Int, $backwardPatchCount: Int) {
   checkoutAgent(agent: $agent, globalRevision: $globalRevision, timestamp: $timestamp, sessionId: $sessionId, forwardPatchCount: $forwardPatchCount, backwardPatchCount: $backwardPatchCount) {

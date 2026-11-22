@@ -45,6 +45,9 @@ const sortAgents = (agents: ListAgentFragment[]) =>
 /** How many finished tasks the home shows under the ongoing ones. */
 const RECENTLY_FINISHED = 3;
 
+/** One page of agents on the home: the agents page has them all. */
+const HOME_AGENTS = 40;
+
 const Page = () => {
   const filters = useAgentFilters();
   const { search, user: userFilter, kind: kindFilter, app, device, supervisor, onlineOnly } = filters.resolved;
@@ -65,6 +68,7 @@ const Page = () => {
     variables: {
       filters: onlineOnly ? { ...base, connected: true } : base,
       ordering: [{ lastSeen: Ordering.Desc }],
+      pagination: { limit: HOME_AGENTS, offset: 0 },
     },
     skip: filters.pending,
   });
@@ -74,8 +78,8 @@ const Page = () => {
   });
 
   // The server answers every filter. Only what changed since is checked here:
-  // AgentUpdater inserts a new agent into every cached `agents(...)` list and
-  // flips `connected` in place, so a row that no longer fits leaves at once.
+  // AgentUpdater flips `connected` in place (a new agent makes it ask the
+  // list again), so a row that no longer fits "online only" leaves at once.
   const agents = useMemo(
     () =>
       sortAgents(
@@ -171,7 +175,7 @@ const Page = () => {
                 array={loaded ? agents : undefined}
                 refetch={refetch}
                 error={error}
-                limit={40}
+                limit={HOME_AGENTS}
                 minItemWidth={CARD_FRAME_MIN_WIDTH}
               >
                 {(agent) => <AgentCard key={agent.id} item={agent} />}

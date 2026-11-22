@@ -6,13 +6,14 @@ import {
   useToolboxesQuery,
 } from "@/rekuest/api/graphql";
 import ToolboxCard from "../cards/ToolboxCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: AgentFilter;
   pagination?: OffsetPaginationInput;
 };
 
-const List = ({ filters, pagination }: Props) => {
+const List = ({ filters, pagination = FIRST_PAGE }: Props) => {
   const { data, refetch } = useToolboxesQuery({
     variables: { filters, pagination },
   });

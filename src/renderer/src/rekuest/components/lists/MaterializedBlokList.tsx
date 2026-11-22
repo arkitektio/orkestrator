@@ -6,6 +6,7 @@ import {
   useListMaterializedBloksQuery,
 } from "@/rekuest/api/graphql";
 import MaterializedBlokCard from "../cards/MaterializedBlokCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: MaterializedBlokFilter;
@@ -13,7 +14,7 @@ export type Props = {
 };
 
 /** The materializations `filters` selects, the ones you pinned first. */
-const MaterializedBlokList = ({ filters, pagination }: Props) => {
+const MaterializedBlokList = ({ filters, pagination = FIRST_PAGE }: Props) => {
   const pinned = useListMaterializedBloksQuery({ variables: { filters: { ...filters, pinned: true } } });
   const { data, refetch } = useListMaterializedBloksQuery({
     variables: { filters: { ...filters, pinned: false }, pagination },

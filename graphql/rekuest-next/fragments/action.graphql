@@ -24,10 +24,6 @@ fragment ListAction on Action {
   app {
     identifier
   }
-  latestTask {
-    id
-    args
-  }
 }
 
 # The actions catalog (ActionsPage): ListAction plus what the facets, grouping
@@ -38,10 +34,6 @@ fragment BrowseAction on Action {
   definedAt
   isDev
   collections {
-    id
-    name
-  }
-  protocols {
     id
     name
   }
@@ -122,6 +114,17 @@ fragment ActionOverview on Action {
   testCases {
     ...ActionTestCase
   }
+  # Old-style test actions, shown only when there are no test cases. Their
+  # runs are every task of the test action: asked for on this page alone.
+  tests {
+    id
+    name
+    description
+    runs {
+      implementation_id: arg(key: "implementation")
+      latestEventKind
+    }
+  }
 }
 
 fragment SearchAction on Action {
@@ -164,15 +167,6 @@ fragment DetailAction on Action {
   }
   implementations {
     ...MinimalImplementation
-  }
-  tests {
-    id
-    name
-    description
-    runs {
-      implementation_id: arg(key: "implementation")
-      latestEventKind
-    }
   }
   key
   version

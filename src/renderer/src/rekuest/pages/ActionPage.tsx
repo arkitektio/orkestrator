@@ -63,8 +63,9 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
             implementations={overview.implementations}
           />
         ) : (
-          data.action.tests.length > 0 && (
-            <LegacyActionTests tests={data.action.tests} />
+          overview &&
+          overview.tests.length > 0 && (
+            <LegacyActionTests tests={overview.tests} />
           )
         )}
 

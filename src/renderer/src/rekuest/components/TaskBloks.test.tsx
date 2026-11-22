@@ -6,7 +6,7 @@ import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
 import { BlokRunHostProvider } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { TaskEventKind } from "../api/graphql";
 import type { HoldRequest } from "../lib/holds";
-import { useTaskBlokHost } from "./TaskBloks";
+import { blokEventKey, useTaskBlokHost } from "./TaskBloks";
 import {installAppBlokCatalog} from "@/core/blok/testing";
 
 installAppBlokCatalog();
@@ -48,5 +48,32 @@ describe("<ask> in a task blok embed", () => {
     cleanup();
     render(<Embed task={{ isDone: false, events: [held("Through me", "mb1")] }} source="<Card><ask /></Card>" />);
     expect(screen.queryByText(/hold:/)).toBeNull();
+  });
+});
+
+describe("blokEventKey", () => {
+  it("does not move with progress or logs", () => {
+    const inform = { id: "7", kind: TaskEventKind.Inform };
+    const before = blokEventKey({ isDone: false, events: [inform] });
+    const after = blokEventKey({
+      isDone: false,
+      events: [
+        { id: "10", kind: TaskEventKind.Progress },
+        { id: "9", kind: TaskEventKind.Log },
+        { id: "8", kind: TaskEventKind.Progress },
+        inform,
+      ],
+    });
+    expect(after).toBe(before);
+  });
+
+  it("moves with every ask, answer and inform, even of the same kind in a row, and with the end", () => {
+    const keys = new Set([
+      blokEventKey({ isDone: false, events: [{ id: "7", kind: TaskEventKind.Inform }] }),
+      blokEventKey({ isDone: false, events: [{ id: "8", kind: TaskEventKind.Inform }, { id: "7", kind: TaskEventKind.Inform }] }),
+      blokEventKey({ isDone: false, events: [{ id: "9", kind: TaskEventKind.Held }] }),
+      blokEventKey({ isDone: true, events: [{ id: "9", kind: TaskEventKind.Held }] }),
+    ]);
+    expect(keys.size).toBe(4);
   });
 });

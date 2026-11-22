@@ -2,6 +2,7 @@ import { ListRender } from "@/core/layout/ListRender";
 import { RekuestInterface } from "@/core/linkers";
 import { useListInterfacesQuery } from "@/rekuest/api/graphql";
 import InterfaceCard from "../cards/InterfaceCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   search?: string;
@@ -9,7 +10,7 @@ export type Props = {
 
 const List = ({ search }: Props) => {
   const { data, refetch } = useListInterfacesQuery({
-    variables: { search },
+    variables: { search, pagination: FIRST_PAGE },
   });
 
   return (

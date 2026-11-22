@@ -1996,6 +1996,11 @@ input BlokFilter {
   """
   hasOrigin: Boolean
 
+  """
+  Only bloks whose name starts with this (case-insensitive): the names a new blok would collide with, e.g. `X panel` and `X panel 2` for `X panel`.
+  """
+  nameStartsWith: String
+
   """Only bloks installed from one of these origins."""
   origins: [String!]
 
@@ -2496,6 +2501,11 @@ input ClientFilter {
   ids: [ID!]
   interface: StrFilterLookup
   mine: Boolean
+
+  """
+  Search by OAuth client id, name, app identifier, release version or device id (case-insensitive substring).
+  """
+  search: String
 }
 
 """A way to order apps"""
@@ -5740,6 +5750,11 @@ type Query {
   """The html bloks registered to decorate the model of this reference."""
   bloksForModel(ref: String!): [Blok!]!
 
+  """
+  The html bloks registered to decorate any of these models (each names its own in `forModel`): one request for every model a scene shows.
+  """
+  bloksForModels(refs: [String!]!): [Blok!]!
+
   """Materialize the latest state for a specific agent"""
   checkout(backwardPatchCount: Int! = 0, forwardPatchCount: Int! = 0, globalRevision: Int = null, sessionId: ID = null, state: ID!, timestamp: DateTime = null): StateValue!
 
@@ -5753,7 +5768,7 @@ type Query {
   dashboard(id: ID!): Dashboard!
 
   """All dashboards."""
-  dashboards: [Dashboard!]!
+  dashboards(pagination: OffsetPaginationInput): [Dashboard!]!
 
   """Fetch a dependency by ID."""
   dependency(id: ID!): Dependency!
@@ -5810,7 +5825,7 @@ type Query {
   """
   All interfaces referenced by the org's action ports (derived, not registered).
   """
-  interfaces(search: String = null): [Interface!]!
+  interfaces(pagination: OffsetPaginationInput = null, search: String = null): [Interface!]!
 
   """
   How many of the organization's stored signals of this kind and structure satisfy the conditions: the uncapped count behind `matchingSignals`. Fires nothing.
@@ -5985,12 +6000,12 @@ type Query {
   """
   All structure packages referenced by the org's action ports (derived, not registered).
   """
-  structurePackages(search: String = null): [StructurePackage!]!
+  structurePackages(pagination: OffsetPaginationInput = null, search: String = null): [StructurePackage!]!
 
   """
   All structures: those the org's action ports reference, and those a service of this hub hosts.
   """
-  structures(search: String = null): [Structure!]!
+  structures(pagination: OffsetPaginationInput = null, search: String = null): [Structure!]!
 
   """Fetch task by ID."""
   task(id: ID!): Task!

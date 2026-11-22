@@ -6,13 +6,14 @@ import {
   useSpacesQuery,
 } from "@/rekuest/api/graphql";
 import SpaceCard from "../cards/SpaceCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: AgentFilter;
   pagination?: OffsetPaginationInput;
 };
 
-const List = ({ filters, pagination }: Props) => {
+const List = ({ filters, pagination = FIRST_PAGE }: Props) => {
   const { data, refetch } = useSpacesQuery({
     variables: { filters, pagination },
   });

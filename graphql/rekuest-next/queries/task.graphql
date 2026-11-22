@@ -22,9 +22,15 @@ query Task($id: ID!) {
   }
 }
 
-# Full-ports single-task fetch for the places that need `action { ...Ports }`:
-# hydrating a new child into `DetailTask.children` (ChildTaskUpdater) and the
-# task-hook runner (positional `returns` need the return ports).
+# A new call, hydrated into its parent's `DetailTask.children` (ChildTaskUpdater).
+query ChildTask($id: ID!) {
+  task(id: $id) {
+    ...ChildTask
+  }
+}
+
+# Full-ports single-task fetch for the task-hook runner (positional `returns`
+# need the return ports).
 query FullTask($id: ID!) {
   task(id: $id) {
     ...PostmanTask
@@ -41,13 +47,15 @@ query ListTasks(
   }
 }
 
-query ListTasksDetails(
+# The runs of an implementation around a travelled moment: what a blok reads
+# as the latest task then (usePastLatestTasks folds the events into a record).
+query PastTasks(
   $filter: TaskFilter
   $ordering: [TaskOrder!]
   $pagination: OffsetPaginationInput
 ) {
   tasks(filters: $filter, pagination: $pagination, ordering: $ordering) {
-    ...PostmanTask
+    ...PastTask
   }
 }
 

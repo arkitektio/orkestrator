@@ -2,10 +2,10 @@ import type { ApolloClient, DocumentNode, Reference } from "@apollo/client";
 import {
   DetailTaskDocument,
   DetailTaskQuery,
-  FullTaskDocument,
-  FullTaskQuery,
+  ChildTaskDocument,
+  ChildTaskFragment,
+  ChildTaskQuery,
   LiveTaskFragment,
-  PostmanTaskFragment,
   TaskChangeFragment,
   TaskDocument,
   TaskEventChangeFragment,
@@ -200,14 +200,14 @@ export const hydrateTask = (
   fetchTask<TaskQuery>(client, TaskDocument, id);
 
 /**
- * Fetch a task once with its full `action { ...Ports }` (`PostmanTask`), for
- * readers that render ports — `DetailTask.children` (timeline / task-space).
+ * Fetch a new call once in the `ChildTask` shape `DetailTask.children` holds
+ * (no action ports: a workflow makes many calls).
  */
-export const hydrateFullTask = (
+export const hydrateChildTask = (
   client: RekuestClient,
   id: string,
-): Promise<PostmanTaskFragment | undefined> =>
-  fetchTask<FullTaskQuery>(client, FullTaskDocument, id);
+): Promise<ChildTaskFragment | undefined> =>
+  fetchTask<ChildTaskQuery>(client, ChildTaskDocument, id);
 
 /**
  * The subscription socket came back: whatever the locally tracked tasks
@@ -283,7 +283,7 @@ export const hydrateChildIntoDetailTask = async (
   childId: string,
   parentId: string,
 ) => {
-  const child = await hydrateFullTask(client, childId);
+  const child = await hydrateChildTask(client, childId);
   if (!child) return;
 
   client.cache.updateQuery<DetailTaskQuery>(

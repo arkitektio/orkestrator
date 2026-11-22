@@ -6,13 +6,14 @@ import {
   useShortcutsQuery
 } from "@/rekuest/api/graphql";
 import ShortcutCard from "../cards/ShortcutCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   filters?: ShortcutFilter;
   pagination?: OffsetPaginationInput;
 };
 
-const List = ({ filters, pagination }: Props) => {
+const List = ({ filters, pagination = FIRST_PAGE }: Props) => {
   const { data, refetch } = useShortcutsQuery({
     variables: { filters, pagination },
   });

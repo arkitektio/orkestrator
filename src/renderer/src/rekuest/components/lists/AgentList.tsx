@@ -8,6 +8,7 @@ import {
   useAgentsQuery,
 } from "@/rekuest/api/graphql";
 import AgentCard from "../cards/AgentCard";
+import { FIRST_PAGE } from "./firstPage";
 
 export type Props = {
   title?: string;
@@ -16,7 +17,7 @@ export type Props = {
   order?: AgentOrder
 };
 
-const List = ({ filters, pagination, order, title }: Props) => {
+const List = ({ filters, pagination = FIRST_PAGE, order, title }: Props) => {
   const { data, refetch } = useAgentsQuery({
     variables: { filters, pagination, ordering: order ? [order] : undefined },
   });

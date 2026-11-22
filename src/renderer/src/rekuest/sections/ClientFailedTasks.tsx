@@ -5,10 +5,14 @@ import { RekuestTask } from "@/core/linkers";
 import type { Object } from "@/core/types";
 import { AlertTriangle, Bug } from "lucide-react";
 import {
-  PostmanTaskFragment,
+  ListTaskFragment,
+  Ordering,
   TaskEventKind,
-  useListTasksDetailsQuery,
+  useListTasksQuery,
 } from "../api/graphql";
+
+/** The latest few: the tasks page has the rest. */
+const SHOWN = 10;
 
 /**
  * A client's critical task failures: rekuest's `main` section on `@lok/client`
@@ -19,19 +23,21 @@ export const ClientFailedTasks = ({ object }: { identifier: string; object: Obje
   const clientId = typeof object.clientId === "string" ? object.clientId : undefined;
   const { openDialog } = useDialog();
 
-  const { data } = useListTasksDetailsQuery({
+  const { data } = useListTasksQuery({
     skip: !clientId,
     variables: {
       filter: {
         clientId: clientId,
         state: [TaskEventKind.Critical],
       },
+      ordering: [{ createdAt: Ordering.Desc }],
+      pagination: { limit: SHOWN },
     },
   });
 
   if (!data?.tasks?.length) return null;
 
-  const handleReportBug = (task: PostmanTaskFragment) => {
+  const handleReportBug = (task: ListTaskFragment) => {
     openDialog("reportbug", {
       taskId: task.id,
     });

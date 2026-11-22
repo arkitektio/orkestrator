@@ -1,17 +1,9 @@
-subscription WatchStateEvents($stateID: ID!) {
-  stateUpdateEvents(stateId: $stateID) {
-    ...StateEvent
-  }
-}
-
-
 subscription  WatchState($stateID: ID, $agentID: ID, $interface: String) {
   watchState(stateId: $stateID, agentId: $agentID, interface: $interface) {
     ...StatePatchEvent
     ...StateSnapshotEvent
   }
 }
-
 
 subscription WatchAgent($agentID: ID!) {
   watchAgent( agentId: $agentID) {
