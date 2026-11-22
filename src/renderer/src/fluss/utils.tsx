@@ -87,6 +87,7 @@ const flussAssignWidgetKindMap: Record<
   SliderAssignWidget: AssignWidgetKind.Slider,
   StateChoiceAssignWidget: AssignWidgetKind.StateChoice,
   StringAssignWidget: AssignWidgetKind.String,
+  BlokAssignWidget: AssignWidgetKind.Blok,
 };
 
 const flussReturnWidgetKindMap: Record<

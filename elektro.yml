@@ -16,6 +16,8 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       apolloReactHooksImportFrom: "@/elektro/api/funcs"
+      # Parsed on first use, not at import: see core/connection/graphql/lazyGql.
+      gqlImport: "@/core/connection/graphql/lazyGql#gql"
       # Reference fragment types by name instead of inlining them: deep fragments
       # otherwise blow graphql.ts up to many MB and stall tsc.
       inlineFragmentTypes: combine

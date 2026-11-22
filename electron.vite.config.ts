@@ -30,6 +30,14 @@ export default defineConfig({
     // The app's own version, for the manifest it registers with (core/constants).
     define: { __APP_VERSION__: JSON.stringify(pkg.version) },
     plugins: [react(), tailwindcss()],
+    build: {
+      // electron-vite leaves the renderer unminified, so every window parsed
+      // whitespace and comments it never runs. Minify, but keep identifiers
+      // (`esbuild.minifyIdentifiers` below): stack traces in bug reports and
+      // the component names `useDebugReport` records stay readable.
+      minify: "esbuild",
+    },
+    esbuild: { minifyIdentifiers: false },
     resolve: {
       alias: {
         "@": resolve(__dirname, 'src/renderer/src')

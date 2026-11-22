@@ -7,6 +7,7 @@
       const result: PossibleTypesResultData = {
   "possibleTypes": {
     "AssignWidget": [
+      "BlokAssignWidget",
       "ChoiceAssignWidget",
       "CustomAssignWidget",
       "ProxyWidget",

@@ -11921,7 +11921,7 @@
       },
       {
         "name": "oneOf",
-        "description": null,
+        "description": "Indicates exactly one field must be supplied and this field must not be `null`.",
         "isRepeatable": false,
         "isDeprecated": false,
         "deprecationReason": null,

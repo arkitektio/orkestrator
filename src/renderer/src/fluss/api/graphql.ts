@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/fluss/api/hooks';
 export type Maybe<T> = T | null;
@@ -236,17 +236,19 @@ export type AssignWidget = {
 export type AssignWidgetInput = {
   /** (STRING) Render as a multi-line paragraph. */
   asParagraph?: InputMaybe<Scalars['Boolean']['input']>;
+  /** (CUSTOM) The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has. */
+  children?: InputMaybe<Array<ComponentNodeInput>>;
   /** (CUSTOM) The catalog component to render. The port value is in scope as the reserved root `value`. */
   component?: InputMaybe<Scalars['String']['input']>;
   /** (SEARCH, CUSTOM, STATE_CHOICE) The other ports (port paths, `..` traverses children) whose values the query may reference. */
   dependencies?: InputMaybe<Array<Scalars['String']['input']>>;
   /** (STATE_CHOICE) The agent dependency (by key) whose state provides the choices; omitted: the implementing agent's own state. */
   dependency?: InputMaybe<Scalars['String']['input']>;
-  /** (CUSTOM) Widget to render when the UI has no such component in its catalog. */
+  /** (CUSTOM, BLOK) Widget to render when the UI has no such component in its catalog. */
   fallback?: InputMaybe<AssignWidgetInput>;
   /** (SEARCH) Filter ports whose values are passed to the query as variables named by their keys. */
   filters?: InputMaybe<Array<ArgPortInput>>;
-  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
+  /** (SLIDER, CHOICE, STRING, SEARCH, CUSTOM, BLOK, STATE_CHOICE, PROXY) Port path of another port whose value this widget follows and mirrors. */
   followValue?: InputMaybe<Scalars['String']['input']>;
   /** Which kind of assign widget this is; decides which other fields are read. */
   kind: AssignWidgetKind;
@@ -260,6 +262,8 @@ export type AssignWidgetInput = {
   props?: InputMaybe<Array<ComponentPropInput>>;
   /** (SEARCH) The GraphQL query the ward executes to populate the choices. Must be a single `query` operation declaring `$search: String` and `$values: [ID!]`, plus one variable per filter port key. */
   query?: InputMaybe<Scalars['SearchQuery']['input']>;
+  /** (BLOK) The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source?: InputMaybe<Scalars['String']['input']>;
   /** (STATE_CHOICE) How to read label/description/logo/value out of each state entry; each accessor is a static pointer or a pure call. */
   stateAccessors?: InputMaybe<Array<StateAccessorInput>>;
   /** (STATE_CHOICE) Pure UtilCall returning that pointer dynamically; may reference `state`, `value` and `dependencies`. Mutually exclusive with `state_path`. */
@@ -274,12 +278,15 @@ export type AssignWidgetInput = {
   targetDependency?: InputMaybe<Scalars['String']['input']>;
   /** (PROXY) The port key on the targeted action. */
   targetPort?: InputMaybe<Scalars['String']['input']>;
+  /** (BLOK) The blok language version the source speaks; 2 is the only one. */
+  vocab?: InputMaybe<Scalars['Int']['input']>;
   /** (SEARCH) The ward (service) that executes the query. */
   ward?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The kind of assign widget. */
 export enum AssignWidgetKind {
+  Blok = 'BLOK',
   Choice = 'CHOICE',
   Custom = 'CUSTOM',
   Proxy = 'PROXY',
@@ -293,6 +300,30 @@ export enum AssignWidgetKind {
 export type AssignableNode = {
   /** The timeout in milliseconds to wait for the assigned work before failing. */
   nextTimeout?: Maybe<Scalars['Int']['output']>;
+};
+
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidget = AssignWidget & {
+  __typename?: 'BlokAssignWidget';
+  fallback?: Maybe<AssignWidget>;
+  followValue?: Maybe<Scalars['String']['output']>;
+  kind: AssignWidgetKind;
+  source: Scalars['String']['output'];
+  vocab: Scalars['Int']['output'];
+};
+
+/** A port blok as the port's widget: BSX the form draws where the port's control would be. */
+export type BlokAssignWidgetInput = {
+  /** Widget to render where the UI draws no port bloks; the port's own kind's widget when left out. */
+  fallback?: InputMaybe<AssignWidgetInput>;
+  /** Port path of another port whose value this widget follows and mirrors. */
+  followValue?: InputMaybe<Scalars['String']['input']>;
+  /** Which member of AssignWidgetInput this is. */
+  kind: AssignWidgetKind;
+  /** The port blok as v2 BSX: one `<Blok kind="port" context="panel">`. It reads the port as `port`, the form's other arguments as `args` and the agents a run would get as `self` and `deps`; it writes `port.value` and calls no agent. */
+  source: Scalars['String']['input'];
+  /** The blok language version the source speaks; 2 is the only one. */
+  vocab?: Scalars['Int']['input'];
 };
 
 export type Choice = {
@@ -398,6 +429,18 @@ export type CollaborationObjectInput = {
   object: Scalars['ID']['input'];
 };
 
+/** A node of a blok tree (blok language v2). */
+export type ComponentNodeInput = {
+  /** Its children, in order. */
+  children?: InputMaybe<Array<ComponentNodeInput>>;
+  /** The catalog component (`Button`) or language component (`if`, `foreach`, `suspense`). */
+  component: Scalars['String']['input'];
+  /** An explicit id, or one derived from the node's place (`Card[0]/Button[1]`); unique in the tree. */
+  id: Scalars['String']['input'];
+  /** The collection of static values, state pointers, or action endpoints assigned to this component. */
+  props?: InputMaybe<Array<ComponentPropInput>>;
+};
+
 /** One prop of a component node: a literal, a path, a function call, a task call (named by `declaresValue`), an effect, or nothing (null). */
 export type ComponentProp = {
   __typename?: 'ComponentProp';
@@ -465,6 +508,7 @@ export type CreateWorkspaceInput = {
 /** A catalog component rendered as the port's widget. */
 export type CustomAssignWidget = AssignWidget & {
   __typename?: 'CustomAssignWidget';
+  children?: Maybe<Scalars['AnyDefault']['output']>;
   component: Scalars['String']['output'];
   dependencies?: Maybe<Array<Scalars['String']['output']>>;
   fallback?: Maybe<AssignWidget>;
@@ -475,6 +519,8 @@ export type CustomAssignWidget = AssignWidget & {
 
 /** A catalog component rendered as the port's widget. */
 export type CustomAssignWidgetInput = {
+  /** The component's children: a tree of blok nodes under the same rules as its props. Left out of the definition's hash when empty, so a widget without any keeps the hash it has. */
+  children?: InputMaybe<Array<ComponentNodeInput>>;
   /** The catalog component to render. The port value is in scope as the reserved root `value`. */
   component: Scalars['String']['input'];
   /** The other ports (port paths, `..` traverses children) whose values the props may reference. */
@@ -2627,7 +2673,7 @@ export type FlussStateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAss
 
 export type FlussProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, targetPort: string, targetAction: string, targetDependency?: string | null };
 
-export type FlussFilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
+export type FlussFilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'BlokAssignWidget' } | { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
 
 export type FlussSearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
     { __typename?: 'ArgPort' }
@@ -2637,7 +2683,7 @@ export type FlussSearchAssignWidgetFragment = { __typename: 'SearchAssignWidget'
 export type FlussCustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kind: AssignWidgetKind, followValue?: string | null, component: string, dependencies?: Array<string> | null, props?: Array<(
     { __typename?: 'ComponentProp' }
     & FlussBlokComponentPropFragment
-  )> | null, fallback?: (
+  )> | null, fallback?: { __typename: 'BlokAssignWidget', kind: AssignWidgetKind } | (
     { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
     & FlussChoiceAssignWidgetFragment
   ) | { __typename: 'CustomAssignWidget', kind: AssignWidgetKind } | (
@@ -2660,6 +2706,9 @@ export type FlussCustomAssignWidgetFragment = { __typename: 'CustomAssignWidget'
 export type FlussChoiceAssignWidgetFragment = { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null };
 
 export type FlussArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & FlussAssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & FlussAssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -2681,6 +2730,9 @@ export type FlussArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortK
     { __typename?: 'StringAssignWidget' }
     & FlussAssignWidget_StringAssignWidget_Fragment
   ) | null, children?: Array<{ __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, nullable: boolean, widget?: (
+      { __typename?: 'BlokAssignWidget' }
+      & FlussAssignWidget_BlokAssignWidget_Fragment
+    ) | (
       { __typename?: 'ChoiceAssignWidget' }
       & FlussAssignWidget_ChoiceAssignWidget_Fragment
     ) | (
@@ -2707,6 +2759,9 @@ export type FlussArgChildPortNestedFragment = { __typename: 'ArgPort', kind: Por
     { __typename?: 'ArgPort' }
     & FlussArgChildPortDeepFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & FlussAssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & FlussAssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -2745,6 +2800,9 @@ export type FlussArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind,
     { __typename?: 'ArgPort' }
     & FlussArgChildPortNestedFragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & FlussAssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & FlussAssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -2882,6 +2940,11 @@ type FlussPortEffect_MessageEffect_Fragment = (
 
 export type FlussPortEffectFragment = FlussPortEffect_CustomEffect_Fragment | FlussPortEffect_HideEffect_Fragment | FlussPortEffect_MessageEffect_Fragment;
 
+type FlussAssignWidget_BlokAssignWidget_Fragment = (
+  { __typename: 'BlokAssignWidget', kind: AssignWidgetKind }
+  & FlussBlokAssignWidgetFragment
+);
+
 type FlussAssignWidget_ChoiceAssignWidget_Fragment = (
   { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
   & FlussChoiceAssignWidgetFragment
@@ -2917,7 +2980,27 @@ type FlussAssignWidget_StringAssignWidget_Fragment = (
   & FlussStringAssignWidgetFragment
 );
 
-export type FlussAssignWidgetFragment = FlussAssignWidget_ChoiceAssignWidget_Fragment | FlussAssignWidget_CustomAssignWidget_Fragment | FlussAssignWidget_ProxyWidget_Fragment | FlussAssignWidget_SearchAssignWidget_Fragment | FlussAssignWidget_SliderAssignWidget_Fragment | FlussAssignWidget_StateChoiceAssignWidget_Fragment | FlussAssignWidget_StringAssignWidget_Fragment;
+export type FlussAssignWidgetFragment = FlussAssignWidget_BlokAssignWidget_Fragment | FlussAssignWidget_ChoiceAssignWidget_Fragment | FlussAssignWidget_CustomAssignWidget_Fragment | FlussAssignWidget_ProxyWidget_Fragment | FlussAssignWidget_SearchAssignWidget_Fragment | FlussAssignWidget_SliderAssignWidget_Fragment | FlussAssignWidget_StateChoiceAssignWidget_Fragment | FlussAssignWidget_StringAssignWidget_Fragment;
+
+export type FlussBlokAssignWidgetFragment = { __typename: 'BlokAssignWidget', kind: AssignWidgetKind, followValue?: string | null, source: string, vocab: number, fallback?: { __typename: 'BlokAssignWidget', kind: AssignWidgetKind } | (
+    { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind }
+    & FlussChoiceAssignWidgetFragment
+  ) | { __typename: 'CustomAssignWidget', kind: AssignWidgetKind } | (
+    { __typename: 'ProxyWidget', kind: AssignWidgetKind }
+    & FlussProxyWidgetFragment
+  ) | (
+    { __typename: 'SearchAssignWidget', kind: AssignWidgetKind }
+    & FlussSearchAssignWidgetFragment
+  ) | (
+    { __typename: 'SliderAssignWidget', kind: AssignWidgetKind }
+    & FlussSliderAssignWidgetFragment
+  ) | (
+    { __typename: 'StateChoiceAssignWidget', kind: AssignWidgetKind }
+    & FlussStateChoiceAssignWidgetFragment
+  ) | (
+    { __typename: 'StringAssignWidget', kind: AssignWidgetKind }
+    & FlussStringAssignWidgetFragment
+  ) | null };
 
 export type ValidatorFragment = { __typename?: 'Validator', dependencies?: Array<string> | null, label?: string | null, errorMessage?: string | null, source?: string | null, call: (
     { __typename?: 'UtilCall' }
@@ -2934,6 +3017,9 @@ export type FlussArgPortFragment = { __typename: 'ArgPort', key: string, label?:
     { __typename?: 'MessageEffect' }
     & FlussPortEffect_MessageEffect_Fragment
   )> | null, widget?: (
+    { __typename?: 'BlokAssignWidget' }
+    & FlussAssignWidget_BlokAssignWidget_Fragment
+  ) | (
     { __typename?: 'ChoiceAssignWidget' }
     & FlussAssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -3761,6 +3847,30 @@ ${FlussSliderAssignWidgetFragmentDoc}
 ${FlussChoiceAssignWidgetFragmentDoc}
 ${FlussProxyWidgetFragmentDoc}
 ${FlussStateChoiceAssignWidgetFragmentDoc}`;
+export const FlussBlokAssignWidgetFragmentDoc = gql`
+    fragment FlussBlokAssignWidget on BlokAssignWidget {
+  __typename
+  kind
+  followValue
+  source
+  vocab
+  fallback {
+    __typename
+    kind
+    ...FlussStringAssignWidget
+    ...FlussSearchAssignWidget
+    ...FlussSliderAssignWidget
+    ...FlussChoiceAssignWidget
+    ...FlussProxyWidget
+    ...FlussStateChoiceAssignWidget
+  }
+}
+    ${FlussStringAssignWidgetFragmentDoc}
+${FlussSearchAssignWidgetFragmentDoc}
+${FlussSliderAssignWidgetFragmentDoc}
+${FlussChoiceAssignWidgetFragmentDoc}
+${FlussProxyWidgetFragmentDoc}
+${FlussStateChoiceAssignWidgetFragmentDoc}`;
 export const FlussAssignWidgetFragmentDoc = gql`
     fragment FlussAssignWidget on AssignWidget {
   __typename
@@ -3772,6 +3882,7 @@ export const FlussAssignWidgetFragmentDoc = gql`
   ...FlussProxyWidget
   ...FlussCustomAssignWidget
   ...FlussStateChoiceAssignWidget
+  ...FlussBlokAssignWidget
 }
     ${FlussStringAssignWidgetFragmentDoc}
 ${FlussSearchAssignWidgetFragmentDoc}
@@ -3779,7 +3890,8 @@ ${FlussSliderAssignWidgetFragmentDoc}
 ${FlussChoiceAssignWidgetFragmentDoc}
 ${FlussProxyWidgetFragmentDoc}
 ${FlussCustomAssignWidgetFragmentDoc}
-${FlussStateChoiceAssignWidgetFragmentDoc}`;
+${FlussStateChoiceAssignWidgetFragmentDoc}
+${FlussBlokAssignWidgetFragmentDoc}`;
 export const FlussArgChildPortDeepFragmentDoc = gql`
     fragment FlussArgChildPortDeep on ArgPort {
   __typename

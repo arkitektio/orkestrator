@@ -1494,6 +1494,7 @@ input RequirementInput {
   key: String!
   optional: Boolean! = false
   service: String!
+  version: String = null
 }
 
 """A requirement as a mandate pins it."""

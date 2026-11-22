@@ -128,6 +128,12 @@ protocol.registerSchemesAsPrivileged([
       supportFetchAPI: true,
       corsEnabled: true,
       stream: true,
+      // V8 code cache. Chromium caches compiled scripts for http(s) only; a
+      // custom scheme opts in here (and needs `standard`). Without it every
+      // window compiled the renderer bundle from source on every launch: the
+      // quick bar and each popout paid that again. Chunk names are content
+      // hashed, so a new build never meets a stale cache entry.
+      codeCache: true,
     },
   },
 ]);

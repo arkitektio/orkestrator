@@ -25036,12 +25036,36 @@
             "deprecationReason": null
           },
           {
+            "name": "newValueJson",
+            "description": "The new value of the field, preserving its native JSON type.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "oldValue",
             "description": "The old value of the field.",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "oldValueJson",
+            "description": "The old value of the field, preserving its native JSON type.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
               "ofType": null
             },
             "isDeprecated": false,

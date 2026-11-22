@@ -11,6 +11,7 @@ const TERM_KIND_LABELS: Partial<Record<TermKind, string>> = {
   [TermKind.ProtocolEvent]: "Protocol Event",
   [TermKind.Measurement]: "Measurement",
   [TermKind.Relation]: "Relation",
+  [TermKind.Structure]: "Structure",
   [TermKind.StructureRelation]: "Structure Relation",
 };
 
@@ -51,6 +52,9 @@ export const TERM_KIND_HINTS: Record<TermKind, string> = {
   [TermKind.Relation]: "How two things relate — is part of, is connected to",
   [TermKind.Measurement]: "What a datum measures about a thing",
   [TermKind.StructureRelation]: "How two data relate — is a crop of, is derived from",
+  // Not offered by the create dialog (TERM_KINDS): a structure word comes from
+  // mounting a structure kind into a graph (createStructureCategory).
+  [TermKind.Structure]: "A kind of data a graph draws — an image, a ROI",
 };
 
 type TermSearchQuery = (x: {

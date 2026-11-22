@@ -328,6 +328,27 @@ fragment FlussAssignWidget on AssignWidget {
   ...FlussProxyWidget
   ...FlussCustomAssignWidget
   ...FlussStateChoiceAssignWidget
+  ...FlussBlokAssignWidget
+}
+
+# A port blok as the port's widget. `source` is required on the way back
+# (BlokAssignWidgetInput), so a flow that round-trips the port must carry it.
+fragment FlussBlokAssignWidget on BlokAssignWidget {
+  __typename
+  kind
+  followValue
+  source
+  vocab
+  fallback {
+    __typename
+    kind
+    ...FlussStringAssignWidget
+    ...FlussSearchAssignWidget
+    ...FlussSliderAssignWidget
+    ...FlussChoiceAssignWidget
+    ...FlussProxyWidget
+    ...FlussStateChoiceAssignWidget
+  }
 }
 
 fragment Validator on Validator {

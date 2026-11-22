@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/kabinet/api/hooks';
 export type Maybe<T> = T | null;
@@ -2681,6 +2681,8 @@ export type Requirement = {
   optional: Scalars['Boolean']['output'];
   /** The name of the required service. */
   service: Scalars['String']['output'];
+  /** The versions of the service the app was written for, as a specifier ('>=12.1,<14'). Advisory: an instance outside it is still used. */
+  version?: Maybe<Scalars['String']['output']>;
 };
 
 export type RequirementInput = {

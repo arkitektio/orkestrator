@@ -32,8 +32,12 @@ import { termKindLabel, termTint } from "../lib/terms";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 import { KRAPH_HELP } from "../help";
 
-/** Each kind of category has its own page; the term links to the one it is. */
-const CATEGORY_LINKS: Record<NonNullable<TermCategoryFragment["__typename"]>, typeof KraphEntityCategory> = {
+/**
+ * Each kind of category has its own page; the term links to the one it is. A
+ * mounted structure kind (StructureCategory) has no page yet, so it is listed
+ * without a link.
+ */
+const CATEGORY_LINKS: Partial<Record<NonNullable<TermCategoryFragment["__typename"]>, typeof KraphEntityCategory>> = {
   EntityCategory: KraphEntityCategory,
   MeasurementCategory: KraphMeasurementCategory,
   NaturalEventCategory: KraphNaturalEventCategory,

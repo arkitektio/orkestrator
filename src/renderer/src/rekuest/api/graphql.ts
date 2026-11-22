@@ -4,7 +4,7 @@ import { EffectKind } from '@arkitektio/bsx/ports/rekuest';
 import { OptionKey } from '@arkitektio/bsx/ports/rekuest';
 import { PortKind } from '@arkitektio/bsx/ports/rekuest';
 import { ReturnWidgetKind } from '@arkitektio/bsx/ports/rekuest';
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/rekuest/api/hooks';
 export type Maybe<T> = T | null;

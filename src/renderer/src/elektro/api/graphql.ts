@@ -11,7 +11,7 @@ import { Resistivity } from '@/elektro/api/scalars';
 import { SpecificCapacitance } from '@/elektro/api/scalars';
 import { Temperature } from '@/elektro/api/scalars';
 import { Unit } from '@/elektro/api/scalars';
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/elektro/api/funcs';
 export type Maybe<T> = T | null;
@@ -3379,8 +3379,12 @@ export type ModelChange = {
   field: Scalars['String']['output'];
   /** The new value of the field. */
   newValue?: Maybe<Scalars['String']['output']>;
+  /** The new value of the field, preserving its native JSON type. */
+  newValueJson?: Maybe<Scalars['JSON']['output']>;
   /** The old value of the field. */
   oldValue?: Maybe<Scalars['String']['output']>;
+  /** The old value of the field, preserving its native JSON type. */
+  oldValueJson?: Maybe<Scalars['JSON']['output']>;
 };
 
 export type ModelCollection = {

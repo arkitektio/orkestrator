@@ -3384,6 +3384,11 @@ type Requirement {
 
   """The name of the required service."""
   service: String!
+
+  """
+  The versions of the service the app was written for, as a specifier ('>=12.1,<14'). Advisory: an instance outside it is still used.
+  """
+  version: String
 }
 
 input RequirementInput {

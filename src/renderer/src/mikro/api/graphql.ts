@@ -2,7 +2,7 @@ import { Frequency } from '@/mikro/api/scalars';
 import { GenericQuantity } from '@/mikro/api/scalars';
 import { Length } from '@/mikro/api/scalars';
 import { Power } from '@/mikro/api/scalars';
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/mikro/api/funcs';
 export type Maybe<T> = T | null;
@@ -1002,7 +1002,7 @@ export type ArrayDatasetFilter = {
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Filter to datasets rendered in this scene, through their lenses' layers. What is actually staged there -- for what merely could be, use `placeableIn` */
   scene?: InputMaybe<Scalars['ID']['input']>;
-  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to the datasets converted from this file -- every series of it, unless `sourceSeriesIdentifier` narrows that. A file link, not a derivation: this asks which bytes the arrays were read out of, where `derivedFrom` asks which data they were computed from. A dataset can honestly answer both */
   sourceFile?: InputMaybe<Scalars['ID']['input']>;
@@ -4530,7 +4530,7 @@ export type FolderFilter = {
   parentless?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by name (full-text) or by the meaning of the query against name and description. Textual matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
+  /** Search by name (full-text) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by tag names */
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -9653,7 +9653,7 @@ export type Query = {
   preflightDeleteTableDataset: DeletePreflight;
   /** The layer a create mutation would make, built and not saved: every field resolves as it would on the saved layer -- `asAffine`, `pathToWorld`, the kind's render columns -- and nothing is written. Refused for exactly the reasons the create would refuse it. Its `id` is negative and names no row; keep it by sending the same input to the create. What a viewer draws while it stages a layer it has not decided to keep */
   previewLayer: Layer;
-  /** The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time */
+  /** The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time; its `search` ranks by match instead of newest first */
   roots: Array<RootNode>;
   /** What a picked row of a table reaches -- a point of a chart of values: the row itself, then every hop the schema allows from it, as `attributePlans` describes its chain, plus REVERSE references (a cluster's member rows) and SAME_ROWS crossings (the PCA row of a measurement row). No sample: the picked row's INDEX value is the id. Instructions, never values, and no id argument, so fetch it once per table. Refused for a table not keyed by one INDEX column */
   rowPlan: RowPlan;
@@ -10467,7 +10467,7 @@ export type RootFilter = {
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Only what this user created, by their subject ID. Kinds that record no creator drop out */
   owner?: InputMaybe<Scalars['ID']['input']>;
-  /** Only what is named with this text, anywhere in the name, ignoring case. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches */
+  /** Only what is named with this text, anywhere in the name, ignoring case, or (array and table datasets) whose name and description mean something close to it. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches. Ranked instead of newest first: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Only data satisfying every one of these specs, as `ArrayDatasetFilter.spec` reads them, e.g. [VOLUME, TIMESERIES]. A file is judged by the series converted out of it, and matches only when one series meets both this and the acquisition window; kinds that are not array data drop out */
   spec?: InputMaybe<Array<ArrayDatasetSpec>>;
@@ -11729,7 +11729,7 @@ export type TableDatasetFilter = {
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
-  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to tables satisfying every one of these specs, e.g. [POINTS_3D, TRACKED] for 3D tracks, or [SERIES] for a value against a single measured coordinate, which a chart draws without an axis to choose. Materialized at creation from the declared columns: one placement member (by how many SPACE coordinate columns the table has) plus a modifier per declared fact. Declared, not measured -- TIMED says a TIME coordinate column exists. Two placement members together match nothing. `hasColumnRole` is the raw form */
   spec?: InputMaybe<Array<TableDatasetSpec>>;

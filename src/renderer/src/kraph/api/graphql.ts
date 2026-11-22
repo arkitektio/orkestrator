@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/kraph/api/funcs';
 export type Maybe<T> = T | null;
@@ -18,6 +18,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** The `AnyScalar` scalar type represents an arbitrary JSON-like value */
   AnyScalar: { input: any; output: any; }
+  /** A reference to a big file store: the id its finished upload returned. */
+  BigFileLike: { input: any; output: any; }
   /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
   ByteCount: { input: number; output: number; }
   /** Date with time (isoformat) */
@@ -606,6 +608,57 @@ export type AttestStructureInput = {
   id: Scalars['String']['input'];
 };
 
+/** Temporary S3 credentials for reading a big file. */
+export type BigFileAccessGrant = {
+  __typename?: 'BigFileAccessGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store?: Maybe<Scalars['String']['output']>;
+};
+
+/** A BigFileStore represents a large object stored behind the S3 datalayer. */
+export type BigFileStore = {
+  __typename?: 'BigFileStore';
+  /** Get temporary S3 read credentials for the object. */
+  accessGrant: BigFileAccessGrant;
+  bucket: Scalars['String']['output'];
+  contentType?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  key: Scalars['String']['output'];
+  /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
+};
+
+/** Temporary S3 credentials for uploading a big file. */
+export type BigFileUploadGrant = {
+  __typename?: 'BigFileUploadGrant';
+  accessKey: Scalars['String']['output'];
+  bucket: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  key: Scalars['String']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
+  originalFileName?: Maybe<Scalars['String']['output']>;
+  path: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  secretKey: Scalars['String']['output'];
+  sessionToken: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  store: Scalars['String']['output'];
+  uploadContentType?: Maybe<Scalars['String']['output']>;
+  uploadFileName: Scalars['String']['output'];
+};
+
 /** Builder arguments for generating a graph table query */
 export type BuilderArgsInput = {
   /** Optional patterns to match in the graph for this query */
@@ -949,6 +1002,20 @@ export type CreateGraphInput = {
   samenessRule?: InputMaybe<SamenessRuleInput>;
 };
 
+/** Input for saving a pairs query: an insight over one view whose runs are training sets */
+export type CreateGraphPairsQueryInput = {
+  /** Description of this query */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The graph id this pairs query will belong to */
+  graph: Scalars['String']['input'];
+  /** Unique key for this query within its graph */
+  key: Scalars['String']['input'];
+  /** Human-readable name (defaults to `key`) */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What the query means: the match and its two ends */
+  plan: PairsQueryPlanInput;
+};
+
 /** Input for creating a new graph table query */
 export type CreateGraphTableQueryInput = {
   /** How the returned aliases are presented */
@@ -1009,6 +1076,24 @@ export type CreateMeasurementCategoryInput = {
   source: StructureDescriptorInput;
   /** Target entity type(s) */
   target: EntityDescriptorInput;
+};
+
+/** Input for registering a trained model: its weights (a finished big-file upload) and what it was trained on, a run or a pairs query the server runs */
+export type CreateModelInput = {
+  /** What the model does */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** What the weights are for, e.g. 'care' or 'cellpose' */
+  framework: Scalars['String']['input'];
+  /** What the model is called */
+  name: Scalars['String']['input'];
+  /** How it was trained, as the trainer reports it */
+  parameters?: InputMaybe<Scalars['JSON']['input']>;
+  /** The finished big-file upload holding the weights */
+  store: Scalars['BigFileLike']['input'];
+  /** The pairs query run it was trained on; give this or `trained_on_query`, or neither for weights from elsewhere */
+  trainedOn?: InputMaybe<Scalars['ID']['input']>;
+  /** The pairs query it was trained on, when nobody kept a run: the server runs it for the model */
+  trainedOnQuery?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Input for creating a new natural event definition in the graph schema */
@@ -1139,6 +1224,28 @@ export type CreateScatterPlotInput = {
   yIdColumn?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Input for mounting a structure kind into a graph: the vertex label its data are drawn under (RFC 0027) */
+export type CreateStructureCategoryInput = {
+  /** Optional RGBA color for this node role (e.g. [255, 0, 0, 128]) */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** Description of this node role */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The graph id the structure kind is mounted into */
+  graph: Scalars['String']['input'];
+  /** The structure identifier mounted (e.g. '@mikro/arraylens') */
+  identifier: Scalars['String']['input'];
+  /** Optional media store ID for an image representing this node role */
+  image?: InputMaybe<Scalars['String']['input']>;
+  /** The label of the node participating in the event */
+  key: Scalars['String']['input'];
+  /** Optional human-readable label for this node role (defaults to 'key' if not provided) */
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** Ontology references for this event */
+  ontologyReferences?: Array<OntologyReferenceInput>;
+  /** Whether to pin this node role in the UI */
+  pin?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Input for creating a new structure relation definition in the graph schema */
 export type CreateStructureRelationCategoryInput = {
   /** Relation cardinality */
@@ -1249,10 +1356,22 @@ export type DeleteMetricKindInput = {
   id: Scalars['String']['input'];
 };
 
+/** Input for deleting a trained model; its weights are flagged orphaned for the datalayer's purge */
+export type DeleteModelInput = {
+  /** The model to delete */
+  id: Scalars['ID']['input'];
+};
+
 /** Input for deleting an existing natural event definition in the graph schema */
 export type DeleteNaturalEventCategoryInput = {
   /** The ID of the event category to delete */
   id: Scalars['String']['input'];
+};
+
+/** Input for deleting a run. A run a model was trained on stays */
+export type DeletePairsQueryRunInput = {
+  /** The run to delete */
+  id: Scalars['ID']['input'];
 };
 
 /** Input for deleting an existing protocol event definition in the graph schema */
@@ -1271,6 +1390,12 @@ export type DeleteRelationCategoryInput = {
 export type DeleteScatterPlotInput = {
   /** The database ID of the scatter plot to delete */
   id: Scalars['Int']['input'];
+};
+
+/** Input for unmounting a structure kind */
+export type DeleteStructureCategoryInput = {
+  /** The ID of the structure category to unmount */
+  id: Scalars['String']['input'];
 };
 
 /** Input for deleting an existing structure definition in the graph schema */
@@ -1409,6 +1534,39 @@ export type Description = Edge & {
   /** The target endpoint, as evidence names it — a bare uuid */
   targetId: Scalars['ID']['output'];
 };
+
+/** One constraint on an external datum's descriptors, in the shape a rekuest port states its `requires` in */
+export type DescriptorConstraint = {
+  __typename?: 'DescriptorConstraint';
+  /** The descriptor key, e.g. '@mikro/n_space_axes' */
+  key: Scalars['String']['output'];
+  /** How the datum's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** What is compared against: a number for GTE/LTE, a list for IN/NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: Maybe<Scalars['JSON']['output']>;
+};
+
+/** One constraint on an external datum's descriptors, in the shape a rekuest port states its `requires` in */
+export type DescriptorConstraintInput = {
+  /** The descriptor key, e.g. '@mikro/n_space_axes' */
+  key: Scalars['String']['input'];
+  /** How the datum's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** What is compared against: a number for GTE/LTE, a list for IN/NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: InputMaybe<Scalars['AnyScalar']['input']>;
+};
+
+export enum DescriptorOperator {
+  Contains = 'CONTAINS',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  Gte = 'GTE',
+  In = 'IN',
+  Lte = 'LTE',
+  Matches = 'MATCHES',
+  NotEquals = 'NOT_EQUALS',
+  NotIn = 'NOT_IN'
+}
 
 /** A claim that two instances are two things, not one (RFC 0019) */
 export type Difference = Edge & {
@@ -1868,6 +2026,11 @@ export type EventRoleInput = {
   role: Scalars['String']['input'];
 };
 
+export type FinishBigFileUploadInput = {
+  storeId: Scalars['String']['input'];
+  valid?: Scalars['Boolean']['input'];
+};
+
 export type FinishMediaUploadInput = {
   storeId: Scalars['String']['input'];
   valid?: Scalars['Boolean']['input'];
@@ -1929,6 +2092,8 @@ export type Graph = {
   relationCategories: Array<RelationCategory>;
   /** Whose sameness claims this view counts when folding its nodes into individuals (RFC 0024). Identity is the view's, not a category's: one answer per view to how many things are here. Null means everyone's claims count */
   samenessRule?: Maybe<SamenessRule>;
+  /** The structure kinds this graph mounts: the vertex labels its structure relations draw their ends under */
+  structureCategories: Array<StructureCategory>;
   /** List of structure relation categories defined in this graph */
   structureRelationCategories: Array<StructureRelationCategory>;
 };
@@ -1975,6 +2140,14 @@ export type GraphRelationCategoriesArgs = {
 
 
 /** One view over the organization's evidence log */
+export type GraphStructureCategoriesArgs = {
+  filters?: InputMaybe<StructureCategoryFilter>;
+  ordering?: Array<StructureCategoryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** One view over the organization's evidence log */
 export type GraphStructureRelationCategoriesArgs = {
   filters?: InputMaybe<StructureRelationCategoryFilter>;
   ordering?: Array<StructureRelationCategoryOrder>;
@@ -2001,6 +2174,8 @@ export type GraphExtensionsInput = {
   relations?: Array<RelationDefinitionInput>;
   /** Structure relation definitions */
   structureRelations?: Array<StructureRelationDefinitionInput>;
+  /** Structure kinds the view mounts (RFC 0027): the vertex labels structure relations draw their ends under */
+  structures?: Array<StructureDefinitionInput>;
 };
 
 /** Numeric/aggregatable fields of Graph */
@@ -2029,6 +2204,54 @@ export type GraphFilter = {
 export type GraphOrder =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
+
+/** An insight that selects pairs from a view's drawing (an image and its ground truth). Run (`runPairsQuery`), its answer is stored: a training set */
+export type GraphPairsQuery = GraphQuery & {
+  __typename?: 'GraphPairsQuery';
+  /** Whether this saved query has been archived */
+  archived: Scalars['Boolean']['output'];
+  /** Description of this query */
+  description?: Maybe<Scalars['String']['output']>;
+  /** What the query says about itself, for a port's `requires`: its view, and the identifier each end is constrained to (null when it is not) */
+  descriptors: Scalars['JSON']['output'];
+  /** The graph this query belongs to */
+  graph: Graph;
+  /** Database ID of this saved query */
+  id: Scalars['ID']['output'];
+  /** The key this query is referenced and pinned by, unique within its graph */
+  key: Scalars['String']['output'];
+  /** Human-readable name for this query */
+  label: Scalars['String']['output'];
+  /** True for a row saved as raw Cypher before the plan became the contract. Such a row cannot render — no projection kind executes Cypher — until rebuilt through the builder */
+  legacy: Scalars['Boolean']['output'];
+  /** The match and its two ends */
+  pairsPlan?: Maybe<PairsQueryPlan>;
+  /** What this query means: its plan. Null only on a legacy row saved as raw Cypher before plans existed — see `legacy` */
+  plan?: Maybe<TableQueryPlan>;
+  /** List of node categories for which this query is relevant */
+  relevantFor: Array<NodeCategory>;
+  /** The runs of this query: its stored answers, newest first */
+  runs: Array<PairsQueryRun>;
+};
+
+export type GraphPairsQueryFilter = {
+  AND?: InputMaybe<GraphPairsQueryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<GraphPairsQueryFilter>;
+  OR?: InputMaybe<GraphPairsQueryFilter>;
+  /** Only archived queries, or only live ones. Omitted shows both */
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the pairs queries satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts (e.g. `@kraph/source_identifier` EQUALS `@mikro/arraylens`). Answered in SQL from the descriptors stored on every pairs query. A key a pairs query does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Full-text search over label and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GraphPairsQueryOrder =
+  { id: Ordering; label?: never; }
+  |  { id?: never; label: Ordering; };
 
 /** How far along the organization's log one view's drawing is. The projection is a cache of the evidence; this says how current a cache it is. `projectedThroughSeq` is a safe cursor: every assertion at or below it has been drawn here. `lag` is the distance to the log head; `pending` is how many assertions organization-wide nobody has finished drawing. `schemaStale` is the other axis — a category's rules moved and the vertices have not been redrawn under them. */
 export type GraphProjection = {
@@ -2795,6 +3018,51 @@ export type MetricValueInput = {
   valueKind: ValueKind;
 };
 
+/** A trained model: its weights, and the pairs query run it learned from */
+export type Model = {
+  __typename?: 'Model';
+  /** When the model was registered */
+  createdAt: Scalars['DateTime']['output'];
+  /** What the model does */
+  description?: Maybe<Scalars['String']['output']>;
+  /** What the model says about itself, for a port's `requires`: its framework and what it was trained on (run, query, position, and the identifiers its pairs share; null where none) */
+  descriptors: Scalars['JSON']['output'];
+  /** What the weights are for, e.g. 'care' or 'cellpose' */
+  framework: Scalars['String']['output'];
+  /** Database ID of the model */
+  id: Scalars['ID']['output'];
+  /** What the model is called */
+  name: Scalars['String']['output'];
+  /** How it was trained, as the trainer reported it */
+  parameters?: Maybe<Scalars['JSON']['output']>;
+  /** The big file holding the weights */
+  store: BigFileStore;
+  /** The pairs query run it was trained on; null for weights from elsewhere */
+  trainedOn?: Maybe<PairsQueryRun>;
+};
+
+export type ModelFilter = {
+  AND?: InputMaybe<ModelFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<ModelFilter>;
+  OR?: InputMaybe<ModelFilter>;
+  /** The models of one framework, e.g. 'care' */
+  framework?: InputMaybe<Scalars['String']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the models satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged (e.g. `@kraph/framework` EQUALS `care`). Answered in SQL from the descriptors stored on every model. A key a model does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Search the name and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** The models trained on one run */
+  trainedOn?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type ModelOrder =
+  { createdAt: Ordering; name?: never; }
+  |  { createdAt?: never; name: Ordering; };
+
 /** Input for moving a todo item on its board, or onto another list */
 export type MoveTodoItemInput = {
   /** The item to move */
@@ -2870,12 +3138,16 @@ export type Mutation = {
   createEntityCategory: EntityCategory;
   /** Create a new graph in the graph engine */
   createGraph: Graph;
+  /** Save a pairs query: a match over a view's drawing and which two of its nodes are the pair. Its runs are training sets */
+  createGraphPairsQuery: GraphPairsQuery;
   /** Create a graph table query */
   createGraphTableQuery: GraphTableQuery;
   /** Create or update a graph table query using builder arguments */
   createGraphTableQueryThroughBuilder: GraphTableQuery;
   /** Create a new measurement category in the graph */
   createMeasurementCategory: MeasurementCategory;
+  /** Register a trained model: its weights, a finished big-file upload (a client passes the file and its upload middleware sends it), and what it was trained on: a run, or a pairs query the server runs */
+  createModel: Model;
   /** Create a new natural event category in the graph */
   createNaturalEventCategory: NaturalEventCategory;
   /** Create a project */
@@ -2886,6 +3158,8 @@ export type Mutation = {
   createRelationCategory: RelationCategory;
   /** Create a scatter plot */
   createScatterPlot: ScatterPlot;
+  /** Mount a structure kind into a graph: the vertex label its data are drawn under wherever a structure relation the graph admits touches them (RFC 0027) */
+  createStructureCategory: StructureCategory;
   /** Create a new structure relation category in the graph */
   createStructureRelationCategory: StructureRelationCategory;
   /** Declare one of the organization's words, or describe one an ingest minted bare */
@@ -2898,14 +3172,20 @@ export type Mutation = {
   deleteEntityCategory: Scalars['ID']['output'];
   /** Delete a graph from the graph engine */
   deleteGraph: Scalars['ID']['output'];
+  /** Delete a pairs query, refused while it has runs */
+  deleteGraphPairsQuery: Scalars['ID']['output'];
   /** Delete a graph table query */
   deleteGraphTableQuery: Scalars['ID']['output'];
   /** Delete a measurement category from the graph */
   deleteMeasurementCategory: Scalars['ID']['output'];
   /** Retire a metric kind. Refused while any metric is recorded under it — evidence is never deleted; retract the metrics first */
   deleteMetricKind: Scalars['ID']['output'];
+  /** Delete a trained model. Its weights are flagged orphaned for the datalayer's purge; the run it was trained on stays */
+  deleteModel: Scalars['ID']['output'];
   /** Delete a natural event category from the graph */
   deleteNaturalEventCategory: Scalars['ID']['output'];
+  /** Delete a run; a run a model was trained on cannot be deleted */
+  deletePairsQueryRun: Scalars['ID']['output'];
   /** Delete a project with its todo lists */
   deleteProject: Scalars['ID']['output'];
   /** Delete a protocol event category from the graph */
@@ -2914,6 +3194,8 @@ export type Mutation = {
   deleteRelationCategory: Scalars['ID']['output'];
   /** Delete a scatter plot */
   deleteScatterPlot: Scalars['ID']['output'];
+  /** Unmount a structure kind, refused while a structure-relation category of the graph names it */
+  deleteStructureCategory: Scalars['ID']['output'];
   /** Retire a structure kind. Refused while any structure is recorded under it — evidence is never deleted; retract the structures first */
   deleteStructureKind: Scalars['ID']['output'];
   /** Delete a structure relation category from the graph */
@@ -2924,12 +3206,20 @@ export type Mutation = {
   deleteTodoList: Scalars['ID']['output'];
   /** Take one object off its todo item */
   detachFromTodoItem: TodoItem;
+  /** Finalize a big-file upload after the client has written the object */
+  finishBigfileUpload: BigFileStore;
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
   /** Move a todo item to a column and a place in it */
   moveTodoItem: TodoItem;
+  /** Reissue upload credentials for a big-file upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
+  refreshBigfileUpload: BigFileUploadGrant;
   /** Reissue upload credentials for a media upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
   refreshMediaUpload: MediaUploadGrant;
+  /** Request temporary S3 read credentials for a big file */
+  requestBigfileAccess: BigFileAccessGrant;
+  /** Request credentials to upload a big file (a trained model's weights) to the datalayer */
+  requestBigfileUpload: BigFileUploadGrant;
   /** Request temporary S3 read credentials for media files in the organization */
   requestGeneralMediaAccess: GeneralMediaAccessGrant;
   /** Request temporary S3 read credentials for a media file */
@@ -2962,6 +3252,8 @@ export type Mutation = {
   retractStructure: AssertedStructure;
   /** Retract a structure relation assertion without destroying it */
   retractStructureRelation: AssertedStructureRelation;
+  /** Run a pairs query: its answer from the view's drawing, stored with where the drawing stood. What a model is trained on */
+  runPairsQuery: PairsQueryRun;
   /** Change only when a todo item is due; no date means its list's again */
   scheduleTodoItem: TodoItem;
   /** Change only when a todo list is due */
@@ -2982,6 +3274,8 @@ export type Mutation = {
   updateEntityCategory: EntityCategory;
   /** Update an existing graph in the graph engine */
   updateGraph: Graph;
+  /** Change a pairs query. Its runs keep the plan they were run with */
+  updateGraphPairsQuery: GraphPairsQuery;
   /** Update a graph table query */
   updateGraphTableQuery: GraphTableQuery;
   /** Update the visual configuration of a graph in the graph engine */
@@ -3000,6 +3294,8 @@ export type Mutation = {
   updateRelationCategory: RelationCategory;
   /** Update a scatter plot */
   updateScatterPlot: ScatterPlot;
+  /** Change a mounted structure kind's label, description, colour, image or pin */
+  updateStructureCategory: StructureCategory;
   /** Update a structure kind's label, description or colour */
   updateStructureKind: StructureKind;
   /** Update an existing structure relation category in the graph */
@@ -3194,6 +3490,12 @@ export type MutationCreateGraphArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationCreateGraphPairsQueryArgs = {
+  input: CreateGraphPairsQueryInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationCreateGraphTableQueryArgs = {
   input: CreateGraphTableQueryInput;
 };
@@ -3208,6 +3510,12 @@ export type MutationCreateGraphTableQueryThroughBuilderArgs = {
 /** Graph Engine Mutations */
 export type MutationCreateMeasurementCategoryArgs = {
   input: CreateMeasurementCategoryInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationCreateModelArgs = {
+  input: CreateModelInput;
 };
 
 
@@ -3238,6 +3546,12 @@ export type MutationCreateRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationCreateScatterPlotArgs = {
   input: CreateScatterPlotInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationCreateStructureCategoryArgs = {
+  input: CreateStructureCategoryInput;
 };
 
 
@@ -3278,6 +3592,12 @@ export type MutationDeleteGraphArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationDeleteGraphPairsQueryArgs = {
+  input: DeleteGraphTableQueryInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationDeleteGraphTableQueryArgs = {
   input: DeleteGraphTableQueryInput;
 };
@@ -3296,8 +3616,20 @@ export type MutationDeleteMetricKindArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationDeleteModelArgs = {
+  input: DeleteModelInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationDeleteNaturalEventCategoryArgs = {
   input: DeleteNaturalEventCategoryInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationDeletePairsQueryRunArgs = {
+  input: DeletePairsQueryRunInput;
 };
 
 
@@ -3322,6 +3654,12 @@ export type MutationDeleteRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationDeleteScatterPlotArgs = {
   input: DeleteScatterPlotInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationDeleteStructureCategoryArgs = {
+  input: DeleteStructureCategoryInput;
 };
 
 
@@ -3356,6 +3694,12 @@ export type MutationDetachFromTodoItemArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationFinishBigfileUploadArgs = {
+  input: FinishBigFileUploadInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationFinishMediaUploadArgs = {
   input: FinishMediaUploadInput;
 };
@@ -3368,8 +3712,26 @@ export type MutationMoveTodoItemArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationRefreshBigfileUploadArgs = {
+  input: RefreshUploadInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationRefreshMediaUploadArgs = {
   input: RefreshUploadInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationRequestBigfileAccessArgs = {
+  input: RequestBigFileAccessInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationRequestBigfileUploadArgs = {
+  input: RequestBigFileUploadInput;
 };
 
 
@@ -3470,6 +3832,12 @@ export type MutationRetractStructureRelationArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationRunPairsQueryArgs = {
+  input: RunPairsQueryInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationScheduleTodoItemArgs = {
   input: ScheduleTodoInput;
 };
@@ -3530,6 +3898,12 @@ export type MutationUpdateGraphArgs = {
 
 
 /** Graph Engine Mutations */
+export type MutationUpdateGraphPairsQueryArgs = {
+  input: UpdateGraphPairsQueryInput;
+};
+
+
+/** Graph Engine Mutations */
 export type MutationUpdateGraphTableQueryArgs = {
   input: UpdateGraphTableQueryInput;
 };
@@ -3580,6 +3954,12 @@ export type MutationUpdateRelationCategoryArgs = {
 /** Graph Engine Mutations */
 export type MutationUpdateScatterPlotArgs = {
   input: UpdateScatterPlotInput;
+};
+
+
+/** Graph Engine Mutations */
+export type MutationUpdateStructureCategoryArgs = {
+  input: UpdateStructureCategoryInput;
 };
 
 
@@ -3996,6 +4376,163 @@ export type OutputParticipation = Edge & {
   targetId: Scalars['ID']['output'];
 };
 
+/** Which matched node is one end of a pair: a node of one path */
+export type PairEnd = {
+  __typename?: 'PairEnd';
+  /** The node's name within that path */
+  node: Scalars['String']['output'];
+  /** The path the node is matched in: its `title`, or `path_<i>` for the i-th path */
+  path: Scalars['String']['output'];
+};
+
+/** Which matched node is one end of a pair: a node of one path */
+export type PairEndInput = {
+  /** The node's name within that path */
+  node: Scalars['String']['input'];
+  /** The path the node is matched in: its `title`, or `path_<i>` for the i-th path */
+  path: Scalars['String']['input'];
+};
+
+/** What a pairs query means: a match over the view's drawing, and which two of its nodes are the pair */
+export type PairsQueryPlan = {
+  __typename?: 'PairsQueryPlan';
+  /** The paths to match */
+  matches: Array<MatchPath>;
+  /** The node every pair starts from */
+  source: PairEnd;
+  /** The node every pair ends at */
+  target: PairEnd;
+  /** Shape version of this plan */
+  version: Scalars['Int']['output'];
+  /** Predicates over matched nodes' properties */
+  wheres: Array<WhereClause>;
+};
+
+/** What a pairs query means: a match over the view's drawing, and which two of its nodes are the pair */
+export type PairsQueryPlanInput = {
+  /** The paths to match, as a table query's are */
+  matches: Array<MatchPathInput>;
+  /** The node every pair starts from */
+  source: PairEndInput;
+  /** The node every pair ends at */
+  target: PairEndInput;
+  /** Predicates over matched nodes' properties */
+  wheres?: Array<WhereClauseInput>;
+};
+
+/** One pair a pairs query answers now, from the view's drawing: two data, as (identifier, object). A drawn instance travels as @kraph/entity */
+export type PairsQueryRow = {
+  __typename?: 'PairsQueryRow';
+  /** The source's structure identifier, e.g. @mikro/arraylens */
+  sourceIdentifier: Scalars['String']['output'];
+  /** The source's id within its structure */
+  sourceObject: Scalars['ID']['output'];
+  /** The target's structure identifier */
+  targetIdentifier: Scalars['String']['output'];
+  /** The target's id within its structure */
+  targetObject: Scalars['ID']['output'];
+};
+
+/** A pairs query's answer, stored with where the drawing stood: the exact pairs a model learned from */
+export type PairsQueryRun = {
+  __typename?: 'PairsQueryRun';
+  /** Where the drawing stood: everything the log committed at or below it was drawn */
+  asOfSeq: Scalars['Int']['output'];
+  /** Run by the server for a model registered against the query */
+  auto: Scalars['Boolean']['output'];
+  /** When the run was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** What the run is for */
+  description?: Maybe<Scalars['String']['output']>;
+  /** What the run says about itself, for a port's `requires`: its view and query, size, position, and the identifiers every pair shares (null when mixed) */
+  descriptors: Scalars['JSON']['output'];
+  /** The pairs, in the run's order */
+  entries: Array<PairsQueryRunEntry>;
+  /** The id of the graph (view) the run read */
+  graphId: Scalars['ID']['output'];
+  /** Database ID of the run */
+  id: Scalars['ID']['output'];
+  /** How many pairs it holds */
+  nPairs: Scalars['Int']['output'];
+  /** What the run is called */
+  name: Scalars['String']['output'];
+  /** The query's plan as it was run */
+  plan: Scalars['JSON']['output'];
+  /** The id of the pairs query that was run */
+  queryId: Scalars['ID']['output'];
+  /** The view's schema hash when it was run */
+  schemaHash?: Maybe<Scalars['String']['output']>;
+  /** The structure identifier every source shares; null when they differ */
+  sourceIdentifier?: Maybe<Scalars['String']['output']>;
+  /** The structure identifier every target shares; null when they differ */
+  targetIdentifier?: Maybe<Scalars['String']['output']>;
+};
+
+
+/** A pairs query's answer, stored with where the drawing stood: the exact pairs a model learned from */
+export type PairsQueryRunEntriesArgs = {
+  filters?: InputMaybe<PairsQueryRunEntryFilter>;
+  ordering?: Array<PairsQueryRunEntryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One pair a run answered: a source datum and a target datum */
+export type PairsQueryRunEntry = {
+  __typename?: 'PairsQueryRunEntry';
+  /** Database ID of the entry */
+  id: Scalars['ID']['output'];
+  /** Its place in the run, 0 first */
+  position: Scalars['Int']['output'];
+  /** The run it belongs to */
+  run: PairsQueryRun;
+  /** The source datum's structure identifier, e.g. @mikro/arraylens (@kraph/entity for a drawn instance) */
+  sourceIdentifier: Scalars['String']['output'];
+  /** The source datum's id within its structure */
+  sourceObject: Scalars['ID']['output'];
+  /** The target datum's structure identifier */
+  targetIdentifier: Scalars['String']['output'];
+  /** The target datum's id within its structure */
+  targetObject: Scalars['ID']['output'];
+};
+
+export type PairsQueryRunEntryFilter = {
+  AND?: InputMaybe<PairsQueryRunEntryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<PairsQueryRunEntryFilter>;
+  OR?: InputMaybe<PairsQueryRunEntryFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type PairsQueryRunEntryOrder =
+  { position: Ordering; };
+
+export type PairsQueryRunFilter = {
+  AND?: InputMaybe<PairsQueryRunFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<PairsQueryRunFilter>;
+  OR?: InputMaybe<PairsQueryRunFilter>;
+  /** Runs the server made for a model registered against a query (true), or ones somebody ran (false) */
+  auto?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The runs against one graph (view) */
+  graph?: InputMaybe<Scalars['ID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** The runs of one pairs query */
+  query?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the runs satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts (e.g. `@kraph/source_identifier` EQUALS `@mikro/arraylens`). Answered in SQL from the descriptors stored on every run. A key a run does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Search the name and description */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type PairsQueryRunOrder =
+  { asOfSeq: Ordering; createdAt?: never; name?: never; }
+  |  { asOfSeq?: never; createdAt: Ordering; name?: never; }
+  |  { asOfSeq?: never; createdAt?: never; name: Ordering; };
+
 /** A paragraph of the comment body */
 export type ParagraphDescendant = Descendant & {
   __typename?: 'ParagraphDescendant';
@@ -4410,6 +4947,10 @@ export type Query = {
   entityCategoryStats: EntityCategoryStats;
   /** Get a graph by ID */
   graph: Graph;
+  /** The saved pairs queries: insights whose runs are training sets; `requires` narrows to the ones a port accepts */
+  graphPairsQueries: Array<GraphPairsQuery>;
+  /** One saved pairs query by ID */
+  graphPairsQuery: GraphPairsQuery;
   /** Show all saved graph queries */
   graphQueries: Array<GraphQuery>;
   /** Show a single saved graph query by ID */
@@ -4456,6 +4997,10 @@ export type Query = {
   metricsForAssertion: Array<Metric>;
   /** List every un-retracted metric describing a structure */
   metricsForStructure: Array<Metric>;
+  /** One trained model by ID */
+  model: Model;
+  /** The organization's trained models; `requires` narrows to the ones a port accepts */
+  models: Array<Model>;
   /** Every remark that mentions the caller, newest first */
   myMentions: Array<Comment>;
   /** Get a natural event by ID, as the named view holds it — see `node` */
@@ -4476,6 +5021,10 @@ export type Query = {
   outputParticipation: OutputParticipation;
   /** List the output participation claims a view admits — log grain, under the view's event categories' rules */
   outputParticipations: Array<OutputParticipation>;
+  /** One run by ID */
+  pairsQueryRun: PairsQueryRun;
+  /** The runs of pairs queries: stored training sets; `requires` narrows to the ones a port accepts, `auto: false` hides the ones made for models */
+  pairsQueryRuns: Array<PairsQueryRun>;
   /** One project by ID */
   project: Project;
   /** The organization's projects */
@@ -4500,6 +5049,8 @@ export type Query = {
   relationCategoryStats: RelationCategoryStats;
   /** List the relation claims a category's rule admits — log grain: every claim, standings folded under the category's rule, however the view draws them */
   relations: Array<Relation>;
+  /** The pairs a saved pairs query answers now, from the view's drawing: a preview. A run (`runPairsQuery`) stores the same answer with where the drawing stood */
+  renderGraphPairs: Array<PairsQueryRow>;
   /** Render a saved table query. Answers from the **drawing**: a page of the view's property graph as of its cursor, filtered, ordered and paged there — the one read with no log path. `Graph.projection { lag }` says how far behind the log it is */
   renderGraphTable?: Maybe<GraphTableRender>;
   /** Render a table plan **without saving it** — the plan a client is still writing, against one view. Same compile path as `renderGraphTable`: answers from the drawing, labels resolved against the view's namespace, filtered, ordered and paged there. Nothing is written; the plan comes back as compiled */
@@ -4512,8 +5063,12 @@ export type Query = {
   standings: Array<Standing>;
   /** Get a structure by ID — a bare uuid, its evidence primary key */
   structure: Structure;
-  /** Get a structure by identifier and object. No graph: a structure belongs to the organization and has no vertex in any projection */
+  /** Get a structure by identifier and object. No graph: a structure belongs to the organization; a view draws it only where it mounts its kind (RFC 0027) */
   structureByIdentifier: Structure;
+  /** List the structure kinds graphs mount (RFC 0027) */
+  structureCategories: Array<StructureCategory>;
+  /** Get a single mounted structure kind by ID */
+  structureCategory: StructureCategory;
   /** Get one structure kind by ID */
   structureKind: StructureKind;
   /** Aggregated structure-kind stats */
@@ -4621,6 +5176,18 @@ export type QueryEntityCategoryStatsArgs = {
 
 
 export type QueryGraphArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryGraphPairsQueriesArgs = {
+  filters?: InputMaybe<GraphPairsQueryFilter>;
+  ordering?: Array<GraphPairsQueryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryGraphPairsQueryArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -4748,6 +5315,18 @@ export type QueryMetricsForStructureArgs = {
 };
 
 
+export type QueryModelArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryModelsArgs = {
+  filters?: InputMaybe<ModelFilter>;
+  ordering?: Array<ModelOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryNaturalEventArgs = {
   graph: Scalars['ID']['input'];
   id: Scalars['ID']['input'];
@@ -4803,6 +5382,18 @@ export type QueryOutputParticipationsArgs = {
   graph: Scalars['ID']['input'];
   ordering?: InputMaybe<Array<ParticipationOrder>>;
   pagination?: InputMaybe<ParticipationPaginationInput>;
+};
+
+
+export type QueryPairsQueryRunArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPairsQueryRunsArgs = {
+  filters?: InputMaybe<PairsQueryRunFilter>;
+  ordering?: Array<PairsQueryRunOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -4879,6 +5470,12 @@ export type QueryRelationsArgs = {
 };
 
 
+export type QueryRenderGraphPairsArgs = {
+  id: Scalars['ID']['input'];
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryRenderGraphTableArgs = {
   filters?: InputMaybe<RenderGraphTableFilter>;
   order?: InputMaybe<RenderGraphTableOrder>;
@@ -4923,6 +5520,18 @@ export type QueryStructureArgs = {
 export type QueryStructureByIdentifierArgs = {
   identifier: Scalars['StructureIdentifier']['input'];
   object: Scalars['StructureObject']['input'];
+};
+
+
+export type QueryStructureCategoriesArgs = {
+  filters?: InputMaybe<StructureCategoryFilter>;
+  ordering?: Array<StructureCategoryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryStructureCategoryArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -5238,6 +5847,16 @@ export type RenderGraphTablePagination = {
   offset: Scalars['Int']['input'];
 };
 
+export type RequestBigFileAccessInput = {
+  storeId: Scalars['String']['input'];
+};
+
+export type RequestBigFileUploadInput = {
+  contentType?: InputMaybe<Scalars['String']['input']>;
+  fileSize: Scalars['ByteCount']['input'];
+  originalFileName: Scalars['String']['input'];
+};
+
 export type RequestGeneralMediaAccessInput = {
   expiresIn?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -5438,6 +6057,16 @@ export type RoleMappingInput = {
   role: Scalars['String']['input'];
 };
 
+/** Input for running a pairs query: its answer from the view's drawing, stored with where the drawing stood */
+export type RunPairsQueryInput = {
+  /** What the run is for */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** What the run is called */
+  name: Scalars['String']['input'];
+  /** The pairs query to run */
+  query: Scalars['ID']['input'];
+};
+
 /** A claim that two instances are one thing */
 export type Sameness = Edge & {
   __typename?: 'Sameness';
@@ -5625,11 +6254,90 @@ export type Structure = {
   observedAt: Scalars['DateTime']['output'];
 };
 
+/** A structure kind mounted into a view (RFC 0027): the vertex label its data are drawn under wherever a structure relation the view admits touches them */
+export type StructureCategory = Category & {
+  __typename?: 'StructureCategory';
+  /** The label this view draws the category's nodes or edges under — its name in the projection namespace. One view's rename of the word; never what a node *is* (that is the claim's kind) */
+  ageName: Scalars['String']['output'];
+  /** Color as RGBA list (0-255) */
+  color?: Maybe<Array<Scalars['Int']['output']>>;
+  /** What this category *means*: a predicate over classification claims (RFC 0007). Null on a primitive category, whose membership is whatever was asserted under its word */
+  definition?: Maybe<CategoryDefinition>;
+  /** Description of the category */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The graph this category belongs to */
+  graph: Graph;
+  /** Database ID of the category */
+  id: Scalars['ID']['output'];
+  /** The structure identifier this view mounts, e.g. @mikro/arraylens */
+  identifier: Scalars['String']['output'];
+  /** An image representing this category, for visualization purposes */
+  image?: Maybe<MediaStore>;
+  /** The unique key/identifier for this category, used for linking to entities or structures (e.g. 'Cell', 'ROI') */
+  key: Scalars['String']['output'];
+  /** Label/name of the category */
+  label: Scalars['String']['output'];
+  /** Whether the requesting user has pinned this graph for quick access */
+  pinned: Scalars['Boolean']['output'];
+  /** Persistent URL for this category */
+  purl?: Maybe<Scalars['String']['output']>;
+  /** List of relevant queries that use this category as input */
+  relevantQueries: Array<GraphQuery>;
+  /** The organization's word this category declares. Claims name the term, not this row — so a category is what the word means *here*, and another graph declaring the same word sees the same claims. */
+  term?: Maybe<Term>;
+};
+
+export type StructureCategoryFilter = {
+  AND?: InputMaybe<StructureCategoryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<StructureCategoryFilter>;
+  OR?: InputMaybe<StructureCategoryFilter>;
+  graph?: InputMaybe<GraphFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** The categories mounting one of these structure identifiers */
+  identifiers?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by list of IDs */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by list of IDs */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StructureCategoryOrder =
+  { id: Ordering; label?: never; }
+  |  { id?: never; label: Ordering; };
+
+/** Definition of a structure type in the graph schema */
+export type StructureDefinitionInput = {
+  /** Optional RGBA color for this node role (e.g. [255, 0, 0, 128]) */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** Description of this node role */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The structure identifier mounted (e.g. '@mikro/arraylens') */
+  identifier: Scalars['String']['input'];
+  /** Optional media store ID for an image representing this node role */
+  image?: InputMaybe<Scalars['String']['input']>;
+  /** The label of the node participating in the event */
+  key: Scalars['String']['input'];
+  /** Optional human-readable label for this node role (defaults to 'key' if not provided) */
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** Ontology references for this event */
+  ontologyReferences?: Array<OntologyReferenceInput>;
+  /** Whether to pin this node role in the UI */
+  pin?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Input type for creating a new graph query */
 export type StructureDescriptor = {
   __typename?: 'StructureDescriptor';
   /** Default category to link to if no entities match the filters */
   defaultCategoryKey?: Maybe<Scalars['String']['output']>;
+  /** Structure identifiers to filter by (e.g. '@mikro/roi') */
+  identifiers?: Maybe<Array<Scalars['String']['output']>>;
+  /** Descriptor constraints this end of the relation pins (e.g. '@mikro/n_space_axes' EQUALS 3): what a datum must be for a claim under this word to make sense here. Stored and served; checked by the client against the datum's own service before it asserts a pair */
+  requires?: Maybe<Array<DescriptorConstraint>>;
 };
 
 /** Input for creating a new structure relation definition in the graph schema */
@@ -5638,6 +6346,8 @@ export type StructureDescriptorInput = {
   defaultCategoryKey?: InputMaybe<Scalars['String']['input']>;
   /** Structure identifiers to filter by (e.g. '@mikro/roi') */
   identifiers?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Descriptor constraints this end of the relation pins (e.g. '@mikro/n_space_axes' EQUALS 3): what a datum must be for a claim under this word to make sense here. Stored and served; checked by the client against the datum's own service before it asserts a pair */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
 
 /** Filter options for querying structures */
@@ -6110,6 +6820,7 @@ export enum TermKind {
   NaturalEvent = 'NATURAL_EVENT',
   ProtocolEvent = 'PROTOCOL_EVENT',
   Relation = 'RELATION',
+  Structure = 'STRUCTURE',
   StructureRelation = 'STRUCTURE_RELATION'
 }
 
@@ -6437,6 +7148,20 @@ export type UpdateGraphInput = {
   samenessRule?: InputMaybe<SamenessRuleInput>;
 };
 
+/** Input for changing a pairs query. Runs keep the plan they were run with */
+export type UpdateGraphPairsQueryInput = {
+  /** Description of this query */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The ID of the pairs query to update */
+  id: Scalars['String']['input'];
+  /** Unique key for this query within its graph */
+  key?: InputMaybe<Scalars['String']['input']>;
+  /** Human-readable name */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** A new plan; omitted means unchanged */
+  plan?: InputMaybe<PairsQueryPlanInput>;
+};
+
 /** Input for updating a graph table query through builder arguments */
 export type UpdateGraphTableQueryInput = {
   /** Definitions for the columns returned by this graph query */
@@ -6617,6 +7342,26 @@ export type UpdateScatterPlotInput = {
   yIdColumn?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Input for changing a mounted structure kind */
+export type UpdateStructureCategoryInput = {
+  /** Optional RGBA color for this node role (e.g. [255, 0, 0, 128]) */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** Description of this node role */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The ID of the definition to update */
+  id: Scalars['String']['input'];
+  /** Optional media store ID for an image representing this node role */
+  image?: InputMaybe<Scalars['String']['input']>;
+  /** The label of the node participating in the event */
+  key?: InputMaybe<Scalars['String']['input']>;
+  /** Optional human-readable label for this node role (defaults to 'key' if not provided) */
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** Ontology references for this event */
+  ontologyReferences?: InputMaybe<Array<OntologyReferenceInput>>;
+  /** Whether to pin this node role in the UI */
+  pin?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Input for updating an existing structure definition in the graph schema */
 export type UpdateStructureKindInput = {
   /** Optional RGBA color for this node role (e.g. [255, 0, 0, 128]) */
@@ -6766,7 +7511,7 @@ export enum WhereOperator {
   StartsWith = 'STARTS_WITH'
 }
 
-export type _Entity = Assertion | Comment | EntityCategory | Graph | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | NaturalEventCategory | Project | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureKind | StructureRelationCategory | Term | TodoItem | TodoItemStructure | TodoList;
+export type _Entity = Assertion | BigFileStore | Comment | EntityCategory | Graph | GraphPairsQuery | GraphTableQuery | Instance | Link | MeasurementCategory | MediaStore | MetricKind | Model | NaturalEventCategory | PairsQueryRun | PairsQueryRunEntry | Project | ProtocolEventCategory | RelationCategory | ScatterPlot | Standing | StructureCategory | StructureKind | StructureRelationCategory | Term | TodoItem | TodoItemStructure | TodoList;
 
 export type _Service = {
   __typename?: '_Service';
@@ -6811,7 +7556,7 @@ export type NodeFragment = Node_Entity_Fragment | Node_NaturalEvent_Fragment | N
 
 export type AssertionFragment = { __typename?: 'Assertion', id: string, subject: string, appId?: string | null, actionId?: string | null, actionName?: string | null, assertedAt: any, recordedAt: any, seq: number };
 
-export type NodeDrawingFragment = { __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string }, node: (
+export type NodeDrawingFragment = { __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string }, node: (
     { __typename?: 'Entity' }
     & ListNode_Entity_Fragment
   ) | (
@@ -6822,7 +7567,7 @@ export type NodeDrawingFragment = { __typename?: 'NodeDrawing', graph: { __typen
     & ListNode_ProtocolEvent_Fragment
   ) };
 
-export type EdgeDrawingFragment = { __typename?: 'EdgeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string }, edge: (
+export type EdgeDrawingFragment = { __typename?: 'EdgeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string }, edge: (
     { __typename?: 'Classification' }
     & BaseEdge_Classification_Fragment
   ) | (
@@ -6863,7 +7608,7 @@ export type InstanceFragment = { __typename?: 'Instance', id: string, kind: Inst
   ) };
 
 export type DetailInstanceFragment = (
-  { __typename?: 'Instance', drawnIn: Array<{ __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string } }>, standings: Array<(
+  { __typename?: 'Instance', drawnIn: Array<{ __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string } }>, standings: Array<(
     { __typename?: 'Standing' }
     & StandingFragment
   )> }
@@ -7266,23 +8011,38 @@ export type EntityFragment = (
   ) | (
     { __typename?: 'StructureRelation' }
     & Edge_StructureRelation_Fragment
-  )>, drawnIn: Array<{ __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string } }> }
+  )>, drawnIn: Array<{ __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string } }> }
   & BaseNode_Entity_Fragment
 );
 
-export type BaseGraphQueryFragment = { __typename?: 'GraphTableQuery', id: string, label: string, description?: string | null, graph: { __typename?: 'Graph', id: string, name: string } };
+type BaseGraphQuery_GraphPairsQuery_Fragment = { __typename?: 'GraphPairsQuery', id: string, label: string, description?: string | null, graph: { __typename?: 'Graph', id: string, name: string } };
 
-export type ListGraphQueryFragment = { __typename: 'GraphTableQuery', id: string, label: string, description?: string | null, legacy: boolean, graph: { __typename?: 'Graph', id: string, name: string } };
+type BaseGraphQuery_GraphTableQuery_Fragment = { __typename?: 'GraphTableQuery', id: string, label: string, description?: string | null, graph: { __typename?: 'Graph', id: string, name: string } };
 
-export type GraphQueryFragment = (
+export type BaseGraphQueryFragment = BaseGraphQuery_GraphPairsQuery_Fragment | BaseGraphQuery_GraphTableQuery_Fragment;
+
+type ListGraphQuery_GraphPairsQuery_Fragment = { __typename: 'GraphPairsQuery', id: string, label: string, description?: string | null, legacy: boolean, graph: { __typename?: 'Graph', id: string, name: string } };
+
+type ListGraphQuery_GraphTableQuery_Fragment = { __typename: 'GraphTableQuery', id: string, label: string, description?: string | null, legacy: boolean, graph: { __typename?: 'Graph', id: string, name: string } };
+
+export type ListGraphQueryFragment = ListGraphQuery_GraphPairsQuery_Fragment | ListGraphQuery_GraphTableQuery_Fragment;
+
+type GraphQuery_GraphPairsQuery_Fragment = (
+  { __typename?: 'GraphPairsQuery' }
+  & BaseGraphQuery_GraphPairsQuery_Fragment
+);
+
+type GraphQuery_GraphTableQuery_Fragment = (
   { __typename?: 'GraphTableQuery' }
-  & BaseGraphQueryFragment
+  & BaseGraphQuery_GraphTableQuery_Fragment
   & GraphTableQueryFragment
 );
 
+export type GraphQueryFragment = GraphQuery_GraphPairsQuery_Fragment | GraphQuery_GraphTableQuery_Fragment;
+
 export type ListGraphTableQueryFragment = (
   { __typename: 'GraphTableQuery' }
-  & BaseGraphQueryFragment
+  & BaseGraphQuery_GraphTableQuery_Fragment
 );
 
 export type GraphTableQueryFragment = (
@@ -7296,7 +8056,7 @@ export type GraphTableQueryFragment = (
     { __typename?: 'ScatterPlot' }
     & ListScatterPlotFragment
   )> }
-  & BaseGraphQueryFragment
+  & BaseGraphQuery_GraphTableQuery_Fragment
 );
 
 export type GraphTableRenderFragment = { __typename?: 'GraphTableRender', rows: Array<any>, query: { __typename?: 'GraphTableQuery', columns: Array<(
@@ -7401,8 +8161,11 @@ type BaseCategory_EntityCategory_Fragment = { __typename?: 'EntityCategory', id:
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
@@ -7412,8 +8175,11 @@ type BaseCategory_MeasurementCategory_Fragment = { __typename?: 'MeasurementCate
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
@@ -7423,8 +8189,11 @@ type BaseCategory_NaturalEventCategory_Fragment = { __typename?: 'NaturalEventCa
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
@@ -7434,8 +8203,11 @@ type BaseCategory_ProtocolEventCategory_Fragment = { __typename?: 'ProtocolEvent
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
@@ -7445,8 +8217,25 @@ type BaseCategory_RelationCategory_Fragment = { __typename?: 'RelationCategory',
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
+  )>, image?: (
+    { __typename?: 'MediaStore' }
+    & MediaStoreFragment
+  ) | null };
+
+type BaseCategory_StructureCategory_Fragment = { __typename?: 'StructureCategory', id: string, key: string, purl?: string | null, ageName: string, graph: { __typename?: 'Graph', id: string }, term?: (
+    { __typename?: 'Term' }
+    & TermFragment
+  ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
+    { __typename?: 'GraphTableQuery' }
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
@@ -7456,14 +8245,17 @@ type BaseCategory_StructureRelationCategory_Fragment = { __typename?: 'Structure
     { __typename?: 'Term' }
     & TermFragment
   ) | null, relevantQueries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
   ) | null };
 
-export type BaseCategoryFragment = BaseCategory_EntityCategory_Fragment | BaseCategory_MeasurementCategory_Fragment | BaseCategory_NaturalEventCategory_Fragment | BaseCategory_ProtocolEventCategory_Fragment | BaseCategory_RelationCategory_Fragment | BaseCategory_StructureRelationCategory_Fragment;
+export type BaseCategoryFragment = BaseCategory_EntityCategory_Fragment | BaseCategory_MeasurementCategory_Fragment | BaseCategory_NaturalEventCategory_Fragment | BaseCategory_ProtocolEventCategory_Fragment | BaseCategory_RelationCategory_Fragment | BaseCategory_StructureCategory_Fragment | BaseCategory_StructureRelationCategory_Fragment;
 
 type BaseNodeCategory_EntityCategory_Fragment = { __typename?: 'EntityCategory', id: string, positionX?: number | null, positionY?: number | null, width?: number | null, label: string, height?: number | null };
 
@@ -7538,8 +8330,11 @@ export type GraphFragment = { __typename?: 'Graph', id: string, name: string, de
     { __typename?: 'StructureRelationCategory' }
     & ListStructureRelationCategoryFragment
   )>, queries: Array<(
+    { __typename?: 'GraphPairsQuery' }
+    & ListGraphQuery_GraphPairsQuery_Fragment
+  ) | (
     { __typename?: 'GraphTableQuery' }
-    & ListGraphQueryFragment
+    & ListGraphQuery_GraphTableQuery_Fragment
   )>, projection: (
     { __typename?: 'GraphProjection' }
     & GraphProjectionFragment
@@ -7595,6 +8390,14 @@ type BaseListCategory_RelationCategory_Fragment = { __typename?: 'RelationCatego
     & MediaStoreFragment
   ) | null };
 
+type BaseListCategory_StructureCategory_Fragment = { __typename?: 'StructureCategory', id: string, description?: string | null, key: string, ageName: string, term?: (
+    { __typename?: 'Term' }
+    & ListTermFragment
+  ) | null, image?: (
+    { __typename?: 'MediaStore' }
+    & MediaStoreFragment
+  ) | null };
+
 type BaseListCategory_StructureRelationCategory_Fragment = { __typename?: 'StructureRelationCategory', id: string, description?: string | null, key: string, ageName: string, term?: (
     { __typename?: 'Term' }
     & ListTermFragment
@@ -7603,7 +8406,7 @@ type BaseListCategory_StructureRelationCategory_Fragment = { __typename?: 'Struc
     & MediaStoreFragment
   ) | null };
 
-export type BaseListCategoryFragment = BaseListCategory_EntityCategory_Fragment | BaseListCategory_MeasurementCategory_Fragment | BaseListCategory_NaturalEventCategory_Fragment | BaseListCategory_ProtocolEventCategory_Fragment | BaseListCategory_RelationCategory_Fragment | BaseListCategory_StructureRelationCategory_Fragment;
+export type BaseListCategoryFragment = BaseListCategory_EntityCategory_Fragment | BaseListCategory_MeasurementCategory_Fragment | BaseListCategory_NaturalEventCategory_Fragment | BaseListCategory_ProtocolEventCategory_Fragment | BaseListCategory_RelationCategory_Fragment | BaseListCategory_StructureCategory_Fragment | BaseListCategory_StructureRelationCategory_Fragment;
 
 type BaseListNodeCategory_EntityCategory_Fragment = { __typename?: 'EntityCategory', id: string, positionX?: number | null, positionY?: number | null, width?: number | null, height?: number | null };
 
@@ -7841,7 +8644,7 @@ export type TermFragment = (
 );
 
 export type ExploreTermFragment = (
-  { __typename?: 'Term', description?: string | null, purl?: string | null, categories: Array<{ __typename?: 'EntityCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } }> }
+  { __typename?: 'Term', description?: string | null, purl?: string | null, categories: Array<{ __typename?: 'EntityCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } }> }
   & ListTermFragment
 );
 
@@ -7855,9 +8658,11 @@ type TermCategory_ProtocolEventCategory_Fragment = { __typename: 'ProtocolEventC
 
 type TermCategory_RelationCategory_Fragment = { __typename: 'RelationCategory', id: string, label: string, description?: string | null, color?: Array<number> | null, graph: { __typename?: 'Graph', id: string, name: string } };
 
+type TermCategory_StructureCategory_Fragment = { __typename: 'StructureCategory', id: string, label: string, description?: string | null, color?: Array<number> | null, graph: { __typename?: 'Graph', id: string, name: string } };
+
 type TermCategory_StructureRelationCategory_Fragment = { __typename: 'StructureRelationCategory', id: string, label: string, description?: string | null, color?: Array<number> | null, graph: { __typename?: 'Graph', id: string, name: string } };
 
-export type TermCategoryFragment = TermCategory_EntityCategory_Fragment | TermCategory_MeasurementCategory_Fragment | TermCategory_NaturalEventCategory_Fragment | TermCategory_ProtocolEventCategory_Fragment | TermCategory_RelationCategory_Fragment | TermCategory_StructureRelationCategory_Fragment;
+export type TermCategoryFragment = TermCategory_EntityCategory_Fragment | TermCategory_MeasurementCategory_Fragment | TermCategory_NaturalEventCategory_Fragment | TermCategory_ProtocolEventCategory_Fragment | TermCategory_RelationCategory_Fragment | TermCategory_StructureCategory_Fragment | TermCategory_StructureRelationCategory_Fragment;
 
 export type DetailTermFragment = (
   { __typename?: 'Term', categories: Array<(
@@ -7876,13 +8681,16 @@ export type DetailTermFragment = (
     { __typename?: 'RelationCategory' }
     & TermCategory_RelationCategory_Fragment
   ) | (
+    { __typename?: 'StructureCategory' }
+    & TermCategory_StructureCategory_Fragment
+  ) | (
     { __typename?: 'StructureRelationCategory' }
     & TermCategory_StructureRelationCategory_Fragment
   )> }
   & TermFragment
 );
 
-export type AssignableTermFragment = { __typename?: 'Term', id: string, kind: TermKind, key: string, label?: string | null, color?: Array<number> | null, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } }> };
+export type AssignableTermFragment = { __typename?: 'Term', id: string, kind: TermKind, key: string, label?: string | null, color?: Array<number> | null, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, label: string, graph: { __typename?: 'Graph', id: string, name: string } }> };
 
 export type TodoItemStructureFragment = { __typename?: 'TodoItemStructure', id: string, identifier: string, object: string, status: TodoStatus, startedAt?: any | null, startedBy?: string | null, done: boolean, doneAt?: any | null, doneBy?: string | null, position: number };
 
@@ -9215,7 +10023,7 @@ export type GetGraphTableQueryQueryVariables = Exact<{
 
 export type GetGraphTableQueryQuery = { __typename?: 'Query', graphTableQuery: (
     { __typename?: 'GraphTableQuery' }
-    & GraphQueryFragment
+    & GraphQuery_GraphTableQuery_Fragment
   ) };
 
 export type SearchGraphTableQueriesQueryVariables = Exact<{

@@ -29,6 +29,7 @@
       "NaturalEventCategory",
       "ProtocolEventCategory",
       "RelationCategory",
+      "StructureCategory",
       "StructureRelationCategory"
     ],
     "ClaimEndpoint": [
@@ -69,6 +70,7 @@
       "ProtocolEventCategory"
     ],
     "GraphQuery": [
+      "GraphPairsQuery",
       "GraphTableQuery"
     ],
     "InformsTarget": [
@@ -97,21 +99,27 @@
     ],
     "_Entity": [
       "Assertion",
+      "BigFileStore",
       "Comment",
       "EntityCategory",
       "Graph",
+      "GraphPairsQuery",
       "GraphTableQuery",
       "Instance",
       "Link",
       "MeasurementCategory",
       "MediaStore",
       "MetricKind",
+      "Model",
       "NaturalEventCategory",
+      "PairsQueryRun",
+      "PairsQueryRunEntry",
       "Project",
       "ProtocolEventCategory",
       "RelationCategory",
       "ScatterPlot",
       "Standing",
+      "StructureCategory",
       "StructureKind",
       "StructureRelationCategory",
       "Term",

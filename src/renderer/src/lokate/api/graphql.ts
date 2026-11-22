@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from '@/core/connection/graphql/lazyGql';
 import * as Apollo from '@apollo/client';
 import * as ApolloReactHooks from '@/lokate/api/funcs';
 export type Maybe<T> = T | null;

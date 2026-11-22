@@ -4431,8 +4431,14 @@ type ModelChange {
   """The new value of the field."""
   newValue: String
 
+  """The new value of the field, preserving its native JSON type."""
+  newValueJson: JSON
+
   """The old value of the field."""
   oldValue: String
+
+  """The old value of the field, preserving its native JSON type."""
+  oldValueJson: JSON
 }
 
 type ModelCollection {

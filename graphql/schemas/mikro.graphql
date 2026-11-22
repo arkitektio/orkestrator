@@ -1252,7 +1252,7 @@ input ArrayDatasetFilter {
   scene: ID
 
   """
-  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking
   """
   search: String
 
@@ -5860,7 +5860,7 @@ input FolderFilter {
   pinned: Boolean
 
   """
-  Search by name (full-text) or by the meaning of the query against name and description. Textual matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  Search by name (full-text) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking
   """
   search: String
 
@@ -11770,7 +11770,7 @@ type Query {
   previewLayer(input: PreviewLayerInput!): Layer!
 
   """
-  The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time
+  The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time; its `search` ranks by match instead of newest first
   """
   roots(filters: RootFilter = null, kinds: [LineageNodeKind!] = null, pagination: OffsetPaginationInput = null): [RootNode!]!
 
@@ -12095,7 +12095,7 @@ input RootFilter {
   owner: ID = null
 
   """
-  Only what is named with this text, anywhere in the name, ignoring case. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches
+  Only what is named with this text, anywhere in the name, ignoring case, or (array and table datasets) whose name and description mean something close to it. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches. Ranked instead of newest first: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning
   """
   search: String = null
 
@@ -13757,7 +13757,7 @@ input TableDatasetFilter {
   requires: [DescriptorConstraintInput!]
 
   """
-  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Ranked: an exact match, then a prefix, then other textual matches by trigram similarity, then by meaning; an explicit `ordering` replaces that ranking
   """
   search: String
 
