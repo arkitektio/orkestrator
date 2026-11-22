@@ -53,6 +53,12 @@ export const CoordinateSystemInfoSidebar = ({
 
   const hasTime = system.axes.some((axis) => axis.type === "TIME");
 
+  // An index space (a pixel grid, a level) measures something in each physical
+  // space it reaches, however many edges away: the server walks and ranks the
+  // routes (`voxelSizes`, canonical first). A physical space's own pixel size
+  // is the edge into it, read above.
+  const reached = system.physical ? [] : system.voxelSizes;
+
   return (
     <div className="flex flex-col gap-4 overflow-y-auto p-4">
       <div className="flex flex-col gap-1">
@@ -169,6 +175,33 @@ export const CoordinateSystemInfoSidebar = ({
               <ValidityBadge validity={calibrationEdge.validity} />
             )}
           </div>
+        </div>
+      )}
+
+      {reached.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <div className="text-xs font-semibold">Pixel size</div>
+          {reached.map((voxel) => (
+            <div key={voxel.system.id} className="flex flex-col gap-0.5">
+              <div className="flex flex-row flex-wrap items-center gap-x-3">
+                {voxel.axes
+                  .filter((axis) => axis.type === "SPACE")
+                  .map((axis) => (
+                    <span key={axis.axis} className="font-mono text-xs">
+                      {formatPixelSize({ axis: axis.physicalAxis, value: axis.size, unit: axis.unit, type: axis.type })}
+                    </span>
+                  ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>in</span>
+                <MikroCoordinateSystem.DetailLink object={voxel.system}>{voxel.system.name}</MikroCoordinateSystem.DetailLink>
+                <span>
+                  · {voxel.hops} {voxel.hops === 1 ? "edge" : "edges"}
+                </span>
+                {voxel.problem && <span title={voxel.problem}>· not a calibration</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

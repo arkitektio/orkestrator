@@ -72,9 +72,8 @@ const spanOf = (images: number): { cols: BentoSpan; rows: BentoSpan; priority: n
   return { cols: 1, rows: 1, priority };
 };
 
-/** How many images were converted out of a file. */
-const fileSeriesCount = (file: HomeFile) =>
-  file.derivedContainers.filter((link) => link.container.__typename === "ArrayDataset").length;
+/** How many images were converted out of a file (counted on the server). */
+const fileSeriesCount = (file: HomeFile) => file.seriesCount;
 
 /**
  * A multi-series file names every series after itself ("scan.lif - Series 3"),
@@ -151,9 +150,10 @@ const FileCard = ({ file }: { file: HomeFile }) => {
       ? [{ id: link.id, dataset: link.container, series: link.seriesIdentifier }]
       : [],
   );
-  const others = file.derivedContainers.length - series.length;
+  // The query reads the first MAX_SHOWN series; the counts are the server's.
+  const others = file.containerCount - file.seriesCount;
   const shown = series.slice(0, MAX_SHOWN);
-  const hidden = series.length - shown.length;
+  const hidden = file.seriesCount - shown.length;
   // The tiles ask for their own results; the card sums the ones it shows.
   const results = useHomeResultMap();
   const resultCount = new Set(
@@ -162,7 +162,7 @@ const FileCard = ({ file }: { file: HomeFile }) => {
     ),
   ).size;
   const facts = [
-    series.length > 0 && `${series.length} ${series.length === 1 ? "image" : "images"}`,
+    file.seriesCount > 0 && `${file.seriesCount} ${file.seriesCount === 1 ? "image" : "images"}`,
     resultCount > 0 && `${resultCount} ${resultCount === 1 ? "result" : "results"}`,
     others > 0 && `${others} other`,
     file.size != null && formatBytes(file.size),
@@ -183,7 +183,7 @@ const FileCard = ({ file }: { file: HomeFile }) => {
         facts={facts}
         menu
       >
-        {shown.length > 0 && <GoldenTiles file={file} items={shown} multi={series.length > 1} />}
+        {shown.length > 0 && <GoldenTiles file={file} items={shown} multi={file.seriesCount > 1} />}
         {hidden > 0 && (
           <MikroFile.DetailLink
             object={file}

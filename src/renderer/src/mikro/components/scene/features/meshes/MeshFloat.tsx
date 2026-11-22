@@ -5,7 +5,7 @@ import { MikroMeshCollection } from "@/core/linkers";
 import { SmartContext } from "@/core/smart/extensions/context";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
-import { useGetMeshObjectInfoQuery } from "@/mikro/api/graphql";
+import { useGetMeshObjectDerivedCountQuery } from "@/mikro/api/graphql";
 
 import { projectScreenRect } from "../../platform/float/projectScreenRect";
 import { SceneFloat, type FloatView } from "../../platform/float/SceneFloat";
@@ -17,7 +17,6 @@ import {
 } from "../../platform/float/floatStore";
 import { FloatMenu, type FloatMenuEntry } from "../../platform/float/FloatMenu";
 import { StagedPane, useFloatStaging } from "../staging/FloatStaging";
-import { isNamedResident } from "../staging/DerivedResidents";
 import { FloatStagingScope } from "../staging/StageToggle";
 import { resolveCollectionMatrix } from "../../platform/model/collectionPlacement";
 import { hueStyle, objectLabel } from "../../platform/model/selectionFormat";
@@ -111,12 +110,12 @@ const Placed = ({
     if (selectionApi.getState().menuRoi) selectionApi.getState().closeRoiMenu();
   }, [selectionApi]);
 
-  // Asked here too, for the Derived row's count; the pane's own query shares it.
-  const { data: info } = useGetMeshObjectInfoQuery({
+  // The Derived row's count, counted on the server; the pane loads the list.
+  const { data: info } = useGetMeshObjectDerivedCountQuery({
     variables: { collection: layerRef.collection.id, object: entry.objectId },
     fetchPolicy: "cache-and-network",
   });
-  const derived = info?.meshObject.derivedResidents.filter(isNamedResident).length;
+  const derived = info?.meshObject.derivedResidentsCount;
 
   if (!selection) return null;
   const size = meshObjectSize(selection.stats);

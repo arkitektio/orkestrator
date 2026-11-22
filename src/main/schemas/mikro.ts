@@ -13832,7 +13832,7 @@ export type DerivedResidentFragment = DerivedResident_AnnotationCollection_Fragm
 
 export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
-export type DetailFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+export type DetailFileFragment = { __typename?: 'File', createdAt: any, descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -15357,10 +15357,17 @@ export type ChildrenCountsQueryVariables = Exact<{
 
 export type ChildrenCountsQuery = { __typename?: 'Query', childrenCounts: { __typename?: 'FolderChildCounts', total: number, kinds: Array<{ __typename?: 'FolderChildKindCount', kind: FolderChildKind, count: number }> } };
 
-export type GetCollaborationsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetCollaborationsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
-export type GetCollaborationsQuery = { __typename?: 'Query', collaborations: Array<{ __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> }> };
+export type GetCollaborationsQuery = { __typename?: 'Query', collaborations: Array<{ __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, put: number }> };
+
+export type GetCollaborationsWithItemsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCollaborationsWithItemsQuery = { __typename?: 'Query', collaborations: Array<{ __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, put: number, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> }> };
 
 export type GetCollaborationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15442,7 +15449,7 @@ export type GetCoordinateSystemQueryVariables = Exact<{
 }>;
 
 
-export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, visualizations: Array<{ __typename: 'Chart', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, layout: ChartLayout, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Grid', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Scene', id: string, descriptors: any, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
+export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: { __typename?: 'CoordinateSystem', physical: boolean, id: string, name: string, epoch?: any | null, voxelSizes: Array<{ __typename?: 'VoxelSize', canonical: boolean, hops: number, problem?: string | null, system: { __typename?: 'CoordinateSystem', id: string, name: string }, axes: Array<{ __typename?: 'AxisVoxelSize', axis: string, physicalAxis: string, size: number, unit: string, type: AxisType }> }>, visualizations: Array<{ __typename: 'Chart', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, layout: ChartLayout, axis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Grid', id: string, descriptors: any, name: string, description?: string | null, createdAt: any, rowAxis: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }, columnAxis?: { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null } | null } | { __typename: 'Scene', id: string, descriptors: any, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }>, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<{ __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null }>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Fixture', id: string, label: string } | { __typename: 'FixtureLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, fixture: { __typename?: 'Fixture', id: string, label: string } } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens', id: string, windows: Array<{ __typename?: 'Window', axis: string, min?: number | null, max?: number | null }>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
 
 export type GetCoordinateSystemProvenanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15598,7 +15605,7 @@ export type GetFileQueryVariables = Exact<{
 }>;
 
 
-export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
+export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', createdAt: any, descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
 
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
@@ -15743,7 +15750,7 @@ export type HomeRootDetailsQueryVariables = Exact<{
 }>;
 
 
-export type HomeRootDetailsQuery = { __typename?: 'Query', files?: Array<{ __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, derivedContainers: Array<{ __typename?: 'FileLink', id: string, seriesIdentifier: string, container: { __typename: 'AnnotationCollection', id: string } | { __typename: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null } | { __typename: 'MeshCollection', id: string } | { __typename: 'TableDataset', id: string } }>, creator: { __typename?: 'User', sub: string } }>, arrayDatasets?: Array<{ __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null }>, tableDatasets?: Array<{ __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string> }>, sparseDatasets?: Array<{ __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string> }> };
+export type HomeRootDetailsQuery = { __typename?: 'Query', files?: Array<{ __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, seriesCount: number, containerCount: number, derivedContainers: Array<{ __typename?: 'FileLink', id: string, seriesIdentifier: string, container: { __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null } | { __typename: 'MeshCollection' } | { __typename: 'TableDataset' } }>, creator: { __typename?: 'User', sub: string } }>, arrayDatasets?: Array<{ __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null }>, tableDatasets?: Array<{ __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string> }>, sparseDatasets?: Array<{ __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string> }> };
 
 export type HomeResultsQueryVariables = Exact<{
   starts: Array<LineageRootInput> | LineageRootInput;
@@ -15763,7 +15770,7 @@ export type HomeOverviewQueryVariables = Exact<{
 }>;
 
 
-export type HomeOverviewQuery = { __typename?: 'Query', lenses: { __typename?: 'LensStats', count: number }, newLenses: { __typename?: 'LensStats', count: number }, arrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, newArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, coordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, newCoordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, tableDatasets: { __typename?: 'TableDatasetStats', count: number }, newTableDatasets: { __typename?: 'TableDatasetStats', count: number }, sparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, newSparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, folders: { __typename?: 'FolderStats', count: number }, newFolders: { __typename?: 'FolderStats', count: number }, files: { __typename?: 'FileStats', count: number }, newFiles: { __typename?: 'FileStats', count: number }, charts: { __typename?: 'ChartStats', count: number }, newCharts: { __typename?: 'ChartStats', count: number }, annotations: { __typename?: 'AnnotationStats', count: number }, scenes: { __typename?: 'SceneStats', count: number }, collaborations: Array<{ __typename?: 'Collaboration', id: string }> };
+export type HomeOverviewQuery = { __typename?: 'Query', lenses: { __typename?: 'LensStats', count: number }, newLenses: { __typename?: 'LensStats', count: number }, arrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, newArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, coordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, newCoordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, tableDatasets: { __typename?: 'TableDatasetStats', count: number }, newTableDatasets: { __typename?: 'TableDatasetStats', count: number }, sparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, newSparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, folders: { __typename?: 'FolderStats', count: number }, newFolders: { __typename?: 'FolderStats', count: number }, files: { __typename?: 'FileStats', count: number }, newFiles: { __typename?: 'FileStats', count: number }, charts: { __typename?: 'ChartStats', count: number }, newCharts: { __typename?: 'ChartStats', count: number }, annotations: { __typename?: 'AnnotationStats', count: number }, newAnnotations: { __typename?: 'AnnotationStats', count: number }, scenes: { __typename?: 'SceneStats', count: number }, newScenes: { __typename?: 'SceneStats', count: number }, collaborations: { __typename?: 'CollaborationStats', count: number } };
 
 export type PreviewLayerQueryVariables = Exact<{
   input: PreviewLayerInput;
@@ -15904,6 +15911,14 @@ export type GetMeshObjectSourceQueryVariables = Exact<{
 
 
 export type GetMeshObjectSourceQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, objectId: number, collection: { __typename?: 'MeshCollection', id: string, label: string, store: { __typename?: 'FabriksStore', id: string, key: string, bucket: string, path: string, specVersion?: string | null, grid?: any | null, encoding?: any | null, axes?: Array<string> | null, counts?: any | null, files?: any | null } } } };
+
+export type GetMeshObjectDerivedCountQueryVariables = Exact<{
+  collection: Scalars['ID']['input'];
+  object: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeshObjectDerivedCountQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, derivedResidentsCount: number } };
 
 export type GetMeshCollectionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -18130,6 +18145,7 @@ ${ProvenanceEntryFragmentDoc}`;
 export const DetailFileFragmentDoc = gql`
     fragment DetailFile on File {
   ...File
+  createdAt
   creator {
     sub
   }
@@ -20575,7 +20591,11 @@ export const AddLayerReachableDocument = gql`
     ${AddLayerStagedLayerFragmentDoc}`;
 export const AddLayerWorldGraphDocument = gql`
     query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
-  coordinateGraph(coordinateSystem: $world, maxDepth: $maxDepth) {
+  coordinateGraph(
+    coordinateSystem: $world
+    maxDepth: $maxDepth
+    direction: INCOMING
+  ) {
     root {
       id
     }
@@ -21095,9 +21115,18 @@ export const ChildrenCountsDocument = gql`
 }
     `;
 export const GetCollaborationsDocument = gql`
-    query GetCollaborations {
+    query GetCollaborations($pagination: OffsetPaginationInput) {
+  collaborations(pagination: $pagination) {
+    ...ListCollaboration
+    put: itemCount(brought: false)
+  }
+}
+    ${ListCollaborationFragmentDoc}`;
+export const GetCollaborationsWithItemsDocument = gql`
+    query GetCollaborationsWithItems {
   collaborations {
     ...ListCollaboration
+    put: itemCount(brought: false)
     items {
       ...CollaborationItem
     }
@@ -21198,6 +21227,23 @@ export const GetCoordinateSystemDocument = gql`
     query GetCoordinateSystem($id: ID!) {
   coordinateSystem(id: $id) {
     ...CoordinateSystem
+    physical
+    voxelSizes {
+      canonical
+      hops
+      problem
+      system {
+        id
+        name
+      }
+      axes {
+        axis
+        physicalAxis
+        size
+        unit
+        type
+      }
+    }
     visualizations {
       __typename
       id
@@ -21641,7 +21687,10 @@ export const HomeRootDetailsDocument = gql`
     query HomeRootDetails($files: [ID!]!, $datasets: [ID!]!, $tables: [ID!]!, $sparse: [ID!]!, $hasFiles: Boolean!, $hasDatasets: Boolean!, $hasTables: Boolean!, $hasSparse: Boolean!) {
   files(filters: {ids: $files}, pagination: {limit: 100}) @include(if: $hasFiles) {
     ...ListFile
-    derivedContainers(filters: {direction: SOURCE}) {
+    derivedContainers(
+      filters: {direction: SOURCE, containerKind: DATASET}
+      pagination: {limit: 5}
+    ) {
       id
       seriesIdentifier
       container {
@@ -21649,17 +21698,10 @@ export const HomeRootDetailsDocument = gql`
         ... on ArrayDataset {
           ...ListArrayDataset
         }
-        ... on TableDataset {
-          id
-        }
-        ... on MeshCollection {
-          id
-        }
-        ... on AnnotationCollection {
-          id
-        }
       }
     }
+    seriesCount: derivedContainersCount(kind: DATASET)
+    containerCount: derivedContainersCount
   }
   arrayDatasets(filters: {ids: $datasets}, pagination: {limit: 100}) @include(if: $hasDatasets) {
     ...ListArrayDataset
@@ -21756,11 +21798,17 @@ export const HomeOverviewDocument = gql`
   annotations: annotationsStats {
     count
   }
+  newAnnotations: annotationsStats(filters: {createdAfter: $since}) {
+    count
+  }
   scenes: scenesStats {
     count
   }
-  collaborations {
-    id
+  newScenes: scenesStats(filters: {createdAfter: $since}) {
+    count
+  }
+  collaborations: collaborationsStats {
+    count
   }
 }
     `;
@@ -21981,6 +22029,14 @@ export const GetMeshObjectSourceDocument = gql`
   }
 }
     ${FabriksStoreFragmentDoc}`;
+export const GetMeshObjectDerivedCountDocument = gql`
+    query GetMeshObjectDerivedCount($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    derivedResidentsCount
+  }
+}
+    `;
 export const GetMeshCollectionDocument = gql`
     query GetMeshCollection($id: ID!) {
   meshCollection(id: $id) {
@@ -22833,6 +22889,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     GetCollaborations(variables?: GetCollaborationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetCollaborationsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetCollaborationsQuery>({ document: GetCollaborationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetCollaborations', 'query', variables);
     },
+    GetCollaborationsWithItems(variables?: GetCollaborationsWithItemsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetCollaborationsWithItemsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetCollaborationsWithItemsQuery>({ document: GetCollaborationsWithItemsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetCollaborationsWithItems', 'query', variables);
+    },
     GetCollaboration(variables: GetCollaborationQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetCollaborationQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetCollaborationQuery>({ document: GetCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetCollaboration', 'query', variables);
     },
@@ -23033,6 +23092,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetMeshObjectSource(variables: GetMeshObjectSourceQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMeshObjectSourceQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMeshObjectSourceQuery>({ document: GetMeshObjectSourceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMeshObjectSource', 'query', variables);
+    },
+    GetMeshObjectDerivedCount(variables: GetMeshObjectDerivedCountQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMeshObjectDerivedCountQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetMeshObjectDerivedCountQuery>({ document: GetMeshObjectDerivedCountDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMeshObjectDerivedCount', 'query', variables);
     },
     GetMeshCollection(variables: GetMeshCollectionQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMeshCollectionQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMeshCollectionQuery>({ document: GetMeshCollectionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMeshCollection', 'query', variables);

@@ -67,3 +67,12 @@ query GetMeshObjectSource($collection: ID!, $object: Int!) {
     }
   }
 }
+
+# How many things were made from one mesh object: the float's Derived row
+# counts them without loading the list the info card shows.
+query GetMeshObjectDerivedCount($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    derivedResidentsCount
+  }
+}

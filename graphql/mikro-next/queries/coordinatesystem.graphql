@@ -1,6 +1,26 @@
 query GetCoordinateSystem($id: ID!) {
   coordinateSystem(id: $id) {
     ...CoordinateSystem
+    physical
+    # An index space's size per step in every physical space it reaches, by
+    # the best route however many edges away, canonical first. Empty for a
+    # space that is itself physical: its own pixel size is the edge into it.
+    voxelSizes {
+      canonical
+      hops
+      problem
+      system {
+        id
+        name
+      }
+      axes {
+        axis
+        physicalAxis
+        size
+        unit
+        type
+      }
+    }
     # Everything worlded on this system, of either kind: its scenes, then its
     # charts (inverse of Visualization.worldCoordinateSystem). A space is
     # adopted, never owned: several may share one, and it outlives each of them.

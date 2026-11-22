@@ -10,7 +10,7 @@ import { useDownload } from "@/core/modules/download/DownloadProvider";
 import { DownloadIcon, FileIcon, GitBranch } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
-import { GetFileQuery, HistoryKind, LineageNodeKind, useGetFileQuery } from "../api/graphql";
+import { GetFileQuery, LineageNodeKind, useGetFileQuery } from "../api/graphql";
 import { lineageLink } from "../components/lineage/lineageGraph";
 import { MoveToFolderButton } from "../components/folder/MoveToFolderButton";
 import { FileOutcomes } from "../components/file/FileOutcomes";
@@ -63,15 +63,8 @@ const getFileTypeColor = (filename: string) => {
 
 type PageFile = GetFileQuery["file"];
 
-/**
- * When the file came to be. The creating task's `createdAt` when there is one;
- * otherwise the date of the Create entry in its provenance, which the page
- * query already carries. A file has no `createdAt` of its own.
- */
-const createdAt = (file: PageFile): string | null =>
-  file.createdThrough?.createdAt ??
-  file.provenanceEntries.find((entry) => entry.kind === HistoryKind.Create)?.date ??
-  null;
+/** When the file came to be: its own `createdAt`. */
+const createdAt = (file: PageFile): string | null => file.createdAt;
 
 /** Absolute date for the `title` of the relative one. */
 const absolute = (date: string): string => {

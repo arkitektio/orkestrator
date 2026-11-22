@@ -27,6 +27,7 @@ fragment File on File {
 # is what every file mutation returns, and none of them needs this.
 fragment DetailFile on File {
   ...File
+  createdAt
   creator {
     sub
   }

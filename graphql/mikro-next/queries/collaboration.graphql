@@ -1,6 +1,18 @@
-query GetCollaborations {
+# The collaborations as cards: each says how many objects were put in it by hand
+# (`itemCount(brought: false)`), counted on the server, not by loading them.
+query GetCollaborations($pagination: OffsetPaginationInput) {
+  collaborations(pagination: $pagination) {
+    ...ListCollaboration
+    put: itemCount(brought: false)
+  }
+}
+
+# The Add to Collaboration dialog: it must tell which collaborations already
+# hold everything being added, so it reads their items.
+query GetCollaborationsWithItems {
   collaborations {
     ...ListCollaboration
+    put: itemCount(brought: false)
     items {
       ...CollaborationItem
     }

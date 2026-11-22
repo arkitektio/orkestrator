@@ -14502,7 +14502,7 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
   )>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type DetailFileFragment = (
-  { __typename?: 'File', creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
+  { __typename?: 'File', createdAt: any, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
   & FileFragment
 );
 
@@ -18607,11 +18607,21 @@ export type ChildrenCountsQueryVariables = Exact<{
 
 export type ChildrenCountsQuery = { __typename?: 'Query', childrenCounts: { __typename?: 'FolderChildCounts', total: number, kinds: Array<{ __typename?: 'FolderChildKindCount', kind: FolderChildKind, count: number }> } };
 
-export type GetCollaborationsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetCollaborationsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type GetCollaborationsQuery = { __typename?: 'Query', collaborations: Array<(
-    { __typename?: 'Collaboration', items: Array<(
+    { __typename?: 'Collaboration', put: number }
+    & ListCollaborationFragment
+  )> };
+
+export type GetCollaborationsWithItemsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCollaborationsWithItemsQuery = { __typename?: 'Query', collaborations: Array<(
+    { __typename?: 'Collaboration', put: number, items: Array<(
       { __typename?: 'CollaborationItem' }
       & CollaborationItemFragment
     )> }
@@ -18762,7 +18772,7 @@ export type GetCoordinateSystemQueryVariables = Exact<{
 
 
 export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: (
-    { __typename?: 'CoordinateSystem', visualizations: Array<(
+    { __typename?: 'CoordinateSystem', physical: boolean, voxelSizes: Array<{ __typename?: 'VoxelSize', canonical: boolean, hops: number, problem?: string | null, system: { __typename?: 'CoordinateSystem', id: string, name: string }, axes: Array<{ __typename?: 'AxisVoxelSize', axis: string, physicalAxis: string, size: number, unit: string, type: AxisType }> }>, visualizations: Array<(
       { __typename: 'Chart', id: string }
       & ListChartFragment
     ) | (
@@ -19315,10 +19325,10 @@ export type HomeRootDetailsQueryVariables = Exact<{
 
 
 export type HomeRootDetailsQuery = { __typename?: 'Query', files?: Array<(
-    { __typename?: 'File', derivedContainers: Array<{ __typename?: 'FileLink', id: string, seriesIdentifier: string, container: { __typename: 'AnnotationCollection', id: string } | (
+    { __typename?: 'File', seriesCount: number, containerCount: number, derivedContainers: Array<{ __typename?: 'FileLink', id: string, seriesIdentifier: string, container: { __typename: 'AnnotationCollection' } | (
         { __typename: 'ArrayDataset' }
         & ListArrayDatasetFragment
-      ) | { __typename: 'MeshCollection', id: string } | { __typename: 'TableDataset', id: string } }> }
+      ) | { __typename: 'MeshCollection' } | { __typename: 'TableDataset' } }> }
     & ListFileFragment
   )>, arrayDatasets?: Array<(
     { __typename?: 'ArrayDataset' }
@@ -19349,7 +19359,7 @@ export type HomeOverviewQueryVariables = Exact<{
 }>;
 
 
-export type HomeOverviewQuery = { __typename?: 'Query', lenses: { __typename?: 'LensStats', count: number }, newLenses: { __typename?: 'LensStats', count: number }, arrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, newArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, coordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, newCoordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, tableDatasets: { __typename?: 'TableDatasetStats', count: number }, newTableDatasets: { __typename?: 'TableDatasetStats', count: number }, sparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, newSparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, folders: { __typename?: 'FolderStats', count: number }, newFolders: { __typename?: 'FolderStats', count: number }, files: { __typename?: 'FileStats', count: number }, newFiles: { __typename?: 'FileStats', count: number }, charts: { __typename?: 'ChartStats', count: number }, newCharts: { __typename?: 'ChartStats', count: number }, annotations: { __typename?: 'AnnotationStats', count: number }, scenes: { __typename?: 'SceneStats', count: number }, collaborations: Array<{ __typename?: 'Collaboration', id: string }> };
+export type HomeOverviewQuery = { __typename?: 'Query', lenses: { __typename?: 'LensStats', count: number }, newLenses: { __typename?: 'LensStats', count: number }, arrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, newArrayDatasets: { __typename?: 'ArrayDatasetStats', count: number }, coordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, newCoordinateSystems: { __typename?: 'CoordinateSystemStats', count: number }, tableDatasets: { __typename?: 'TableDatasetStats', count: number }, newTableDatasets: { __typename?: 'TableDatasetStats', count: number }, sparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, newSparseDatasets: { __typename?: 'SparseDatasetStats', count: number }, folders: { __typename?: 'FolderStats', count: number }, newFolders: { __typename?: 'FolderStats', count: number }, files: { __typename?: 'FileStats', count: number }, newFiles: { __typename?: 'FileStats', count: number }, charts: { __typename?: 'ChartStats', count: number }, newCharts: { __typename?: 'ChartStats', count: number }, annotations: { __typename?: 'AnnotationStats', count: number }, newAnnotations: { __typename?: 'AnnotationStats', count: number }, scenes: { __typename?: 'SceneStats', count: number }, newScenes: { __typename?: 'SceneStats', count: number }, collaborations: { __typename?: 'CollaborationStats', count: number } };
 
 export type PreviewLayerQueryVariables = Exact<{
   input: PreviewLayerInput;
@@ -19856,6 +19866,14 @@ export type GetMeshObjectSourceQuery = { __typename?: 'Query', meshObject: { __t
         { __typename?: 'FabriksStore' }
         & FabriksStoreFragment
       ) } } };
+
+export type GetMeshObjectDerivedCountQueryVariables = Exact<{
+  collection: Scalars['ID']['input'];
+  object: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeshObjectDerivedCountQuery = { __typename?: 'Query', meshObject: { __typename?: 'MeshObject', id: string, derivedResidentsCount: number } };
 
 export type GetMeshCollectionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -22232,6 +22250,7 @@ ${ProvenanceEntryFragmentDoc}`;
 export const DetailFileFragmentDoc = gql`
     fragment DetailFile on File {
   ...File
+  createdAt
   creator {
     sub
   }
@@ -28194,7 +28213,11 @@ export type AddLayerReachableLazyQueryHookResult = ReturnType<typeof useAddLayer
 export type AddLayerReachableQueryResult = Apollo.QueryResult<AddLayerReachableQuery, AddLayerReachableQueryVariables>;
 export const AddLayerWorldGraphDocument = gql`
     query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
-  coordinateGraph(coordinateSystem: $world, maxDepth: $maxDepth) {
+  coordinateGraph(
+    coordinateSystem: $world
+    maxDepth: $maxDepth
+    direction: INCOMING
+  ) {
     root {
       id
     }
@@ -29469,16 +29492,13 @@ export type ChildrenCountsQueryHookResult = ReturnType<typeof useChildrenCountsQ
 export type ChildrenCountsLazyQueryHookResult = ReturnType<typeof useChildrenCountsLazyQuery>;
 export type ChildrenCountsQueryResult = Apollo.QueryResult<ChildrenCountsQuery, ChildrenCountsQueryVariables>;
 export const GetCollaborationsDocument = gql`
-    query GetCollaborations {
-  collaborations {
+    query GetCollaborations($pagination: OffsetPaginationInput) {
+  collaborations(pagination: $pagination) {
     ...ListCollaboration
-    items {
-      ...CollaborationItem
-    }
+    put: itemCount(brought: false)
   }
 }
-    ${ListCollaborationFragmentDoc}
-${CollaborationItemFragmentDoc}`;
+    ${ListCollaborationFragmentDoc}`;
 
 /**
  * __useGetCollaborationsQuery__
@@ -29492,6 +29512,7 @@ ${CollaborationItemFragmentDoc}`;
  * @example
  * const { data, loading, error } = useGetCollaborationsQuery({
  *   variables: {
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -29506,6 +29527,45 @@ export function useGetCollaborationsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetCollaborationsQueryHookResult = ReturnType<typeof useGetCollaborationsQuery>;
 export type GetCollaborationsLazyQueryHookResult = ReturnType<typeof useGetCollaborationsLazyQuery>;
 export type GetCollaborationsQueryResult = Apollo.QueryResult<GetCollaborationsQuery, GetCollaborationsQueryVariables>;
+export const GetCollaborationsWithItemsDocument = gql`
+    query GetCollaborationsWithItems {
+  collaborations {
+    ...ListCollaboration
+    put: itemCount(brought: false)
+    items {
+      ...CollaborationItem
+    }
+  }
+}
+    ${ListCollaborationFragmentDoc}
+${CollaborationItemFragmentDoc}`;
+
+/**
+ * __useGetCollaborationsWithItemsQuery__
+ *
+ * To run a query within a React component, call `useGetCollaborationsWithItemsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCollaborationsWithItemsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCollaborationsWithItemsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetCollaborationsWithItemsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetCollaborationsWithItemsQuery, GetCollaborationsWithItemsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCollaborationsWithItemsQuery, GetCollaborationsWithItemsQueryVariables>(GetCollaborationsWithItemsDocument, options);
+      }
+export function useGetCollaborationsWithItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborationsWithItemsQuery, GetCollaborationsWithItemsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCollaborationsWithItemsQuery, GetCollaborationsWithItemsQueryVariables>(GetCollaborationsWithItemsDocument, options);
+        }
+export type GetCollaborationsWithItemsQueryHookResult = ReturnType<typeof useGetCollaborationsWithItemsQuery>;
+export type GetCollaborationsWithItemsLazyQueryHookResult = ReturnType<typeof useGetCollaborationsWithItemsLazyQuery>;
+export type GetCollaborationsWithItemsQueryResult = Apollo.QueryResult<GetCollaborationsWithItemsQuery, GetCollaborationsWithItemsQueryVariables>;
 export const GetCollaborationDocument = gql`
     query GetCollaboration($id: ID!) {
   collaboration(id: $id) {
@@ -29836,6 +29896,23 @@ export const GetCoordinateSystemDocument = gql`
     query GetCoordinateSystem($id: ID!) {
   coordinateSystem(id: $id) {
     ...CoordinateSystem
+    physical
+    voxelSizes {
+      canonical
+      hops
+      problem
+      system {
+        id
+        name
+      }
+      axes {
+        axis
+        physicalAxis
+        size
+        unit
+        type
+      }
+    }
     visualizations {
       __typename
       id
@@ -31392,7 +31469,10 @@ export const HomeRootDetailsDocument = gql`
     query HomeRootDetails($files: [ID!]!, $datasets: [ID!]!, $tables: [ID!]!, $sparse: [ID!]!, $hasFiles: Boolean!, $hasDatasets: Boolean!, $hasTables: Boolean!, $hasSparse: Boolean!) {
   files(filters: {ids: $files}, pagination: {limit: 100}) @include(if: $hasFiles) {
     ...ListFile
-    derivedContainers(filters: {direction: SOURCE}) {
+    derivedContainers(
+      filters: {direction: SOURCE, containerKind: DATASET}
+      pagination: {limit: 5}
+    ) {
       id
       seriesIdentifier
       container {
@@ -31400,17 +31480,10 @@ export const HomeRootDetailsDocument = gql`
         ... on ArrayDataset {
           ...ListArrayDataset
         }
-        ... on TableDataset {
-          id
-        }
-        ... on MeshCollection {
-          id
-        }
-        ... on AnnotationCollection {
-          id
-        }
       }
     }
+    seriesCount: derivedContainersCount(kind: DATASET)
+    containerCount: derivedContainersCount
   }
   arrayDatasets(filters: {ids: $datasets}, pagination: {limit: 100}) @include(if: $hasDatasets) {
     ...ListArrayDataset
@@ -31598,11 +31671,17 @@ export const HomeOverviewDocument = gql`
   annotations: annotationsStats {
     count
   }
+  newAnnotations: annotationsStats(filters: {createdAfter: $since}) {
+    count
+  }
   scenes: scenesStats {
     count
   }
-  collaborations {
-    id
+  newScenes: scenesStats(filters: {createdAfter: $since}) {
+    count
+  }
+  collaborations: collaborationsStats {
+    count
   }
 }
     `;
@@ -32312,6 +32391,43 @@ export function useGetMeshObjectSourceLazyQuery(baseOptions?: ApolloReactHooks.L
 export type GetMeshObjectSourceQueryHookResult = ReturnType<typeof useGetMeshObjectSourceQuery>;
 export type GetMeshObjectSourceLazyQueryHookResult = ReturnType<typeof useGetMeshObjectSourceLazyQuery>;
 export type GetMeshObjectSourceQueryResult = Apollo.QueryResult<GetMeshObjectSourceQuery, GetMeshObjectSourceQueryVariables>;
+export const GetMeshObjectDerivedCountDocument = gql`
+    query GetMeshObjectDerivedCount($collection: ID!, $object: Int!) {
+  meshObject(collection: $collection, object: $object) {
+    id
+    derivedResidentsCount
+  }
+}
+    `;
+
+/**
+ * __useGetMeshObjectDerivedCountQuery__
+ *
+ * To run a query within a React component, call `useGetMeshObjectDerivedCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMeshObjectDerivedCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMeshObjectDerivedCountQuery({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *      object: // value for 'object'
+ *   },
+ * });
+ */
+export function useGetMeshObjectDerivedCountQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMeshObjectDerivedCountQuery, GetMeshObjectDerivedCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMeshObjectDerivedCountQuery, GetMeshObjectDerivedCountQueryVariables>(GetMeshObjectDerivedCountDocument, options);
+      }
+export function useGetMeshObjectDerivedCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMeshObjectDerivedCountQuery, GetMeshObjectDerivedCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMeshObjectDerivedCountQuery, GetMeshObjectDerivedCountQueryVariables>(GetMeshObjectDerivedCountDocument, options);
+        }
+export type GetMeshObjectDerivedCountQueryHookResult = ReturnType<typeof useGetMeshObjectDerivedCountQuery>;
+export type GetMeshObjectDerivedCountLazyQueryHookResult = ReturnType<typeof useGetMeshObjectDerivedCountLazyQuery>;
+export type GetMeshObjectDerivedCountQueryResult = Apollo.QueryResult<GetMeshObjectDerivedCountQuery, GetMeshObjectDerivedCountQueryVariables>;
 export const GetMeshCollectionDocument = gql`
     query GetMeshCollection($id: ID!) {
   meshCollection(id: $id) {

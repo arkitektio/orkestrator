@@ -33,11 +33,11 @@ query AddLayerReachable($scene: ID!) {
 # space's children are the spaces whose edges land in it: the grids registered
 # into the world, the derived datasets, crops and levels landing in those
 # grids, and so on down — which is the tree the derivation engine ranks by.
-# The server's walk is undirected, so a dataset registered into a second world
-# brings that world along; the client's directed walk from THIS world never
-# reaches it, and its spaces are simply not listed.
+# The server walks INCOMING only (an edge's output to its input): what maps into
+# this world, not a second world a dataset is also registered into, so the
+# picker is handed only the tree it walks.
 query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
-  coordinateGraph(coordinateSystem: $world, maxDepth: $maxDepth) {
+  coordinateGraph(coordinateSystem: $world, maxDepth: $maxDepth, direction: INCOMING) {
     root {
       id
     }

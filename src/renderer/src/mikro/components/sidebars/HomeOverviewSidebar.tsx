@@ -43,9 +43,9 @@ export const HomeOverviewSidebar = () => {
       "/mikro/folders": dated(data.folders, data.newFolders),
       "/mikro/files": dated(data.files, data.newFiles),
       "/mikro/charts": dated(data.charts, data.newCharts),
-      "/mikro/annotations": { count: data.annotations.count },
-      "/mikro/scenes": { count: data.scenes.count },
-      "/mikro/collaborations": { count: data.collaborations.length },
+      "/mikro/annotations": dated(data.annotations, data.newAnnotations),
+      "/mikro/scenes": dated(data.scenes, data.newScenes),
+      "/mikro/collaborations": { count: data.collaborations.count },
     };
   }, [data]);
 

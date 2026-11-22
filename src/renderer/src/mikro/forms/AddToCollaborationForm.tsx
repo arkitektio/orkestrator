@@ -15,7 +15,7 @@ import { useState } from "react";
 import {
   useAddManyToCollaborationMutation,
   useCreateCollaborationMutation,
-  useGetCollaborationsQuery,
+  useGetCollaborationsWithItemsQuery,
 } from "../api/graphql";
 import { DerivedDataPicker, useDerivedSelection } from "./collaboration/DerivedDataPicker";
 import { collaborationRefs } from "./collaboration/derivedSelection";
@@ -40,12 +40,12 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
   const { openDialog } = useDialog();
   const [name, setName] = useState("");
   const [pending, setPending] = useState<string>();
-  const { data, loading } = useGetCollaborationsQuery();
-  const [addMany] = useAddManyToCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaboration"] });
+  const { data, loading } = useGetCollaborationsWithItemsQuery();
+  const [addMany] = useAddManyToCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaborationsWithItems", "GetCollaboration"] });
   const derived = useDerivedSelection(objects);
   const refs = collaborationRefs(objects, derived.picked);
   const derivedCount = refs.length - objects.length;
-  const [create] = useCreateCollaborationMutation({ refetchQueries: ["GetCollaborations"] });
+  const [create] = useCreateCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaborationsWithItems"] });
 
   const holdsAll = (items: { identifier?: string | null; objectId: string }[]) =>
     refs.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
@@ -130,7 +130,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
                 {already ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
                 <span className="truncate">{collaboration.name}</span>
                 <Badge variant="outline" className="ml-auto text-[0.625rem]">
-                  {collaboration.items.filter((item) => !item.brought).length}
+                  {collaboration.put}
                 </Badge>
               </Button>
             );

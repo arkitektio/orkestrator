@@ -5,12 +5,13 @@ import { MikroCollaboration } from "@/core/linkers";
 import { ListCollaborationFragment } from "../../api/graphql";
 
 interface Props {
-  item: ListCollaborationFragment & { items?: { brought: boolean }[] };
+  /** `put`: how many objects were put in by hand, counted by the server. */
+  item: ListCollaborationFragment & { put?: number };
   className?: string;
 }
 
 const TheCard = ({ item, className }: Props) => {
-  const put = item.items?.filter((entry) => !entry.brought).length;
+  const put = item.put;
   return (
     <MikroCollaboration.Smart object={item} menuButton>
       <HomeCard className={className}>

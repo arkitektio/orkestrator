@@ -16,7 +16,7 @@ import {
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
 import { useDebounce } from "@uidotdev/usehooks";
-import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpWideNarrow, Axis3d } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpWideNarrow, Axis3d, Ruler } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   CoordinateSystemFilter,
@@ -30,8 +30,7 @@ import { PeopleFilter } from "../home/HomeFilters";
  * What a space holds, as `CoordinateSystemFilter.uninhabited` reads it. A system
  * no longer declares a kind (see `coordinates/residents.ts`): an empty
  * `residents` IS a reference frame, so this is the one distinction the server
- * can filter on. Whether a space is physical (its axes carry units) it cannot
- * filter on yet.
+ * can filter on besides whether it is physical (`UNITS_OPTIONS`).
  */
 export const SPACE_OPTIONS = [
   { key: "any", label: "Any space", value: undefined },
@@ -39,6 +38,19 @@ export const SPACE_OPTIONS = [
   { key: "frames", label: "Reference frames", value: true },
 ] as const;
 const SPACE_KEYS = SPACE_OPTIONS.map((option) => option.key) as ["any", ...string[]];
+
+/**
+ * Whether a space is physical, as `CoordinateSystemFilter.physical` reads it:
+ * every axis carries a unit (a calibration, a stage frame, a world), or none do
+ * (a pixel grid, a pyramid level, a lens grid). The list shows physical spaces
+ * unless asked otherwise: the index spaces are many and say little on their own.
+ */
+export const UNITS_OPTIONS = [
+  { key: "physical", label: "Physical spaces", value: true },
+  { key: "index", label: "Index spaces", value: false },
+  { key: "all", label: "All spaces", value: undefined },
+] as const;
+const UNITS_KEYS = UNITS_OPTIONS.map((option) => option.key) as ["physical", ...string[]];
 
 const SORT_FIELDS = ["createdAt", "name"] as const;
 const SORT_FIELD_LABELS: Record<(typeof SORT_FIELDS)[number], string> = {
@@ -49,6 +61,7 @@ const SORT_FIELD_LABELS: Record<(typeof SORT_FIELDS)[number], string> = {
 export type CoordinateSystemFilterState = {
   search: string;
   space: string;
+  units: string;
   owner: string | null;
   createdAfter: Date | null;
   createdBefore: Date | null;
@@ -62,15 +75,18 @@ export type CoordinateSystemFilterState = {
 export const coordinateSystemFilters = ({
   search,
   space,
+  units,
   owner,
   createdAfter,
   createdBefore,
 }: CoordinateSystemFilterState): CoordinateSystemFilter => {
   const text = search.trim();
   const uninhabited = SPACE_OPTIONS.find((option) => option.key === space)?.value;
+  const physical = UNITS_OPTIONS.find((option) => option.key === units)?.value;
   return {
     ...(text ? { search: text } : {}),
     ...(uninhabited === undefined ? {} : { uninhabited }),
+    ...(physical === undefined ? {} : { physical }),
     ...(owner ? { owner } : {}),
     ...(createdAfter ? { createdAfter: createdAfter.toISOString() } : {}),
     ...(createdBefore ? { createdBefore: createdBefore.toISOString() } : {}),
@@ -86,6 +102,7 @@ export const coordinateSystemFilters = ({
 export const useCoordinateSystemFilterBar = () => {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
   const [space, setSpace] = useQueryState("space", parseAsStringLiteral(SPACE_KEYS).withDefault("any"));
+  const [units, setUnits] = useQueryState("units", parseAsStringLiteral(UNITS_KEYS).withDefault("physical"));
   const [owner, setOwner] = useQueryState("user", parseAsString);
   const [createdAfter, setCreatedAfter] = useQueryState("after", parseAsIsoDateTime);
   const [createdBefore, setCreatedBefore] = useQueryState("before", parseAsIsoDateTime);
@@ -112,10 +129,10 @@ export const useCoordinateSystemFilterBar = () => {
   const afterKey = createdAfter?.getTime();
   const beforeKey = createdBefore?.getTime();
   const filters = useMemo(
-    () => coordinateSystemFilters({ search: settled, space, owner, createdAfter, createdBefore }),
+    () => coordinateSystemFilters({ search: settled, space, units, owner, createdAfter, createdBefore }),
     // The dates are compared by time: the URL parser hands out a fresh Date.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [settled, space, owner, afterKey, beforeKey],
+    [settled, space, units, owner, afterKey, beforeKey],
   );
 
   const dir = sortDirection === "ASC" ? Ordering.Asc : Ordering.Desc;
@@ -126,10 +143,11 @@ export const useCoordinateSystemFilterBar = () => {
   const isCustomOrder = sortField !== "createdAt" || sortDirection !== "DESC";
 
   const filtered =
-    !!search || space !== "any" || !!owner || !!createdAfter || !!createdBefore || isCustomOrder;
+    !!search || space !== "any" || units !== "physical" || !!owner || !!createdAfter || !!createdBefore || isCustomOrder;
   const clear = () => {
     setSearch(null);
     setSpace(null);
+    setUnits(null);
     setOwner(null);
     setCreatedAfter(null);
     setCreatedBefore(null);
@@ -139,6 +157,7 @@ export const useCoordinateSystemFilterBar = () => {
   };
 
   const spaceLabel = SPACE_OPTIONS.find((option) => option.key === space)?.label ?? "Any space";
+  const unitsLabel = UNITS_OPTIONS.find((option) => option.key === units)?.label ?? "Physical spaces";
 
   const bar = (
     <div className="flex flex-wrap items-center gap-2">
@@ -161,6 +180,27 @@ export const useCoordinateSystemFilterBar = () => {
             onValueChange={(next) => setSpace(next === "any" ? null : (next as typeof space))}
           >
             {SPACE_OPTIONS.map((option) => (
+              <DropdownMenuRadioItem key={option.key} value={option.key}>
+                {option.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <FilterTrigger active={units !== "physical"} icon={Ruler} aria-label="Units">
+            {unitsLabel}
+          </FilterTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-52">
+          <DropdownMenuLabel>What its axes measure</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={units}
+            onValueChange={(next) => setUnits(next === "physical" ? null : (next as typeof units))}
+          >
+            {UNITS_OPTIONS.map((option) => (
               <DropdownMenuRadioItem key={option.key} value={option.key}>
                 {option.label}
               </DropdownMenuRadioItem>

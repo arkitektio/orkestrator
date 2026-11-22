@@ -83,7 +83,8 @@ query HomeRoots($pagination: OffsetPaginationInput, $filters: RootFilter) {
 }
 
 # The tiles for a page of roots, one constant-cost list per kind. A file comes with
-# the series a converter wrote out of it, so its card can show its images.
+# the first series a converter wrote out of it, so its card can show its images,
+# and the counts of all of them: a 40-series LIF ships 5 datasets, not 40.
 query HomeRootDetails(
   $files: [ID!]!
   $datasets: [ID!]!
@@ -96,7 +97,7 @@ query HomeRootDetails(
 ) {
   files(filters: { ids: $files }, pagination: { limit: 100 }) @include(if: $hasFiles) {
     ...ListFile
-    derivedContainers(filters: { direction: SOURCE }) {
+    derivedContainers(filters: { direction: SOURCE, containerKind: DATASET }, pagination: { limit: 5 }) {
       id
       seriesIdentifier
       container {
@@ -104,17 +105,10 @@ query HomeRootDetails(
         ... on ArrayDataset {
           ...ListArrayDataset
         }
-        ... on TableDataset {
-          id
-        }
-        ... on MeshCollection {
-          id
-        }
-        ... on AnnotationCollection {
-          id
-        }
       }
     }
+    seriesCount: derivedContainersCount(kind: DATASET)
+    containerCount: derivedContainersCount
   }
   arrayDatasets(filters: { ids: $datasets }, pagination: { limit: 100 }) @include(if: $hasDatasets) {
     ...ListArrayDataset
@@ -159,9 +153,9 @@ query HomeFilterOptions {
 }
 
 # The home sidebar's page list: how many of each kind there are and how many
-# came in since `since` (a week back). Annotations and scenes carry no
-# timestamp, so they only count. Collaborations have no aggregate (they come
-# from the shared collaborations package); there are few, so the list is it.
+# came in since `since` (a week back). Annotations and scenes made before they
+# carried a timestamp count but are never new. Collaborations are counted by
+# `collaborationsStats` (the shared collaborations package).
 query HomeOverview($since: DateTime!) {
   lenses: lensesStats { count }
   newLenses: lensesStats(filters: { createdAfter: $since }) { count }
@@ -180,6 +174,8 @@ query HomeOverview($since: DateTime!) {
   charts: chartsStats { count }
   newCharts: chartsStats(filters: { createdAfter: $since }) { count }
   annotations: annotationsStats { count }
+  newAnnotations: annotationsStats(filters: { createdAfter: $since }) { count }
   scenes: scenesStats { count }
-  collaborations { id }
+  newScenes: scenesStats(filters: { createdAfter: $since }) { count }
+  collaborations: collaborationsStats { count }
 }
