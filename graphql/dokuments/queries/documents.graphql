@@ -4,13 +4,12 @@ query GetDocument($id: ID!) {
   }
 }
 
-query SearchDocuments($search: String, $values: [ID!]) {
-  options: documents(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: title
+# What a `@dokuments/document` display line shows: its title and page count.
+query DocumentDisplay($id: ID!) {
+  document(id: $id) {
+    id
+    title
+    pageCount
   }
 }
 

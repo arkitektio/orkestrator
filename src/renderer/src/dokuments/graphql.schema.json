@@ -230,14 +230,14 @@
             "deprecationReason": null
           },
           {
-            "name": "ocrEngine",
-            "description": null,
+            "name": "pageCount",
+            "description": "How many pages the document has.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "String",
+                "name": "Int",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -246,20 +246,8 @@
             "deprecationReason": null
           },
           {
-            "name": "pageCount",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "pages",
-            "description": null,
+            "description": "The document's pages, in reading order (by index).",
             "args": [
               {
                 "name": "filters",
@@ -422,18 +410,6 @@
                   "ofType": null
                 }
               }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "StrFilterLookup",
-              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -2206,16 +2182,12 @@
         "fields": [
           {
             "name": "content",
-            "description": "The content of the page as a flat string.",
+            "description": "The content of the page as a flat string. Null when no text was recognised on it.",
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -2289,13 +2261,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "OCRPageResult",
-                "kind": "OBJECT",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "OCRPageResult",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -2388,18 +2356,6 @@
                   "ofType": null
                 }
               }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "StrFilterLookup",
-              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,

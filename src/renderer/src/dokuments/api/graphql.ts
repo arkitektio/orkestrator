@@ -44,8 +44,9 @@ export type Document = {
   __typename?: 'Document';
   file: File;
   id: Scalars['ID']['output'];
-  ocrEngine: Scalars['String']['output'];
-  pageCount?: Maybe<Scalars['Int']['output']>;
+  /** How many pages the document has. */
+  pageCount: Scalars['Int']['output'];
+  /** The document's pages, in reading order (by index). */
   pages: Array<Page>;
   processedAt?: Maybe<Scalars['String']['output']>;
   title: Scalars['String']['output'];
@@ -64,7 +65,6 @@ export type DocumentFilter = {
   OR?: InputMaybe<DocumentFilter>;
   id?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  name?: InputMaybe<StrFilterLookup>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -277,13 +277,13 @@ export type OffsetPaginationInput = {
 
 export type Page = {
   __typename?: 'Page';
-  /** The content of the page as a flat string. */
-  content: Scalars['String']['output'];
+  /** The content of the page as a flat string. Null when no text was recognised on it. */
+  content?: Maybe<Scalars['String']['output']>;
   document: Document;
   id: Scalars['ID']['output'];
   image: MediaStore;
   index: Scalars['Int']['output'];
-  ocrResult: OcrPageResult;
+  ocrResult?: Maybe<OcrPageResult>;
 };
 
 export type PageFilter = {
@@ -293,7 +293,6 @@ export type PageFilter = {
   OR?: InputMaybe<PageFilter>;
   id?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  name?: InputMaybe<StrFilterLookup>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -405,7 +404,7 @@ export type _Service = {
 
 export type DocumentFragment = { __typename?: 'Document', id: string, title: string, pages: Array<(
     { __typename?: 'Page' }
-    & PageFragment
+    & ListPageFragment
   )> };
 
 export type ListDocumentFragment = { __typename?: 'Document', id: string, title: string };
@@ -422,28 +421,31 @@ export type ListFileFragment = { __typename?: 'File', id: string, name: string }
 
 export type OcrPageResultFragment = { __typename?: 'OCRPageResult', angle: number, lines: Array<{ __typename?: 'OCRTextLine', text: string, score: number, angle: number, bbox: Array<Array<number>> }> };
 
-export type PageFragment = { __typename?: 'Page', id: string, index: number, content: string, image: (
+export type PageFragment = { __typename?: 'Page', id: string, index: number, content?: string | null, image: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
-  ), ocrResult: (
+  ), ocrResult?: (
     { __typename?: 'OCRPageResult' }
     & OcrPageResultFragment
-  ) };
+  ) | null };
 
-export type ListPageFragment = { __typename?: 'Page', id: string, index: number, content: string, document: { __typename?: 'Document', id: string, title: string } };
+export type ListPageFragment = { __typename?: 'Page', id: string, index: number, image: (
+    { __typename?: 'MediaStore' }
+    & MediaStoreFragment
+  ) };
 
 export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: string, bucket: string, path: string, originalFileName?: string | null, sizeBytes?: number | null };
 
-export type MediaAccessGrantFragment = { __typename?: 'MediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string };
+export type GeneralMediaAccessGrantFragment = { __typename?: 'GeneralMediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string, prefix: string };
 
-export type RequestMediaAccessMutationVariables = Exact<{
-  input: RequestMediaAccessInput;
+export type RequestGeneralMediaAccessMutationVariables = Exact<{
+  input: RequestGeneralMediaAccessInput;
 }>;
 
 
-export type RequestMediaAccessMutation = { __typename?: 'Mutation', requestMediaAccess: (
-    { __typename?: 'MediaAccessGrant' }
-    & MediaAccessGrantFragment
+export type RequestGeneralMediaAccessMutation = { __typename?: 'Mutation', requestGeneralMediaAccess: (
+    { __typename?: 'GeneralMediaAccessGrant' }
+    & GeneralMediaAccessGrantFragment
   ) };
 
 export type GetDocumentQueryVariables = Exact<{
@@ -456,13 +458,12 @@ export type GetDocumentQuery = { __typename?: 'Query', document: (
     & DocumentFragment
   ) };
 
-export type SearchDocumentsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+export type DocumentDisplayQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type SearchDocumentsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Document', value: string, label: string }> };
+export type DocumentDisplayQuery = { __typename?: 'Query', document: { __typename?: 'Document', id: string, title: string, pageCount: number } };
 
 export type ListDocumentsQueryVariables = Exact<{
   filter?: InputMaybe<DocumentFilter>;
@@ -485,14 +486,6 @@ export type GetFileQuery = { __typename?: 'Query', file: (
     & FileFragment
   ) };
 
-export type SearchFilesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchFilesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'File', value: string, label: string }> };
-
 export type ListFilesQueryVariables = Exact<{
   filter?: InputMaybe<FileFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -514,34 +507,12 @@ export type GetPageQuery = { __typename?: 'Query', page: (
     & PageFragment
   ) };
 
-export type SearchPagesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+export type PageDisplayQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type SearchPagesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Page', value: string, label: number }> };
-
-export type ListPagesQueryVariables = Exact<{
-  filter?: InputMaybe<PageFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListPagesQuery = { __typename?: 'Query', pages: Array<(
-    { __typename?: 'Page' }
-    & ListPageFragment
-  )> };
-
-export type GlobalSearchQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type GlobalSearchQuery = { __typename?: 'Query', pages: Array<(
-    { __typename?: 'Page' }
-    & ListPageFragment
-  )> };
+export type PageDisplayQuery = { __typename?: 'Query', page: { __typename?: 'Page', id: string, index: number, content?: string | null } };
 
 export const MediaStoreFragmentDoc = gql`
     fragment MediaStore on MediaStore {
@@ -551,6 +522,49 @@ export const MediaStoreFragmentDoc = gql`
   path
   originalFileName
   sizeBytes
+}
+    `;
+export const ListPageFragmentDoc = gql`
+    fragment ListPage on Page {
+  id
+  index
+  image {
+    ...MediaStore
+  }
+}
+    ${MediaStoreFragmentDoc}`;
+export const DocumentFragmentDoc = gql`
+    fragment Document on Document {
+  id
+  title
+  pages {
+    ...ListPage
+  }
+}
+    ${ListPageFragmentDoc}`;
+export const ListDocumentFragmentDoc = gql`
+    fragment ListDocument on Document {
+  id
+  title
+}
+    `;
+export const FileFragmentDoc = gql`
+    fragment File on File {
+  id
+  name
+  documents {
+    ...ListDocument
+  }
+  store {
+    ...MediaStore
+  }
+}
+    ${ListDocumentFragmentDoc}
+${MediaStoreFragmentDoc}`;
+export const ListFileFragmentDoc = gql`
+    fragment ListFile on File {
+  id
+  name
 }
     `;
 export const OcrPageResultFragmentDoc = gql`
@@ -578,96 +592,50 @@ export const PageFragmentDoc = gql`
 }
     ${MediaStoreFragmentDoc}
 ${OcrPageResultFragmentDoc}`;
-export const DocumentFragmentDoc = gql`
-    fragment Document on Document {
-  id
-  title
-  pages {
-    ...Page
-  }
-}
-    ${PageFragmentDoc}`;
-export const ListDocumentFragmentDoc = gql`
-    fragment ListDocument on Document {
-  id
-  title
-}
-    `;
-export const FileFragmentDoc = gql`
-    fragment File on File {
-  id
-  name
-  documents {
-    ...ListDocument
-  }
-  store {
-    ...MediaStore
-  }
-}
-    ${ListDocumentFragmentDoc}
-${MediaStoreFragmentDoc}`;
-export const ListFileFragmentDoc = gql`
-    fragment ListFile on File {
-  id
-  name
-}
-    `;
-export const ListPageFragmentDoc = gql`
-    fragment ListPage on Page {
-  id
-  index
-  content
-  document {
-    id
-    title
-  }
-}
-    `;
-export const MediaAccessGrantFragmentDoc = gql`
-    fragment MediaAccessGrant on MediaAccessGrant {
+export const GeneralMediaAccessGrantFragmentDoc = gql`
+    fragment GeneralMediaAccessGrant on GeneralMediaAccessGrant {
   accessKey
   secretKey
   sessionToken
   expiresIn
   region
-  path
-  key
   bucket
+  prefix
 }
     `;
-export const RequestMediaAccessDocument = gql`
-    mutation RequestMediaAccess($input: RequestMediaAccessInput!) {
-  requestMediaAccess(input: $input) {
-    ...MediaAccessGrant
+export const RequestGeneralMediaAccessDocument = gql`
+    mutation RequestGeneralMediaAccess($input: RequestGeneralMediaAccessInput!) {
+  requestGeneralMediaAccess(input: $input) {
+    ...GeneralMediaAccessGrant
   }
 }
-    ${MediaAccessGrantFragmentDoc}`;
-export type RequestMediaAccessMutationFn = Apollo.MutationFunction<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>;
+    ${GeneralMediaAccessGrantFragmentDoc}`;
+export type RequestGeneralMediaAccessMutationFn = Apollo.MutationFunction<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>;
 
 /**
- * __useRequestMediaAccessMutation__
+ * __useRequestGeneralMediaAccessMutation__
  *
- * To run a mutation, you first call `useRequestMediaAccessMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRequestMediaAccessMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useRequestGeneralMediaAccessMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestGeneralMediaAccessMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [requestMediaAccessMutation, { data, loading, error }] = useRequestMediaAccessMutation({
+ * const [requestGeneralMediaAccessMutation, { data, loading, error }] = useRequestGeneralMediaAccessMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useRequestMediaAccessMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>) {
+export function useRequestGeneralMediaAccessMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>(RequestMediaAccessDocument, options);
+        return ApolloReactHooks.useMutation<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>(RequestGeneralMediaAccessDocument, options);
       }
-export type RequestMediaAccessMutationHookResult = ReturnType<typeof useRequestMediaAccessMutation>;
-export type RequestMediaAccessMutationResult = Apollo.MutationResult<RequestMediaAccessMutation>;
-export type RequestMediaAccessMutationOptions = Apollo.BaseMutationOptions<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>;
+export type RequestGeneralMediaAccessMutationHookResult = ReturnType<typeof useRequestGeneralMediaAccessMutation>;
+export type RequestGeneralMediaAccessMutationResult = Apollo.MutationResult<RequestGeneralMediaAccessMutation>;
+export type RequestGeneralMediaAccessMutationOptions = Apollo.BaseMutationOptions<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>;
 export const GetDocumentDocument = gql`
     query GetDocument($id: ID!) {
   document(id: $id) {
@@ -703,46 +671,43 @@ export function useGetDocumentLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetDocumentQueryHookResult = ReturnType<typeof useGetDocumentQuery>;
 export type GetDocumentLazyQueryHookResult = ReturnType<typeof useGetDocumentLazyQuery>;
 export type GetDocumentQueryResult = Apollo.QueryResult<GetDocumentQuery, GetDocumentQueryVariables>;
-export const SearchDocumentsDocument = gql`
-    query SearchDocuments($search: String, $values: [ID!]) {
-  options: documents(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: title
+export const DocumentDisplayDocument = gql`
+    query DocumentDisplay($id: ID!) {
+  document(id: $id) {
+    id
+    title
+    pageCount
   }
 }
     `;
 
 /**
- * __useSearchDocumentsQuery__
+ * __useDocumentDisplayQuery__
  *
- * To run a query within a React component, call `useSearchDocumentsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchDocumentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useDocumentDisplayQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDocumentDisplayQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSearchDocumentsQuery({
+ * const { data, loading, error } = useDocumentDisplayQuery({
  *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useSearchDocumentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchDocumentsQuery, SearchDocumentsQueryVariables>) {
+export function useDocumentDisplayQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DocumentDisplayQuery, DocumentDisplayQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchDocumentsQuery, SearchDocumentsQueryVariables>(SearchDocumentsDocument, options);
+        return ApolloReactHooks.useQuery<DocumentDisplayQuery, DocumentDisplayQueryVariables>(DocumentDisplayDocument, options);
       }
-export function useSearchDocumentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchDocumentsQuery, SearchDocumentsQueryVariables>) {
+export function useDocumentDisplayLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DocumentDisplayQuery, DocumentDisplayQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchDocumentsQuery, SearchDocumentsQueryVariables>(SearchDocumentsDocument, options);
+          return ApolloReactHooks.useLazyQuery<DocumentDisplayQuery, DocumentDisplayQueryVariables>(DocumentDisplayDocument, options);
         }
-export type SearchDocumentsQueryHookResult = ReturnType<typeof useSearchDocumentsQuery>;
-export type SearchDocumentsLazyQueryHookResult = ReturnType<typeof useSearchDocumentsLazyQuery>;
-export type SearchDocumentsQueryResult = Apollo.QueryResult<SearchDocumentsQuery, SearchDocumentsQueryVariables>;
+export type DocumentDisplayQueryHookResult = ReturnType<typeof useDocumentDisplayQuery>;
+export type DocumentDisplayLazyQueryHookResult = ReturnType<typeof useDocumentDisplayLazyQuery>;
+export type DocumentDisplayQueryResult = Apollo.QueryResult<DocumentDisplayQuery, DocumentDisplayQueryVariables>;
 export const ListDocumentsDocument = gql`
     query ListDocuments($filter: DocumentFilter, $pagination: OffsetPaginationInput) {
   documents(filters: $filter, pagination: $pagination) {
@@ -814,46 +779,6 @@ export function useGetFileLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetFileQueryHookResult = ReturnType<typeof useGetFileQuery>;
 export type GetFileLazyQueryHookResult = ReturnType<typeof useGetFileLazyQuery>;
 export type GetFileQueryResult = Apollo.QueryResult<GetFileQuery, GetFileQueryVariables>;
-export const SearchFilesDocument = gql`
-    query SearchFiles($search: String, $values: [ID!]) {
-  options: files(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useSearchFilesQuery__
- *
- * To run a query within a React component, call `useSearchFilesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchFilesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchFilesQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchFilesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchFilesQuery, SearchFilesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchFilesQuery, SearchFilesQueryVariables>(SearchFilesDocument, options);
-      }
-export function useSearchFilesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchFilesQuery, SearchFilesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchFilesQuery, SearchFilesQueryVariables>(SearchFilesDocument, options);
-        }
-export type SearchFilesQueryHookResult = ReturnType<typeof useSearchFilesQuery>;
-export type SearchFilesLazyQueryHookResult = ReturnType<typeof useSearchFilesLazyQuery>;
-export type SearchFilesQueryResult = Apollo.QueryResult<SearchFilesQuery, SearchFilesQueryVariables>;
 export const ListFilesDocument = gql`
     query ListFiles($filter: FileFilter, $pagination: OffsetPaginationInput) {
   files(filters: $filter, pagination: $pagination) {
@@ -925,114 +850,40 @@ export function useGetPageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetPageQueryHookResult = ReturnType<typeof useGetPageQuery>;
 export type GetPageLazyQueryHookResult = ReturnType<typeof useGetPageLazyQuery>;
 export type GetPageQueryResult = Apollo.QueryResult<GetPageQuery, GetPageQueryVariables>;
-export const SearchPagesDocument = gql`
-    query SearchPages($search: String, $values: [ID!]) {
-  options: pages(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: index
+export const PageDisplayDocument = gql`
+    query PageDisplay($id: ID!) {
+  page(id: $id) {
+    id
+    index
+    content
   }
 }
     `;
 
 /**
- * __useSearchPagesQuery__
+ * __usePageDisplayQuery__
  *
- * To run a query within a React component, call `useSearchPagesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchPagesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `usePageDisplayQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePageDisplayQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSearchPagesQuery({
+ * const { data, loading, error } = usePageDisplayQuery({
  *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useSearchPagesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchPagesQuery, SearchPagesQueryVariables>) {
+export function usePageDisplayQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PageDisplayQuery, PageDisplayQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchPagesQuery, SearchPagesQueryVariables>(SearchPagesDocument, options);
+        return ApolloReactHooks.useQuery<PageDisplayQuery, PageDisplayQueryVariables>(PageDisplayDocument, options);
       }
-export function useSearchPagesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchPagesQuery, SearchPagesQueryVariables>) {
+export function usePageDisplayLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PageDisplayQuery, PageDisplayQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchPagesQuery, SearchPagesQueryVariables>(SearchPagesDocument, options);
+          return ApolloReactHooks.useLazyQuery<PageDisplayQuery, PageDisplayQueryVariables>(PageDisplayDocument, options);
         }
-export type SearchPagesQueryHookResult = ReturnType<typeof useSearchPagesQuery>;
-export type SearchPagesLazyQueryHookResult = ReturnType<typeof useSearchPagesLazyQuery>;
-export type SearchPagesQueryResult = Apollo.QueryResult<SearchPagesQuery, SearchPagesQueryVariables>;
-export const ListPagesDocument = gql`
-    query ListPages($filter: PageFilter, $pagination: OffsetPaginationInput) {
-  pages(filters: $filter, pagination: $pagination) {
-    ...ListPage
-  }
-}
-    ${ListPageFragmentDoc}`;
-
-/**
- * __useListPagesQuery__
- *
- * To run a query within a React component, call `useListPagesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListPagesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListPagesQuery({
- *   variables: {
- *      filter: // value for 'filter'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListPagesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListPagesQuery, ListPagesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListPagesQuery, ListPagesQueryVariables>(ListPagesDocument, options);
-      }
-export function useListPagesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListPagesQuery, ListPagesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListPagesQuery, ListPagesQueryVariables>(ListPagesDocument, options);
-        }
-export type ListPagesQueryHookResult = ReturnType<typeof useListPagesQuery>;
-export type ListPagesLazyQueryHookResult = ReturnType<typeof useListPagesLazyQuery>;
-export type ListPagesQueryResult = Apollo.QueryResult<ListPagesQuery, ListPagesQueryVariables>;
-export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String) {
-  pages: pages(filters: {search: $search}) {
-    ...ListPage
-  }
-}
-    ${ListPageFragmentDoc}`;
-
-/**
- * __useGlobalSearchQuery__
- *
- * To run a query within a React component, call `useGlobalSearchQuery` and pass it any options that fit your needs.
- * When your component renders, `useGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGlobalSearchQuery({
- *   variables: {
- *      search: // value for 'search'
- *   },
- * });
- */
-export function useGlobalSearchQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-      }
-export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-        }
-export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
-export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
-export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export type PageDisplayQueryHookResult = ReturnType<typeof usePageDisplayQuery>;
+export type PageDisplayLazyQueryHookResult = ReturnType<typeof usePageDisplayLazyQuery>;
+export type PageDisplayQueryResult = Apollo.QueryResult<PageDisplayQuery, PageDisplayQueryVariables>;

@@ -10,12 +10,12 @@ fragment Page on Page {
   }
 }
 
+# A page as a document's thumbnail strip shows it: no text, no OCR lines. The
+# selected page is read in full (GetPage).
 fragment ListPage on Page {
   id
   index
-  content
-  document {
-    id
-    title
+  image {
+    ...MediaStore
   }
 }

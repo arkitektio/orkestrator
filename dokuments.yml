@@ -1,5 +1,7 @@
 overwrite: true
-schema: "http://jhnnsrs-lab/dokuments/graphql"
+schema:
+  "http://jhnnsrs-lab/dokuments/schema":
+    handleAsSDL: true
 documents: "graphql/dokuments/**/*.graphql"
 generates:
   src/renderer/src/dokuments/api/fragments.ts:

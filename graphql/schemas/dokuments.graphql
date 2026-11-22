@@ -25,8 +25,11 @@ input DeleteFileInput {
 type Document {
   file: File!
   id: ID!
-  ocrEngine: String!
-  pageCount: Int
+
+  """How many pages the document has."""
+  pageCount: Int!
+
+  """The document's pages, in reading order (by index)."""
   pages(filters: PageFilter, pagination: OffsetPaginationInput): [Page!]!
   processedAt: String
   title: String!
@@ -39,7 +42,6 @@ input DocumentFilter {
   OR: DocumentFilter
   id: ID
   ids: [ID!]
-  name: StrFilterLookup
   search: String
 }
 
@@ -214,13 +216,15 @@ input OffsetPaginationInput {
 }
 
 type Page {
-  """The content of the page as a flat string."""
-  content: String!
+  """
+  The content of the page as a flat string. Null when no text was recognised on it.
+  """
+  content: String
   document: Document!
   id: ID!
   image: MediaStore!
   index: Int!
-  ocrResult: OCRPageResult!
+  ocrResult: OCRPageResult
 }
 
 input PageFilter {
@@ -230,7 +234,6 @@ input PageFilter {
   OR: PageFilter
   id: ID
   ids: [ID!]
-  name: StrFilterLookup
   search: String
 }
 

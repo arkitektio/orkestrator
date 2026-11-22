@@ -6,7 +6,7 @@ import { DokumentsImage, useDokumentsMediaUrl } from "../datalayer/dokumentsAcce
 import { DokumentsDocument, DokumentsPage, LovekitStream } from "@/core/linkers";
 import { Eye, FileTextIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { PageFragment, useGetDocumentQuery } from "../api/graphql";
+import { ListPageFragment, useGetDocumentQuery, useGetPageQuery } from "../api/graphql";
 import { OcrOverlay } from "../components/OcrOverlay";
 import { DOKUMENTS_HELP } from "../help";
 
@@ -14,7 +14,13 @@ export const DocumentPage = asDetailQueryRoute(
   useGetDocumentQuery,
   ({ data }) => {
     const document = data?.document;
-    const [selectedPage, setSelectedPage] = useState<PageFragment | null>(null);
+    const [selectedPage, setSelectedPage] = useState<ListPageFragment | null>(null);
+    // The strip holds thumbnails only; the selected page's text and OCR lines are read on their own.
+    const { data: selectedData } = useGetPageQuery({
+      variables: { id: selectedPage?.id ?? "" },
+      skip: !selectedPage,
+    });
+    const selectedDetail = selectedData?.page.id === selectedPage?.id ? selectedData?.page : undefined;
     const selectedImageUrl = useDokumentsMediaUrl(selectedPage?.image);
     const [showOcrOverlay, setShowOcrOverlay] = useState(true);
     const imageRef = useRef<HTMLImageElement>(null);
@@ -151,11 +157,13 @@ export const DocumentPage = asDetailQueryRoute(
                             className="max-w-full max-h-full object-contain"
                             alt={`Page ${selectedPage!.index + 1}`}
                           />
-                          <OcrOverlay
-                            page={selectedPage!}
-                            imageRef={imageRef}
-                            show={showOcrOverlay}
-                          />
+                          {selectedDetail && (
+                            <OcrOverlay
+                              page={selectedDetail}
+                              imageRef={imageRef}
+                              show={showOcrOverlay}
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">

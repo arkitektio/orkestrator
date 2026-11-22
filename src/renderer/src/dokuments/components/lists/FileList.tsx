@@ -11,7 +11,10 @@ export type Props = {
   pagination?: OffsetPaginationInput;
 };
 
-const TList = ({ filters, pagination }: Props) => {
+/** One page of files; without a page asked for, the first 20 (never every file). */
+const DEFAULT_LIMIT = 20;
+
+const TList = ({ filters, pagination = { limit: DEFAULT_LIMIT } }: Props) => {
   const { data, refetch } = useListFilesQuery({
     variables: {
       filter: filters,
@@ -26,6 +29,7 @@ const TList = ({ filters, pagination }: Props) => {
         <DokumentsFile.ListLink className="flex-0">Files</DokumentsFile.ListLink>
       }
       refetch={refetch}
+      limit={pagination.limit ?? DEFAULT_LIMIT}
       actions={
         <DokumentsFile.NewButton
           className="flex-1"

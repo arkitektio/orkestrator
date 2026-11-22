@@ -2,37 +2,36 @@ import { Arkitekt, mediaGrantKey, sharedGrant, useDatalayerEndpoint } from "@/co
 import { presignS3Url, stampGrant } from "@/core/data/s3/s3request";
 import { useDokuments } from "@/dokuments/api/funcs";
 import {
-  MediaAccessGrantFragment,
+  GeneralMediaAccessGrantFragment,
   MediaStoreFragment,
-  RequestMediaAccessDocument,
-  RequestMediaAccessMutation,
-  RequestMediaAccessMutationVariables,
+  RequestGeneralMediaAccessDocument,
+  RequestGeneralMediaAccessMutation,
+  RequestGeneralMediaAccessMutationVariables,
 } from "@/dokuments/api/graphql";
 import { ApolloClient } from "@apollo/client";
 import React from "react";
 
-type DokumentsMediaCredentials = MediaAccessGrantFragment & { signedAt: number; expiresAt: number };
+type DokumentsMediaCredentials = GeneralMediaAccessGrantFragment & { signedAt: number; expiresAt: number };
 
-// Grants are per store (`requestMediaAccess` takes a `storeId`), so they are
-// shared per store id, across windows and launches (`sharedGrant`); a fresh
-// grant per mount would presign to a new URL each time and defeat the HTTP
-// cache. No profile: this window only.
+// One grant per profile covers every store of the organization (its media
+// prefix), so a document's page thumbnails ask once, not once per page. Shared
+// across windows and launches (`sharedGrant`), so each object keeps one URL and
+// the HTTP cache answers. No profile: this window only.
 const getCredentials = (
-  store: MediaStoreFragment,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: ApolloClient<any>,
   datalayer: string,
   profileId: string | null,
 ): Promise<DokumentsMediaCredentials> =>
   sharedGrant(
-    mediaGrantKey("dokuments", profileId ?? "", datalayer, `store:${store.id}`),
+    mediaGrantKey("dokuments", profileId ?? "", datalayer),
     async () => {
-      const { data } = await client.mutate<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>({
-        mutation: RequestMediaAccessDocument,
-        variables: { input: { storeId: store.id } },
+      const { data } = await client.mutate<RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables>({
+        mutation: RequestGeneralMediaAccessDocument,
+        variables: { input: {} },
       });
-      const grant = data?.requestMediaAccess;
-      if (!grant) throw new Error("Failed to get read credentials for the file");
+      const grant = data?.requestGeneralMediaAccess;
+      if (!grant) throw new Error("Failed to get read credentials for the organization's files");
       return stampGrant(grant);
     },
     { share: profileId !== null },
@@ -46,8 +45,8 @@ export const getDokumentsMediaUrl = async (
   datalayer: string,
   profileId: string | null = null,
 ): Promise<string> => {
-  const credentials = await getCredentials(store, client, datalayer, profileId);
-  return presignS3Url(datalayer + "/" + credentials.bucket + "/" + credentials.key, credentials);
+  const credentials = await getCredentials(client, datalayer, profileId);
+  return presignS3Url(`${datalayer}/${store.bucket}/${store.key}`, credentials);
 };
 
 /** The URL of `store`, or undefined until it is signed (or when there is none). */

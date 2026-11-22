@@ -4,18 +4,11 @@ query GetPage($id: ID!) {
   }
 }
 
-query SearchPages($search: String, $values: [ID!]) {
-  options: pages(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: index
-  }
-}
-
-query ListPages($filter: PageFilter, $pagination: OffsetPaginationInput) {
-  pages(filters: $filter, pagination: $pagination) {
-    ...ListPage
+# What a `@dokuments/page` display line shows: its number and the start of its text.
+query PageDisplay($id: ID!) {
+  page(id: $id) {
+    id
+    index
+    content
   }
 }

@@ -1,5 +1,6 @@
 # A file or page image: a media store of the organization. Its bytes are read
-# with a grant from `requestMediaAccess`, signed client-side (presignS3Url).
+# with the session's general grant (`requestGeneralMediaAccess`, one per
+# profile, covering every store of the organization), signed client-side.
 fragment MediaStore on MediaStore {
   id
   key
@@ -9,13 +10,12 @@ fragment MediaStore on MediaStore {
   sizeBytes
 }
 
-fragment MediaAccessGrant on MediaAccessGrant {
+fragment GeneralMediaAccessGrant on GeneralMediaAccessGrant {
   accessKey
   secretKey
   sessionToken
   expiresIn
   region
-  path
-  key
   bucket
+  prefix
 }
