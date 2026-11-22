@@ -15007,7 +15007,7 @@ export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id:
       ) | (
         { __typename?: 'UnmappableTransformation' }
         & Transformation_UnmappableTransformation_Fragment
-      ) | null, store: (
+      ) | null, relativeScale?: Array<{ __typename?: 'AxisScaleFactor', axis: string, factor: number }> | null, store: (
         { __typename?: 'ZarrStore' }
         & ZarrStoreFragment
       ) }> }, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number>, min?: number | null, max?: number | null, p1?: number | null, p99?: number | null } | null, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null, lightGraph?: { __typename?: 'LightPath', graph: (
@@ -22880,6 +22880,10 @@ export const SceneLensFragmentDoc = gql`
       }
       toParent {
         ...Transformation
+      }
+      relativeScale {
+        axis
+        factor
       }
       store {
         ...ZarrStore

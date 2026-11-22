@@ -114,13 +114,42 @@ export {
 export type DataArraySource = {
   level: number;
   toParent?: TransformLike;
+  /** The server's `DataArray.relativeScale`: per axis of the level, in dim order. */
+  relativeScale?: readonly { axis: string; factor: number }[] | null;
   store: { id: string };
+};
+
+/**
+ * Each level's scale against the finest level, as the server states it
+ * (`DataArray.relativeScale`). Null for a level it states none for (an edge
+ * that is not affine), and for every level when the finest states none:
+ * those fall back to the factors derived from `toParent`.
+ */
+export const statedLevelScaleFactors = (
+  dataArrays: readonly DataArraySource[],
+  dimCount: number,
+): (number[] | null)[] => {
+  const stated = dataArrays.map((dataArray) =>
+    dataArray.relativeScale?.length === dimCount
+      ? dataArray.relativeScale.map((axis) => axis.factor)
+      : null,
+  );
+  const baseIndex = dataArrays.reduce(
+    (best, dataArray, i) => (dataArray.level < dataArrays[best].level ? i : best),
+    0,
+  );
+  const base = stated[baseIndex];
+  if (!base) return dataArrays.map(() => null);
+  return stated.map((factors) =>
+    factors ? factors.map((factor, k) => (base[k] ? factor / base[k] : 1)) : null,
+  );
 };
 
 /**
  * The one shared `LevelSource[]` builder (plan tracker, residency manager and
  * pool-viability probe previously each hand-rolled this): opened-array shapes
- * per store plus the relative scale factors derived from the transform graph.
+ * per store plus the relative scale factors: the server's
+ * (`statedLevelScaleFactors`), else derived from the transform graph.
  * Throws (like `getArrayForStoreId`) when a store's array isn't opened yet.
  */
 export function buildLevelSources(
@@ -132,7 +161,10 @@ export function buildLevelSources(
     dtype: unknown;
   },
 ): LevelSource[] {
-  const factors = relativeLevelScaleFactors(dataArrays, dimCount);
+  // The server's factors first; the ones derived from the edge where it states none.
+  const stated = statedLevelScaleFactors(dataArrays, dimCount);
+  const derived = relativeLevelScaleFactors(dataArrays, dimCount);
+  const factors = stated.map((factors, i) => factors ?? derived[i]);
   return dataArrays.map((dataArray, i) => {
     const arr = getArrayForStoreId(dataArray.store.id);
     return {

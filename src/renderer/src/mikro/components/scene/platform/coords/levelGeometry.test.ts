@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildLayerLevelGeometry, type LevelSource } from "./levelGeometry";
+import {
+  buildLayerLevelGeometry,
+  buildLevelSources,
+  statedLevelScaleFactors,
+  type LevelSource,
+} from "./levelGeometry";
 
 /**
  * Fixture: dims [c, z, y, x] (channel-first, like OME), 3-level pyramid that
@@ -113,5 +118,41 @@ describe("MAX_BRICK_LEVELS cap (deep pyramids)", () => {
     // The kept levels are the FINEST ten (the dropped tail is coarser).
     expect(geo.levels[0].spatialShape[0]).toBe(4096);
     expect(geo.levels[MAX_BRICK_LEVELS - 1].spatialShape[0]).toBe(4096 >> 9);
+  });
+});
+
+describe("level scales the server states (`DataArray.relativeScale`)", () => {
+  const axes = (factors: number[]) => factors.map((factor, i) => ({ axis: DIMS[i], factor }));
+  const opened = (shape: number[]) => ({ shape, chunks: [1, 16, 128, 128], dtype: "uint8" });
+
+  it("places each level by the server's factors, against the finest level", () => {
+    const dataArrays = [
+      { level: 1, relativeScale: axes([1, 1, 2, 2]), store: { id: "s1" } },
+      { level: 0, relativeScale: axes([1, 1, 1, 1]), store: { id: "s0" } },
+    ];
+    expect(statedLevelScaleFactors(dataArrays, 4)).toEqual([[1, 1, 2, 2], [1, 1, 1, 1]]);
+    // A shape ratio would say 3 on x; the stated factor wins.
+    const sources = buildLevelSources(dataArrays, 4, (id) => opened(id === "s0" ? [3, 40, 600, 600] : [3, 40, 200, 200]));
+    expect(sources.map((source) => source.scaleFactors)).toEqual([[1, 1, 2, 2], [1, 1, 1, 1]]);
+  });
+
+  it("falls back to the edge where a level states none", () => {
+    const dataArrays = [
+      {
+        level: 0,
+        relativeScale: axes([1, 1, 1, 1]),
+        toParent: { __typename: "IdentityTransformation" },
+        store: { id: "s0" },
+      },
+      {
+        level: 1,
+        relativeScale: null,
+        toParent: { __typename: "ScaleTransformation", scale: [1, 1, 4, 4] },
+        store: { id: "s1" },
+      },
+    ];
+    expect(statedLevelScaleFactors(dataArrays, 4)).toEqual([[1, 1, 1, 1], null]);
+    const sources = buildLevelSources(dataArrays, 4, () => opened([3, 40, 100, 100]));
+    expect(sources[1].scaleFactors).toEqual([1, 1, 4, 4]);
   });
 });
