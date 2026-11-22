@@ -3,3 +3,7 @@ query ListMailChanges($filters: MailChangeFilter, $pagination: OffsetPaginationI
     ...MailChange
   }
 }
+
+query MailChangesCount($filters: MailChangeFilter) {
+  mailChangesCount(filters: $filters)
+}

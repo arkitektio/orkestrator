@@ -30,7 +30,7 @@ const TasksPage = () => {
   const { view, setView } = useTaskView();
   const [params, setParams] = useSearchParams();
   const scope: ListScope = params.get("list") ?? "all";
-  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 200 } } });
+  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 100 } } });
   const lists = data?.taskLists ?? [];
   const current = lists.find((l) => l.id === scope);
 

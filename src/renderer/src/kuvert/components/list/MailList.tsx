@@ -22,8 +22,7 @@ import { deleteMail, threadMessages, undoToast } from "../../mailOps";
 import { CategoryDot } from "../categories/CategoryDot";
 import { useMailSelection } from "../split/selection";
 import { MailRow, rowsFromMessages, rowsFromThreads } from "./rows";
-
-const PAGE = 50;
+import { hasMore, PAGE, windowFetchPolicy } from "./window";
 
 /**
  * What a list shows: conversations (a mailbox, a folder — `inFolder` /
@@ -127,7 +126,13 @@ export const MailList = ({
   source: MailSource;
   empty: MailEmpty;
 }) => {
-  const [limit, setLimit] = useState(PAGE);
+  // The rows shown: [0, limit). "Load more" fetches the next page on its own
+  // (the server answers at most 100 rows a page) and then grows the window.
+  // A window belongs to its source: another mailbox or search starts at one page.
+  const sourceKey = JSON.stringify(source);
+  const [grown, setGrown] = useState({ source: sourceKey, limit: PAGE });
+  const limit = grown.source === sourceKey ? grown.limit : PAGE;
+  const [loadingMore, setLoadingMore] = useState(false);
   const pagination = { offset: 0, limit };
   const threadSource = source.kind === "threads" ? source : null;
   const messageSource = source.kind === "messages" ? source : null;
@@ -141,16 +146,31 @@ export const MailList = ({
     },
     skip: !threadSource,
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: windowFetchPolicy,
   });
   const count = useThreadsCountQuery({ variables: { filters: threadSource?.filters }, skip: !threadSource });
   const messages = useListMessagesQuery({
     variables: { filters: messageSource?.filters, ordering: messageSource?.ordering ?? [], pagination },
     skip: !messageSource,
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: windowFetchPolicy,
   });
 
   const loaded = threadSource ? threads.data?.threads : messages.data?.messages;
   const loading = threadSource ? threads.loading : messages.loading;
+  const more = hasMore(loaded?.length ?? 0, limit, threadSource ? count.data?.threadsCount : undefined);
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const page = { pagination: { offset: loaded?.length ?? limit, limit: PAGE } };
+      await (threadSource ? threads.fetchMore({ variables: page }) : messages.fetchMore({ variables: page }));
+      setGrown({ source: sourceKey, limit: limit + PAGE });
+    } catch (e) {
+      reportKuvertError(e, "Couldn't load more mail");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const rows = useMemo(
     () =>
       threadSource
@@ -238,9 +258,9 @@ export const MailList = ({
               </React.Fragment>
             );
           })}
-          {(loaded?.length ?? 0) >= limit && (
-            <Button variant="ghost" size="sm" className="mt-1 text-xs" disabled={loading} onClick={() => setLimit((l) => l + PAGE)}>
-              {loading && <Spinner />}
+          {more && (
+            <Button variant="ghost" size="sm" className="mt-1 text-xs" disabled={loading || loadingMore} onClick={() => void loadMore()}>
+              {(loading || loadingMore) && <Spinner />}
               Load more
             </Button>
           )}

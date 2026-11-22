@@ -10,12 +10,13 @@ import { MessageView } from "../components/MessageView";
 import { formatBytes, formatMailDateTime } from "../format";
 import { KUVERT_HELP } from "../help";
 import { MailAccount, MailFolder, MailMessage, MailThread } from "../linkers";
+import { updateReadThreads } from "../mailOps";
 
 /** One mail on its own (from search, a link elsewhere), with the way into its conversation. */
 const MessagePage = asDetailQueryRoute(useGetMessageQuery, ({ data }) => {
   const message = data.message;
 
-  const [markRead] = useMarkMessagesReadMutation({ refetchQueries: [MailboxTreeDocument] });
+  const [markRead] = useMarkMessagesReadMutation({ update: updateReadThreads, refetchQueries: [MailboxTreeDocument] });
   const marked = useRef<string | null>(null);
   useEffect(() => {
     if (marked.current === message.id || message.isRead) return;

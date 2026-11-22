@@ -4,7 +4,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Spinner } from "@/core/ui/spinner";
 import { cn } from "@/core/util/utils";
 import { AlarmClock, ListTodo, MessagesSquare, Pin } from "lucide-react";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ListTaskFragment,
@@ -14,13 +14,12 @@ import {
   useSetTaskStatusMutation,
   useTasksCountQuery,
 } from "../../api/graphql";
-import { reportKuvertErrorAs } from "../../errors";
+import { reportKuvertError, reportKuvertErrorAs } from "../../errors";
 import { MailTask } from "../../linkers";
 import { ListDot } from "./ListDot";
 import { useTaskSelection } from "./selection";
-import { formatDue, isOverdue, pinnedFirst, TASK_VIEWS } from "./taskOps";
-
-const PAGE = 50;
+import { hasMore, PAGE, windowFetchPolicy } from "../list/window";
+import { formatDue, isOverdue, TASK_VIEWS } from "./taskOps";
 
 export type TaskEmpty = { title: string; description?: string; action?: React.ReactNode };
 
@@ -138,13 +137,31 @@ export const TaskRows = ({
   /** Name each task's list (off on a list's own page). */
   showList?: boolean;
 }) => {
-  const [limit, setLimit] = useState(PAGE);
-  const { data, loading } = useListTasksQuery({
+  // A window [0, limit) of the server's order (pinned first); "Load more"
+  // fetches the next page on its own (pages are cut at 100) and grows it.
+  const filterKey = JSON.stringify(filters);
+  const [grown, setGrown] = useState({ filters: filterKey, limit: PAGE });
+  const limit = grown.filters === filterKey ? grown.limit : PAGE;
+  const [loadingMore, setLoadingMore] = useState(false);
+  const { data, loading, fetchMore } = useListTasksQuery({
     variables: { filters, pagination: { offset: 0, limit } },
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: windowFetchPolicy,
   });
   const count = useTasksCountQuery({ variables: { filters } });
-  const tasks = useMemo(() => data && pinnedFirst(data.tasks), [data]);
+  const tasks = data?.tasks;
+  const more = hasMore(tasks?.length ?? 0, limit, count.data?.tasksCount);
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      await fetchMore({ variables: { pagination: { offset: tasks?.length ?? limit, limit: PAGE } } });
+      setGrown({ filters: filterKey, limit: limit + PAGE });
+    } catch (e) {
+      reportKuvertError(e, "Couldn't load more tasks");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const { selected, select } = useTaskSelection();
   const navigate = useNavigate();
   const container = useRef<HTMLDivElement>(null);
@@ -213,9 +230,9 @@ export const TaskRows = ({
               )}
             </React.Fragment>
           ))}
-          {(data?.tasks.length ?? 0) >= limit && (
-            <Button variant="ghost" size="sm" className="mt-1 text-xs" disabled={loading} onClick={() => setLimit((l) => l + PAGE)}>
-              {loading && <Spinner />}
+          {more && (
+            <Button variant="ghost" size="sm" className="mt-1 text-xs" disabled={loading || loadingMore} onClick={() => void loadMore()}>
+              {(loading || loadingMore) && <Spinner />}
               Load more
             </Button>
           )}

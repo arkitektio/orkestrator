@@ -4,7 +4,8 @@ import { TooltipButton } from "@/core/ui/tooltip-button";
 import { cn } from "@/core/util/utils";
 import { Flag, Forward, ImageOff, Paperclip, Reply, ReplyAll } from "lucide-react";
 import { useState } from "react";
-import { AddressFragment, MessageFragment, useGetMessageQuery } from "../api/graphql";
+import { Spinner } from "@/core/ui/spinner";
+import { AddressFragment, MessageHeaderFragment, useGetMessageBodyQuery } from "../api/graphql";
 import { addressLabel, formatMailDate, formatMailDateTime } from "../format";
 import { MailMessage } from "../linkers";
 import { MessageAttachments } from "./Attachments";
@@ -50,13 +51,25 @@ const Recipients = ({ label, list }: { label: string; list: AddressFragment[] })
   );
 
 /**
- * The body of one mail. Remote images stay blocked until asked for: loading
- * one tells the sender the mail was read. Asking refetches the HTML with them.
+ * The body of one mail, asked for when its card is open (a conversation's
+ * folded cards fetch none). Remote images stay blocked until asked for:
+ * loading one tells the sender the mail was read. Asking fetches the HTML with
+ * them, and nothing else.
  */
-const Body = ({ message }: { message: MessageFragment }) => {
+const Body = ({ message }: { message: MessageHeaderFragment }) => {
   const [allowRemote, setAllowRemote] = useState(false);
-  const remote = useGetMessageQuery({ variables: { id: message.id, allowRemote: true }, skip: !allowRemote });
-  const html = (allowRemote ? remote.data?.message.html : null) ?? message.html;
+  const plain = useGetMessageBodyQuery({ variables: { id: message.id } });
+  const remote = useGetMessageBodyQuery({ variables: { id: message.id, allowRemote: true }, skip: !allowRemote });
+  const body = plain.data?.message;
+  const html = (allowRemote ? remote.data?.message.html : null) ?? body?.html;
+
+  if (!body) {
+    return (
+      <div className="flex justify-center px-5 pb-5">
+        {plain.loading ? <Spinner className="size-4 text-muted-foreground" /> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 px-5 pb-5">
@@ -72,7 +85,7 @@ const Body = ({ message }: { message: MessageFragment }) => {
       {html ? (
         <HtmlBody message={message.id} html={html} allowRemote={allowRemote} account={message.account.id} />
       ) : (
-        <TextBody text={message.textBody} />
+        <TextBody text={body.textBody} />
       )}
       {message.truncated && (
         <span className="text-xs text-muted-foreground">This mail was larger than the sync limit; only its headers are stored.</span>
@@ -94,7 +107,7 @@ export const MessageView = ({
   onToggle,
   showSubject = false,
 }: {
-  message: MessageFragment;
+  message: MessageHeaderFragment;
   open?: boolean;
   onToggle?: () => void;
   showSubject?: boolean;

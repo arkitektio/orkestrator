@@ -63,7 +63,7 @@ export const MailToolbar = ({
         variant="ghost"
         size="icon-lg"
         tooltip="Archive"
-        onClick={() => act(() => moveToRole(client, messages, FolderRole.Archive, "Archive"), "Archived")}
+        onClick={() => act(() => moveToRole(client, messages, FolderRole.Archive), "Archived")}
       >
         <Archive />
       </TooltipButton>
@@ -74,7 +74,7 @@ export const MailToolbar = ({
         variant="ghost"
         size="icon-lg"
         tooltip="Move to Junk"
-        onClick={() => act(() => moveToRole(client, messages, FolderRole.Junk, "Junk"), "Moved to Junk")}
+        onClick={() => act(() => moveToRole(client, messages, FolderRole.Junk), "Moved to Junk")}
       >
         <ShieldBan />
       </TooltipButton>

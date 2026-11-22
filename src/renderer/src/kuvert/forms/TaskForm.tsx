@@ -26,7 +26,7 @@ type Values = { title: string; notes: string; dueAt: string; list: string; pinne
 const NO_LIST = "none";
 
 const Fields = () => {
-  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 200 } } });
+  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 100 } } });
   const { control } = useFormContext<Values>();
   return (
     <>

@@ -1,6 +1,6 @@
 query ListTasks(
   $filters: TaskFilter
-  $ordering: [TaskOrder!]! = [{ position: ASC }]
+  $ordering: [TaskOrder!]! = [{ pinned: DESC }, { position: ASC }]
   $pagination: OffsetPaginationInput
 ) {
   tasks(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -30,16 +30,11 @@ query GetTaskList($id: ID!) {
   }
 }
 
-query SearchTasks($search: String, $values: [ID!]) {
-  options: tasks(filters: { search: $search, ids: $values, status: OPEN }, pagination: { limit: 20 }) {
-    value: id
-    label: title
-  }
-}
-
-query SearchTaskLists($search: String, $values: [ID!]) {
-  options: taskLists(filters: { search: $search, ids: $values }, pagination: { limit: 50 }) {
-    value: id
-    label: name
+# A task wherever another module shows one: its chip, due date and size.
+query DisplayTask($id: ID!) {
+  task(id: $id) {
+    ...TaskChip
+    dueAt
+    threadCount
   }
 }

@@ -25,7 +25,8 @@ import { sortFolders } from "../format";
 export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
   const [filter, setFilter] = useState("");
   const { data: selected } = useListMessagesQuery({
-    variables: { filters: { ids: messages }, pagination: { limit: messages.length } },
+    // No page: every selected mail, however many (a page is cut at 100).
+    variables: { filters: { ids: messages } },
   });
   const accounts = [...new Set(selected?.messages.map((m) => m.account.id))];
   const current = new Set(selected?.messages.map((m) => m.folder.id));
@@ -34,7 +35,7 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
   const { data } = useListMailFoldersQuery({
     variables: {
       filters: { account: accounts[0], selectable: true, existsOnServer: true, ...(search ? { search } : {}) },
-      pagination: { limit: 500 },
+      pagination: { limit: 100 },
     },
     skip: accounts.length !== 1,
   });

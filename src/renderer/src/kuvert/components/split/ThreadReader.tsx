@@ -9,10 +9,11 @@ import { ThreadTasks } from "../tasks/ThreadTasks";
 import { InlineReply } from "./InlineReply";
 import { MailToolbar } from "./MailToolbar";
 import { useMailSelection } from "./selection";
+import { updateReadThreads } from "../../mailOps";
 
 /** Opening a conversation marks its unread mail read, once per conversation. */
 export const useMarkThreadRead = (thread: ThreadFragment | undefined) => {
-  const [markRead] = useMarkMessagesReadMutation({ refetchQueries: [MailboxTreeDocument] });
+  const [markRead] = useMarkMessagesReadMutation({ update: updateReadThreads, refetchQueries: [MailboxTreeDocument] });
   const marked = useRef<string | null>(null);
   useEffect(() => {
     if (!thread || marked.current === thread.id) return;

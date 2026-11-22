@@ -10,10 +10,7 @@ import {
 import { Spinner } from "@/core/ui/spinner";
 import { useState } from "react";
 import {
-  GetCategoryDocument,
-  ListCategoriesDocument,
   ListMessageFragment,
-  ListThreadsDocument,
   useCategorizeMessagesMutation,
   useListCategoriesQuery,
   useListMessagesQuery,
@@ -22,6 +19,7 @@ import { CategoryDot } from "../components/categories/CategoryDot";
 import { categorizeDelta, Membership, membership } from "../components/categories/membership";
 import { TriCheck } from "../components/categories/TriCheck";
 import { asKuvertError } from "../errors";
+import { CATEGORIZE_VIEWS } from "../mailOps";
 
 type Group = { account: ListMessageFragment["account"]; mail: ListMessageFragment[] };
 
@@ -78,12 +76,13 @@ const AccountCategories = ({
 /** Put mail into categories of its mailbox and take it out; mail of several mailboxes is grouped by mailbox. */
 export const CategorizeForm = ({ messages }: { messages: string[] }) => {
   const { data } = useListMessagesQuery({
-    variables: { filters: { ids: messages }, pagination: { limit: messages.length } },
+    // No page: every selected mail, however many (a page is cut at 100).
+    variables: { filters: { ids: messages } },
   });
   // Per mailbox, per category: what the member asked for (absent = as it is).
   const [wanted, setWanted] = useState<Record<string, Record<string, Membership>>>({});
   const [categorize, { loading }] = useCategorizeMessagesMutation({
-    refetchQueries: [ListCategoriesDocument, GetCategoryDocument, ListThreadsDocument],
+    ...CATEGORIZE_VIEWS,
   });
   const groups = data ? byAccount(data.messages) : [];
 

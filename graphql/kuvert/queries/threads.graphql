@@ -10,7 +10,7 @@ query ListThreads(
   }
 }
 
-query GetThread($id: ID!, $allowRemote: Boolean! = false) {
+query GetThread($id: ID!) {
   thread(id: $id) {
     ...Thread
   }

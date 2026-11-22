@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { CloudAlert, CloudOff, CloudUpload } from "lucide-react";
 import React from "react";
 import { useKuvert } from "../../api/funcs";
-import { MailChangeState, MessageFragment, SyncState } from "../../api/graphql";
+import { MailChangeState, MessageHeaderFragment, SyncState } from "../../api/graphql";
 import { describeError, reportKuvertErrorAs } from "../../errors";
 import { retryChanges, revertToServer, undoChanges } from "../../mailOps";
 import { describeChange } from "./describe";
@@ -26,7 +26,7 @@ const Hint = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
 );
 
 /** A mail whose changes did not reach the server: why, and the ways out. */
-const Failed = ({ message }: { message: MessageFragment }) => {
+const Failed = ({ message }: { message: MessageHeaderFragment }) => {
   const client = useKuvert();
   const failed = message.changes.filter((c) => c.state === MailChangeState.Failed);
   // Reverting and undoing show on the mail itself; a retry only queues, so it says so.
@@ -82,7 +82,7 @@ const Failed = ({ message }: { message: MessageFragment }) => {
 };
 
 /** How a mail here relates to the server, in its card header (null when SYNCED). */
-export const MessageSyncState = ({ message }: { message: MessageFragment }) => {
+export const MessageSyncState = ({ message }: { message: MessageHeaderFragment }) => {
   switch (message.syncState) {
     case SyncState.Pending:
       return <Hint icon={<CloudUpload className="size-3.5" />} text="Changed here; on its way to the server" />;

@@ -184,7 +184,7 @@ const LinkRow = ({ link, task }: { link: TaskThreadFragment; task: string }) => 
 /** List, due date and state, in one quiet line under the title. */
 const TaskMeta = ({ task }: { task: TaskFragment }) => {
   const update = useUpdate(task.id);
-  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 200 } } });
+  const { data } = useListTaskListsQuery({ variables: { pagination: { limit: 100 } } });
   const lists = data?.taskLists ?? [];
   const overdue = task.status === TaskStatus.Open && isOverdue(task.dueAt);
 

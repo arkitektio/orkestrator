@@ -10,11 +10,3 @@ query GetMailFolder($id: ID!) {
   }
 }
 
-# No `$search` / `$values`: `MailFolderFilter` takes neither, and a declared but
-# unused variable fails validation. It lists the mailbox's folders.
-query SearchMailFolders($account: ID) {
-  options: mailFolders(filters: { account: $account }, pagination: { limit: 200 }) {
-    value: id
-    label: path
-  }
-}

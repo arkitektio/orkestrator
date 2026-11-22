@@ -9,6 +9,7 @@ import { InlineReply } from "./InlineReply";
 import { MailToolbar } from "./MailToolbar";
 import { useMailSelection } from "./selection";
 import { ReaderCanvas, ReaderState } from "./ThreadReader";
+import { updateReadThreads } from "../../mailOps";
 
 /** The reading pane for one mail (a search hit), with the way into its conversation. */
 export const MessageReader = ({ id }: { id: string }) => {
@@ -16,7 +17,7 @@ export const MessageReader = ({ id }: { id: string }) => {
   const { select } = useMailSelection();
   const message = data?.message;
 
-  const [markRead] = useMarkMessagesReadMutation({ refetchQueries: [MailboxTreeDocument] });
+  const [markRead] = useMarkMessagesReadMutation({ update: updateReadThreads, refetchQueries: [MailboxTreeDocument] });
   const marked = useRef(false);
   useEffect(() => {
     if (!message || message.isRead || marked.current) return;

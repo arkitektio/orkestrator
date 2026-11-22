@@ -13,3 +13,24 @@ query GetMessage($id: ID!, $allowRemote: Boolean! = false) {
     ...Message
   }
 }
+
+# The body of an open card; with `allowRemote`, the HTML with its remote images.
+query GetMessageBody($id: ID!, $allowRemote: Boolean! = false) {
+  message(id: $id) {
+    ...MessageBody
+  }
+}
+
+# A mail wherever another module shows one: the list row's data, no body.
+query DisplayMessage($id: ID!) {
+  message(id: $id) {
+    ...ListMessage
+  }
+}
+
+# Every mail of these conversations (conversation actions act on those).
+query ThreadsMessageIds($threads: [ID!]!) {
+  messages(filters: { threads: $threads }) {
+    id
+  }
+}

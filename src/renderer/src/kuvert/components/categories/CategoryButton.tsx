@@ -6,9 +6,6 @@ import { Plus, Tag } from "lucide-react";
 import { useState } from "react";
 import {
   CategoryChipFragment,
-  GetCategoryDocument,
-  ListCategoriesDocument,
-  ListThreadsDocument,
   useCategorizeMessagesMutation,
   useListCategoriesQuery,
 } from "../../api/graphql";
@@ -16,6 +13,7 @@ import { reportKuvertErrorAs } from "../../errors";
 import { CategoryDot } from "./CategoryDot";
 import { membership } from "./membership";
 import { TriCheck } from "./TriCheck";
+import { CATEGORIZE_VIEWS } from "../../mailOps";
 
 /**
  * The reader toolbar's category picker: the mailbox's categories, checked
@@ -33,7 +31,7 @@ export const CategoryButton = ({
   const [open, setOpen] = useState(false);
   const { data } = useListCategoriesQuery({ variables: { filters: { account } }, skip: !open });
   const [categorize, { loading }] = useCategorizeMessagesMutation({
-    refetchQueries: [ListCategoriesDocument, GetCategoryDocument, ListThreadsDocument],
+    ...CATEGORIZE_VIEWS,
   });
   const messages = mail.map((m) => m.id);
   const anyIn = mail.some((m) => m.categories.length > 0);

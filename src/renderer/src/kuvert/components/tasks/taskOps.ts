@@ -66,11 +66,5 @@ export const snoozePresets = (now = new Date()) => {
   return presets.filter((p) => p.label !== "Later today" || laterToday.getDate() === now.getDate());
 };
 
-/** Pinned tasks first; otherwise the server's order stays. */
-export const pinnedFirst = <T extends { pinned: boolean }>(tasks: readonly T[]) => [
-  ...tasks.filter((t) => t.pinned),
-  ...tasks.filter((t) => !t.pinned),
-];
-
 /** Colours offered for a task list (user data: shown as a dot, never as chrome). */
 export const LIST_COLORS = ["#4f86f7", "#34a853", "#f4b400", "#ea4335", "#a142f4", "#12b5cb", "#ff6d01", "#9aa0a6"];

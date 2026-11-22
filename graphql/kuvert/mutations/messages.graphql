@@ -16,6 +16,12 @@ fragment MessageState on Message {
     name
     role
   }
+  # Whether its conversation still has unread mail: a read conversation's
+  # list rows drop their unread dot (see mailOps.markReadInCache).
+  thread {
+    id
+    unread
+  }
 }
 
 mutation SetMessageFlags($input: SetMessageFlagsInput!) {

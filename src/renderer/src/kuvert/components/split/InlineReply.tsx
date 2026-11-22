@@ -5,7 +5,13 @@ import { Kbd } from "@/core/ui/kbd";
 import { Spinner } from "@/core/ui/spinner";
 import { useState } from "react";
 import { toast } from "@/core/notify";
-import { ListOutboxDocument, MessageFragment, OutgoingStatus, useSendMessageMutation } from "../../api/graphql";
+import {
+  ListOutboxDocument,
+  MessageHeaderFragment,
+  OutgoingStatus,
+  useGetMessageBodyQuery,
+  useSendMessageMutation,
+} from "../../api/graphql";
 import { asKuvertError, codedError } from "../../errors";
 import { fromText, isEmpty, MailNode, toMailHtml, toText } from "../../editor/serialize";
 import { addressLabel, quoteForReply, replyRecipients, replySubject } from "../../format";
@@ -17,18 +23,20 @@ import { MailContent, MailEditor, MailToolbar, useMailEditor } from "../editor/M
  * quoted below. Anything more — Cc, attachments — continues in the full
  * editor with the formatting kept.
  */
-export const InlineReply = ({ message }: { message: MessageFragment }) => {
+export const InlineReply = ({ message }: { message: MessageHeaderFragment }) => {
   const editor = useMailEditor();
   const [empty, setEmpty] = useState(true);
   const { openSheet } = useDialog();
   const [send, { loading }] = useSendMessageMutation({ refetchQueries: [ListOutboxDocument] });
+  // The text quoted under the reply: the newest card's body, usually in the cache already.
+  const body = useGetMessageBodyQuery({ variables: { id: message.id } }).data?.message;
   const { to } = replyRecipients(message, message.account.emailAddress, false);
   // A reply that did not go out says why under the editor, which keeps the text.
   const [failure, setFailure] = useState<unknown>(null);
 
   const submit = () => {
     setFailure(null);
-    const doc = [...(editor.children as MailNode[]), ...fromText(quoteForReply(message))];
+    const doc = [...(editor.children as MailNode[]), ...fromText(quoteForReply({ ...message, textBody: body?.textBody ?? "" }))];
     return send({
       variables: {
         input: {
@@ -54,7 +62,7 @@ export const InlineReply = ({ message }: { message: MessageFragment }) => {
       .catch((e) => setFailure(asKuvertError(e)));
   };
 
-  const ready = !empty && to.length > 0 && !loading;
+  const ready = !empty && to.length > 0 && !loading && !!body;
 
   return (
     <form

@@ -1180,6 +1180,7 @@ input MessageFilter {
   similarTo: ID
   syncState: SyncState
   thread: ID
+  threads: [ID!]
   unread: Boolean
 }
 
@@ -1191,10 +1192,17 @@ input MessageOrder @oneOf {
   subject: Ordering
 }
 
-"""Move messages to another folder of their mailbox."""
+"""
+Move messages to another folder of their mailbox: one `folder`, or each message's own mailbox's folder of a `role` (Archive, Junk, ...).
+"""
 input MoveMessagesInput {
-  folder: ID!
+  folder: ID = null
   messages: [ID!]!
+
+  """
+  Instead of `folder`: the folder of this role in each message's mailbox (messages of several mailboxes move at once).
+  """
+  role: FolderRole = null
 }
 
 type Mutation {
@@ -1971,6 +1979,7 @@ input TaskListFilter {
 input TaskOrder @oneOf {
   createdAt: Ordering
   dueAt: Ordering
+  pinned: Ordering
   position: Ordering
   title: Ordering
   updatedAt: Ordering

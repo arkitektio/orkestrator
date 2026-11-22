@@ -1,11 +1,11 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
-import { useGetMessageQuery } from "../api/graphql";
+import { useDisplayMessageQuery } from "../api/graphql";
 import MessageCard from "../components/cards/MessageCard";
 import { MailMessage } from "../linkers";
 
 /** `@kuvert/message` wherever another module shows one. */
 export const MessageDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetMessageQuery({ variables: { id: props.id } });
+  const { data } = useDisplayMessageQuery({ variables: { id: props.id } });
   const message = data?.message;
   if (!message) return <span className="text-xs text-muted-foreground">Mail</span>;
 

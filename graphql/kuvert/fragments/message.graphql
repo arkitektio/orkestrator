@@ -35,11 +35,11 @@ fragment ListMessage on Message {
   }
 }
 
-fragment Message on Message {
+# A mail without its body: what a card's header, a folded card and a reply need.
+fragment MessageHeader on Message {
   ...ListMessage
   messageId
   receivedAt
-  textBody
   hasRemoteImages
   size
   flags
@@ -48,7 +48,6 @@ fragment Message on Message {
     ...MailChange
   }
   truncated
-  html(allowRemote: $allowRemote)
   sender {
     ...Address
   }
@@ -67,4 +66,16 @@ fragment Message on Message {
   attachments {
     ...Attachment
   }
+}
+
+# The body, asked for only when a card is open.
+fragment MessageBody on Message {
+  id
+  textBody
+  html(allowRemote: $allowRemote)
+}
+
+fragment Message on Message {
+  ...MessageHeader
+  ...MessageBody
 }

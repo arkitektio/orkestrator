@@ -895,6 +895,7 @@ export type MessageFilter = {
   similarTo?: InputMaybe<Scalars['ID']['input']>;
   syncState?: InputMaybe<SyncState>;
   thread?: InputMaybe<Scalars['ID']['input']>;
+  threads?: InputMaybe<Array<Scalars['ID']['input']>>;
   unread?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -905,10 +906,12 @@ export type MessageOrder =
   |  { date?: never; receivedAt?: never; senderAddress?: never; size: Ordering; subject?: never; }
   |  { date?: never; receivedAt?: never; senderAddress?: never; size?: never; subject: Ordering; };
 
-/** Move messages to another folder of their mailbox. */
+/** Move messages to another folder of their mailbox: one `folder`, or each message's own mailbox's folder of a `role` (Archive, Junk, ...). */
 export type MoveMessagesInput = {
-  folder: Scalars['ID']['input'];
+  folder?: InputMaybe<Scalars['ID']['input']>;
   messages: Array<Scalars['ID']['input']>;
+  /** Instead of `folder`: the folder of this role in each message's mailbox (messages of several mailboxes move at once). */
+  role?: InputMaybe<FolderRole>;
 };
 
 export type Mutation = {
@@ -1837,11 +1840,12 @@ export type TaskListFilter = {
 };
 
 export type TaskOrder =
-  { createdAt: Ordering; dueAt?: never; position?: never; title?: never; updatedAt?: never; }
-  |  { createdAt?: never; dueAt: Ordering; position?: never; title?: never; updatedAt?: never; }
-  |  { createdAt?: never; dueAt?: never; position: Ordering; title?: never; updatedAt?: never; }
-  |  { createdAt?: never; dueAt?: never; position?: never; title: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; dueAt?: never; position?: never; title?: never; updatedAt: Ordering; };
+  { createdAt: Ordering; dueAt?: never; pinned?: never; position?: never; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt: Ordering; pinned?: never; position?: never; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; pinned: Ordering; position?: never; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; pinned?: never; position: Ordering; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; pinned?: never; position?: never; title: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; pinned?: never; position?: never; title?: never; updatedAt: Ordering; };
 
 /** Where a task is. OPEN: To do; DONE: Done; DISMISSED: Dropped without doing it. */
 export enum TaskStatus {
@@ -2151,8 +2155,8 @@ export type ListMessageFragment = { __typename?: 'Message', id: string, subject:
     & CategoryChipFragment
   )>, account: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, canSend: boolean }, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole }, thread?: { __typename?: 'Thread', id: string, messageCount: number } | null };
 
-export type MessageFragment = (
-  { __typename?: 'Message', messageId?: string | null, receivedAt?: string | null, textBody: string, hasRemoteImages: boolean, size: number, flags: Array<string>, serverFlags: Array<string>, truncated: boolean, html?: string | null, changes: Array<(
+export type MessageHeaderFragment = (
+  { __typename?: 'Message', messageId?: string | null, receivedAt?: string | null, hasRemoteImages: boolean, size: number, flags: Array<string>, serverFlags: Array<string>, truncated: boolean, changes: Array<(
     { __typename?: 'MailChange' }
     & MailChangeFragment
   )>, sender: (
@@ -2175,6 +2179,14 @@ export type MessageFragment = (
     & AttachmentFragment
   )> }
   & ListMessageFragment
+);
+
+export type MessageBodyFragment = { __typename?: 'Message', id: string, textBody: string, html?: string | null };
+
+export type MessageFragment = (
+  { __typename?: 'Message' }
+  & MessageHeaderFragment
+  & MessageBodyFragment
 );
 
 export type RecipientsFragment = { __typename?: 'OutgoingMessage', to: Array<(
@@ -2276,7 +2288,7 @@ export type ThreadFragment = { __typename?: 'Thread', id: string, subject: strin
     & SenderAccountFragment
   ), messages: Array<(
     { __typename?: 'Message' }
-    & MessageFragment
+    & MessageHeaderFragment
   )> };
 
 export type CreateMailAccountMutationVariables = Exact<{
@@ -2459,7 +2471,7 @@ export type MessageStateFragment = { __typename?: 'Message', id: string, flags: 
   )>, changes: Array<(
     { __typename?: 'MailChange' }
     & MailChangeFragment
-  )>, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole } };
+  )>, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole }, thread?: { __typename?: 'Thread', id: string, unread: boolean } | null };
 
 export type SetMessageFlagsMutationVariables = Exact<{
   input: SetMessageFlagsInput;
@@ -2739,13 +2751,15 @@ export type SenderAccountsQuery = { __typename?: 'Query', mailAccounts: Array<(
     & SenderAccountFragment
   )> };
 
-export type SearchMailAccountsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+export type DisplayMailAccountQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type SearchMailAccountsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'MailAccount', value: string, label: string }> };
+export type DisplayMailAccountQuery = { __typename?: 'Query', mailAccount: (
+    { __typename?: 'MailAccount' }
+    & ListMailAccountFragment
+  ) };
 
 export type MailPresetsQueryVariables = Exact<{
   address?: InputMaybe<Scalars['String']['input']>;
@@ -2799,6 +2813,13 @@ export type ListMailChangesQuery = { __typename?: 'Query', mailChanges: Array<(
     & MailChangeFragment
   )> };
 
+export type MailChangesCountQueryVariables = Exact<{
+  filters?: InputMaybe<MailChangeFilter>;
+}>;
+
+
+export type MailChangesCountQuery = { __typename?: 'Query', mailChangesCount: number };
+
 export type MessageAttachmentAccessQueryVariables = Exact<{
   message: Scalars['ID']['input'];
 }>;
@@ -2830,13 +2851,6 @@ export type GetMailFolderQuery = { __typename?: 'Query', mailFolder: (
     & DetailMailFolderFragment
   ) };
 
-export type SearchMailFoldersQueryVariables = Exact<{
-  account?: InputMaybe<Scalars['ID']['input']>;
-}>;
-
-
-export type SearchMailFoldersQuery = { __typename?: 'Query', options: Array<{ __typename?: 'MailFolder', value: string, label: string }> };
-
 export type ListMessagesQueryVariables = Exact<{
   filters?: InputMaybe<MessageFilter>;
   ordering?: Array<MessageOrder> | MessageOrder;
@@ -2859,6 +2873,34 @@ export type GetMessageQuery = { __typename?: 'Query', message: (
     { __typename?: 'Message' }
     & MessageFragment
   ) };
+
+export type GetMessageBodyQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  allowRemote?: Scalars['Boolean']['input'];
+}>;
+
+
+export type GetMessageBodyQuery = { __typename?: 'Query', message: (
+    { __typename?: 'Message' }
+    & MessageBodyFragment
+  ) };
+
+export type DisplayMessageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DisplayMessageQuery = { __typename?: 'Query', message: (
+    { __typename?: 'Message' }
+    & ListMessageFragment
+  ) };
+
+export type ThreadsMessageIdsQueryVariables = Exact<{
+  threads: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ThreadsMessageIdsQuery = { __typename?: 'Query', messages: Array<{ __typename?: 'Message', id: string }> };
 
 export type ListOutboxQueryVariables = Exact<{
   filters?: InputMaybe<OutgoingMessageFilter>;
@@ -2970,21 +3012,15 @@ export type GetTaskListQuery = { __typename?: 'Query', taskList: (
     & ListTaskListFragment
   ) };
 
-export type SearchTasksQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+export type DisplayTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type SearchTasksQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Task', value: string, label: string }> };
-
-export type SearchTaskListsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchTaskListsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'TaskList', value: string, label: string }> };
+export type DisplayTaskQuery = { __typename?: 'Query', task: (
+    { __typename?: 'Task', dueAt?: string | null, threadCount: number }
+    & TaskChipFragment
+  ) };
 
 export type ListThreadsQueryVariables = Exact<{
   filters?: InputMaybe<ThreadFilter>;
@@ -3002,7 +3038,6 @@ export type ListThreadsQuery = { __typename?: 'Query', threads: Array<(
 
 export type GetThreadQueryVariables = Exact<{
   id: Scalars['ID']['input'];
-  allowRemote?: Scalars['Boolean']['input'];
 }>;
 
 
@@ -3045,7 +3080,7 @@ export type MailChangesSubscription = { __typename?: 'Subscription', mailChanges
 export type MailboxSyncsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MailboxSyncsSubscription = { __typename?: 'Subscription', mailboxSyncs: { __typename?: 'MailboxSyncEvent', accountId: string, created: number, updated: number, deleted: number, more: boolean } };
+export type MailboxSyncsSubscription = { __typename?: 'Subscription', mailboxSyncs: { __typename?: 'MailboxSyncEvent', accountId: string, created: number, updated: number, deleted: number, more: boolean, folders: Array<string> } };
 
 export const MailProviderRefFragmentDoc = gql`
     fragment MailProviderRef on MailProvider {
@@ -3219,12 +3254,152 @@ export const DetailMailFolderFragmentDoc = gql`
 }
     ${MailFolderFragmentDoc}
 ${ListMailAccountFragmentDoc}`;
+export const ListMessageFragmentDoc = gql`
+    fragment ListMessage on Message {
+  id
+  subject
+  senderName
+  senderAddress
+  date
+  snippet
+  isRead
+  isFlagged
+  isAnswered
+  hasAttachments
+  syncState
+  categories {
+    ...CategoryChip
+  }
+  account {
+    id
+    name
+    emailAddress
+    canSend
+  }
+  folder {
+    id
+    name
+    role
+  }
+  thread {
+    id
+    messageCount
+  }
+}
+    ${CategoryChipFragmentDoc}`;
+export const MailChangeFragmentDoc = gql`
+    fragment MailChange on MailChange {
+  id
+  kind
+  state
+  add
+  remove
+  attempts
+  error
+  errorCode
+  createdAt
+  pushAfter
+  undoable
+  createdBy {
+    id
+    sub
+  }
+  account {
+    id
+    name
+    emailAddress
+  }
+  message {
+    id
+    subject
+    senderName
+    senderAddress
+    thread {
+      id
+    }
+  }
+  originFolder {
+    id
+    name
+    role
+  }
+  targetFolder {
+    id
+    name
+    role
+  }
+}
+    `;
 export const AddressFragmentDoc = gql`
     fragment Address on Address {
   name
   address
 }
     `;
+export const AttachmentFragmentDoc = gql`
+    fragment Attachment on Attachment {
+  id
+  position
+  filename
+  contentType
+  size
+  contentId
+  inline
+  store {
+    id
+  }
+}
+    `;
+export const MessageHeaderFragmentDoc = gql`
+    fragment MessageHeader on Message {
+  ...ListMessage
+  messageId
+  receivedAt
+  hasRemoteImages
+  size
+  flags
+  serverFlags
+  changes {
+    ...MailChange
+  }
+  truncated
+  sender {
+    ...Address
+  }
+  replyTo {
+    ...Address
+  }
+  to {
+    ...Address
+  }
+  cc {
+    ...Address
+  }
+  bcc {
+    ...Address
+  }
+  attachments {
+    ...Attachment
+  }
+}
+    ${ListMessageFragmentDoc}
+${MailChangeFragmentDoc}
+${AddressFragmentDoc}
+${AttachmentFragmentDoc}`;
+export const MessageBodyFragmentDoc = gql`
+    fragment MessageBody on Message {
+  id
+  textBody
+  html(allowRemote: $allowRemote)
+}
+    `;
+export const MessageFragmentDoc = gql`
+    fragment Message on Message {
+  ...MessageHeader
+  ...MessageBody
+}
+    ${MessageHeaderFragmentDoc}
+${MessageBodyFragmentDoc}`;
 export const ListOutgoingMessageFragmentDoc = gql`
     fragment ListOutgoingMessage on OutgoingMessage {
   id
@@ -3392,39 +3567,6 @@ export const ListTaskListFragmentDoc = gql`
   createdAt
 }
     `;
-export const ListMessageFragmentDoc = gql`
-    fragment ListMessage on Message {
-  id
-  subject
-  senderName
-  senderAddress
-  date
-  snippet
-  isRead
-  isFlagged
-  isAnswered
-  hasAttachments
-  syncState
-  categories {
-    ...CategoryChip
-  }
-  account {
-    id
-    name
-    emailAddress
-    canSend
-  }
-  folder {
-    id
-    name
-    role
-  }
-  thread {
-    id
-    messageCount
-  }
-}
-    ${CategoryChipFragmentDoc}`;
 export const ListTaskFragmentDoc = gql`
     fragment ListTask on Task {
   id
@@ -3521,101 +3663,6 @@ export const SenderAccountFragmentDoc = gql`
   status
 }
     `;
-export const MailChangeFragmentDoc = gql`
-    fragment MailChange on MailChange {
-  id
-  kind
-  state
-  add
-  remove
-  attempts
-  error
-  errorCode
-  createdAt
-  pushAfter
-  undoable
-  createdBy {
-    id
-    sub
-  }
-  account {
-    id
-    name
-    emailAddress
-  }
-  message {
-    id
-    subject
-    senderName
-    senderAddress
-    thread {
-      id
-    }
-  }
-  originFolder {
-    id
-    name
-    role
-  }
-  targetFolder {
-    id
-    name
-    role
-  }
-}
-    `;
-export const AttachmentFragmentDoc = gql`
-    fragment Attachment on Attachment {
-  id
-  position
-  filename
-  contentType
-  size
-  contentId
-  inline
-  store {
-    id
-  }
-}
-    `;
-export const MessageFragmentDoc = gql`
-    fragment Message on Message {
-  ...ListMessage
-  messageId
-  receivedAt
-  textBody
-  hasRemoteImages
-  size
-  flags
-  serverFlags
-  changes {
-    ...MailChange
-  }
-  truncated
-  html(allowRemote: $allowRemote)
-  sender {
-    ...Address
-  }
-  replyTo {
-    ...Address
-  }
-  to {
-    ...Address
-  }
-  cc {
-    ...Address
-  }
-  bcc {
-    ...Address
-  }
-  attachments {
-    ...Attachment
-  }
-}
-    ${ListMessageFragmentDoc}
-${MailChangeFragmentDoc}
-${AddressFragmentDoc}
-${AttachmentFragmentDoc}`;
 export const ThreadFragmentDoc = gql`
     fragment Thread on Thread {
   id
@@ -3630,12 +3677,12 @@ export const ThreadFragmentDoc = gql`
     ...SenderAccount
   }
   messages {
-    ...Message
+    ...MessageHeader
   }
 }
     ${TaskChipFragmentDoc}
 ${SenderAccountFragmentDoc}
-${MessageFragmentDoc}`;
+${MessageHeaderFragmentDoc}`;
 export const MessageStateFragmentDoc = gql`
     fragment MessageState on Message {
   id
@@ -3654,6 +3701,10 @@ export const MessageStateFragmentDoc = gql`
     id
     name
     role
+  }
+  thread {
+    id
+    unread
   }
 }
     ${CategoryChipFragmentDoc}
@@ -5243,46 +5294,41 @@ export function useSenderAccountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type SenderAccountsQueryHookResult = ReturnType<typeof useSenderAccountsQuery>;
 export type SenderAccountsLazyQueryHookResult = ReturnType<typeof useSenderAccountsLazyQuery>;
 export type SenderAccountsQueryResult = Apollo.QueryResult<SenderAccountsQuery, SenderAccountsQueryVariables>;
-export const SearchMailAccountsDocument = gql`
-    query SearchMailAccounts($search: String, $values: [ID!]) {
-  options: mailAccounts(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 20}
-  ) {
-    value: id
-    label: emailAddress
+export const DisplayMailAccountDocument = gql`
+    query DisplayMailAccount($id: ID!) {
+  mailAccount(id: $id) {
+    ...ListMailAccount
   }
 }
-    `;
+    ${ListMailAccountFragmentDoc}`;
 
 /**
- * __useSearchMailAccountsQuery__
+ * __useDisplayMailAccountQuery__
  *
- * To run a query within a React component, call `useSearchMailAccountsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMailAccountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useDisplayMailAccountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDisplayMailAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSearchMailAccountsQuery({
+ * const { data, loading, error } = useDisplayMailAccountQuery({
  *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useSearchMailAccountsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchMailAccountsQuery, SearchMailAccountsQueryVariables>) {
+export function useDisplayMailAccountQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DisplayMailAccountQuery, DisplayMailAccountQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMailAccountsQuery, SearchMailAccountsQueryVariables>(SearchMailAccountsDocument, options);
+        return ApolloReactHooks.useQuery<DisplayMailAccountQuery, DisplayMailAccountQueryVariables>(DisplayMailAccountDocument, options);
       }
-export function useSearchMailAccountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMailAccountsQuery, SearchMailAccountsQueryVariables>) {
+export function useDisplayMailAccountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DisplayMailAccountQuery, DisplayMailAccountQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMailAccountsQuery, SearchMailAccountsQueryVariables>(SearchMailAccountsDocument, options);
+          return ApolloReactHooks.useLazyQuery<DisplayMailAccountQuery, DisplayMailAccountQueryVariables>(DisplayMailAccountDocument, options);
         }
-export type SearchMailAccountsQueryHookResult = ReturnType<typeof useSearchMailAccountsQuery>;
-export type SearchMailAccountsLazyQueryHookResult = ReturnType<typeof useSearchMailAccountsLazyQuery>;
-export type SearchMailAccountsQueryResult = Apollo.QueryResult<SearchMailAccountsQuery, SearchMailAccountsQueryVariables>;
+export type DisplayMailAccountQueryHookResult = ReturnType<typeof useDisplayMailAccountQuery>;
+export type DisplayMailAccountLazyQueryHookResult = ReturnType<typeof useDisplayMailAccountLazyQuery>;
+export type DisplayMailAccountQueryResult = Apollo.QueryResult<DisplayMailAccountQuery, DisplayMailAccountQueryVariables>;
 export const MailPresetsDocument = gql`
     query MailPresets($address: String) {
   mailPresets(address: $address) {
@@ -5460,6 +5506,39 @@ export function useListMailChangesLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type ListMailChangesQueryHookResult = ReturnType<typeof useListMailChangesQuery>;
 export type ListMailChangesLazyQueryHookResult = ReturnType<typeof useListMailChangesLazyQuery>;
 export type ListMailChangesQueryResult = Apollo.QueryResult<ListMailChangesQuery, ListMailChangesQueryVariables>;
+export const MailChangesCountDocument = gql`
+    query MailChangesCount($filters: MailChangeFilter) {
+  mailChangesCount(filters: $filters)
+}
+    `;
+
+/**
+ * __useMailChangesCountQuery__
+ *
+ * To run a query within a React component, call `useMailChangesCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMailChangesCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMailChangesCountQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useMailChangesCountQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MailChangesCountQuery, MailChangesCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MailChangesCountQuery, MailChangesCountQueryVariables>(MailChangesCountDocument, options);
+      }
+export function useMailChangesCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MailChangesCountQuery, MailChangesCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MailChangesCountQuery, MailChangesCountQueryVariables>(MailChangesCountDocument, options);
+        }
+export type MailChangesCountQueryHookResult = ReturnType<typeof useMailChangesCountQuery>;
+export type MailChangesCountLazyQueryHookResult = ReturnType<typeof useMailChangesCountLazyQuery>;
+export type MailChangesCountQueryResult = Apollo.QueryResult<MailChangesCountQuery, MailChangesCountQueryVariables>;
 export const MessageAttachmentAccessDocument = gql`
     query MessageAttachmentAccess($message: ID!) {
   message(id: $message) {
@@ -5577,42 +5656,6 @@ export function useGetMailFolderLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GetMailFolderQueryHookResult = ReturnType<typeof useGetMailFolderQuery>;
 export type GetMailFolderLazyQueryHookResult = ReturnType<typeof useGetMailFolderLazyQuery>;
 export type GetMailFolderQueryResult = Apollo.QueryResult<GetMailFolderQuery, GetMailFolderQueryVariables>;
-export const SearchMailFoldersDocument = gql`
-    query SearchMailFolders($account: ID) {
-  options: mailFolders(filters: {account: $account}, pagination: {limit: 200}) {
-    value: id
-    label: path
-  }
-}
-    `;
-
-/**
- * __useSearchMailFoldersQuery__
- *
- * To run a query within a React component, call `useSearchMailFoldersQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMailFoldersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchMailFoldersQuery({
- *   variables: {
- *      account: // value for 'account'
- *   },
- * });
- */
-export function useSearchMailFoldersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchMailFoldersQuery, SearchMailFoldersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMailFoldersQuery, SearchMailFoldersQueryVariables>(SearchMailFoldersDocument, options);
-      }
-export function useSearchMailFoldersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMailFoldersQuery, SearchMailFoldersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMailFoldersQuery, SearchMailFoldersQueryVariables>(SearchMailFoldersDocument, options);
-        }
-export type SearchMailFoldersQueryHookResult = ReturnType<typeof useSearchMailFoldersQuery>;
-export type SearchMailFoldersLazyQueryHookResult = ReturnType<typeof useSearchMailFoldersLazyQuery>;
-export type SearchMailFoldersQueryResult = Apollo.QueryResult<SearchMailFoldersQuery, SearchMailFoldersQueryVariables>;
 export const ListMessagesDocument = gql`
     query ListMessages($filters: MessageFilter, $ordering: [MessageOrder!]! = [], $pagination: OffsetPaginationInput) {
   messages(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -5686,6 +5729,112 @@ export function useGetMessageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetMessageQueryHookResult = ReturnType<typeof useGetMessageQuery>;
 export type GetMessageLazyQueryHookResult = ReturnType<typeof useGetMessageLazyQuery>;
 export type GetMessageQueryResult = Apollo.QueryResult<GetMessageQuery, GetMessageQueryVariables>;
+export const GetMessageBodyDocument = gql`
+    query GetMessageBody($id: ID!, $allowRemote: Boolean! = false) {
+  message(id: $id) {
+    ...MessageBody
+  }
+}
+    ${MessageBodyFragmentDoc}`;
+
+/**
+ * __useGetMessageBodyQuery__
+ *
+ * To run a query within a React component, call `useGetMessageBodyQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMessageBodyQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMessageBodyQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      allowRemote: // value for 'allowRemote'
+ *   },
+ * });
+ */
+export function useGetMessageBodyQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMessageBodyQuery, GetMessageBodyQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMessageBodyQuery, GetMessageBodyQueryVariables>(GetMessageBodyDocument, options);
+      }
+export function useGetMessageBodyLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMessageBodyQuery, GetMessageBodyQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMessageBodyQuery, GetMessageBodyQueryVariables>(GetMessageBodyDocument, options);
+        }
+export type GetMessageBodyQueryHookResult = ReturnType<typeof useGetMessageBodyQuery>;
+export type GetMessageBodyLazyQueryHookResult = ReturnType<typeof useGetMessageBodyLazyQuery>;
+export type GetMessageBodyQueryResult = Apollo.QueryResult<GetMessageBodyQuery, GetMessageBodyQueryVariables>;
+export const DisplayMessageDocument = gql`
+    query DisplayMessage($id: ID!) {
+  message(id: $id) {
+    ...ListMessage
+  }
+}
+    ${ListMessageFragmentDoc}`;
+
+/**
+ * __useDisplayMessageQuery__
+ *
+ * To run a query within a React component, call `useDisplayMessageQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDisplayMessageQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDisplayMessageQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDisplayMessageQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DisplayMessageQuery, DisplayMessageQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DisplayMessageQuery, DisplayMessageQueryVariables>(DisplayMessageDocument, options);
+      }
+export function useDisplayMessageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DisplayMessageQuery, DisplayMessageQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DisplayMessageQuery, DisplayMessageQueryVariables>(DisplayMessageDocument, options);
+        }
+export type DisplayMessageQueryHookResult = ReturnType<typeof useDisplayMessageQuery>;
+export type DisplayMessageLazyQueryHookResult = ReturnType<typeof useDisplayMessageLazyQuery>;
+export type DisplayMessageQueryResult = Apollo.QueryResult<DisplayMessageQuery, DisplayMessageQueryVariables>;
+export const ThreadsMessageIdsDocument = gql`
+    query ThreadsMessageIds($threads: [ID!]!) {
+  messages(filters: {threads: $threads}) {
+    id
+  }
+}
+    `;
+
+/**
+ * __useThreadsMessageIdsQuery__
+ *
+ * To run a query within a React component, call `useThreadsMessageIdsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useThreadsMessageIdsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useThreadsMessageIdsQuery({
+ *   variables: {
+ *      threads: // value for 'threads'
+ *   },
+ * });
+ */
+export function useThreadsMessageIdsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ThreadsMessageIdsQuery, ThreadsMessageIdsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ThreadsMessageIdsQuery, ThreadsMessageIdsQueryVariables>(ThreadsMessageIdsDocument, options);
+      }
+export function useThreadsMessageIdsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ThreadsMessageIdsQuery, ThreadsMessageIdsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ThreadsMessageIdsQuery, ThreadsMessageIdsQueryVariables>(ThreadsMessageIdsDocument, options);
+        }
+export type ThreadsMessageIdsQueryHookResult = ReturnType<typeof useThreadsMessageIdsQuery>;
+export type ThreadsMessageIdsLazyQueryHookResult = ReturnType<typeof useThreadsMessageIdsLazyQuery>;
+export type ThreadsMessageIdsQueryResult = Apollo.QueryResult<ThreadsMessageIdsQuery, ThreadsMessageIdsQueryVariables>;
 export const ListOutboxDocument = gql`
     query ListOutbox($filters: OutgoingMessageFilter, $pagination: OffsetPaginationInput) {
   outbox(filters: $filters, pagination: $pagination) {
@@ -5903,7 +6052,7 @@ export type ProviderKindsQueryHookResult = ReturnType<typeof useProviderKindsQue
 export type ProviderKindsLazyQueryHookResult = ReturnType<typeof useProviderKindsLazyQuery>;
 export type ProviderKindsQueryResult = Apollo.QueryResult<ProviderKindsQuery, ProviderKindsQueryVariables>;
 export const ListTasksDocument = gql`
-    query ListTasks($filters: TaskFilter, $ordering: [TaskOrder!]! = [{position: ASC}], $pagination: OffsetPaginationInput) {
+    query ListTasks($filters: TaskFilter, $ordering: [TaskOrder!]! = [{pinned: DESC}, {position: ASC}], $pagination: OffsetPaginationInput) {
   tasks(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTask
   }
@@ -6080,86 +6229,43 @@ export function useGetTaskListLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetTaskListQueryHookResult = ReturnType<typeof useGetTaskListQuery>;
 export type GetTaskListLazyQueryHookResult = ReturnType<typeof useGetTaskListLazyQuery>;
 export type GetTaskListQueryResult = Apollo.QueryResult<GetTaskListQuery, GetTaskListQueryVariables>;
-export const SearchTasksDocument = gql`
-    query SearchTasks($search: String, $values: [ID!]) {
-  options: tasks(
-    filters: {search: $search, ids: $values, status: OPEN}
-    pagination: {limit: 20}
-  ) {
-    value: id
-    label: title
+export const DisplayTaskDocument = gql`
+    query DisplayTask($id: ID!) {
+  task(id: $id) {
+    ...TaskChip
+    dueAt
+    threadCount
   }
 }
-    `;
+    ${TaskChipFragmentDoc}`;
 
 /**
- * __useSearchTasksQuery__
+ * __useDisplayTaskQuery__
  *
- * To run a query within a React component, call `useSearchTasksQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchTasksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useDisplayTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDisplayTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSearchTasksQuery({
+ * const { data, loading, error } = useDisplayTaskQuery({
  *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useSearchTasksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchTasksQuery, SearchTasksQueryVariables>) {
+export function useDisplayTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DisplayTaskQuery, DisplayTaskQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchTasksQuery, SearchTasksQueryVariables>(SearchTasksDocument, options);
+        return ApolloReactHooks.useQuery<DisplayTaskQuery, DisplayTaskQueryVariables>(DisplayTaskDocument, options);
       }
-export function useSearchTasksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchTasksQuery, SearchTasksQueryVariables>) {
+export function useDisplayTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DisplayTaskQuery, DisplayTaskQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchTasksQuery, SearchTasksQueryVariables>(SearchTasksDocument, options);
+          return ApolloReactHooks.useLazyQuery<DisplayTaskQuery, DisplayTaskQueryVariables>(DisplayTaskDocument, options);
         }
-export type SearchTasksQueryHookResult = ReturnType<typeof useSearchTasksQuery>;
-export type SearchTasksLazyQueryHookResult = ReturnType<typeof useSearchTasksLazyQuery>;
-export type SearchTasksQueryResult = Apollo.QueryResult<SearchTasksQuery, SearchTasksQueryVariables>;
-export const SearchTaskListsDocument = gql`
-    query SearchTaskLists($search: String, $values: [ID!]) {
-  options: taskLists(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 50}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useSearchTaskListsQuery__
- *
- * To run a query within a React component, call `useSearchTaskListsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchTaskListsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchTaskListsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchTaskListsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchTaskListsQuery, SearchTaskListsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchTaskListsQuery, SearchTaskListsQueryVariables>(SearchTaskListsDocument, options);
-      }
-export function useSearchTaskListsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchTaskListsQuery, SearchTaskListsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchTaskListsQuery, SearchTaskListsQueryVariables>(SearchTaskListsDocument, options);
-        }
-export type SearchTaskListsQueryHookResult = ReturnType<typeof useSearchTaskListsQuery>;
-export type SearchTaskListsLazyQueryHookResult = ReturnType<typeof useSearchTaskListsLazyQuery>;
-export type SearchTaskListsQueryResult = Apollo.QueryResult<SearchTaskListsQuery, SearchTaskListsQueryVariables>;
+export type DisplayTaskQueryHookResult = ReturnType<typeof useDisplayTaskQuery>;
+export type DisplayTaskLazyQueryHookResult = ReturnType<typeof useDisplayTaskLazyQuery>;
+export type DisplayTaskQueryResult = Apollo.QueryResult<DisplayTaskQuery, DisplayTaskQueryVariables>;
 export const ListThreadsDocument = gql`
     query ListThreads($filters: ThreadFilter, $ordering: [ThreadOrder!]! = [{lastMessageAt: DESC}], $pagination: OffsetPaginationInput, $inFolder: ID, $inRole: FolderRole) {
   threads(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -6200,7 +6306,7 @@ export type ListThreadsQueryHookResult = ReturnType<typeof useListThreadsQuery>;
 export type ListThreadsLazyQueryHookResult = ReturnType<typeof useListThreadsLazyQuery>;
 export type ListThreadsQueryResult = Apollo.QueryResult<ListThreadsQuery, ListThreadsQueryVariables>;
 export const GetThreadDocument = gql`
-    query GetThread($id: ID!, $allowRemote: Boolean! = false) {
+    query GetThread($id: ID!) {
   thread(id: $id) {
     ...Thread
   }
@@ -6220,7 +6326,6 @@ export const GetThreadDocument = gql`
  * const { data, loading, error } = useGetThreadQuery({
  *   variables: {
  *      id: // value for 'id'
- *      allowRemote: // value for 'allowRemote'
  *   },
  * });
  */
@@ -6380,6 +6485,7 @@ export const MailboxSyncsDocument = gql`
     updated
     deleted
     more
+    folders
   }
 }
     `;

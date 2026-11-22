@@ -1,14 +1,14 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
-import { TaskStatus, useListTasksQuery } from "../api/graphql";
+import { TaskStatus, useDisplayTaskQuery } from "../api/graphql";
 import { ListDot } from "../components/tasks/ListDot";
 import { formatDue } from "../components/tasks/taskOps";
 import { MailTask } from "../linkers";
 
 /** `@kuvert/task` wherever another module shows one: its list's dot and title (a card adds due date and size). */
 export const TaskDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useListTasksQuery({ variables: { filters: { ids: [props.id] }, pagination: { limit: 1 } } });
-  const task = data?.tasks[0];
+  const { data } = useDisplayTaskQuery({ variables: { id: props.id } });
+  const task = data?.task;
   if (!task) return <span className="text-xs text-muted-foreground">Task</span>;
   const finished = task.status !== TaskStatus.Open;
 

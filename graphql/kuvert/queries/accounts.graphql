@@ -26,10 +26,10 @@ query SenderAccounts {
   }
 }
 
-query SearchMailAccounts($search: String, $values: [ID!]) {
-  options: mailAccounts(filters: { search: $search, ids: $values }, pagination: { limit: 20 }) {
-    value: id
-    label: emailAddress
+# A mailbox wherever another module shows one.
+query DisplayMailAccount($id: ID!) {
+  mailAccount(id: $id) {
+    ...ListMailAccount
   }
 }
 

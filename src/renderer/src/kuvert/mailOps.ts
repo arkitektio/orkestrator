@@ -1,25 +1,26 @@
 import { toast } from "@/core/notify";
-import type { ApolloClient } from "@apollo/client";
+import type { ApolloCache, ApolloClient, ObservableQuery } from "@apollo/client";
 import {
   DeleteMessagesDocument,
+  GetCategoryDocument,
   GetMailAccountDocument,
+  ListCategoriesDocument,
   FolderRole,
-  ListMailFoldersDocument,
-  ListMailFoldersQuery,
   ListMessagesDocument,
   ListMailChangesDocument,
   ListMailAccountsDocument,
-  ListMessagesQuery,
   ListThreadsDocument,
   MailboxTreeDocument,
   MarkMessagesReadDocument,
+  MarkMessagesReadMutation,
+  MessageStateFragment,
   MoveMessagesDocument,
   PushAllMailChangesDocument,
   RetryMailChangesDocument,
   RevertMessagesToServerDocument,
   SetMessageFlagsDocument,
-  ThreadMessageIdsDocument,
-  ThreadMessageIdsQuery,
+  ThreadsMessageIdsDocument,
+  ThreadsMessageIdsQuery,
   UndoMailChangesDocument,
 } from "./api/graphql";
 import { asKuvertError, reportKuvertError } from "./errors";
@@ -33,6 +34,17 @@ import { asKuvertError, reportKuvertError } from "./errors";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = ApolloClient<any>;
 
+/**
+ * After categorizing: the categories' counts, and only the conversation lists
+ * that filter by a category. Every other row shows the mail's categories
+ * through the `Message` the mutation answers with.
+ */
+export const CATEGORIZE_VIEWS = {
+  refetchQueries: [ListCategoriesDocument, GetCategoryDocument, ListThreadsDocument],
+  onQueryUpdated: (query: ObservableQuery) =>
+    query.queryName !== "ListThreads" || !!(query.variables as { filters?: { category?: string | null } } | undefined)?.filters?.category,
+};
+
 /** What mail lists and counts show; refetched (when mounted) after a change to mail. */
 export const MAIL_VIEWS = [ListThreadsDocument, ListMessagesDocument, MailboxTreeDocument];
 
@@ -44,11 +56,31 @@ const run = async <T>(work: () => Promise<T>) => {
   }
 };
 
+/**
+ * Conversations whose mail is all read now: a list row shows a conversation's
+ * unread dot from `Thread.unreadCount(folder:, folderRole:)`, one cache entry
+ * per folder it is listed in, which a mutation answering with messages does
+ * not touch. Every one of them is 0 once `thread.unread` is false.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const markThreadsReadInCache = (cache: ApolloCache<any>, messages: readonly Pick<MessageStateFragment, "thread">[]) => {
+  const read = new Set(messages.flatMap((m) => (m.thread && !m.thread.unread ? [m.thread.id] : [])));
+  for (const id of read) {
+    cache.modify({ id: cache.identify({ __typename: "Thread", id }), fields: { unreadCount: () => 0 } });
+  }
+};
+
+/** `update` of a `markMessagesRead`: see `markThreadsReadInCache`. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateReadThreads = (cache: ApolloCache<any>, result: { data?: MarkMessagesReadMutation | null }) =>
+  markThreadsReadInCache(cache, result.data?.markMessagesRead ?? []);
+
 export const markRead = (client: Client, messages: string[], read: boolean) =>
   run(() =>
     client.mutate({
       mutation: MarkMessagesReadDocument,
       variables: { input: { messages, read } },
+      update: updateReadThreads,
       refetchQueries: MAIL_VIEWS,
     }),
   );
@@ -80,38 +112,28 @@ export const deleteMail = (client: Client, messages: string[], permanent: boolea
     }),
   );
 
-/** Move mail to its own mailbox's folder of `role` (Archive, Junk, …), per mailbox. */
-export const moveToRole = async (client: Client, messages: string[], role: FolderRole, label: string) => {
-  const { data } = await client.query<ListMessagesQuery>({
-    query: ListMessagesDocument,
-    variables: { filters: { ids: messages }, pagination: { limit: messages.length } },
-    fetchPolicy: "network-only",
-  });
-  const byAccount = new Map<string, { email: string; ids: string[] }>();
-  for (const m of data.messages) {
-    const entry = byAccount.get(m.account.id) ?? { email: m.account.emailAddress, ids: [] };
-    entry.ids.push(m.id);
-    byAccount.set(m.account.id, entry);
-  }
-  for (const [account, { email, ids }] of byAccount) {
-    const folders = await client.query<ListMailFoldersQuery>({
-      query: ListMailFoldersDocument,
-      variables: { filters: { account, role } },
-    });
-    const target = folders.data.mailFolders[0];
-    if (!target) throw new Error(`${email} has no ${label} folder`);
-    await moveTo(client, ids, target.id);
-  }
-};
-
-/** Every message of the given conversations: conversation actions act on those. */
-export const threadMessages = async (client: Client, threads: string[]) => {
-  const results = await Promise.all(
-    threads.map((id) =>
-      client.query<ThreadMessageIdsQuery>({ query: ThreadMessageIdsDocument, variables: { id }, fetchPolicy: "network-only" }),
-    ),
+/**
+ * Move mail to its own mailbox's folder of `role` (Archive, Junk, …): the
+ * server finds each mailbox's folder, and refuses a mailbox without one.
+ */
+export const moveToRole = (client: Client, messages: string[], role: FolderRole) =>
+  run(() =>
+    client.mutate({
+      mutation: MoveMessagesDocument,
+      variables: { input: { messages, role } },
+      refetchQueries: MAIL_VIEWS,
+    }),
   );
-  return results.flatMap((r) => r.data.thread.messages.map((m) => m.id));
+
+/** Every message of the given conversations, in one request: conversation actions act on those. */
+export const threadMessages = async (client: Client, threads: string[]) => {
+  const { data } = await client.query<ThreadsMessageIdsQuery>({
+    query: ThreadsMessageIdsDocument,
+    variables: { threads },
+    // A lookup for one action: always the server's answer, nothing kept.
+    fetchPolicy: "no-cache",
+  });
+  return data.messages.map((m) => m.id);
 };
 
 /** After a change to the queue: mail views plus the queue and the mailbox's counts. */

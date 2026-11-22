@@ -34,7 +34,8 @@ fragment Thread on Thread {
   account {
     ...SenderAccount
   }
+  # Headers only: a conversation's cards fold, and an open card asks for its body.
   messages {
-    ...Message
+    ...MessageHeader
   }
 }

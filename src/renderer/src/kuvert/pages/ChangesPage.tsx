@@ -8,6 +8,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { TooltipButton } from "@/core/ui/tooltip-button";
 import { cn } from "@/core/util/utils";
+import { Button } from "@/core/ui/button";
 import { CloudCheck, CloudUpload, RotateCcw, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -17,8 +18,10 @@ import {
   MailChangeState,
   useListMailAccountsQuery,
   useListMailChangesQuery,
+  useMailChangesCountQuery,
   useMailChangesSubscription,
 } from "../api/graphql";
+import { hasMore, PAGE, windowFetchPolicy } from "../components/list/window";
 import { changeStatus, describeChange } from "../components/changes/describe";
 import { describeError, reportKuvertError, reportKuvertErrorAs } from "../errors";
 import { KUVERT_HELP } from "../help";
@@ -127,25 +130,49 @@ const ChangesPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
   const [pushing, setPushing] = useState(false);
   const accounts = useListMailAccountsQuery();
-  const { data, loading, refetch } = useListMailChangesQuery({
-    variables: {
-      filters: {
-        account,
-        state: filter === "pending" ? MailChangeState.Pending : filter === "failed" ? MailChangeState.Failed : undefined,
-      },
-      pagination: { limit: 500 },
-    },
+  const filters = {
+    account,
+    state: filter === "pending" ? MailChangeState.Pending : filter === "failed" ? MailChangeState.Failed : undefined,
+  };
+  // A window [0, limit) of the queue, a page at a time (pages are cut at 100).
+  const filterKey = JSON.stringify(filters);
+  const [grown, setGrown] = useState({ filters: filterKey, limit: PAGE });
+  const limit = grown.filters === filterKey ? grown.limit : PAGE;
+  const [loadingMore, setLoadingMore] = useState(false);
+  const { data, loading, refetch, fetchMore } = useListMailChangesQuery({
+    variables: { filters, pagination: { offset: 0, limit } },
+    nextFetchPolicy: windowFetchPolicy,
   });
-  // Pending changes leave on their own as they are pushed: read the list (and
-  // the counts) again when a mailbox's queue moves.
+  const count = useMailChangesCountQuery({ variables: { filters } });
+  // Pending changes leave on their own as they are pushed: read the list again
+  // when a mailbox's queue moves. The event carries that mailbox's counts.
   useMailChangesSubscription({
     variables: { account: account ?? null },
-    onData: () => {
+    onData: ({ data: event, client: apollo }) => {
+      const moved = event.data?.mailChanges;
+      if (moved) {
+        apollo.cache.modify({
+          id: apollo.cache.identify({ __typename: "MailAccount", id: moved.accountId }),
+          fields: { pendingChanges: () => moved.pending, failedChanges: () => moved.failed },
+        });
+      }
       void refetch();
-      void accounts.refetch();
+      void count.refetch();
     },
   });
   const changes = data?.mailChanges ?? [];
+  const more = hasMore(changes.length, limit, count.data?.mailChangesCount);
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      await fetchMore({ variables: { pagination: { offset: changes.length, limit: PAGE } } });
+      setGrown({ filters: filterKey, limit: limit + PAGE });
+    } catch (e) {
+      reportKuvertError(e, "Couldn't load more changes");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const mailboxes = (accounts.data?.mailAccounts ?? []).filter((a) => !account || a.id === account);
   const pendingAccounts = mailboxes.filter((a) => a.pendingChanges > 0).map((a) => a.id);
   const failedAccounts = mailboxes.filter((a) => a.failedChanges > 0);
@@ -236,6 +263,12 @@ const ChangesPage = () => {
           {changes.map((c) => (
             <ChangeRow key={c.id} change={c} />
           ))}
+          {more && (
+            <Button variant="ghost" size="sm" className="text-xs" disabled={loading || loadingMore} onClick={() => void loadMore()}>
+              {(loading || loadingMore) && <Spinner />}
+              Load more
+            </Button>
+          )}
         </div>
       ) : loading ? (
         <div className="flex justify-center p-6">

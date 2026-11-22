@@ -222,7 +222,7 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
     pinned: true,
     conditions: [{ type: "identifier", identifier: MESSAGE }, { type: "nopartner" }],
     execute: async ({ services, state, onProgress }) => {
-      await moveToRole(kuvertClient(services), need(idsOf(state, MESSAGE), "mail"), FolderRole.Archive, "Archive");
+      await moveToRole(kuvertClient(services), need(idsOf(state, MESSAGE), "mail"), FolderRole.Archive);
       onProgress(100);
     },
   },
@@ -296,7 +296,7 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
     execute: async ({ services, state, onProgress }) => {
       const client = kuvertClient(services);
       const messages = await threadMessages(client, need(idsOf(state, THREAD), "conversation"));
-      await moveToRole(client, messages, FolderRole.Archive, "Archive");
+      await moveToRole(client, messages, FolderRole.Archive);
       onProgress(100);
     },
   },
