@@ -1,9 +1,3 @@
-query Holdings($account: ID!, $date: Date) {
-  holdings(account: $account, date: $date) {
-    ...Holding
-  }
-}
-
 query Portfolio {
   bankAccounts(filters: { kind: DEPOT }, ordering: [{ name: ASC }], pagination: { limit: 100 }) {
     id
@@ -19,10 +13,11 @@ query Portfolio {
   }
 }
 
-# Every depot's positions summed by ISIN and currency on the server, exactly
-# (decimals), largest first.
-query MergedPositions {
-  portfolioInsights {
+# Positions summed by ISIN and currency on the server, exactly (decimals),
+# largest first: every depot's, or these accounts'; today's, or as of a day
+# (each depot's latest synced day on or before it).
+query MergedPositions($accounts: [ID!], $asOf: Date) {
+  portfolioInsights(accounts: $accounts, asOf: $asOf) {
     mergedPositions {
       isin
       name

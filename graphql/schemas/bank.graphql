@@ -2605,7 +2605,15 @@ type Query {
   periodOverview(compareTo: Comparison! = PREVIOUS_PERIOD, limit: Int! = 10, window: StatsWindowInput = null): PeriodOverview!
 
   """The depot: value over time, allocation, positions, investment income."""
-  portfolioInsights(accounts: [ID!] = null, dateFrom: Date = null): PortfolioInsights!
+  portfolioInsights(
+    accounts: [ID!] = null
+
+    """
+    Answer as of this day: each depot's positions of its latest synced day on or before it, history and income up to it. Today by default.
+    """
+    asOf: Date = null
+    dateFrom: Date = null
+  ): PortfolioInsights!
 
   """How each depot position's price moved over a window."""
   positionPerformance(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null): [PositionPerformance!]!

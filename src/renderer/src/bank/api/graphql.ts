@@ -2610,6 +2610,7 @@ export type QueryPeriodOverviewArgs = {
 
 export type QueryPortfolioInsightsArgs = {
   accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
+  asOf?: InputMaybe<Scalars['Date']['input']>;
   dateFrom?: InputMaybe<Scalars['Date']['input']>;
 };
 
@@ -4412,17 +4413,6 @@ export type ReauthConnectionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ReauthConnectionsQuery = { __typename?: 'Query', bankConnections: Array<{ __typename?: 'BankConnection', id: string }> };
 
-export type HoldingsQueryVariables = Exact<{
-  account: Scalars['ID']['input'];
-  date?: InputMaybe<Scalars['Date']['input']>;
-}>;
-
-
-export type HoldingsQuery = { __typename?: 'Query', holdings: Array<(
-    { __typename?: 'HoldingSnapshot' }
-    & HoldingFragment
-  )> };
-
 export type PortfolioQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4434,7 +4424,10 @@ export type PortfolioQuery = { __typename?: 'Query', bankAccounts: Array<{ __typ
       & HoldingFragment
     )> }> };
 
-export type MergedPositionsQueryVariables = Exact<{ [key: string]: never; }>;
+export type MergedPositionsQueryVariables = Exact<{
+  accounts?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  asOf?: InputMaybe<Scalars['Date']['input']>;
+}>;
 
 
 export type MergedPositionsQuery = { __typename?: 'Query', portfolioInsights: { __typename?: 'PortfolioInsights', mergedPositions: Array<{ __typename?: 'MergedPosition', isin: string, name: string, securityType?: string | null, currency: string, depots: number, quantity: string, price?: string | null, fifoPrice?: string | null, costBasis?: string | null, valuation: string, unrealizedGain?: string | null, weight: number }> } };
@@ -8064,42 +8057,6 @@ export function useReauthConnectionsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type ReauthConnectionsQueryHookResult = ReturnType<typeof useReauthConnectionsQuery>;
 export type ReauthConnectionsLazyQueryHookResult = ReturnType<typeof useReauthConnectionsLazyQuery>;
 export type ReauthConnectionsQueryResult = Apollo.QueryResult<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>;
-export const HoldingsDocument = gql`
-    query Holdings($account: ID!, $date: Date) {
-  holdings(account: $account, date: $date) {
-    ...Holding
-  }
-}
-    ${HoldingFragmentDoc}`;
-
-/**
- * __useHoldingsQuery__
- *
- * To run a query within a React component, call `useHoldingsQuery` and pass it any options that fit your needs.
- * When your component renders, `useHoldingsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useHoldingsQuery({
- *   variables: {
- *      account: // value for 'account'
- *      date: // value for 'date'
- *   },
- * });
- */
-export function useHoldingsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<HoldingsQuery, HoldingsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<HoldingsQuery, HoldingsQueryVariables>(HoldingsDocument, options);
-      }
-export function useHoldingsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HoldingsQuery, HoldingsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<HoldingsQuery, HoldingsQueryVariables>(HoldingsDocument, options);
-        }
-export type HoldingsQueryHookResult = ReturnType<typeof useHoldingsQuery>;
-export type HoldingsLazyQueryHookResult = ReturnType<typeof useHoldingsLazyQuery>;
-export type HoldingsQueryResult = Apollo.QueryResult<HoldingsQuery, HoldingsQueryVariables>;
 export const PortfolioDocument = gql`
     query Portfolio {
   bankAccounts(
@@ -8149,8 +8106,8 @@ export type PortfolioQueryHookResult = ReturnType<typeof usePortfolioQuery>;
 export type PortfolioLazyQueryHookResult = ReturnType<typeof usePortfolioLazyQuery>;
 export type PortfolioQueryResult = Apollo.QueryResult<PortfolioQuery, PortfolioQueryVariables>;
 export const MergedPositionsDocument = gql`
-    query MergedPositions {
-  portfolioInsights {
+    query MergedPositions($accounts: [ID!], $asOf: Date) {
+  portfolioInsights(accounts: $accounts, asOf: $asOf) {
     mergedPositions {
       isin
       name
@@ -8181,6 +8138,8 @@ export const MergedPositionsDocument = gql`
  * @example
  * const { data, loading, error } = useMergedPositionsQuery({
  *   variables: {
+ *      accounts: // value for 'accounts'
+ *      asOf: // value for 'asOf'
  *   },
  * });
  */

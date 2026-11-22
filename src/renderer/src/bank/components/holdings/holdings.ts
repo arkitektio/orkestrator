@@ -1,17 +1,5 @@
 import { toNumber } from "../../format";
 
-export type HoldingLike = {
-  isin: string;
-  name: string;
-  securityType?: string | null;
-  quantity: string;
-  fifoPrice?: string | null;
-  price?: string | null;
-  valuation: string;
-  currency: string;
-  unrealizedGain?: string | null;
-};
-
 /** One security across however many depots hold it. Numbers, for display only. */
 export type Position = {
   isin: string;
@@ -60,54 +48,6 @@ export const positionsOf = (merged: readonly MergedPositionLike[]): Position[] =
     gain: p.unrealizedGain != null ? toNumber(p.unrealizedGain) : null,
     weight: p.weight,
   }));
-
-/**
- * One depot's holdings (as of any day) as positions, largest first. Across
- * depots the server merges them (`positionsOf`); this is for one depot's own
- * snapshot, whose lots of a security are summed the same way.
- */
-export const aggregatePositions = (holdings: readonly HoldingLike[]): Position[] => {
-  const byKey = new Map<string, Position & { cost: number | null }>();
-  for (const h of holdings) {
-    const key = `${h.isin}|${h.currency}`;
-    const quantity = toNumber(h.quantity);
-    const cost = h.fifoPrice != null ? toNumber(h.fifoPrice) * quantity : null;
-    const gain = h.unrealizedGain != null ? toNumber(h.unrealizedGain) : null;
-    const row = byKey.get(key);
-    if (!row) {
-      byKey.set(key, {
-        isin: h.isin,
-        name: h.name,
-        securityType: h.securityType ?? null,
-        currency: h.currency,
-        quantity,
-        price: h.price != null ? toNumber(h.price) : null,
-        fifoPrice: null,
-        valuation: toNumber(h.valuation),
-        gain,
-        cost,
-        weight: 0,
-      });
-      continue;
-    }
-    row.quantity += quantity;
-    row.valuation += toNumber(h.valuation);
-    row.gain = row.gain != null && gain != null ? row.gain + gain : null;
-    row.cost = row.cost != null && cost != null ? row.cost + cost : null;
-    row.price ??= h.price != null ? toNumber(h.price) : null;
-  }
-
-  const totals = new Map<string, number>();
-  for (const row of byKey.values()) totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.valuation);
-
-  return [...byKey.values()]
-    .map(({ cost, ...row }) => ({
-      ...row,
-      fifoPrice: cost != null && row.quantity > 0 ? cost / row.quantity : null,
-      weight: totals.get(row.currency) ? row.valuation / totals.get(row.currency)! : 0,
-    }))
-    .sort((a, b) => b.valuation - a.valuation);
-};
 
 export type PortfolioSummary = {
   currency: string;

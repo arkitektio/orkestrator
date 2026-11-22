@@ -10,11 +10,11 @@ import { toast } from "@/core/notify";
 import {
   AccountKind,
   ListTransactionsDocument,
-  useHoldingsQuery,
   useAccountSyncsSubscription,
   useBalanceHistoryQuery,
   useForecastQuery,
   useGetBankAccountQuery,
+  useMergedPositionsQuery,
   useSyncAccountMutation,
 } from "../api/graphql";
 import { useBank } from "../api/funcs";
@@ -28,7 +28,7 @@ import { AccountInsightsTab } from "../components/insights/tabs/AccountInsightsT
 import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { Money } from "../components/Money";
 import { daysAgo, formatDay, formatIban, isoDay } from "../format";
-import { aggregatePositions } from "../components/holdings/holdings";
+import { positionsOf } from "../components/holdings/holdings";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { Input } from "@/core/ui/input";
 import { BANK_HELP } from "../help";
@@ -59,6 +59,19 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
     refetchQueries: [ListTransactionsDocument],
   });
 
+  // A depot's positions, merged on the server: today's by default, or as of a
+  // chosen day (its latest synced day on or before it).
+  const depot = account.kind === AccountKind.Depot;
+  const [asOf, setAsOf] = useState("");
+  const merged = useMergedPositionsQuery({
+    variables: { accounts: [account.id], asOf: asOf || null },
+    skip: !depot,
+  });
+  const positions = useMemo(
+    () => positionsOf(merged.data?.portfolioInsights.mergedPositions ?? []),
+    [merged.data],
+  );
+
   // A background sweep finished this account: pull the new rows in.
   const client = useBank();
   useAccountSyncsSubscription({
@@ -66,21 +79,10 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
     onData: () => {
       void refetch();
       void history.refetch();
+      if (depot) void merged.refetch();
       void client.refetchQueries({ include: [ListTransactionsDocument] });
     },
   });
-  // A depot's holdings: today's by default, or those of a chosen day.
-  const depot = account.kind === AccountKind.Depot;
-  const [asOf, setAsOf] = useState("");
-  const pastHoldings = useHoldingsQuery({
-    variables: { account: account.id, date: asOf },
-    skip: !depot || !asOf,
-  });
-  const pastData = pastHoldings.data;
-  const positions = useMemo(
-    () => aggregatePositions(asOf ? (pastData?.holdings ?? []) : account.currentHoldings),
-    [asOf, pastData, account.currentHoldings],
-  );
 
   const name = account.name || account.product || formatIban(account.iban) || "Account";
   const balance = account.latestBalance;
