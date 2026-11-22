@@ -21,58 +21,18 @@ import {
   StructureInput,
   useCreateRoomMutation,
   useGetRoomQuery,
-  useListRoomsQuery,
+  useRecentRoomsQuery,
   WatchMessagesDocument,
   WatchMessagesSubscription,
   WatchMessagesSubscriptionVariables,
 } from "../api/graphql";
 import { Chat } from "@/alpaka/chat/chat";
+import { RoomHistoryProvider } from "@/alpaka/chat/roomHistory";
 import { toStructureInput } from "../roomTalkingAbout";
 
 export type StructureRoomsSidebarProps = {
   identifier: Identifier;
   object: Object;
-};
-
-type RankableRoom = { id: string; messages: readonly { createdAt: unknown }[] };
-
-const lastMessageAt = (room: RankableRoom): number =>
-  room.messages.reduce((newest, message) => {
-    const at = Date.parse(String(message.createdAt));
-    return Number.isNaN(at) ? newest : Math.max(newest, at);
-  }, Number.NEGATIVE_INFINITY);
-
-/**
- * The chat the tab opens on: the one that was talked in most recently.
- *
- * `Room` exposes no timestamp of its own and `rooms` takes no ordering, so
- * recency is read off the messages the list query already carries. A room
- * nobody has written in yet has nothing to compare with, so it loses to any
- * room that does have a message; between two of those, the one created last
- * wins — by id, which alpaka hands out ascending, and by list position when
- * ids aren't numeric.
- */
-const latestRoomId = (rooms: readonly RankableRoom[]): string => {
-  let best: { id: string; at: number; rank: number } | undefined;
-
-  rooms.forEach((room, index) => {
-    const numericId = Number(room.id);
-    const candidate = {
-      id: room.id,
-      at: lastMessageAt(room),
-      rank: Number.isFinite(numericId) ? numericId : index,
-    };
-
-    if (
-      !best ||
-      candidate.at > best.at ||
-      (candidate.at === best.at && candidate.rank >= best.rank)
-    ) {
-      best = candidate;
-    }
-  });
-
-  return best?.id ?? "";
 };
 
 const buildSidebarStorageKey = (identifier: Identifier, object: Object) =>
@@ -130,6 +90,7 @@ const StructureRoomView = ({
           room: {
             ...prev.room,
             messages: prev.room.messages.concat([nextMessage]),
+            messageCount: prev.room.messageCount + 1,
           },
         };
       },
@@ -160,7 +121,9 @@ const StructureRoomView = ({
           </div>
         }
       >
-        <Chat isMobile={isMobile} room={data.room} talkingAbout={[talkingAbout]} />
+        <RoomHistoryProvider room={data.room}>
+          <Chat isMobile={isMobile} room={data.room} talkingAbout={[talkingAbout]} />
+        </RoomHistoryProvider>
       </RekuestGuard>
     </div>
   );
@@ -177,7 +140,9 @@ export const StructureRoomsSidebar = ({
   // isn't one cannot be talked about, and asking anyway would have the server
   // reject the whole query.
   const talkingAbout = toStructureInput({ identifier, id: object.id });
-  const { data, loading, error, refetch } = useListRoomsQuery({
+  // Newest activity first, ordered by the server: the first room is the one
+  // the tab opens on.
+  const { data, loading, error, refetch } = useRecentRoomsQuery({
     skip: !talkingAbout,
     variables: {
       filter: {
@@ -216,7 +181,7 @@ export const StructureRoomsSidebar = ({
   const resolvedActiveRoomId = (() => {
     // Nothing chosen yet — open on the most recent conversation, which is what
     // the tab is for. A room the user picked from the menu sticks instead.
-    const fallback = latestRoomId(rooms);
+    const fallback = rooms[0]?.id ?? "";
 
     if (!activeRoomId) return fallback;
     if (pickedThisSession.current) return activeRoomId;

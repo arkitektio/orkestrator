@@ -1,18 +1,18 @@
 fragment Provider on Provider {
   id
   name
-  models {
-    id
-    modelId
-  }
   kind
+  # The models themselves page through `llmModels(filters: { provider })`.
+  modelCount
 }
 
+# A provider as a card shows it: how many models, and the first two by name.
 fragment ListProvider on Provider {
   id
   name
   kind
-  models {
+  modelCount
+  preview: models(pagination: { limit: 2 }) {
     id
     modelId
   }

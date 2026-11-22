@@ -192,8 +192,8 @@ export const getProviderKindDisplayName = (kind: ProviderKind): string => {
 };
 
 const TheCard = ({ item }: Props) => {
-  const count = item.models.length;
-  const preview = item.models
+  const count = item.modelCount;
+  const preview = item.preview
     .slice(0, 2)
     .map((model) => model.modelId)
     .join(", ");

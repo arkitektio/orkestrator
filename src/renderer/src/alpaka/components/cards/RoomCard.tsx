@@ -4,10 +4,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/core/ui/
 import { cn } from "@/core/util/utils";
 import { AlpakaRoom } from "@/core/linkers";
 import { ArrowUpRight, MessageSquareText, Paperclip } from "lucide-react";
-import { ListRoomFragment, RoomFragment } from "../../api/graphql";
+import { RoomCardFragment } from "../../api/graphql";
 
 interface Props {
-  item: RoomFragment | ListRoomFragment;
+  item: RoomCardFragment;
   index?: number;
 }
 
@@ -24,8 +24,7 @@ const getRoomCardLayout = (index: number) => {
 };
 
 const TheCard = ({ item, index = 0 }: Props) => {
-  const messages = "messages" in item ? item.messages : [];
-  const latestMessage = messages.at(-1) ?? messages.at(0);
+  const latestMessage = item.latest.at(0);
   const latestPreview = latestMessage?.text?.trim();
   const attachedStructureCount = latestMessage?.attachedStructures.length ?? 0;
 
@@ -43,9 +42,9 @@ const TheCard = ({ item, index = 0 }: Props) => {
               <MessageSquareText className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex items-center gap-2">
-              {messages.length > 0 ? (
+              {item.messageCount > 0 ? (
                 <Badge variant="secondary" className="rounded-full text-[10px]">
-                  {messages.length} {messages.length === 1 ? "message" : "messages"}
+                  {item.messageCount} {item.messageCount === 1 ? "message" : "messages"}
                 </Badge>
               ) : null}
               <Badge variant="outline" className="rounded-full text-[10px]">

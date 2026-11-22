@@ -48,6 +48,7 @@ import {
 } from "@/core/ui/command";
 import {
   useAllActionsQuery,
+  useReplyerActionsQuery,
   useDetailActionQuery,
   DemandKind,
   PortKind,
@@ -58,7 +59,7 @@ import {
 } from "@/rekuest/api/graphql";
 import {
   useAllPrimaryDefinitionsQuery,
-  ListDefinitionFragment,
+  SmartDefinitionFragment,
   PortKind as KabinetPortKind,
 } from "@/kabinet/api/graphql";
 import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
@@ -106,7 +107,7 @@ type InstallAction = {
 };
 
 const InstallReplyerDefinitionButton = (props: {
-  definition: ListDefinitionFragment;
+  definition: SmartDefinitionFragment;
   action: InstallAction;
   onInstalled?: () => void;
 }) => {
@@ -193,6 +194,7 @@ const InstallReplyerSection = (props: {
         ],
         search: props.search !== "" ? props.search : undefined,
       },
+      pagination: { limit: 20 },
     },
     fetchPolicy: "cache-and-network",
   });
@@ -439,9 +441,8 @@ interface ChatProps {
 }
 
 export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
-  const [send] = useSendMessageMutation({
-    refetchQueries: ["DetailRoom"],
-  });
+  // The room's subscription delivers the sent message into the room.
+  const [send] = useSendMessageMutation();
 
   // Sent, not delivered back yet. These render as real rows that pulse, so
   // nothing covers the conversation while a message is on its way.
@@ -516,10 +517,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   );
   const subjectIdentifier = subject?.identifier;
 
-  const { data: actionsData } = useAllActionsQuery({
+  const { data: actionsData } = useReplyerActionsQuery({
     variables: { filters: GENERIC_REPLYER_FILTER },
   });
-  const { data: specificData } = useAllActionsQuery({
+  const { data: specificData } = useReplyerActionsQuery({
     variables: { filters: specificReplyerFilter(subjectIdentifier ?? "") },
     skip: !subjectIdentifier,
   });

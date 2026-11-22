@@ -19,6 +19,7 @@ import { preloadable } from "@/core/util/preloadable";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import { Avatar, AvatarFallback } from "@/core/ui/avatar";
 import ChatBottombar from "./chat-bottombar";
+import { LoadEarlierMessages } from "./roomHistory";
 import { Markdown, type CodeRenderers } from "@/core/ui/markdown";
 
 /** A ```bsx fence in a message is a blok draft (the blok assistant streams one): drawn as a live preview. */
@@ -545,6 +546,7 @@ export function ChatList({
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
       >
         <div className="flex flex-1 flex-col gap-3 px-3 py-4 sm:px-4">
+          <LoadEarlierMessages />
           {messages?.length === 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}

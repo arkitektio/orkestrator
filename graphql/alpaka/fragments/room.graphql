@@ -19,7 +19,10 @@ fragment Room on Room {
       preferredUsername
     }
   }
-  messages {
+  # The newest page of the conversation; "Load earlier" reads older pages
+  # (`RoomMessages`). The chat sorts by `createdAt` itself.
+  messageCount
+  messages(ordering: [{ createdAt: DESC }], pagination: { limit: 50 }) {
     ...ListMessage
   }
   talkingAbout {
@@ -28,10 +31,21 @@ fragment Room on Room {
   }
 }
 
-fragment ListRoom on Room {
+# A room as the Rooms page's card shows it: how much was said, and the latest of it.
+fragment RoomCard on Room {
   id
   title
   description
+  messageCount
+  latest: messages(ordering: [{ createdAt: DESC }], pagination: { limit: 1 }) {
+    id
+    text
+    createdAt
+    attachedStructures {
+      identifier
+      object
+    }
+  }
 }
 
 fragment RecentRoom on Room {

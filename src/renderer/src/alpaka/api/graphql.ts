@@ -978,6 +978,8 @@ export type Provider = {
   id: Scalars['ID']['output'];
   /** The kind of the provider */
   kind: ProviderKind;
+  /** How many models the provider offers */
+  modelCount: Scalars['Int']['output'];
   models: Array<LlmModel>;
   name: Scalars['String']['output'];
 };
@@ -1289,6 +1291,8 @@ export type Room = {
   id: Scalars['ID']['output'];
   /** When the room last saw a message, or when it was created if it has none. `RoomOrder.lastMessageAt` sorts by the same time */
   lastActivity: Scalars['DateTime']['output'];
+  /** How many messages the room holds */
+  messageCount: Scalars['Int']['output'];
   messages: Array<Message>;
   /** The organization this room belongs to */
   organization: Organization;
@@ -1741,7 +1745,7 @@ export type ListChromaCollectionFragment = { __typename?: 'ChromaCollection', id
 export type DocumentFragment = { __typename?: 'Document', id: string, content: string, metadata?: any | null, distance?: number | null, structure?: { __typename?: 'Structure', identifier: string, object: number } | null };
 
 export type LlmModelFragment = { __typename?: 'LLMModel', id: string, modelId: string, llmString: string, features: Array<FeatureType>, inputModalities: Array<Modality>, outputModalities: Array<Modality>, provider: (
-    { __typename?: 'Provider' }
+    { __typename?: 'Provider', models: Array<{ __typename?: 'LLMModel', id: string, modelId: string }> }
     & ProviderFragment
   ), embedderFor: Array<{ __typename?: 'ChromaCollection', id: string, name: string }> };
 
@@ -1759,18 +1763,18 @@ export type ListMessageFragment = { __typename?: 'Message', id: string, text: st
     & MessageAgentFragment
   ), attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
 
-export type ProviderFragment = { __typename?: 'Provider', id: string, name: string, kind: ProviderKind, models: Array<{ __typename?: 'LLMModel', id: string, modelId: string }> };
+export type ProviderFragment = { __typename?: 'Provider', id: string, name: string, kind: ProviderKind, modelCount: number };
 
-export type ListProviderFragment = { __typename?: 'Provider', id: string, name: string, kind: ProviderKind, models: Array<{ __typename?: 'LLMModel', id: string, modelId: string }> };
+export type ListProviderFragment = { __typename?: 'Provider', id: string, name: string, kind: ProviderKind, modelCount: number, preview: Array<{ __typename?: 'LLMModel', id: string, modelId: string }> };
 
 export type ChatResponseFragment = { __typename?: 'ChatResponse', id: string, object: string, created: number, model: string, usage?: { __typename?: 'Usage', promptTokens: number, completionTokens: number, totalTokens: number } | null, choices: Array<{ __typename?: 'Choice', index: number, finishReason?: string | null, message: { __typename?: 'ChatMessage', role: Role, content?: string | null, name?: string | null, toolCallId?: string | null, functionCall?: { __typename?: 'FunctionCall', name: string, arguments: string } | null, toolCalls?: Array<{ __typename?: 'ToolCall', id: string, type: ToolType, function: { __typename?: 'FunctionCall', name: string, arguments: string } }> | null } }> };
 
-export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, identifier: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
+export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, messageCount: number, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, identifier: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
     { __typename?: 'Message' }
     & ListMessageFragment
   )>, talkingAbout: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
 
-export type ListRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null };
+export type RoomCardFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, messageCount: number, latest: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> };
 
 export type RecentRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, lastActivity: any, latest: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> };
 
@@ -1899,14 +1903,6 @@ export type GetChromaCollectionQuery = { __typename?: 'Query', chromaCollection:
     & ChromaCollectionFragment
   ) };
 
-export type SearchChromaCollectionQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchChromaCollectionQuery = { __typename?: 'Query', options: Array<{ __typename?: 'ChromaCollection', value: string, label: string }> };
-
 export type ListChromaCollectionsQueryVariables = Exact<{
   filter?: InputMaybe<ChromaCollectionFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -1943,14 +1939,6 @@ export type GetLlmModelQuery = { __typename?: 'Query', llmModel: (
     & LlmModelFragment
   ) };
 
-export type SearchLlmModelsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchLlmModelsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'LLMModel', value: string, label: string }> };
-
 export type ListLlModelsQueryVariables = Exact<{
   filter?: InputMaybe<LlmModelFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -1982,14 +1970,6 @@ export type GetProviderQuery = { __typename?: 'Query', provider: (
     & ProviderFragment
   ) };
 
-export type SearchProvidersQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchProvidersQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Provider', value: string, label: string }> };
-
 export type ListProvidersQueryVariables = Exact<{
   filter?: InputMaybe<ProviderFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2011,14 +1991,6 @@ export type GetRoomQuery = { __typename?: 'Query', room: (
     & RoomFragment
   ) };
 
-export type SearchRoomsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchRoomsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Room', value: string, label: string, description?: string | null }> };
-
 export type ListRoomsQueryVariables = Exact<{
   filter?: InputMaybe<RoomFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2027,16 +1999,20 @@ export type ListRoomsQueryVariables = Exact<{
 
 export type ListRoomsQuery = { __typename?: 'Query', rooms: Array<(
     { __typename?: 'Room' }
-    & RoomFragment
+    & RoomCardFragment
   )> };
 
-export type RoomsQueryVariables = Exact<{ [key: string]: never; }>;
+export type RoomMessagesQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  offset: Scalars['Int']['input'];
+  limit: Scalars['Int']['input'];
+}>;
 
 
-export type RoomsQuery = { __typename?: 'Query', rooms: Array<{ __typename?: 'Room', id: string, title: string, description?: string | null, messages: Array<(
+export type RoomMessagesQuery = { __typename?: 'Query', room: { __typename?: 'Room', id: string, earlier: Array<(
       { __typename?: 'Message' }
       & ListMessageFragment
-    )> }> };
+    )> } };
 
 export type RecentRoomsQueryVariables = Exact<{
   filter?: InputMaybe<RoomFilter>;
@@ -2047,18 +2023,6 @@ export type RecentRoomsQueryVariables = Exact<{
 export type RecentRoomsQuery = { __typename?: 'Query', rooms: Array<(
     { __typename?: 'Room' }
     & RecentRoomFragment
-  )> };
-
-export type GlobalSearchQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  noRooms: Scalars['Boolean']['input'];
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type GlobalSearchQuery = { __typename?: 'Query', rooms?: Array<(
-    { __typename?: 'Room' }
-    & ListRoomFragment
   )> };
 
 export type WatchMessagesSubscriptionVariables = Exact<{
@@ -2110,11 +2074,8 @@ export const ProviderFragmentDoc = gql`
     fragment Provider on Provider {
   id
   name
-  models {
-    id
-    modelId
-  }
   kind
+  modelCount
 }
     `;
 export const LlmModelFragmentDoc = gql`
@@ -2124,6 +2085,10 @@ export const LlmModelFragmentDoc = gql`
   llmString
   provider {
     ...Provider
+    models(pagination: {limit: 5}) {
+      id
+      modelId
+    }
   }
   features
   embedderFor {
@@ -2183,7 +2148,8 @@ export const ListProviderFragmentDoc = gql`
   id
   name
   kind
-  models {
+  modelCount
+  preview: models(pagination: {limit: 2}) {
     id
     modelId
   }
@@ -2261,7 +2227,8 @@ export const RoomFragmentDoc = gql`
       preferredUsername
     }
   }
-  messages {
+  messageCount
+  messages(ordering: [{createdAt: DESC}], pagination: {limit: 50}) {
     ...ListMessage
   }
   talkingAbout {
@@ -2270,11 +2237,21 @@ export const RoomFragmentDoc = gql`
   }
 }
     ${ListMessageFragmentDoc}`;
-export const ListRoomFragmentDoc = gql`
-    fragment ListRoom on Room {
+export const RoomCardFragmentDoc = gql`
+    fragment RoomCard on Room {
   id
   title
   description
+  messageCount
+  latest: messages(ordering: [{createdAt: DESC}], pagination: {limit: 1}) {
+    id
+    text
+    createdAt
+    attachedStructures {
+      identifier
+      object
+    }
+  }
 }
     `;
 export const RecentRoomFragmentDoc = gql`
@@ -2758,46 +2735,6 @@ export function useGetChromaCollectionLazyQuery(baseOptions?: ApolloReactHooks.L
 export type GetChromaCollectionQueryHookResult = ReturnType<typeof useGetChromaCollectionQuery>;
 export type GetChromaCollectionLazyQueryHookResult = ReturnType<typeof useGetChromaCollectionLazyQuery>;
 export type GetChromaCollectionQueryResult = Apollo.QueryResult<GetChromaCollectionQuery, GetChromaCollectionQueryVariables>;
-export const SearchChromaCollectionDocument = gql`
-    query SearchChromaCollection($search: String, $values: [ID!]) {
-  options: chromaCollections(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useSearchChromaCollectionQuery__
- *
- * To run a query within a React component, call `useSearchChromaCollectionQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchChromaCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchChromaCollectionQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchChromaCollectionQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchChromaCollectionQuery, SearchChromaCollectionQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchChromaCollectionQuery, SearchChromaCollectionQueryVariables>(SearchChromaCollectionDocument, options);
-      }
-export function useSearchChromaCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchChromaCollectionQuery, SearchChromaCollectionQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchChromaCollectionQuery, SearchChromaCollectionQueryVariables>(SearchChromaCollectionDocument, options);
-        }
-export type SearchChromaCollectionQueryHookResult = ReturnType<typeof useSearchChromaCollectionQuery>;
-export type SearchChromaCollectionLazyQueryHookResult = ReturnType<typeof useSearchChromaCollectionLazyQuery>;
-export type SearchChromaCollectionQueryResult = Apollo.QueryResult<SearchChromaCollectionQuery, SearchChromaCollectionQueryVariables>;
 export const ListChromaCollectionsDocument = gql`
     query ListChromaCollections($filter: ChromaCollectionFilter, $pagination: OffsetPaginationInput) {
   chromaCollections(filters: $filter, pagination: $pagination) {
@@ -2938,46 +2875,6 @@ export function useGetLlmModelLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetLlmModelQueryHookResult = ReturnType<typeof useGetLlmModelQuery>;
 export type GetLlmModelLazyQueryHookResult = ReturnType<typeof useGetLlmModelLazyQuery>;
 export type GetLlmModelQueryResult = Apollo.QueryResult<GetLlmModelQuery, GetLlmModelQueryVariables>;
-export const SearchLlmModelsDocument = gql`
-    query SearchLLMModels($search: String, $values: [ID!]) {
-  options: llmModels(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: id
-  }
-}
-    `;
-
-/**
- * __useSearchLlmModelsQuery__
- *
- * To run a query within a React component, call `useSearchLlmModelsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchLlmModelsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchLlmModelsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchLlmModelsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchLlmModelsQuery, SearchLlmModelsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchLlmModelsQuery, SearchLlmModelsQueryVariables>(SearchLlmModelsDocument, options);
-      }
-export function useSearchLlmModelsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchLlmModelsQuery, SearchLlmModelsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchLlmModelsQuery, SearchLlmModelsQueryVariables>(SearchLlmModelsDocument, options);
-        }
-export type SearchLlmModelsQueryHookResult = ReturnType<typeof useSearchLlmModelsQuery>;
-export type SearchLlmModelsLazyQueryHookResult = ReturnType<typeof useSearchLlmModelsLazyQuery>;
-export type SearchLlmModelsQueryResult = Apollo.QueryResult<SearchLlmModelsQuery, SearchLlmModelsQueryVariables>;
 export const ListLlModelsDocument = gql`
     query ListLLModels($filter: LLMModelFilter, $pagination: OffsetPaginationInput) {
   llmModels(filters: $filter, pagination: $pagination) {
@@ -3088,46 +2985,6 @@ export function useGetProviderLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetProviderQueryHookResult = ReturnType<typeof useGetProviderQuery>;
 export type GetProviderLazyQueryHookResult = ReturnType<typeof useGetProviderLazyQuery>;
 export type GetProviderQueryResult = Apollo.QueryResult<GetProviderQuery, GetProviderQueryVariables>;
-export const SearchProvidersDocument = gql`
-    query SearchProviders($search: String, $values: [ID!]) {
-  options: providers(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useSearchProvidersQuery__
- *
- * To run a query within a React component, call `useSearchProvidersQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchProvidersQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchProvidersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchProvidersQuery, SearchProvidersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchProvidersQuery, SearchProvidersQueryVariables>(SearchProvidersDocument, options);
-      }
-export function useSearchProvidersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchProvidersQuery, SearchProvidersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchProvidersQuery, SearchProvidersQueryVariables>(SearchProvidersDocument, options);
-        }
-export type SearchProvidersQueryHookResult = ReturnType<typeof useSearchProvidersQuery>;
-export type SearchProvidersLazyQueryHookResult = ReturnType<typeof useSearchProvidersLazyQuery>;
-export type SearchProvidersQueryResult = Apollo.QueryResult<SearchProvidersQuery, SearchProvidersQueryVariables>;
 export const ListProvidersDocument = gql`
     query ListProviders($filter: ProviderFilter, $pagination: OffsetPaginationInput) {
   providers(filters: $filter, pagination: $pagination) {
@@ -3199,54 +3056,13 @@ export function useGetRoomLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetRoomQueryHookResult = ReturnType<typeof useGetRoomQuery>;
 export type GetRoomLazyQueryHookResult = ReturnType<typeof useGetRoomLazyQuery>;
 export type GetRoomQueryResult = Apollo.QueryResult<GetRoomQuery, GetRoomQueryVariables>;
-export const SearchRoomsDocument = gql`
-    query SearchRooms($search: String, $values: [ID!]) {
-  options: rooms(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: title
-    description: description
-  }
-}
-    `;
-
-/**
- * __useSearchRoomsQuery__
- *
- * To run a query within a React component, call `useSearchRoomsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchRoomsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchRoomsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchRoomsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchRoomsQuery, SearchRoomsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchRoomsQuery, SearchRoomsQueryVariables>(SearchRoomsDocument, options);
-      }
-export function useSearchRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchRoomsQuery, SearchRoomsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchRoomsQuery, SearchRoomsQueryVariables>(SearchRoomsDocument, options);
-        }
-export type SearchRoomsQueryHookResult = ReturnType<typeof useSearchRoomsQuery>;
-export type SearchRoomsLazyQueryHookResult = ReturnType<typeof useSearchRoomsLazyQuery>;
-export type SearchRoomsQueryResult = Apollo.QueryResult<SearchRoomsQuery, SearchRoomsQueryVariables>;
 export const ListRoomsDocument = gql`
     query ListRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
   rooms(filters: $filter, pagination: $pagination) {
-    ...Room
+    ...RoomCard
   }
 }
-    ${RoomFragmentDoc}`;
+    ${RoomCardFragmentDoc}`;
 
 /**
  * __useListRoomsQuery__
@@ -3276,13 +3092,14 @@ export function useListRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListRoomsQueryHookResult = ReturnType<typeof useListRoomsQuery>;
 export type ListRoomsLazyQueryHookResult = ReturnType<typeof useListRoomsLazyQuery>;
 export type ListRoomsQueryResult = Apollo.QueryResult<ListRoomsQuery, ListRoomsQueryVariables>;
-export const RoomsDocument = gql`
-    query Rooms {
-  rooms(pagination: {limit: 10}) {
+export const RoomMessagesDocument = gql`
+    query RoomMessages($id: ID!, $offset: Int!, $limit: Int!) {
+  room(id: $id) {
     id
-    title
-    description
-    messages(pagination: {limit: 4}) {
+    earlier: messages(
+      ordering: [{createdAt: DESC}]
+      pagination: {offset: $offset, limit: $limit}
+    ) {
       ...ListMessage
     }
   }
@@ -3290,31 +3107,34 @@ export const RoomsDocument = gql`
     ${ListMessageFragmentDoc}`;
 
 /**
- * __useRoomsQuery__
+ * __useRoomMessagesQuery__
  *
- * To run a query within a React component, call `useRoomsQuery` and pass it any options that fit your needs.
- * When your component renders, `useRoomsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useRoomMessagesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRoomMessagesQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useRoomsQuery({
+ * const { data, loading, error } = useRoomMessagesQuery({
  *   variables: {
+ *      id: // value for 'id'
+ *      offset: // value for 'offset'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
-export function useRoomsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RoomsQuery, RoomsQueryVariables>) {
+export function useRoomMessagesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RoomMessagesQuery, RoomMessagesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<RoomsQuery, RoomsQueryVariables>(RoomsDocument, options);
+        return ApolloReactHooks.useQuery<RoomMessagesQuery, RoomMessagesQueryVariables>(RoomMessagesDocument, options);
       }
-export function useRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RoomsQuery, RoomsQueryVariables>) {
+export function useRoomMessagesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RoomMessagesQuery, RoomMessagesQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<RoomsQuery, RoomsQueryVariables>(RoomsDocument, options);
+          return ApolloReactHooks.useLazyQuery<RoomMessagesQuery, RoomMessagesQueryVariables>(RoomMessagesDocument, options);
         }
-export type RoomsQueryHookResult = ReturnType<typeof useRoomsQuery>;
-export type RoomsLazyQueryHookResult = ReturnType<typeof useRoomsLazyQuery>;
-export type RoomsQueryResult = Apollo.QueryResult<RoomsQuery, RoomsQueryVariables>;
+export type RoomMessagesQueryHookResult = ReturnType<typeof useRoomMessagesQuery>;
+export type RoomMessagesLazyQueryHookResult = ReturnType<typeof useRoomMessagesLazyQuery>;
+export type RoomMessagesQueryResult = Apollo.QueryResult<RoomMessagesQuery, RoomMessagesQueryVariables>;
 export const RecentRoomsDocument = gql`
     query RecentRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
   rooms(
@@ -3355,43 +3175,6 @@ export function useRecentRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type RecentRoomsQueryHookResult = ReturnType<typeof useRecentRoomsQuery>;
 export type RecentRoomsLazyQueryHookResult = ReturnType<typeof useRecentRoomsLazyQuery>;
 export type RecentRoomsQueryResult = Apollo.QueryResult<RecentRoomsQuery, RecentRoomsQueryVariables>;
-export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $noRooms: Boolean!, $pagination: OffsetPaginationInput) {
-  rooms: rooms(filters: {search: $search}, pagination: $pagination) @skip(if: $noRooms) {
-    ...ListRoom
-  }
-}
-    ${ListRoomFragmentDoc}`;
-
-/**
- * __useGlobalSearchQuery__
- *
- * To run a query within a React component, call `useGlobalSearchQuery` and pass it any options that fit your needs.
- * When your component renders, `useGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGlobalSearchQuery({
- *   variables: {
- *      search: // value for 'search'
- *      noRooms: // value for 'noRooms'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useGlobalSearchQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-      }
-export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-        }
-export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
-export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
-export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
 export const WatchMessagesDocument = gql`
     subscription WatchMessages($room: ID!, $agentId: ID!) {
   room(room: $room, agentId: $agentId, filterOwn: false) {

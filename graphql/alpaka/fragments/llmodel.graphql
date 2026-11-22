@@ -2,8 +2,13 @@ fragment LLMModel on LLMModel {
   id
   modelId
   llmString
+  # The provider, and a few of its other models.
   provider {
     ...Provider
+    models(pagination: { limit: 5 }) {
+      id
+      modelId
+    }
   }
   features
   embedderFor {

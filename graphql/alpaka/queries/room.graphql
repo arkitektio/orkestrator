@@ -3,29 +3,17 @@ query GetRoom($id: ID!) {
     ...Room
   }
 }
-query SearchRooms($search: String, $values: [ID!]) {
-  options: rooms(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: title
-    description: description
-  }
-}
-
 query ListRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
   rooms(filters: $filter, pagination: $pagination) {
-    ...Room
+    ...RoomCard
   }
 }
 
-query Rooms {
-  rooms(pagination: { limit: 10 }) {
+# An older page of a room's conversation, newest first: "Load earlier".
+query RoomMessages($id: ID!, $offset: Int!, $limit: Int!) {
+  room(id: $id) {
     id
-    title
-    description
-    messages(pagination: { limit: 4 }) {
+    earlier: messages(ordering: [{ createdAt: DESC }], pagination: { offset: $offset, limit: $limit }) {
       ...ListMessage
     }
   }

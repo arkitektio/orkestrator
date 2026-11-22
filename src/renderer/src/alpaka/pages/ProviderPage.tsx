@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AlpakaLLMModel, AlpakaProvider } from "@/core/linkers";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  useGetProviderQuery
+  useGetProviderQuery,
+  useListLlModelsQuery,
 } from "../api/graphql";
 import {
   getProviderKindDisplayName,
@@ -22,12 +23,16 @@ export const TPage = asDetailQueryRoute(
   ({ data, subscribeToMore: _subscribeToMore }) => {
     const provider = data.provider;
     const [page, setPage] = useState(0);
-    const pageCount = Math.max(1, Math.ceil(provider.models.length / MODELS_PER_PAGE));
+    const pageCount = Math.max(1, Math.ceil(provider.modelCount / MODELS_PER_PAGE));
     const currentPage = Math.min(page, pageCount - 1);
-    const visibleModels = useMemo(() => {
-      const offset = currentPage * MODELS_PER_PAGE;
-      return provider.models.slice(offset, offset + MODELS_PER_PAGE);
-    }, [currentPage, provider.models]);
+    // One page of the provider's models at a time, asked of the server.
+    const { data: modelPage } = useListLlModelsQuery({
+      variables: {
+        filter: { provider: provider.id },
+        pagination: { offset: currentPage * MODELS_PER_PAGE, limit: MODELS_PER_PAGE },
+      },
+    });
+    const visibleModels = modelPage?.llmModels ?? [];
 
     useEffect(() => {
       if (page !== currentPage) {
@@ -67,7 +72,7 @@ export const TPage = asDetailQueryRoute(
                   <div>
                     <h2 className="text-3xl font-semibold tracking-tight text-foreground">{provider.name}</h2>
                     <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                      Alpaka provider backing {provider.models.length} {provider.models.length === 1 ? "model" : "models"}.
+                      Alpaka provider backing {provider.modelCount} {provider.modelCount === 1 ? "model" : "models"}.
                     </p>
                   </div>
                 </div>
@@ -76,7 +81,7 @@ export const TPage = asDetailQueryRoute(
               <div className="grid min-w-[220px] gap-3 sm:grid-cols-2 md:grid-cols-1">
                 <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Models</div>
-                  <div className="mt-1 text-2xl font-semibold text-foreground">{provider.models.length}</div>
+                  <div className="mt-1 text-2xl font-semibold text-foreground">{provider.modelCount}</div>
                 </div>
                 <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Provider ID</div>
@@ -92,7 +97,7 @@ export const TPage = asDetailQueryRoute(
                 <CardTitle>Available Models</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {provider.models.length > 0 ? (
+                {provider.modelCount > 0 ? (
                   <>
                     <div className="grid gap-3 md:grid-cols-2">
                     {visibleModels.map((model) => (
@@ -159,8 +164,8 @@ export const TPage = asDetailQueryRoute(
                 <div>
                   <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Model Density</div>
                   <div className="mt-1 text-sm text-muted-foreground">
-                    {provider.models.length > 0
-                      ? `${provider.models.length} connected ${provider.models.length === 1 ? "model" : "models"}`
+                    {provider.modelCount > 0
+                      ? `${provider.modelCount} connected ${provider.modelCount === 1 ? "model" : "models"}`
                       : "No connected models"}
                   </div>
                 </div>

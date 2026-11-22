@@ -912,6 +912,9 @@ type Provider {
 
   """The kind of the provider"""
   kind: ProviderKind!
+
+  """How many models the provider offers"""
+  modelCount: Int!
   models(filters: LLMModelFilter, ordering: [LLMModelOrder!]! = [], pagination: OffsetPaginationInput): [LLMModel!]!
   name: String!
 }
@@ -1128,6 +1131,9 @@ type Room {
   When the room last saw a message, or when it was created if it has none. `RoomOrder.lastMessageAt` sorts by the same time
   """
   lastActivity: DateTime!
+
+  """How many messages the room holds"""
+  messageCount: Int!
   messages(filters: MessageFilter, ordering: [MessageOrder!]! = [], pagination: OffsetPaginationInput): [Message!]!
 
   """The organization this room belongs to"""

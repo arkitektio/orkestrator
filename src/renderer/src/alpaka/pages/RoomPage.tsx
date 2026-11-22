@@ -11,6 +11,7 @@ import {
   useGetRoomQuery,
 } from "../api/graphql";
 import { ALPAKA_HELP } from "../help";
+import { RoomHistoryProvider } from "../chat/roomHistory";
 
 
 export const RoomPage =  asDetailQueryRoute(
@@ -39,6 +40,7 @@ export const RoomPage =  asDetailQueryRoute(
             room: {
               ...prev.room,
               messages: prev.room.messages.concat([message]),
+              messageCount: prev.room.messageCount + 1,
             },
           };
         },
@@ -67,7 +69,9 @@ export const RoomPage =  asDetailQueryRoute(
         }
       >
         <div className="h-[calc(100vh)] min-h-0 flex flex-col overflow-hidden">
-          <ChatLayout navCollapsedSize={200} room={data.room} />
+          <RoomHistoryProvider room={data.room}>
+            <ChatLayout navCollapsedSize={200} room={data.room} />
+          </RoomHistoryProvider>
         </div>
       </AlpakaRoom.ModelPage>
     );
