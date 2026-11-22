@@ -7,7 +7,8 @@ import {
   useListBankAccountsQuery,
   useListBankConnectionsQuery,
   useListRecurringPaymentsQuery,
-  useMerchantCandidatesQuery,
+  useMerchantCandidatesCountQuery,
+  useReauthConnectionsQuery,
   useTransactionsCountQuery,
 } from "../api/graphql";
 import AccountCard from "../components/cards/AccountCard";
@@ -28,8 +29,9 @@ const Recent = () => {
   const uncategorized = useTransactionsCountQuery({
     variables: { filters: { uncategorized: true, isTransfer: false, dateFrom: firstOfMonth() } },
   });
-  const candidates = useMerchantCandidatesQuery();
-  const connections = useListBankConnectionsQuery({ variables: { pagination: { limit: 50 } } });
+  // Counted by the server, past any page.
+  const candidates = useMerchantCandidatesCountQuery();
+  const reauth = useReauthConnectionsQuery();
   const accounts = useListBankAccountsQuery({ variables: { pagination: { limit: 50 } } });
   const recurring = useListRecurringPaymentsQuery({
     variables: { filters: { status: RecurringStatus.Confirmed }, pagination: { limit: 5 } },
@@ -43,8 +45,8 @@ const Recent = () => {
     <>
       <AttentionChips
         uncategorized={uncategorized.data?.transactionsCount ?? 0}
-        discover={candidates.data?.merchantCandidates.length ?? 0}
-        reauth={(connections.data?.bankConnections ?? []).filter((c) => c.needsReauth).length}
+        discover={candidates.data?.merchantCandidatesCount ?? 0}
+        reauth={reauth.data?.bankConnections.length ?? 0}
       />
 
       {accountRows.length > 0 && (

@@ -15,7 +15,9 @@ import {
   useListBankAccountsQuery,
   useListBankConnectionsQuery,
   useListRecurringPaymentsQuery,
-  useMerchantCandidatesQuery,
+  useBalanceTotalsQuery,
+  useMerchantCandidatesCountQuery,
+  useReauthConnectionsQuery,
   useMerchantLocationsGeojsonQuery,
   useSpendingByCategoryQuery,
   useSpendingByMerchantQuery,
@@ -104,33 +106,34 @@ const Overview = () => {
   const spending = useSpendingByCategoryQuery({ variables: { dateFrom: monthStart } });
   const budgets = useBudgetStatusQuery();
   const merchants = useSpendingByMerchantQuery({ variables: { dateFrom: monthStart, limit: 12 } });
-  const connections = useListBankConnectionsQuery({ variables: { pagination: { limit: 50 } } });
-  const candidates = useMerchantCandidatesQuery();
+  // Counted and summed by the server, over every account and connection.
+  const balanceTotals = useBalanceTotalsQuery();
+  const reauth = useReauthConnectionsQuery();
+  const candidates = useMerchantCandidatesCountQuery();
   // Same variables as the map's own query, so the preview reuses this result.
   const places = useMerchantLocationsGeojsonQuery();
   const recurring = useListRecurringPaymentsQuery({
     variables: { filters: { status: RecurringStatus.Confirmed }, pagination: { limit: 5 } },
   });
 
-  // Balances summed per currency, cash apart from depots (whose balance is a
-  // market valuation); a household rarely has more than one currency.
+  // The server's balance totals (per account kind and currency) as cash apart
+  // from depots (whose balance is a market valuation); a household rarely has
+  // more than one currency.
   const totals = useMemo(() => {
     const sums = new Map<string, { label: string; currency: string; amount: number }>();
-    const accountsList = accounts.data?.bankAccounts ?? [];
-    const hasDepot = accountsList.some((account) => account.kind === AccountKind.Depot);
-    for (const account of accountsList) {
-      const balance = account.latestBalance;
-      if (!balance) continue;
-      const label = !hasDepot ? "Balance" : account.kind === AccountKind.Depot ? "Invested" : "Cash";
-      const key = `${label}|${balance.currency}`;
-      const row = sums.get(key) ?? { label, currency: balance.currency, amount: 0 };
-      row.amount += toNumber(balance.amount);
+    const byKind = balanceTotals.data?.balanceTotals ?? [];
+    const hasDepot = byKind.some((total) => total.kind === AccountKind.Depot);
+    for (const total of byKind) {
+      const label = !hasDepot ? "Balance" : total.kind === AccountKind.Depot ? "Invested" : "Cash";
+      const key = `${label}|${total.currency}`;
+      const row = sums.get(key) ?? { label, currency: total.currency, amount: 0 };
+      row.amount += toNumber(total.amount);
       sums.set(key, row);
     }
     const rows = [...sums.values()].sort((a, b) => a.label.localeCompare(b.label));
     const currencies = new Set(rows.map((row) => row.currency));
     return rows.map((row) => ({ ...row, label: currencies.size > 1 ? `${row.label} (${row.currency})` : row.label }));
-  }, [accounts.data]);
+  }, [balanceTotals.data]);
 
   const month = useMemo(() => {
     const buckets = thisMonth.data?.cashflow ?? [];
@@ -144,9 +147,11 @@ const Overview = () => {
   const hasSpending = (spending.data?.spendingByCategory ?? []).some((total) => toNumber(total.expense) > 0);
   const budgetRows = budgets.data?.budgetStatus ?? [];
   const uncategorizedCount = uncategorized.data?.transactionsCount ?? 0;
-  const discoverCount = candidates.data?.merchantCandidates.length ?? 0;
-  const reauthCount = (connections.data?.bankConnections ?? []).filter((c) => c.needsReauth).length;
-  const hasDepot = (accounts.data?.bankAccounts ?? []).some((account) => account.kind === AccountKind.Depot);
+  const discoverCount = candidates.data?.merchantCandidatesCount ?? 0;
+  const reauthCount = reauth.data?.bankConnections.length ?? 0;
+  const hasDepot =
+    (balanceTotals.data?.balanceTotals ?? []).some((total) => total.kind === AccountKind.Depot) ||
+    (accounts.data?.bankAccounts ?? []).some((account) => account.kind === AccountKind.Depot);
   const hasPlaces = (places.data?.merchantLocationsGeojson.features.length ?? 0) > 0;
   const topRows = (merchants.data?.spendingByMerchant ?? []).filter((row) => toNumber(row.expense) > 0);
 

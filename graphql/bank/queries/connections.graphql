@@ -25,3 +25,10 @@ query AuthSession($state: String!) {
     ...AuthSession
   }
 }
+
+# The connections whose login ran out, decided by the server: a home chip counts them.
+query ReauthConnections {
+  bankConnections(filters: { needsReauth: true }) {
+    id
+  }
+}

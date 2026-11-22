@@ -42,3 +42,14 @@ query Forecast($account: ID!, $horizonDays: Int!, $includeDetected: Boolean!, $i
     currency
   }
 }
+
+# Each account's newest balance, summed per account kind and currency by the
+# server, over every account (no page cap).
+query BalanceTotals($filters: BankAccountFilter) {
+  balanceTotals(filters: $filters) {
+    kind
+    currency
+    amount
+    accounts
+  }
+}

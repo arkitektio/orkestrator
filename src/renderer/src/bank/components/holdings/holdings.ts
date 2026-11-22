@@ -29,9 +29,42 @@ export type Position = {
   weight: number;
 };
 
+/** The server's positions, summed by ISIN and currency across depots (`mergedPositions`). */
+export type MergedPositionLike = {
+  isin: string;
+  name: string;
+  securityType?: string | null;
+  currency: string;
+  quantity: string;
+  price?: string | null;
+  fifoPrice?: string | null;
+  valuation: string;
+  unrealizedGain?: string | null;
+  weight: number;
+};
+
 /**
- * Sums positions by ISIN and currency, largest first. The same ETF in two
- * depots is one line; its gain is only known if every lot's is.
+ * The server's merged positions as display numbers. The sums, FIFO prices,
+ * gains and weights were worked out there in exact decimals.
+ */
+export const positionsOf = (merged: readonly MergedPositionLike[]): Position[] =>
+  merged.map((p) => ({
+    isin: p.isin,
+    name: p.name,
+    securityType: p.securityType ?? null,
+    currency: p.currency,
+    quantity: toNumber(p.quantity),
+    price: p.price != null ? toNumber(p.price) : null,
+    fifoPrice: p.fifoPrice != null ? toNumber(p.fifoPrice) : null,
+    valuation: toNumber(p.valuation),
+    gain: p.unrealizedGain != null ? toNumber(p.unrealizedGain) : null,
+    weight: p.weight,
+  }));
+
+/**
+ * One depot's holdings (as of any day) as positions, largest first. Across
+ * depots the server merges them (`positionsOf`); this is for one depot's own
+ * snapshot, whose lots of a security are summed the same way.
  */
 export const aggregatePositions = (holdings: readonly HoldingLike[]): Position[] => {
   const byKey = new Map<string, Position & { cost: number | null }>();

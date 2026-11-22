@@ -3,7 +3,8 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { BankAccount } from "@/bank/linkers";
 import { LineChart } from "lucide-react";
 import { useMemo } from "react";
-import { Provider, usePortfolioQuery } from "../api/graphql";
+import { Provider, useMergedPositionsQuery, usePortfolioQuery } from "../api/graphql";
+import { positionsOf } from "../components/holdings/holdings";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { PortfolioInsights } from "../components/insights/portfolio/PortfolioInsights";
 import { formatMoney } from "../format";
@@ -17,7 +18,12 @@ const PortfolioPage = () => {
   const { data } = usePortfolioQuery();
   // The query asks for depots only (`kind: DEPOT`).
   const depots = useMemo(() => data?.bankAccounts ?? [], [data]);
-  const holdings = useMemo(() => depots.flatMap((depot) => depot.currentHoldings), [depots]);
+  // A security held in several depots is merged by the server, exactly.
+  const merged = useMergedPositionsQuery();
+  const positions = useMemo(
+    () => positionsOf(merged.data?.portfolioInsights.mergedPositions ?? []),
+    [merged.data],
+  );
 
   return (
     <PageLayout
@@ -51,7 +57,7 @@ const PortfolioPage = () => {
       ) : (
         <div className="flex flex-col gap-8 p-6">
           <PortfolioInsights />
-          <PortfolioOverview holdings={holdings} />
+          <PortfolioOverview positions={positions} />
           {depots.length > 1 && (
             <section className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold text-muted-foreground">Depots</h2>

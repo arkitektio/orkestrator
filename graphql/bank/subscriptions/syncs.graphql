@@ -1,5 +1,6 @@
-subscription AccountSyncs {
-  accountSyncs {
+# Syncs of one account (`account`), or of every account of the organization.
+subscription AccountSyncs($account: ID) {
+  accountSyncs(account: $account) {
     accountId
     created
     updated

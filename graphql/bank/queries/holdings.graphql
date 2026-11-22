@@ -18,3 +18,24 @@ query Portfolio {
     }
   }
 }
+
+# Every depot's positions summed by ISIN and currency on the server, exactly
+# (decimals), largest first.
+query MergedPositions {
+  portfolioInsights {
+    mergedPositions {
+      isin
+      name
+      securityType
+      currency
+      depots
+      quantity
+      price
+      fifoPrice
+      costBasis
+      valuation
+      unrealizedGain
+      weight
+    }
+  }
+}

@@ -94,3 +94,8 @@ query GeocodeSearch($query: String!, $limit: Int! = 5) {
     osmId
   }
 }
+
+# How many merchant candidates are waiting, counted by the server (no page cap).
+query MerchantCandidatesCount($minCount: Int! = 2) {
+  merchantCandidatesCount(minCount: $minCount)
+}

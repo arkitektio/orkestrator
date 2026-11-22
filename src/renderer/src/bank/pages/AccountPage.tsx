@@ -28,6 +28,7 @@ import { AccountInsightsTab } from "../components/insights/tabs/AccountInsightsT
 import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { Money } from "../components/Money";
 import { daysAgo, formatDay, formatIban, isoDay } from "../format";
+import { aggregatePositions } from "../components/holdings/holdings";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { Input } from "@/core/ui/input";
 import { BANK_HELP } from "../help";
@@ -61,8 +62,8 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
   // A background sweep finished this account: pull the new rows in.
   const client = useBank();
   useAccountSyncsSubscription({
-    onData: ({ data: event }) => {
-      if (event.data?.accountSyncs.accountId !== account.id) return;
+    variables: { account: account.id },
+    onData: () => {
       void refetch();
       void history.refetch();
       void client.refetchQueries({ include: [ListTransactionsDocument] });
@@ -76,6 +77,7 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
     skip: !depot || !asOf,
   });
   const holdings = asOf ? pastHoldings.data?.holdings ?? [] : account.currentHoldings;
+  const positions = useMemo(() => aggregatePositions(holdings), [holdings]);
 
   const name = account.name || account.product || formatIban(account.iban) || "Account";
   const balance = account.latestBalance;
@@ -176,7 +178,7 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
                 </button>
               </div>
             )}
-            <PortfolioOverview holdings={holdings} />
+            <PortfolioOverview positions={positions} />
           </>
         )}
 

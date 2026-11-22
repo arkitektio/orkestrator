@@ -226,6 +226,21 @@ type BalanceSnapshot {
 }
 
 """
+The latest balances of the accounts of one kind, summed in one currency (a depot's is its market valuation).
+"""
+type BalanceTotal {
+  """How many accounts reported a balance."""
+  accounts: Int!
+
+  """
+  Σ of each account's newest balance, of the most authoritative type (`latestBalance`).
+  """
+  amount: Decimal!
+  currency: String!
+  kind: AccountKind!
+}
+
+"""
 An account. Keeps its history across relinks; fed by its syncers and by imports.
 """
 type BankAccount {
@@ -436,6 +451,7 @@ input BankConnectionFilter {
   NOT: BankConnectionFilter
   OR: BankConnectionFilter
   ids: [ID!]
+  needsReauth: Boolean
   provider: ID
 
   """
@@ -1991,6 +2007,45 @@ type MerchantTotal {
   net: Decimal!
 }
 
+"""
+One security across every depot that holds it, in one currency (the same ETF in two depots is one position).
+"""
+type MergedPosition {
+  """
+  Σ quantity × FIFO price; null when any lot reports no buy-in (e.g. transferred in).
+  """
+  costBasis: Decimal
+  currency: String!
+
+  """How many depots hold it."""
+  depots: Int!
+
+  """
+  costBasis / quantity: the quantity-weighted buy-in per unit; null with costBasis.
+  """
+  fifoPrice: Decimal
+  isin: String!
+  name: String!
+
+  """
+  The last quoted mid price per unit (of the largest holding that reports one).
+  """
+  price: Decimal
+
+  """Σ quantity over the depots."""
+  quantity: Decimal!
+  securityType: String
+
+  """valuation − costBasis; null with costBasis."""
+  unrealizedGain: Decimal
+
+  """Σ valuation over the depots."""
+  valuation: Decimal!
+
+  """Share of the portfolio's valuation in the same currency, 0..1."""
+  weight: Float!
+}
+
 """Money in and out in one currency; `expense` is positive."""
 type MoneyTotals {
   count: Int!
@@ -2299,6 +2354,13 @@ type PortfolioInsights {
   """Σ quantity × FIFO price of the current positions."""
   costBasis: [CurrencyTotal!]!
   income: [InvestmentIncome!]!
+
+  """
+  The positions summed by ISIN and currency across depots, largest first. Exact (decimal) arithmetic.
+  """
+  mergedPositions: [MergedPosition!]!
+
+  """Each depot's positions on its latest day, one per depot and ISIN."""
   positions: [HoldingSnapshot!]!
   unrealizedGain: [CurrencyTotal!]!
   valuation: [CurrencyTotal!]!
@@ -2438,6 +2500,11 @@ type Query {
   """An account's end-of-day balance over a range."""
   balanceHistory(account: ID!, dateFrom: Date!, dateTo: Date = null): [BalancePoint!]!
 
+  """
+  The latest balance of every account (or the filtered ones), summed per account kind and currency.
+  """
+  balanceTotals(filters: BankAccountFilter = null): [BalanceTotal!]!
+
   """A bank account by id."""
   bankAccount(id: ID!): BankAccount!
 
@@ -2506,6 +2573,11 @@ type Query {
 
   """Recurring counterparties without a merchant."""
   merchantCandidates(limit: Int! = 20, minCount: Int! = 2): [MerchantCandidate!]!
+
+  """
+  How many recurring counterparties have no merchant (all of them, past `merchantCandidates`' limit).
+  """
+  merchantCandidatesCount(minCount: Int! = 2): Int!
 
   """Stats for one merchant (by id or key)."""
   merchantInsights(compareTo: Comparison! = PREVIOUS_PERIOD, merchant: MerchantRef!, window: StatsWindowInput = null): MerchantInsights!
@@ -2948,8 +3020,15 @@ input StatsWindowInput {
 }
 
 type Subscription {
-  """Events whenever one of the organization's accounts finished syncing."""
-  accountSyncs: AccountSyncEvent!
+  """
+  Events whenever one of the organization's accounts (or `account`) finished syncing.
+  """
+  accountSyncs(account: ID = null): AccountSyncEvent!
+
+  """
+  A login as it is now, then whenever it changes, until it is no longer PENDING. Only its starter may watch it.
+  """
+  authSession(state: String!): AuthSession!
 }
 
 """Why a category was suggested."""

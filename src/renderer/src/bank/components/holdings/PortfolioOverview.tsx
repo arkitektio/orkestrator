@@ -1,7 +1,7 @@
 import { cn } from "@/core/util/utils";
 import { useMemo } from "react";
 import { formatMoney } from "../../format";
-import { allocationByType, HoldingLike, aggregatePositions, summarize } from "./holdings";
+import { allocationByType, Position, summarize } from "./holdings";
 import { Gain, HoldingsTable } from "./HoldingsTable";
 
 const TYPE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
@@ -36,13 +36,12 @@ const Allocation = ({ rows, currency }: { rows: ReturnType<typeof allocationByTy
  * by security type, and every position.
  */
 export const PortfolioOverview = ({
-  holdings,
+  positions,
   className,
 }: {
-  holdings: readonly HoldingLike[];
+  positions: readonly Position[];
   className?: string;
 }) => {
-  const positions = useMemo(() => aggregatePositions(holdings), [holdings]);
   const summaries = useMemo(() => summarize(positions), [positions]);
 
   return (

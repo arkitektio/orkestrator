@@ -1,7 +1,7 @@
 import { Badge } from "@/core/ui/badge";
 import { cn } from "@/core/util/utils";
 import { NavLink, useLocation } from "react-router-dom";
-import { useMerchantCandidatesQuery } from "../../api/graphql";
+import { useMerchantCandidatesCountQuery } from "../../api/graphql";
 
 const TABS = [
   { to: "/bank/merchants", label: "Map", end: true, view: "map" },
@@ -18,8 +18,8 @@ const TABS = [
  */
 export const MerchantSectionNav = ({ className }: { className?: string }) => {
   const location = useLocation();
-  const { data } = useMerchantCandidatesQuery({ fetchPolicy: "cache-first" });
-  const waiting = data?.merchantCandidates.length ?? 0;
+  const { data } = useMerchantCandidatesCountQuery({ fetchPolicy: "cache-first" });
+  const waiting = data?.merchantCandidatesCount ?? 0;
   const listView = new URLSearchParams(location.search).get("view") === "list";
 
   return (

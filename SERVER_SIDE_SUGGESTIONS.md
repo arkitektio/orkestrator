@@ -240,16 +240,6 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ## bank
 
-### Counts and totals (correctness)
-- **Add:** `merchantCandidatesCount`, `BankConnectionFilter.needsReauth` (or a count), and a balance-total aggregate per currency.
-- **Workaround:**
-  - `bank/pages/HomePage.tsx` and `components/merchants/MerchantSectionNav.tsx` count candidates as `list.length`, which is capped at the default 20.
-  - The re-auth count comes from the first 50 connections.
-  - Cash and depot balances are summed over the first 50 accounts.
-
-### Merged positions by ISIN (cosmetic, precision)
-- **Add:** an aggregated `positions` grouped by ISIN on `PortfolioInsights`.
-- **Workaround:** `bank/components/holdings/holdings.ts` merges per-depot snapshots by ISIN and recomputes gain, FIFO and weights in floating point.
-
-### `accountSyncs(account: ID)` (perf, minor)
-- **Workaround:** `bank/pages/AccountPage.tsx` receives every account's sync events and filters by account.
+### Holdings of one depot on a past day (cosmetic, precision)
+- **Add:** `mergedPositions` for one depot as of a day (`portfolioInsights(accounts:, asOf:)`), or the same fields on `holdings(asOf:)`.
+- **Workaround:** the portfolio uses the server's `mergedPositions`. `bank/pages/AccountPage.tsx` still sums one depot's snapshot (today's or a past day's) with `components/holdings/holdings.ts`, in floating point.

@@ -215,6 +215,17 @@ export type BalanceSnapshot = {
   id: Scalars['ID']['output'];
 };
 
+/** The latest balances of the accounts of one kind, summed in one currency (a depot's is its market valuation). */
+export type BalanceTotal = {
+  __typename?: 'BalanceTotal';
+  /** How many accounts reported a balance. */
+  accounts: Scalars['Int']['output'];
+  /** Σ of each account's newest balance, of the most authoritative type (`latestBalance`). */
+  amount: Scalars['Decimal']['output'];
+  currency: Scalars['String']['output'];
+  kind: AccountKind;
+};
+
 /** An account. Keeps its history across relinks; fed by its syncers and by imports. */
 export type BankAccount = {
   __typename?: 'BankAccount';
@@ -361,6 +372,7 @@ export type BankConnectionFilter = {
   NOT?: InputMaybe<BankConnectionFilter>;
   OR?: InputMaybe<BankConnectionFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  needsReauth?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
@@ -1618,6 +1630,31 @@ export type MerchantTotal = {
   net: Scalars['Decimal']['output'];
 };
 
+/** One security across every depot that holds it, in one currency (the same ETF in two depots is one position). */
+export type MergedPosition = {
+  __typename?: 'MergedPosition';
+  /** Σ quantity × FIFO price; null when any lot reports no buy-in (e.g. transferred in). */
+  costBasis?: Maybe<Scalars['Decimal']['output']>;
+  currency: Scalars['String']['output'];
+  /** How many depots hold it. */
+  depots: Scalars['Int']['output'];
+  /** costBasis / quantity: the quantity-weighted buy-in per unit; null with costBasis. */
+  fifoPrice?: Maybe<Scalars['Decimal']['output']>;
+  isin: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  /** The last quoted mid price per unit (of the largest holding that reports one). */
+  price?: Maybe<Scalars['Decimal']['output']>;
+  /** Σ quantity over the depots. */
+  quantity: Scalars['Decimal']['output'];
+  securityType?: Maybe<Scalars['String']['output']>;
+  /** valuation − costBasis; null with costBasis. */
+  unrealizedGain?: Maybe<Scalars['Decimal']['output']>;
+  /** Σ valuation over the depots. */
+  valuation: Scalars['Decimal']['output'];
+  /** Share of the portfolio's valuation in the same currency, 0..1. */
+  weight: Scalars['Float']['output'];
+};
+
 /** Money in and out in one currency; `expense` is positive. */
 export type MoneyTotals = {
   __typename?: 'MoneyTotals';
@@ -2118,6 +2155,9 @@ export type PortfolioInsights = {
   /** Σ quantity × FIFO price of the current positions. */
   costBasis: Array<CurrencyTotal>;
   income: Array<InvestmentIncome>;
+  /** The positions summed by ISIN and currency across depots, largest first. Exact (decimal) arithmetic. */
+  mergedPositions: Array<MergedPosition>;
+  /** Each depot's positions on its latest day, one per depot and ISIN. */
   positions: Array<HoldingSnapshot>;
   unrealizedGain: Array<CurrencyTotal>;
   valuation: Array<CurrencyTotal>;
@@ -2239,6 +2279,8 @@ export type Query = {
   authSession: AuthSession;
   /** An account's end-of-day balance over a range. */
   balanceHistory: Array<BalancePoint>;
+  /** The latest balance of every account (or the filtered ones), summed per account kind and currency. */
+  balanceTotals: Array<BalanceTotal>;
   /** A bank account by id. */
   bankAccount: BankAccount;
   /** The organization's bank accounts. */
@@ -2285,6 +2327,8 @@ export type Query = {
   merchant: Merchant;
   /** Recurring counterparties without a merchant. */
   merchantCandidates: Array<MerchantCandidate>;
+  /** How many recurring counterparties have no merchant (all of them, past `merchantCandidates`' limit). */
+  merchantCandidatesCount: Scalars['Int']['output'];
   /** Stats for one merchant (by id or key). */
   merchantInsights: MerchantInsights;
   /** A merchant location by id. */
@@ -2368,6 +2412,11 @@ export type QueryBalanceHistoryArgs = {
   account: Scalars['ID']['input'];
   dateFrom: Scalars['Date']['input'];
   dateTo?: InputMaybe<Scalars['Date']['input']>;
+};
+
+
+export type QueryBalanceTotalsArgs = {
+  filters?: InputMaybe<BankAccountFilter>;
 };
 
 
@@ -2506,6 +2555,11 @@ export type QueryMerchantArgs = {
 
 export type QueryMerchantCandidatesArgs = {
   limit?: Scalars['Int']['input'];
+  minCount?: Scalars['Int']['input'];
+};
+
+
+export type QueryMerchantCandidatesCountArgs = {
   minCount?: Scalars['Int']['input'];
 };
 
@@ -2956,8 +3010,20 @@ export type StatsWindowInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  /** Events whenever one of the organization's accounts finished syncing. */
+  /** Events whenever one of the organization's accounts (or `account`) finished syncing. */
   accountSyncs: AccountSyncEvent;
+  /** A login as it is now, then whenever it changes, until it is no longer PENDING. Only its starter may watch it. */
+  authSession: AuthSession;
+};
+
+
+export type SubscriptionAccountSyncsArgs = {
+  account?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type SubscriptionAuthSessionArgs = {
+  state: Scalars['String']['input'];
 };
 
 /** Why a category was suggested. */
@@ -4201,6 +4267,13 @@ export type ForecastQueryVariables = Exact<{
 
 export type ForecastQuery = { __typename?: 'Query', forecast: Array<{ __typename?: 'ForecastPoint', date: string, amount: string, currency: string }> };
 
+export type BalanceTotalsQueryVariables = Exact<{
+  filters?: InputMaybe<BankAccountFilter>;
+}>;
+
+
+export type BalanceTotalsQuery = { __typename?: 'Query', balanceTotals: Array<{ __typename?: 'BalanceTotal', kind: AccountKind, currency: string, amount: string, accounts: number }> };
+
 export type ListBudgetsQueryVariables = Exact<{
   filters?: InputMaybe<BudgetFilter>;
   ordering?: Array<BudgetOrder> | BudgetOrder;
@@ -4334,6 +4407,11 @@ export type AuthSessionQuery = { __typename?: 'Query', authSession: (
     & AuthSessionFragment
   ) };
 
+export type ReauthConnectionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ReauthConnectionsQuery = { __typename?: 'Query', bankConnections: Array<{ __typename?: 'BankConnection', id: string }> };
+
 export type HoldingsQueryVariables = Exact<{
   account: Scalars['ID']['input'];
   date?: InputMaybe<Scalars['Date']['input']>;
@@ -4355,6 +4433,11 @@ export type PortfolioQuery = { __typename?: 'Query', bankAccounts: Array<{ __typ
       { __typename?: 'HoldingSnapshot' }
       & HoldingFragment
     )> }> };
+
+export type MergedPositionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MergedPositionsQuery = { __typename?: 'Query', portfolioInsights: { __typename?: 'PortfolioInsights', mergedPositions: Array<{ __typename?: 'MergedPosition', isin: string, name: string, securityType?: string | null, currency: string, depots: number, quantity: string, price?: string | null, fifoPrice?: string | null, costBasis?: string | null, valuation: string, unrealizedGain?: string | null, weight: number }> } };
 
 export type PeriodOverviewQueryVariables = Exact<{
   window?: InputMaybe<StatsWindowInput>;
@@ -4577,6 +4660,13 @@ export type GeocodeSearchQueryVariables = Exact<{
 
 export type GeocodeSearchQuery = { __typename?: 'Query', geocodeSearch: Array<{ __typename?: 'GeocodeResult', label: string, street?: string | null, postalCode?: string | null, city?: string | null, region?: string | null, country?: string | null, latitude: string, longitude: string, osmId?: string | null }> };
 
+export type MerchantCandidatesCountQueryVariables = Exact<{
+  minCount?: Scalars['Int']['input'];
+}>;
+
+
+export type MerchantCandidatesCountQuery = { __typename?: 'Query', merchantCandidatesCount: number };
+
 export type BankPaletteSearchQueryVariables = Exact<{
   search: Scalars['String']['input'];
   limit: Scalars['Int']['input'];
@@ -4721,7 +4811,19 @@ export type TransactionSuggestionsQuery = { __typename?: 'Query', transaction: {
       & CategorySuggestionFragment
     )> } };
 
-export type AccountSyncsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type WatchAuthSessionSubscriptionVariables = Exact<{
+  state: Scalars['String']['input'];
+}>;
+
+
+export type WatchAuthSessionSubscription = { __typename?: 'Subscription', authSession: (
+    { __typename?: 'AuthSession' }
+    & AuthSessionFragment
+  ) };
+
+export type AccountSyncsSubscriptionVariables = Exact<{
+  account?: InputMaybe<Scalars['ID']['input']>;
+}>;
 
 
 export type AccountSyncsSubscription = { __typename?: 'Subscription', accountSyncs: { __typename?: 'AccountSyncEvent', accountId: string, created: number, updated: number, pendingReplaced: number } };
@@ -7414,6 +7516,44 @@ export function useForecastLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ForecastQueryHookResult = ReturnType<typeof useForecastQuery>;
 export type ForecastLazyQueryHookResult = ReturnType<typeof useForecastLazyQuery>;
 export type ForecastQueryResult = Apollo.QueryResult<ForecastQuery, ForecastQueryVariables>;
+export const BalanceTotalsDocument = gql`
+    query BalanceTotals($filters: BankAccountFilter) {
+  balanceTotals(filters: $filters) {
+    kind
+    currency
+    amount
+    accounts
+  }
+}
+    `;
+
+/**
+ * __useBalanceTotalsQuery__
+ *
+ * To run a query within a React component, call `useBalanceTotalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBalanceTotalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBalanceTotalsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useBalanceTotalsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BalanceTotalsQuery, BalanceTotalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BalanceTotalsQuery, BalanceTotalsQueryVariables>(BalanceTotalsDocument, options);
+      }
+export function useBalanceTotalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BalanceTotalsQuery, BalanceTotalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BalanceTotalsQuery, BalanceTotalsQueryVariables>(BalanceTotalsDocument, options);
+        }
+export type BalanceTotalsQueryHookResult = ReturnType<typeof useBalanceTotalsQuery>;
+export type BalanceTotalsLazyQueryHookResult = ReturnType<typeof useBalanceTotalsLazyQuery>;
+export type BalanceTotalsQueryResult = Apollo.QueryResult<BalanceTotalsQuery, BalanceTotalsQueryVariables>;
 export const ListBudgetsDocument = gql`
     query ListBudgets($filters: BudgetFilter, $ordering: [BudgetOrder!]! = [{startMonth: DESC}], $pagination: OffsetPaginationInput) {
   budgets(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -7890,6 +8030,40 @@ export function useAuthSessionLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type AuthSessionQueryHookResult = ReturnType<typeof useAuthSessionQuery>;
 export type AuthSessionLazyQueryHookResult = ReturnType<typeof useAuthSessionLazyQuery>;
 export type AuthSessionQueryResult = Apollo.QueryResult<AuthSessionQuery, AuthSessionQueryVariables>;
+export const ReauthConnectionsDocument = gql`
+    query ReauthConnections {
+  bankConnections(filters: {needsReauth: true}) {
+    id
+  }
+}
+    `;
+
+/**
+ * __useReauthConnectionsQuery__
+ *
+ * To run a query within a React component, call `useReauthConnectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useReauthConnectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useReauthConnectionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useReauthConnectionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>(ReauthConnectionsDocument, options);
+      }
+export function useReauthConnectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>(ReauthConnectionsDocument, options);
+        }
+export type ReauthConnectionsQueryHookResult = ReturnType<typeof useReauthConnectionsQuery>;
+export type ReauthConnectionsLazyQueryHookResult = ReturnType<typeof useReauthConnectionsLazyQuery>;
+export type ReauthConnectionsQueryResult = Apollo.QueryResult<ReauthConnectionsQuery, ReauthConnectionsQueryVariables>;
 export const HoldingsDocument = gql`
     query Holdings($account: ID!, $date: Date) {
   holdings(account: $account, date: $date) {
@@ -7974,6 +8148,53 @@ export function usePortfolioLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type PortfolioQueryHookResult = ReturnType<typeof usePortfolioQuery>;
 export type PortfolioLazyQueryHookResult = ReturnType<typeof usePortfolioLazyQuery>;
 export type PortfolioQueryResult = Apollo.QueryResult<PortfolioQuery, PortfolioQueryVariables>;
+export const MergedPositionsDocument = gql`
+    query MergedPositions {
+  portfolioInsights {
+    mergedPositions {
+      isin
+      name
+      securityType
+      currency
+      depots
+      quantity
+      price
+      fifoPrice
+      costBasis
+      valuation
+      unrealizedGain
+      weight
+    }
+  }
+}
+    `;
+
+/**
+ * __useMergedPositionsQuery__
+ *
+ * To run a query within a React component, call `useMergedPositionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMergedPositionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMergedPositionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMergedPositionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MergedPositionsQuery, MergedPositionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MergedPositionsQuery, MergedPositionsQueryVariables>(MergedPositionsDocument, options);
+      }
+export function useMergedPositionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MergedPositionsQuery, MergedPositionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MergedPositionsQuery, MergedPositionsQueryVariables>(MergedPositionsDocument, options);
+        }
+export type MergedPositionsQueryHookResult = ReturnType<typeof useMergedPositionsQuery>;
+export type MergedPositionsLazyQueryHookResult = ReturnType<typeof useMergedPositionsLazyQuery>;
+export type MergedPositionsQueryResult = Apollo.QueryResult<MergedPositionsQuery, MergedPositionsQueryVariables>;
 export const PeriodOverviewDocument = gql`
     query PeriodOverview($window: StatsWindowInput, $compareTo: Comparison! = PREVIOUS_PERIOD, $limit: Int! = 10) {
   periodOverview(window: $window, compareTo: $compareTo, limit: $limit) {
@@ -8748,6 +8969,39 @@ export function useGeocodeSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GeocodeSearchQueryHookResult = ReturnType<typeof useGeocodeSearchQuery>;
 export type GeocodeSearchLazyQueryHookResult = ReturnType<typeof useGeocodeSearchLazyQuery>;
 export type GeocodeSearchQueryResult = Apollo.QueryResult<GeocodeSearchQuery, GeocodeSearchQueryVariables>;
+export const MerchantCandidatesCountDocument = gql`
+    query MerchantCandidatesCount($minCount: Int! = 2) {
+  merchantCandidatesCount(minCount: $minCount)
+}
+    `;
+
+/**
+ * __useMerchantCandidatesCountQuery__
+ *
+ * To run a query within a React component, call `useMerchantCandidatesCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMerchantCandidatesCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMerchantCandidatesCountQuery({
+ *   variables: {
+ *      minCount: // value for 'minCount'
+ *   },
+ * });
+ */
+export function useMerchantCandidatesCountQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MerchantCandidatesCountQuery, MerchantCandidatesCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MerchantCandidatesCountQuery, MerchantCandidatesCountQueryVariables>(MerchantCandidatesCountDocument, options);
+      }
+export function useMerchantCandidatesCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MerchantCandidatesCountQuery, MerchantCandidatesCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MerchantCandidatesCountQuery, MerchantCandidatesCountQueryVariables>(MerchantCandidatesCountDocument, options);
+        }
+export type MerchantCandidatesCountQueryHookResult = ReturnType<typeof useMerchantCandidatesCountQuery>;
+export type MerchantCandidatesCountLazyQueryHookResult = ReturnType<typeof useMerchantCandidatesCountLazyQuery>;
+export type MerchantCandidatesCountQueryResult = Apollo.QueryResult<MerchantCandidatesCountQuery, MerchantCandidatesCountQueryVariables>;
 export const BankPaletteSearchDocument = gql`
     query BankPaletteSearch($search: String!, $limit: Int!) {
   transactions(filters: {search: $search}, pagination: {limit: $limit}) {
@@ -9271,9 +9525,39 @@ export function useTransactionSuggestionsLazyQuery(baseOptions?: ApolloReactHook
 export type TransactionSuggestionsQueryHookResult = ReturnType<typeof useTransactionSuggestionsQuery>;
 export type TransactionSuggestionsLazyQueryHookResult = ReturnType<typeof useTransactionSuggestionsLazyQuery>;
 export type TransactionSuggestionsQueryResult = Apollo.QueryResult<TransactionSuggestionsQuery, TransactionSuggestionsQueryVariables>;
+export const WatchAuthSessionDocument = gql`
+    subscription WatchAuthSession($state: String!) {
+  authSession(state: $state) {
+    ...AuthSession
+  }
+}
+    ${AuthSessionFragmentDoc}`;
+
+/**
+ * __useWatchAuthSessionSubscription__
+ *
+ * To run a query within a React component, call `useWatchAuthSessionSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchAuthSessionSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchAuthSessionSubscription({
+ *   variables: {
+ *      state: // value for 'state'
+ *   },
+ * });
+ */
+export function useWatchAuthSessionSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchAuthSessionSubscription, WatchAuthSessionSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchAuthSessionSubscription, WatchAuthSessionSubscriptionVariables>(WatchAuthSessionDocument, options);
+      }
+export type WatchAuthSessionSubscriptionHookResult = ReturnType<typeof useWatchAuthSessionSubscription>;
+export type WatchAuthSessionSubscriptionResult = Apollo.SubscriptionResult<WatchAuthSessionSubscription>;
 export const AccountSyncsDocument = gql`
-    subscription AccountSyncs {
-  accountSyncs {
+    subscription AccountSyncs($account: ID) {
+  accountSyncs(account: $account) {
     accountId
     created
     updated
@@ -9294,6 +9578,7 @@ export const AccountSyncsDocument = gql`
  * @example
  * const { data, loading, error } = useAccountSyncsSubscription({
  *   variables: {
+ *      account: // value for 'account'
  *   },
  * });
  */

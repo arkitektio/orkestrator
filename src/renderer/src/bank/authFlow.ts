@@ -5,6 +5,7 @@ import {
   CompleteAuthDocument,
   ListBankAccountsDocument,
   ListBankConnectionsDocument,
+  WatchAuthSessionDocument,
 } from "./api/graphql";
 import { toastText } from "./errors";
 
@@ -14,6 +15,11 @@ export const BANK_AUTH_FLOW = contractAuthFlow({
   title: "Bank login",
   restartDialog: "banklink",
   describeError: toastText,
-  documents: { complete: CompleteAuthDocument, read: AuthSessionDocument, cancel: CancelAuthDocument },
+  documents: {
+    complete: CompleteAuthDocument,
+    read: AuthSessionDocument,
+    cancel: CancelAuthDocument,
+    watch: WatchAuthSessionDocument,
+  },
   refetchOnDone: [ListBankConnectionsDocument, ListBankAccountsDocument],
 });
