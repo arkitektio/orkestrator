@@ -21,7 +21,7 @@ import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
  * A blok an app provides is materialized by its agents only, so a fork of it
  * is made first; it stays in the dialog and is materialized next.
  */
-const ForkStep = (props: { blok: BlokFragment; onForked: (fork: BlokFragment) => void }) => {
+const ForkStep = (props: { blok: BlokFragment; title: string; onForked: (fork: BlokFragment) => void }) => {
   const { closeDialog } = useDialog();
   const [name, setName] = useState(`${props.blok.name} copy`);
   const [forkBlok] = useForkBlokMutation({ refetchQueries: ["ListBloks"] });
@@ -44,16 +44,16 @@ const ForkStep = (props: { blok: BlokFragment; onForked: (fork: BlokFragment) =>
       }}
     >
       <DialogHeader>
-        <DialogTitle>Rematerialize {props.blok.name}</DialogTitle>
+        <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>
-          Its app's agents keep this blok and materialize it themselves. Fork it into a custom
-          blok first; the fork is then materialized with the same agents.
+          Its app's agents keep this template and change it with their registrations. Fork it into a
+          template of your own first; a blok is then made of the fork, on the same agents.
         </DialogDescription>
       </DialogHeader>
 
       <Input
         value={name}
-        aria-label="Name of the fork"
+        aria-label="Name of your template"
         autoFocus
         onChange={(event) => setName(event.target.value)}
       />
@@ -73,6 +73,8 @@ const MaterializeStep = (props: {
   materializedBlok: MaterializedBlokFragment;
   blok: BlokFragment;
   forked: boolean;
+  title: string;
+  then?: "open" | "edit";
 }) => {
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
@@ -82,23 +84,28 @@ const MaterializeStep = (props: {
   );
 
   return (
-    <div className="flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>Rematerialize {props.blok.name}</DialogTitle>
+        <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>
           {props.forked ? "Forked. " : ""}
           {props.blok.dependencies.length > 0
-            ? "The agents it was bound to are filled in; change any, then materialize it."
-            : "It is bound to no agent, so it is ready to materialize."}
+            ? "The agents it runs on are filled in; change any, then install it."
+            : "It runs on no agent, so it is ready to install."}{" "}
+          {props.materializedBlok.name || props.materializedBlok.blok.name} stays as it is.
         </DialogDescription>
       </DialogHeader>
       <MaterializeBlokForm
         blokId={props.blok.id}
+        defaultName={props.materializedBlok.name || props.blok.name}
         dependencies={props.blok.dependencies}
         prefilledMappings={prefilledMappings}
+        submitLabel={props.then === "edit" ? "Install and edit" : "Install"}
+        onCancel={closeDialog}
         onMaterialized={(materialized) => {
           closeDialog();
-          navigate(RekuestMaterializedBlok.linkBuilder(materialized.id));
+          const page = RekuestMaterializedBlok.linkBuilder(materialized.id);
+          navigate(props.then === "edit" ? `${page}/edit` : page);
         }}
       />
     </div>
@@ -106,10 +113,12 @@ const MaterializeStep = (props: {
 };
 
 /**
- * A new materialization of the blok a materialized blok was made from, bound
- * to the same agents to start with. The one it starts from stays as it is.
+ * A new blok of the template a blok was made from, on the same agents to
+ * start with. The one it starts from stays as it is. With `then: "edit"` it
+ * is how a blok an app provides is made your own to edit: forked, installed
+ * again, and opened in the editor.
  */
-export const RematerializeBlokDialog = (props: { id: string }) => {
+export const RematerializeBlokDialog = (props: { id: string; then?: "open" | "edit" }) => {
   const { data, error, refetch } = useMaterializedBlokQuery({ variables: { id: props.id } });
   const [fork, setFork] = useState<BlokFragment | null>(null);
 
@@ -118,7 +127,11 @@ export const RematerializeBlokDialog = (props: { id: string }) => {
   if (!materializedBlok) return <Loader2 className="m-6 size-5 animate-spin text-muted-foreground" />;
 
   const blok = fork ?? materializedBlok.blok;
-  if (blok.provided) return <ForkStep blok={blok} onForked={setFork} />;
+  const name = materializedBlok.name || materializedBlok.blok.name;
+  const title = props.then === "edit" ? `Make ${name} your own` : `Install ${name} again`;
+  if (blok.provided) return <ForkStep blok={blok} title={title} onForked={setFork} />;
 
-  return <MaterializeStep materializedBlok={materializedBlok} blok={blok} forked={fork !== null} />;
+  return (
+    <MaterializeStep materializedBlok={materializedBlok} blok={blok} forked={fork !== null} title={title} then={props.then} />
+  );
 };

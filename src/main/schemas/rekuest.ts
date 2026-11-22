@@ -9087,7 +9087,7 @@ export type MemoryShelveQuery = { __typename?: 'Query', memoryShelve: { __typena
 export type PinnedQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PinnedQuery = { __typename?: 'Query', agents: Array<{ __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, supervisor?: string | null, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null }>, bloks: Array<{ __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null }>, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> };
+export type PinnedQuery = { __typename?: 'Query', agents: Array<{ __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, supervisor?: string | null, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null }>, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> };
 
 export type ProtocolOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -14398,15 +14398,11 @@ export const PinnedDocument = gql`
   agents(filters: {pinned: true}) {
     ...ListAgent
   }
-  bloks(filters: {pinned: true}) {
-    ...ListBlok
-  }
   materializedBloks(filters: {pinned: true}) {
     ...ListMaterializedBlok
   }
 }
     ${ListAgentFragmentDoc}
-${ListBlokFragmentDoc}
 ${ListMaterializedBlokFragmentDoc}`;
 export const ProtocolOptionsDocument = gql`
     query ProtocolOptions($search: String, $values: [ID!]) {

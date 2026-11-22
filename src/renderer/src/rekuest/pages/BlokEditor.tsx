@@ -15,7 +15,7 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { SlotSections, useHasSlotSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { RekuestBlok } from "@/core/linkers";
+import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 import { useTheme } from "@/core/settings/theme/ThemeProvider";
 import { Button } from "@/core/ui/button";
 import { MonacoGate } from "@/core/ui/code/monaco";
@@ -30,11 +30,13 @@ import { Textarea } from "@/core/ui/textarea";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { Editor } from "@monaco-editor/react";
-import { Code, Columns2, Download, Eye, GitFork } from "lucide-react";
+import { Code, Columns2, Download, Eye, GitFork, History, Layers } from "lucide-react";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
+import { reportErrorAs } from "@/core/notify";
 import {
   ArgPortFragment,
   ComponentContext,
@@ -43,6 +45,8 @@ import {
   useCreateEditorBlokMutation,
   useEditBlokMutation,
   useGetBlokQuery,
+  useMaterializedBlokQuery,
+  usePinMaterializedBlokRevisionMutation,
   useUpdateEditorBlokMutation,
   type BlokEditorFragment,
   type ListMaterializedBlokFragment,
@@ -323,6 +327,60 @@ const SERVER_STATUS: Record<ServerCheck["status"], string> = {
 type Head = { id: string; number: number } | null;
 
 /**
+ * The blok the editor was opened from (`/rekuest/materialized_bloks/:id/edit`):
+ * what people edit, though a save changes its template. The preview runs on
+ * it, and the page says what else a save reaches.
+ */
+export type EditorFocus = {
+  id: string;
+  name: string;
+  /** The revision it stays at, when it does not follow its template's latest. */
+  heldAt: number | null;
+  /** How many other bloks are made from the same template. */
+  others: number;
+};
+
+/** One line over the workspace: what saving does to the blok being edited, and to the others. */
+const FocusLine = ({ focus }: { focus: EditorFocus }) => {
+  const [follow, { loading }] = usePinMaterializedBlokRevisionMutation({ refetchQueries: ["MaterializedBlok"] });
+  if (focus.heldAt === null && focus.others === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground">
+      {focus.heldAt !== null ? (
+        <>
+          <History className="size-4 shrink-0" />
+          <span className="flex-1">
+            {focus.name} stays at revision {focus.heldAt} of its template, so what you save here does not change it
+            until it follows the latest.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => {
+              follow({ variables: { input: { id: focus.id, revision: null } } }).catch(
+                reportErrorAs("Couldn't let it follow the latest revision"),
+              );
+            }}
+          >
+            Follow latest
+          </Button>
+        </>
+      ) : (
+        <>
+          <Layers className="size-4 shrink-0" />
+          <span className="flex-1">
+            Saving changes its template:{" "}
+            {focus.others === 1 ? "one other blok is" : `${focus.others} other bloks are`} made from it and change
+            too, unless held at a revision.
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
+/**
  * Writing a blok in BSX: the source with completion from the catalog and
  * what the blok declares, a live preview against the demo state, and its
  * details, demo state, dependencies, args and history beside. The client
@@ -340,12 +398,14 @@ const BlokEditorWorkspace = (props: {
   title: string;
   /** Load the blok again from the server (after a restore, or to take the head someone else saved). */
   onReload?: () => void;
+  /** Opened from a blok rather than its template: the preview starts on it. */
+  focus?: EditorFocus;
 }) => {
   const navigate = useNavigate();
-  // What the preview runs on: a materialization of this blok (asked for by id
-  // in `?shown=`, as "Create blok from agent" does), else its demo.
+  // What the preview runs on: the blok it was opened from, a blok of this
+  // template asked for by id in `?shown=`, else its demo.
   const [searchParams] = useSearchParams();
-  const [shown, setShown] = useState<string | null>(() => searchParams.get("shown"));
+  const [shown, setShown] = useState<string | null>(() => props.focus?.id ?? searchParams.get("shown"));
   const materializedQuery = useGetBlokQuery({ variables: { id: props.blokId ?? "" }, skip: !props.blokId });
   const materializations = materializedQuery.data?.blok.materializedBloks ?? EMPTY_MATERIALIZED;
   const targets = useMemo<LiveTarget[]>(
@@ -605,9 +665,19 @@ const BlokEditorWorkspace = (props: {
           >
             Export
           </PageAction>
+          {props.focus ? (
+            <PageAction
+              size="sm"
+              variant="ghost"
+              title="Its page; unsaved changes are not kept"
+              onClick={() => navigate(RekuestMaterializedBlok.linkBuilder(props.focus!.id))}
+            >
+              Open blok
+            </PageAction>
+          ) : null}
           {props.blokId && (
             <PageAction size="sm" variant="ghost" onClick={() => navigate(RekuestBlok.linkBuilder(props.blokId!))}>
-              Open blok
+              Open template
             </PageAction>
           )}
           <PageAction.Slot alwaysShow>
@@ -681,7 +751,7 @@ const BlokEditorWorkspace = (props: {
             </Sidebars.Tab>
           ) : null}
           {props.blokId && !props.provided ? (
-            <Sidebars.Tab label="Materialized">
+            <Sidebars.Tab label="Preview on">
               <BlokMaterializedPicker
                 blokId={props.blokId}
                 materialized={materializations}
@@ -699,6 +769,7 @@ const BlokEditorWorkspace = (props: {
       }
     >
       <div className="flex h-full min-h-0 flex-col">
+        {props.focus && <FocusLine focus={props.focus} />}
         {props.provided && (
           <div className="flex items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground">
             <GitFork className="size-4 shrink-0" />
@@ -778,7 +849,15 @@ export const NewBlokEditorPage = () => {
   return <BlokEditorWorkspace title={imported?.name ? `Import ${imported.name}` : "New Blok"} args={[]} initial={initial} />;
 };
 
-const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () => Promise<unknown> }) => {
+const EditorFor = ({
+  blok,
+  refetch,
+  focus,
+}: {
+  blok: BlokEditorFragment;
+  refetch: () => Promise<unknown>;
+  focus?: EditorFocus;
+}) => {
   // Bumped to start over from what the server holds now.
   const [generation, setGeneration] = useState(0);
   const reload = useCallback(() => {
@@ -831,10 +910,11 @@ const EditorFor = ({ blok, refetch }: { blok: BlokEditorFragment; refetch: () =>
       blokId={blok.id}
       provided={blok.provided}
       head={blok.head ?? null}
-      title={`Edit ${blok.name}`}
+      title={`Edit ${focus?.name ?? blok.name}`}
       initial={initial}
       args={blok.args}
       onReload={reload}
+      focus={focus}
     />
   );
 };
@@ -862,3 +942,47 @@ const ForkToEdit = ({ blok }: { blok: BlokEditorFragment }) => {
 export const EditBlokEditorPage = asDetailQueryRoute(useBlokEditorQuery, ({ data, refetch }) =>
   data.blok.provided ? <ForkToEdit blok={data.blok} /> : <EditorFor blok={data.blok} refetch={refetch} />,
 );
+
+/** The template of a blok, opened from that blok: loaded here, as the blok's page knows only its id. */
+const EditorForFocus = ({ blokId, focus }: { blokId: string; focus: EditorFocus }) => {
+  const { data, error, refetch } = useBlokEditorQuery({ variables: { id: blokId } });
+  if (error) return <QueryError error={error} onRetry={() => void refetch()} />;
+  if (!data) return null;
+  return <EditorFor blok={data.blok} refetch={refetch} focus={focus} />;
+};
+
+/**
+ * Editing a blok: what people do, though BSX lives on its template. The
+ * editor opens on the template, running the draft live on this blok's
+ * agents. One an app provides is its agents' to keep, so it is made your own
+ * first: forked and installed again on the same agents, then edited.
+ */
+export const EditMaterializedBlokEditorPage = asDetailQueryRoute(useMaterializedBlokQuery, ({ data }) => {
+  const { openDialog } = useDialog();
+  const materialized = data.materializedBlok;
+  const name = materialized.name || materialized.blok.name;
+  const focus = useMemo<EditorFocus>(
+    () => ({
+      id: materialized.id,
+      name,
+      heldAt: materialized.pinnedRevision?.number ?? null,
+      others: Math.max(0, materialized.blok.materializedBloks.length - 1),
+    }),
+    [materialized.id, name, materialized.pinnedRevision, materialized.blok.materializedBloks.length],
+  );
+
+  if (materialized.blok.provided) {
+    return (
+      <PageLayout title={`Edit ${name}`} help={REKUEST_HELP.blokEditor}>
+        <StatusPage
+          variant="compact"
+          icon={GitFork}
+          title={`${name} comes with its app`}
+          description="Its app's agents keep it in step with what they register, so it is not changed by hand. Make it your own: its template is forked, a blok of the copy is installed on the same agents, and that one opens here, ready to edit. This one stays as it is."
+          actions={<Button onClick={() => openDialog("rematerializeblok", { id: materialized.id, then: "edit" })}>Make it your own</Button>}
+        />
+      </PageLayout>
+    );
+  }
+  return <EditorForFocus blokId={materialized.blok.id} focus={focus} />;
+});

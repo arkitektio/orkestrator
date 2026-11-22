@@ -10283,9 +10283,6 @@ export type PinnedQueryVariables = Exact<{ [key: string]: never; }>;
 export type PinnedQuery = { __typename?: 'Query', agents: Array<(
     { __typename?: 'Agent' }
     & ListAgentFragment
-  )>, bloks: Array<(
-    { __typename?: 'Blok' }
-    & ListBlokFragment
   )>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
@@ -19853,15 +19850,11 @@ export const PinnedDocument = gql`
   agents(filters: {pinned: true}) {
     ...ListAgent
   }
-  bloks(filters: {pinned: true}) {
-    ...ListBlok
-  }
   materializedBloks(filters: {pinned: true}) {
     ...ListMaterializedBlok
   }
 }
     ${ListAgentFragmentDoc}
-${ListBlokFragmentDoc}
 ${ListMaterializedBlokFragmentDoc}`;
 
 /**

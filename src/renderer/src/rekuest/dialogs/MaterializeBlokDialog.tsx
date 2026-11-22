@@ -6,14 +6,21 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { useGetBlokQuery } from "@/rekuest/api/graphql";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BLOK_CONTEXTS } from "../components/blokContexts";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 
 /**
- * Install a custom blok: bind each of its dependencies to an agent and
- * materialize it, then open what was made. A blok an app provides is
- * materialized by its agents, so it is forked first.
+ * Install a template: name the blok it makes, choose an agent for each one it
+ * runs on, and open the blok. A template an app provides is installed by its
+ * agents, so it is forked first.
  */
-export const MaterializeBlokDialog = (props: { id: string }) => {
+export const MaterializeBlokDialog = (props: {
+  id: string;
+  /** Said over the form when the dialog is the second step of something (an install from a repository or a file). */
+  lead?: string;
+  /** Open the new blok in the editor instead of on its page. */
+  then?: "open" | "edit";
+}) => {
   const { closeDialog, openDialog } = useDialog();
   const navigate = useNavigate();
   const { data, error, refetch } = useGetBlokQuery({ variables: { id: props.id } });
@@ -28,7 +35,7 @@ export const MaterializeBlokDialog = (props: { id: string }) => {
         <DialogHeader>
           <DialogTitle>{blok.name} comes with its app</DialogTitle>
           <DialogDescription>
-            The app's agents materialize this blok themselves. Fork it to bind it to other agents.
+            The app's agents install this template themselves. Fork it to run it on other agents.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -41,22 +48,41 @@ export const MaterializeBlokDialog = (props: { id: string }) => {
     );
   }
 
+  const context = BLOK_CONTEXTS[blok.context];
+  const others = blok.materializedBloks.length;
+
   return (
-    <div className="flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <DialogHeader>
         <DialogTitle>Install {blok.name}</DialogTitle>
         <DialogDescription>
+          {props.lead ? `${props.lead} ` : ""}
           {blok.dependencies.length > 0
-            ? "Choose the agents it draws from, then materialize it."
-            : "It is bound to no agent, so it is ready to materialize."}
+            ? "Choose the agents it runs on. The blok it makes is live: its values follow them and its controls act on them."
+            : "It runs on no agent, so it is ready to install."}
         </DialogDescription>
+        {(context || others > 0) && (
+          <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            {context && (
+              <span className="flex items-center gap-1">
+                <context.icon className="size-3" />
+                {context.label}
+              </span>
+            )}
+            {context && others > 0 && <span>·</span>}
+            {others > 0 && <span>Installed {others === 1 ? "once" : `${others} times`} already</span>}
+          </p>
+        )}
       </DialogHeader>
       <MaterializeBlokForm
         blokId={blok.id}
+        defaultName={blok.name}
         dependencies={blok.dependencies}
+        onCancel={closeDialog}
         onMaterialized={(materialized) => {
           closeDialog();
-          navigate(RekuestMaterializedBlok.linkBuilder(materialized.id));
+          const page = RekuestMaterializedBlok.linkBuilder(materialized.id);
+          navigate(props.then === "edit" ? `${page}/edit` : page);
         }}
       />
     </div>

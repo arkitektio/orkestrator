@@ -30,7 +30,7 @@ export const InstallRepoBlokDialog = (props: { id: string; update?: boolean }) =
       // An update keeps its materializations; a new blok goes on to be bound.
       close: !!props.update,
       onSuccess: (installed) => {
-        if (!props.update) openDialog("materializeblok", { id: installed.id });
+        if (!props.update) openDialog("materializeblok", { id: installed.id, lead: "Its template is in your organization now." });
       },
     },
   );
@@ -53,7 +53,7 @@ export const InstallRepoBlokDialog = (props: { id: string; update?: boolean }) =
         <DialogDescription>
           {props.update
             ? "Its repository changed it. Updating replaces what your copy draws; where it is materialized stays as it is."
-            : "It becomes a blok of your organization. Next, choose the agents it draws from."}
+            : "It becomes a blok template of your organization. Next, name the blok and choose the agents it runs on."}
         </DialogDescription>
       </DialogHeader>
       <p className="break-all font-mono text-xs text-muted-foreground">{blok.origin}</p>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyDependency } from "./blokDependencies";
-import { blokFileOf, parseBlokFile } from "./blokFile";
+import { blokFileCreateInput, blokFileName, blokFileOf, parseBlokFile } from "./blokFile";
 
 const SOURCE = '<Blok kind="custom" context="panel">\n  <Text text={agents.stage.position.x} />\n</Blok>\n';
 
@@ -38,5 +38,23 @@ describe("blok files", () => {
     expect(parseBlokFile(JSON.stringify({ ...blokFileOf(draft), version: 9 })).ok).toBe(false);
     const broken = parseBlokFile(JSON.stringify({ ...blokFileOf(draft), source: "<Blok" }));
     expect(!broken.ok && broken.error).toMatch(/^Its BSX does not parse/);
+  });
+
+  it("installs a file as a template under the name it is given, with its context and demo", () => {
+    const input = blokFileCreateInput(draft, "Stage panel 2");
+    expect(input).toMatchObject({
+      name: "Stage panel 2",
+      description: null,
+      context: "PANEL",
+      source: SOURCE,
+      demo: { deps: { stage: { position: { x: 1 } } } },
+    });
+    expect(input?.dependencies).toHaveLength(1);
+    expect(blokFileCreateInput({ ...draft, source: "<Blok" }, "x")).toBeNull();
+  });
+
+  it("names the file after the blok", () => {
+    expect(blokFileName(" Stage Panel (v2) ")).toBe("stage-panel-v2.blok.json");
+    expect(blokFileName("")).toBe("blok.blok.json");
   });
 });

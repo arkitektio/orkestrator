@@ -35,7 +35,7 @@ import { REKUEST_HELP } from "../help";
 const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedBlokFragment }) => (
   <div className="flex flex-col gap-4 p-3 text-sm">
     <div className="flex flex-col gap-1">
-      <div className="text-xs text-muted-foreground">Blok</div>
+      <div className="text-xs text-muted-foreground">Made from the template</div>
       <RekuestBlok.DetailLink object={materializedBlok.blok} className="font-medium">
         {materializedBlok.blok.name}
       </RekuestBlok.DetailLink>
@@ -57,14 +57,14 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
           {materializedBlok.declaredBy.name || materializedBlok.declaredBy.id}
         </RekuestAgent.DetailLink>
         <p className="text-xs text-muted-foreground">
-          Its app provides the blok; the agent keeps this in step with its registrations.
+          Its app provides the template; the agent keeps this blok in step with its registrations.
         </p>
       </div>
     )}
 
     {materializedBlok.agentMappings.length > 0 && (
       <div className="flex flex-col gap-1">
-        <div className="text-xs text-muted-foreground">Bound agents</div>
+        <div className="text-xs text-muted-foreground">Runs on</div>
         {materializedBlok.agentMappings.map((mapping) => (
           <div key={mapping.key} className="flex items-center gap-2 py-1">
             <span
@@ -125,6 +125,10 @@ const useBlokArgs = () => {
 
 export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery, ({ data }) => {
   const materializedBlok = data.materializedBlok;
+  const self = useMemo(
+    () => ({ left: [{ identifier: "@rekuest/materialized_blok", id: materializedBlok.id }], isCommand: false }),
+    [materializedBlok.id],
+  );
   const travel = useBlokTravel();
   const { openDialog } = useDialog();
   const [args, setArgs] = useBlokArgs();
@@ -172,6 +176,8 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       pageActions={(
         <>
           <PinMaterializedBlokAction materializedBlok={materializedBlok} />
+          <LocalActionButton name={"rekuest-edit-materialized-blok" as keyof typeof registry} state={self} />
+          <LocalActionButton name={"rekuest-export-materialized-blok" as keyof typeof registry} state={self} />
           <PageAction
             size="sm"
             variant={travel.open ? "secondary" : "outline"}
@@ -200,8 +206,8 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
               onClick={() => openDialog("pinrevision", { id: materializedBlok.id })}
               title={
                 materializedBlok.pinnedRevision
-                  ? "It stays at this revision of its blok. Choose another, or follow the latest again."
-                  : "It follows its blok's latest revision. Keep it at one instead."
+                  ? "It stays at this revision of its template. Choose another, or follow the latest again."
+                  : "It follows its template's latest revision. Keep it at one instead."
               }
             >
               <History className="h-4 w-4" />
@@ -210,30 +216,8 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
                 : `Rev ${materializedBlok.revision.number} · latest`}
             </PageAction>
           )}
-          <LocalActionButton
-            name={"rekuest-rematerialize-blok" as keyof typeof registry}
-            state={{
-              left: [
-                {
-                  identifier: '@rekuest/materialized_blok',
-                  id: materializedBlok.id,
-                },
-              ],
-              isCommand: false,
-            }}
-          />
-          <LocalActionButton
-            name={"rekuest-delete-materialized-blok" as keyof typeof registry}
-            state={{
-              left: [
-                {
-                  identifier: '@rekuest/materialized_blok',
-                  id: materializedBlok.id,
-                },
-              ],
-              isCommand: false,
-            }}
-          />
+          <LocalActionButton name={"rekuest-rematerialize-blok" as keyof typeof registry} state={self} />
+          <LocalActionButton name={"rekuest-delete-materialized-blok" as keyof typeof registry} state={self} />
         </>
       )}
       sidebars={

@@ -34,9 +34,6 @@ import {
   PinMaterializedBlokRevisionDocument,
   PinMaterializedBlokRevisionMutation,
   PinMaterializedBlokRevisionMutationVariables,
-  PinBlokDocument,
-  PinBlokMutation,
-  PinBlokMutationVariables,
   DeleteMaterializedBlokMutation,
   DeleteMaterializedBlokMutationVariables,
   DeleteScheduleDocument,
@@ -113,16 +110,8 @@ import {
   MaterializeBlokDocument,
   MaterializeBlokMutation,
   MaterializeBlokMutationVariables,
-  BlokEditorDocument,
-  BlokEditorQuery,
-  BlokEditorQueryVariables
 } from '@/rekuest/api/graphql'
 import { scaffoldAgentsBlok } from './lib/agentBlokScaffold'
-import { printBsx } from '@arkitektio/bsx/bsx/index'
-import type { BlokComponentNode } from '@arkitektio/bsx/renderer/runtime/types'
-import { declarationsDraft } from './components/editor/blokDeclarationsDraft'
-import { dependencyDraft } from './components/editor/blokDependencies'
-import { downloadBlokFile } from './components/editor/blokFile'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
@@ -287,7 +276,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         unbound = error
       }
       // The blok exists either way: it is opened, and a failed binding said after.
-      navigate(`/rekuest/bloks/${blok.id}/edit${materialized ? `?shown=${materialized}` : ''}`)
+      // A blok to edit live on its agents; the bare template when binding it failed.
+      navigate(materialized ? `/rekuest/materialized_bloks/${materialized}/edit` : `/rekuest/bloks/${blok.id}/edit`)
       if (unbound) {
         console.warn('Materializing the new blok failed', unbound)
         throw new Error(`${blok.name} was created, but could not be bound to ${ids.length > 1 ? 'these agents' : 'this agent'}. Materialize it from its page.`)
@@ -296,36 +286,40 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     collections: ['io'],
   },
   'rekuest-export-blok': {
-    title: 'Export Blok…',
-    description: 'Save it as a file (its BSX, demo and the agents it declares) to import elsewhere',
+    title: 'Export Template…',
+    description: 'Save it as a file (its BSX, demo and the agents it asks for) to install elsewhere',
     icon: Share,
     conditions: only('@rekuest/blok'),
-    execute: async ({ services, state }) => {
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('exportblok', { id: selected(state, '@rekuest/blok') })
+    },
+    collections: ['io'],
+  },
+  'rekuest-export-materialized-blok': {
+    title: 'Export…',
+    description: 'Save this blok as a file to install elsewhere; which agents it runs on stays here',
+    icon: Share,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ services, state, dialog }) => {
       if (!services.rekuest) {
         throw new Error('Rekuest service not available')
       }
-      const { data } = await services.rekuest.client.query<BlokEditorQuery, BlokEditorQueryVariables>({
-        query: BlokEditorDocument,
-        variables: { id: selected(state, '@rekuest/blok') },
-        fetchPolicy: 'network-only',
+      const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
+        query: MaterializedBlokDocument,
+        variables: { id: selected(state, '@rekuest/materialized_blok') },
       })
-      const roots = (data.blok.componentTree ?? []) as BlokComponentNode[]
-      if (roots.length !== 1) {
-        throw new Error(`${data.blok.name} cannot be written as BSX, so it cannot be exported`)
-      }
-      downloadBlokFile({
-        name: data.blok.name,
-        description: data.blok.description ?? '',
-        source: printBsx(roots[0]),
-        dependencies: data.blok.dependencies.map(dependencyDraft),
-        declarations: declarationsDraft(data.blok),
+      const blok = data.materializedBlok
+      dialog.openDialog('exportblok', {
+        id: blok.blok.id,
+        name: blok.name || blok.blok.name,
+        heldAt: blok.pinnedRevision?.number ?? null,
       })
     },
     collections: ['io'],
   },
   'rekuest-fork-blok': {
-    title: 'Fork Blok',
-    description: 'Copy a blok an app provides into one of your own, to edit it or bind other agents',
+    title: 'Fork Template',
+    description: 'Copy a template an app provides into one of your own, to edit it or run it on other agents',
     icon: Copy,
     conditions: only('@rekuest/blok'),
     execute: async ({ services, state, dialog }) => {
@@ -337,15 +331,15 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         variables: { id: selected(state, '@rekuest/blok') },
       })
       if (!data.blok.provided) {
-        throw new Error(`${data.blok.name} is already yours to change; only a blok an app provides is forked`)
+        throw new Error(`${data.blok.name} is already yours to change; only a template an app provides is forked`)
       }
       dialog.openDialog('forkblok', { id: data.blok.id, name: data.blok.name })
     },
     collections: ['io'],
   },
   'rekuest-edit-blok': {
-    title: 'Edit Blok',
-    description: 'Open a blok as BSX, with a live preview, to change it; a blok an app provides is copied on its first save',
+    title: 'Edit Template',
+    description: 'Open a template as BSX, with a live preview, to change it and every blok made from it',
     icon: Code,
     conditions: only('@rekuest/blok'),
     execute: async ({ state, navigate }) => {
@@ -353,45 +347,17 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
   },
   'rekuest-edit-materialized-blok': {
-    title: 'Edit Blok',
-    description: 'Open the blok this shows as BSX, to change it',
+    title: 'Edit',
+    description: 'Change this blok in BSX, running live on its agents as you type; one an app provides is made your own first',
     icon: Code,
     conditions: only('@rekuest/materialized_blok'),
-    execute: async ({ services, state, navigate }) => {
-      if (!services.rekuest) {
-        throw new Error('Rekuest service not available')
-      }
-      const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
-        query: MaterializedBlokDocument,
-        variables: { id: selected(state, '@rekuest/materialized_blok') },
-      })
-      navigate(`/rekuest/bloks/${data.materializedBlok.blok.id}/edit`)
-    },
-  },
-  'rekuest-pin-blok': {
-    title: 'Pin Blok',
-    description: 'Pin or unpin this blok for yourself',
-    icon: Pin,
-    conditions: only('@rekuest/blok'),
-    execute: async ({ services, state }) => {
-      if (!services.rekuest) {
-        throw new Error('Rekuest service not available')
-      }
-      const id = selected(state, '@rekuest/blok')
-      const { data } = await services.rekuest.client.query<GetBlokQuery, GetBlokQueryVariables>({
-        query: GetBlokDocument,
-        variables: { id },
-      })
-      await services.rekuest.client.mutate<PinBlokMutation, PinBlokMutationVariables>({
-        mutation: PinBlokDocument,
-        variables: { input: { id, pin: !data.blok.pinned } },
-        refetchQueries: PIN_REFETCH,
-      })
+    execute: async ({ state, navigate }) => {
+      navigate(`/rekuest/materialized_bloks/${selected(state, '@rekuest/materialized_blok')}/edit`)
     },
   },
   'rekuest-pin-materialized-blok': {
-    title: 'Pin Materialized Blok',
-    description: 'Pin or unpin this materialized blok for yourself',
+    title: 'Pin Blok',
+    description: 'Pin or unpin this blok for yourself: pinned ones come first, on Home and in ⌘K',
     icon: Pin,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ services, state }) => {
@@ -412,7 +378,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
   },
   'rekuest-choose-revision': {
     title: 'Choose Revision',
-    description: "Keep a materialized blok at one revision of its blok, or let it follow the latest",
+    description: "Keep a blok at one revision of its template, or let it follow the latest",
     icon: History,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ state, dialog }) => {
@@ -421,7 +387,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
   },
   'rekuest-follow-latest-revision': {
     title: 'Follow Latest Revision',
-    description: 'Let a materialized blok held at one revision show its blok\'s latest revision again',
+    description: 'Let a blok held at one revision show its template\'s latest revision again',
     icon: RotateCcw,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ services, state }) => {
@@ -444,8 +410,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
   },
   'rekuest-materialize-blok': {
-    title: 'Materialize Blok',
-    description: 'Bind a custom blok to agents and open it',
+    title: 'Install…',
+    description: 'Make a blok of this template, running on your agents, and open it',
     icon: Download,
     conditions: only('@rekuest/blok'),
     execute: async ({ state, dialog }) => {
@@ -453,8 +419,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
   },
   'rekuest-rematerialize-blok': {
-    title: 'Rematerialize',
-    description: 'Materialize the original blok again, with the same agents; a blok an app provides is forked first',
+    title: 'Install Again…',
+    description: 'Make another blok of the same template, on the same agents to start with; one an app provides is forked first',
     icon: RefreshCw,
     conditions: only('@rekuest/materialized_blok'),
     execute: async ({ state, dialog }) => {
@@ -462,8 +428,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
   },
   'rekuest-delete-blok': {
-    title: 'Delete Blok',
-    description: 'Delete the blok and return to the blok list',
+    title: 'Delete Template',
+    description: 'Delete the template and return to the template list',
     icon: Trash2,
     conditions: [
       {
@@ -507,8 +473,8 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     collections: ['io'],
   },
   'rekuest-delete-materialized-blok': {
-    title: 'Delete Materialized Blok',
-    description: 'Delete the materialized blok and return to the list',
+    title: 'Delete Blok',
+    description: 'Delete the blok and return to the list; its template stays',
     icon: Trash2,
     conditions: [
       {
@@ -537,7 +503,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         const declared = data.materializedBlok
         if (declared?.declaredBy) {
           throw new Error(
-            `${declared.name || declared.blok.name} belongs to ${declared.declaredBy.name}; it cannot be deleted. Fork its blok to make one of your own.`,
+            `${declared.name || declared.blok.name} belongs to ${declared.declaredBy.name}; it cannot be deleted. Install it again to make one of your own.`,
           )
         }
 

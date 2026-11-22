@@ -1,10 +1,13 @@
 import { reportErrorAs } from "@/core/notify";
 import { PageAction } from "@/core/ui/page-action";
 import { Pin, PinOff } from "lucide-react";
-import { usePinBlokMutation, usePinMaterializedBlokMutation } from "../api/graphql";
+import { usePinMaterializedBlokMutation } from "../api/graphql";
 import { PIN_REFETCH } from "../lib/pins";
 
-/** The page action that pins a thing for you: a favourite, listed first and on Home. */
+/**
+ * The page action that pins a thing for you: a favourite, listed first and on Home.
+ * Bloks are pinned, never templates: a blok is what you open and use.
+ */
 const PinAction = (props: { pinned: boolean; what: string; onToggle: () => Promise<unknown> }) => (
   <PageAction
     size="sm"
@@ -19,23 +22,12 @@ const PinAction = (props: { pinned: boolean; what: string; onToggle: () => Promi
   </PageAction>
 );
 
-export const PinBlokAction = (props: { blok: { id: string; pinned: boolean } }) => {
-  const [pin] = usePinBlokMutation({ refetchQueries: PIN_REFETCH });
-  return (
-    <PinAction
-      pinned={props.blok.pinned}
-      what="blok"
-      onToggle={() => pin({ variables: { input: { id: props.blok.id, pin: !props.blok.pinned } } })}
-    />
-  );
-};
-
 export const PinMaterializedBlokAction = (props: { materializedBlok: { id: string; pinned: boolean } }) => {
   const [pin] = usePinMaterializedBlokMutation({ refetchQueries: PIN_REFETCH });
   return (
     <PinAction
       pinned={props.materializedBlok.pinned}
-      what="materialized blok"
+      what="blok"
       onToggle={() =>
         pin({ variables: { input: { id: props.materializedBlok.id, pin: !props.materializedBlok.pinned } } })
       }

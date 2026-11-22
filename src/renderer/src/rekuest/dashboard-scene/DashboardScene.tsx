@@ -292,7 +292,7 @@ const DashboardBlokMaterializeSelector = (props: {
   }
 
   if (failure) {
-    return <ErrorNote error={failure} title="Couldn't materialize the blok" />;
+    return <ErrorNote error={failure} title="Couldn't install the blok" />;
   }
 
   if (!data) {
@@ -302,7 +302,7 @@ const DashboardBlokMaterializeSelector = (props: {
   if (data.blok.dependencies.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
-        {loading ? "Materializing blok..." : "Preparing blok..."}
+        {loading ? "Installing blok..." : "Preparing blok..."}
       </div>
     );
   }
@@ -344,12 +344,12 @@ const DashboardDropDialog = (props: {
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {props.dropContext?.agentId ? "Materialize Blok for Agent" : "Materialize Blok"}
+            {props.dropContext?.agentId ? "Install a Blok for this Agent" : "Install Blok"}
           </DialogTitle>
           <DialogDescription>
             {props.dropContext?.agentId
-              ? `Choose a blok to materialize for ${props.dropContext.agentName ?? "the dropped agent"}.`
-              : "Configure the blok before adding it to this dashboard."}
+              ? `Choose a template to install on ${props.dropContext.agentName ?? "the dropped agent"}.`
+              : "Choose the agents it runs on before adding it to this dashboard."}
           </DialogDescription>
         </DialogHeader>
 

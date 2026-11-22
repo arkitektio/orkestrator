@@ -1,6 +1,8 @@
-import { parseBsxSafe } from "@arkitektio/bsx/bsx/index";
-import type { AgentDependencyInput } from "@/rekuest/api/graphql";
-import { dependencyInput, draftUid, type DependencyDraft } from "./blokDependencies";
+import { blokHeader, parseBsxSafe, printBsx } from "@arkitektio/bsx/bsx/index";
+import type { BlokComponentNode } from "@arkitektio/bsx/renderer/runtime/types";
+import type { AgentDependencyInput, BlokEditorFragment, ComponentContext, CreateBlokInput } from "@/rekuest/api/graphql";
+import { buildDeclarations, declarationsDraft } from "./blokDeclarationsDraft";
+import { dependencyDraft, dependencyInput, draftUid, type DependencyDraft } from "./blokDependencies";
 
 /**
  * A blok as a file, to carry it to another organization or keep a copy: its
@@ -12,6 +14,8 @@ import { dependencyInput, draftUid, type DependencyDraft } from "./blokDependenc
 export const BLOK_FILE_KIND = "arkitekt.blok";
 export const BLOK_FILE_VERSION = 1;
 export const BLOK_FILE_EXTENSION = ".blok.json";
+/** The expression vocabulary the editor writes, and a file installs with. */
+export const BLOK_VOCAB = 2;
 
 /** What the editor holds of a blok: the same shape it drafts in. */
 export type BlokFileDraft = {
@@ -115,7 +119,8 @@ export const parseBlokFile = (content: string): ParsedBlokFile => {
   };
 };
 
-const fileName = (name: string) =>
+/** `My panel` → `my-panel.blok.json`. */
+export const blokFileName = (name: string) =>
   `${
     name
       .trim()
@@ -124,12 +129,60 @@ const fileName = (name: string) =>
       .replace(/^-+|-+$/g, "") || "blok"
   }${BLOK_FILE_EXTENSION}`;
 
+/** The file's text, as it is downloaded or copied. */
+export const blokFileText = (draft: BlokFileDraft) => JSON.stringify(blokFileOf(draft), null, 2);
+
 /** Hand the blok to the person as a file. */
 export const downloadBlokFile = (draft: BlokFileDraft) => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(blokFileOf(draft), null, 2)], { type: "application/json" }));
+  const url = URL.createObjectURL(new Blob([blokFileText(draft)], { type: "application/json" }));
   const anchor = window.document.createElement("a");
   anchor.href = url;
-  anchor.download = fileName(draft.name);
+  anchor.download = blokFileName(draft.name);
   anchor.click();
   URL.revokeObjectURL(url);
+};
+
+export type BlokDraftOf = { ok: true; draft: BlokFileDraft } | { ok: false; error: string };
+
+/** A saved template as a file's draft: its tree printed back to BSX, when BSX can spell it. */
+export const draftOfBlok = (
+  blok: Pick<BlokEditorFragment, "name" | "description" | "componentTree" | "dependencies" | "demo">,
+): BlokDraftOf => {
+  const roots = (blok.componentTree ?? []) as BlokComponentNode[];
+  if (roots.length !== 1) return { ok: false, error: `BSX holds one root; ${blok.name} has ${roots.length}.` };
+  try {
+    return {
+      ok: true,
+      draft: {
+        name: blok.name,
+        description: blok.description ?? "",
+        source: printBsx(roots[0]),
+        dependencies: blok.dependencies.map(dependencyDraft),
+        declarations: declarationsDraft(blok),
+      },
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+};
+
+/**
+ * What creating a template from a file sends, under `name` (a free one: a
+ * template created under a taken name would change that one). Null when its
+ * BSX no longer parses.
+ */
+export const blokFileCreateInput = (draft: BlokFileDraft, name: string): CreateBlokInput | null => {
+  const parsed = parseBsxSafe(draft.source);
+  if (!parsed.ok) return null;
+  const header = blokHeader(parsed.tree);
+  return {
+    name,
+    description: draft.description.trim() || null,
+    context: (header?.context ?? "PANEL") as ComponentContext,
+    source: draft.source,
+    vocab: BLOK_VOCAB,
+    // As the editor sends it: only the demo's own roots.
+    demo: buildDeclarations(draft.declarations).demo,
+    dependencies: draft.dependencies.map(dependencyInput),
+  };
 };

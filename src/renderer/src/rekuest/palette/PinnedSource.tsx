@@ -6,7 +6,7 @@ import { usePinnedQuery } from "@/rekuest/api/graphql";
 import { CommandGroup } from "cmdk";
 
 /**
- * What you pinned in rekuest — materialized bloks, bloks, agents — to open from anywhere.
+ * What you pinned in rekuest — bloks and agents — to open from anywhere.
  *
  * Like Recent, only on an empty query: a search hit is the same entity row, and two rows
  * sharing a cmdk value trap the arrow keys between them.
@@ -22,9 +22,8 @@ export const PinnedSource = ({ filter, onDone }: PassDownProps) => {
       identifier: "@rekuest/materialized_blok",
       id: m.id,
       label: m.name || m.blok.name,
-      description: "Materialized blok",
+      description: "Blok",
     })),
-    ...data.bloks.map((b) => ({ identifier: "@rekuest/blok", id: b.id, label: b.name, description: "Blok" })),
     ...data.agents.map((a) => ({ identifier: "@rekuest/agent", id: a.id, label: a.name, description: "Agent" })),
   ];
   if (rows.length === 0) return null;

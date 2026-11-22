@@ -31,7 +31,7 @@ const MaterializedBlokList = ({ filters, pagination = FIRST_PAGE }: Props) => {
         array={data?.materializedBloks}
         title={
           <RekuestMaterializedBlok.ListLink className="flex-0">
-            Materialized Bloks
+            Bloks
           </RekuestMaterializedBlok.ListLink>
         }
         refetch={refetch}

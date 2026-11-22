@@ -15,10 +15,10 @@ const ROW =
 const CHOSEN = "bg-primary/10 text-primary hover:bg-primary/15";
 
 /**
- * The editor's "Materialized" tab: what the preview beside the source is
- * drawn against. Its demo values, or one of the blok's materializations: then
- * the draft as it is typed runs on that materialization's agents, live state
- * and real buttons. One is shown at a time; the rows switch between them.
+ * The editor's "Preview on" tab: what the preview beside the source is drawn
+ * against. Its demo values, or one of the bloks made from the template: then
+ * the draft as it is typed runs on that blok's agents, live state and real
+ * buttons. One is shown at a time; the rows switch between them.
  */
 export const BlokMaterializedPicker = (props: {
   blokId: string;
@@ -31,8 +31,8 @@ export const BlokMaterializedPicker = (props: {
   return (
     <div className="flex flex-col gap-3 p-3">
       <p className="text-xs text-muted-foreground">
-        What the preview is drawn against. On a materialized blok the draft runs on its agents as you type: values are
-        live, and a button there does what it says.
+        What the preview is drawn against. On a blok made from this template the draft runs on its agents as you type:
+        values are live, and a button there does what it says.
       </p>
       <ul className="flex flex-col gap-0.5">
         <li className="flex">
@@ -83,7 +83,7 @@ export const BlokMaterializedPicker = (props: {
               </button>
               <RekuestMaterializedBlok.DetailLink
                 object={materialized}
-                title="Open the materialized blok"
+                title="Open the blok"
                 className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <ArrowUpRight className="size-3.5" />
@@ -93,7 +93,7 @@ export const BlokMaterializedPicker = (props: {
         })}
       </ul>
       {props.materialized.length === 0 && (
-        <p className="text-xs text-muted-foreground">This blok is not materialized on any agent yet.</p>
+        <p className="text-xs text-muted-foreground">No blok is made from this template yet.</p>
       )}
       <Button
         variant="outline"
@@ -101,7 +101,7 @@ export const BlokMaterializedPicker = (props: {
         className="self-start"
         onClick={() => openDialog("materializeblok", { id: props.blokId })}
       >
-        Materialize…
+        Install…
       </Button>
     </div>
   );

@@ -33,7 +33,7 @@ export const AgentBloksPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) =
           error={error}
           title={
             <RekuestMaterializedBlok.ListLink className="flex-0">
-              Materialized Bloks
+              Bloks
             </RekuestMaterializedBlok.ListLink>
           }
           refetch={({ pagination }) =>

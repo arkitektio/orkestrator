@@ -16,9 +16,8 @@ import { BLOK_CONTEXTS, isLogoContext } from "../components/blokContexts";
 import { BlokLogo } from "../components/logo/BlokLogo";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
-import { GitFork } from "lucide-react";
+import { GitFork, Plus } from "lucide-react";
 import { BlokHistory } from "../components/editor/BlokHistory";
-import { PinBlokAction } from "../components/PinBlokActions";
 import { REKUEST_HELP } from "../help";
 
 type DetailBlok = GetBlokQuery["blok"];
@@ -55,16 +54,21 @@ const BlokStage = ({ blok }: { blok: DetailBlok }) => {
         </ErrorBoundary>
       </div>
       <figcaption className="text-xs text-muted-foreground">
-        Shown with its demo values, bound to no agent. Materialize it to connect it to real ones.
+        A template, shown with its demo values and running on no agent. Install it to make a blok that runs on yours.
       </figcaption>
     </figure>
   );
 };
 
+/**
+ * A blok template: what a blok is made of. People mostly meet the bloks made
+ * from it (installed, running on agents); this page shows the template
+ * itself, the bloks made from it, and installs another.
+ */
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const { openDialog } = useDialog();
-  // An app's agents keep a provided blok in step with their registrations:
-  // it is forked, never edited, materialized or deleted by hand.
+  // An app's agents keep a provided template in step with their registrations:
+  // it is forked, never edited, installed or deleted by hand.
   const blok = data.blok;
   const provided = blok.provided;
   const context = BLOK_CONTEXTS[blok.context];
@@ -138,20 +142,26 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
       }
       pageActions={provided ? (
         <>
-        <PinBlokAction blok={data.blok} />
+        <LocalActionButton
+            name={"rekuest-export-blok" as keyof typeof registry}
+            state={{ left: [{ identifier: '@rekuest/blok', id: blok.id }], isCommand: false }}
+        />
         <PageAction.Slot alwaysShow>
           <Button
             variant="default"
             onClick={() => openDialog("forkblok", { id: blok.id, name: blok.name })}
           >
             <GitFork className="h-4 w-4" />
-            Fork Blok
+            Fork Template
           </Button>
         </PageAction.Slot>
         </>
       ) : (
         <>
-            <PinBlokAction blok={data.blok} />
+            <LocalActionButton
+                name={"rekuest-export-blok" as keyof typeof registry}
+                state={{ left: [{ identifier: '@rekuest/blok', id: blok.id }], isCommand: false }}
+            />
             <LocalActionButton
                 name={"rekuest-edit-blok" as keyof typeof registry}
                 state={{
@@ -180,7 +190,8 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
 
             <PageAction.Slot alwaysShow>
               <Button variant="default" onClick={() => openDialog("materializeblok", { id: blok.id })}>
-                Materialize Blok
+                <Plus className="h-4 w-4" />
+                Install
               </Button>
             </PageAction.Slot>
         </>
@@ -192,7 +203,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             {context && (
               <span className="flex items-center gap-1.5 text-foreground">
                 <context.icon className="size-3.5" />
-                {context.label}
+                {context.label} template
               </span>
             )}
             {context && blok.description && <span>·</span>}
@@ -232,7 +243,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
         {blok.materializedBloks.length > 0 && (
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold text-muted-foreground">
-              Materialized
+              Bloks made from it
               <span className="ml-1.5 font-normal tabular-nums text-muted-foreground/60">
                 {blok.materializedBloks.length}
               </span>

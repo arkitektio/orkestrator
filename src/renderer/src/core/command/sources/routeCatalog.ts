@@ -1,4 +1,4 @@
-import { Blocks, Home, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 import { satisfiesRoles } from "@/core/connection/roles";
@@ -14,9 +14,7 @@ export type CatalogRoute = NavLinkDecl & {
 
 /** The host's own pages (blok is the host's renderer, not a module). */
 const HOST_ROUTES: CatalogRoute[] = [
-  { module: "blok", label: "Dashboard", route: "/blok", group: "Bloks", icon: Home, home: true },
   { module: "blok", label: "Dashboards", route: "/blok/dashboards", group: "Bloks", icon: LayoutDashboard, description: "Composed blok dashboards" },
-  { module: "blok", label: "Bloks", route: "/blok/bloks", group: "Bloks", icon: Blocks, description: "Reusable UI bloks" },
 ];
 
 /**

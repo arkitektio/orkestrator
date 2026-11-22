@@ -1,5 +1,4 @@
 import React from "react";
-import { Pin } from "lucide-react";
 import { CARD_FRAME_SIZE, CardFrame } from "@/core/ui/card-frame";
 import { Name } from "@/core/ui/name";
 import { RekuestBlok } from "@/core/linkers";
@@ -13,9 +12,9 @@ interface Props {
 }
 
 /**
- * A blok in the shared card frame, in the interface tone: its kind's glyph
- * and its name, what kind it is and whose (the app that provides it), and
- * what it looks like as a small screen in the card's body.
+ * A blok template in the shared card frame, in the interface tone: its kind's
+ * glyph and its name, that it is a template and whose (the app that provides
+ * it), and what it looks like as a small screen in the card's body.
  */
 const TheCard = ({ item }: Props) => {
   const context = BLOK_CONTEXTS[item.context];
@@ -30,8 +29,7 @@ const TheCard = ({ item }: Props) => {
             <Name>{item.name}</Name>
           </RekuestBlok.DetailLink>
         }
-        badge={item.pinned ? <Pin className="h-3 w-3 text-muted-foreground" aria-label="You pinned it" /> : undefined}
-        facts={[context?.label, item.app && <span title="Provided by this app's agents">{item.app.identifier}</span>].filter(Boolean)}
+        facts={[context ? `${context.label} template` : "Template", item.app && <span title="Provided by this app's agents">{item.app.identifier}</span>].filter(Boolean)}
         menu
       >
         <BlokScreen blok={item} />

@@ -8,7 +8,7 @@ import TaskPage from "./pages/TaskPage";
 import Blok from "./pages/Blok";
 import Bloks from "./pages/Bloks";
 import ProvidedBloks from "./pages/ProvidedBloks";
-import { EditBlokEditorPage, NewBlokEditorPage } from "./pages/BlokEditor";
+import { EditBlokEditorPage, EditMaterializedBlokEditorPage, NewBlokEditorPage } from "./pages/BlokEditor";
 import Dashboard from "./pages/Dashboard";
 import Dashboards from "./pages/Dashboards";
 import Dependency from "./pages/Dependency";
@@ -113,6 +113,7 @@ const Module: React.FC = () => {
         <Route path="materialized_bloks/provided" element={<ProvidedMaterializedBloks />} />
         <Route path="materialized_bloks" element={<MaterializedBloks />} />
         <Route path="materialized_bloks/:id" element={<MaterializedBlokPage />} />
+        <Route path="materialized_bloks/:id/edit" element={<EditMaterializedBlokEditorPage />} />
         <Route path="dependencies/:id" element={<Dependency />} />
         <Route path="implementations" element={<ImplementationsPage />} />
         <Route path="implementations/:id" element={<Implementation />} />

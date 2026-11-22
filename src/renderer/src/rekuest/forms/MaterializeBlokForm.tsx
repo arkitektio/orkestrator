@@ -1,8 +1,9 @@
 import { Button } from "@/core/ui/button";
-import { DialogFooter } from "@/core/ui/dialog";
+import { DialogBody, DialogFooter, DialogForm } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { ErrorNote } from "@/core/ui/error-note";
-import { cn } from "@/core/util/utils";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
 import { useState } from "react";
 import {
   ListDependencyFragment,
@@ -27,6 +28,7 @@ const dependencySelectionSchema = z.object({
 });
 
 const formSchema = z.object({
+  name: z.string(),
   dependencies: z.array(dependencySelectionSchema),
 });
 
@@ -36,6 +38,15 @@ export type MaterializeBlokFormProps = {
   prefilledAgentId?: string;
   /** Per-dependency agents to start from (a rematerialization's old bindings). */
   prefilledMappings?: BlokMapping[];
+  /**
+   * What the new blok is called, to start with (its template's name). Given,
+   * the form asks for the name too; left out, the blok takes its template's.
+   */
+  defaultName?: string;
+  /** The submit button's word. Default "Install". */
+  submitLabel?: string;
+  /** A Cancel button beside it, when the form sits in a dialog that has none. */
+  onCancel?: () => void;
   dependencies: Array<{
     id: string;
     key: string;
@@ -52,16 +63,18 @@ export type MaterializeBlokFormProps = {
   onError?: (error: unknown) => void;
 };
 
-
-
+/**
+ * Install a template: a name for the blok it makes and an agent for each
+ * agent it draws from. The body scrolls, the buttons stay at the foot.
+ */
 export const MaterializeBlokForm = (
   props: MaterializeBlokFormProps,
 ) => {
   const [materialize, { loading }] = useMaterializeBlokMutation({
     refetchQueries: ["GetBlok", "ListMaterializedBloks"],
   });
-  // Shown above the button: the form lives in a plain <Dialog>, which stays
-  // open to try again.
+  // Shown above the buttons: the form also lives in a plain <Dialog> (the
+  // dashboard's drop), outside a registry dialog's error scope.
   const [failure, setFailure] = useState<unknown>(null);
 
   const normalizedDependencies: ListDependencyFragment[] = props.dependencies.map(
@@ -82,6 +95,7 @@ export const MaterializeBlokForm = (
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: props.defaultName ?? "",
       dependencies: props.prefilledAgentId
         ? normalizedDependencies.map((dependency) => ({
             key: dependency.key,
@@ -105,12 +119,15 @@ export const MaterializeBlokForm = (
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setFailure(null);
+    const name = data.name.trim();
     try {
       const result = await materialize({
         variables: {
           input: {
             blok: props.blokId,
             dashboard: props.dashboardId,
+            // Left as the template's when it was not asked for, or is unchanged.
+            name: props.defaultName !== undefined && name && name !== props.defaultName ? name : null,
             agentMappings: data.dependencies.map(d => ({
                  key: d.key,
                  agent: d.mappedAgents[0]?.agent // Assuming single mapping for now based on your logic
@@ -132,25 +149,35 @@ export const MaterializeBlokForm = (
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col w-full h-full mx-auto p-6 @container">
-        <div className="flex flex-col sm:justify-between mb-2 h-full min-h-0">
-          <div className="flex-grow mb-4 @container">
-            {props.dependencies && (
+      <DialogForm onSubmit={form.handleSubmit(onSubmit)} className="@container">
+        <DialogBody>
+          {props.defaultName !== undefined && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="materialize-name">Name</Label>
+              <Input id="materialize-name" placeholder={props.defaultName} {...form.register("name")} />
+            </div>
+          )}
+          {normalizedDependencies.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">Agents it runs on</span>
               <DependenciesContainer dependencies={normalizedDependencies} bound={"blok"} owner="blok" />
-            )}
-          </div>
-          <ErrorNote error={failure} title="Couldn't materialize the blok" className="mb-2" />
-          <DialogFooter className="flex-initial">
-            <Button
-              type="submit"
-              disabled={loading}
-              className={cn("flex-initial", form.formState.isSubmitting && "bg-destructive/20")}
-            >
-              Submit
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">It needs no agent: it is ready as it is.</p>
+          )}
+        </DialogBody>
+        <ErrorNote error={failure} title="Couldn't install the blok" />
+        <DialogFooter>
+          {props.onCancel && (
+            <Button type="button" variant="ghost" onClick={props.onCancel} disabled={loading}>
+              Cancel
             </Button>
-          </DialogFooter>
-        </div>
-      </form>
+          )}
+          <Button type="submit" disabled={loading}>
+            {props.submitLabel ?? "Install"}
+          </Button>
+        </DialogFooter>
+      </DialogForm>
     </Form>
   );
 };

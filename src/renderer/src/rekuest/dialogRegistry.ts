@@ -5,7 +5,9 @@ import { REKUEST_ADMIN } from "./roles";
 import { AssignDialog } from "./forms/assign/AssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
 import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
+import { ExportBlokDialog } from "./dialogs/ExportBlokDialog";
 import { ForkBlokDialog } from "./dialogs/ForkBlokDialog";
+import { InstallBlokFileDialog } from "./dialogs/InstallBlokFileDialog";
 import { MaterializeBlokDialog } from "./dialogs/MaterializeBlokDialog";
 import { OpenBlokDialog } from "./dialogs/OpenBlokDialog";
 import { PinRevisionDialog } from "./dialogs/PinRevisionDialog";
@@ -43,12 +45,16 @@ export const REKUEST_DIALOGS = {
   importwiregram: prefersSize("medium", ImportWiregramDialog),
   exportwiregram: prefersSize("medium", ExportWiregramDialog),
   updateagent: UpdateAgentForm,
-  // a blok an app provides → a custom copy to edit or bind to other agents
+  // a template an app provides → a template of your own, to edit or run on other agents
   forkblok: prefersSize("small", ForkBlokDialog),
-  // a custom blok → bound to agents and materialized (the store's "Install")
+  // a template → a blok: named and run on agents ("Install"; also a repository's or a file's second step)
   materializeblok: prefersSize("medium", MaterializeBlokDialog),
-  // a materialized blok → a new one of its blok (forked first when an app provides it)
+  // a blok → another of its template ("Install again"; "Make it your own" for one an app provides)
   rematerializeblok: prefersSize("medium", RematerializeBlokDialog),
+  // a template, or the template of a blok → a blok file, saying what goes in and what stays
+  exportblok: prefersSize("small", ExportBlokDialog),
+  // a blok file → a template of this organization, then installed (`materializeblok`)
+  installblokfile: prefersSize("medium", InstallBlokFileDialog),
   // a materialization → which revision of its blok it shows (latest, or one it stays at)
   pinrevision: prefersSize("small", PinRevisionDialog),
   // "Open in…" a blok whose args the selection leaves open: ask for the rest, then open it

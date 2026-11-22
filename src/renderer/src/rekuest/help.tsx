@@ -16,7 +16,7 @@ export const REKUEST_HELP = {
         <>Click an app card to open the agent and see the actions it can run.</>,
         <>Open the <b>Overview</b> tab of the sidebar to go to a Rekuest page: <b>Actions</b> is the catalog of everything your apps can do, <b>Tasks</b> every task you ran. The numbers next to <b>Actions</b> and <b>Org Tasks</b> count the whole organization.</>,
         <>Right-click an app card for its actions, for example <b>Rename / Update Agent</b> or <b>Pin Agent</b>.</>,
-        <>Under <b>Materialized Bloks</b>, click a card to open that view. Each card names the apps it is wired to and how many of them are online.</>,
+        <>Under <b>Bloks</b>, click a card to open that interface. Each card names the apps it runs on and how many of them are online.</>,
         <>Scroll down to <b>Ongoing tasks</b> for what is running now, and <b>Recently finished</b> for the last three that ended (failed ones included). Click a task to follow it; click either title for every task.</>,
       ]}
       tips={[
@@ -147,36 +147,37 @@ export const REKUEST_HELP = {
   ),
   agentBloks: (
     <PageHelp
-      intro="The materialized bloks bound to this agent. A blok is a piece of interface an app provides; materialized means it has been connected to real agents and can be used."
+      intro="The bloks that run on this agent: interfaces whose values follow it and whose controls act on it."
       steps={[
-        <>Click a materialized blok to open it and use its controls.</>,
-        <>Click the <b>Materialized Bloks</b> heading to see the materialized bloks of all agents.</>,
-        <>Right-click one and choose <b>Delete Materialized Blok</b> to remove it.</>,
+        <>Click a blok to open it and use its controls.</>,
+        <>Click the <b>Bloks</b> heading to see the bloks of all agents.</>,
+        <>Right-click one and choose <b>Delete Blok</b> to remove it; its template stays.</>,
       ]}
       tips={[
-        <>An empty list means no blok has been materialized with this agent yet. Open a blok and press <b>Materialize Blok</b> to make one.</>,
-        <>For a blok its app provides, the agent keeps its own materialization, in step with its registrations.</>,
+        <>An empty list means no blok runs on this agent yet. Open a template from <b>Blok Templates</b> and press <b>Install</b> to make one.</>,
+        <>For a template its app provides, the agent keeps its own blok, in step with its registrations.</>,
       ]}
     />
   ),
   customBloks: (
     <PageHelp
-      intro="Bloks are pieces of user interface: panels that show an agent’s state and offer its controls. They are the building blocks of dashboards. This page lists the custom bloks: the ones people made, installed from a repository or forked from an app."
+      intro="Templates are what bloks are made of: a piece of interface written in BSX, running on no agent. Installing one makes a blok that runs on your agents. This page lists the templates people made, installed from a repository or a file, or forked from an app."
       steps={[
-        <>Click a blok to see a preview and where it is already in use.</>,
-        <>Press <b>New Blok</b> in the header to write one in BSX, or right-click a blok and choose <b>Edit Blok</b> to change it.</>,
-        <>Open a blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
-        <>Right-click a blok and choose <b>Delete Blok</b> to remove it.</>,
-        <>Right-click a blok and choose <b>Export Blok…</b> to save it as a file. Press <b>Import</b> in the header to open such a file as a new blok: it is created only when you press <b>Create blok</b> in the editor.</>,
+        <>Click a template to see a preview and the bloks made from it.</>,
+        <>Press <b>New Template</b> in the header to write one in BSX, or right-click a template and choose <b>Edit Template</b> to change it.</>,
+        <>Open a template and press <b>Install</b>: name the blok, choose the agents it runs on and press <b>Install</b>. The new blok opens.</>,
+        <>Press <b>Install from file…</b> in the header and choose or drop a blok file someone exported. You see what is in it; press <b>Install</b> to make it a template and go on to choose its agents, or <b>Open in editor</b> to look at it first.</>,
+        <>Right-click a template and choose <b>Export Template…</b> to save it as a file, or <b>Delete Template</b> to remove it.</>,
       ]}
       tips={[
-        <>The bloks your apps bring along are on the <b>App-provided Bloks</b> page.</>,
+        <>Most of the time you work with bloks, not templates: they are on the <b>Bloks</b> page, and editing a blok edits its template.</>,
+        <>The templates your apps bring along are on the <b>App-provided Templates</b> page.</>,
       ]}
     />
   ),
   blokEditor: (
     <PageHelp
-      intro="Write a blok in BSX: tags for the components, attributes for their props. The preview on the right follows as you type, drawn against its demo."
+      intro="Write a blok in BSX: tags for the components, attributes for their props. What you write is its template, shared by every blok made from it. The preview on the right follows as you type, running live on the blok you opened, or drawn against the demo."
       steps={[
         <>Type <b>&lt;</b> to see the components that fit where the cursor is; a part of its parent (a <b>SelectItem</b> in a <b>Select</b>) comes first. Accepting one fills in the props it needs.</>,
         <>Inside a tag, start typing to see its props; hover a tag or a prop to read what it does.</>,
@@ -186,10 +187,11 @@ export const REKUEST_HELP = {
         <>A green dot before an action or a state means the source uses it. A yellow row is something the source names but nothing declares: click it to declare it.</>,
         <>Press <b>Code</b>, <b>Split</b> or <b>Preview</b> at the top to show the source, the preview, or both; the choice is kept.</>,
         <>Open the <b>Chat</b> tab (shown when Alpaka is installed) to design the blok with an assistant: it reads the source as it stands in the editor and writes its changes into it, where you see them in the preview. Nothing it writes is saved until you press <b>Save</b>.</>,
-        <>Press <b>Export</b> to save the blok as a file; on the <b>Custom Bloks</b> page, <b>Import</b> opens such a file as a new blok for you to create.</>,
-        <>Switch what the preview runs on with the select over it: <b>Demo values</b>, or one of the blok’s materialized bloks. The line under the source says whether it would save, and why not.</>,
+        <>Press <b>Export</b> to save the draft as a file; <b>Install from file…</b> on the <b>Bloks</b> or <b>Blok Templates</b> page installs such a file.</>,
+        <>Switch what the preview runs on with the select over it: <b>Demo values</b>, or one of the bloks made from this template. The line under the source says whether it would save, and why not.</>,
         <>Everything is inside one <b>&lt;Blok kind=&quot;custom&quot; context=&quot;panel&quot;&gt;</b> (or <b>context=&quot;scene&quot;</b>). Declare form state with <b>{'<local name="x" default={3} persist />'}</b> as the first children of the element it is for (a control binds it with <b>{"bind={x}"}</b>; <b>persist</b> keeps it on this device), and reads as children of the <b>&lt;Blok&gt;</b>: <b>{'<query name="q" service="mikro" document="...">'}</b> with <b>&lt;var key value /&gt;</b> children, read as <b>queries.&lt;name&gt;</b> (pass <b>then</b> as a variable to read the moment viewed while time-travelling).</>,
-        <>Open the <b>Materialized</b> tab and click one of the blok’s materialized bloks to run the draft on its agents while you type, with live values; click <b>Demo values</b> to go back. The line over the preview says which one is shown.</>,
+        <>Open the <b>Preview on</b> tab and click one of the bloks made from this template to run the draft on its agents while you type, with live values; click <b>Demo values</b> to go back. The line over the preview says which one is shown.</>,
+        <>Opened from a blok (its <b>Edit</b> button), the preview starts on that blok, and a line over the editor says what a save reaches: the other bloks made from the template change too, unless held at a revision. A blok held at one is not changed by your save; press <b>Follow latest</b> there to let it take the new revision.</>,
         <>Fill the <b>Demo</b> tab with JSON to see the preview with values: <b>{"{deps, args, task, queries}"}</b>, as the blok reads them.</>,
         <>Press <b>Create blok</b> or <b>Save</b>, say in a sentence what changed if you like, and press <b>Save revision</b>. Every save is a revision of its own.</>,
         <>A moment after you stop typing the server checks the draft too: the line under the editor says what it found, and its warnings are underlined.</>,
@@ -199,38 +201,40 @@ export const REKUEST_HELP = {
       tips={[
         <>A red underline marks what will not save: BSX that does not parse, a prop the component does not have, or an agent the <b>Agents</b> tab does not declare.</>,
         <>Wrap what loads in <b>&lt;suspense&gt;</b> with a <b>&lt;fallback&gt;</b> and an <b>&lt;error&gt;</b>; without one each component shows its own skeleton.</>,
-        <>A blok an app provides is forked first: the copy is yours, and reads the app&apos;s agent as <b>agents.&lt;app&gt;</b>, one it is bound to.</>,
+        <>A blok an app provides is made your own first (<b>Make it your own</b>): its template is forked, a blok of the copy is installed on the same agents, and that one opens in the editor. The copy reads the app&apos;s agent as <b>agents.&lt;app&gt;</b>, one it runs on.</>,
       ]}
     />
   ),
   providedBloks: (
     <PageHelp
-      intro="The bloks your apps provide. Their agents keep each one in step with what they register, and materialize it themselves."
+      intro="The templates your apps provide: what their App Bloks are made of. Their agents keep each one in step with what they register, and install it themselves."
       steps={[
-        <>Click a blok to see a preview and which agents provide it.</>,
-        <>Right-click a blok and choose <b>Fork Blok</b> to make a custom copy you can change and bind to other agents.</>,
+        <>Click a template to see a preview and which agents provide it.</>,
+        <>Right-click a template and choose <b>Fork Template</b> to make a copy of your own you can change and install on other agents.</>,
       ]}
       tips={[
-        <>A provided blok carries its app’s name. It changes, and goes, with its agents’ registrations, so it can’t be changed, materialized or deleted by hand.</>,
+        <>A provided template carries its app’s name. It changes, and goes, with its agents’ registrations, so it can’t be changed, installed or deleted by hand.</>,
+        <>To change an App Blok, open it and press <b>Edit</b>: it is made your own first.</>,
       ]}
     />
   ),
   blok: (
     <PageHelp
-      intro="One blok: what it looks like, drawn large with its demo values, and the materialized copies that are connected to real agents."
+      intro="One blok template: what it looks like, drawn large with its demo values, and the bloks made from it, which run on real agents."
       steps={[
-        <>Press <b>Materialize Blok</b>, choose an agent for each one it is bound to and press <b>Submit</b> to make a working copy.</>,
-        <>For a blok an app provides, press <b>Fork Blok</b> instead, give the copy a name and press <b>Fork</b>. The new custom blok opens.</>,
-        <>Look at the blok itself at the top of the page to see what it looks like before connecting it; a 3D scene can be turned and framed.</>,
-        <>Click a card under <b>Materialized</b> to open a working copy.</>,
+        <>Press <b>Install</b>, name the blok, choose an agent for each one it asks for and press <b>Install</b>. The new blok opens.</>,
+        <>For a template an app provides, press <b>Fork Template</b> instead, give the copy a name and press <b>Fork</b>. The new template opens.</>,
+        <>Look at the template itself at the top of the page to see what it looks like before installing it; a 3D scene can be turned and framed.</>,
+        <>Click a card under <b>Bloks made from it</b> to open one.</>,
         <>Open the <b>Info</b> tab of the sidebar for its kind, module, revision and the agents it asks for.</>,
-        <>Press <b>Delete Blok</b> to remove a custom blok. You are taken back to the list.</>,
-        <>Press <b>Pin</b> to pin the blok for yourself: it is listed first, and shows on the Rekuest home and in ⌘K. Press <b>Unpin</b> to undo it.</>,
+        <>Press <b>Export Template…</b> to save it as a file. The dialog says what goes in, and that which agents it runs on stays here.</>,
+        <>Press <b>Delete Template</b> to remove a template. You are taken back to the list.</>,
       ]}
       tips={[
         <>The preview is filled with demo state, not with live values from an agent.</>,
-        <>A yellow note above the blok lists problems found in its definition.</>,
-        <><b>Provided by</b> in the <b>Info</b> tab names the app whose agents provide the blok, and <b>Its agents</b> lists them, with a green dot for the connected ones.</>,
+        <>Templates are not pinned; pin the bloks made from them.</>,
+        <>A yellow note above the template lists problems found in its definition.</>,
+        <><b>Provided by</b> in the <b>Info</b> tab names the app whose agents provide the template, and <b>Its agents</b> lists them, with a green dot for the connected ones.</>,
       ]}
     />
   ),
@@ -248,7 +252,7 @@ export const REKUEST_HELP = {
     <PageHelp
       intro="A dashboard holds panels, each a blok connected to your agents. Panels can sit side by side, stacked or in tabs."
       steps={[
-        <>Open the <b>Bloks</b> tab of the sidebar and drag a blok onto the dashboard. In <b>Materialize Blok</b>, choose the agents it should talk to and press <b>Submit</b>.</>,
+        <>Open the <b>Bloks</b> tab of the sidebar and drag a blok onto the dashboard. In <b>Install Blok</b>, choose the agents it should run on and press <b>Install</b>.</>,
         <>Drop an agent card onto the dashboard instead to pick a blok for that agent. The agent is preselected in the dialog.</>,
         <>Drag a panel by its tab to move it next to, below or behind another panel.</>,
         <>Press <b>Edit</b>, then hover a tab and press its cross to close the panel. <b>Reset</b> discards the arrangement and reopens every panel, and <b>Done</b> leaves editing.</>,
@@ -321,48 +325,52 @@ export const REKUEST_HELP = {
   ),
   materializedBloks: (
     <PageHelp
-      intro="A materialized blok is a blok that has been connected to real agents, so its controls act on your devices and its values are live. This page lists all of them."
+      intro="Bloks are interfaces running on your agents: their values are live and their controls act on your devices. This page lists the ones people installed."
       steps={[
-        <>Click a materialized blok to open it and use it.</>,
-        <>Right-click one and choose <b>Delete Materialized Blok</b> to remove it.</>,
-        <>To make a new one, open a blok from the <b>Custom Bloks</b> page and press <b>Materialize Blok</b>.</>,
+        <>Click a blok to open it and use it.</>,
+        <>Right-click one and choose <b>Edit</b> to change it in BSX, <b>Pin Blok</b> to keep it first, or <b>Delete Blok</b> to remove it.</>,
+        <>Press <b>Install from file…</b> in the header and choose or drop a blok file someone exported to install it here.</>,
+        <>Press <b>Templates</b> in the header to install another from a template, or to write a new one.</>,
       ]}
       tips={[
-        <>This page lists the ones people made. The agents’ own materializations of the bloks their app provides are on their own page.</>,
-        <>The ones you pinned come first, under <b>Pinned</b>.</>,
+        <>The bloks your apps bring along are on the <b>App Bloks</b> page.</>,
+        <>The ones you pinned come first, under <b>Pinned</b>, and show on the Rekuest home and in ⌘K.</>,
       ]}
     />
   ),
   providedMaterializedBloks: (
     <PageHelp
-      intro="The agents’ own materializations of the bloks their app provides. Each agent keeps its own, in step with its registrations."
+      intro="The bloks your apps bring along. Each agent keeps its own, in step with its registrations."
       steps={[
-        <>Click a materialized blok to open it and use it.</>,
-        <>Open one and press <b>Rematerialize</b> to fork its blok and make a materialization of your own, with the same agents filled in.</>,
+        <>Click a blok to open it and use it.</>,
+        <>Open one and press <b>Edit</b> to change it: it is made your own first, a copy on the same agents, and that copy opens in the editor.</>,
+        <>Open one and press <b>Install Again…</b> to make a copy of your own without editing it.</>,
       ]}
     />
   ),
   materializedBlok: (
     <PageHelp
-      intro="A working interface panel: a blok connected to your agents. Its controls run actions on those agents and its values follow their state."
+      intro="A blok: a working interface running on your agents. Its controls run actions on those agents and its values follow their state."
       steps={[
         <>Use the controls in the panel as you would on the device itself.</>,
         <>Open the <b>Bindings</b> tab of the sidebar to see which agent stands behind each part of the blok. Click an agent to open it.</>,
-        <>Click the blok name in the <b>Bindings</b> tab to go back to the blok this was made from.</>,
+        <>Click the name under <b>Made from the template</b> in the <b>Bindings</b> tab to open its template.</>,
+        <>Press <b>Edit</b> to change it in BSX, with the draft running live on its agents as you type. Saving changes its template, so the other bloks made from it change too. One its app provides is made your own first.</>,
+        <>Press <b>Export…</b> to save it as a file to install elsewhere. The dialog says what goes in, and that which agents it runs on stays here.</>,
         <>Press <b>History</b> in the header to see the panel as it was earlier. In the bar below it, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Click the time to jump to another one. Press <b>Go live</b> to return to the present.</>,
         <>Press <b>Revisions</b> in that bar to go through the past one recorded change of an agent at a time instead: the arrows go to the revision before or after, the slider runs over all revisions since the agent started, and typing a number into <b>Revision</b> and pressing Enter goes straight to it. With more than one agent, choose whose revisions to step through. Press <b>Time</b> to get the slider back.</>,
         <>Press <b>Reinstantiate</b> to choose again what the blok is opened for. The form starts from what it shows now; press <b>Open</b> to show the new items, or <b>Cancel</b> to keep them.</>,
-        <>Press <b>Rematerialize</b> to make a new materialization of the original blok, with the current agents filled in. A blok an app provides is forked first, so name the copy and press <b>Fork</b>. The new one opens; this one stays as it is.</>,
-        <>Press the <b>Rev</b> button in the header to choose which revision of its blok this shows: the latest, which follows every save, or one it stays at while the blok changes on. It reads <b>Held at rev</b> while it stays at one.</>,
+        <>Press <b>Install Again…</b> to make another blok of the same template, with the current agents filled in. A template an app provides is forked first, so name the copy and press <b>Fork</b>. The new one opens; this one stays as it is.</>,
+        <>Press the <b>Rev</b> button in the header to choose which revision of its template this shows: the latest, which follows every save, or one it stays at while the template changes on. It reads <b>Held at rev</b> while it stays at one.</>,
         <>Press <b>Pin</b> to pin it for yourself: it is listed first, and shows on the Rekuest home and in ⌘K. Press <b>Unpin</b> to undo it.</>,
-        <>Press <b>Delete Materialized Blok</b> to remove it. You are taken back to the list.</>,
+        <>Press <b>Delete Blok</b> to remove it; its template stays. You are taken back to the list.</>,
       ]}
       tips={[
         <>While the bar says <b>PAST</b> the panel only shows what was: its controls run nothing.</>,
         <>A revision number counts within one run of an agent and starts again when the agent restarts. The other agents are shown as they were at the moment of the revision.</>,
         <>A button that needs an agent which is offline, or a part no agent is bound to, is grayed out: hover it to see why. The <b>Bindings</b> tab lists what is <b>Not bound</b>.</>,
         <>In the <b>Bindings</b> tab a green dot means the agent is connected, a grey one that it is offline.</>,
-        <><b>Belongs to</b> in the <b>Bindings</b> tab names the agent that keeps this materialization, for a blok its app provides.</>,
+        <><b>Belongs to</b> in the <b>Bindings</b> tab names the agent that keeps this blok, for a template its app provides.</>,
       ]}
     />
   ),

@@ -13,22 +13,16 @@ export type Props = {
   pagination?: OffsetPaginationInput;
 };
 
-/** The bloks `filters` selects, the ones you pinned first. */
+/** The templates `filters` selects. Templates are not pinned: the bloks made of them are. */
 const List = ({ filters, pagination = FIRST_PAGE }: Props) => {
-  const pinned = useListBloksQuery({ variables: { filters: { ...filters, pinned: true } } });
-  const { data, refetch } = useListBloksQuery({ variables: { filters: { ...filters, pinned: false }, pagination } });
+  const { data, refetch } = useListBloksQuery({ variables: { filters, pagination } });
 
   return (
     <div className="flex flex-col gap-4">
-      {(pinned.data?.bloks.length ?? 0) > 0 && (
-        <ListRender array={pinned.data?.bloks} title="Pinned" refetch={() => pinned.refetch()}>
-          {(ex) => <BlokCard key={ex.id} item={ex} />}
-        </ListRender>
-      )}
       <ListRender
         array={data?.bloks}
         title={
-          <RekuestBlok.ListLink className="flex-0">Bloks</RekuestBlok.ListLink>
+          <RekuestBlok.ListLink className="flex-0">Templates</RekuestBlok.ListLink>
         }
         refetch={() => refetch()}
       >
