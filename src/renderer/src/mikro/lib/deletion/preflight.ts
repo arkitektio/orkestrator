@@ -1,4 +1,5 @@
 import type { ApolloClient, NormalizedCacheObject, TypedDocumentNode } from "@apollo/client";
+import { Kind, type DocumentNode, type FieldNode, type OperationDefinitionNode, type VariableDefinitionNode } from "graphql";
 import {
   PreflightDeleteAnnotationCollectionDocument,
   PreflightDeleteAnnotationDocument,
@@ -106,14 +107,83 @@ export function summarizePreflights(
   };
 }
 
+/** How many targets one batched request asks about. */
+export const PREFLIGHT_BATCH = 50;
+
+/**
+ * One request asking a one-target preflight query of many targets: its field
+ * repeated under an alias per target (`t0`, `t1`, ...), each with its own `$id`
+ * (`$id0`, `$id1`, ...); every other variable (`$kind`) is shared. Built from
+ * the generated document, so the selection is exactly the one-target query's.
+ * A multi-select delete used to send one request per target.
+ */
+export const batchedPreflightDocument = (document: DocumentNode, count: number): DocumentNode => {
+  const operation = document.definitions.find(
+    (definition): definition is OperationDefinitionNode => definition.kind === Kind.OPERATION_DEFINITION,
+  );
+  if (!operation) throw new Error("A preflight document without an operation");
+  const field = operation.selectionSet.selections.find((selection): selection is FieldNode => selection.kind === Kind.FIELD);
+  if (!field) throw new Error("A preflight document without a field");
+  const shared = (operation.variableDefinitions ?? []).filter((definition) => definition.variable.name.value !== "id");
+  const idDefinition = (operation.variableDefinitions ?? []).find((definition) => definition.variable.name.value === "id");
+  if (!idDefinition) throw new Error("A preflight document without an $id");
+  const ids: VariableDefinitionNode[] = Array.from({ length: count }, (_, index) => ({
+    ...idDefinition,
+    variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: `id${index}` } },
+  }));
+  const fields: FieldNode[] = Array.from({ length: count }, (_, index) => ({
+    ...field,
+    alias: { kind: Kind.NAME, value: `t${index}` },
+    arguments: (field.arguments ?? []).map((argument) =>
+      argument.value.kind === Kind.VARIABLE && argument.value.name.value === "id"
+        ? { ...argument, value: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: `id${index}` } } }
+        : argument,
+    ),
+  }));
+  return {
+    ...document,
+    definitions: [
+      {
+        ...operation,
+        name: { kind: Kind.NAME, value: `${operation.name?.value ?? "Preflight"}Batch${count}` },
+        variableDefinitions: [...shared, ...ids],
+        selectionSet: { ...operation.selectionSet, selections: fields },
+      },
+      ...document.definitions.filter((definition) => definition !== operation),
+    ],
+  };
+};
+
+/** Every target's preflight, `PREFLIGHT_BATCH` targets a request, always fresh. */
+const batchedPreflights = async (
+  client: ApolloClient<NormalizedCacheObject> | ApolloClient<unknown>,
+  document: DocumentNode,
+  ids: readonly string[],
+  shared: Record<string, unknown> = {},
+): Promise<{ id: string; preflight: DeletePreflightFragment }[]> => {
+  const chunks: string[][] = [];
+  for (let start = 0; start < ids.length; start += PREFLIGHT_BATCH) chunks.push(ids.slice(start, start + PREFLIGHT_BATCH));
+  const answers = await Promise.all(
+    chunks.map(async (chunk) => {
+      const variables = { ...shared, ...Object.fromEntries(chunk.map((id, index) => [`id${index}`, id])) };
+      const { data } = await (client as ApolloClient<unknown>).query<Record<string, DeletePreflightFragment>>({
+        query: batchedPreflightDocument(document, chunk.length),
+        variables,
+        fetchPolicy: "network-only",
+      });
+      return chunk.map((id, index) => ({ id, preflight: data[`t${index}`] }));
+    }),
+  );
+  return answers.flat();
+};
+
 /** Preflight every target of one kind and summarise. */
 export async function preflightDeletes(
   client: ApolloClient<NormalizedCacheObject> | ApolloClient<unknown>,
   kind: PreflightKind,
   ids: readonly string[],
 ): Promise<DeletePreflightSummary> {
-  const entries = await Promise.all(ids.map(async (id) => ({ id, preflight: await preflightDelete(client, kind, id) })));
-  return summarizePreflights(entries);
+  return summarizePreflights(await batchedPreflights(client, QUERIES[kind].document, ids));
 }
 
 /**
@@ -126,12 +196,7 @@ export async function preflightDeleteDerived(
   kind: LineageNodeKind,
   ids: readonly string[],
 ): Promise<DeletePreflightSummary> {
-  const entries = await Promise.all(
-    ids.map(async (id) => {
-      const { data } = await (client as ApolloClient<unknown>).query({ query: PreflightDeleteDerivedDocument, variables: { kind, id }, fetchPolicy: "network-only" });
-      return { id, preflight: data.preflightDeleteDerived };
-    }),
-  );
+  const entries = await batchedPreflights(client, PreflightDeleteDerivedDocument, ids, { kind });
   return summarizePreflights(entries, 5, "derived");
 }
 

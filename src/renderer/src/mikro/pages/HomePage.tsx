@@ -36,6 +36,7 @@ import { RecentData } from "../components/home/RecentData";
 import { HomeFilterBar, useHomeFilters } from "../components/home/HomeFilters";
 import { HomeResultsProvider } from "../components/home/homeResults";
 import { useLiveLenses } from "../lib/lenses/useLiveLenses";
+import { isWholeLens } from "../lenses";
 import { HomeOverviewSidebar } from "../components/sidebars/HomeOverviewSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { MIKRO_HELP } from "../help";
@@ -60,7 +61,9 @@ const LIVE_REFETCH = [HomeRootsDocument, HomeRootDetailsDocument, HomeResultsDoc
  * acquired or created; search and sort live on the list pages.
  */
 const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
-  useLiveLenses({ refetch: LIVE_REFETCH });
+  // Only a new container is news here (its whole lens comes with it): a crop
+  // cut anywhere in the organization changes nothing on this page.
+  useLiveLenses({ refetch: LIVE_REFETCH, when: isWholeLens });
   const performDataLayerUpload = useMikroBigFileUpload();
   const createFile = useCreateFile();
   const { startUpload } = useUpload();

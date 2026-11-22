@@ -1,9 +1,9 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroTableDataset } from "@/core/linkers";
-import { useGetTableDatasetQuery } from "@/mikro/api/graphql";
+import { useGetListTableDatasetQuery } from "@/mikro/api/graphql";
 
 export const TableDatasetDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetTableDatasetQuery({ variables: { id: props.id } });
+  const { data } = useGetListTableDatasetQuery({ variables: { id: props.id } });
 
   if (!data?.tableDataset) {
     return (

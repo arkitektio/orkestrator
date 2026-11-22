@@ -12,7 +12,7 @@ const Page: React.FC<ISparseDatasetsScreenProps> = () => {
   return (
     <MikroSparseDataset.ListPage title="Sparse Datasets" pageActions={actions} help={MIKRO_HELP.sparseDatasets}>
       <div className="p-3 flex flex-col gap-3">
-        <SparseDatasetList filters={filters} ordering={ordering} />
+        <SparseDatasetList filters={filters} ordering={ordering} pagination={{ limit: 30 }} />
       </div>
     </MikroSparseDataset.ListPage>
   );

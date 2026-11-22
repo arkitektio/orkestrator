@@ -8,7 +8,7 @@ import {
   meshPreviewInput,
   previewInputOf,
 } from "@/mikro/forms/addLayer/previewLayer";
-import { planLensLayer } from "@/mikro/forms/addLayer/stageLens";
+import { loadStageWorld, planLensLayer, type StageWorld } from "@/mikro/forms/addLayer/stageLens";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 
 import {
@@ -66,7 +66,7 @@ export const useStaging = () => {
   );
 
   const stage = useCallback(
-    async (owner: string, source: StageSource, origin?: string): Promise<StageResult> => {
+    async (owner: string, source: StageSource, origin?: string, world?: Promise<StageWorld | null>): Promise<StageResult> => {
       const scene = sceneApi.getState().id;
       if (source.kind === "mesh") {
         const drawn = sceneApi
@@ -81,7 +81,7 @@ export const useStaging = () => {
         return { status: "staged", key };
       }
       const extraLayers = stagedApi.getState().entries.map((entry) => entry.engine);
-      const plan = await planLensLayer(client, registry, { scene, lens: source.lens, extraLayers });
+      const plan = await planLensLayer(client, registry, { scene, lens: source.lens, extraLayers, world });
       if (plan.status !== "ready") return plan;
       const key = await stageInput(owner, previewInputOf(plan.request), {
         label: source.label ?? plan.label,
@@ -117,8 +117,8 @@ export const useStaging = () => {
           stagedApi.getState().setKeeping(key, false);
           throw error;
         }
-        // The refetch has the saved layer by now (`awaitRefetchQueries`): drop
-        // the staged one without the layer blinking out.
+        // The cached scene has the saved layer by now (`keepPreviewLayer` links
+        // it in): drop the staged one without the layer blinking out.
         stagedApi.getState().discard([key]);
       }
     },
@@ -127,5 +127,8 @@ export const useStaging = () => {
 
   const discard = useCallback((keys: readonly string[]) => stagedApi.getState().discard(keys), [stagedApi]);
 
-  return useMemo(() => ({ stage, keep, discard }), [stage, keep, discard]);
+  /** The scene's world, looked at once for a batch of lenses (`loadStageWorld`); hand it to each `stage`. */
+  const world = useCallback(() => loadStageWorld(client, sceneApi.getState().id), [client, sceneApi]);
+
+  return useMemo(() => ({ stage, keep, discard, world }), [stage, keep, discard, world]);
 };

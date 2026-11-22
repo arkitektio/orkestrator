@@ -542,7 +542,7 @@ fragment SceneLayer on Layer {
   }
   ... on PointLayer {
     tableDataset {
-      ...TableDataset
+      ...SceneTableDataset
     }
     # The selection the layer draws: its table, narrowed by the lens' windows.
     # `windowFilters` is those windows as filters the server ALWAYS applies, on
@@ -575,7 +575,7 @@ fragment SceneLayer on Layer {
   }
   ... on TrackLayer {
     tableDataset {
-      ...TableDataset
+      ...SceneTableDataset
     }
     # The selection the layer draws: its table, narrowed by the lens' windows.
     # `windowFilters` is those windows as filters the server ALWAYS applies, on

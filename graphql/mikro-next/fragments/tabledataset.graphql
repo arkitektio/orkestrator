@@ -86,3 +86,22 @@ fragment TableDataset on TableDataset {
     ...CoordinateSystem
   }
 }
+
+# A table as a scene layer draws it: the `TableDataset` fields with its space
+# as `SpaceAxes` -- a layer reads the axes, never who else lives there.
+fragment SceneTableDataset on TableDataset {
+  id
+  name
+  description
+  axisNames
+  rowCount
+  store {
+    ...ParquetStore
+  }
+  columns {
+    ...TableDatasetColumn
+  }
+  coordinateSystem {
+    ...SpaceAxes
+  }
+}

@@ -397,7 +397,7 @@ export type StagedLayerLike = {
     slices?: readonly SliceLike[] | null;
     dataset: { id: string; intrinsicSystem?: { id: string } | null };
   } | null;
-  colormap?: string | null;
+  intensityColormap?: string | null;
   climMin?: number | null;
   climMax?: number | null;
   gamma?: number | null;
@@ -427,7 +427,7 @@ export const stagedFromLayers = (
       nodeKey: source.nodeKey,
       spaceId: source.spaceId,
       slices: layer.lens?.slices,
-      colormap: layer.colormap,
+      colormap: layer.intensityColormap,
       climMin: layer.climMin,
       climMax: layer.climMax,
       gamma: layer.gamma,

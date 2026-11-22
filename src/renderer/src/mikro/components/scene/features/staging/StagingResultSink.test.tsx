@@ -2,10 +2,11 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const client = { refetchQueries: vi.fn(async () => []) };
+const client = { refetchQueries: vi.fn(async () => []), query: vi.fn(async () => ({ data: { annotations: [] } })), cache: {} };
 const stage = vi.fn(async () => ({ status: "staged", key: "staged:x" }));
 vi.mock("@/mikro/api/funcs", () => ({ useMikro: () => client }));
-vi.mock("./useStaging", () => ({ useStaging: () => ({ stage }) }));
+const world = vi.fn(async () => null);
+vi.mock("./useStaging", () => ({ useStaging: () => ({ stage, world }) }));
 vi.mock("@/mikro/lenses", () => ({
   LENS_KINDS: { ArrayLens: { identifier: "@mikro/arraylens" }, MeshLens: { identifier: "@mikro/meshlens" } },
 }));
@@ -52,7 +53,9 @@ describe("StagingResultSink", () => {
     mount("mesh:m:3");
     sink!([{ identifier: "@mikro/arraylens", id: "7", label: "crop" }]);
     await settle();
-    expect(stage).toHaveBeenCalledWith("mesh:m:3", { kind: "array", lens: "7", label: "crop" }, undefined);
+    // With the run's one shared look at the world.
+    expect(world).toHaveBeenCalledTimes(1);
+    expect(stage).toHaveBeenCalledWith("mesh:m:3", { kind: "array", lens: "7", label: "crop" }, undefined, expect.any(Promise));
     expect(client.refetchQueries).toHaveBeenCalledWith({ include: ["GetMeshObjectInfo"] });
   });
 

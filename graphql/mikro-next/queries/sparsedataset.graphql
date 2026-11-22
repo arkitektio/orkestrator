@@ -106,3 +106,10 @@ query GetSparseDatasetAnchorsFull($id: ID!) {
     }
   }
 }
+
+# One sparse dataset at card depth, for a chip or a display widget.
+query GetListSparseDataset($id: ID!) {
+  sparseDataset(id: $id) {
+    ...ListSparseDataset
+  }
+}

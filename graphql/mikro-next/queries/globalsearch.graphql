@@ -1,3 +1,5 @@
+# The palette's mikro hits: a row is an id and a name, so that is all a hit
+# carries (it runs on every settled keystroke).
 query GlobalSearch(
   $search: String
   $noArrayDatasets: Boolean!
@@ -10,21 +12,24 @@ query GlobalSearch(
     filters: { search: $search }
     pagination: $pagination
   ) @skip(if: $noArrayDatasets) {
-    ...ListArrayDataset
+    id
+    name
   }
 
   files: files(
     filters: { search: $search }
     pagination: $pagination
   ) @skip(if: $noFiles) {
-    ...ListFile
+    id
+    name
   }
 
   folders: folders(
     filters: { search: $search }
     pagination: $pagination
   ) @skip(if: $noFolders){
-    ...ListFolder
+    id
+    name
   }
 
   # Only lenses that select something: a whole lens is its container, which is

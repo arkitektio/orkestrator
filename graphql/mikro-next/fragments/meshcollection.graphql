@@ -13,7 +13,7 @@ fragment MeshCollection on MeshCollection {
   label
   specVersion
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   store {
     ...FabriksStore

@@ -1,7 +1,7 @@
 import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { Aperture } from "lucide-react";
-import { useGetLensQuery } from "../api/graphql";
+import { useGetListLensQuery } from "../api/graphql";
 import { describeLens } from "../lenses";
 
 /** A lens elsewhere: what it is called, the container it looks into and the
@@ -9,7 +9,7 @@ import { describeLens } from "../lenses";
  *  each kind's structure (`@mikro/arraylens`, …), all of which link to the one
  *  lens page. */
 export const LensDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetLensQuery({ variables: { id: props.id } });
+  const { data } = useGetListLensQuery({ variables: { id: props.id } });
   const lens = data?.lens;
   if (!lens) return <DisplayLinePlaceholder {...props} icon={Aperture} />;
 

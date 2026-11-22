@@ -1,18 +1,14 @@
 # Only whether there is anything at all: the page's lists run their own
 # queries. Lenses rather than array datasets, because every container has a
-# whole lens — an organization holding only tables is not an empty one.
+# whole lens — an organization holding only tables is not an empty one; files
+# because an upload that has not been converted yet has none.
 query HomePage {
   lenses(pagination: { limit: 1 }) {
     id
   }
 
-  # The newest dataset, for the dashboard widget's thumbnail.
-  arrayDatasets: arrayDatasets(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
-    ...ListArrayDataset
-  }
-
-  files: files(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
-    ...ListFile
+  files: files(pagination: { limit: 1 }) {
+    id
   }
 }
 

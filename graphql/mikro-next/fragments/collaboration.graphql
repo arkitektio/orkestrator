@@ -13,9 +13,11 @@ fragment CollaborationItem on CollaborationItem {
   addedAt
 }
 
+# A collaboration and how much is in it, counted on the server. Its items are
+# paged (`GetCollaborationItems`): one put in with "everything made from it"
+# can hold thousands.
 fragment Collaboration on Collaboration {
   ...ListCollaboration
-  items {
-    ...CollaborationItem
-  }
+  put: itemCount(brought: false)
+  broughtCount: itemCount(brought: true)
 }

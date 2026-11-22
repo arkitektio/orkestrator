@@ -9,10 +9,10 @@ import { LENS_KINDS } from "@/mikro/lenses";
 
 import { useStagedLayersStoreApi } from "../../platform/float/stagedLayerStore";
 import { useStaging, type StageSource } from "./useStaging";
+import { returnedAnnotationIds, showReturnedAnnotations } from "../results/returnedAnnotations";
 
 const ARRAY_LENS = LENS_KINDS.ArrayLens.identifier;
 const MESH_LENS = LENS_KINDS.MeshLens.identifier;
-const ANNOTATION = "@mikro/annotation";
 /** What a float asks about its object (what was made from it, …), by the float's owner key. */
 const floatQueriesOf = (owner: string): string[] =>
   owner.startsWith("annotation:") ? ["GetAnnotationInfo"] : owner.startsWith("mesh:") ? ["GetMeshObjectInfo"] : [];
@@ -37,7 +37,7 @@ const floatQueriesOf = (owner: string): string[] =>
  */
 export const StagingResultSink = ({ owner, children }: { owner: string; children?: ReactNode }) => {
   const client = useMikro();
-  const { stage } = useStaging();
+  const { stage, world } = useStaging();
   const stagedApi = useStagedLayersStoreApi();
   const queue = useRef<Promise<void>>(Promise.resolve());
   // Whether the float is still open. A run outlives its menu; one that ends
@@ -61,16 +61,18 @@ export const StagingResultSink = ({ owner, children }: { owner: string; children
           (lens): StageSource => ({ kind: "mesh", lens: lens.id, label: lens.label }),
         ),
       ];
-      const annotations = results.some((result) => result.identifier === ANNOTATION);
+      const annotations = returnedAnnotationIds(results);
       const originKey = origin ? resultOriginKey(origin) : undefined;
 
       queue.current = queue.current.then(async () => {
         if (!open.current) return;
         const staged: string[] = [];
         let unplaceable = 0;
+        // One look at the world for the whole run, shared by every lens it returned.
+        const shared = sources.some((source) => source.kind === "array") ? world() : undefined;
         for (const source of sources) {
           try {
-            const result = await stage(owner, source, originKey);
+            const result = await stage(owner, source, originKey, shared);
             if (result.status === "staged") staged.push(result.key);
             if (result.status === "unplaceable") unplaceable++;
           } catch (error) {
@@ -78,11 +80,9 @@ export const StagingResultSink = ({ owner, children }: { owner: string; children
           }
         }
         if (unplaceable > 0) toast.info("The result was made, but cannot be placed in this scene");
-        if (annotations) {
-          await client.refetchQueries({ include: ["GetSceneAnnotations"] }).catch((error: unknown) => {
-            reportError(error, "Couldn't show the returned shape");
-          });
-        }
+        await showReturnedAnnotations(client, annotations).catch((error: unknown) => {
+          reportError(error, "Couldn't show the returned shape");
+        });
         // A rerun replaces this owner's layers from the previous run.
         if (originKey && staged.length > 0) {
           const stale = stagedApi
@@ -99,7 +99,7 @@ export const StagingResultSink = ({ owner, children }: { owner: string; children
         });
       });
     },
-    [client, owner, stage, stagedApi],
+    [client, owner, stage, stagedApi, world],
   );
 
   return <SmartResultSink onResults={onResults}>{children}</SmartResultSink>;

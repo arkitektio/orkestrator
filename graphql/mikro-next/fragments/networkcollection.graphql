@@ -17,7 +17,7 @@ fragment NetworkCollection on NetworkCollection {
   label
   specVersion
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   store {
     ...KonnektionStore

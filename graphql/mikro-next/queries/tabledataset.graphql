@@ -120,19 +120,6 @@ query BrowseTableDatasets(
   }
 }
 
-query GetTableDatasets(
-  $filters: TableDatasetFilter
-  $pagination: OffsetPaginationInput
-  $ordering: [TableDatasetOrder!]
-) {
-  tableDatasets(
-    filters: $filters
-    pagination: $pagination
-    ordering: $ordering
-  ) {
-    ...ListTableDataset
-  }
-}
 
 # The coordinate anchors of a table, in the same thin/full split the array side
 # uses (`SceneLens.activeAnchors` rides along thin; `GetLensAnchors` fills in
@@ -164,6 +151,17 @@ query GetTableDatasetAnchorsFull($id: ID!) {
     id
     anchors {
       ...FullCoordinateAnchor
+    }
+  }
+}
+
+# One table at card depth, for a chip or a display widget: its columns by name.
+query GetListTableDataset($id: ID!) {
+  tableDataset(id: $id) {
+    ...ListTableDataset
+    columns {
+      id
+      name
     }
   }
 }

@@ -2,13 +2,20 @@
 # range and null count, and the summary a client computed once and pinned
 # (histogram, distinct values). The column editor reads these first and scans
 # the parquet only for what is missing.
+#
+# Also what a colouring entry needs of its table to draw its control and scan
+# the parquet (name, store, each column's role): the editor and the network
+# layer ask this one query instead of the whole `GetTableDataset`.
 query TableColumnStats($id: ID!) {
   tableDataset(id: $id) {
     id
+    name
     rowCount
+    store {
+      ...ParquetStore
+    }
     columns {
-      id
-      name
+      ...TableDatasetColumn
       stats {
         min
         max

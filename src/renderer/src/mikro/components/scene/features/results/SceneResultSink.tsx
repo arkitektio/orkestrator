@@ -7,7 +7,9 @@ import type { Structure } from "@/core/types";
 import { CreateMeshLayerDocument, DeleteLayerDocument } from "@/mikro/api/graphql";
 import { useMikro } from "@/mikro/api/funcs";
 import { LAYER_KIND_INFO } from "@/mikro/forms/addLayer/engine";
-import { stageLens, type StageOutcome } from "@/mikro/forms/addLayer/stageLens";
+import { loadStageWorld, stageLens, type StageOutcome } from "@/mikro/forms/addLayer/stageLens";
+import { intoScene, outOfScene } from "@/mikro/lib/scene/sceneLayerCache";
+import { returnedAnnotationIds, showReturnedAnnotations } from "./returnedAnnotations";
 import { LENS_KINDS } from "@/mikro/lenses";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 
@@ -18,7 +20,6 @@ const ARRAY_LENS = LENS_KINDS.ArrayLens.identifier;
 /** A surface an action extracted: drawn as a mesh layer over the whole lens it returned. */
 const MESH_LENS = LENS_KINDS.MeshLens.identifier;
 /** A shape an action drew: it lives in a collection the scene already shows, so a refetch shows it. */
-const ANNOTATION = "@mikro/annotation";
 
 type MikroClient = ReturnType<typeof useMikro>;
 
@@ -41,7 +42,7 @@ export const stageMeshLens = async (
   const created = (await client.mutate({
     mutation: CreateMeshLayerDocument,
     variables: { input: { scene: input.scene, lens: input.lens } },
-    refetchQueries: ["GetScene"],
+    ...intoScene(input.scene),
   } as unknown as Parameters<MikroClient["mutate"]>[0])) as { data?: { createMeshLayer?: { id: string } | null } };
   return created.data?.createMeshLayer?.id ?? null;
 };
@@ -76,7 +77,8 @@ export class RerunLayers {
  * - an array lens an action made (a crop, a segmentation's labels) is added
  *   the way Add Layer would add it (`stageLens`);
  * - a mesh lens (an extracted surface) becomes a mesh layer;
- * - an annotation (a refined path) is shown by refetching the scene's shapes.
+ * - an annotation (a refined path) is fetched and put into its collection's
+ *   cached shapes (`showReturnedAnnotations`).
  *
  * One run at a time, in the order the runs finish, so a second channel takes
  * the next colour after the first. A rerun of the same action on the same
@@ -95,13 +97,15 @@ export const SceneResultSink = ({ children }: { children?: ReactNode }) => {
       if (!scene) return;
       const lenses = uniqueStructures(results.filter((result) => result.identifier === ARRAY_LENS));
       const meshes = uniqueStructures(results.filter((result) => result.identifier === MESH_LENS));
-      const annotations = results.some((result) => result.identifier === ANNOTATION);
+      const annotations = returnedAnnotationIds(results);
 
       queue.current = queue.current.then(async () => {
         const added: string[] = [];
+        // One look at the world for the whole run, shared by every lens it returned.
+        const world = lenses.length > 0 ? loadStageWorld(client, scene) : undefined;
         for (const lens of lenses) {
           try {
-            const outcome = await stageLens(client, registry, { scene, lens: lens.id });
+            const outcome = await stageLens(client, registry, { scene, lens: lens.id, world });
             if (outcome.status === "added" && outcome.layer) added.push(outcome.layer);
             const message = stageMessage(outcome);
             toast[message.kind](message.text);
@@ -118,11 +122,9 @@ export const SceneResultSink = ({ children }: { children?: ReactNode }) => {
             reportError(error, "Couldn't add the surface as a layer");
           }
         }
-        if (annotations) {
-          await client.refetchQueries({ include: ["GetSceneAnnotations"] }).catch((error: unknown) => {
-            reportError(error, "Couldn't show the returned shape");
-          });
-        }
+        await showReturnedAnnotations(client, annotations).catch((error: unknown) => {
+          reportError(error, "Couldn't show the returned shape");
+        });
 
         const stale = reruns.current.replace(origin, added);
         for (const layer of stale) {
@@ -130,7 +132,7 @@ export const SceneResultSink = ({ children }: { children?: ReactNode }) => {
             await client.mutate({
               mutation: DeleteLayerDocument,
               variables: { input: { id: layer } },
-              refetchQueries: ["GetScene"],
+              ...outOfScene(scene, layer),
             } as unknown as Parameters<MikroClient["mutate"]>[0]);
           } catch {
             // Already removed by hand: nothing to replace.

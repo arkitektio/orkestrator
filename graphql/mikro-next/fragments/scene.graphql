@@ -18,7 +18,7 @@ fragment Scene on Scene {
     ...SceneSnapshot
   }
   worldCoordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   # scene.coordinateSystems and scene.registrations are deliberately NOT
   # selected: every edge self-describes its parameter order

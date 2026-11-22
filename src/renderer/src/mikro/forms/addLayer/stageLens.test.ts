@@ -27,7 +27,7 @@ vi.mock("./spaceGraph", () => ({
   mergeGraphs: (a: object, b: object) => ({ ...a, ...b }),
 }));
 
-import { drawsLens, stageLens } from "./stageLens";
+import { drawsLens, loadStageWorld, stageLens } from "./stageLens";
 
 const crop = { id: "42", dataset: { id: "d", intrinsicSystem: { id: "grid" } }, slices: [], renderAxes: null };
 const rowOf = (lens: object) => [{ entries: [{ kind: "dataset", lenses: [{ lens, label: "soma crop" }] }] }];
@@ -68,15 +68,32 @@ describe("stageLens", () => {
       expect.objectContaining({
         mutation: CreateIntensityLayerDocument,
         variables: { input: { scene: "s", lens: "42" } },
-        refetchQueries: ["GetScene"],
+        // Into the cached scene from the answer, never a scene refetch.
+        update: expect.any(Function),
       }),
     );
+    expect(mutate.mock.calls[0][0]).not.toHaveProperty("refetchQueries");
+  });
+
+  it("looks at the world once for a batch of lenses, and at the scene's layers for each", async () => {
+    sections.mockReturnValue(rowOf(crop));
+    const { client, query } = clientWith([]);
+    const asked = (document: unknown) => query.mock.calls.filter(([options]) => (options as { query: unknown }).query === document).length;
+
+    const world = loadStageWorld(client, "s");
+    await stageLens(client, registry, { scene: "s", lens: "42", world });
+    await stageLens(client, registry, { scene: "s", lens: "42", world });
+
+    expect(asked(AddLayerWorldGraphDocument)).toBe(1);
+    expect(asked(AddLayerLensCapabilitiesDocument)).toBe(1);
+    // Once for the shared world, then once per lens: the lens before may have added a layer.
+    expect(asked(AddLayerReachableDocument)).toBe(3);
   });
 
   it("answers with the layer the server made, so a rerun can replace it", async () => {
     sections.mockReturnValue(rowOf(crop));
     const { client, mutate } = clientWith([]);
-    mutate.mockResolvedValueOnce({ data: { createIntensityLayer: { id: "layer-9" } } } as never);
+    mutate.mockResolvedValueOnce({ data: { createIntensityLayer: { __typename: "IntensityLayer", id: "layer-9" } } } as never);
 
     expect(await stageLens(client, registry, { scene: "s", lens: "42" })).toEqual({
       status: "added",

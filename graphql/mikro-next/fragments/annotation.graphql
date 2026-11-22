@@ -151,6 +151,6 @@ fragment AnnotationCollection on AnnotationCollection {
   name
   description
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
 }

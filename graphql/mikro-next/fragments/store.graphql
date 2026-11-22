@@ -27,14 +27,14 @@ fragment ParquetStore on ParquetStore {
   sizeBytes
 }
 
+# No `accessGrant`: asking for it has the server mint S3 credentials (an STS
+# round trip) on every read. A download asks for its own, fresh, with
+# `RequestBigfileAccess` when it starts.
 fragment BigFileStore on BigFileStore {
   id
   key
   bucket
   path
-  accessGrant {
-   ...BigFileAccessGrant
-  }
 }
 
 fragment MediaStore on MediaStore {

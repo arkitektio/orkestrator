@@ -1,14 +1,18 @@
 # One scene's layers changing: added, edited or removed by anybody, an agent bound
-# to the scene included. The scene does not apply the event itself: any event
-# refetches `GetScene`, the same store-free path a layer created here takes, so
-# the selection is only what says that something happened.
+# to the scene included (and our own writes, heard back). The event carries the
+# whole layer, so the scene applies it to its cached layers (`useLiveScene`,
+# `lib/scene/sceneLayerCache.ts`) instead of refetching itself: an update
+# replaces the normalized layer in place, a create is appended, a delete drops it.
+#
+# `asAffine` ERRORS for a layer whose path will not condense (see `SceneLayer`),
+# so the subscription runs with errorPolicy "all", like `GetScene`.
 subscription WatchSceneLayers($scene: ID!) {
   layers(scene: $scene) {
     create {
-      id
+      ...SceneLayer
     }
     update {
-      id
+      ...SceneLayer
     }
     delete
   }

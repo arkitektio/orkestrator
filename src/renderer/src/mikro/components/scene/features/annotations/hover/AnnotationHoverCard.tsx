@@ -145,8 +145,10 @@ const AttachedCard = ({ roi }: { roi: VisibleRoi }) => {
     const { bounds: _bounds, zSpan: _zSpan, ...selected } = roi;
     return { ...selected, name: selected.name ?? null };
   }, [roi]);
+  // Who drew a shape does not change: asked once, not on every hover.
   const { data: creatorData } = useGetAnnotationCreatorQuery({
     variables: { id: roi.id },
+    fetchPolicy: "cache-first",
   });
   const creator = creatorData?.annotation.creator?.sub;
 

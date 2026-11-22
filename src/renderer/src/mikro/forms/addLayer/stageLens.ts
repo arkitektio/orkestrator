@@ -6,14 +6,16 @@ import {
   AddLayerReachableDocument,
   AddLayerWorldGraphDocument,
   type AddLayerLensCapabilitiesQuery,
+  type AddLayerReachableQuery,
   type AddLayerStagedLayerFragment,
 } from "@/mikro/api/graphql";
+import { createdLayer, intoScene } from "@/mikro/lib/scene/sceneLayerCache";
 import type { LensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 
 import { buildSections, lensCandidateOf, type Capabilities } from "./candidates";
 import { stagedFromLayers, suggestLensKinds, type LayerKind } from "./engine";
 import { lensLayerRequest, resolveLensLayerLenses, type LensLayerRequest } from "./lensLayer";
-import { graphFromComponent, graphFromLineage, mergeGraphs } from "./spaceGraph";
+import { graphFromComponent, graphFromLineage, mergeGraphs, type DerivationGraph } from "./spaceGraph";
 
 /**
  * Adding an array lens to a scene with no one asked: the Add Layer engine's
@@ -94,32 +96,60 @@ export type LensLayerPlan =
   | { status: "present"; label: string }
   | { status: "unplaceable" };
 
-/**
- * The Add Layer engine's pick for a lens, as the create request it would send.
- * `extraLayers` are layers the scene draws that the server does not know of
- * (a float's staged previews): they take a channel colour and count as
- * "already drawn" exactly like saved ones.
- */
-export const planLensLayer = async (
-  client: ApolloClient<unknown>,
-  registry: Pick<LensRegistry, "ensureChannelLens">,
-  input: { scene: string; lens: string; extraLayers?: readonly AddLayerStagedLayerFragment[] },
-): Promise<LensLayerPlan> => {
-  const { data } = await client.query({
-    query: AddLayerReachableDocument,
-    variables: { scene: input.scene },
-    ...FRESH,
-  });
-  const world = data.scene.worldCoordinateSystem;
-  if (!world) return { status: "unplaceable" };
+type ReachableWorld = NonNullable<AddLayerReachableQuery["scene"]["worldCoordinateSystem"]>;
 
+/**
+ * What the engine reads of the scene's world, once per batch of lenses: what
+ * the world reaches (`coordinateGraph`) and which lenses the server would draw
+ * in it (four `placeableIn` walks). Both are the expensive part of a plan and
+ * the same for every lens of one run, so a caller staging several lenses
+ * loads it once (`loadStageWorld`) and hands it to each `planLensLayer`.
+ * Asked fresh: the run that handed the lenses back may have just made them.
+ */
+export type StageWorld = { world: ReachableWorld; graph: DerivationGraph; capabilities: Capabilities };
+
+const worldOf = async (client: ApolloClient<unknown>, world: ReachableWorld): Promise<StageWorld> => {
   const [{ data: component }, { data: capabilityData }] = await Promise.all([
     client.query({ query: AddLayerWorldGraphDocument, variables: { world: world.id, maxDepth: 6 }, ...FRESH }),
     client.query({ query: AddLayerLensCapabilitiesDocument, variables: { space: world.id }, ...FRESH }),
   ]);
-  const graph = graphFromComponent(component.coordinateGraph);
-  const capabilities = capabilitiesFrom(capabilityData);
-  const sceneLayers = [...data.scene.layers, ...(input.extraLayers ?? [])];
+  return { world, graph: graphFromComponent(component.coordinateGraph), capabilities: capabilitiesFrom(capabilityData) };
+};
+
+const reachableOf = async (client: ApolloClient<unknown>, scene: string) =>
+  (await client.query({ query: AddLayerReachableDocument, variables: { scene }, ...FRESH })).data.scene;
+
+/** The scene's world as a batch of plans shares it; null when the scene has no world. */
+export const loadStageWorld = async (client: ApolloClient<unknown>, scene: string): Promise<StageWorld | null> => {
+  const world = (await reachableOf(client, scene)).worldCoordinateSystem;
+  return world ? worldOf(client, world) : null;
+};
+
+/**
+ * The Add Layer engine's pick for a lens, as the create request it would send.
+ * `extraLayers` are layers the scene draws that the server does not know of
+ * (a float's staged previews): they take a channel colour and count as
+ * "already drawn" exactly like saved ones. `world` is the batch's shared
+ * `loadStageWorld`; without it the plan loads its own.
+ */
+export const planLensLayer = async (
+  client: ApolloClient<unknown>,
+  registry: Pick<LensRegistry, "ensureChannelLens">,
+  input: {
+    scene: string;
+    lens: string;
+    extraLayers?: readonly AddLayerStagedLayerFragment[];
+    world?: Promise<StageWorld | null>;
+  },
+): Promise<LensLayerPlan> => {
+  // The scene's layers, asked every time: the lens before this one in a batch
+  // may have added one, and it takes a channel colour.
+  const scene = await reachableOf(client, input.scene);
+  const reached = scene.worldCoordinateSystem;
+  if (!reached) return { status: "unplaceable" };
+  const shared = input.world ? await input.world : null;
+  const { world, graph, capabilities } = shared && shared.world.id === reached.id ? shared : await worldOf(client, reached);
+  const sceneLayers = [...scene.layers, ...(input.extraLayers ?? [])];
   const staged = stagedFromLayers(sceneLayers);
   const option = buildSections({
     world: { id: world.id, name: world.name },
@@ -156,7 +186,7 @@ export const planLensLayer = async (
   return { status: "ready", kind, label, request };
 };
 
-/** Send a planned request: the layer is made, and the scene refetched to show it. */
+/** Send a planned request: the layer is made, and linked into the cached scene to show it. */
 export const createPlannedLayer = async (
   client: ApolloClient<unknown>,
   request: LensLayerRequest,
@@ -164,19 +194,18 @@ export const createPlannedLayer = async (
   const created = await client.mutate({
     mutation: request.document,
     variables: request.variables,
-    // The scene view reinitializes its stores when GetScene changes, so the
-    // layer appears without any store plumbing (as the form's does).
-    refetchQueries: ["GetScene"],
+    // The scene view reconciles its stores when the cached scene changes, so
+    // the layer appears without any store plumbing (as the form's does).
+    ...intoScene(request.variables.input.scene),
   } as Parameters<typeof client.mutate>[0]);
   // Every create mutation answers with the one layer it made, under its own field name.
-  const answered = Object.values((created.data ?? {}) as Record<string, { id?: string } | null>)[0];
-  return answered?.id;
+  return createdLayer(created.data)?.id;
 };
 
 export const stageLens = async (
   client: ApolloClient<unknown>,
   registry: Pick<LensRegistry, "ensureChannelLens">,
-  input: { scene: string; lens: string },
+  input: { scene: string; lens: string; world?: Promise<StageWorld | null> },
 ): Promise<StageOutcome> => {
   const plan = await planLensLayer(client, registry, input);
   if (plan.status !== "ready") return plan;

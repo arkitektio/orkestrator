@@ -1,7 +1,7 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroFile } from "@/core/linkers";
 import { Name } from "@/core/ui/name";
-import { useGetFileQuery } from "@/mikro/api/graphql";
+import { useGetListFileQuery } from "@/mikro/api/graphql";
 
 function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null) return "";
@@ -12,7 +12,7 @@ function formatBytes(bytes: number | null | undefined): string {
 }
 
 export const FileDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetFileQuery({
+  const { data } = useGetListFileQuery({
     variables: {
       id: props.id,
     },

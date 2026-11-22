@@ -13674,7 +13674,7 @@ type AddLayerStagedLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: s
     & AddLayerStagedLensFragment
   ) };
 
-type AddLayerStagedLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', colormap: ColorMap, climMin?: number | null, climMax?: number | null, gamma?: number | null, id: string, name?: string | null, blending: Blending, lens: (
+type AddLayerStagedLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', climMin?: number | null, climMax?: number | null, gamma?: number | null, id: string, name?: string | null, blending: Blending, intensityColormap: ColorMap, lens: (
     { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
@@ -13862,13 +13862,10 @@ export type AnnotationShapeLineageFragment = { __typename?: 'Annotation', derive
 
 export type AnnotationCollectionFragment = { __typename?: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ) };
 
-export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: (
-    { __typename?: 'CoordinateSystem' }
-    & ListCoordinateSystemFragment
-  ) | null, toParent?: (
+export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
     { __typename?: 'AffineTransformation' }
     & Transformation_AffineTransformation_Fragment
   ) | (
@@ -13907,7 +13904,7 @@ export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptor
 
 export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ) | null, dataArrays: Array<(
     { __typename?: 'DataArray' }
     & DataArrayFragment
@@ -14216,10 +14213,7 @@ export type ListCollaborationFragment = { __typename?: 'Collaboration', id: stri
 export type CollaborationItemFragment = { __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any };
 
 export type CollaborationFragment = (
-  { __typename?: 'Collaboration', items: Array<(
-    { __typename?: 'CollaborationItem' }
-    & CollaborationItemFragment
-  )> }
+  { __typename?: 'Collaboration', put: number, broughtCount: number }
   & ListCollaborationFragment
 );
 
@@ -14279,6 +14273,11 @@ type Resident_TableLens_Fragment = (
 );
 
 export type ResidentFragment = Resident_AnnotationCollection_Fragment | Resident_AnnotationLens_Fragment | Resident_ArrayDataset_Fragment | Resident_ArrayLens_Fragment | Resident_DataArray_Fragment | Resident_Fixture_Fragment | Resident_FixtureLens_Fragment | Resident_MeshCollection_Fragment | Resident_MeshLens_Fragment | Resident_NetworkCollection_Fragment | Resident_NetworkLens_Fragment | Resident_SparseDataset_Fragment | Resident_SparseLens_Fragment | Resident_TableDataset_Fragment | Resident_TableLens_Fragment;
+
+export type SpaceAxesFragment = { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, axes: Array<(
+    { __typename?: 'Axis' }
+    & AxisFragment
+  )> };
 
 export type CoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<(
     { __typename?: 'AnnotationCollection' }
@@ -14515,7 +14514,7 @@ export type FixtureFragment = { __typename?: 'Fixture', id: string, name?: strin
     & KulisseStoreFragment
   ), coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ), fullLens?: { __typename?: 'FixtureLens', id: string } | null };
 
 export type ListFixtureFragment = { __typename?: 'Fixture', id: string, name?: string | null, label: string, createdAt: any };
@@ -14528,12 +14527,6 @@ export type DetailFixtureFragment = (
 export type FolderFragment = { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
-  )>, files: Array<(
-    { __typename?: 'File' }
-    & ListFileFragment
-  )>, children: Array<(
-    { __typename?: 'Folder' }
-    & ListFolderFragment
   )>, parent?: (
     { __typename?: 'Folder' }
     & ListFolderFragment
@@ -14877,7 +14870,7 @@ type SceneLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, 
 
 type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
-    & TableDatasetFragment
+    & SceneTableDatasetFragment
   ), lens: (
     { __typename?: 'TableLens' }
     & LayerLens_TableLens_Fragment
@@ -14914,7 +14907,7 @@ type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', climMin?: number |
 
 type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, tailWindow?: number | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
-    & TableDatasetFragment
+    & SceneTableDatasetFragment
   ), lens: (
     { __typename?: 'TableLens' }
     & LayerLens_TableLens_Fragment
@@ -15584,7 +15577,7 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
 
 export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string, name?: string | null, label: string, specVersion?: string | null, grid: any, encoding: any, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ), store: (
     { __typename?: 'FabriksStore' }
     & FabriksStoreFragment
@@ -15592,7 +15585,7 @@ export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string
 
 export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: string, name?: string | null, label: string, specVersion?: string | null, grid: any, encoding: any, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ), store: (
     { __typename?: 'KonnektionStore' }
     & KonnektionStoreFragment
@@ -15608,7 +15601,7 @@ export type SceneFragment = { __typename?: 'Scene', descriptors: any, id: string
     & SceneSnapshotFragment
   ) | null, worldCoordinateSystem: (
     { __typename?: 'CoordinateSystem' }
-    & CoordinateSystemFragment
+    & SpaceAxesFragment
   ), layers: Array<(
     { __typename?: 'AnnotationLayer' }
     & SceneLayer_AnnotationLayer_Fragment
@@ -15699,10 +15692,7 @@ export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: str
 
 export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: number | null };
 
-export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: (
-    { __typename?: 'BigFileAccessGrant' }
-    & BigFileAccessGrantFragment
-  ) };
+export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string };
 
 export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: string, bucket: string };
 
@@ -15727,6 +15717,17 @@ export type TableDatasetFragment = { __typename?: 'TableDataset', id: string, na
   )>, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
+  ) };
+
+export type SceneTableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, rowCount?: number | null, store: (
+    { __typename?: 'ParquetStore' }
+    & ParquetStoreFragment
+  ), columns: Array<(
+    { __typename?: 'Column' }
+    & TableDatasetColumnFragment
+  )>, coordinateSystem: (
+    { __typename?: 'CoordinateSystem' }
+    & SpaceAxesFragment
   ) };
 
 export type CreateAnimationMutationVariables = Exact<{
@@ -18336,26 +18337,25 @@ export type GetAnnotationsQuery = { __typename?: 'Query', annotations: Array<(
     & ListAnnotationFragment
   )> };
 
-export type GetAnnotationCollectionQueryVariables = Exact<{
+export type ReturnedSceneAnnotationsQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ReturnedSceneAnnotationsQuery = { __typename?: 'Query', annotations: Array<(
+    { __typename?: 'Annotation', collection: { __typename?: 'AnnotationCollection', id: string } }
+    & SceneAnnotationFragment
+  )> };
+
+export type GetListAnnotationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetAnnotationCollectionQuery = { __typename?: 'Query', annotationCollection: (
-    { __typename?: 'AnnotationCollection' }
-    & AnnotationCollectionFragment
+export type GetListAnnotationQuery = { __typename?: 'Query', annotation: (
+    { __typename?: 'Annotation' }
+    & ListAnnotationFragment
   ) };
-
-export type GetAnnotationCollectionsQueryVariables = Exact<{
-  filters?: InputMaybe<AnnotationCollectionFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type GetAnnotationCollectionsQuery = { __typename?: 'Query', annotationCollections: Array<(
-    { __typename?: 'AnnotationCollection' }
-    & AnnotationCollectionFragment
-  )> };
 
 export type GetArrayDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -18372,10 +18372,7 @@ export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
     ) | null, fullLens?: (
       { __typename?: 'ArrayLens', voxelSizes: Array<{ __typename?: 'VoxelSize', canonical: boolean, problem?: string | null, system: { __typename?: 'CoordinateSystem', id: string, name: string }, axes: Array<{ __typename?: 'AxisVoxelSize', axis: string, physicalAxis: string, size: number, unit: string, type: AxisType }> }> }
       & ListLens_ArrayLens_Fragment
-    ) | null, lenses: Array<(
-      { __typename?: 'ArrayLens' }
-      & ListLens_ArrayLens_Fragment
-    )> }
+    ) | null }
     & ArrayDatasetFragment
   ) };
 
@@ -18428,7 +18425,10 @@ export type GetArrayDatasetIntrinsicSystemQueryVariables = Exact<{
 }>;
 
 
-export type GetArrayDatasetIntrinsicSystemQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, name: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } };
+export type GetArrayDatasetIntrinsicSystemQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, name: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null } };
 
 export type AttributePlansQueryVariables = Exact<{
   system: Scalars['ID']['input'];
@@ -18646,12 +18646,83 @@ export type CollaborationDerivedQueryVariables = Exact<{
 
 export type CollaborationDerivedQuery = { __typename?: 'Query', descendants: Array<{ __typename?: 'Descendants', root: string, more: boolean, nodes: Array<{ __typename?: 'DescendantNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, parent: string }> }> };
 
+export type GetCollaborationItemsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  brought: Scalars['Boolean']['input'];
+  offset: Scalars['Int']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type GetCollaborationItemsQuery = { __typename?: 'Query', collaboration: { __typename?: 'Collaboration', id: string, items: Array<(
+      { __typename?: 'CollaborationItem' }
+      & CollaborationItemFragment
+    )> } };
+
+export type CollaborationItemNamesQueryVariables = Exact<{
+  datasets: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  tables: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  sparse: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  files: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  folders: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  scenes: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  charts: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  grids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  meshes: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  fixtures: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  lenses: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  annotations: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+  hasDatasets: Scalars['Boolean']['input'];
+  hasTables: Scalars['Boolean']['input'];
+  hasSparse: Scalars['Boolean']['input'];
+  hasFiles: Scalars['Boolean']['input'];
+  hasFolders: Scalars['Boolean']['input'];
+  hasScenes: Scalars['Boolean']['input'];
+  hasCharts: Scalars['Boolean']['input'];
+  hasGrids: Scalars['Boolean']['input'];
+  hasMeshes: Scalars['Boolean']['input'];
+  hasFixtures: Scalars['Boolean']['input'];
+  hasLenses: Scalars['Boolean']['input'];
+  hasAnnotations: Scalars['Boolean']['input'];
+}>;
+
+
+export type CollaborationItemNamesQuery = { __typename?: 'Query', arrayDatasets?: Array<{ __typename?: 'ArrayDataset', id: string, name: string }>, tableDatasets?: Array<{ __typename?: 'TableDataset', id: string, name: string }>, sparseDatasets?: Array<{ __typename?: 'SparseDataset', id: string, name: string }>, files?: Array<{ __typename?: 'File', id: string, name: string }>, folders?: Array<{ __typename?: 'Folder', id: string, name: string }>, scenes?: Array<{ __typename?: 'Scene', id: string, name: string }>, charts?: Array<{ __typename?: 'Chart', id: string, name: string }>, grids?: Array<{ __typename?: 'Grid', id: string, name: string }>, meshCollections?: Array<{ __typename?: 'MeshCollection', id: string, name?: string | null, label: string }>, fixtures?: Array<{ __typename?: 'Fixture', id: string, name?: string | null, label: string }>, lenses?: Array<(
+    { __typename?: 'AnnotationLens', id: string, name?: string | null }
+    & LensSubject_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens', id: string, name?: string | null }
+    & LensSubject_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'FixtureLens', id: string, name?: string | null }
+    & LensSubject_FixtureLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens', id: string, name?: string | null }
+    & LensSubject_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens', id: string, name?: string | null }
+    & LensSubject_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens', id: string, name?: string | null }
+    & LensSubject_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens', id: string, name?: string | null }
+    & LensSubject_TableLens_Fragment
+  )>, annotations?: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> };
+
 export type TableColumnStatsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TableColumnStatsQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, rowCount?: number | null, columns: Array<{ __typename?: 'Column', id: string, name: string, stats?: { __typename?: 'ColumnStats', min?: number | null, max?: number | null, nullCount?: number | null } | null, summary?: { __typename?: 'ColumnSummary', id: string, histogram: Array<number>, bins: Array<number>, distinctValues?: any | null, distinctCount?: number | null } | null }> } };
+export type TableColumnStatsQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, name: string, rowCount?: number | null, store: (
+      { __typename?: 'ParquetStore' }
+      & ParquetStoreFragment
+    ), columns: Array<(
+      { __typename?: 'Column', stats?: { __typename?: 'ColumnStats', min?: number | null, max?: number | null, nullCount?: number | null } | null, summary?: { __typename?: 'ColumnSummary', id: string, histogram: Array<number>, bins: Array<number>, distinctValues?: any | null, distinctCount?: number | null } | null }
+      & TableDatasetColumnFragment
+    )> } };
 
 export type PinColumnSummaryMutationVariables = Exact<{
   table: Scalars['ID']['input'];
@@ -19152,6 +19223,16 @@ export type GetFileDerivedQuery = { __typename?: 'Query', file: { __typename?: '
       & FileLinkFragment
     )> } };
 
+export type GetListFileQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListFileQuery = { __typename?: 'Query', file: (
+    { __typename?: 'File' }
+    & ListFileFragment
+  ) };
+
 export type GetFixtureQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -19178,17 +19259,6 @@ export type PlaceableFixtureLensesQueryVariables = Exact<{
 
 export type PlaceableFixtureLensesQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'FixtureLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }> };
 
-export type ListFixturesQueryVariables = Exact<{
-  filters?: InputMaybe<FixtureFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListFixturesQuery = { __typename?: 'Query', fixtures: Array<(
-    { __typename?: 'Fixture' }
-    & ListFixtureFragment
-  )> };
-
 export type GetFolderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -19211,6 +19281,23 @@ export type GetFoldersQuery = { __typename?: 'Query', folders: Array<(
     & ListFolderFragment
   )> };
 
+export type GetFolderSummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetFolderSummaryQuery = { __typename?: 'Query', folder: (
+    { __typename?: 'Folder' }
+    & ListFolderFragment
+  ), childrenCounts: { __typename?: 'FolderChildCounts', total: number, kinds: Array<{ __typename?: 'FolderChildKindCount', kind: FolderChildKind, count: number }> } };
+
+export type GetFolderPinsQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type GetFolderPinsQuery = { __typename?: 'Query', folders: Array<{ __typename?: 'Folder', id: string, pinned: boolean }> };
+
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   noArrayDatasets: Scalars['Boolean']['input'];
@@ -19221,16 +19308,7 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets?: Array<(
-    { __typename?: 'ArrayDataset' }
-    & ListArrayDatasetFragment
-  )>, files?: Array<(
-    { __typename?: 'File' }
-    & ListFileFragment
-  )>, folders?: Array<(
-    { __typename?: 'Folder' }
-    & ListFolderFragment
-  )>, lenses?: Array<(
+export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets?: Array<{ __typename?: 'ArrayDataset', id: string, name: string }>, files?: Array<{ __typename?: 'File', id: string, name: string }>, folders?: Array<{ __typename?: 'Folder', id: string, name: string }>, lenses?: Array<(
     { __typename?: 'AnnotationLens' }
     & ListLens_AnnotationLens_Fragment
   ) | (
@@ -19288,13 +19366,7 @@ export type GetGridsQuery = { __typename?: 'Query', grids: Array<(
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HomePageQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'FixtureLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, arrayDatasets: Array<(
-    { __typename?: 'ArrayDataset' }
-    & ListArrayDatasetFragment
-  )>, files: Array<(
-    { __typename?: 'File' }
-    & ListFileFragment
-  )> };
+export type HomePageQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'FixtureLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, files: Array<{ __typename?: 'File', id: string }> };
 
 export type PeerHomePageQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -19384,74 +19456,50 @@ export type PreviewLayerQueryVariables = Exact<{
 export type PreviewLayerQuery = { __typename?: 'Query', previewLayer: (
     { __typename?: 'AnnotationLayer' }
     & SceneLayer_AnnotationLayer_Fragment
-  ) | (
-    { __typename?: 'FixtureLayer' }
-    & SceneLayer_FixtureLayer_Fragment
-  ) | (
-    { __typename?: 'ImageLayer' }
-    & SceneLayer_ImageLayer_Fragment
-  ) | (
-    { __typename?: 'IntensityLayer' }
-    & SceneLayer_IntensityLayer_Fragment
-  ) | (
-    { __typename?: 'LabelLayer' }
-    & SceneLayer_LabelLayer_Fragment
-  ) | (
-    { __typename?: 'MeshLayer' }
-    & SceneLayer_MeshLayer_Fragment
-  ) | (
-    { __typename?: 'NetworkLayer' }
-    & SceneLayer_NetworkLayer_Fragment
-  ) | (
-    { __typename?: 'PhasorLayer' }
-    & SceneLayer_PhasorLayer_Fragment
-  ) | (
-    { __typename?: 'PointLayer' }
-    & SceneLayer_PointLayer_Fragment
-  ) | (
-    { __typename?: 'RgbLayer' }
-    & SceneLayer_RgbLayer_Fragment
-  ) | (
-    { __typename?: 'TrackLayer' }
-    & SceneLayer_TrackLayer_Fragment
-  ) | (
-    { __typename?: 'VectorLayer' }
-    & SceneLayer_VectorLayer_Fragment
-  ), engine: (
-    { __typename?: 'AnnotationLayer' }
     & AddLayerStagedLayer_AnnotationLayer_Fragment
   ) | (
     { __typename?: 'FixtureLayer' }
+    & SceneLayer_FixtureLayer_Fragment
     & AddLayerStagedLayer_FixtureLayer_Fragment
   ) | (
     { __typename?: 'ImageLayer' }
+    & SceneLayer_ImageLayer_Fragment
     & AddLayerStagedLayer_ImageLayer_Fragment
   ) | (
     { __typename?: 'IntensityLayer' }
+    & SceneLayer_IntensityLayer_Fragment
     & AddLayerStagedLayer_IntensityLayer_Fragment
   ) | (
     { __typename?: 'LabelLayer' }
+    & SceneLayer_LabelLayer_Fragment
     & AddLayerStagedLayer_LabelLayer_Fragment
   ) | (
     { __typename?: 'MeshLayer' }
+    & SceneLayer_MeshLayer_Fragment
     & AddLayerStagedLayer_MeshLayer_Fragment
   ) | (
     { __typename?: 'NetworkLayer' }
+    & SceneLayer_NetworkLayer_Fragment
     & AddLayerStagedLayer_NetworkLayer_Fragment
   ) | (
     { __typename?: 'PhasorLayer' }
+    & SceneLayer_PhasorLayer_Fragment
     & AddLayerStagedLayer_PhasorLayer_Fragment
   ) | (
     { __typename?: 'PointLayer' }
+    & SceneLayer_PointLayer_Fragment
     & AddLayerStagedLayer_PointLayer_Fragment
   ) | (
     { __typename?: 'RgbLayer' }
+    & SceneLayer_RgbLayer_Fragment
     & AddLayerStagedLayer_RgbLayer_Fragment
   ) | (
     { __typename?: 'TrackLayer' }
+    & SceneLayer_TrackLayer_Fragment
     & AddLayerStagedLayer_TrackLayer_Fragment
   ) | (
     { __typename?: 'VectorLayer' }
+    & SceneLayer_VectorLayer_Fragment
     & AddLayerStagedLayer_VectorLayer_Fragment
   ) };
 
@@ -19732,6 +19780,42 @@ export type GetSlicedDescriptorsQueryVariables = Exact<{
 
 export type GetSlicedDescriptorsQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, descriptorsSliced?: any | null } };
 
+export type GetListLensQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListLensQuery = { __typename?: 'Query', lens: (
+    { __typename?: 'AnnotationLens' }
+    & ListLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & ListLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'FixtureLens' }
+    & ListLens_FixtureLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & ListLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & ListLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & ListLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & ListLens_TableLens_Fragment
+  ) };
+
+export type GetLensNamesQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type GetLensNamesQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string, name?: string | null } | { __typename?: 'ArrayLens', id: string, name?: string | null } | { __typename?: 'FixtureLens', id: string, name?: string | null } | { __typename?: 'MeshLens', id: string, name?: string | null } | { __typename?: 'NetworkLens', id: string, name?: string | null } | { __typename?: 'SparseLens', id: string, name?: string | null } | { __typename?: 'TableLens', id: string, name?: string | null }> };
+
 export type GetLineageQueryVariables = Exact<{
   start: LineageRootInput;
   up?: Scalars['Int']['input'];
@@ -19742,11 +19826,6 @@ export type GetLineageQueryVariables = Exact<{
 
 
 export type GetLineageQuery = { __typename?: 'Query', lineage: { __typename?: 'Lineage', root: string, truncated: boolean, nodes: Array<{ __typename?: 'LineageNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, createdAt?: any | null, taskId?: string | null, hasMoreUp: boolean, hasMoreDown: boolean, lensCount: number, dtype?: string | null, levels: number, lenses: Array<{ __typename?: 'LineageLens', id: string, label: string, whole: boolean, shape?: Array<number> | null, slices: Array<{ __typename?: 'LineageSlice', axis: string, start: number, stop: number, step: number }> }>, axes: Array<{ __typename?: 'LineageAxis', name: string, type: AxisType, size?: number | null, chunk?: number | null }> }>, edges: Array<{ __typename?: 'LineageEdge', key: string, kind: LineageEdgeKind, source: string, target: string, taskId?: string | null, transformationKind?: TransformKind | null, valueRelation?: ValueRelation | null, annotationId?: string | null, annotationRelation?: AnnotationRelation | null, primary: boolean, sourceLens?: string | null }> } };
-
-export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MembersQuery = { __typename?: 'Query', members: Array<{ __typename?: 'Membership', user: { __typename?: 'User', sub: string }, folders: Array<{ __typename?: 'Folder', id: string, name: string }> }> };
 
 export type GetMeshObjectInfoQueryVariables = Exact<{
   collection: Scalars['ID']['input'];
@@ -19906,23 +19985,6 @@ export type GetMeshCollectionQuery = { __typename?: 'Query', meshCollection: (
     & MeshCollectionFragment
   ) };
 
-export type GetPermissionsQueryVariables = Exact<{
-  identifier: Scalars['String']['input'];
-  object: Scalars['ID']['input'];
-}>;
-
-
-export type GetPermissionsQuery = { __typename?: 'Query', permissions: Array<{ __typename?: 'UserObjectPermission', permission: string, user: { __typename?: 'User', sub: string } }> };
-
-export type PermissionOptionsQueryVariables = Exact<{
-  identifier: Scalars['String']['input'];
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type PermissionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'PermissionOption', value: string, label: string }> };
-
 export type ProfileFeedRootsQueryVariables = Exact<{
   kinds: Array<LineageNodeKind> | LineageNodeKind;
   filters?: InputMaybe<RootFilter>;
@@ -19967,6 +20029,16 @@ export type GetScenesQuery = { __typename?: 'Query', scenes: Array<(
     { __typename?: 'Scene' }
     & ListSceneFragment
   )> };
+
+export type GetListSceneQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListSceneQuery = { __typename?: 'Query', scene: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) };
 
 export type GetSparseDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -20019,6 +20091,16 @@ export type GetSparseDatasetAnchorsFullQuery = { __typename?: 'Query', sparseDat
       { __typename?: 'CoordinateAnchor' }
       & FullCoordinateAnchorFragment
     )> } };
+
+export type GetListSparseDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListSparseDatasetQuery = { __typename?: 'Query', sparseDataset: (
+    { __typename?: 'SparseDataset' }
+    & ListSparseDatasetFragment
+  ) };
 
 export type GetTableDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -20103,18 +20185,6 @@ export type BrowseTableDatasetsQuery = { __typename?: 'Query', tableDatasets: Ar
     & BrowseTableDatasetFragment
   )> };
 
-export type GetTableDatasetsQueryVariables = Exact<{
-  filters?: InputMaybe<TableDatasetFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-  ordering?: InputMaybe<Array<TableDatasetOrder> | TableDatasetOrder>;
-}>;
-
-
-export type GetTableDatasetsQuery = { __typename?: 'Query', tableDatasets: Array<(
-    { __typename?: 'TableDataset' }
-    & ListTableDatasetFragment
-  )> };
-
 export type GetTableDatasetAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -20131,6 +20201,16 @@ export type GetTableDatasetAnchorsFullQuery = { __typename?: 'Query', tableDatas
       { __typename?: 'CoordinateAnchor' }
       & FullCoordinateAnchorFragment
     )> } };
+
+export type GetListTableDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListTableDatasetQuery = { __typename?: 'Query', tableDataset: (
+    { __typename?: 'TableDataset', columns: Array<{ __typename?: 'Column', id: string, name: string }> }
+    & ListTableDatasetFragment
+  ) };
 
 export type WatchSceneAnnotationsSubscriptionVariables = Exact<{
   collection: Scalars['ID']['input'];
@@ -20150,7 +20230,79 @@ export type WatchSceneLayersSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchSceneLayersSubscription = { __typename?: 'Subscription', layers: { __typename?: 'LayerEvent', delete?: string | null, create?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'FixtureLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null, update?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'FixtureLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null } };
+export type WatchSceneLayersSubscription = { __typename?: 'Subscription', layers: { __typename?: 'LayerEvent', delete?: string | null, create?: (
+      { __typename?: 'AnnotationLayer' }
+      & SceneLayer_AnnotationLayer_Fragment
+    ) | (
+      { __typename?: 'FixtureLayer' }
+      & SceneLayer_FixtureLayer_Fragment
+    ) | (
+      { __typename?: 'ImageLayer' }
+      & SceneLayer_ImageLayer_Fragment
+    ) | (
+      { __typename?: 'IntensityLayer' }
+      & SceneLayer_IntensityLayer_Fragment
+    ) | (
+      { __typename?: 'LabelLayer' }
+      & SceneLayer_LabelLayer_Fragment
+    ) | (
+      { __typename?: 'MeshLayer' }
+      & SceneLayer_MeshLayer_Fragment
+    ) | (
+      { __typename?: 'NetworkLayer' }
+      & SceneLayer_NetworkLayer_Fragment
+    ) | (
+      { __typename?: 'PhasorLayer' }
+      & SceneLayer_PhasorLayer_Fragment
+    ) | (
+      { __typename?: 'PointLayer' }
+      & SceneLayer_PointLayer_Fragment
+    ) | (
+      { __typename?: 'RgbLayer' }
+      & SceneLayer_RgbLayer_Fragment
+    ) | (
+      { __typename?: 'TrackLayer' }
+      & SceneLayer_TrackLayer_Fragment
+    ) | (
+      { __typename?: 'VectorLayer' }
+      & SceneLayer_VectorLayer_Fragment
+    ) | null, update?: (
+      { __typename?: 'AnnotationLayer' }
+      & SceneLayer_AnnotationLayer_Fragment
+    ) | (
+      { __typename?: 'FixtureLayer' }
+      & SceneLayer_FixtureLayer_Fragment
+    ) | (
+      { __typename?: 'ImageLayer' }
+      & SceneLayer_ImageLayer_Fragment
+    ) | (
+      { __typename?: 'IntensityLayer' }
+      & SceneLayer_IntensityLayer_Fragment
+    ) | (
+      { __typename?: 'LabelLayer' }
+      & SceneLayer_LabelLayer_Fragment
+    ) | (
+      { __typename?: 'MeshLayer' }
+      & SceneLayer_MeshLayer_Fragment
+    ) | (
+      { __typename?: 'NetworkLayer' }
+      & SceneLayer_NetworkLayer_Fragment
+    ) | (
+      { __typename?: 'PhasorLayer' }
+      & SceneLayer_PhasorLayer_Fragment
+    ) | (
+      { __typename?: 'PointLayer' }
+      & SceneLayer_PointLayer_Fragment
+    ) | (
+      { __typename?: 'RgbLayer' }
+      & SceneLayer_RgbLayer_Fragment
+    ) | (
+      { __typename?: 'TrackLayer' }
+      & SceneLayer_TrackLayer_Fragment
+    ) | (
+      { __typename?: 'VectorLayer' }
+      & SceneLayer_VectorLayer_Fragment
+    ) | null } };
 
 export type WatchLensesSubscriptionVariables = Exact<{
   kind?: InputMaybe<LensKind>;
@@ -20242,7 +20394,7 @@ export const AddLayerStagedLayerFragmentDoc = gql`
     lens {
       ...AddLayerStagedLens
     }
-    colormap
+    intensityColormap: colormap
     climMin
     climMax
     gamma
@@ -21194,15 +21346,16 @@ export const DetailAnnotationFragmentDoc = gql`
     ${AnnotationFragmentDoc}
 ${ListSceneFragmentDoc}
 ${AnnotationShapeLineageFragmentDoc}`;
-export const ListCoordinateSystemFragmentDoc = gql`
-    fragment ListCoordinateSystem on CoordinateSystem {
+export const SpaceAxesFragmentDoc = gql`
+    fragment SpaceAxes on CoordinateSystem {
   id
   name
-  residents {
-    __typename
+  epoch
+  axes {
+    ...Axis
   }
 }
-    `;
+    ${AxisFragmentDoc}`;
 export const LeafTransformationFragmentDoc = gql`
     fragment LeafTransformation on Transformation {
   __typename
@@ -21234,6 +21387,15 @@ export const LeafTransformationFragmentDoc = gql`
   }
   ... on UnmappableTransformation {
     reason
+  }
+}
+    `;
+export const ListCoordinateSystemFragmentDoc = gql`
+    fragment ListCoordinateSystem on CoordinateSystem {
+  id
+  name
+  residents {
+    __typename
   }
 }
     `;
@@ -21291,7 +21453,8 @@ export const DataArrayFragmentDoc = gql`
   shape
   chunkShape
   coordinateSystem {
-    ...ListCoordinateSystem
+    id
+    name
   }
   toParent {
     ...Transformation
@@ -21300,8 +21463,7 @@ export const DataArrayFragmentDoc = gql`
     ...ZarrStore
   }
 }
-    ${ListCoordinateSystemFragmentDoc}
-${TransformationFragmentDoc}
+    ${TransformationFragmentDoc}
 ${ZarrStoreFragmentDoc}`;
 export const ArrayDatasetFragmentDoc = gql`
     fragment ArrayDataset on ArrayDataset {
@@ -21318,13 +21480,13 @@ export const ArrayDatasetFragmentDoc = gql`
     name
   }
   intrinsicSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   dataArrays {
     ...DataArray
   }
 }
-    ${CoordinateSystemFragmentDoc}
+    ${SpaceAxesFragmentDoc}
 ${DataArrayFragmentDoc}`;
 export const FabriksStoreFragmentDoc = gql`
     fragment FabriksStore on FabriksStore {
@@ -21962,14 +22124,6 @@ export const ChartLayerCandidateFragmentDoc = gql`
     ${DimSliceFragmentDoc}
 ${AxisFragmentDoc}
 ${TableDatasetColumnFragmentDoc}`;
-export const ListCollaborationFragmentDoc = gql`
-    fragment ListCollaboration on Collaboration {
-  id
-  name
-  description
-  createdAt
-}
-    `;
 export const CollaborationItemFragmentDoc = gql`
     fragment CollaborationItem on CollaborationItem {
   id
@@ -21979,15 +22133,21 @@ export const CollaborationItemFragmentDoc = gql`
   addedAt
 }
     `;
+export const ListCollaborationFragmentDoc = gql`
+    fragment ListCollaboration on Collaboration {
+  id
+  name
+  description
+  createdAt
+}
+    `;
 export const CollaborationFragmentDoc = gql`
     fragment Collaboration on Collaboration {
   ...ListCollaboration
-  items {
-    ...CollaborationItem
-  }
+  put: itemCount(brought: false)
+  broughtCount: itemCount(brought: true)
 }
-    ${ListCollaborationFragmentDoc}
-${CollaborationItemFragmentDoc}`;
+    ${ListCollaborationFragmentDoc}`;
 export const BigFileUploadGrantFragmentDoc = gql`
     fragment BigFileUploadGrant on BigFileUploadGrant {
   accessKey
@@ -22038,6 +22198,17 @@ export const ParquetUploadGrantFragmentDoc = gql`
   expiresIn
   maxBytes
   store
+}
+    `;
+export const BigFileAccessGrantFragmentDoc = gql`
+    fragment BigFileAccessGrant on BigFileAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  path
+  key
+  bucket
 }
     `;
 export const MediaAccessGrantFragmentDoc = gql`
@@ -22198,28 +22369,14 @@ export const DerivedResidentFragmentDoc = gql`
   }
 }
     `;
-export const BigFileAccessGrantFragmentDoc = gql`
-    fragment BigFileAccessGrant on BigFileAccessGrant {
-  accessKey
-  secretKey
-  sessionToken
-  expiresIn
-  path
-  key
-  bucket
-}
-    `;
 export const BigFileStoreFragmentDoc = gql`
     fragment BigFileStore on BigFileStore {
   id
   key
   bucket
   path
-  accessGrant {
-    ...BigFileAccessGrant
-  }
 }
-    ${BigFileAccessGrantFragmentDoc}`;
+    `;
 export const ProvenanceEntryFragmentDoc = gql`
     fragment ProvenanceEntry on ProvenanceEntry {
   id
@@ -22289,6 +22446,18 @@ export const DetailFileFragmentDoc = gql`
   }
 }
     ${FileFragmentDoc}`;
+export const ListFileFragmentDoc = gql`
+    fragment ListFile on File {
+  descriptors
+  id
+  name
+  creator {
+    sub
+  }
+  size
+  contentType
+}
+    `;
 export const FileLinkFragmentDoc = gql`
     fragment FileLink on FileLink {
   id
@@ -22346,14 +22515,14 @@ export const FixtureFragmentDoc = gql`
     ...KulisseStore
   }
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   fullLens {
     id
   }
 }
     ${KulisseStoreFragmentDoc}
-${CoordinateSystemFragmentDoc}`;
+${SpaceAxesFragmentDoc}`;
 export const DetailFixtureFragmentDoc = gql`
     fragment DetailFixture on Fixture {
   ...Fixture
@@ -22364,18 +22533,6 @@ export const DetailFixtureFragmentDoc = gql`
   descriptors
 }
     ${FixtureFragmentDoc}`;
-export const ListFileFragmentDoc = gql`
-    fragment ListFile on File {
-  descriptors
-  id
-  name
-  creator {
-    sub
-  }
-  size
-  contentType
-}
-    `;
 export const ListFolderFragmentDoc = gql`
     fragment ListFolder on Folder {
   id
@@ -22392,12 +22549,6 @@ export const FolderFragmentDoc = gql`
   provenanceEntries {
     ...ProvenanceEntry
   }
-  files {
-    ...ListFile
-  }
-  children {
-    ...ListFolder
-  }
   parent {
     ...ListFolder
   }
@@ -22410,7 +22561,6 @@ export const FolderFragmentDoc = gql`
   tags
 }
     ${ProvenanceEntryFragmentDoc}
-${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
 export const GridLayerStyleFragmentDoc = gql`
     fragment GridLayerStyle on GridLayer {
@@ -23105,12 +23255,12 @@ export const AnnotationCollectionFragmentDoc = gql`
   name
   description
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
 }
-    ${CoordinateSystemFragmentDoc}`;
-export const TableDatasetFragmentDoc = gql`
-    fragment TableDataset on TableDataset {
+    ${SpaceAxesFragmentDoc}`;
+export const SceneTableDatasetFragmentDoc = gql`
+    fragment SceneTableDataset on TableDataset {
   id
   name
   description
@@ -23123,12 +23273,12 @@ export const TableDatasetFragmentDoc = gql`
     ...TableDatasetColumn
   }
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
 }
     ${ParquetStoreFragmentDoc}
 ${TableDatasetColumnFragmentDoc}
-${CoordinateSystemFragmentDoc}`;
+${SpaceAxesFragmentDoc}`;
 export const MeshCollectionFragmentDoc = gql`
     fragment MeshCollection on MeshCollection {
   id
@@ -23136,7 +23286,7 @@ export const MeshCollectionFragmentDoc = gql`
   label
   specVersion
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   store {
     ...FabriksStore
@@ -23144,7 +23294,7 @@ export const MeshCollectionFragmentDoc = gql`
   grid
   encoding
 }
-    ${CoordinateSystemFragmentDoc}
+    ${SpaceAxesFragmentDoc}
 ${FabriksStoreFragmentDoc}`;
 export const MeshColorByFragmentDoc = gql`
     fragment MeshColorBy on MeshColorBy {
@@ -23186,7 +23336,7 @@ export const NetworkCollectionFragmentDoc = gql`
   label
   specVersion
   coordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   store {
     ...KonnektionStore
@@ -23194,7 +23344,7 @@ export const NetworkCollectionFragmentDoc = gql`
   grid
   encoding
 }
-    ${CoordinateSystemFragmentDoc}
+    ${SpaceAxesFragmentDoc}
 ${KonnektionStoreFragmentDoc}`;
 export const NetworkColorByFragmentDoc = gql`
     fragment NetworkColorBy on NetworkColorBy {
@@ -23350,7 +23500,7 @@ export const SceneLayerFragmentDoc = gql`
   }
   ... on PointLayer {
     tableDataset {
-      ...TableDataset
+      ...SceneTableDataset
     }
     lens {
       ...LayerLens
@@ -23374,7 +23524,7 @@ export const SceneLayerFragmentDoc = gql`
   }
   ... on TrackLayer {
     tableDataset {
-      ...TableDataset
+      ...SceneTableDataset
     }
     lens {
       ...LayerLens
@@ -23461,7 +23611,7 @@ ${LabelRenderFragmentDoc}
 ${AnnotationCollectionFragmentDoc}
 ${LayerLensFragmentDoc}
 ${LensWindowFragmentDoc}
-${TableDatasetFragmentDoc}
+${SceneTableDatasetFragmentDoc}
 ${LabelFilterByFragmentDoc}
 ${LabelColorByFragmentDoc}
 ${MeshCollectionFragmentDoc}
@@ -23485,7 +23635,7 @@ export const SceneFragmentDoc = gql`
     ...SceneSnapshot
   }
   worldCoordinateSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   layers {
     ...SceneLayer
@@ -23493,7 +23643,7 @@ export const SceneFragmentDoc = gql`
 }
     ${AnimationFragmentDoc}
 ${SceneSnapshotFragmentDoc}
-${CoordinateSystemFragmentDoc}
+${SpaceAxesFragmentDoc}
 ${SceneLayerFragmentDoc}`;
 export const ListSparseDatasetFragmentDoc = gql`
     fragment ListSparseDataset on SparseDataset {
@@ -23573,6 +23723,26 @@ export const BrowseTableDatasetFragmentDoc = gql`
   }
 }
     `;
+export const TableDatasetFragmentDoc = gql`
+    fragment TableDataset on TableDataset {
+  id
+  name
+  description
+  axisNames
+  rowCount
+  store {
+    ...ParquetStore
+  }
+  columns {
+    ...TableDatasetColumn
+  }
+  coordinateSystem {
+    ...CoordinateSystem
+  }
+}
+    ${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}
+${CoordinateSystemFragmentDoc}`;
 export const AnnotationActionDescriptorsFragmentDoc = gql`
     fragment AnnotationActionDescriptors on Annotation {
   id
@@ -28834,77 +29004,79 @@ export function useGetAnnotationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetAnnotationsQueryHookResult = ReturnType<typeof useGetAnnotationsQuery>;
 export type GetAnnotationsLazyQueryHookResult = ReturnType<typeof useGetAnnotationsLazyQuery>;
 export type GetAnnotationsQueryResult = Apollo.QueryResult<GetAnnotationsQuery, GetAnnotationsQueryVariables>;
-export const GetAnnotationCollectionDocument = gql`
-    query GetAnnotationCollection($id: ID!) {
-  annotationCollection(id: $id) {
-    ...AnnotationCollection
+export const ReturnedSceneAnnotationsDocument = gql`
+    query ReturnedSceneAnnotations($ids: [ID!]!) {
+  annotations(filters: {ids: $ids}) {
+    ...SceneAnnotation
+    collection {
+      id
+    }
   }
 }
-    ${AnnotationCollectionFragmentDoc}`;
+    ${SceneAnnotationFragmentDoc}`;
 
 /**
- * __useGetAnnotationCollectionQuery__
+ * __useReturnedSceneAnnotationsQuery__
  *
- * To run a query within a React component, call `useGetAnnotationCollectionQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetAnnotationCollectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useReturnedSceneAnnotationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useReturnedSceneAnnotationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetAnnotationCollectionQuery({
+ * const { data, loading, error } = useReturnedSceneAnnotationsQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useReturnedSceneAnnotationsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ReturnedSceneAnnotationsQuery, ReturnedSceneAnnotationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ReturnedSceneAnnotationsQuery, ReturnedSceneAnnotationsQueryVariables>(ReturnedSceneAnnotationsDocument, options);
+      }
+export function useReturnedSceneAnnotationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ReturnedSceneAnnotationsQuery, ReturnedSceneAnnotationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ReturnedSceneAnnotationsQuery, ReturnedSceneAnnotationsQueryVariables>(ReturnedSceneAnnotationsDocument, options);
+        }
+export type ReturnedSceneAnnotationsQueryHookResult = ReturnType<typeof useReturnedSceneAnnotationsQuery>;
+export type ReturnedSceneAnnotationsLazyQueryHookResult = ReturnType<typeof useReturnedSceneAnnotationsLazyQuery>;
+export type ReturnedSceneAnnotationsQueryResult = Apollo.QueryResult<ReturnedSceneAnnotationsQuery, ReturnedSceneAnnotationsQueryVariables>;
+export const GetListAnnotationDocument = gql`
+    query GetListAnnotation($id: ID!) {
+  annotation(id: $id) {
+    ...ListAnnotation
+  }
+}
+    ${ListAnnotationFragmentDoc}`;
+
+/**
+ * __useGetListAnnotationQuery__
+ *
+ * To run a query within a React component, call `useGetListAnnotationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListAnnotationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListAnnotationQuery({
  *   variables: {
  *      id: // value for 'id'
  *   },
  * });
  */
-export function useGetAnnotationCollectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAnnotationCollectionQuery, GetAnnotationCollectionQueryVariables>) {
+export function useGetListAnnotationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListAnnotationQuery, GetListAnnotationQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetAnnotationCollectionQuery, GetAnnotationCollectionQueryVariables>(GetAnnotationCollectionDocument, options);
+        return ApolloReactHooks.useQuery<GetListAnnotationQuery, GetListAnnotationQueryVariables>(GetListAnnotationDocument, options);
       }
-export function useGetAnnotationCollectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationCollectionQuery, GetAnnotationCollectionQueryVariables>) {
+export function useGetListAnnotationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListAnnotationQuery, GetListAnnotationQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetAnnotationCollectionQuery, GetAnnotationCollectionQueryVariables>(GetAnnotationCollectionDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetListAnnotationQuery, GetListAnnotationQueryVariables>(GetListAnnotationDocument, options);
         }
-export type GetAnnotationCollectionQueryHookResult = ReturnType<typeof useGetAnnotationCollectionQuery>;
-export type GetAnnotationCollectionLazyQueryHookResult = ReturnType<typeof useGetAnnotationCollectionLazyQuery>;
-export type GetAnnotationCollectionQueryResult = Apollo.QueryResult<GetAnnotationCollectionQuery, GetAnnotationCollectionQueryVariables>;
-export const GetAnnotationCollectionsDocument = gql`
-    query GetAnnotationCollections($filters: AnnotationCollectionFilter, $pagination: OffsetPaginationInput) {
-  annotationCollections(filters: $filters, pagination: $pagination) {
-    ...AnnotationCollection
-  }
-}
-    ${AnnotationCollectionFragmentDoc}`;
-
-/**
- * __useGetAnnotationCollectionsQuery__
- *
- * To run a query within a React component, call `useGetAnnotationCollectionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetAnnotationCollectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetAnnotationCollectionsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useGetAnnotationCollectionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetAnnotationCollectionsQuery, GetAnnotationCollectionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetAnnotationCollectionsQuery, GetAnnotationCollectionsQueryVariables>(GetAnnotationCollectionsDocument, options);
-      }
-export function useGetAnnotationCollectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationCollectionsQuery, GetAnnotationCollectionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetAnnotationCollectionsQuery, GetAnnotationCollectionsQueryVariables>(GetAnnotationCollectionsDocument, options);
-        }
-export type GetAnnotationCollectionsQueryHookResult = ReturnType<typeof useGetAnnotationCollectionsQuery>;
-export type GetAnnotationCollectionsLazyQueryHookResult = ReturnType<typeof useGetAnnotationCollectionsLazyQuery>;
-export type GetAnnotationCollectionsQueryResult = Apollo.QueryResult<GetAnnotationCollectionsQuery, GetAnnotationCollectionsQueryVariables>;
+export type GetListAnnotationQueryHookResult = ReturnType<typeof useGetListAnnotationQuery>;
+export type GetListAnnotationLazyQueryHookResult = ReturnType<typeof useGetListAnnotationLazyQuery>;
+export type GetListAnnotationQueryResult = Apollo.QueryResult<GetListAnnotationQuery, GetListAnnotationQueryVariables>;
 export const GetArrayDatasetDocument = gql`
     query GetArrayDataset($id: ID!) {
   arrayDataset(id: $id) {
@@ -28932,9 +29104,6 @@ export const GetArrayDatasetDocument = gql`
           type
         }
       }
-    }
-    lenses(sliced: true) {
-      ...ListLens
     }
   }
 }
@@ -29149,10 +29318,13 @@ export const GetArrayDatasetIntrinsicSystemDocument = gql`
     intrinsicSystem {
       id
       name
+      axes {
+        ...Axis
+      }
     }
   }
 }
-    `;
+    ${AxisFragmentDoc}`;
 
 /**
  * __useGetArrayDatasetIntrinsicSystemQuery__
@@ -29675,14 +29847,166 @@ export function useCollaborationDerivedLazyQuery(baseOptions?: ApolloReactHooks.
 export type CollaborationDerivedQueryHookResult = ReturnType<typeof useCollaborationDerivedQuery>;
 export type CollaborationDerivedLazyQueryHookResult = ReturnType<typeof useCollaborationDerivedLazyQuery>;
 export type CollaborationDerivedQueryResult = Apollo.QueryResult<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>;
+export const GetCollaborationItemsDocument = gql`
+    query GetCollaborationItems($id: ID!, $brought: Boolean!, $offset: Int!, $limit: Int!) {
+  collaboration(id: $id) {
+    id
+    items(brought: $brought, pagination: {offset: $offset, limit: $limit}) {
+      ...CollaborationItem
+    }
+  }
+}
+    ${CollaborationItemFragmentDoc}`;
+
+/**
+ * __useGetCollaborationItemsQuery__
+ *
+ * To run a query within a React component, call `useGetCollaborationItemsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCollaborationItemsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCollaborationItemsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      brought: // value for 'brought'
+ *      offset: // value for 'offset'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetCollaborationItemsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCollaborationItemsQuery, GetCollaborationItemsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCollaborationItemsQuery, GetCollaborationItemsQueryVariables>(GetCollaborationItemsDocument, options);
+      }
+export function useGetCollaborationItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborationItemsQuery, GetCollaborationItemsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCollaborationItemsQuery, GetCollaborationItemsQueryVariables>(GetCollaborationItemsDocument, options);
+        }
+export type GetCollaborationItemsQueryHookResult = ReturnType<typeof useGetCollaborationItemsQuery>;
+export type GetCollaborationItemsLazyQueryHookResult = ReturnType<typeof useGetCollaborationItemsLazyQuery>;
+export type GetCollaborationItemsQueryResult = Apollo.QueryResult<GetCollaborationItemsQuery, GetCollaborationItemsQueryVariables>;
+export const CollaborationItemNamesDocument = gql`
+    query CollaborationItemNames($datasets: [ID!]!, $tables: [ID!]!, $sparse: [ID!]!, $files: [ID!]!, $folders: [ID!]!, $scenes: [ID!]!, $charts: [ID!]!, $grids: [ID!]!, $meshes: [ID!]!, $fixtures: [ID!]!, $lenses: [ID!]!, $annotations: [ID!]!, $limit: Int!, $hasDatasets: Boolean!, $hasTables: Boolean!, $hasSparse: Boolean!, $hasFiles: Boolean!, $hasFolders: Boolean!, $hasScenes: Boolean!, $hasCharts: Boolean!, $hasGrids: Boolean!, $hasMeshes: Boolean!, $hasFixtures: Boolean!, $hasLenses: Boolean!, $hasAnnotations: Boolean!) {
+  arrayDatasets(filters: {ids: $datasets}, pagination: {limit: $limit}) @include(if: $hasDatasets) {
+    id
+    name
+  }
+  tableDatasets(filters: {ids: $tables}, pagination: {limit: $limit}) @include(if: $hasTables) {
+    id
+    name
+  }
+  sparseDatasets(filters: {ids: $sparse}, pagination: {limit: $limit}) @include(if: $hasSparse) {
+    id
+    name
+  }
+  files(filters: {ids: $files}, pagination: {limit: $limit}) @include(if: $hasFiles) {
+    id
+    name
+  }
+  folders(filters: {ids: $folders}, pagination: {limit: $limit}) @include(if: $hasFolders) {
+    id
+    name
+  }
+  scenes(filters: {ids: $scenes}, pagination: {limit: $limit}) @include(if: $hasScenes) {
+    id
+    name
+  }
+  charts(filters: {ids: $charts}, pagination: {limit: $limit}) @include(if: $hasCharts) {
+    id
+    name
+  }
+  grids(filters: {ids: $grids}, pagination: {limit: $limit}) @include(if: $hasGrids) {
+    id
+    name
+  }
+  meshCollections(filters: {ids: $meshes}, pagination: {limit: $limit}) @include(if: $hasMeshes) {
+    id
+    name
+    label
+  }
+  fixtures(filters: {ids: $fixtures}, pagination: {limit: $limit}) @include(if: $hasFixtures) {
+    id
+    name
+    label
+  }
+  lenses(filters: {ids: $lenses}, pagination: {limit: $limit}) @include(if: $hasLenses) {
+    id
+    name
+    ...LensSubject
+  }
+  annotations(filters: {ids: $annotations}, pagination: {limit: $limit}) @include(if: $hasAnnotations) {
+    id
+    name
+    kind
+  }
+}
+    ${LensSubjectFragmentDoc}`;
+
+/**
+ * __useCollaborationItemNamesQuery__
+ *
+ * To run a query within a React component, call `useCollaborationItemNamesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCollaborationItemNamesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCollaborationItemNamesQuery({
+ *   variables: {
+ *      datasets: // value for 'datasets'
+ *      tables: // value for 'tables'
+ *      sparse: // value for 'sparse'
+ *      files: // value for 'files'
+ *      folders: // value for 'folders'
+ *      scenes: // value for 'scenes'
+ *      charts: // value for 'charts'
+ *      grids: // value for 'grids'
+ *      meshes: // value for 'meshes'
+ *      fixtures: // value for 'fixtures'
+ *      lenses: // value for 'lenses'
+ *      annotations: // value for 'annotations'
+ *      limit: // value for 'limit'
+ *      hasDatasets: // value for 'hasDatasets'
+ *      hasTables: // value for 'hasTables'
+ *      hasSparse: // value for 'hasSparse'
+ *      hasFiles: // value for 'hasFiles'
+ *      hasFolders: // value for 'hasFolders'
+ *      hasScenes: // value for 'hasScenes'
+ *      hasCharts: // value for 'hasCharts'
+ *      hasGrids: // value for 'hasGrids'
+ *      hasMeshes: // value for 'hasMeshes'
+ *      hasFixtures: // value for 'hasFixtures'
+ *      hasLenses: // value for 'hasLenses'
+ *      hasAnnotations: // value for 'hasAnnotations'
+ *   },
+ * });
+ */
+export function useCollaborationItemNamesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<CollaborationItemNamesQuery, CollaborationItemNamesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CollaborationItemNamesQuery, CollaborationItemNamesQueryVariables>(CollaborationItemNamesDocument, options);
+      }
+export function useCollaborationItemNamesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CollaborationItemNamesQuery, CollaborationItemNamesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CollaborationItemNamesQuery, CollaborationItemNamesQueryVariables>(CollaborationItemNamesDocument, options);
+        }
+export type CollaborationItemNamesQueryHookResult = ReturnType<typeof useCollaborationItemNamesQuery>;
+export type CollaborationItemNamesLazyQueryHookResult = ReturnType<typeof useCollaborationItemNamesLazyQuery>;
+export type CollaborationItemNamesQueryResult = Apollo.QueryResult<CollaborationItemNamesQuery, CollaborationItemNamesQueryVariables>;
 export const TableColumnStatsDocument = gql`
     query TableColumnStats($id: ID!) {
   tableDataset(id: $id) {
     id
+    name
     rowCount
+    store {
+      ...ParquetStore
+    }
     columns {
-      id
-      name
+      ...TableDatasetColumn
       stats {
         min
         max
@@ -29698,7 +30022,8 @@ export const TableColumnStatsDocument = gql`
     }
   }
 }
-    `;
+    ${ParquetStoreFragmentDoc}
+${TableDatasetColumnFragmentDoc}`;
 
 /**
  * __useTableColumnStatsQuery__
@@ -30982,6 +31307,41 @@ export function useGetFileDerivedLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetFileDerivedQueryHookResult = ReturnType<typeof useGetFileDerivedQuery>;
 export type GetFileDerivedLazyQueryHookResult = ReturnType<typeof useGetFileDerivedLazyQuery>;
 export type GetFileDerivedQueryResult = Apollo.QueryResult<GetFileDerivedQuery, GetFileDerivedQueryVariables>;
+export const GetListFileDocument = gql`
+    query GetListFile($id: ID!) {
+  file(id: $id) {
+    ...ListFile
+  }
+}
+    ${ListFileFragmentDoc}`;
+
+/**
+ * __useGetListFileQuery__
+ *
+ * To run a query within a React component, call `useGetListFileQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListFileQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListFileQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListFileQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListFileQuery, GetListFileQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListFileQuery, GetListFileQueryVariables>(GetListFileDocument, options);
+      }
+export function useGetListFileLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListFileQuery, GetListFileQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListFileQuery, GetListFileQueryVariables>(GetListFileDocument, options);
+        }
+export type GetListFileQueryHookResult = ReturnType<typeof useGetListFileQuery>;
+export type GetListFileLazyQueryHookResult = ReturnType<typeof useGetListFileLazyQuery>;
+export type GetListFileQueryResult = Apollo.QueryResult<GetListFileQuery, GetListFileQueryVariables>;
 export const GetFixtureDocument = gql`
     query GetFixture($id: ID!) {
   fixture(id: $id) {
@@ -31101,42 +31461,6 @@ export function usePlaceableFixtureLensesLazyQuery(baseOptions?: ApolloReactHook
 export type PlaceableFixtureLensesQueryHookResult = ReturnType<typeof usePlaceableFixtureLensesQuery>;
 export type PlaceableFixtureLensesLazyQueryHookResult = ReturnType<typeof usePlaceableFixtureLensesLazyQuery>;
 export type PlaceableFixtureLensesQueryResult = Apollo.QueryResult<PlaceableFixtureLensesQuery, PlaceableFixtureLensesQueryVariables>;
-export const ListFixturesDocument = gql`
-    query ListFixtures($filters: FixtureFilter, $pagination: OffsetPaginationInput) {
-  fixtures(filters: $filters, pagination: $pagination) {
-    ...ListFixture
-  }
-}
-    ${ListFixtureFragmentDoc}`;
-
-/**
- * __useListFixturesQuery__
- *
- * To run a query within a React component, call `useListFixturesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListFixturesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListFixturesQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListFixturesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListFixturesQuery, ListFixturesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListFixturesQuery, ListFixturesQueryVariables>(ListFixturesDocument, options);
-      }
-export function useListFixturesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListFixturesQuery, ListFixturesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListFixturesQuery, ListFixturesQueryVariables>(ListFixturesDocument, options);
-        }
-export type ListFixturesQueryHookResult = ReturnType<typeof useListFixturesQuery>;
-export type ListFixturesLazyQueryHookResult = ReturnType<typeof useListFixturesLazyQuery>;
-export type ListFixturesQueryResult = Apollo.QueryResult<ListFixturesQuery, ListFixturesQueryVariables>;
 export const GetFolderDocument = gql`
     query GetFolder($id: ID!) {
   folder(id: $id) {
@@ -31209,19 +31533,100 @@ export function useGetFoldersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetFoldersQueryHookResult = ReturnType<typeof useGetFoldersQuery>;
 export type GetFoldersLazyQueryHookResult = ReturnType<typeof useGetFoldersLazyQuery>;
 export type GetFoldersQueryResult = Apollo.QueryResult<GetFoldersQuery, GetFoldersQueryVariables>;
+export const GetFolderSummaryDocument = gql`
+    query GetFolderSummary($id: ID!) {
+  folder(id: $id) {
+    ...ListFolder
+  }
+  childrenCounts(parent: $id) {
+    total
+    kinds {
+      kind
+      count
+    }
+  }
+}
+    ${ListFolderFragmentDoc}`;
+
+/**
+ * __useGetFolderSummaryQuery__
+ *
+ * To run a query within a React component, call `useGetFolderSummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetFolderSummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetFolderSummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetFolderSummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetFolderSummaryQuery, GetFolderSummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetFolderSummaryQuery, GetFolderSummaryQueryVariables>(GetFolderSummaryDocument, options);
+      }
+export function useGetFolderSummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFolderSummaryQuery, GetFolderSummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetFolderSummaryQuery, GetFolderSummaryQueryVariables>(GetFolderSummaryDocument, options);
+        }
+export type GetFolderSummaryQueryHookResult = ReturnType<typeof useGetFolderSummaryQuery>;
+export type GetFolderSummaryLazyQueryHookResult = ReturnType<typeof useGetFolderSummaryLazyQuery>;
+export type GetFolderSummaryQueryResult = Apollo.QueryResult<GetFolderSummaryQuery, GetFolderSummaryQueryVariables>;
+export const GetFolderPinsDocument = gql`
+    query GetFolderPins($ids: [ID!]!) {
+  folders(filters: {ids: $ids}, pagination: {limit: 100}) {
+    id
+    pinned
+  }
+}
+    `;
+
+/**
+ * __useGetFolderPinsQuery__
+ *
+ * To run a query within a React component, call `useGetFolderPinsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetFolderPinsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetFolderPinsQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useGetFolderPinsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetFolderPinsQuery, GetFolderPinsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetFolderPinsQuery, GetFolderPinsQueryVariables>(GetFolderPinsDocument, options);
+      }
+export function useGetFolderPinsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFolderPinsQuery, GetFolderPinsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetFolderPinsQuery, GetFolderPinsQueryVariables>(GetFolderPinsDocument, options);
+        }
+export type GetFolderPinsQueryHookResult = ReturnType<typeof useGetFolderPinsQuery>;
+export type GetFolderPinsLazyQueryHookResult = ReturnType<typeof useGetFolderPinsLazyQuery>;
+export type GetFolderPinsQueryResult = Apollo.QueryResult<GetFolderPinsQuery, GetFolderPinsQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String, $noArrayDatasets: Boolean!, $noFiles: Boolean!, $noFolders: Boolean!, $noLenses: Boolean!, $pagination: OffsetPaginationInput) {
   arrayDatasets: arrayDatasets(
     filters: {search: $search}
     pagination: $pagination
   ) @skip(if: $noArrayDatasets) {
-    ...ListArrayDataset
+    id
+    name
   }
   files: files(filters: {search: $search}, pagination: $pagination) @skip(if: $noFiles) {
-    ...ListFile
+    id
+    name
   }
   folders: folders(filters: {search: $search}, pagination: $pagination) @skip(if: $noFolders) {
-    ...ListFolder
+    id
+    name
   }
   lenses: lenses(
     filters: {search: $search, sliced: true}
@@ -31230,10 +31635,7 @@ export const GlobalSearchDocument = gql`
     ...ListLens
   }
 }
-    ${ListArrayDatasetFragmentDoc}
-${ListFileFragmentDoc}
-${ListFolderFragmentDoc}
-${ListLensFragmentDoc}`;
+    ${ListLensFragmentDoc}`;
 
 /**
  * __useGlobalSearchQuery__
@@ -31379,18 +31781,11 @@ export const HomePageDocument = gql`
   lenses(pagination: {limit: 1}) {
     id
   }
-  arrayDatasets: arrayDatasets(
-    pagination: {limit: 1}
-    ordering: [{createdAt: DESC}]
-  ) {
-    ...ListArrayDataset
-  }
-  files: files(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
-    ...ListFile
+  files: files(pagination: {limit: 1}) {
+    id
   }
 }
-    ${ListArrayDatasetFragmentDoc}
-${ListFileFragmentDoc}`;
+    `;
 
 /**
  * __useHomePageQuery__
@@ -31834,8 +32229,6 @@ export const PreviewLayerDocument = gql`
     query PreviewLayer($input: PreviewLayerInput!) {
   previewLayer(input: $input) {
     ...SceneLayer
-  }
-  engine: previewLayer(input: $input) {
     ...AddLayerStagedLayer
   }
 }
@@ -32200,6 +32593,78 @@ export function useGetSlicedDescriptorsLazyQuery(baseOptions?: ApolloReactHooks.
 export type GetSlicedDescriptorsQueryHookResult = ReturnType<typeof useGetSlicedDescriptorsQuery>;
 export type GetSlicedDescriptorsLazyQueryHookResult = ReturnType<typeof useGetSlicedDescriptorsLazyQuery>;
 export type GetSlicedDescriptorsQueryResult = Apollo.QueryResult<GetSlicedDescriptorsQuery, GetSlicedDescriptorsQueryVariables>;
+export const GetListLensDocument = gql`
+    query GetListLens($id: ID!) {
+  lens(id: $id) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+
+/**
+ * __useGetListLensQuery__
+ *
+ * To run a query within a React component, call `useGetListLensQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListLensQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListLensQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListLensQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListLensQuery, GetListLensQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListLensQuery, GetListLensQueryVariables>(GetListLensDocument, options);
+      }
+export function useGetListLensLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListLensQuery, GetListLensQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListLensQuery, GetListLensQueryVariables>(GetListLensDocument, options);
+        }
+export type GetListLensQueryHookResult = ReturnType<typeof useGetListLensQuery>;
+export type GetListLensLazyQueryHookResult = ReturnType<typeof useGetListLensLazyQuery>;
+export type GetListLensQueryResult = Apollo.QueryResult<GetListLensQuery, GetListLensQueryVariables>;
+export const GetLensNamesDocument = gql`
+    query GetLensNames($ids: [ID!]!, $limit: Int!) {
+  lenses(filters: {ids: $ids}, pagination: {limit: $limit}) {
+    id
+    name
+  }
+}
+    `;
+
+/**
+ * __useGetLensNamesQuery__
+ *
+ * To run a query within a React component, call `useGetLensNamesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLensNamesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetLensNamesQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetLensNamesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetLensNamesQuery, GetLensNamesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetLensNamesQuery, GetLensNamesQueryVariables>(GetLensNamesDocument, options);
+      }
+export function useGetLensNamesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetLensNamesQuery, GetLensNamesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetLensNamesQuery, GetLensNamesQueryVariables>(GetLensNamesDocument, options);
+        }
+export type GetLensNamesQueryHookResult = ReturnType<typeof useGetLensNamesQuery>;
+export type GetLensNamesLazyQueryHookResult = ReturnType<typeof useGetLensNamesLazyQuery>;
+export type GetLensNamesQueryResult = Apollo.QueryResult<GetLensNamesQuery, GetLensNamesQueryVariables>;
 export const GetLineageDocument = gql`
     query GetLineage($start: LineageRootInput!, $up: Int! = 1, $down: Int! = 3, $limit: Int! = 300, $fanout: Int! = 50) {
   lineage(start: $start, up: $up, down: $down, limit: $limit, fanout: $fanout) {
@@ -32285,46 +32750,6 @@ export function useGetLineageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetLineageQueryHookResult = ReturnType<typeof useGetLineageQuery>;
 export type GetLineageLazyQueryHookResult = ReturnType<typeof useGetLineageLazyQuery>;
 export type GetLineageQueryResult = Apollo.QueryResult<GetLineageQuery, GetLineageQueryVariables>;
-export const MembersDocument = gql`
-    query Members {
-  members {
-    user {
-      sub
-    }
-    folders(pagination: {limit: 3}, filters: {parentless: true}) {
-      id
-      name
-    }
-  }
-}
-    `;
-
-/**
- * __useMembersQuery__
- *
- * To run a query within a React component, call `useMembersQuery` and pass it any options that fit your needs.
- * When your component renders, `useMembersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMembersQuery({
- *   variables: {
- *   },
- * });
- */
-export function useMembersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MembersQuery, MembersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<MembersQuery, MembersQueryVariables>(MembersDocument, options);
-      }
-export function useMembersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MembersQuery, MembersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<MembersQuery, MembersQueryVariables>(MembersDocument, options);
-        }
-export type MembersQueryHookResult = ReturnType<typeof useMembersQuery>;
-export type MembersLazyQueryHookResult = ReturnType<typeof useMembersLazyQuery>;
-export type MembersQueryResult = Apollo.QueryResult<MembersQuery, MembersQueryVariables>;
 export const GetMeshObjectInfoDocument = gql`
     query GetMeshObjectInfo($collection: ID!, $object: Int!) {
   meshObject(collection: $collection, object: $object) {
@@ -32620,87 +33045,6 @@ export function useGetMeshCollectionLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetMeshCollectionQueryHookResult = ReturnType<typeof useGetMeshCollectionQuery>;
 export type GetMeshCollectionLazyQueryHookResult = ReturnType<typeof useGetMeshCollectionLazyQuery>;
 export type GetMeshCollectionQueryResult = Apollo.QueryResult<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>;
-export const GetPermissionsDocument = gql`
-    query GetPermissions($identifier: String!, $object: ID!) {
-  permissions(identifier: $identifier, object: $object) {
-    user {
-      sub
-    }
-    permission
-  }
-}
-    `;
-
-/**
- * __useGetPermissionsQuery__
- *
- * To run a query within a React component, call `useGetPermissionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetPermissionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetPermissionsQuery({
- *   variables: {
- *      identifier: // value for 'identifier'
- *      object: // value for 'object'
- *   },
- * });
- */
-export function useGetPermissionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetPermissionsQuery, GetPermissionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetPermissionsQuery, GetPermissionsQueryVariables>(GetPermissionsDocument, options);
-      }
-export function useGetPermissionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetPermissionsQuery, GetPermissionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetPermissionsQuery, GetPermissionsQueryVariables>(GetPermissionsDocument, options);
-        }
-export type GetPermissionsQueryHookResult = ReturnType<typeof useGetPermissionsQuery>;
-export type GetPermissionsLazyQueryHookResult = ReturnType<typeof useGetPermissionsLazyQuery>;
-export type GetPermissionsQueryResult = Apollo.QueryResult<GetPermissionsQuery, GetPermissionsQueryVariables>;
-export const PermissionOptionsDocument = gql`
-    query PermissionOptions($identifier: String!, $search: String, $values: [ID!]) {
-  options: availablePermissions(
-    identifier: $identifier
-    search: $search
-    values: $values
-  ) {
-    value
-    label
-  }
-}
-    `;
-
-/**
- * __usePermissionOptionsQuery__
- *
- * To run a query within a React component, call `usePermissionOptionsQuery` and pass it any options that fit your needs.
- * When your component renders, `usePermissionOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = usePermissionOptionsQuery({
- *   variables: {
- *      identifier: // value for 'identifier'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function usePermissionOptionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PermissionOptionsQuery, PermissionOptionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<PermissionOptionsQuery, PermissionOptionsQueryVariables>(PermissionOptionsDocument, options);
-      }
-export function usePermissionOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PermissionOptionsQuery, PermissionOptionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<PermissionOptionsQuery, PermissionOptionsQueryVariables>(PermissionOptionsDocument, options);
-        }
-export type PermissionOptionsQueryHookResult = ReturnType<typeof usePermissionOptionsQuery>;
-export type PermissionOptionsLazyQueryHookResult = ReturnType<typeof usePermissionOptionsLazyQuery>;
-export type PermissionOptionsQueryResult = Apollo.QueryResult<PermissionOptionsQuery, PermissionOptionsQueryVariables>;
 export const ProfileFeedRootsDocument = gql`
     query ProfileFeedRoots($kinds: [LineageNodeKind!]!, $filters: RootFilter, $pagination: OffsetPaginationInput) {
   roots(kinds: $kinds, filters: $filters, pagination: $pagination) {
@@ -32863,6 +33207,41 @@ export function useGetScenesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetScenesQueryHookResult = ReturnType<typeof useGetScenesQuery>;
 export type GetScenesLazyQueryHookResult = ReturnType<typeof useGetScenesLazyQuery>;
 export type GetScenesQueryResult = Apollo.QueryResult<GetScenesQuery, GetScenesQueryVariables>;
+export const GetListSceneDocument = gql`
+    query GetListScene($id: ID!) {
+  scene(id: $id) {
+    ...ListScene
+  }
+}
+    ${ListSceneFragmentDoc}`;
+
+/**
+ * __useGetListSceneQuery__
+ *
+ * To run a query within a React component, call `useGetListSceneQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListSceneQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListSceneQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListSceneQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListSceneQuery, GetListSceneQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListSceneQuery, GetListSceneQueryVariables>(GetListSceneDocument, options);
+      }
+export function useGetListSceneLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListSceneQuery, GetListSceneQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListSceneQuery, GetListSceneQueryVariables>(GetListSceneDocument, options);
+        }
+export type GetListSceneQueryHookResult = ReturnType<typeof useGetListSceneQuery>;
+export type GetListSceneLazyQueryHookResult = ReturnType<typeof useGetListSceneLazyQuery>;
+export type GetListSceneQueryResult = Apollo.QueryResult<GetListSceneQuery, GetListSceneQueryVariables>;
 export const GetSparseDatasetDocument = gql`
     query GetSparseDataset($id: ID!) {
   sparseDataset(id: $id) {
@@ -33088,6 +33467,41 @@ export function useGetSparseDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReac
 export type GetSparseDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsFullQuery>;
 export type GetSparseDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsFullLazyQuery>;
 export type GetSparseDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>;
+export const GetListSparseDatasetDocument = gql`
+    query GetListSparseDataset($id: ID!) {
+  sparseDataset(id: $id) {
+    ...ListSparseDataset
+  }
+}
+    ${ListSparseDatasetFragmentDoc}`;
+
+/**
+ * __useGetListSparseDatasetQuery__
+ *
+ * To run a query within a React component, call `useGetListSparseDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListSparseDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListSparseDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListSparseDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListSparseDatasetQuery, GetListSparseDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListSparseDatasetQuery, GetListSparseDatasetQueryVariables>(GetListSparseDatasetDocument, options);
+      }
+export function useGetListSparseDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListSparseDatasetQuery, GetListSparseDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListSparseDatasetQuery, GetListSparseDatasetQueryVariables>(GetListSparseDatasetDocument, options);
+        }
+export type GetListSparseDatasetQueryHookResult = ReturnType<typeof useGetListSparseDatasetQuery>;
+export type GetListSparseDatasetLazyQueryHookResult = ReturnType<typeof useGetListSparseDatasetLazyQuery>;
+export type GetListSparseDatasetQueryResult = Apollo.QueryResult<GetListSparseDatasetQuery, GetListSparseDatasetQueryVariables>;
 export const GetTableDatasetDocument = gql`
     query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
@@ -33267,43 +33681,6 @@ export function useBrowseTableDatasetsLazyQuery(baseOptions?: ApolloReactHooks.L
 export type BrowseTableDatasetsQueryHookResult = ReturnType<typeof useBrowseTableDatasetsQuery>;
 export type BrowseTableDatasetsLazyQueryHookResult = ReturnType<typeof useBrowseTableDatasetsLazyQuery>;
 export type BrowseTableDatasetsQueryResult = Apollo.QueryResult<BrowseTableDatasetsQuery, BrowseTableDatasetsQueryVariables>;
-export const GetTableDatasetsDocument = gql`
-    query GetTableDatasets($filters: TableDatasetFilter, $pagination: OffsetPaginationInput, $ordering: [TableDatasetOrder!]) {
-  tableDatasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
-    ...ListTableDataset
-  }
-}
-    ${ListTableDatasetFragmentDoc}`;
-
-/**
- * __useGetTableDatasetsQuery__
- *
- * To run a query within a React component, call `useGetTableDatasetsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetTableDatasetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetTableDatasetsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *      ordering: // value for 'ordering'
- *   },
- * });
- */
-export function useGetTableDatasetsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>(GetTableDatasetsDocument, options);
-      }
-export function useGetTableDatasetsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>(GetTableDatasetsDocument, options);
-        }
-export type GetTableDatasetsQueryHookResult = ReturnType<typeof useGetTableDatasetsQuery>;
-export type GetTableDatasetsLazyQueryHookResult = ReturnType<typeof useGetTableDatasetsLazyQuery>;
-export type GetTableDatasetsQueryResult = Apollo.QueryResult<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>;
 export const GetTableDatasetAnchorsDocument = gql`
     query GetTableDatasetAnchors($id: ID!) {
   tableDataset(id: $id) {
@@ -33385,6 +33762,45 @@ export function useGetTableDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReact
 export type GetTableDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullQuery>;
 export type GetTableDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullLazyQuery>;
 export type GetTableDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>;
+export const GetListTableDatasetDocument = gql`
+    query GetListTableDataset($id: ID!) {
+  tableDataset(id: $id) {
+    ...ListTableDataset
+    columns {
+      id
+      name
+    }
+  }
+}
+    ${ListTableDatasetFragmentDoc}`;
+
+/**
+ * __useGetListTableDatasetQuery__
+ *
+ * To run a query within a React component, call `useGetListTableDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListTableDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListTableDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListTableDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListTableDatasetQuery, GetListTableDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListTableDatasetQuery, GetListTableDatasetQueryVariables>(GetListTableDatasetDocument, options);
+      }
+export function useGetListTableDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListTableDatasetQuery, GetListTableDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListTableDatasetQuery, GetListTableDatasetQueryVariables>(GetListTableDatasetDocument, options);
+        }
+export type GetListTableDatasetQueryHookResult = ReturnType<typeof useGetListTableDatasetQuery>;
+export type GetListTableDatasetLazyQueryHookResult = ReturnType<typeof useGetListTableDatasetLazyQuery>;
+export type GetListTableDatasetQueryResult = Apollo.QueryResult<GetListTableDatasetQuery, GetListTableDatasetQueryVariables>;
 export const WatchSceneAnnotationsDocument = gql`
     subscription WatchSceneAnnotations($collection: ID!) {
   annotations(collection: $collection) {
@@ -33425,15 +33841,15 @@ export const WatchSceneLayersDocument = gql`
     subscription WatchSceneLayers($scene: ID!) {
   layers(scene: $scene) {
     create {
-      id
+      ...SceneLayer
     }
     update {
-      id
+      ...SceneLayer
     }
     delete
   }
 }
-    `;
+    ${SceneLayerFragmentDoc}`;
 
 /**
  * __useWatchSceneLayersSubscription__

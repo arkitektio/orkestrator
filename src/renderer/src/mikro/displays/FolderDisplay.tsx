@@ -1,9 +1,10 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroFolder } from "@/core/linkers";
-import { useGetFolderQuery } from "@/mikro/api/graphql";
+import { FolderChildKind, useGetFolderSummaryQuery } from "@/mikro/api/graphql";
 
 export const FolderDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetFolderQuery({
+  // Counted on the server: a chip has no business listing the folder.
+  const { data } = useGetFolderSummaryQuery({
     variables: {
       id: props.id,
     },
@@ -14,8 +15,10 @@ export const FolderDisplay = (props: DisplayWidgetProps) => {
   }
 
   const folder = data.folder;
-  const fileCount = folder.files?.length ?? 0;
-  const childCount = folder.children?.length ?? 0;
+  const countOf = (kind: FolderChildKind) =>
+    data.childrenCounts.kinds.find((entry) => entry.kind === kind)?.count ?? 0;
+  const fileCount = countOf(FolderChildKind.File);
+  const childCount = countOf(FolderChildKind.Folder);
 
   if (props.context === "command") {
     return (

@@ -265,7 +265,7 @@ export const stagedIntensity = (
     ],
     dataset: { id: datasetId, intrinsicSystem: { id: `grid-${datasetId}` } },
   },
-  colormap: overrides.colormap ?? "GREEN",
+  intensityColormap: overrides.colormap ?? "GREEN",
   climMin: overrides.climMin ?? null,
   climMax: overrides.climMax ?? null,
   gamma: overrides.gamma ?? null,

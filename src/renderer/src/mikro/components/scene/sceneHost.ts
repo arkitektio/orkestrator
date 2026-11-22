@@ -27,8 +27,8 @@ import { useModeStore, useModeStoreApi, type DisplayMode, type InteractionMode }
 import { useSceneStore, useSceneStoreApi, type SceneLayer } from "./platform/stores/sceneStore";
 import { useViewerStoreApi } from "./platform/stores/viewerStore";
 import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
-import { useMikro } from "@/mikro/api/funcs";
 import { useWatchSceneLayersSubscription } from "@/mikro/api/graphql";
+import { addSceneLayer, removeSceneLayer } from "@/mikro/lib/scene/sceneLayerCache";
 import { useSceneEventsApi } from "./platform/events/sceneEvents";
 import {
   drawnPayload,
@@ -349,33 +349,27 @@ export const useSceneEvents = (handlers: SceneEventHandlers): void => {
   }, [key, wantsLayers, sceneApi]);
 };
 
-/** How long layer events are gathered before the scene is fetched again. */
-const LIVE_REFETCH_AFTER_MS = 250;
-
 /**
  * Follow the scene as others change it: an action writing a layer or a shape
- * into it shows up here without a reload. Layers through `WatchSceneLayers`
- * (any event refetches `GetScene`, debounced, the same store-free path a layer
- * made here takes), shapes through each annotation collection's live list.
+ * into it shows up here without a reload. Layers through `WatchSceneLayers`,
+ * whose events carry the whole layer and are written into the cached scene
+ * (`lib/scene/sceneLayerCache.ts`) — an edit in place, a create appended, a
+ * delete dropped — so nothing refetches `GetScene`. Shapes through each
+ * annotation collection's live list.
  */
 export const useLiveScene = (sceneId: string, enabled = true): void => {
-  const client = useMikro();
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
   useWatchSceneLayersSubscription({
     variables: { scene: sceneId },
     skip: !enabled,
-    onData: () => {
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        timer.current = null;
-        void client.refetchQueries({ include: ["GetScene"] });
-      }, LIVE_REFETCH_AFTER_MS);
+    // `asAffine` errors for a layer that will not condense; the layer still
+    // arrives, with that field null, exactly as `GetScene` brings it.
+    errorPolicy: "all",
+    onData: ({ client, data }) => {
+      const event = data.data?.layers;
+      if (!event) return;
+      // `update` needs nothing: the subscription's own write replaced the normalized layer.
+      if (event.create) addSceneLayer(client.cache, sceneId, event.create);
+      if (event.delete) removeSceneLayer(client.cache, sceneId, event.delete);
     },
     onError: (error) => console.error(`Live layers of scene ${sceneId} failed:`, error),
   });

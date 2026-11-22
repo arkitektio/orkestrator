@@ -9,11 +9,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { cn } from "@/core/util/utils";
 import { useMikro } from "@/mikro/api/funcs";
 import {
-  GetLensDocument,
+  GetLensNamesDocument,
   SetPositionLabelDocument,
   type AnchorLabelsFragment,
-  type GetLensQuery,
-  type GetLensQueryVariables,
+  type GetLensNamesQuery,
+  type GetLensNamesQueryVariables,
   type SetPositionLabelMutation,
   type SetPositionLabelMutationVariables,
 } from "@/mikro/api/graphql";
@@ -277,8 +277,8 @@ const applyLensNames = (
 /**
  * The other layers over the same array: their lenses may pin the position just
  * labelled, and the server renamed them with it. Read each one's name back and
- * patch the ones that moved. Network-only: the cache holds the name from
- * before.
+ * patch the ones that moved, in one request. Network-only: the cache holds the
+ * name from before.
  */
 const refreshLensNames = async (client: MikroClient, sceneApi: SceneApi, named: LayerState) => {
   const others = sceneApi
@@ -289,15 +289,17 @@ const refreshLensNames = async (client: MikroClient, sceneApi: SceneApi, named: 
         candidate.lens.dataset.id === named.lens.dataset.id &&
         layerPins(candidate).length > 0,
     );
-  await Promise.all(
-    others.map(async (other) => {
-      const { data } = await client.query<GetLensQuery, GetLensQueryVariables>({
-        query: GetLensDocument,
-        variables: { id: other.lens.id },
-        fetchPolicy: "network-only",
-      });
-      const name = data?.lens.name ?? null;
-      if (name !== (other.lens.name ?? null)) applyLensNames(sceneApi, other.id, { name });
-    }),
-  );
+  if (others.length === 0) return;
+  const ids = [...new Set(others.map((other) => other.lens.id))];
+  const { data } = await client.query<GetLensNamesQuery, GetLensNamesQueryVariables>({
+    query: GetLensNamesDocument,
+    variables: { ids, limit: ids.length },
+    fetchPolicy: "network-only",
+  });
+  const names = new Map((data?.lenses ?? []).map((lens) => [lens.id, lens.name ?? null]));
+  for (const other of others) {
+    if (!names.has(other.lens.id)) continue;
+    const name = names.get(other.lens.id) ?? null;
+    if (name !== (other.lens.name ?? null)) applyLensNames(sceneApi, other.id, { name });
+  }
 };

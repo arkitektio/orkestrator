@@ -1,3 +1,4 @@
+import { intoScene } from "@/mikro/lib/scene/sceneLayerCache";
 import {
   AxisType,
   CreatableTransformKind,
@@ -183,10 +184,10 @@ export async function commitMeshDesign(opts: {
     // SMOOTH: designed surfaces are polished, welded meshes — and single-cell
     // collections shade smooth without seams. The card can still flip to flat.
     variables: { input: { scene: sceneId, lens, shading: MeshShading.Smooth } },
-    // The same refetch `AddLayerForm` uses: the scene store reconciles the
+    // The same cache write `AddLayerForm` uses: the scene store reconciles the
     // new MeshLayer and `FabriksCollectionLayer` streams it in. (`MikroClient`
-    // narrows Apollo's options type; the refetch is Apollo's own.)
-    refetchQueries: ["GetScene"],
+    // narrows Apollo's options type; `update` is Apollo's own.)
+    ...intoScene(sceneId),
   } as unknown as Parameters<MikroClient["mutate"]>[0])) as { data?: CreateMeshLayerMutation };
   const layerId = layer.data?.createMeshLayer?.id;
   if (!layerId) throw new Error("The collection was registered but the scene refused a layer for it.");

@@ -104,3 +104,20 @@ query GetSlicedDescriptors($dataset: ID!, $slices: [SliceInput!]!) {
     descriptorsSliced(slices: $slices)
   }
 }
+
+# One lens at list depth, for a chip or a display widget. `GetLens` adds its
+# scenes and everything derived from it.
+query GetListLens($id: ID!) {
+  lens(id: $id) {
+    ...ListLens
+  }
+}
+
+# The names of these lenses, read back after a position label renamed them:
+# names only, in one request.
+query GetLensNames($ids: [ID!]!, $limit: Int!) {
+  lenses(filters: { ids: $ids }, pagination: { limit: $limit }) {
+    id
+    name
+  }
+}

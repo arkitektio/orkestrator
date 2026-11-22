@@ -18,8 +18,8 @@ import {
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { makeSparseReader } from "@/mikro/lib/sparse/sparseSource";
 import {
-  GetTableDatasetDocument,
-  type GetTableDatasetQuery,
+  TableColumnStatsDocument,
+  type TableColumnStatsQuery,
 } from "@/mikro/api/graphql";
 
 import type { KonnektionCollection } from "./konnektion/konnektionCollection";
@@ -263,11 +263,12 @@ const NetworkCollectionGroup = ({
   const fetchTable = useMemo<NodeTableFetcher | null>(() => {
     if (!client?.query) return null;
     return async (tableId: string) => {
+      // The store and the columns' roles: the column query, not the table's page.
       const result = await client.query({
-        query: GetTableDatasetDocument,
+        query: TableColumnStatsDocument,
         variables: { id: tableId },
       });
-      const dataset = (result as { data?: GetTableDatasetQuery }).data?.tableDataset;
+      const dataset = (result as { data?: TableColumnStatsQuery }).data?.tableDataset;
       if (!dataset) return null;
       return {
         id: dataset.id,

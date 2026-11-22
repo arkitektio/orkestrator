@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 // (the generated Apollo layer touches `window`)
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { print, type DocumentNode } from "graphql";
 import { LineageNodeKind } from "@/mikro/api/graphql";
 
-import { cacheIdOfKey, summarizePreflights } from "./preflight";
+import { cacheIdOfKey, PREFLIGHT_BATCH, preflightDeleteDerived, preflightDeletes, summarizePreflights } from "./preflight";
 
 const preflight = (target: string, casualties: { key: string; kind: LineageNodeKind; name: string }[], over = {}) => ({
   target,
@@ -60,5 +61,50 @@ describe("delete derived", () => {
     expect(cacheIdOfKey("annotation:9f2c-11")).toEqual({ __typename: "Annotation", id: "9f2c-11" });
     expect(cacheIdOfKey("lens:1")).toBeNull();
     expect(cacheIdOfKey("nokey")).toBeNull();
+  });
+});
+
+describe("batched preflights", () => {
+  const answer = (target: string) => ({
+    target,
+    casualties: [],
+    blockers: [],
+    cascadeCounts: [],
+    truncated: false,
+    needsCascade: false,
+    deletable: true,
+  });
+
+  it("asks every target in one request, one aliased field each", async () => {
+    const query = vi.fn(async ({ variables }: { variables: Record<string, string> }) => ({
+      data: Object.fromEntries(
+        Object.entries(variables).map(([name, id]) => [name.replace("id", "t"), answer(`dataset:${id}`)]),
+      ),
+    }));
+    const summary = await preflightDeletes({ query } as never, "ArrayDataset", ["1", "2", "3"]);
+    expect(query).toHaveBeenCalledTimes(1);
+    const { query: document, variables } = query.mock.calls[0][0] as unknown as { query: DocumentNode; variables: object };
+    expect(variables).toEqual({ id0: "1", id1: "2", id2: "3" });
+    const printed = print(document);
+    expect(printed).toContain("t0: preflightDeleteArrayDataset(id: $id0)");
+    expect(printed).toContain("t2: preflightDeleteArrayDataset(id: $id2)");
+    expect(printed).toContain("fragment DeletePreflight on DeletePreflight");
+    expect(summary.blockers).toEqual([]);
+  });
+
+  it("keeps the shared variables and chunks a long selection", async () => {
+    const query = vi.fn(async ({ variables }: { variables: Record<string, string> }) => ({
+      data: Object.fromEntries(
+        Object.entries(variables)
+          .filter(([name]) => name !== "kind")
+          .map(([name, id]) => [name.replace("id", "t"), answer(`dataset:${id}`)]),
+      ),
+    }));
+    const ids = Array.from({ length: PREFLIGHT_BATCH + 1 }, (_, index) => String(index));
+    await preflightDeleteDerived({ query } as never, LineageNodeKind.Dataset, ids);
+    expect(query).toHaveBeenCalledTimes(2);
+    const first = query.mock.calls[0][0] as unknown as { query: DocumentNode; variables: Record<string, string> };
+    expect(first.variables.kind).toBe(LineageNodeKind.Dataset);
+    expect(print(first.query)).toContain("t0: preflightDeleteDerived(kind: $kind, id: $id0)");
   });
 });

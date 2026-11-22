@@ -1,15 +1,12 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroScene } from "@/core/linkers";
-import { useGetSceneQuery } from "@/mikro/api/graphql";
+import { useGetListSceneQuery } from "@/mikro/api/graphql";
 
 export const SceneDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetSceneQuery({
+  const { data } = useGetListSceneQuery({
     variables: {
       id: props.id,
     },
-    // See ScenePage: a layer whose `asAffine` cannot condense must null that
-    // one field, not discard the scene.
-    errorPolicy: "all",
   });
 
   if (!data?.scene) {

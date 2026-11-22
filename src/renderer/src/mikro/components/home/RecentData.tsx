@@ -1,4 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ApolloError } from "@apollo/client";
 import { FileIcon, Grid3x3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HomeSection } from "@/core/layout/ModuleHome";
@@ -10,7 +11,9 @@ import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
 import { CARD_TONES, CardFrame, type CardTone } from "@/core/ui/card-frame";
 import {
+  HomeRootDetailsDocument,
   HomeRootDetailsQuery,
+  HomeRootsDocument,
   HomeRootsQuery,
   LineageNodeKind,
   ListArrayDatasetFragment,
@@ -25,6 +28,8 @@ import { describeShape } from "../sparse/sparseFacts";
 import { formatAxes, formatBytes, spatialSpecOf, splitAxesBySpec } from "../../specs";
 import { rootKey } from "./fileResults";
 import { useHomeResult, useHomeResultMap } from "./homeResults";
+import { hasMorePages, loadedPages } from "./pages";
+import { useMikro } from "../../api/funcs";
 import { ResultCount } from "./ResultChips";
 
 type Root = HomeRootsQuery["roots"][number];
@@ -291,19 +296,34 @@ const idsOf = (roots: Root[], kind: LineageNodeKind) =>
  * more" pages through the matching roots only. While it narrows, the section
  * says so, and an empty result says that nothing matched rather than vanishing.
  */
-export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear?: () => void }) => {
-  const [limit, setLimit] = useState(PAGE);
-  const { ref, count } = useColumnCount();
-  const filtered = !!filters && Object.keys(filters).length > 0;
-  // A new filter starts again at the first page.
-  const [shownFilters, setShownFilters] = useState(filters);
-  if (shownFilters !== filters) {
-    setShownFilters(filters);
-    setLimit(PAGE);
-  }
+/** One page's answer, as its `RootsPage` reports it up. */
+type PageAnswer = {
+  roots: Root[];
+  details: HomeRootDetailsQuery | undefined;
+  /** The roots of THIS page's variables have come (not the previous filter's). */
+  answered: boolean;
+  error: ApolloError | undefined;
+};
+
+/**
+ * One page of roots and its tiles, by offset: a page is its own request, so
+ * "Show more" asks for the next twelve and nothing it already has (growing one
+ * request's limit asked again for every root on screen, and stopped at the
+ * server's page cap of 100 without saying so). Draws nothing itself; the grid
+ * is laid out over all pages at once, so it reports up.
+ */
+const RootsPage = ({
+  index,
+  filters,
+  onAnswer,
+}: {
+  index: number;
+  filters: RootFilter | undefined;
+  onAnswer: (index: number, answer: PageAnswer) => void;
+}) => {
   // cache-and-network so coming back after a converter ran shows what it wrote.
   const rootsQuery = useHomeRootsQuery({
-    variables: { pagination: { limit }, ...(filtered ? { filters } : {}) },
+    variables: { pagination: { offset: index * PAGE, limit: PAGE }, ...(filters ? { filters } : {}) },
     fetchPolicy: "cache-and-network",
   });
   // While a new filter loads, the old grid stays rather than blinking out.
@@ -311,7 +331,6 @@ export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear
     () => (rootsQuery.data ?? rootsQuery.previousData)?.roots ?? [],
     [rootsQuery.data, rootsQuery.previousData],
   );
-
   const ids = useMemo(
     () => ({
       files: idsOf(roots, LineageNodeKind.File),
@@ -333,34 +352,81 @@ export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear
     fetchPolicy: "cache-and-network",
   });
   const details = detailsQuery.data ?? detailsQuery.previousData;
+  const answered = rootsQuery.data !== undefined;
+  const failed = rootsQuery.error ?? detailsQuery.error;
+  useEffect(() => {
+    onAnswer(index, { roots, details, answered, error: failed });
+  }, [index, roots, details, answered, failed, onAnswer]);
+  return null;
+};
+
+export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear?: () => void }) => {
+  const client = useMikro();
+  const [pages, setPages] = useState(1);
+  const { ref, count } = useColumnCount();
+  const filtered = !!filters && Object.keys(filters).length > 0;
+  // A new filter starts again at the first page.
+  const [shownFilters, setShownFilters] = useState(filters);
+  const [answers, setAnswers] = useState<readonly (PageAnswer | undefined)[]>([]);
+  if (shownFilters !== filters) {
+    setShownFilters(filters);
+    setPages(1);
+    // The first page keeps showing the old filter's roots until it answers.
+    setAnswers((current) => current.slice(0, 1));
+  }
+  const onAnswer = useCallback((index: number, answer: PageAnswer) => {
+    setAnswers((current) => {
+      const next = current.slice(0);
+      next[index] = answer;
+      return next;
+    });
+  }, []);
+
+  const loaded = useMemo(() => loadedPages(answers, pages), [answers, pages]);
+  // A root a later page repeats (something new pushed the list down while
+  // paging) is shown once.
+  const roots = useMemo(() => {
+    const seen = new Set<string>();
+    return loaded.flatMap((answer) => answer.roots).filter((root) => !seen.has(root.key) && !!seen.add(root.key));
+  }, [loaded]);
+  const hasMore = hasMorePages(loaded, pages, PAGE);
+  const rootsAnswered = loaded[0]?.answered ?? false;
 
   const byKey = useMemo(() => {
     const map = new Map<string, { file?: HomeFile; dataset?: ListArrayDatasetFragment; detail?: string }>();
-    for (const file of details?.files ?? []) map.set(rootKey(LineageNodeKind.File, file.id), { file });
-    for (const dataset of details?.arrayDatasets ?? [])
-      map.set(rootKey(LineageNodeKind.Dataset, dataset.id), { dataset });
-    for (const table of details?.tableDatasets ?? [])
-      map.set(rootKey(LineageNodeKind.TableDataset, table.id), {
-        detail: table.axisNames.length ? table.axisNames.join(" × ") : "measurement table",
-      });
-    for (const sparse of details?.sparseDatasets ?? [])
-      map.set(rootKey(LineageNodeKind.SparseDataset, sparse.id), {
-        detail: describeShape(sparse.axisNames, sparse.shape),
-      });
+    for (const { details } of loaded) {
+      for (const file of details?.files ?? []) map.set(rootKey(LineageNodeKind.File, file.id), { file });
+      for (const dataset of details?.arrayDatasets ?? [])
+        map.set(rootKey(LineageNodeKind.Dataset, dataset.id), { dataset });
+      for (const table of details?.tableDatasets ?? [])
+        map.set(rootKey(LineageNodeKind.TableDataset, table.id), {
+          detail: table.axisNames.length ? table.axisNames.join(" × ") : "measurement table",
+        });
+      for (const sparse of details?.sparseDatasets ?? [])
+        map.set(rootKey(LineageNodeKind.SparseDataset, sparse.id), {
+          detail: describeShape(sparse.axisNames, sparse.shape),
+        });
+    }
     return map;
-  }, [details]);
+  }, [loaded]);
 
-  const error = rootsQuery.error ?? detailsQuery.error;
+  const pageRequests = Array.from({ length: pages }, (_, index) => (
+    <RootsPage key={index} index={index} filters={filtered ? filters : undefined} onAnswer={onAnswer} />
+  ));
+
+  const error = loaded.find((answer) => answer?.error)?.error;
   if (error) {
     return (
       <HomeSection title={filtered ? "Matching data" : "Recent data"}>
+        {pageRequests}
         <div className="flex flex-col gap-2">
           <ErrorNote error={error} title="Couldn't load the recent data" />
           <button
             type="button"
             onClick={() => {
-              void rootsQuery.refetch().catch(() => undefined);
-              void detailsQuery.refetch().catch(() => undefined);
+              void client
+                .refetchQueries({ include: [HomeRootsDocument, HomeRootDetailsDocument] })
+                .catch(() => undefined);
             }}
             className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
           >
@@ -416,7 +482,8 @@ export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear
   // by the time the cards arrive.
   return (
     <div ref={ref} className="min-w-0">
-      {filtered && cards.length === 0 && rootsQuery.data && (
+      {pageRequests}
+      {filtered && cards.length === 0 && rootsAnswered && (
         <HomeSection title="Matching data">
           <p className="text-sm text-muted-foreground">
             Nothing matches these filters.{" "}
@@ -433,12 +500,12 @@ export const RecentData = ({ filters, onClear }: { filters?: RootFilter; onClear
           <BentoGrid columns={count} rowHeight="11rem" style={{ gap: GAP }}>
             {cards}
           </BentoGrid>
-          {roots.length === limit && (
+          {hasMore && (
             <Button
               variant="ghost"
               size="sm"
               className="mt-2 text-muted-foreground"
-              onClick={() => setLimit((current) => current + PAGE)}
+              onClick={() => setPages((current) => current + 1)}
             >
               Show more
             </Button>

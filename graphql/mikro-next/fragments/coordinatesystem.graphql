@@ -73,6 +73,19 @@ fragment Resident on Resident {
   }
 }
 
+# A space as something to draw or compute in: its axes and its epoch, without
+# `residents`. Residents are a listing of everything living in the space (every
+# crop lens of a dataset's grid among them, ~10 prefetches per system), which
+# only the coordinate-system pages and the "who lives here" badges read.
+fragment SpaceAxes on CoordinateSystem {
+  id
+  name
+  epoch
+  axes {
+    ...Axis
+  }
+}
+
 fragment CoordinateSystem on CoordinateSystem {
   id
   name

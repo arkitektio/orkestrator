@@ -6,7 +6,8 @@ fragment DataArray on DataArray {
   shape
   chunkShape
   coordinateSystem {
-    ...ListCoordinateSystem
+    id
+    name
   }
   toParent {
     ...Transformation
@@ -71,7 +72,7 @@ fragment ArrayDataset on ArrayDataset {
   # The structural pixel grid: the space ROIs resolve against and every level
   # and lens maps into.
   intrinsicSystem {
-    ...CoordinateSystem
+    ...SpaceAxes
   }
   dataArrays {
     ...DataArray

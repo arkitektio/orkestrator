@@ -96,6 +96,8 @@ export const AnnotationPairActions = ({
   const { data, previousData, error, refetch } = useGetAnnotationActionDescriptorsQuery({
     variables: { id: roi.id, lens: lens?.id ?? "" },
     skip: !lens,
+    // Primed by the draw (`primeCardDescriptors`); a hover reads it, it does not re-ask.
+    fetchPolicy: "cache-first",
   });
   const answered =
     data?.annotation ?? (previousData?.annotation.id === roi.id ? previousData.annotation : undefined);

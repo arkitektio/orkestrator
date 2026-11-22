@@ -13,3 +13,11 @@ query GetScenes(
     ...ListScene
   }
 }
+
+# One scene at card depth: what a chip or a display widget draws. `GetScene`
+# is the whole composition (every layer, its placement, its stores).
+query GetListScene($id: ID!) {
+  scene(id: $id) {
+    ...ListScene
+  }
+}

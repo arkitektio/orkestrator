@@ -66,8 +66,8 @@ const client = (lensNames: Record<string, string | null> = {}) => ({
       },
     },
   })),
-  query: vi.fn(async ({ variables }: { variables: { id: string } }) => ({
-    data: { lens: { name: lensNames[variables.id] ?? null } },
+  query: vi.fn(async ({ variables }: { variables: { ids: string[] } }) => ({
+    data: { lenses: variables.ids.map((id) => ({ id, name: lensNames[id] ?? null })) },
   })),
 });
 
@@ -114,6 +114,20 @@ describe("setAnchorLabel", () => {
     await setAnchorLabel(c as never, api, named, "GFP");
     await vi.waitFor(() => expect(state.layers[1].lens.name).toBe("GFP"));
     expect(c.query).toHaveBeenCalledTimes(1); // not the layer over another array
+    expect(c.query.mock.calls[0][0].variables.ids).toEqual(["11"]);
+  });
+
+  it("reads every sibling back in one request", async () => {
+    const named = layer({ id: "1", lensId: "10" });
+    const siblings = [layer({ id: "2", lensId: "11" }), layer({ id: "3", lensId: "12" }), layer({ id: "4", lensId: "13" })];
+    const { api, state } = store([named, ...siblings]);
+    const c = client({ "11": "GFP", "12": "RFP", "13": null });
+    await setAnchorLabel(c as never, api, named, "GFP");
+    await vi.waitFor(() => expect(state.layers[2].lens.name).toBe("RFP"));
+    expect(state.layers[1].lens.name).toBe("GFP");
+    expect(state.layers[3].lens.name).toBeNull();
+    expect(c.query).toHaveBeenCalledTimes(1);
+    expect(c.query.mock.calls[0][0].variables).toEqual({ ids: ["11", "12", "13"], limit: 3 });
   });
 });
 

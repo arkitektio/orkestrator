@@ -481,6 +481,8 @@ const RunPane = ({
 }) => {
   const { data, previousData, error, refetch } = useGetSlicedDescriptorsQuery({
     variables: { dataset: selection.datasetId, slices: selection.slices },
+    // Stored descriptors: one answer per slice, not one per opening of the float.
+    fetchPolicy: "cache-first",
   });
   // Picking another layer asks again; this one's tiles stay meanwhile.
   const descriptors = data?.arrayDataset.descriptorsSliced ?? (data ? null : previousData?.arrayDataset.descriptorsSliced);

@@ -64,6 +64,11 @@ export const useSceneAnnotations = (
   const { data } = useGetSceneAnnotationsQuery({
     variables: sceneAnnotationsVariables(collectionId ?? ""),
     skip: !collectionId,
+    // Fetched once per collection, then kept current by writes into this one
+    // entry (`annotationCache.ts`): the card and the renderer mount and unmount
+    // with the panel and the layer's visibility, and each mount must not ask
+    // the server for every shape again.
+    fetchPolicy: "cache-first",
   });
   const stored = data?.annotations;
   return useMemo(() => stored?.map(inSceneOrder), [stored]);

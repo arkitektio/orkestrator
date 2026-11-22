@@ -1,3 +1,4 @@
+import { addSceneLayer, createdLayer } from "@/mikro/lib/scene/sceneLayerCache";
 import type { ApolloClient } from "@apollo/client";
 import type { DocumentNode } from "graphql";
 
@@ -10,6 +11,7 @@ import {
   CreateVectorLayerDocument,
   CreateVolumeLayerDocument,
   PreviewLayerDocument,
+  type AddLayerStagedLayerFragment,
   type PreviewLayerInput,
   type PreviewLayerQuery,
 } from "@/mikro/api/graphql";
@@ -26,7 +28,7 @@ import type { LensLayerRequest } from "./lensLayer";
 /** The preview as the scene draws it (`...SceneLayer`). */
 export type PreviewedLayer = PreviewLayerQuery["previewLayer"];
 /** The same preview as the Add Layer engine counts it (`...AddLayerStagedLayer`). */
-export type PreviewedEngineLayer = PreviewLayerQuery["engine"];
+export type PreviewedEngineLayer = AddLayerStagedLayerFragment;
 
 /** Which create a preview input names. */
 export type PreviewArm = Exclude<keyof PreviewLayerInput, "image">;
@@ -80,18 +82,18 @@ export const fetchPreviewLayer = async (
     variables: { input },
     fetchPolicy: "no-cache",
   });
-  return { layer: data.previewLayer, engine: data.engine };
+  return { layer: data.previewLayer, engine: data.previewLayer };
 };
 
 /**
  * Keep a preview: the same input sent to its create, with what the viewer
  * changed in the meantime folded in — `overrides` (only fields the create
  * takes) and `edits`, the writes its layer card made while it was staged,
- * replayed in order against the saved layer. The scene is refetched only
- * after the edits, so the saved layer arrives as tuned: a later content-only
- * write would not be folded into the scene's stores. Resolves once the
- * refetch has the saved layer, so the staged one can be dropped without the
- * layer blinking out.
+ * replayed in order against the saved layer. The saved layer joins the
+ * cached scene only after the edits, so it arrives as tuned: a later
+ * content-only write would not be folded into the scene's stores. Resolves
+ * once the cached scene has the saved layer, so the staged one can be dropped
+ * without the layer blinking out.
  */
 export const keepPreviewLayer = async (
   client: ApolloClient<unknown>,
@@ -114,6 +116,8 @@ export const keepPreviewLayer = async (
       });
     }
   }
-  await client.refetchQueries({ include: ["GetScene"] });
+  // Linked into the cached scene only now, after the edits: the layer arrives as tuned.
+  const layer = createdLayer(created.data);
+  if (layer && typeof value.scene === "string") addSceneLayer(client.cache, value.scene, layer);
   return saved;
 };

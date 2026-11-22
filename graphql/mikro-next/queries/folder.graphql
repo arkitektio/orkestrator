@@ -13,3 +13,26 @@ query GetFolders(
     ...ListFolder
   }
 }
+
+# A folder as a chip or a card: what it is called and how much it holds,
+# counted on the server rather than listed.
+query GetFolderSummary($id: ID!) {
+  folder(id: $id) {
+    ...ListFolder
+  }
+  childrenCounts(parent: $id) {
+    total
+    kinds {
+      kind
+      count
+    }
+  }
+}
+
+# Whether each of these folders is pinned: what the pin toggle flips.
+query GetFolderPins($ids: [ID!]!) {
+  folders(filters: { ids: $ids }, pagination: { limit: 100 }) {
+    id
+    pinned
+  }
+}

@@ -103,17 +103,24 @@ query GetAnnotations(
   }
 }
 
-query GetAnnotationCollection($id: ID!) {
-  annotationCollection(id: $id) {
-    ...AnnotationCollection
+
+
+# The shapes a run handed back, each with its collection, so they go straight
+# into their collections' cached lists (`upsertSceneAnnotation`) instead of
+# refetching every collection on screen.
+query ReturnedSceneAnnotations($ids: [ID!]!) {
+  annotations(filters: { ids: $ids }) {
+    ...SceneAnnotation
+    collection {
+      id
+    }
   }
 }
 
-query GetAnnotationCollections(
-  $filters: AnnotationCollectionFilter
-  $pagination: OffsetPaginationInput
-) {
-  annotationCollections(filters: $filters, pagination: $pagination) {
-    ...AnnotationCollection
+# One annotation at list depth, for a chip or a display widget: no vectors,
+# no coordinate system, no lineage.
+query GetListAnnotation($id: ID!) {
+  annotation(id: $id) {
+    ...ListAnnotation
   }
 }

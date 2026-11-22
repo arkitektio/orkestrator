@@ -1,3 +1,4 @@
+import { outOfScene } from "@/mikro/lib/scene/sceneLayerCache";
 import { isStagedLayerId, useStagedLayersStoreApi } from "../../platform/float/stagedLayerStore";
 import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation } from "@/mikro/api/graphql";
@@ -59,12 +60,9 @@ export const LayerControlPanel = ({
   // selection; present = the user has said otherwise for that card.
   const [expandOverrides, setExpandOverrides] = useState<Record<string, boolean>>({});
 
-  // Deleting refetches GetScene, which reinitializes the scene stores so the
-  // removed layer drops out — the same store-free path layer creation uses.
-  const [deleteLayer] = useDeleteLayerMutation({
-    refetchQueries: ["GetScene"],
-    awaitRefetchQueries: true,
-  });
+  // Deleting drops the layer from the cached scene, which the scene stores
+  // reconcile from — the same store-free path layer creation uses.
+  const [deleteLayer] = useDeleteLayerMutation();
 
   // Stable handlers so the memoized LayerCard actually skips re-render during a
   // pan/orbit. The zustand actions (setSelectedLayerId, updateLayer,
@@ -98,11 +96,11 @@ export const LayerControlPanel = ({
         stagedApi.getState().discard([id]);
         return;
       }
-      void deleteLayer({ variables: { input: { id } } }).catch(
+      void deleteLayer({ variables: { input: { id } }, ...outOfScene(sceneId, id) }).catch(
         reportErrorAs("Couldn't remove the layer"),
       );
     },
-    [deleteLayer, setSelectedLayerId, stagedApi],
+    [deleteLayer, sceneId, setSelectedLayerId, stagedApi],
   );
 
   // EVERY layer is listed, in scene order — the order NEVER changes while you

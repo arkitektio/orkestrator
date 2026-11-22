@@ -7,7 +7,6 @@ import {
   ColorMap,
   ColumnControl,
   type ColumnSummaryInput,
-  useGetTableDatasetLazyQuery,
   usePinColumnSummaryMutation,
   useTableColumnStatsLazyQuery,
 } from "@/mikro/api/graphql";
@@ -565,7 +564,8 @@ export const ColumnEntrySettings = ({
   onCommit: (patch: Draft) => void;
 }) => {
   const service = useAttributeServiceOrNull();
-  const [loadTable, tableResult] = useGetTableDatasetLazyQuery();
+  // One query for the table's name, store, columns (with their roles) and what
+  // the server knows of their ranges: the whole `GetTableDataset` is a page's.
   const [loadStats, statsResult] = useTableColumnStatsLazyQuery({ fetchPolicy: "cache-first" });
   const [pinSummary] = usePinColumnSummaryMutation();
   // What was scanned, for a column the server had no summary of yet.
@@ -576,7 +576,7 @@ export const ColumnEntrySettings = ({
   );
   const [statsError, setStatsError] = useState<ColumnStatsFailure | null>(null);
 
-  const table = tableResult.data?.tableDataset;
+  const table = statsResult.data?.tableDataset;
   const column = table?.columns.find((candidate) => candidate.name === entry.column);
   const control = column ? controlForRole(column.role) : null;
 
@@ -585,14 +585,11 @@ export const ColumnEntrySettings = ({
     // stats below stay unread rather than being asked of `null`.
     const tableId = entry.table;
     if (tableId == null) return;
-    void loadTable({ variables: { id: tableId } }).catch((error) => {
+    void loadStats({ variables: { id: tableId } }).catch((error) => {
       console.warn("[layer] could not resolve the entry's table:", error);
     });
-    void loadStats({ variables: { id: tableId } }).catch((error) => {
-      console.warn("[layer] could not read the table's column stats:", error);
-    });
-  }, [entry.table, loadTable, loadStats]);
-  const known = statsResult.data?.tableDataset.columns.find((candidate) => candidate.name === entry.column);
+  }, [entry.table, loadStats]);
+  const known = column;
   const footerDomain = useMemo(
     () =>
       known?.stats?.min != null && known.stats.max != null ? { min: known.stats.min, max: known.stats.max } : null,
@@ -894,10 +891,10 @@ export const ColumnEntrySettings = ({
         </div>
       )}
 
-      {tableResult.loading && (
+      {statsResult.loading && (
         <div className="text-[10px] text-foreground/40">Resolving column…</div>
       )}
-      {!tableResult.loading && table && !column && (
+      {!statsResult.loading && table && !column && (
         <div className="text-[10px] text-warning/80">
           {table.name} no longer declares a column named “{entry.column}”.
         </div>

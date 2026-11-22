@@ -273,7 +273,10 @@ fragment AddLayerStagedLayer on Layer {
     lens {
       ...AddLayerStagedLens
     }
-    colormap
+    # Aliased as `SceneLayer` does: `colormap` is `ColorMap!` here and
+    # `ColorMap` on Point/Track, so the two fragments can share one selection
+    # (`PreviewLayer` asks for both at once).
+    intensityColormap: colormap
     climMin
     climMax
     gamma

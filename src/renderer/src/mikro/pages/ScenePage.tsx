@@ -7,11 +7,22 @@ import {
 } from "../api/graphql";
 import { Scene } from "../components/scene/Scene";
 import { SceneTitleOverlay } from "../components/scene/SceneTitleOverlay";
+import { useLiveScene } from "../components/scene/sceneHost";
 import { coldOpenTimeline } from "../components/scene/platform/perf/coldOpenTimeline";
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
 import { MIKRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
+
+/**
+ * Layers others add, edit or remove — an agent bound to the scene, a second
+ * window — show up while the page is open. Each event carries the whole layer
+ * and is written into the cached scene, so following costs no refetch.
+ */
+const LiveLayers = ({ sceneId }: { sceneId: string }) => {
+  useLiveScene(sceneId);
+  return null;
+};
 
 const DetailPage = asDetailQueryRoute(
   useGetSceneQuery,
@@ -25,6 +36,7 @@ const DetailPage = asDetailQueryRoute(
       // right-rail sidebar too — the rail is a sibling panel of the content
       // area, unreachable from anything rendered inside it.
       <Scene.Provider scene={data.scene}>
+        <LiveLayers sceneId={data.scene.id} />
         <MikroScene.ModelPage
           overlay
           actions={<MikroScene.Actions object={id} />}

@@ -5,12 +5,9 @@ fragment Folder on Folder {
   provenanceEntries {
     ...ProvenanceEntry
   }
-  files {
-    ...ListFile
-  }
-  children {
-    ...ListFolder
-  }
+  # Not what is IN it: a folder's contents are paged through `children` (the
+  # explorer), and counted by `childrenCounts`. Listing them here loaded every
+  # file of the folder with the folder.
   # Where this folder SITS, not what is in it: the Info rail names the parent so
   # a folder reached by a link (rather than by walking down to it) still says
   # where it hangs. Null for a root folder, which is a meaningful answer.

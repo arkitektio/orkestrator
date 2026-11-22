@@ -39,11 +39,9 @@ query GetArrayDataset($id: ID!) {
         }
       }
     }
-    # The selections people cut out of it. Sliced only: a dataset carries
-    # several interchangeable unsliced lenses, and each of them is this page.
-    lenses(sliced: true) {
-      ...ListLens
-    }
+    # The selections people cut out of it are NOT here: `ArrayDataset.lenses`
+    # has no pagination, and a task can cut hundreds. The lens sidebar pages
+    # them with `ListLenses(filters: { dataset, sliced: true })`.
   }
 }
 
@@ -169,6 +167,8 @@ query GetArrayDatasetDerived($id: ID!) {
 # intrinsic grid — so an entry point holding only a dataset id needs this one
 # hop first. Deliberately not the full ArrayDataset: the action wants an id, not
 # every pyramid level and its store.
+#
+# Also what calibrating a dataset needs: its name and the grid's axes.
 query GetArrayDatasetIntrinsicSystem($id: ID!) {
   arrayDataset(id: $id) {
     id
@@ -176,6 +176,9 @@ query GetArrayDatasetIntrinsicSystem($id: ID!) {
     intrinsicSystem {
       id
       name
+      axes {
+        ...Axis
+      }
     }
   }
 }

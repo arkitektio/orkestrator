@@ -3,16 +3,20 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resultOriginKey, useResultSink, type ResultSink } from "@/core/smart/extensions/results";
-import { CreateMeshLayerDocument, DeleteLayerDocument } from "@/mikro/api/graphql";
+import { CreateMeshLayerDocument, DeleteLayerDocument, ReturnedSceneAnnotationsDocument } from "@/mikro/api/graphql";
 
 const stage = vi.fn();
 const mutate = vi.fn();
 const refetchQueries = vi.fn(async () => []);
-const client = { mutate, refetchQueries };
+const query = vi.fn(async () => ({ data: { annotations: [] } }));
+const client = { mutate, refetchQueries, query, cache: {} };
 
 vi.mock("@/mikro/api/funcs", () => ({ useMikro: () => client }));
 vi.mock("@/mikro/lib/lenses/useLensRegistry", () => ({ useLensRegistry: () => ({}) }));
-vi.mock("@/mikro/forms/addLayer/stageLens", () => ({ stageLens: (...args: unknown[]) => stage(...args) }));
+vi.mock("@/mikro/forms/addLayer/stageLens", () => ({
+  stageLens: (...args: unknown[]) => stage(...args),
+  loadStageWorld: async () => null,
+}));
 vi.mock("@/mikro/forms/addLayer/engine", () => ({ LAYER_KIND_INFO: { LABEL: { title: "Label" } } }));
 vi.mock("@/core/notify", () => ({ toast: { success: vi.fn(), info: vi.fn() }, reportError: vi.fn() }));
 vi.mock("../../platform/stores/sceneStore", () => ({
@@ -88,12 +92,18 @@ describe("RerunLayers", () => {
 });
 
 describe("SceneResultSink", () => {
-  it("stages the label, adds the surface as a mesh layer and refetches the shapes", async () => {
+  it("stages the label, adds the surface as a mesh layer and fetches only the returned shape", async () => {
     const sink = mountSink();
     sink([label("42"), refined, surface("m7")], onPath);
 
-    await waitFor(() => expect(refetchQueries).toHaveBeenCalledWith({ include: ["GetSceneAnnotations"] }));
-    expect(stage).toHaveBeenCalledWith(client, {}, { scene: "scene-1", lens: "42" });
+    await waitFor(() =>
+      expect(query).toHaveBeenCalledWith(
+        expect.objectContaining({ query: ReturnedSceneAnnotationsDocument, variables: { ids: ["a-refined"] } }),
+      ),
+    );
+    // No list of the scene's shapes is refetched for it.
+    expect(refetchQueries).not.toHaveBeenCalled();
+    expect(stage).toHaveBeenCalledWith(client, {}, { scene: "scene-1", lens: "42", world: expect.any(Promise) });
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         mutation: CreateMeshLayerDocument,

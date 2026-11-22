@@ -38,3 +38,10 @@ query GetFileDerived($id: ID!) {
     }
   }
 }
+
+# One file at list depth, for a chip or a display widget.
+query GetListFile($id: ID!) {
+  file(id: $id) {
+    ...ListFile
+  }
+}

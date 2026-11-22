@@ -30,8 +30,3 @@ query PlaceableFixtureLenses($fixture: ID!, $space: ID!) {
   }
 }
 
-query ListFixtures($filters: FixtureFilter, $pagination: OffsetPaginationInput) {
-  fixtures(filters: $filters, pagination: $pagination) {
-    ...ListFixture
-  }
-}

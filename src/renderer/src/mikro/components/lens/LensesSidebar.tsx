@@ -7,7 +7,9 @@ import { Plus } from "lucide-react";
 import {
   DetailLensFragment,
   GetArrayDatasetQuery,
+  LensKind,
   ListLensFragment,
+  Ordering,
   useListLensesQuery,
 } from "../../api/graphql";
 import { containerFilter, describeLens, isWholeLens, lensSnapshot } from "../../lenses";
@@ -33,9 +35,10 @@ const rowClass = (active: boolean) =>
  * A list rather than a grid of cards: these are siblings to pick between, and
  * what tells them apart is one line of slices or windows, not a picture.
  *
- * An array lens' siblings come with its dataset, which the page already holds.
- * The other containers do not list their lenses themselves, so those are one
- * `lenses(filters: { <container>: id })` query.
+ * Every kind is one `lenses(filters: { <container>: id })` query, a page of
+ * the newest: a task can cut a container into hundreds. An array lens' whole
+ * row is its dataset's `fullLens`, which the page already holds, so the array
+ * query asks for the cut ones only.
  */
 export const LensesSidebar = ({
   lens,
@@ -46,20 +49,37 @@ export const LensesSidebar = ({
   /** The array lens' dataset. Absent for every other kind. */
   dataset?: PageDataset;
 }) =>
-  dataset ? (
+  dataset ? <DatasetLenses lens={lens} dataset={dataset} /> : <ContainerLenses lens={lens} />;
+
+/** How many of a container's lenses the sidebar lists: the newest. */
+export const SIBLING_LIMIT = 100;
+const NEWEST = [{ createdAt: Ordering.Desc }];
+
+const DatasetLenses = ({ lens, dataset }: { lens: DetailLensFragment; dataset: NonNullable<PageDataset> }) => {
+  const { data, error, refetch } = useListLensesQuery({
+    variables: { filters: { dataset: dataset.id, sliced: true }, ordering: NEWEST, pagination: { limit: SIBLING_LIMIT } },
+  });
+  // Someone else cutting this dataset while the page is open adds a row.
+  useLiveLenses({ kind: LensKind.Array, container: dataset.id });
+
+  if (error) return <QueryError error={error} onRetry={() => refetch()} />;
+  if (!data) return null;
+  return (
     <LensRows
       // The whole array is the dataset's `fullLens`; its duplicates forward to
       // it, so that one row stands for all of them.
-      lenses={[...(dataset.fullLens ? [dataset.fullLens] : []), ...dataset.lenses]}
+      lenses={[...(dataset.fullLens ? [dataset.fullLens] : []), ...data.lenses]}
       lens={lens}
+      capped={data.lenses.length >= SIBLING_LIMIT}
     />
-  ) : (
-    <ContainerLenses lens={lens} />
   );
+};
 
 const ContainerLenses = ({ lens }: { lens: DetailLensFragment }) => {
   const filters = containerFilter(lens);
-  const { data, error, refetch } = useListLensesQuery({ variables: { filters } });
+  const { data, error, refetch } = useListLensesQuery({
+    variables: { filters, ordering: NEWEST, pagination: { limit: SIBLING_LIMIT } },
+  });
   // Someone else cutting this container while the page is open adds a row.
   useLiveLenses({ kind: describeLens(lens).info.kind, container: describeLens(lens).container.id });
 
@@ -70,15 +90,18 @@ const ContainerLenses = ({ lens }: { lens: DetailLensFragment }) => {
   const lenses = [...data.lenses].sort(
     (a, b) => Number(isWholeLens(b)) - Number(isWholeLens(a)),
   );
-  return <LensRows lenses={lenses} lens={lens} />;
+  return <LensRows lenses={lenses} lens={lens} capped={data.lenses.length >= SIBLING_LIMIT} />;
 };
 
 const LensRows = ({
   lenses,
   lens: active,
+  capped = false,
 }: {
   lenses: readonly ListLensFragment[];
   lens: DetailLensFragment;
+  /** A full page came back: older lenses exist and are not listed. */
+  capped?: boolean;
 }) => {
   const { openDialog } = useDialog();
   const { info } = describeLens(active);
@@ -110,6 +133,12 @@ const LensRows = ({
           </LensSmart.Smart>
         );
       })}
+
+      {capped && (
+        <p className="text-xs text-muted-foreground">
+          The newest {SIBLING_LIMIT} lenses. Older ones are on the lens list.
+        </p>
+      )}
 
       {lenses.every(isWholeLens) && (
         <p className="text-xs text-muted-foreground">

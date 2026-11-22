@@ -129,6 +129,8 @@ export const AnnotationEverythingActions = ({
   const { selection, label } = everything;
   const { data, error, refetch } = useGetSlicedDescriptorsQuery({
     variables: { dataset: selection.datasetId, slices: selection.slices },
+    // A slice's descriptors are the dataset's, stored: one answer per slice, not one per hover.
+    fetchPolicy: "cache-first",
   });
   const lensDescriptors = data?.arrayDataset.descriptorsSliced;
 

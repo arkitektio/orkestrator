@@ -1,10 +1,10 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroSparseDataset } from "@/core/linkers";
-import { useGetSparseDatasetQuery } from "@/mikro/api/graphql";
+import { useGetListSparseDatasetQuery } from "@/mikro/api/graphql";
 import { describeShape, sparseDatasetTitle } from "@/mikro/components/sparse/sparseFacts";
 
 export const SparseDatasetDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetSparseDatasetQuery({ variables: { id: props.id } });
+  const { data } = useGetListSparseDatasetQuery({ variables: { id: props.id } });
 
   if (!data?.sparseDataset) {
     return (

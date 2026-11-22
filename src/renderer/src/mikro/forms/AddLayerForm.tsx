@@ -1,3 +1,4 @@
+import { intoScene } from "@/mikro/lib/scene/sceneLayerCache";
 import { MikroGuard } from "@/mikro/api/funcs";
 import { useDialogError } from "@/core/dialogs/DialogError";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
@@ -110,13 +111,6 @@ import {
   type DerivationGraph,
 } from "./addLayer/spaceGraph";
 
-// The mutation options every layer creation submits with: the scene view
-// reinitializes its stores when the GetScene result changes, so the new layer
-// appears without any store plumbing.
-const REFETCH_SCENE = {
-  refetchQueries: ["GetScene"],
-  awaitRefetchQueries: true,
-};
 
 // No success toast: the new layer appears in the scene.
 const DIALOG_OPTIONS = {
@@ -629,17 +623,17 @@ const LensLayerForm = (props: {
     if (!request) return;
     switch (request.kind) {
       case "INTENSITY":
-        return submitIntensity({ variables: request.variables, ...REFETCH_SCENE });
+        return submitIntensity({ variables: request.variables, ...intoScene(props.scene) });
       case "RGB":
-        return submitRgb({ variables: request.variables, ...REFETCH_SCENE });
+        return submitRgb({ variables: request.variables, ...intoScene(props.scene) });
       case "VOLUME":
-        return submitVolume({ variables: request.variables, ...REFETCH_SCENE });
+        return submitVolume({ variables: request.variables, ...intoScene(props.scene) });
       case "LABEL":
-        return submitLabel({ variables: request.variables, ...REFETCH_SCENE });
+        return submitLabel({ variables: request.variables, ...intoScene(props.scene) });
       case "VECTOR":
-        return submitVector({ variables: request.variables, ...REFETCH_SCENE });
+        return submitVector({ variables: request.variables, ...intoScene(props.scene) });
       case "PHASOR":
-        return submitPhasor({ variables: request.variables, ...REFETCH_SCENE });
+        return submitPhasor({ variables: request.variables, ...intoScene(props.scene) });
     }
   });
 
@@ -880,7 +874,7 @@ const TableLayerForm = (props: {
             pointSize: data.pointSize ?? undefined,
           },
         },
-        ...REFETCH_SCENE,
+        ...intoScene(props.scene),
       });
     }
     return submitTrack({
@@ -892,7 +886,7 @@ const TableLayerForm = (props: {
           lineWidth: data.lineWidth ?? undefined,
         },
       },
-      ...REFETCH_SCENE,
+      ...intoScene(props.scene),
     });
   });
 
@@ -1003,7 +997,7 @@ const MeshLayerForm = (props: {
           opacity: data.opacity ?? undefined,
         },
       },
-      ...REFETCH_SCENE,
+      ...intoScene(props.scene),
     });
   });
 
@@ -1080,7 +1074,7 @@ const FixtureLayerForm = (props: {
           opacity: data.opacity ?? undefined,
         },
       },
-      ...REFETCH_SCENE,
+      ...intoScene(props.scene),
     });
   });
 
@@ -1159,7 +1153,7 @@ const NetworkLayerForm = (props: {
           opacity: data.opacity ?? undefined,
         },
       },
-      ...REFETCH_SCENE,
+      ...intoScene(props.scene),
     });
   });
 
@@ -1237,7 +1231,7 @@ const AnnotationLayerForm = (props: {
           opacity: data.opacity ?? undefined,
         },
       },
-      ...REFETCH_SCENE,
+      ...intoScene(props.scene),
     });
   });
 

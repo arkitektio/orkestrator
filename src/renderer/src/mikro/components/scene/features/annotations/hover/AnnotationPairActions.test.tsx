@@ -123,7 +123,7 @@ describe("AnnotationPairActions", () => {
     render(<AnnotationPairActions roi={roi} layerId="layer:gfp" autoFocus={false} onDone={() => {}} />);
 
     expect(pairMenu().partners).toEqual([{ identifier: "@mikro/arraylens", id: "9", label: "GFP" }]);
-    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "9" }, skip: false });
+    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "9" }, skip: false, fetchPolicy: "cache-first" });
   });
 
   it("waits for the descriptors, and says so when there is no image to run on", () => {
@@ -144,7 +144,7 @@ describe("AnnotationPairActions", () => {
 
     render(<AnnotationPairActions roi={roi} layerId="layer:image" autoFocus={false} onDone={() => {}} />);
 
-    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "7" }, skip: false });
+    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "7" }, skip: false, fetchPolicy: "cache-first" });
     expect(screen.getByText("On the crop to this shape")).toBeTruthy();
     const { objects, partners, sections, materialize } = cropMenu();
     expect({ objects, partners, sections }).toEqual({

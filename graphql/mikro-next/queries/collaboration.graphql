@@ -42,3 +42,98 @@ query CollaborationDerived($starts: [LineageRootInput!]!, $down: Int!) {
     }
   }
 }
+
+# One page of what is in a collaboration: what was put in by hand
+# (`brought: false`), or what came along with it (`brought: true`).
+query GetCollaborationItems($id: ID!, $brought: Boolean!, $offset: Int!, $limit: Int!) {
+  collaboration(id: $id) {
+    id
+    items(brought: $brought, pagination: { offset: $offset, limit: $limit }) {
+      ...CollaborationItem
+    }
+  }
+}
+
+# The names of a page of collaboration items, one list per kind rather than a
+# display widget (and its detail query) per row. Kinds not asked for are
+# skipped, so a page of datasets asks for datasets only.
+query CollaborationItemNames(
+  $datasets: [ID!]!
+  $tables: [ID!]!
+  $sparse: [ID!]!
+  $files: [ID!]!
+  $folders: [ID!]!
+  $scenes: [ID!]!
+  $charts: [ID!]!
+  $grids: [ID!]!
+  $meshes: [ID!]!
+  $fixtures: [ID!]!
+  $lenses: [ID!]!
+  $annotations: [ID!]!
+  $limit: Int!
+  $hasDatasets: Boolean!
+  $hasTables: Boolean!
+  $hasSparse: Boolean!
+  $hasFiles: Boolean!
+  $hasFolders: Boolean!
+  $hasScenes: Boolean!
+  $hasCharts: Boolean!
+  $hasGrids: Boolean!
+  $hasMeshes: Boolean!
+  $hasFixtures: Boolean!
+  $hasLenses: Boolean!
+  $hasAnnotations: Boolean!
+) {
+  arrayDatasets(filters: { ids: $datasets }, pagination: { limit: $limit }) @include(if: $hasDatasets) {
+    id
+    name
+  }
+  tableDatasets(filters: { ids: $tables }, pagination: { limit: $limit }) @include(if: $hasTables) {
+    id
+    name
+  }
+  sparseDatasets(filters: { ids: $sparse }, pagination: { limit: $limit }) @include(if: $hasSparse) {
+    id
+    name
+  }
+  files(filters: { ids: $files }, pagination: { limit: $limit }) @include(if: $hasFiles) {
+    id
+    name
+  }
+  folders(filters: { ids: $folders }, pagination: { limit: $limit }) @include(if: $hasFolders) {
+    id
+    name
+  }
+  scenes(filters: { ids: $scenes }, pagination: { limit: $limit }) @include(if: $hasScenes) {
+    id
+    name
+  }
+  charts(filters: { ids: $charts }, pagination: { limit: $limit }) @include(if: $hasCharts) {
+    id
+    name
+  }
+  grids(filters: { ids: $grids }, pagination: { limit: $limit }) @include(if: $hasGrids) {
+    id
+    name
+  }
+  meshCollections(filters: { ids: $meshes }, pagination: { limit: $limit }) @include(if: $hasMeshes) {
+    id
+    name
+    label
+  }
+  fixtures(filters: { ids: $fixtures }, pagination: { limit: $limit }) @include(if: $hasFixtures) {
+    id
+    name
+    label
+  }
+  lenses(filters: { ids: $lenses }, pagination: { limit: $limit }) @include(if: $hasLenses) {
+    id
+    name
+    ...LensSubject
+  }
+  annotations(filters: { ids: $annotations }, pagination: { limit: $limit }) @include(if: $hasAnnotations) {
+    id
+    name
+    kind
+  }
+}

@@ -15,7 +15,7 @@ import {
   CreatableTransformKind,
   PartKind,
   useCreateCoordinateSystemMutation,
-  useGetArrayDatasetQuery,
+  useGetArrayDatasetIntrinsicSystemQuery,
 } from "../api/graphql";
 import {
   CalibrationRow,
@@ -42,7 +42,7 @@ const REFETCH = {
 };
 
 const CalibrateFormInner = (props: { dataset: string }) => {
-  const { data, loading, error } = useGetArrayDatasetQuery({
+  const { data, loading, error } = useGetArrayDatasetIntrinsicSystemQuery({
     variables: { id: props.dataset },
   });
 

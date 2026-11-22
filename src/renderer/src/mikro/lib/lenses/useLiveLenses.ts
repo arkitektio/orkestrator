@@ -4,12 +4,19 @@ import {
   ListLensesDocument,
   useWatchLensesSubscription,
   type LensKind,
+  type ListLensFragment,
 } from "@/mikro/api/graphql";
 import { LENS_KIND_ORDER, LENS_KINDS } from "@/mikro/lenses";
 
 /** Lenses arriving in a burst (a task cutting a hundred crops) refetch once. */
 const REFETCH_DELAY_MS = 400;
 const DEFAULT_REFETCH = [ListLensesDocument];
+
+/** Whether a lens event's create is news to the lists a hook refetches. */
+export const createRefetches = (
+  created: ListLensFragment | null | undefined,
+  when?: (lens: ListLensFragment) => boolean,
+): boolean => created != null && (!when || when(created));
 
 /**
  * Keep the lens lists on screen current: every lens someone else (or a task)
@@ -26,13 +33,21 @@ const DEFAULT_REFETCH = [ListLensesDocument];
  *
  * Mount it where a lens list is shown; mounting IS listening. `refetch` names
  * the queries a create refetches, for a page whose lists are not lens lists
- * but grow with every new whole lens (a converted file's series).
+ * but grow with every new whole lens (a converted file's series); `when`
+ * says which created lenses are such news (`isWholeLens` there: a crop cut
+ * anywhere in the organization is not, and must not refetch the page).
  */
 export const useLiveLenses = ({
   kind,
   container,
   refetch = DEFAULT_REFETCH,
-}: { kind?: LensKind; container?: string; refetch?: DocumentNode[] } = {}): void => {
+  when,
+}: {
+  kind?: LensKind;
+  container?: string;
+  refetch?: DocumentNode[];
+  when?: (lens: ListLensFragment) => boolean;
+} = {}): void => {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -47,7 +62,7 @@ export const useLiveLenses = ({
       const event = data.data?.lenses;
       if (!event) return;
 
-      if (event.create) {
+      if (createRefetches(event.create, when)) {
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => {
           timer.current = null;

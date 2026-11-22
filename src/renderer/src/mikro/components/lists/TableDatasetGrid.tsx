@@ -13,6 +13,34 @@ const PAGE = 24;
 const GRID = CARD_FRAME_GRID;
 
 /**
+ * One page of the grid, by offset. Its own request, so "Show more" asks for
+ * the next page only (growing one request's limit asked again for every card
+ * on screen, and stopped at the server's page cap of 100). `tableDatasets` is
+ * offset-paged in the cache, so the pages share one window.
+ */
+const TablePage = ({
+  filters,
+  ordering,
+  index,
+}: {
+  filters: TableDatasetFilter;
+  ordering: TableDatasetOrder[];
+  index: number;
+}) => {
+  const { data } = useBrowseTableDatasetsQuery({
+    variables: { filters, ordering, pagination: { offset: index * PAGE, limit: PAGE } },
+    fetchPolicy: "cache-and-network",
+  });
+  return (
+    <>
+      {data?.tableDatasets.map((table) => (
+        <TableDatasetCard key={table.id} item={table} />
+      ))}
+    </>
+  );
+};
+
+/**
  * The table list as the Mikro home lays out its data: cards in a grid, newest
  * first unless sorted otherwise, and "Show more" at the foot rather than pages.
  * The previous cards stay while a filter's answer runs. An empty filtered list
@@ -30,20 +58,28 @@ export const TableDatasetGrid = ({
   filtered: boolean;
   onClear: () => void;
 }) => {
-  const [limit, setLimit] = useState(PAGE);
+  const [pages, setPages] = useState(1);
   // A new filter or order starts from the first page again.
   const key = JSON.stringify([filters, ordering]);
   const [shownKey, setShownKey] = useState(key);
   if (shownKey !== key) {
     setShownKey(key);
-    setLimit(PAGE);
+    setPages(1);
   }
 
-  const { data, previousData, loading, error, refetch } = useBrowseTableDatasetsQuery({
-    variables: { filters, ordering, pagination: { limit } },
+  // The first page decides the empty, error and loading states; the last one
+  // whether there is more. Both are the pages' own requests (same variables,
+  // so the same cache entry and one request each).
+  const first = useBrowseTableDatasetsQuery({
+    variables: { filters, ordering, pagination: { offset: 0, limit: PAGE } },
     fetchPolicy: "cache-and-network",
   });
-  const tables = (data ?? previousData)?.tableDatasets;
+  const last = useBrowseTableDatasetsQuery({
+    variables: { filters, ordering, pagination: { offset: (pages - 1) * PAGE, limit: PAGE } },
+    fetchPolicy: "cache-and-network",
+  });
+  const tables = (first.data ?? first.previousData)?.tableDatasets;
+  const { error, refetch } = first;
 
   if (error && !tables) {
     return (
@@ -81,23 +117,33 @@ export const TableDatasetGrid = ({
     );
   }
 
+  const lastPage = last.data?.tableDatasets;
+  const hasMore = lastPage !== undefined && lastPage.length >= PAGE;
   return (
     <div className="flex flex-col gap-4">
-      <div className={GRID} style={{ opacity: loading && data === undefined ? 0.6 : 1 }}>
-        {tables.map((table) => (
-          <TableDatasetCard key={table.id} item={table} />
-        ))}
+      <div className={GRID} style={{ opacity: first.loading && first.data === undefined ? 0.6 : 1 }}>
+        {first.data === undefined ? (
+          // The previous filter's cards, while this one's first page runs.
+          tables.map((table) => <TableDatasetCard key={table.id} item={table} />)
+        ) : (
+          Array.from({ length: pages }, (_, index) => (
+            <TablePage key={index} filters={filters} ordering={ordering} index={index} />
+          ))
+        )}
       </div>
-      {tables.length >= limit && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="self-center rounded-full"
-          disabled={loading}
-          onClick={() => setLimit((current) => current + PAGE)}
-        >
-          {loading ? "Loading…" : "Show more"}
-        </Button>
+      {last.data === undefined && pages > 1 ? (
+        <span className="self-center text-xs text-muted-foreground">Loading…</span>
+      ) : (
+        hasMore && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-center rounded-full"
+            onClick={() => setPages((current) => current + 1)}
+          >
+            Show more
+          </Button>
+        )
       )}
     </div>
   );

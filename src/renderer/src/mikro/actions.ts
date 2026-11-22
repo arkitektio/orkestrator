@@ -57,6 +57,9 @@ import {
   GetScenesDocument,
   GetFolderQuery,
   GetFolderQueryVariables,
+  GetFolderPinsDocument,
+  GetFolderPinsQuery,
+  GetFolderPinsQueryVariables,
   PinFolderDocument,
   PinFolderMutation,
   PinFolderMutationVariables,
@@ -800,20 +803,26 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       if (!grid?.id || lenses.length === 0) throw new Error('Draw in Grid needs both a grid and a lens');
       const mikro = services.mikro;
       if (!mikro) throw new Error('Mikro service is not available');
-      for (const lens of lenses) {
-        const { data } = await mikro.client.query<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>({
-          query: GetWindowLensSubjectDocument,
-          variables: { id: lens.id },
-        });
-        const kind = data.lens.__typename;
-        if (kind !== 'ArrayLens' && kind !== 'SparseLens' && kind !== 'TableLens') {
-          throw new Error('A grid draws arrays, sparse matrices and tables; this lens selects over none of them');
+      // What each lens selects over, asked of all of them at once.
+      const { data } = await mikro.client.query<GetLensContainersQuery, GetLensContainersQueryVariables>({
+        query: GetLensContainersDocument,
+        variables: { ids: lenses.map((lens) => lens.id) },
+      });
+      const kinds = new Map(data.lenses.map((lens) => [lens.id, lens.__typename]));
+      try {
+        for (const lens of lenses) {
+          const kind = kinds.get(lens.id);
+          if (kind !== 'ArrayLens' && kind !== 'SparseLens' && kind !== 'TableLens') {
+            throw new Error('A grid draws arrays, sparse matrices and tables; this lens selects over none of them');
+          }
+          await mikro.client.mutate({
+            mutation: kind === 'TableLens' ? CreateCellsGridLayerDocument : CreateHeatmapGridLayerDocument,
+            variables: { input: { grid: grid.id, lens: lens.id } },
+          });
         }
-        await mikro.client.mutate({
-          mutation: kind === 'TableLens' ? CreateCellsGridLayerDocument : CreateHeatmapGridLayerDocument,
-          variables: { input: { grid: grid.id, lens: lens.id } },
-          refetchQueries: ['GetGrid'],
-        });
+      } finally {
+        // The grid once, after every layer it gained (and after a refusal, for those it did).
+        await mikro.client.refetchQueries({ include: ['GetGrid'] });
       }
     },
   },
@@ -1094,26 +1103,28 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         throw new Error('Mikro service is not available');
       }
 
-      // The menu only knows the structure, not whether it is pinned.
-      for (const folder of folders) {
-        const { data } = await mikro.client.query<
-          GetFolderQuery,
-          GetFolderQueryVariables
-        >({
-          query: GetFolderDocument,
-          variables: { id: folder.id },
-          fetchPolicy: 'network-only',
-        });
+      // The menu only knows the structure, not whether it is pinned: one
+      // question for all of them, then the lists once at the end.
+      const { data } = await mikro.client.query<
+        GetFolderPinsQuery,
+        GetFolderPinsQueryVariables
+      >({
+        query: GetFolderPinsDocument,
+        variables: { ids: folders.map((folder) => folder.id) },
+        fetchPolicy: 'network-only',
+      });
+      const pinned = new Map(data.folders.map((folder) => [folder.id, folder.pinned]));
 
+      for (const folder of folders) {
         await mikro.client.mutate<
           PinFolderMutation,
           PinFolderMutationVariables
         >({
           mutation: PinFolderDocument,
-          variables: { id: folder.id, pin: !data.folder.pinned },
-          refetchQueries: [GetFoldersDocument],
+          variables: { id: folder.id, pin: !pinned.get(folder.id) },
         });
       }
+      await mikro.client.refetchQueries({ include: [GetFoldersDocument] });
     },
   },
   // Fixtures: hardware around the sample, one glTF each. Uploaded into a
@@ -1560,41 +1571,46 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
       // No registration is written: the lens must already be laid along the
       // chart's axis, and the server's refusal is what says when it is not.
-      for (const lens of lenses) {
-        const { data } = await mikro.client.query<
-          GetWindowLensSubjectQuery,
-          GetWindowLensSubjectQueryVariables
-        >({ query: GetWindowLensSubjectDocument, variables: { id: lens.id } });
-
-        switch (data.lens.__typename) {
-          case 'ArrayLens':
-            await mikro.client.mutate<
-              CreateTraceChartLayerMutation,
-              CreateTraceChartLayerMutationVariables
-            >({
-              mutation: CreateTraceChartLayerDocument,
-              variables: { input: { chart: chart.id, lens: lens.id } },
-              refetchQueries: ['GetChart'],
-            });
-            break;
-          case 'AnnotationLens':
-            await mikro.client.mutate({
-              mutation: CreateAnnotationChartLayerDocument,
-              variables: { input: { chart: chart.id, lens: lens.id } },
-              refetchQueries: ['GetChart'],
-            });
-            break;
-          case 'TableLens':
-            // One dialog at a time: a series needs its value column chosen.
-            dialog.openDialog(
-              'addchartlayer',
-              { chart: chart.id, table: data.lens.tableDataset.id, lens: lens.id },
-              { size: 'medium' },
-            );
-            return;
-          default:
-            throw new Error('A chart draws arrays, tables and annotations; this lens selects over none of them');
+      // What each lens selects over, asked of all of them at once; the chart
+      // is read again once, after every layer it gained.
+      const { data } = await mikro.client.query<GetLensContainersQuery, GetLensContainersQueryVariables>({
+        query: GetLensContainersDocument,
+        variables: { ids: lenses.map((lens) => lens.id) },
+      });
+      const subjects = new Map(data.lenses.map((subject) => [subject.id, subject]));
+      try {
+        for (const lens of lenses) {
+          const subject = subjects.get(lens.id);
+          switch (subject?.__typename) {
+            case 'ArrayLens':
+              await mikro.client.mutate<
+                CreateTraceChartLayerMutation,
+                CreateTraceChartLayerMutationVariables
+              >({
+                mutation: CreateTraceChartLayerDocument,
+                variables: { input: { chart: chart.id, lens: lens.id } },
+              });
+              break;
+            case 'AnnotationLens':
+              await mikro.client.mutate({
+                mutation: CreateAnnotationChartLayerDocument,
+                variables: { input: { chart: chart.id, lens: lens.id } },
+              });
+              break;
+            case 'TableLens':
+              // One dialog at a time: a series needs its value column chosen.
+              dialog.openDialog(
+                'addchartlayer',
+                { chart: chart.id, table: subject.tableDataset.id, lens: lens.id },
+                { size: 'medium' },
+              );
+              return;
+            default:
+              throw new Error('A chart draws arrays, tables and annotations; this lens selects over none of them');
+          }
         }
+      } finally {
+        await mikro.client.refetchQueries({ include: ['GetChart'] });
       }
     },
   },
@@ -1623,16 +1639,20 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       // whole lens. Whether that selection IS a trace is the server's call, as
       // is refusing one that is not.
       const lenses = lensRegistry(mikro.client);
-      for (const dataset of datasets) {
-        const lens = await lenses.ensureArrayLens(dataset.id, []);
-        await mikro.client.mutate<
-          CreateTraceChartLayerMutation,
-          CreateTraceChartLayerMutationVariables
-        >({
-          mutation: CreateTraceChartLayerDocument,
-          variables: { input: { chart: chart.id, lens } },
-          refetchQueries: ['GetChart'],
-        });
+      try {
+        for (const dataset of datasets) {
+          const lens = await lenses.ensureArrayLens(dataset.id, []);
+          await mikro.client.mutate<
+            CreateTraceChartLayerMutation,
+            CreateTraceChartLayerMutationVariables
+          >({
+            mutation: CreateTraceChartLayerDocument,
+            variables: { input: { chart: chart.id, lens } },
+          });
+        }
+      } finally {
+        // The chart once, after every trace it gained.
+        await mikro.client.refetchQueries({ include: ['GetChart'] });
       }
     },
   },
