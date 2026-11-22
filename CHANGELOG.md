@@ -1,3 +1,10 @@
+# [8.24.0](https://github.com/arkitektio/orkestrator/compare/v8.23.2...v8.24.0) (2026-11-22)
+
+
+### Features
+
+* **rekuest:** bloks first — materialized bloks are "Bloks", bloks are "Blok Templates" ([0bfc698](https://github.com/arkitektio/orkestrator/commit/0bfc6983c57ec59c22e481308550ea617442e648))
+
 ## [8.23.2](https://github.com/arkitektio/orkestrator/compare/v8.23.1...v8.23.2) (2026-11-22)
 
 
