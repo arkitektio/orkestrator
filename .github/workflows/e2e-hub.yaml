@@ -1,0 +1,40 @@
+name: E2E against a hub
+
+# The built app against a self-contained konstruktor hub (e2e/hub.spec.ts):
+# sign in, every module, the pages below them, a relaunch. The hub takes a few
+# minutes to come up, so nightly and on demand rather than on every push.
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      konstruktor_version:
+        description: "konstruktor from PyPI (empty: the newest)"
+        required: false
+
+jobs:
+  hub:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      # Must run before setup-node, or `cache: pnpm` cannot find the executable.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build, create a hub, sign in and walk the app
+        env:
+          KONSTRUKTOR_VERSION: ${{ inputs.konstruktor_version }}
+        run: pnpm e2e:hub
+      - name: Upload traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-hub
+          path: test-results/
+          if-no-files-found: ignore

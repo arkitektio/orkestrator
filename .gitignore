@@ -11,3 +11,7 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Playwright e2e output (e2e/)
+test-results/
+playwright-report/

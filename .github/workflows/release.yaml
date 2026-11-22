@@ -48,6 +48,10 @@ jobs:
         env:
           SERVICE_TAG: ${{ vars.SERVICE_TAG || 'latest' }}
         run: uv run --with konstruktor scripts/tested_hub.py
+      # A build that renders nothing must not ship: the built app has to boot to
+      # its first screen (e2e/smoke.spec.ts) before anything is released.
+      - name: Boot the built app
+        run: pnpm e2e
       - name: Run semantic-release
         id: semantic-release
         env:
