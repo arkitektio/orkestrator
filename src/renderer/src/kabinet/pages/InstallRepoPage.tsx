@@ -140,20 +140,24 @@ const LegacyGithubInstall = () => {
   }, [raw, rawBranch]);
   const navigate = useNavigate();
 
+  // Kabinet tracks each branch on its own; no branch means its default. The
+  // branch is part of the filter, so a repo with many tracked branches never
+  // pages the asked one out of the answer.
+  const branch = coordinates?.branch ?? "main";
   const { data } = useListReposQuery({
-    variables: { filters: { user: coordinates?.user, repo: coordinates?.repo } },
+    variables: { filters: { user: coordinates?.user, repo: coordinates?.repo, branch } },
     skip: !coordinates,
   });
 
-  // The filter is a case-insensitive match on each half, but it is the server's
-  // notion of a match — narrow it here so a near-miss is never taken for a hit.
+  // The filter is a case-insensitive match on each part, but it is the
+  // server's notion of a match — check it here so a near-miss is never taken
+  // for a hit (a branch name is case-sensitive on GitHub).
   const existing = coordinates
     ? data?.repos.find(
         (repo) =>
           repo.user.toLowerCase() === coordinates.user.toLowerCase() &&
           repo.repo.toLowerCase() === coordinates.repo.toLowerCase() &&
-          // Kabinet tracks each branch on its own; no branch means its default.
-          repo.branch === (coordinates.branch ?? "main"),
+          repo.branch === branch,
       )
     : undefined;
 

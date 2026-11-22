@@ -175,26 +175,36 @@ const CustomBlokCard = React.memo(({ blok }: { blok: CustomBlok }) => {
 /**
  * The bloks people in the organization made: only these are materialized by
  * hand. One installed from a repository that still publishes it is that
- * repository's tile instead (`listedOrigins`); one whose repository dropped
- * it stays here.
+ * repository's tile instead (`listedOrigins`, left out by the server); one
+ * whose repository dropped it stays here.
  */
 const useCustomBloks = (search: string, listedOrigins?: ReadonlySet<string>): CustomBlok[] | undefined => {
+  // Sorted, so the same origins are the same variables (and the same cache entry).
+  const origins = useMemo(() => [...(listedOrigins ?? [])].sort(), [listedOrigins]);
   const { data } = useListBloksQuery({
-    variables: { filters: { provided: false } },
+    variables: {
+      filters: {
+        provided: false,
+        // An empty `origins` is no filter to negate: only send one with origins in it.
+        ...(origins.length > 0 ? { NOT: { origins } } : {}),
+      },
+    },
     fetchPolicy: "cache-and-network",
   });
   return useMemo(() => {
     if (!data) return undefined;
     const needle = search.trim().toLowerCase();
+    // The server has no context filter yet (SERVER_SIDE_SUGGESTIONS.md, "Bloks
+    // by context"), so logos are dropped here. The search stays here too:
+    // `BlokFilter.search` matches the name only, the store also the description.
     return data.bloks.filter(
       (blok) =>
         !isLogoContext(blok.context) &&
-        !(blok.origin && listedOrigins?.has(blok.origin)) &&
         (!needle ||
           blok.name.toLowerCase().includes(needle) ||
           !!blok.description?.toLowerCase().includes(needle)),
     );
-  }, [data, search, listedOrigins]);
+  }, [data, search]);
 };
 
 export const BLOK_GRID = "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";

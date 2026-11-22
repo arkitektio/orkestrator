@@ -46,7 +46,6 @@ import {
   ACTION_SORTS,
   buildActionFilter,
   buildActionOrdering,
-  isRunnable,
 } from "../lib/actionBrowse";
 import { pickCapabilityFacets } from "../lib/capabilities";
 import { ActionsManageSidebar } from "../sidebars/ActionsManageSidebar";
@@ -119,10 +118,11 @@ const Page = () => {
         after: usedAfter,
         before: usedBefore,
         capabilities,
+        runnable,
       }),
     // Dates are fresh objects on every parse; key them by value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey, capabilities],
+    [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey, capabilities, runnable],
   );
   const ordering = useMemo(
     () => buildActionOrdering(sort === "default" ? null : sort),
@@ -134,9 +134,7 @@ const Page = () => {
   // truncated to a single page's worth of items.
   const limit = grouping ? 100 : 30;
 
-  const hasFilter = Boolean(
-    Object.keys(filters).length > 0 || runnable,
-  );
+  const hasFilter = Object.keys(filters).length > 0;
   const clearAll = () => {
     setSearch(null);
     setFacets(NO_ACTION_FACETS);
@@ -287,7 +285,6 @@ const Page = () => {
           ordering={ordering}
           groupBy={grouping}
           defaultLimit={limit}
-          clientFilter={runnable ? isRunnable : undefined}
           emptyActions={
             hasFilter ? (
               <Button variant="outline" onClick={clearAll}>

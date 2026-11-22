@@ -1,0 +1,14 @@
+# Every pod event of the organization: a page that lists pods (a resource's)
+# keeps its list by these instead of polling. `ListPod` carries `resource`,
+# so a page can tell which events are about its pods.
+subscription WatchPods {
+  pods {
+    create {
+      ...ListPod
+    }
+    update {
+      ...ListPod
+    }
+    delete
+  }
+}

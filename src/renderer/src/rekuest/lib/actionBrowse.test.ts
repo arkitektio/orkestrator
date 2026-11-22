@@ -13,7 +13,6 @@ import {
   buildActionOrdering,
   deriveAvailability,
   fillBuckets,
-  isRunnable,
   pivotTestMatrix,
   structureDemand,
 } from "./actionBrowse";
@@ -52,10 +51,6 @@ describe("deriveAvailability", () => {
       recent: 1,
       status: "recent",
     });
-    expect(isRunnable({ implementations: recent })).toBe(false);
-    expect(
-      isRunnable({ implementations: [impl("1", "a", { connected: true })] }),
-    ).toBe(true);
   });
 
   it("is offline when every agent is gone", () => {
@@ -96,6 +91,11 @@ describe("buildActionFilter", () => {
       protocols: ["7"],
       inCollection: "segmentation",
     });
+  });
+
+  it("asks the server for runnable actions, never for 'not runnable'", () => {
+    expect(buildActionFilter({ runnable: true })).toEqual({ assignable: true });
+    expect(buildActionFilter({ runnable: false })).toEqual({});
   });
 
   it("keeps stateful=false apart from 'any'", () => {

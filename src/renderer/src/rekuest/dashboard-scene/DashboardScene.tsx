@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { RekuestAgent } from "@/core/linkers";
 import { useSmartDrop } from "@/core/smart/hooks";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
@@ -179,21 +180,19 @@ const DashboardAgentBlokPicker = (props: {
   agentName: string;
   onSelect: (blokId: string) => void;
 }) => {
-  // Bloks to materialize by hand: an app's own are forked first.
-  const { data, loading, error } = useListBloksQuery({ variables: { filters: { provided: false } } });
   const [search, setSearch] = useState("");
-
-  const filteredBloks = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-
-    if (!needle) {
-      return data?.bloks ?? [];
-    }
-
-    return (data?.bloks ?? []).filter((blok) =>
-      blok.name.toLowerCase().includes(needle),
-    );
-  }, [data?.bloks, search]);
+  const needle = useDebounce(search.trim(), 300);
+  // Bloks to materialize by hand: an app's own are forked first. The server
+  // searches by name (`BlokFilter.search`) and pages, so a large instance
+  // never ships every blok to be narrowed here; the last answer stays on
+  // screen while the next one loads.
+  const { data, previousData, loading, error } = useListBloksQuery({
+    variables: {
+      filters: { provided: false, search: needle || undefined },
+      pagination: { limit: 50 },
+    },
+  });
+  const bloks = (data ?? previousData)?.bloks ?? [];
 
   return (
     <div className="space-y-4">
@@ -208,23 +207,19 @@ const DashboardAgentBlokPicker = (props: {
         />
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          Failed to load bloks: {error.message}
-        </div>
-      )}
+      <ErrorNote error={error} title="Couldn't load the bloks" />
 
       <div className="grid max-h-80 gap-2 overflow-y-auto pr-1">
-        {loading && filteredBloks.length === 0 ? (
+        {loading && bloks.length === 0 ? (
           <div className="rounded-lg border border-dashed px-3 py-6 text-sm text-muted-foreground">
             Loading bloks...
           </div>
-        ) : filteredBloks.length === 0 ? (
+        ) : bloks.length === 0 ? (
           <div className="rounded-lg border border-dashed px-3 py-6 text-sm text-muted-foreground">
             No bloks match this search.
           </div>
         ) : (
-          filteredBloks.map((blok) => (
+          bloks.map((blok) => (
             <button
               key={blok.id}
               type="button"

@@ -1,10 +1,13 @@
+import { useMemo } from "react";
 import { Button } from "@/core/ui/button";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { RekuestAgent } from "@/core/linkers";
 import type { Object } from "@/core/types";
 import { buildAssignInput } from "../assign";
 import {
   DemandKind,
+  DetailImplementationFragment,
   PortKind,
   useAgentsQuery,
   useImplementationsQuery,
@@ -65,12 +68,42 @@ const PodActionButton = (props: { implementation: { id: string; action: { name: 
   );
 };
 
-/** One agent's actions that take a pod (e.g. refresh its logs). */
-const AgentPodActions = (props: { agentId: string; pod: string; backendName?: string }) => {
-  const { data } = useImplementationsQuery({
+/** The pod-taking actions of one agent (e.g. refresh its logs). */
+const AgentPodActions = (props: {
+  implementations: readonly { id: string; action: { name: string } }[];
+  pod: string;
+  backendName?: string;
+}) => (
+  <div className="flex flex-row gap-2">
+    {props.implementations.map((implementation) => (
+      <Tooltip key={implementation.id}>
+        <TooltipTrigger asChild>
+          <div>
+            <PodActionButton implementation={implementation} pod={props.pod} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="p-2 text-sm">
+            {implementation.action.name} on {props.backendName ?? "the backend"}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    ))}
+  </div>
+);
+
+/**
+ * On a `@kabinet/pod` page: what its backend's agents can do with the pod.
+ * One query for every agent of the backend (`agent.clientId`), grouped here
+ * into a row per agent, rather than a query per agent.
+ */
+export const PodActions = ({ object }: SectionProps) => {
+  const clientId = clientIdOf(object);
+  const backendName = typeof object.backendName === "string" ? object.backendName : undefined;
+  const { data, error } = useImplementationsQuery({
     variables: {
       filters: {
-        agent: { ids: [props.agentId] },
+        agent: { clientId },
         action: {
           demands: [
             {
@@ -81,43 +114,25 @@ const AgentPodActions = (props: { agentId: string; pod: string; backendName?: st
         },
       },
     },
-  });
-
-  return (
-    <div className="flex flex-row gap-2">
-      {data?.implementations.map((implementation) => (
-        <Tooltip key={implementation.id}>
-          <TooltipTrigger asChild>
-            <div>
-              <PodActionButton implementation={implementation} pod={props.pod} />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="p-2 text-sm">
-              {implementation.action.name} on {props.backendName ?? "the backend"}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
-  );
-};
-
-/** On a `@kabinet/pod` page: what its backend's agents can do with the pod. */
-export const PodActions = ({ object }: SectionProps) => {
-  const clientId = clientIdOf(object);
-  const backendName = typeof object.backendName === "string" ? object.backendName : undefined;
-  const { data, error } = useAgentsQuery({
-    variables: { filters: { clientId } },
     skip: !clientId,
   });
 
-  if (error) return <div>Error loading agent {error.message}</div>;
+  const byAgent = useMemo(() => {
+    const groups = new Map<string, DetailImplementationFragment[]>();
+    for (const implementation of data?.implementations ?? []) {
+      const group = groups.get(implementation.agent.id);
+      if (group) group.push(implementation);
+      else groups.set(implementation.agent.id, [implementation]);
+    }
+    return [...groups.entries()];
+  }, [data]);
+
+  if (error) return <ErrorNote error={error} title="Couldn't load the pod's actions" />;
 
   return (
     <>
-      {data?.agents.map((agent) => (
-        <AgentPodActions key={agent.id} agentId={agent.id} pod={object.id} backendName={backendName} />
+      {byAgent.map(([agentId, implementations]) => (
+        <AgentPodActions key={agentId} implementations={implementations} pod={object.id} backendName={backendName} />
       ))}
     </>
   );

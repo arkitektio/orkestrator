@@ -4347,6 +4347,17 @@ export type AppStoreQuery = { __typename?: 'Query', releases: Array<(
     & StoreReleaseFragment
   )> };
 
+export type WatchPodsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchPodsSubscription = { __typename?: 'Subscription', pods: { __typename?: 'PodEvent', delete?: string | null, create?: (
+      { __typename?: 'Pod' }
+      & ListPodFragment
+    ) | null, update?: (
+      { __typename?: 'Pod' }
+      & ListPodFragment
+    ) | null } };
+
 export const KabinetLogoBlokFragmentDoc = gql`
     fragment KabinetLogoBlok on FlavourBlok {
   id
@@ -7288,3 +7299,38 @@ export function useAppStoreLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type AppStoreQueryHookResult = ReturnType<typeof useAppStoreQuery>;
 export type AppStoreLazyQueryHookResult = ReturnType<typeof useAppStoreLazyQuery>;
 export type AppStoreQueryResult = Apollo.QueryResult<AppStoreQuery, AppStoreQueryVariables>;
+export const WatchPodsDocument = gql`
+    subscription WatchPods {
+  pods {
+    create {
+      ...ListPod
+    }
+    update {
+      ...ListPod
+    }
+    delete
+  }
+}
+    ${ListPodFragmentDoc}`;
+
+/**
+ * __useWatchPodsSubscription__
+ *
+ * To run a query within a React component, call `useWatchPodsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchPodsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchPodsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchPodsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchPodsSubscription, WatchPodsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchPodsSubscription, WatchPodsSubscriptionVariables>(WatchPodsDocument, options);
+      }
+export type WatchPodsSubscriptionHookResult = ReturnType<typeof useWatchPodsSubscription>;
+export type WatchPodsSubscriptionResult = Apollo.SubscriptionResult<WatchPodsSubscription>;

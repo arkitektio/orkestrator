@@ -4,23 +4,46 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { InfoList } from "@/core/ui/info-list";
 import { KabinetBackend, KabinetResource } from "@/core/linkers";
 import { Cpu } from "lucide-react";
-import { useGetResourceQuery } from "../api/graphql";
+import { useEffect } from "react";
+import {
+  useGetResourceQuery,
+  WatchPodsDocument,
+  WatchPodsSubscription,
+  WatchPodsSubscriptionVariables,
+} from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
 import { StatusTally } from "../components/cards/parts";
 import { CardGrid, DetailSection, FactGrid } from "../components/DetailSection";
 import { IconForBackendKind } from "../components/IconForBackendKind";
 import { KABINET_HELP } from "../help";
+import { applyPodEvent } from "../lib/podEvents";
 import { qualifierRows } from "../lib/qualifiers";
 
 /**
  * A resource: something a backend schedules pods onto. The body says what it
  * reports about itself (its qualifiers) and which pods run on it; the Info
- * rail repeats its backend and ids.
+ * rail repeats its backend and ids. Its pods follow the pod events; the
+ * qualifiers are what the resource reported when the page was opened.
  */
 export const ResourcePage = asDetailQueryRoute(
   useGetResourceQuery,
-  ({ data }) => {
+  ({ data, subscribeToMore }) => {
     const resource = data.resource;
+    const resourceId = resource.id;
+
+    useEffect(
+      () =>
+        subscribeToMore<WatchPodsSubscription, WatchPodsSubscriptionVariables>({
+          document: WatchPodsDocument,
+          updateQuery: (prev, { subscriptionData }) => {
+            if (!subscriptionData.data) return prev;
+            const pods = applyPodEvent(resourceId, prev.resource.pods, subscriptionData.data.pods);
+            return pods === prev.resource.pods ? prev : { ...prev, resource: { ...prev.resource, pods } };
+          },
+        }),
+      [subscribeToMore, resourceId],
+    );
+
     const qualifiers = qualifierRows(resource.qualifiers);
 
     return (
@@ -81,11 +104,6 @@ export const ResourcePage = asDetailQueryRoute(
         </div>
       </KabinetResource.ModelPage>
     );
-  },
-  {
-    queryOptions: {
-      pollInterval: 15000,
-    },
   },
 );
 

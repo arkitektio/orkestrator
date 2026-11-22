@@ -72,10 +72,6 @@ export const deriveAvailability = (
   return { total: impls.length, agents: agents.size, online, recent, status };
 };
 
-export const isRunnable = (item: {
-  implementations?: readonly AvailabilityImplementation[] | null;
-}) => deriveAvailability(item.implementations).online > 0;
-
 // --- URL state → query variables ---
 
 export type DemandDirection = "consumes" | "produces";
@@ -96,6 +92,12 @@ export type ActionBrowseState = {
   before?: Date | null;
   /** Whether it asks, informs or calls (see `capabilities`). */
   capabilities?: Partial<CapabilityFacets> | null;
+  /**
+   * Only actions a connected agent can take now (`ActionFilter.assignable`).
+   * The server decides it, so paging and the statistics count the same rows
+   * the list shows; filtering a loaded page would leave pages half empty.
+   */
+  runnable?: boolean | null;
 };
 
 /** Matches a structure at any port position (no `at`). */
@@ -124,6 +126,7 @@ export const buildActionFilter = (state: ActionBrowseState): ActionFilter => {
   }
   if (state.after) filter.usedAfter = state.after;
   if (state.before) filter.usedBefore = state.before;
+  if (state.runnable) filter.assignable = true;
 
   return filter;
 };
