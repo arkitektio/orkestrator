@@ -1,3 +1,10 @@
+# [8.23.0](https://github.com/arkitektio/orkestrator/compare/v8.22.0...v8.23.0) (2026-11-22)
+
+
+### Features
+
+* **mikro:** pyramid levels are placed by the server's relativeScale ([b341423](https://github.com/arkitektio/orkestrator/commit/b3414238558d56a015427751fe3e56d182365fd9))
+
 # [8.22.0](https://github.com/arkitektio/orkestrator/compare/v8.21.0...v8.22.0) (2026-11-22)
 
 
