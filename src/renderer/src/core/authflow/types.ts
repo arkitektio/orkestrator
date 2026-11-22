@@ -71,7 +71,7 @@ export type AuthFlowHandler = {
    * re-reading on a timer.
    */
   watch?: (
-    client: ApolloClient<any>,
+    client: ApolloClient<unknown>,
     session: AuthSession,
     onUpdate: (update: AuthUpdate) => void,
     onError: (error: unknown) => void,

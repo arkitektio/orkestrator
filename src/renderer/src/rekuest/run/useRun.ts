@@ -29,9 +29,13 @@ export const useRunTask = (
   const task = data?.task ?? null;
   const ended = task?.isDone ?? false;
   const loaded = task !== null;
-  // Read once when the stream opens: events are ordered newest first.
+  // The newest event read (events are ordered newest first), kept for when the
+  // stream opens; updated in an effect, which runs before the one below.
   const newest = React.useRef<string | null>(null);
-  newest.current = task?.events[0]?.id ?? null;
+  const newestId = task?.events[0]?.id ?? null;
+  React.useEffect(() => {
+    newest.current = newestId;
+  }, [newestId]);
   React.useEffect(() => {
     if (!follow || !id || !loaded || ended || error || !client) return undefined;
     // A task not in the cache any more has nothing to merge into: the query

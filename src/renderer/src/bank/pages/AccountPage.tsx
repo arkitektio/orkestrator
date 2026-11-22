@@ -76,8 +76,11 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
     variables: { account: account.id, date: asOf },
     skip: !depot || !asOf,
   });
-  const holdings = asOf ? pastHoldings.data?.holdings ?? [] : account.currentHoldings;
-  const positions = useMemo(() => aggregatePositions(holdings), [holdings]);
+  const pastData = pastHoldings.data;
+  const positions = useMemo(
+    () => aggregatePositions(asOf ? (pastData?.holdings ?? []) : account.currentHoldings),
+    [asOf, pastData, account.currentHoldings],
+  );
 
   const name = account.name || account.product || formatIban(account.iban) || "Account";
   const balance = account.latestBalance;

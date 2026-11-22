@@ -106,7 +106,6 @@ export const useAuthSession = ({
       (e) => setError(e),
     );
     // Opened once per session: `latest` is read when the stream opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, waiting, watching, driver, merge]);
 
   useEffect(() => {
