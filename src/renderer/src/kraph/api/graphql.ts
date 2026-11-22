@@ -1774,7 +1774,7 @@ export type EntityCategoryEntitiesArgs = {
 
 /** Numeric/aggregatable fields of EntityCategory */
 export enum EntityCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type EntityCategoryFilter = {
@@ -2049,6 +2049,15 @@ export type GeneralMediaAccessGrant = {
   status: Scalars['String']['output'];
 };
 
+export enum Granularity {
+  Day = 'DAY',
+  Hour = 'HOUR',
+  Month = 'MONTH',
+  Quarter = 'QUARTER',
+  Week = 'WEEK',
+  Year = 'YEAR'
+}
+
 /** One view over the organization's evidence log */
 export type Graph = {
   __typename?: 'Graph';
@@ -2056,6 +2065,8 @@ export type Graph = {
   ageName: Scalars['String']['output'];
   /** Color as RGBA list (0-255) */
   color?: Maybe<Array<Scalars['Int']['output']>>;
+  /** When the graph was created. Null for a graph older than the column whose history does not record its creation */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
   /** Description of the graph */
   description?: Maybe<Scalars['String']['output']>;
   /** List of edge categories defined in this graph */
@@ -2188,6 +2199,8 @@ export type GraphFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<GraphFilter>;
   OR?: InputMaybe<GraphFilter>;
+  /** Only the graphs this member made, by their lok sub */
+  creator?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
@@ -2202,8 +2215,9 @@ export type GraphFilter = {
 };
 
 export type GraphOrder =
-  { id: Ordering; name?: never; }
-  |  { id?: never; name: Ordering; };
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
 
 /** An insight that selects pairs from a view's drawing (an image and its ground truth). Run (`runPairsQuery`), its answer is stored: a training set */
 export type GraphPairsQuery = GraphQuery & {
@@ -2311,6 +2325,8 @@ export type GraphStats = {
   max?: Maybe<Scalars['Float']['output']>;
   /** Minimum value */
   min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
   /** Sum of values */
   sum?: Maybe<Scalars['Float']['output']>;
 };
@@ -2333,6 +2349,13 @@ export type GraphStatsMaxArgs = {
 
 export type GraphStatsMinArgs = {
   field: GraphField;
+};
+
+
+export type GraphStatsSeriesArgs = {
+  by: Granularity;
+  field: GraphField;
+  timestampField: GraphTimestampField;
 };
 
 
@@ -2397,6 +2420,11 @@ export type GraphTableRender = {
   rows: Array<Scalars['AnyScalar']['output']>;
 };
 
+/** Datetime fields of Graph for bucketing */
+export enum GraphTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
+
 /** What a structure is evidence for: an individual (as the log has it) or another claim (RFC 0025) */
 export type InformsTarget = Instance | Link;
 
@@ -2448,12 +2476,16 @@ export type Instance = {
   differentFrom: Array<Link>;
   /** Every view that actually draws this claim, and the category it draws it under. Empty means no view does, which is an ordinary answer */
   drawnIn: Array<NodeDrawing>;
+  /** The structures that are evidence for this instance itself — the data behind it — oldest first. Not unioned over the component: read `members { evidence }` to see which member each datum belongs to */
+  evidence: Array<Structure>;
   /** The claim's durable identity — a bare uuid, world-unique and stable across reprojects */
   id: Scalars['ID']['output'];
   /** What sort of individual this is. Entities and events are told apart here, not by a vertex label — a label is one view's rename of a word */
   kind: InstanceKind;
   /** What anyone has called this thing, with how many assertions say so. Two words means two people disagreed; one word with a count of two means they agreed */
   labels: Array<Label>;
+  /** Every instance claimed to be this same thing, this one included, as instances rather than ids — so each member's own `evidence` can be read in the same request. `component` lists the same members */
+  members: Array<Instance>;
   /** When the world contained this individual — for an event, when it happened; for an entity, when it was seen. World time, distinct from `assertion.assertedAt`; equal to it when the claimant gave no other (RFC 0015) */
   observedAt: Scalars['DateTime']['output'];
   /** The standing claims that this instance and another are one thing, with who said so */
@@ -2665,7 +2697,7 @@ export type MeasurementCategory = Category & EdgeCategory & {
 
 /** Numeric/aggregatable fields of MeasurementCategory */
 export enum MeasurementCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type MeasurementCategoryFilter = {
@@ -2964,6 +2996,8 @@ export type MetricKindStats = {
   max?: Maybe<Scalars['Float']['output']>;
   /** Minimum value */
   min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
   /** Sum of values */
   sum?: Maybe<Scalars['Float']['output']>;
 };
@@ -2989,9 +3023,21 @@ export type MetricKindStatsMinArgs = {
 };
 
 
+export type MetricKindStatsSeriesArgs = {
+  by: Granularity;
+  field: MetricKindField;
+  timestampField: MetricKindTimestampField;
+};
+
+
 export type MetricKindStatsSumArgs = {
   field: MetricKindField;
 };
+
+/** Datetime fields of MetricKind for bucketing */
+export enum MetricKindTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
 
 /** One value about one external datum, inside a batch */
 export type MetricValueInput = {
@@ -4108,7 +4154,7 @@ export type NaturalEventCategory = Category & EventCategory & NodeCategory & {
 
 /** Numeric/aggregatable fields of NaturalEventCategory */
 export enum NaturalEventCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type NaturalEventCategoryFilter = {
@@ -4627,6 +4673,8 @@ export type ProjectFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Projects this member (a sub) works on: ones they made, or holding a todo list or item assigned to them */
+  member?: InputMaybe<Scalars['ID']['input']>;
   /** Search the name and description */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -4826,7 +4874,7 @@ export type ProtocolEventCategory = Category & EventCategory & NodeCategory & {
 
 /** Numeric/aggregatable fields of ProtocolEventCategory */
 export enum ProtocolEventCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type ProtocolEventCategoryFilter = {
@@ -5001,7 +5049,9 @@ export type Query = {
   model: Model;
   /** The organization's trained models; `requires` narrows to the ones a port accepts */
   models: Array<Model>;
-  /** Every remark that mentions the caller, newest first */
+  /** How many remarks mention the caller, past any page. `resolved: false` counts the open ones — the badge */
+  myMentionCount: Scalars['Int']['output'];
+  /** Every remark that mentions the caller, newest first. `resolved` narrows to resolved or open remarks; omitted lists both */
   myMentions: Array<Comment>;
   /** Get a natural event by ID, as the named view holds it — see `node` */
   naturalEvent: NaturalEvent;
@@ -5324,6 +5374,17 @@ export type QueryModelsArgs = {
   filters?: InputMaybe<ModelFilter>;
   ordering?: Array<ModelOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMyMentionCountArgs = {
+  resolved?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type QueryMyMentionsArgs = {
+  pagination?: InputMaybe<LogPaginationInput>;
+  resolved?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -5707,7 +5768,7 @@ export type RelationCategory = Category & EdgeCategory & {
 
 /** Numeric/aggregatable fields of RelationCategory */
 export enum RelationCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type RelationCategoryFilter = {
@@ -5715,6 +5776,8 @@ export type RelationCategoryFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<RelationCategoryFilter>;
   OR?: InputMaybe<RelationCategoryFilter>;
+  /** Only the relation categories whose source and target descriptors admit these two entity categories — what the write would accept, in one query */
+  admits?: InputMaybe<RelationEndsInput>;
   graph?: InputMaybe<GraphFilter>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
@@ -5797,6 +5860,14 @@ export type RelationDefinitionInput = {
   source: EntityDescriptorInput;
   /** Target entity type(s) */
   target: EntityDescriptorInput;
+};
+
+/** The two ends a relation would connect: entity category ids, in one graph */
+export type RelationEndsInput = {
+  /** The entity category of the source end */
+  source: Scalars['ID']['input'];
+  /** The entity category of the target end */
+  target: Scalars['ID']['input'];
 };
 
 /** Filter options for querying relations */
@@ -6415,6 +6486,8 @@ export type StructureKindStats = {
   max?: Maybe<Scalars['Float']['output']>;
   /** Minimum value */
   min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
   /** Sum of values */
   sum?: Maybe<Scalars['Float']['output']>;
 };
@@ -6440,9 +6513,21 @@ export type StructureKindStatsMinArgs = {
 };
 
 
+export type StructureKindStatsSeriesArgs = {
+  by: Granularity;
+  field: StructureKindField;
+  timestampField: StructureKindTimestampField;
+};
+
+
 export type StructureKindStatsSumArgs = {
   field: StructureKindField;
 };
+
+/** Datetime fields of StructureKind for bucketing */
+export enum StructureKindTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
 
 /** Ordering options for structure queries */
 export type StructureOrder = {
@@ -6543,7 +6628,7 @@ export type StructureRelationCategory = Category & EdgeCategory & {
 
 /** Numeric/aggregatable fields of StructureRelationCategory */
 export enum StructureRelationCategoryField {
-  CreatedAt = 'CREATED_AT'
+  Id = 'ID'
 }
 
 export type StructureRelationCategoryFilter = {
@@ -6551,6 +6636,8 @@ export type StructureRelationCategoryFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<StructureRelationCategoryFilter>;
   OR?: InputMaybe<StructureRelationCategoryFilter>;
+  /** Only the structure relation categories whose ends admit these two structure kinds */
+  admits?: InputMaybe<StructureRelationEndsInput>;
   graph?: InputMaybe<GraphFilter>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
@@ -6633,6 +6720,14 @@ export type StructureRelationDefinitionInput = {
   source: StructureDescriptorInput;
   /** Target entity type(s) */
   target: StructureDescriptorInput;
+};
+
+/** The two ends a structure relation would connect: structure kind identifiers */
+export type StructureRelationEndsInput = {
+  /** The structure kind identifier of the source end, e.g. `@mikro/roi` */
+  source: Scalars['String']['input'];
+  /** The structure kind identifier of the target end */
+  target: Scalars['String']['input'];
 };
 
 /** Filter options for querying structure relations */
@@ -6823,6 +6918,17 @@ export enum TermKind {
   Structure = 'STRUCTURE',
   StructureRelation = 'STRUCTURE_RELATION'
 }
+
+export type TimeBucket = {
+  __typename?: 'TimeBucket';
+  avg?: Maybe<Scalars['Float']['output']>;
+  count: Scalars['Int']['output'];
+  distinctCount: Scalars['Int']['output'];
+  max?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
+  sum?: Maybe<Scalars['Float']['output']>;
+  ts: Scalars['DateTime']['output'];
+};
 
 /** A todo list or item changed: re-read it, or drop it when it was deleted */
 export type TodoChange = {
@@ -9803,6 +9909,8 @@ export type ListApplicableMeasurementCategoriesQuery = { __typename?: 'Query', m
 export type ListCandidateRelationCategoriesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   graph: Scalars['ID']['input'];
+  source: Scalars['ID']['input'];
+  target: Scalars['ID']['input'];
 }>;
 
 
@@ -9813,6 +9921,8 @@ export type ListCandidateRelationCategoriesQuery = { __typename?: 'Query', relat
 
 export type ListCandidateStructureRelationCategoriesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
+  source: Scalars['String']['input'];
+  target: Scalars['String']['input'];
 }>;
 
 
@@ -9890,6 +10000,16 @@ export type GetStandingsQuery = { __typename?: 'Query', standings: Array<(
     & StandingFragment
   )> };
 
+export type SameAsEvidenceQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SameAsEvidenceQuery = { __typename?: 'Query', instance: { __typename?: 'Instance', id: string, members: Array<{ __typename?: 'Instance', id: string, evidence: Array<(
+        { __typename?: 'Structure' }
+        & ListStructureFragment
+      )> }> } };
+
 export type CommentsForQueryVariables = Exact<{
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
@@ -9901,10 +10021,12 @@ export type CommentsForQuery = { __typename?: 'Query', commentsFor: Array<(
     & ListCommentFragment
   )> };
 
-export type MyMentionsQueryVariables = Exact<{ [key: string]: never; }>;
+export type MyMentionsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
 
 
-export type MyMentionsQuery = { __typename?: 'Query', myMentions: Array<(
+export type MyMentionsQuery = { __typename?: 'Query', myMentionCount: number, myMentions: Array<(
     { __typename?: 'Comment' }
     & MentionCommentFragment
   )> };
@@ -10214,6 +10336,28 @@ export type ProfileTodoListsQuery = { __typename?: 'Query', todoLists: Array<(
       & ListProjectFragment
     ) }
     & ListTodoListFragment
+  )> };
+
+export type ProfileProjectsQueryVariables = Exact<{
+  member: Scalars['ID']['input'];
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileProjectsQuery = { __typename?: 'Query', projects: Array<(
+    { __typename?: 'Project' }
+    & ListProjectFragment
+  )> };
+
+export type ProfileFeedGraphsQueryVariables = Exact<{
+  filters?: InputMaybe<GraphFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedGraphsQuery = { __typename?: 'Query', graphs: Array<(
+    { __typename?: 'Graph', createdAt?: any | null }
+    & ListGraphFragment
   )> };
 
 export type ProjectsQueryVariables = Exact<{
@@ -15854,8 +15998,10 @@ export type ListApplicableMeasurementCategoriesQueryHookResult = ReturnType<type
 export type ListApplicableMeasurementCategoriesLazyQueryHookResult = ReturnType<typeof useListApplicableMeasurementCategoriesLazyQuery>;
 export type ListApplicableMeasurementCategoriesQueryResult = Apollo.QueryResult<ListApplicableMeasurementCategoriesQuery, ListApplicableMeasurementCategoriesQueryVariables>;
 export const ListCandidateRelationCategoriesDocument = gql`
-    query ListCandidateRelationCategories($search: String, $graph: ID!) {
-  relationCategories(filters: {search: $search, graph: {id: $graph}}) {
+    query ListCandidateRelationCategories($search: String, $graph: ID!, $source: ID!, $target: ID!) {
+  relationCategories(
+    filters: {search: $search, graph: {id: $graph}, admits: {source: $source, target: $target}}
+  ) {
     ...ListRelationCategory
     graph {
       id
@@ -15879,6 +16025,8 @@ export const ListCandidateRelationCategoriesDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      graph: // value for 'graph'
+ *      source: // value for 'source'
+ *      target: // value for 'target'
  *   },
  * });
  */
@@ -15894,8 +16042,10 @@ export type ListCandidateRelationCategoriesQueryHookResult = ReturnType<typeof u
 export type ListCandidateRelationCategoriesLazyQueryHookResult = ReturnType<typeof useListCandidateRelationCategoriesLazyQuery>;
 export type ListCandidateRelationCategoriesQueryResult = Apollo.QueryResult<ListCandidateRelationCategoriesQuery, ListCandidateRelationCategoriesQueryVariables>;
 export const ListCandidateStructureRelationCategoriesDocument = gql`
-    query ListCandidateStructureRelationCategories($search: String) {
-  structureRelationCategories(filters: {search: $search}) {
+    query ListCandidateStructureRelationCategories($search: String, $source: String!, $target: String!) {
+  structureRelationCategories(
+    filters: {search: $search, admits: {source: $source, target: $target}}
+  ) {
     ...ListStructureRelationCategoryWithGraph
   }
 }
@@ -15914,10 +16064,12 @@ export const ListCandidateStructureRelationCategoriesDocument = gql`
  * const { data, loading, error } = useListCandidateStructureRelationCategoriesQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      source: // value for 'source'
+ *      target: // value for 'target'
  *   },
  * });
  */
-export function useListCandidateStructureRelationCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>) {
+export function useListCandidateStructureRelationCategoriesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return ApolloReactHooks.useQuery<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>(ListCandidateStructureRelationCategoriesDocument, options);
       }
@@ -16182,6 +16334,47 @@ export function useGetStandingsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GetStandingsQueryHookResult = ReturnType<typeof useGetStandingsQuery>;
 export type GetStandingsLazyQueryHookResult = ReturnType<typeof useGetStandingsLazyQuery>;
 export type GetStandingsQueryResult = Apollo.QueryResult<GetStandingsQuery, GetStandingsQueryVariables>;
+export const SameAsEvidenceDocument = gql`
+    query SameAsEvidence($id: ID!) {
+  instance(id: $id) {
+    id
+    members {
+      id
+      evidence {
+        ...ListStructure
+      }
+    }
+  }
+}
+    ${ListStructureFragmentDoc}`;
+
+/**
+ * __useSameAsEvidenceQuery__
+ *
+ * To run a query within a React component, call `useSameAsEvidenceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSameAsEvidenceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSameAsEvidenceQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useSameAsEvidenceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>(SameAsEvidenceDocument, options);
+      }
+export function useSameAsEvidenceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>(SameAsEvidenceDocument, options);
+        }
+export type SameAsEvidenceQueryHookResult = ReturnType<typeof useSameAsEvidenceQuery>;
+export type SameAsEvidenceLazyQueryHookResult = ReturnType<typeof useSameAsEvidenceLazyQuery>;
+export type SameAsEvidenceQueryResult = Apollo.QueryResult<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>;
 export const CommentsForDocument = gql`
     query CommentsFor($identifier: String!, $object: ID!) {
   commentsFor(identifier: $identifier, object: $object) {
@@ -16219,10 +16412,11 @@ export type CommentsForQueryHookResult = ReturnType<typeof useCommentsForQuery>;
 export type CommentsForLazyQueryHookResult = ReturnType<typeof useCommentsForLazyQuery>;
 export type CommentsForQueryResult = Apollo.QueryResult<CommentsForQuery, CommentsForQueryVariables>;
 export const MyMentionsDocument = gql`
-    query MyMentions {
-  myMentions {
+    query MyMentions($limit: Int = 5) {
+  myMentions(resolved: false, pagination: {limit: $limit}) {
     ...MentionComment
   }
+  myMentionCount(resolved: false)
 }
     ${MentionCommentFragmentDoc}`;
 
@@ -16238,6 +16432,7 @@ export const MyMentionsDocument = gql`
  * @example
  * const { data, loading, error } = useMyMentionsQuery({
  *   variables: {
+ *      limit: // value for 'limit'
  *   },
  * });
  */
@@ -17332,6 +17527,87 @@ export function useProfileTodoListsLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type ProfileTodoListsQueryHookResult = ReturnType<typeof useProfileTodoListsQuery>;
 export type ProfileTodoListsLazyQueryHookResult = ReturnType<typeof useProfileTodoListsLazyQuery>;
 export type ProfileTodoListsQueryResult = Apollo.QueryResult<ProfileTodoListsQuery, ProfileTodoListsQueryVariables>;
+export const ProfileProjectsDocument = gql`
+    query ProfileProjects($member: ID!, $pagination: OffsetPaginationInput) {
+  projects(
+    filters: {member: $member}
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListProject
+  }
+}
+    ${ListProjectFragmentDoc}`;
+
+/**
+ * __useProfileProjectsQuery__
+ *
+ * To run a query within a React component, call `useProfileProjectsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileProjectsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileProjectsQuery({
+ *   variables: {
+ *      member: // value for 'member'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileProjectsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ProfileProjectsQuery, ProfileProjectsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileProjectsQuery, ProfileProjectsQueryVariables>(ProfileProjectsDocument, options);
+      }
+export function useProfileProjectsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileProjectsQuery, ProfileProjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileProjectsQuery, ProfileProjectsQueryVariables>(ProfileProjectsDocument, options);
+        }
+export type ProfileProjectsQueryHookResult = ReturnType<typeof useProfileProjectsQuery>;
+export type ProfileProjectsLazyQueryHookResult = ReturnType<typeof useProfileProjectsLazyQuery>;
+export type ProfileProjectsQueryResult = Apollo.QueryResult<ProfileProjectsQuery, ProfileProjectsQueryVariables>;
+export const ProfileFeedGraphsDocument = gql`
+    query ProfileFeedGraphs($filters: GraphFilter, $pagination: OffsetPaginationInput) {
+  graphs(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListGraph
+    createdAt
+  }
+}
+    ${ListGraphFragmentDoc}`;
+
+/**
+ * __useProfileFeedGraphsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedGraphsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedGraphsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedGraphsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedGraphsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedGraphsQuery, ProfileFeedGraphsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedGraphsQuery, ProfileFeedGraphsQueryVariables>(ProfileFeedGraphsDocument, options);
+      }
+export function useProfileFeedGraphsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedGraphsQuery, ProfileFeedGraphsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedGraphsQuery, ProfileFeedGraphsQueryVariables>(ProfileFeedGraphsDocument, options);
+        }
+export type ProfileFeedGraphsQueryHookResult = ReturnType<typeof useProfileFeedGraphsQuery>;
+export type ProfileFeedGraphsLazyQueryHookResult = ReturnType<typeof useProfileFeedGraphsLazyQuery>;
+export type ProfileFeedGraphsQueryResult = Apollo.QueryResult<ProfileFeedGraphsQuery, ProfileFeedGraphsQueryVariables>;
 export const ProjectsDocument = gql`
     query Projects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
   projects(

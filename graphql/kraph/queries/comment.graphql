@@ -7,10 +7,13 @@ query CommentsFor($identifier: String!, $object: ID!) {
   }
 }
 
-query MyMentions {
-  myMentions {
+# The open mentions of the caller: the badge counts them all, the rows show the
+# newest few. A resolved remark leaves both.
+query MyMentions($limit: Int = 5) {
+  myMentions(resolved: false, pagination: { limit: $limit }) {
     ...MentionComment
   }
+  myMentionCount(resolved: false)
 }
 
 query DetailComment($id: ID!) {

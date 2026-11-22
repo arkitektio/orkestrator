@@ -37,3 +37,18 @@ query GetStandings($id: ID!) {
     ...Standing
   }
 }
+
+# Everything claimed to be this same thing, each with the data behind it, in one
+# request (`Instance.members { evidence }`): the "same as" list shows a member by
+# its evidence, since instances have no names.
+query SameAsEvidence($id: ID!) {
+  instance(id: $id) {
+    id
+    members {
+      id
+      evidence {
+        ...ListStructure
+      }
+    }
+  }
+}

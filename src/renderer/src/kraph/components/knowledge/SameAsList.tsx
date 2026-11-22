@@ -1,34 +1,28 @@
 import { DisplayWidget } from "@/core/command/Menu";
 import {
-  useInformingStructuresQuery,
+  useSameAsEvidenceQuery,
   type KnowledgeInstanceFragment,
+  type ListStructureFragment,
 } from "@/kraph/api/graphql";
 import type { Structure } from "@/core/types";
 
 /**
  * One other member of the sameness component, shown by its evidence. Instances
  * have no names — the only thing a person recognises is the datum behind one,
- * so that is what gets rendered. One read per member until the backend exposes
- * `Instance.evidence`; components are small, so this stays cheap.
+ * so that is what gets rendered.
  */
 const SameAsMember = ({
-  instanceId,
+  evidence,
   self,
 }: {
-  instanceId: string;
+  evidence: readonly ListStructureFragment[];
   self: Structure;
 }) => {
-  const { data, loading } = useInformingStructuresQuery({
-    variables: { entityId: instanceId },
-  });
-  const structures = (data?.informingStructures ?? []).filter(
+  const structures = evidence.filter(
     (structure) =>
       !(structure.identifier === self.identifier && structure.object === self.id),
   );
 
-  if (loading && !data) {
-    return <li className="text-xs text-muted-foreground">Loading…</li>;
-  }
   if (structures.length === 0) {
     return (
       <li className="text-xs text-muted-foreground">
@@ -52,7 +46,10 @@ const SameAsMember = ({
   );
 };
 
-/** Everything else claimed to be this same thing, by the datums behind it. */
+/**
+ * Everything else claimed to be this same thing, by the datums behind it. One
+ * request reads every member with its evidence (`Instance.members`).
+ */
 export const SameAsList = ({
   instance,
   self,
@@ -60,19 +57,27 @@ export const SameAsList = ({
   instance: KnowledgeInstanceFragment;
   self: Structure;
 }) => {
-  const members = instance.component.filter((id) => id !== instance.id);
+  const others = instance.component.filter((id) => id !== instance.id);
+  const { data, loading } = useSameAsEvidenceQuery({
+    variables: { id: instance.id },
+    skip: others.length === 0,
+  });
 
-  if (members.length === 0) {
+  if (others.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
         Nothing else is claimed to be this {instance.term.key} yet.
       </p>
     );
   }
+  if (loading && !data) {
+    return <p className="text-xs text-muted-foreground">Loading…</p>;
+  }
+  const members = (data?.instance.members ?? []).filter((member) => member.id !== instance.id);
   return (
     <ul className="flex flex-col gap-1">
-      {members.map((id) => (
-        <SameAsMember key={id} instanceId={id} self={self} />
+      {members.map((member) => (
+        <SameAsMember key={member.id} evidence={member.evidence} self={self} />
       ))}
     </ul>
   );

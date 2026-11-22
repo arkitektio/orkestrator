@@ -10,10 +10,6 @@ import {
   useListCandidateRelationCategoriesQuery,
   useListCandidateStructureRelationCategoriesQuery,
 } from "@/kraph/api/graphql";
-import {
-  useApplicableRelationCategories,
-  useApplicableStructureRelationCategories,
-} from "@/kraph/lib/applicableCategories";
 import { GitBranchPlus, Network, Ruler } from "lucide-react";
 import React from "react";
 import type {
@@ -56,17 +52,6 @@ const searchVariables = (search: string | undefined) => (search ? { search } : {
 const bothEntities = (props: SmartContextProps) =>
   props.objects.at(0)?.identifier === "@kraph/entity" &&
   props.partners?.at(0)?.identifier === "@kraph/entity";
-
-/** The probe's status, once its candidates are here. */
-const probeStatus = (
-  candidates: SectionStatus,
-  probe: { applicable: readonly unknown[]; loading: boolean; error?: Error },
-): SectionStatus => {
-  if (candidates !== "ready") return candidates;
-  if (probe.error) return "error";
-  if (probe.loading) return probe.applicable.length ? "revalidating" : "loading";
-  return "ready";
-};
 
 /* ---------------------------------------------------------------- measures */
 
@@ -193,20 +178,20 @@ const useEntityRelationItems = (ctx: SmartSectionContext): SectionItems<Relation
     return undefined;
   }, [source.data, target.data]);
 
-  // Only that graph's relation categories are candidates; the server narrows
-  // to it, so the probe never sees another graph's schema.
+  // That graph's relation categories that admit both ends, narrowed by the
+  // server (`admits`), which applies the writer's own predicate.
   const skip = !shared;
   const result = useListCandidateRelationCategoriesQuery({
     ...QUERY_OPTIONS,
-    variables: { ...searchVariables(ctx.filter), graph: shared?.graphId ?? "" },
+    variables: {
+      ...searchVariables(ctx.filter),
+      graph: shared?.graphId ?? "",
+      source: shared?.sourceCategoryId ?? "",
+      target: shared?.targetCategoryId ?? "",
+    },
     skip,
   });
   const candidates = useStableData(result, skip);
-  const probe = useApplicableRelationCategories(
-    candidates.data?.relationCategories,
-    shared?.sourceCategoryId,
-    shared?.targetCategoryId,
-  );
 
   const endsError = source.error ?? target.error;
   const endsLoading = (source.loading && !source.data) || (target.loading && !target.data);
@@ -216,12 +201,12 @@ const useEntityRelationItems = (ctx: SmartSectionContext): SectionItems<Relation
       ? "loading"
       : !shared
         ? "ready"
-        : probeStatus(candidates.status, probe);
+        : candidates.status;
 
   return {
-    items: shared ? probe.applicable : NO_CANDIDATES,
+    items: shared ? (candidates.data?.relationCategories ?? NO_CANDIDATES) : NO_CANDIDATES,
     status,
-    error: endsError ?? candidates.error ?? probe.error,
+    error: endsError ?? candidates.error,
   };
 };
 
@@ -261,34 +246,31 @@ const useStructureRelationItems = (
   const firstPartner = ctx.partners?.at(0);
   const skip = !firstObject || !firstPartner;
 
+  // The categories whose descriptors admit both structure kinds (`admits`).
   const result = useListCandidateStructureRelationCategoriesQuery({
     ...QUERY_OPTIONS,
-    variables: searchVariables(ctx.filter),
+    variables: {
+      ...searchVariables(ctx.filter),
+      source: firstObject?.identifier ?? "",
+      target: firstPartner?.identifier ?? "",
+    },
     skip,
   });
   const candidates = useStableData(result, skip);
 
-  // `StructureRelationCategoryFilter` has no `sourceIdentifier` /
-  // `targetIdentifier` (only `MeasurementCategoryFilter` kept one), so
-  // admission is probed against the two structure kinds instead.
-  const probe = useApplicableStructureRelationCategories(
-    candidates.data?.structureRelationCategories,
-    firstObject?.identifier,
-    firstPartner?.identifier,
-  );
-
+  const applicable = candidates.data?.structureRelationCategories;
   const items = React.useMemo<StructureRelationItem[]>(
     () => [
-      ...probe.applicable.map((category) => ({ kind: "relate" as const, category })),
+      ...(applicable ?? []).map((category) => ({ kind: "relate" as const, category })),
       CREATE_ROW,
     ],
-    [probe.applicable],
+    [applicable],
   );
 
   return {
     items,
-    status: probeStatus(candidates.status, probe),
-    error: candidates.error ?? probe.error,
+    status: candidates.status,
+    error: candidates.error,
   };
 };
 

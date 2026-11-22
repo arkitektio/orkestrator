@@ -1,7 +1,5 @@
 # A member's profile: the todo lists assigned to them (or holding an item
-# assigned to them), newest first, each with its project. The profile's
-# "Projects" are the projects of these lists: a project has no member or
-# creator of its own to filter by.
+# assigned to them), newest first, each with its project.
 query ProfileTodoLists($assignee: ID!, $pagination: OffsetPaginationInput) {
   todoLists(
     filters: { assignee: $assignee }
@@ -12,5 +10,21 @@ query ProfileTodoLists($assignee: ID!, $pagination: OffsetPaginationInput) {
     project {
       ...ListProject
     }
+  }
+}
+
+# The projects a member works on: ones they made, or holding a todo list or item
+# assigned to them (`ProjectFilter.member`), newest first.
+query ProfileProjects($member: ID!, $pagination: OffsetPaginationInput) {
+  projects(filters: { member: $member }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListProject
+  }
+}
+
+# A member's profile feed: the graphs they made, newest first.
+query ProfileFeedGraphs($filters: GraphFilter, $pagination: OffsetPaginationInput) {
+  graphs(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListGraph
+    createdAt
   }
 }

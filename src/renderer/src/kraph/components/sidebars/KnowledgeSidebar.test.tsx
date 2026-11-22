@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const knowledge = vi.fn();
-const informing = vi.fn();
+const sameAs = vi.fn();
 const me = vi.fn();
 
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
@@ -19,7 +19,7 @@ vi.mock("@/kraph/api/graphql", () => ({
   useAssertEntityExistsMutation: () => [vi.fn(), {}],
   useAssertInformsMutation: () => [vi.fn(), {}],
   useSearchAssignableTermsQuery: () => ({ data: { terms: [] }, loading: false }),
-  useInformingStructuresQuery: (o: unknown) => informing(o),
+  useSameAsEvidenceQuery: (o: unknown) => sameAs(o),
 }));
 vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
 // Surfaces with their own plumbing: the discussion, the drop zone, the drag
@@ -78,10 +78,10 @@ const object = { id: "img-1" };
 
 beforeEach(() => {
   knowledge.mockReset();
-  informing.mockReset();
+  sameAs.mockReset();
   me.mockReset();
   me.mockReturnValue({ userId: "user-1", username: "ada" });
-  informing.mockReturnValue({ data: { informingStructures: [] }, loading: false });
+  sameAs.mockReturnValue({ data: { instance: { id: "i1", members: [] } }, loading: false });
 });
 
 describe("KnowledgeSidebar", () => {
@@ -121,12 +121,21 @@ describe("KnowledgeSidebar", () => {
       loading: false,
       refetch: vi.fn(),
     });
-    informing.mockReturnValue({
+    sameAs.mockReturnValue({
       data: {
-        informingStructures: [
-          { id: "s-self", identifier: "@mikro/file", object: "img-1" },
-          { id: "s-other", identifier: "@mikro/file", object: "img-7" },
-        ],
+        instance: {
+          id: "i1",
+          members: [
+            { id: "i1", evidence: [{ id: "s-own", identifier: "@mikro/file", object: "img-1" }] },
+            {
+              id: "i9",
+              evidence: [
+                { id: "s-self", identifier: "@mikro/file", object: "img-1" },
+                { id: "s-other", identifier: "@mikro/file", object: "img-7" },
+              ],
+            },
+          ],
+        },
       },
       loading: false,
     });
@@ -142,7 +151,8 @@ describe("KnowledgeSidebar", () => {
     expect(screen.getByTestId("link-graph")).toHaveTextContent("Neurons");
     expect(screen.getByText(/Axon initial segment/)).toBeInTheDocument();
 
-    expect(informing).toHaveBeenCalledWith(expect.objectContaining({ variables: { entityId: "i9" } }));
+    // One request reads every member with its evidence.
+    expect(sameAs).toHaveBeenCalledWith(expect.objectContaining({ variables: { id: "i1" } }));
     // The datum's own structure is not listed as "the same as" itself.
     expect(screen.getAllByTestId("display").map((n) => n.textContent)).toEqual(["@mikro/file:img-7"]);
 

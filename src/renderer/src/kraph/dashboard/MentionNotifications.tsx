@@ -15,11 +15,12 @@ export const MentionNotifications = () => {
     fetchPolicy: "cache-and-network",
   });
 
-  useReportNotificationCount("kraph.mentions", data?.myMentions?.length ?? 0);
+  // The server counts the open ones: a resolved mention clears the badge.
+  useReportNotificationCount("kraph.mentions", data?.myMentionCount ?? 0);
 
   return (
     <>
-      {(data?.myMentions ?? []).slice(0, 5).map((mention) => (
+      {(data?.myMentions ?? []).map((mention) => (
         <SmartLink
           key={mention.id}
           identifier={mention.structure.identifier}

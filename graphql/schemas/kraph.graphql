@@ -2672,7 +2672,7 @@ type EntityCategory implements Category & NodeCategory {
 
 """Numeric/aggregatable fields of EntityCategory"""
 enum EntityCategoryField {
-  CREATED_AT
+  ID
 }
 
 input EntityCategoryFilter {
@@ -3018,6 +3018,15 @@ type GeneralMediaAccessGrant {
   status: String!
 }
 
+enum Granularity {
+  DAY
+  HOUR
+  MONTH
+  QUARTER
+  WEEK
+  YEAR
+}
+
 """One view over the organization's evidence log"""
 type Graph {
   """
@@ -3027,6 +3036,11 @@ type Graph {
 
   """Color as RGBA list (0-255)"""
   color: [Int!]
+
+  """
+  When the graph was created. Null for a graph older than the column whose history does not record its creation
+  """
+  createdAt: DateTime
 
   """Description of the graph"""
   description: String
@@ -3139,6 +3153,9 @@ input GraphFilter {
   DISTINCT: Boolean
   NOT: GraphFilter
   OR: GraphFilter
+
+  """Only the graphs this member made, by their lok sub"""
+  creator: ID
   description: String
   id: ID
 
@@ -3157,6 +3174,7 @@ input GraphFilter {
 }
 
 input GraphOrder @oneOf {
+  createdAt: Ordering
   id: Ordering
   name: Ordering
 }
@@ -3331,6 +3349,9 @@ type GraphStats {
   """Minimum value"""
   min(field: GraphField!): Float
 
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: GraphField!, timestampField: GraphTimestampField!): [TimeBucket!]!
+
   """Sum of values"""
   sum(field: GraphField!): Float
 }
@@ -3413,6 +3434,11 @@ type GraphTableRender {
 
   """Rows of the rendered table"""
   rows: [AnyScalar!]!
+}
+
+"""Datetime fields of Graph for bucketing"""
+enum GraphTimestampField {
+  CREATED_AT
 }
 
 """
@@ -3508,6 +3534,11 @@ type Instance {
   drawnIn: [NodeDrawing!]!
 
   """
+  The structures that are evidence for this instance itself — the data behind it — oldest first. Not unioned over the component: read `members { evidence }` to see which member each datum belongs to
+  """
+  evidence: [Structure!]!
+
+  """
   The claim's durable identity — a bare uuid, world-unique and stable across reprojects
   """
   id: ID!
@@ -3521,6 +3552,11 @@ type Instance {
   What anyone has called this thing, with how many assertions say so. Two words means two people disagreed; one word with a count of two means they agreed
   """
   labels: [Label!]!
+
+  """
+  Every instance claimed to be this same thing, this one included, as instances rather than ids — so each member's own `evidence` can be read in the same request. `component` lists the same members
+  """
+  members: [Instance!]!
 
   """
   When the world contained this individual — for an event, when it happened; for an entity, when it was seen. World time, distinct from `assertion.assertedAt`; equal to it when the claimant gave no other (RFC 0015)
@@ -3862,7 +3898,7 @@ type MeasurementCategory implements Category & EdgeCategory {
 
 """Numeric/aggregatable fields of MeasurementCategory"""
 enum MeasurementCategoryField {
-  CREATED_AT
+  ID
 }
 
 input MeasurementCategoryFilter {
@@ -4222,8 +4258,16 @@ type MetricKindStats {
   """Minimum value"""
   min(field: MetricKindField!): Float
 
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: MetricKindField!, timestampField: MetricKindTimestampField!): [TimeBucket!]!
+
   """Sum of values"""
   sum(field: MetricKindField!): Float
+}
+
+"""Datetime fields of MetricKind for bucketing"""
+enum MetricKindTimestampField {
+  CREATED_AT
 }
 
 """One value about one external datum, inside a batch"""
@@ -4982,7 +5026,7 @@ type NaturalEventCategory implements Category & EventCategory & NodeCategory {
 
 """Numeric/aggregatable fields of NaturalEventCategory"""
 enum NaturalEventCategoryField {
-  CREATED_AT
+  ID
 }
 
 input NaturalEventCategoryFilter {
@@ -5638,6 +5682,11 @@ input ProjectFilter {
   """Filter by list of IDs"""
   ids: [ID!]
 
+  """
+  Projects this member (a sub) works on: ones they made, or holding a todo list or item assigned to them
+  """
+  member: ID
+
   """Search the name and description"""
   search: String
 }
@@ -5930,7 +5979,7 @@ type ProtocolEventCategory implements Category & EventCategory & NodeCategory {
 
 """Numeric/aggregatable fields of ProtocolEventCategory"""
 enum ProtocolEventCategoryField {
-  CREATED_AT
+  ID
 }
 
 input ProtocolEventCategoryFilter {
@@ -6154,8 +6203,15 @@ type Query {
   """
   models(filters: ModelFilter, ordering: [ModelOrder!]! = [], pagination: OffsetPaginationInput): [Model!]!
 
-  """Every remark that mentions the caller, newest first"""
-  myMentions: [Comment!]!
+  """
+  How many remarks mention the caller, past any page. `resolved: false` counts the open ones — the badge
+  """
+  myMentionCount(resolved: Boolean = null): Int!
+
+  """
+  Every remark that mentions the caller, newest first. `resolved` narrows to resolved or open remarks; omitted lists both
+  """
+  myMentions(pagination: LogPaginationInput = null, resolved: Boolean = null): [Comment!]!
 
   """Get a natural event by ID, as the named view holds it — see `node`"""
   naturalEvent(graph: ID!, id: ID!): NaturalEvent!
@@ -6452,7 +6508,7 @@ type RelationCategory implements Category & EdgeCategory {
 
 """Numeric/aggregatable fields of RelationCategory"""
 enum RelationCategoryField {
-  CREATED_AT
+  ID
 }
 
 input RelationCategoryFilter {
@@ -6460,6 +6516,11 @@ input RelationCategoryFilter {
   DISTINCT: Boolean
   NOT: RelationCategoryFilter
   OR: RelationCategoryFilter
+
+  """
+  Only the relation categories whose source and target descriptors admit these two entity categories — what the write would accept, in one query
+  """
+  admits: RelationEndsInput
   graph: GraphFilter
   id: ID
 
@@ -6540,6 +6601,17 @@ input RelationDefinitionInput {
 
   """Target entity type(s)"""
   target: EntityDescriptorInput!
+}
+
+"""
+The two ends a relation would connect: entity category ids, in one graph
+"""
+input RelationEndsInput {
+  """The entity category of the source end"""
+  source: ID!
+
+  """The entity category of the target end"""
+  target: ID!
 }
 
 """Filter options for querying relations"""
@@ -7443,8 +7515,16 @@ type StructureKindStats {
   """Minimum value"""
   min(field: StructureKindField!): Float
 
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: StructureKindField!, timestampField: StructureKindTimestampField!): [TimeBucket!]!
+
   """Sum of values"""
   sum(field: StructureKindField!): Float
+}
+
+"""Datetime fields of StructureKind for bucketing"""
+enum StructureKindTimestampField {
+  CREATED_AT
 }
 
 """
@@ -7597,7 +7677,7 @@ type StructureRelationCategory implements Category & EdgeCategory {
 
 """Numeric/aggregatable fields of StructureRelationCategory"""
 enum StructureRelationCategoryField {
-  CREATED_AT
+  ID
 }
 
 input StructureRelationCategoryFilter {
@@ -7605,6 +7685,11 @@ input StructureRelationCategoryFilter {
   DISTINCT: Boolean
   NOT: StructureRelationCategoryFilter
   OR: StructureRelationCategoryFilter
+
+  """
+  Only the structure relation categories whose ends admit these two structure kinds
+  """
+  admits: StructureRelationEndsInput
   graph: GraphFilter
   id: ID
 
@@ -7685,6 +7770,17 @@ input StructureRelationDefinitionInput {
 
   """Target entity type(s)"""
   target: StructureDescriptorInput!
+}
+
+"""
+The two ends a structure relation would connect: structure kind identifiers
+"""
+input StructureRelationEndsInput {
+  """The structure kind identifier of the source end, e.g. `@mikro/roi`"""
+  source: String!
+
+  """The structure kind identifier of the target end"""
+  target: String!
 }
 
 """Filter options for querying structure relations"""
@@ -7957,6 +8053,16 @@ enum TermKind {
   RELATION
   STRUCTURE
   STRUCTURE_RELATION
+}
+
+type TimeBucket {
+  avg: Float
+  count: Int!
+  distinctCount: Int!
+  max: Float
+  min: Float
+  sum: Float
+  ts: DateTime!
 }
 
 """

@@ -33,8 +33,18 @@ query ListApplicableMeasurementCategories(
 
 # Relation categories live in one graph's schema, and a pair can only be related
 # in a graph that draws both ends: the caller names that graph.
-query ListCandidateRelationCategories($search: String, $graph: ID!) {
-  relationCategories(filters: { search: $search, graph: { id: $graph } }) {
+# `admits` keeps the categories whose source and target descriptors admit the two
+# entity categories, the predicate the writer applies: the menu offers no pairing
+# the write would refuse.
+query ListCandidateRelationCategories(
+  $search: String
+  $graph: ID!
+  $source: ID!
+  $target: ID!
+) {
+  relationCategories(
+    filters: { search: $search, graph: { id: $graph }, admits: { source: $source, target: $target } }
+  ) {
     ...ListRelationCategory
     graph {
       id
@@ -43,8 +53,8 @@ query ListCandidateRelationCategories($search: String, $graph: ID!) {
   }
 }
 
-query ListCandidateStructureRelationCategories($search: String) {
-  structureRelationCategories(filters: { search: $search }) {
+query ListCandidateStructureRelationCategories($search: String, $source: String!, $target: String!) {
+  structureRelationCategories(filters: { search: $search, admits: { source: $source, target: $target } }) {
     ...ListStructureRelationCategoryWithGraph
   }
 }
