@@ -4,12 +4,11 @@ fragment ListProject on Project {
   description
 }
 
+# Its datasets are a paginated list of their own (`datasets(filters: {project})`).
 fragment Project on Project {
   id
   name
   description
-  datasets {
-    ...ListDataset
-  }
+  datasetCount
   tags
 }

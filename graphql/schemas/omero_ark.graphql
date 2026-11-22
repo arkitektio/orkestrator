@@ -1,3 +1,5 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
 """
 Metadata attached to an OMERO object. Concrete kinds carry their payload in kind-specific fields.
 """
@@ -83,6 +85,17 @@ type CommentAnnotation implements Annotation {
   owner: Experimenter!
   permissions: Permissions!
   text: String!
+}
+
+"""
+One sort key of a project, dataset or image list. Ties are broken by id, ascending.
+"""
+input ContainerOrder @oneOf {
+  """By id: the order objects were created in."""
+  id: SortDirection
+
+  """By name, case-insensitively."""
+  name: SortDirection
 }
 
 input CreateCommentInput {
@@ -905,20 +918,20 @@ type Query {
   annotation(id: ID!): Annotation!
   currentExperimenter: Experimenter!
   dataset(id: ID!): Dataset!
-  datasets(filters: DatasetFilter = null, pagination: OffsetPaginationInput = null): [Dataset!]!
+  datasets(filters: DatasetFilter = null, ordering: [ContainerOrder!] = null, pagination: OffsetPaginationInput = null): [Dataset!]!
   experimenter(id: ID!): Experimenter!
   experimenters(filters: ExperimenterFilter = null, pagination: OffsetPaginationInput = null): [Experimenter!]!
   group(id: ID!): ExperimenterGroup!
   groups(filters: ExperimenterGroupFilter = null, pagination: OffsetPaginationInput = null): [ExperimenterGroup!]!
   image(id: ID!): Image!
-  images(filters: ImageFilter = null, pagination: OffsetPaginationInput = null): [Image!]!
+  images(filters: ImageFilter = null, ordering: [ContainerOrder!] = null, pagination: OffsetPaginationInput = null): [Image!]!
   me: User!
   omeroUsers: [OmeroUser!]!
   plate(id: ID!): Plate!
   plateAcquisition(id: ID!): PlateAcquisition!
   plates(filters: PlateFilter = null, pagination: OffsetPaginationInput = null): [Plate!]!
   project(id: ID!): Project!
-  projects(filters: ProjectFilter = null, pagination: OffsetPaginationInput = null): [Project!]!
+  projects(filters: ProjectFilter = null, ordering: [ContainerOrder!] = null, pagination: OffsetPaginationInput = null): [Project!]!
   roi(id: ID!): Roi!
   rois(filters: RoiFilter = null, pagination: OffsetPaginationInput = null): [Roi!]!
   screen(id: ID!): Screen!
@@ -1080,6 +1093,12 @@ input ShapeInput {
 
   """Zero-based Z plane; null for all planes."""
   z: Int = null
+}
+
+"""Which way a list is sorted."""
+enum SortDirection {
+  ASC
+  DESC
 }
 
 """A tag. Tags are shared, reusable labels linked to many objects."""

@@ -2,7 +2,6 @@ mutation EnsureOmeroUser($input: OmeroUserInput!) {
   ensureOmeroUser(input: $input) {
     id
     omeroUsername
-    omeroPassword
     user {
       id
       sub

@@ -13,7 +13,8 @@ import { useForm } from "react-hook-form";
 import { CreateDatasetMutation, CreateDatasetMutationVariables, ListProjectFragment, useCreateDatasetMutation } from "../api/graphql";
 
 export const CreateDatasetForm = (props: { project?: ListProjectFragment; onSuccess?: (data: CreateDatasetMutation | null | undefined) => void }) => {
-  const [add] = useCreateDatasetMutation();
+  // The new dataset shows up in the dataset lists (its project's among them).
+  const [add] = useCreateDatasetMutation({ refetchQueries: ["ListDatasets", "GetProject"] });
 
   const submit = useGraphQLDialog(add, { errorTitle: "Couldn't create the dataset", onSuccess: props.onSuccess });
 

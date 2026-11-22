@@ -4,12 +4,12 @@ fragment ListDataset on Dataset {
   description
 }
 
+# Its images are a paginated list of their own (`images(filters: {dataset})`),
+# never a field of the dataset: an OMERO dataset can hold thousands.
 fragment Dataset on Dataset {
   id
   name
   description
-  images {
-    ...ListOmeroImage
-  }
+  imageCount
   tags
 }

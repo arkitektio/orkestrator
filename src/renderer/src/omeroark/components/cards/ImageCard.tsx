@@ -16,7 +16,7 @@ const apiUrlFromImageID = (id: string, baseUrl: string) => {
   return `${baseUrl.replace(
     "/graphql",
     "",
-  )}/api/thumbnails/${id}`;
+  )}/api/thumbnails/${id}/`;
 };
 
 const TCard = ({ image }: Props) => {

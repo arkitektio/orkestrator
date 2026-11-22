@@ -1,5 +1,5 @@
-query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput) {
-  datasets(filters: $filters, pagination: $pagination) {
+query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  datasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListDataset
   }
 }
@@ -7,5 +7,14 @@ query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput) 
 query GetDataset($id: ID!) {
   dataset(id: $id) {
     ...Dataset
+  }
+}
+
+# A dataset named elsewhere (a task's result, a firing's input): its name and
+# how many images it holds — counted by OMERO, not by listing them.
+query GetDatasetLine($id: ID!) {
+  dataset(id: $id) {
+    ...ListDataset
+    imageCount
   }
 }

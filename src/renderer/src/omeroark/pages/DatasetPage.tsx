@@ -1,5 +1,4 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/layout/ListRender";
 import {
   DetailPane,
   DetailPaneHeader,
@@ -7,7 +6,7 @@ import {
 } from "@/core/ui/pane";
 import { OmeroArkDataset } from "@/core/linkers";
 import { useGetDatasetQuery } from "../api/graphql";
-import ImageCard from "../components/cards/ImageCard";
+import ImageList from "../components/lists/ImageList";
 import { OMEROARK_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
@@ -38,9 +37,8 @@ const Page = asDetailQueryRoute(useGetDatasetQuery, ({ data }) => {
             ))}
           </div>
         </div>
-        <ListRender title="Contained Images" array={data?.dataset?.images}>
-          {(item, index) => <ImageCard image={item} key={index} />}
-        </ListRender>
+        {/* A page at a time, asked of OMERO: a dataset can hold thousands. */}
+        <ImageList filters={{ dataset: data.dataset.id }} title={`Contained Images (${data.dataset.imageCount})`} />
       </DetailPane>
     </OmeroArkDataset.ModelPage>
   );

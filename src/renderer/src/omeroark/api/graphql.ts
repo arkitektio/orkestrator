@@ -97,6 +97,13 @@ export type CommentAnnotation = Annotation & {
   text: Scalars['String']['output'];
 };
 
+/** One sort key of a project, dataset or image list. Ties are broken by id, ascending. */
+export type ContainerOrder =
+  /** By id: the order objects were created in. */
+  { id: SortDirection; name?: never; }
+  |  /** By name, case-insensitively. */
+  { id?: never; name: SortDirection; };
+
 export type CreateCommentInput = {
   target: AnnotationTargetInput;
   text: Scalars['String']['input'];
@@ -1018,6 +1025,7 @@ export type QueryDatasetArgs = {
 
 export type QueryDatasetsArgs = {
   filters?: InputMaybe<DatasetFilter>;
+  ordering?: InputMaybe<Array<ContainerOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1051,6 +1059,7 @@ export type QueryImageArgs = {
 
 export type QueryImagesArgs = {
   filters?: InputMaybe<ImageFilter>;
+  ordering?: InputMaybe<Array<ContainerOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1078,6 +1087,7 @@ export type QueryProjectArgs = {
 
 export type QueryProjectsArgs = {
   filters?: InputMaybe<ProjectFilter>;
+  ordering?: InputMaybe<Array<ContainerOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1262,6 +1272,12 @@ export type ShapeInput = {
   z?: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** Which way a list is sorted. */
+export enum SortDirection {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
+
 /** A tag. Tags are shared, reusable labels linked to many objects. */
 export type TagAnnotation = Annotation & {
   __typename?: 'TagAnnotation';
@@ -1403,10 +1419,7 @@ export type _Service = {
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string, description: string };
 
-export type DatasetFragment = { __typename?: 'Dataset', id: string, name: string, description: string, tags: Array<string>, images: Array<(
-    { __typename?: 'Image' }
-    & ListOmeroImageFragment
-  )> };
+export type DatasetFragment = { __typename?: 'Dataset', id: string, name: string, description: string, imageCount: number, tags: Array<string> };
 
 export type ListOmeroImageFragment = { __typename?: 'Image', id: string, name: string, description: string };
 
@@ -1414,10 +1427,7 @@ export type OmeroImageFragment = { __typename?: 'Image', id: string, name: strin
 
 export type ListProjectFragment = { __typename?: 'Project', id: string, name: string, description: string };
 
-export type ProjectFragment = { __typename?: 'Project', id: string, name: string, description: string, tags: Array<string>, datasets: Array<(
-    { __typename?: 'Dataset' }
-    & ListDatasetFragment
-  )> };
+export type ProjectFragment = { __typename?: 'Project', id: string, name: string, description: string, datasetCount: number, tags: Array<string> };
 
 export type CreateDatasetMutationVariables = Exact<{
   input: CreateDatasetInput;
@@ -1438,7 +1448,7 @@ export type EnsureOmeroUserMutationVariables = Exact<{
 }>;
 
 
-export type EnsureOmeroUserMutation = { __typename?: 'Mutation', ensureOmeroUser: { __typename?: 'OmeroUser', id: string, omeroUsername: string, omeroPassword: string, user: { __typename?: 'User', id: string, sub: string } } };
+export type EnsureOmeroUserMutation = { __typename?: 'Mutation', ensureOmeroUser: { __typename?: 'OmeroUser', id: string, omeroUsername: string, user: { __typename?: 'User', id: string, sub: string } } };
 
 export type DeleteMeMutationVariables = Exact<{
   input: DeleteMeInput;
@@ -1450,6 +1460,7 @@ export type DeleteMeMutation = { __typename?: 'Mutation', deleteMe: { __typename
 export type ListDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<DatasetFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<ContainerOrder> | ContainerOrder>;
 }>;
 
 
@@ -1468,21 +1479,20 @@ export type GetDatasetQuery = { __typename?: 'Query', dataset: (
     & DatasetFragment
   ) };
 
-export type GlobalSearchQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  noImages: Scalars['Boolean']['input'];
-  pagination?: InputMaybe<OffsetPaginationInput>;
+export type GetDatasetLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', images?: Array<(
-    { __typename?: 'Image' }
-    & ListOmeroImageFragment
-  )> };
+export type GetDatasetLineQuery = { __typename?: 'Query', dataset: (
+    { __typename?: 'Dataset', imageCount: number }
+    & ListDatasetFragment
+  ) };
 
 export type ListOmeroImagesQueryVariables = Exact<{
   filters?: InputMaybe<ImageFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<ContainerOrder> | ContainerOrder>;
 }>;
 
 
@@ -1509,6 +1519,7 @@ export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', omeroUs
 export type ListProjectsQueryVariables = Exact<{
   filters?: InputMaybe<ProjectFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<ContainerOrder> | ContainerOrder>;
 }>;
 
 
@@ -1527,8 +1538,18 @@ export type GetProjectQuery = { __typename?: 'Query', project: (
     & ProjectFragment
   ) };
 
-export const ListOmeroImageFragmentDoc = gql`
-    fragment ListOmeroImage on Image {
+export type GetProjectLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetProjectLineQuery = { __typename?: 'Query', project: (
+    { __typename?: 'Project', datasetCount: number }
+    & ListProjectFragment
+  ) };
+
+export const ListDatasetFragmentDoc = gql`
+    fragment ListDataset on Dataset {
   id
   name
   description
@@ -1539,12 +1560,17 @@ export const DatasetFragmentDoc = gql`
   id
   name
   description
-  images {
-    ...ListOmeroImage
-  }
+  imageCount
   tags
 }
-    ${ListOmeroImageFragmentDoc}`;
+    `;
+export const ListOmeroImageFragmentDoc = gql`
+    fragment ListOmeroImage on Image {
+  id
+  name
+  description
+}
+    `;
 export const OmeroImageFragmentDoc = gql`
     fragment OmeroImage on Image {
   id
@@ -1560,24 +1586,15 @@ export const ListProjectFragmentDoc = gql`
   description
 }
     `;
-export const ListDatasetFragmentDoc = gql`
-    fragment ListDataset on Dataset {
-  id
-  name
-  description
-}
-    `;
 export const ProjectFragmentDoc = gql`
     fragment Project on Project {
   id
   name
   description
-  datasets {
-    ...ListDataset
-  }
+  datasetCount
   tags
 }
-    ${ListDatasetFragmentDoc}`;
+    `;
 export const CreateDatasetDocument = gql`
     mutation CreateDataset($input: CreateDatasetInput!) {
   createDataset(input: $input) {
@@ -1653,7 +1670,6 @@ export const EnsureOmeroUserDocument = gql`
   ensureOmeroUser(input: $input) {
     id
     omeroUsername
-    omeroPassword
     user {
       id
       sub
@@ -1721,8 +1737,8 @@ export type DeleteMeMutationHookResult = ReturnType<typeof useDeleteMeMutation>;
 export type DeleteMeMutationResult = Apollo.MutationResult<DeleteMeMutation>;
 export type DeleteMeMutationOptions = Apollo.BaseMutationOptions<DeleteMeMutation, DeleteMeMutationVariables>;
 export const ListDatasetsDocument = gql`
-    query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput) {
-  datasets(filters: $filters, pagination: $pagination) {
+    query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  datasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListDataset
   }
 }
@@ -1742,6 +1758,7 @@ export const ListDatasetsDocument = gql`
  *   variables: {
  *      filters: // value for 'filters'
  *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */
@@ -1791,46 +1808,45 @@ export function useGetDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetDatasetQueryHookResult = ReturnType<typeof useGetDatasetQuery>;
 export type GetDatasetLazyQueryHookResult = ReturnType<typeof useGetDatasetLazyQuery>;
 export type GetDatasetQueryResult = Apollo.QueryResult<GetDatasetQuery, GetDatasetQueryVariables>;
-export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $noImages: Boolean!, $pagination: OffsetPaginationInput) {
-  images: images(filters: {search: $search}, pagination: $pagination) @skip(if: $noImages) {
-    ...ListOmeroImage
+export const GetDatasetLineDocument = gql`
+    query GetDatasetLine($id: ID!) {
+  dataset(id: $id) {
+    ...ListDataset
+    imageCount
   }
 }
-    ${ListOmeroImageFragmentDoc}`;
+    ${ListDatasetFragmentDoc}`;
 
 /**
- * __useGlobalSearchQuery__
+ * __useGetDatasetLineQuery__
  *
- * To run a query within a React component, call `useGlobalSearchQuery` and pass it any options that fit your needs.
- * When your component renders, `useGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetDatasetLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDatasetLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGlobalSearchQuery({
+ * const { data, loading, error } = useGetDatasetLineQuery({
  *   variables: {
- *      search: // value for 'search'
- *      noImages: // value for 'noImages'
- *      pagination: // value for 'pagination'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useGlobalSearchQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
+export function useGetDatasetLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDatasetLineQuery, GetDatasetLineQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
+        return ApolloReactHooks.useQuery<GetDatasetLineQuery, GetDatasetLineQueryVariables>(GetDatasetLineDocument, options);
       }
-export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
+export function useGetDatasetLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDatasetLineQuery, GetDatasetLineQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetDatasetLineQuery, GetDatasetLineQueryVariables>(GetDatasetLineDocument, options);
         }
-export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
-export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
-export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export type GetDatasetLineQueryHookResult = ReturnType<typeof useGetDatasetLineQuery>;
+export type GetDatasetLineLazyQueryHookResult = ReturnType<typeof useGetDatasetLineLazyQuery>;
+export type GetDatasetLineQueryResult = Apollo.QueryResult<GetDatasetLineQuery, GetDatasetLineQueryVariables>;
 export const ListOmeroImagesDocument = gql`
-    query ListOmeroImages($filters: ImageFilter, $pagination: OffsetPaginationInput) {
-  images(filters: $filters, pagination: $pagination) {
+    query ListOmeroImages($filters: ImageFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  images(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListOmeroImage
   }
 }
@@ -1850,6 +1866,7 @@ export const ListOmeroImagesDocument = gql`
  *   variables: {
  *      filters: // value for 'filters'
  *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */
@@ -1937,8 +1954,8 @@ export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const ListProjectsDocument = gql`
-    query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
-  projects(filters: $filters, pagination: $pagination) {
+    query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  projects(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListProject
   }
 }
@@ -1958,6 +1975,7 @@ export const ListProjectsDocument = gql`
  *   variables: {
  *      filters: // value for 'filters'
  *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */
@@ -2007,3 +2025,39 @@ export function useGetProjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetProjectQueryHookResult = ReturnType<typeof useGetProjectQuery>;
 export type GetProjectLazyQueryHookResult = ReturnType<typeof useGetProjectLazyQuery>;
 export type GetProjectQueryResult = Apollo.QueryResult<GetProjectQuery, GetProjectQueryVariables>;
+export const GetProjectLineDocument = gql`
+    query GetProjectLine($id: ID!) {
+  project(id: $id) {
+    ...ListProject
+    datasetCount
+  }
+}
+    ${ListProjectFragmentDoc}`;
+
+/**
+ * __useGetProjectLineQuery__
+ *
+ * To run a query within a React component, call `useGetProjectLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetProjectLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetProjectLineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetProjectLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetProjectLineQuery, GetProjectLineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetProjectLineQuery, GetProjectLineQueryVariables>(GetProjectLineDocument, options);
+      }
+export function useGetProjectLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetProjectLineQuery, GetProjectLineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetProjectLineQuery, GetProjectLineQueryVariables>(GetProjectLineDocument, options);
+        }
+export type GetProjectLineQueryHookResult = ReturnType<typeof useGetProjectLineQuery>;
+export type GetProjectLineLazyQueryHookResult = ReturnType<typeof useGetProjectLineLazyQuery>;
+export type GetProjectLineQueryResult = Apollo.QueryResult<GetProjectLineQuery, GetProjectLineQueryVariables>;

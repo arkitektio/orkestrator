@@ -1,5 +1,5 @@
-query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
-  projects(filters: $filters, pagination: $pagination) {
+query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  projects(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListProject
   }
 }
@@ -7,5 +7,13 @@ query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput) 
 query GetProject($id: ID!) {
   project(id: $id) {
     ...Project
+  }
+}
+
+# A project named elsewhere: its name and how many datasets it holds.
+query GetProjectLine($id: ID!) {
+  project(id: $id) {
+    ...ListProject
+    datasetCount
   }
 }

@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { CreateProjectMutation, CreateProjectMutationVariables, useCreateProjectMutation } from "../api/graphql";
 
 export const CreateProjectForm = (props: { onSuccess?: (data: CreateProjectMutation | null | undefined) => void }) => {
-  const [add] = useCreateProjectMutation();
+  const [add] = useCreateProjectMutation({ refetchQueries: ["ListProjects"] });
 
   const submit = useGraphQLDialog(add, { errorTitle: "Couldn't create the project", onSuccess: props.onSuccess });
 

@@ -1,5 +1,4 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/layout/ListRender";
 import { DialogButton } from "@/core/ui/dialog-button";
 import {
   DetailPane,
@@ -9,11 +8,11 @@ import {
 import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useGetProjectQuery } from "../api/graphql";
-import DatasetCard from "../components/cards/DatasetCard";
+import DatasetList from "../components/lists/DatasetList";
 import { OMEROARK_HELP } from "../help";
 
 
-const Page = asDetailQueryRoute(useGetProjectQuery, ({ data, refetch }) => {
+const Page = asDetailQueryRoute(useGetProjectQuery, ({ data }) => {
 
   return (
     <OmeroArkProject.ModelPage
@@ -28,7 +27,6 @@ const Page = asDetailQueryRoute(useGetProjectQuery, ({ data, refetch }) => {
           size={"sm"}
           dialogProps={{
             project: data?.project,
-            onSuccess: () => refetch(),
           }}
         >
           <PlusIcon className="h-4 w-4 mr-2" />
@@ -53,9 +51,7 @@ const Page = asDetailQueryRoute(useGetProjectQuery, ({ data, refetch }) => {
             ))}
           </div>
         </div>
-        <ListRender title="Contained Dataset" array={data?.project?.datasets}>
-          {(item, index) => <DatasetCard item={item} key={index} />}
-        </ListRender>
+        <DatasetList filters={{ project: data.project.id }} title={`Contained Datasets (${data.project.datasetCount})`} />
       </DetailPane>
     </OmeroArkProject.ModelPage>
   );

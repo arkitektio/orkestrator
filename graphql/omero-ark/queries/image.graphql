@@ -1,5 +1,5 @@
-query ListOmeroImages($filters: ImageFilter, $pagination: OffsetPaginationInput) {
-  images(filters: $filters, pagination: $pagination) {
+query ListOmeroImages($filters: ImageFilter, $pagination: OffsetPaginationInput, $ordering: [ContainerOrder!]) {
+  images(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListOmeroImage
   }
 }

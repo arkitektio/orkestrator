@@ -9,7 +9,7 @@ const apiUrlFromImageID = (id: string, fakts: any) => {
   return `${fakts.omero_ark.endpoint_url.replace(
     "/graphql",
     "",
-  )}/api/thumbnails/${id}`;
+  )}/api/thumbnails/${id}/`;
 };
 
 const AuthorizedImage: React.FC<ImageWithAuthProps> = (props) => {
