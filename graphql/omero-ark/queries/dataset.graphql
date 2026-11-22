@@ -1,5 +1,5 @@
-query ListDatasets {
-  datasets {
+query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput) {
+  datasets(filters: $filters, pagination: $pagination) {
     ...ListDataset
   }
 }

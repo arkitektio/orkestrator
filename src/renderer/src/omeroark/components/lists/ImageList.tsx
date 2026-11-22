@@ -1,10 +1,25 @@
 import { ListRender } from "@/core/layout/ListRender";
 import { OmeroArkImage } from "@/core/linkers";
-import { useListOmeroImagesQuery } from "@/omeroark/api/graphql";
+import {
+  ImageFilter,
+  OffsetPaginationInput,
+  useListOmeroImagesQuery,
+} from "@/omeroark/api/graphql";
 import ImageCard from "../cards/ImageCard";
 
-const List = () => {
-  const { data, loading, error, refetch } = useListOmeroImagesQuery();
+export type Props = {
+  filters?: ImageFilter;
+  pagination?: OffsetPaginationInput;
+};
+
+// One page, the size ListRender pages by: an OMERO server easily holds more
+// images than one grid should ask for at once.
+const DEFAULT_PAGINATION: OffsetPaginationInput = { limit: 20, offset: 0 };
+
+const List = ({ filters, pagination = DEFAULT_PAGINATION }: Props) => {
+  const { data, loading, error, refetch } = useListOmeroImagesQuery({
+    variables: { filters, pagination },
+  });
 
   return (
     <ListRender
@@ -12,8 +27,9 @@ const List = () => {
       loading={loading}
       error={error}
       title={<OmeroArkImage.ListLink className="flex-0">Images</OmeroArkImage.ListLink>}
-      // The query takes no variables, so paging has nothing to send.
-      refetch={() => refetch()}
+      limit={pagination.limit ?? undefined}
+      // Paging sends the next page's offset through the query's `pagination`.
+      refetch={refetch}
     >
       {(item) => <ImageCard key={item.id} image={item} />}
     </ListRender>

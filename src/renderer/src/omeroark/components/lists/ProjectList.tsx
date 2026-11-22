@@ -1,11 +1,24 @@
 import { ListRender } from "@/core/layout/ListRender";
 import { OmeroArkProject } from "@/core/linkers";
-import { useListProjectsQuery } from "@/omeroark/api/graphql";
+import {
+  OffsetPaginationInput,
+  ProjectFilter,
+  useListProjectsQuery,
+} from "@/omeroark/api/graphql";
 import ProjectCard from "../cards/ProjectCard";
 
-const List = () => {
+export type Props = {
+  filters?: ProjectFilter;
+  pagination?: OffsetPaginationInput;
+};
+
+// One page, the size ListRender pages by: an OMERO server can hold far more
+// projects than one grid should ask for at once.
+const DEFAULT_PAGINATION: OffsetPaginationInput = { limit: 20, offset: 0 };
+
+const List = ({ filters, pagination = DEFAULT_PAGINATION }: Props) => {
   const { data, error, refetch } = useListProjectsQuery({
-    variables: {},
+    variables: { filters, pagination },
   });
 
   return (
@@ -18,7 +31,8 @@ const List = () => {
             Projects
           </OmeroArkProject.ListLink>
         }
-        refetch={() => refetch()}
+        limit={pagination.limit ?? undefined}
+        refetch={refetch}
       >
         {(ex) => <ProjectCard key={ex.id} project={ex} />}
       </ListRender>

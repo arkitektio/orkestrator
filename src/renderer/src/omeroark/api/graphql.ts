@@ -1447,7 +1447,10 @@ export type DeleteMeMutationVariables = Exact<{
 
 export type DeleteMeMutation = { __typename?: 'Mutation', deleteMe: { __typename?: 'User', id: string } };
 
-export type ListDatasetsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListDatasetsQueryVariables = Exact<{
+  filters?: InputMaybe<DatasetFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListDatasetsQuery = { __typename?: 'Query', datasets: Array<(
@@ -1477,7 +1480,10 @@ export type GlobalSearchQuery = { __typename?: 'Query', images?: Array<(
     & ListOmeroImageFragment
   )> };
 
-export type ListOmeroImagesQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListOmeroImagesQueryVariables = Exact<{
+  filters?: InputMaybe<ImageFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListOmeroImagesQuery = { __typename?: 'Query', images: Array<(
@@ -1500,7 +1506,10 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', omeroUser?: { __typename?: 'OmeroUser', id: string, omeroUsername: string } | null } };
 
-export type ListProjectsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListProjectsQueryVariables = Exact<{
+  filters?: InputMaybe<ProjectFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListProjectsQuery = { __typename?: 'Query', projects: Array<(
@@ -1712,8 +1721,8 @@ export type DeleteMeMutationHookResult = ReturnType<typeof useDeleteMeMutation>;
 export type DeleteMeMutationResult = Apollo.MutationResult<DeleteMeMutation>;
 export type DeleteMeMutationOptions = Apollo.BaseMutationOptions<DeleteMeMutation, DeleteMeMutationVariables>;
 export const ListDatasetsDocument = gql`
-    query ListDatasets {
-  datasets {
+    query ListDatasets($filters: DatasetFilter, $pagination: OffsetPaginationInput) {
+  datasets(filters: $filters, pagination: $pagination) {
     ...ListDataset
   }
 }
@@ -1731,6 +1740,8 @@ export const ListDatasetsDocument = gql`
  * @example
  * const { data, loading, error } = useListDatasetsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -1818,8 +1829,8 @@ export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
 export const ListOmeroImagesDocument = gql`
-    query ListOmeroImages {
-  images {
+    query ListOmeroImages($filters: ImageFilter, $pagination: OffsetPaginationInput) {
+  images(filters: $filters, pagination: $pagination) {
     ...ListOmeroImage
   }
 }
@@ -1837,6 +1848,8 @@ export const ListOmeroImagesDocument = gql`
  * @example
  * const { data, loading, error } = useListOmeroImagesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -1924,8 +1937,8 @@ export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const ListProjectsDocument = gql`
-    query ListProjects {
-  projects {
+    query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
+  projects(filters: $filters, pagination: $pagination) {
     ...ListProject
   }
 }
@@ -1943,6 +1956,8 @@ export const ListProjectsDocument = gql`
  * @example
  * const { data, loading, error } = useListProjectsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */

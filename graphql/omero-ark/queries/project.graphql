@@ -1,5 +1,5 @@
-query ListProjects {
-  projects {
+query ListProjects($filters: ProjectFilter, $pagination: OffsetPaginationInput) {
+  projects(filters: $filters, pagination: $pagination) {
     ...ListProject
   }
 }
