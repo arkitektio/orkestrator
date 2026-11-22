@@ -181,31 +181,25 @@ const CustomBlokCard = React.memo(({ blok }: { blok: CustomBlok }) => {
 const useCustomBloks = (search: string, listedOrigins?: ReadonlySet<string>): CustomBlok[] | undefined => {
   // Sorted, so the same origins are the same variables (and the same cache entry).
   const origins = useMemo(() => [...(listedOrigins ?? [])].sort(), [listedOrigins]);
+  const needle = search.trim();
   const { data } = useListBloksQuery({
     variables: {
       filters: {
         provided: false,
+        // Interfaces to open, not logos. The search reads names and descriptions.
+        contexts: OPENABLE_CONTEXTS,
+        ...(needle ? { search: needle } : {}),
         // An empty `origins` is no filter to negate: only send one with origins in it.
         ...(origins.length > 0 ? { NOT: { origins } } : {}),
       },
     },
     fetchPolicy: "cache-and-network",
   });
-  return useMemo(() => {
-    if (!data) return undefined;
-    const needle = search.trim().toLowerCase();
-    // The server has no context filter yet (SERVER_SIDE_SUGGESTIONS.md, "Bloks
-    // by context"), so logos are dropped here. The search stays here too:
-    // `BlokFilter.search` matches the name only, the store also the description.
-    return data.bloks.filter(
-      (blok) =>
-        !isLogoContext(blok.context) &&
-        (!needle ||
-          blok.name.toLowerCase().includes(needle) ||
-          !!blok.description?.toLowerCase().includes(needle)),
-    );
-  }, [data, search]);
+  return data?.bloks;
 };
+
+/** The contexts a store blok is opened in: every one but a logo's. */
+const OPENABLE_CONTEXTS = Object.values(RekuestContext).filter((context) => !isLogoContext(context));
 
 export const BLOK_GRID = "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
 

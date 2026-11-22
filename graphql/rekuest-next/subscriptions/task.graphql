@@ -33,3 +33,11 @@ subscription WatchAgentTasks($agent: ID!) {
     }
   }
 }
+
+# One task's events, whoever started it: those newer than `after` first, then
+# each new one as it is recorded.
+subscription WatchTaskEvents($task: ID!, $after: ID) {
+  taskEvents(task: $task, after: $after) {
+    ...TaskEventChange
+  }
+}

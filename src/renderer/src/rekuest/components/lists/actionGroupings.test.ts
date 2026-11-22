@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { ActionKind, BrowseActionFragment } from "../../api/graphql";
+import { ActionKind, BrowseActionFragment, Ordering } from "../../api/graphql";
 import {
   ACTION_GROUP_KEYS,
   ACTION_GROUPINGS,
   getActionGrouping,
+  groupOrdering,
   UNCOLLECTED,
 } from "./actionGroupings";
 
@@ -85,5 +86,14 @@ describe("action groupings", () => {
       ),
     ).toBe("online");
     expect(grouping.getGroupId(action({}))).toBe("none");
+  });
+
+  it("orders by what app, collection and kind group on, so groups stay whole across pages", () => {
+    expect(groupOrdering("app")).toEqual({ appIdentifier: Ordering.Asc });
+    expect(groupOrdering("collection")).toEqual({ collection: Ordering.Asc });
+    expect(groupOrdering("kind")).toEqual({ kind: Ordering.Asc });
+    // Worked out from implementations: the server cannot order by it.
+    expect(groupOrdering("availability")).toBeUndefined();
+    expect(groupOrdering("none")).toBeUndefined();
   });
 });

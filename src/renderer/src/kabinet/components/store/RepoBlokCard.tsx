@@ -146,9 +146,11 @@ const Grid = ({
 
 /** The grid, knowing which bloks rekuest has installed (and from which version). */
 const InstalledGrid = ({ bloks }: { bloks: StoreRepoBlokFragment[] }) => {
-  // The same query as the store's "Made in your organization": one request.
+  // Only the installed copies of these tiles' bloks, asked by origin.
+  const origins = useMemo(() => [...new Set(bloks.map((blok) => blok.origin))].sort(), [bloks]);
   const { data } = useListBloksQuery({
-    variables: { filters: { provided: false } },
+    variables: { filters: { provided: false, origins } },
+    skip: origins.length === 0,
     fetchPolicy: "cache-and-network",
   });
   const installed = useMemo(() => (data ? installedByOrigin(data.bloks) : null), [data]);

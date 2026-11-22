@@ -531,15 +531,26 @@ enum ActionKind {
 
 input ActionOrder @oneOf {
   """
+  By the identifier of the app the action belongs to, so one app's actions stay together across pages.
+  """
+  appIdentifier: Ordering
+
+  """
   Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance.
   """
   assignable: Ordering
+
+  """
+  By the name of the action's first collection (alphabetically): the collection a grouped list files it under. Actions in no collection come last.
+  """
+  collection: Ordering
   definedAt: Ordering
 
   """
   Runnable first, then by the estimate for the object named in the `estimatedRuntime` filter, with no estimate last. Does nothing without that filter.
   """
   estimatedRuntime: Ordering
+  kind: Ordering
   usedAt: Ordering
 }
 
@@ -832,6 +843,12 @@ input AgentDependencyInput {
   version: String = null
 }
 
+"""Numeric/aggregatable fields of Agent"""
+enum AgentField {
+  INSTALLED_AT
+  LAST_SEEN
+}
+
 """A way to filter agents"""
 input AgentFilter {
   AND: AgentFilter
@@ -856,6 +873,11 @@ input AgentFilter {
 
   """Filter by client ID of the app the agent is registered to"""
   clientId: String
+
+  """
+  Agents with a live connection (true): connected, with a fresh heartbeat. False keeps every other agent, webhook agents included. Unlike `available`, a webhook agent is never connected.
+  """
+  connected: Boolean
   dependency: ID
 
   """Filter based on device"""
@@ -875,6 +897,9 @@ input AgentFilter {
   The agents with at least one implementation listed under any of these protocols, declared as a hint (`on_scene_annotation`) or inferred. Each agent once, however many of its actions match.
   """
   implementsProtocols: [String!]
+
+  """Filter by the kind of agent (websocket, webhook, ...)"""
+  kind: AgentKind
 
   """Filter by pinned agents"""
   pinned: Boolean
@@ -965,6 +990,7 @@ type AgentMapping {
 }
 
 input AgentOrder @oneOf {
+  installedAt: Ordering
   lastSeen: Ordering
 }
 
@@ -993,9 +1019,40 @@ type AgentSnapshotEvent {
 
 union AgentSnapshotEventStatePatchEvent = AgentSnapshotEvent | StatePatchEvent
 
+type AgentStats {
+  """Average"""
+  avg(field: AgentField!): Float
+
+  """
+  Total number of agents in the selection. Ask once with `filters: {connected: true}` (aliased) for how many are online.
+  """
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: AgentField!): Int!
+
+  """Maximum"""
+  max(field: AgentField!): Float
+
+  """Minimum"""
+  min(field: AgentField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: AgentField!, timestampField: AgentTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: AgentField!): Float
+}
+
 type AgentTaskUpdate {
   create: TaskChange
   update: TaskChange
+}
+
+"""Datetime fields of Agent for bucketing"""
+enum AgentTimestampField {
+  INSTALLED_AT
+  LAST_SEEN
 }
 
 type AgentWithValues {
@@ -1233,6 +1290,21 @@ type Asset {
 
   """An image's width in pixels. Null for other kinds."""
   width: Int
+}
+
+"""
+An asset that was just stored: enough to tell whether it is the one awaited.
+"""
+type AssetChange {
+  id: ID!
+
+  """What the file is (AssetKind)."""
+  kind: String!
+
+  """
+  'sha256:' and the hex SHA-256 of the file's bytes: what an agent's declared asset names.
+  """
+  ref: String!
 }
 
 """
@@ -1885,6 +1957,11 @@ input BlokFilter {
   anyDemands: [[PortDemandInput!]!]
 
   """
+  Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action.
+  """
+  contexts: [ComponentContext!]
+
+  """
   Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none.
   """
   demands: [PortDemandInput!]
@@ -1905,7 +1982,7 @@ input BlokFilter {
   """
   provided: Boolean
 
-  """Search by name"""
+  """Search by name or description (case-insensitive substring)."""
   search: String
 }
 
@@ -4563,6 +4640,11 @@ input MaterializedBlokFilter {
   anyDemands: [[PortDemandInput!]!]
 
   """
+  Only materializations of the blok with exactly this name (case-sensitive), unlike the substring `search`.
+  """
+  blokName: String
+
+  """
   Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action.
   """
   contexts: [ComponentContext!]
@@ -5601,6 +5683,11 @@ type Query {
   """Fetch a specific agent by ID or by app, version and device_id."""
   agent(app: String = null, deviceId: String = null, id: ID = null, version: String = null): Agent!
 
+  """
+  Statistics about agents: how many (narrowed by filters, e.g. connected or kind) and when they registered or were last seen.
+  """
+  agentStats(filters: AgentFilter = null): AgentStats!
+
   """Retrieve all compute agents."""
   agents(filters: AgentFilter, ordering: [AgentOrder!]! = [], pagination: OffsetPaginationInput): [Agent!]!
 
@@ -5699,6 +5786,11 @@ type Query {
   All interfaces referenced by the org's action ports (derived, not registered).
   """
   interfaces(search: String = null): [Interface!]!
+
+  """
+  How many of the organization's stored signals of this kind and structure satisfy the conditions: the uncapped count behind `matchingSignals`. Fires nothing.
+  """
+  matchingSignalCount(conditions: AnyDefault = null, identifier: String!, kind: SignalKind!): Int!
 
   """
   A dry run for a trigger not written yet: the organization's stored signals of this kind and structure whose descriptors satisfy the conditions, newest first. Fires nothing.
@@ -6505,6 +6597,7 @@ input ScheduleIdInput {
 }
 
 input ScheduleOrder @oneOf {
+  consecutiveFailures: Ordering
   createdAt: Ordering
   name: Ordering
   updatedAt: Ordering
@@ -7529,6 +7622,11 @@ type Subscription {
   """Subscribe to updates on agent connections and statuses."""
   agents: AgentChangeEvent!
 
+  """
+  The organization's assets as they are stored (only those of `refs`, if given): an agent's declared asset becomes available the moment one with its ref arrives.
+  """
+  assets(refs: [String!] = null): AssetChange!
+
   """Subscribe to all descendant task changes of a task."""
   childTasks(id: ID!): ChildTaskEvent!
 
@@ -7563,6 +7661,11 @@ type Subscription {
 
   """Subscribe to updates of state values and patches."""
   stateUpdateEvents(stateId: ID!): State!
+
+  """
+  One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history.
+  """
+  taskEvents(after: ID = null, task: ID!): TaskEventChange!
 
   """Subscribe to root task changes across the whole organization."""
   tasks: TaskChangeEvent!
@@ -7981,7 +8084,9 @@ input TaskFilter {
   """Filter by the canonical args hash (the replay-discovery key)"""
   argsHash: String
 
-  """Filter by the caller (client/user/organization) that created the task"""
+  """
+  Filter by the caller that created the task: the ID of a Caller row (one client, user and organization), not a user. For a person use `user`.
+  """
   caller: ID
 
   """
@@ -8027,6 +8132,11 @@ input TaskFilter {
 
   """Keep the runs this trigger fired"""
   trigger: ID
+
+  """
+  Filter by the user (their sub) on whose behalf the task was created, whatever client they used.
+  """
+  user: ID
 }
 
 """
@@ -8426,6 +8536,7 @@ input TriggerIdInput {
 }
 
 input TriggerOrder @oneOf {
+  consecutiveFailures: Ordering
   createdAt: Ordering
   name: Ordering
   updatedAt: Ordering

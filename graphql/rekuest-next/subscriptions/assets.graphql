@@ -1,0 +1,8 @@
+# An asset arrived in the organization: an agent uploaded one of `refs`.
+subscription WatchAssets($refs: [String!]) {
+  assets(refs: $refs) {
+    id
+    ref
+    kind
+  }
+}

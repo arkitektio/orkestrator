@@ -1,14 +1,17 @@
 import { GroupByDef } from "@/core/layout/GroupableListRenderer";
-import { BrowseActionFragment } from "@/rekuest/api/graphql";
+import { ActionOrder, BrowseActionFragment, Ordering } from "@/rekuest/api/graphql";
 import {
   actionsBrowseLink,
   deriveAvailability,
 } from "@/rekuest/lib/actionBrowse";
 import { Link } from "react-router-dom";
 
-// Grouping runs on the loaded page only (offset pagination), so a group can be
-// cut off at the page edge. Where the backend can filter on the same thing, the
-// group title links to that filter — the way to see a whole group.
+// A grouping by app, collection or kind is also the server's first ordering
+// (`groupOrdering`), so one group's actions come together across pages and the
+// page edge cuts at most the last group short. Availability is worked out from
+// the implementations here and has no server ordering: those groups cover the
+// loaded page only. Where the backend can filter on the same thing, the group
+// title links to that filter, the way to see a whole group.
 
 const byTitle = (a: { title: React.ReactNode }, b: { title: React.ReactNode }) =>
   String(a.title).localeCompare(String(b.title));
@@ -91,6 +94,17 @@ export const ACTION_GROUP_KEYS = [
 ] as const;
 
 export type ActionGroupKey = (typeof ACTION_GROUP_KEYS)[number];
+
+/**
+ * The server ordering that keeps a grouping's groups together across pages, put
+ * before the page's own sort. Absent for a grouping the server cannot order by.
+ */
+export const groupOrdering = (key: ActionGroupKey): ActionOrder | undefined =>
+  ({
+    app: { appIdentifier: Ordering.Asc },
+    collection: { collection: Ordering.Asc },
+    kind: { kind: Ordering.Asc },
+  })[key as "app" | "collection" | "kind"];
 
 export const getActionGrouping = (
   key: ActionGroupKey,

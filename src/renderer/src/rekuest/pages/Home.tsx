@@ -14,7 +14,13 @@ import {
   EmptyTitle,
 } from "@/core/ui/empty";
 import { RekuestAgent } from "@/core/linkers";
-import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
+import {
+  AgentFilter,
+  ListAgentFragment,
+  Ordering,
+  useAgentCountsQuery,
+  useAgentsQuery,
+} from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import TaskList from "@/rekuest/components/lists/TaskList";
 import { Loader2, Podcast } from "lucide-react";
@@ -44,38 +50,47 @@ const Page = () => {
   const { search, user: userFilter, kind: kindFilter, app, device, supervisor, onlineOnly } = filters.resolved;
   const hasFilter = filters.active;
 
+  // Everything but "online" narrows the counts too: "N online · M total" is
+  // over the apps the other filters leave.
+  const base: AgentFilter = {
+    search: search || undefined,
+    user: userFilter ?? undefined,
+    kind: kindFilter ?? undefined,
+    appIdentifier: app ?? undefined,
+    deviceId: device ?? undefined,
+    supervisor: supervisor ?? undefined,
+  };
+
   const { data, error, refetch } = useAgentsQuery({
     variables: {
-      filters: {
-        search: search || undefined,
-        user: userFilter ?? undefined,
-        appIdentifier: app ?? undefined,
-        deviceId: device ?? undefined,
-        supervisor: supervisor ?? undefined,
-      },
+      filters: onlineOnly ? { ...base, connected: true } : base,
       ordering: [{ lastSeen: Ordering.Desc }],
     },
     skip: filters.pending,
   });
+  const { data: counts } = useAgentCountsQuery({
+    variables: { filters: base, online: { ...base, connected: true } },
+    skip: filters.pending,
+  });
 
-  // The server has no kind filter, and a newly connected agent is inserted
-  // into every cached `agents(...)` list (AgentUpdater), so the type, the user
-  // and the supervisor are narrowed here too.
-  const visible = useMemo(
+  // The server answers every filter. Only what changed since is checked here:
+  // AgentUpdater inserts a new agent into every cached `agents(...)` list and
+  // flips `connected` in place, so a row that no longer fits leaves at once.
+  const agents = useMemo(
     () =>
-      (data?.agents ?? []).filter(
-        (a) =>
-          (!kindFilter || a.kind === kindFilter) &&
-          (!userFilter || a.user.sub === userFilter) &&
-          (!supervisor || a.supervisor === supervisor),
+      sortAgents(
+        (data?.agents ?? []).filter(
+          (a) =>
+            (!kindFilter || a.kind === kindFilter) &&
+            (!userFilter || a.user.sub === userFilter) &&
+            (!supervisor || a.supervisor === supervisor) &&
+            (!onlineOnly || a.connected),
+        ),
       ),
-    [data, kindFilter, userFilter, supervisor],
+    [data, kindFilter, userFilter, supervisor, onlineOnly],
   );
-  const agents = useMemo(() => {
-    const all = sortAgents(visible);
-    return onlineOnly ? all.filter((a) => a.connected) : all;
-  }, [visible, onlineOnly]);
-  const onlineCount = visible.filter((a) => a.connected).length;
+  const onlineCount = counts?.online.count ?? 0;
+  const totalCount = counts?.total.count ?? 0;
   const loaded = data !== undefined;
 
   return (
@@ -106,10 +121,10 @@ const Page = () => {
             <HomeSectionHeading className="justify-between">
               <span>Your apps</span>
               <span className="flex items-center gap-2 font-normal normal-case tracking-normal">
-                {loaded && (
+                {counts && (
                   <span>
                     <span className="font-semibold text-foreground">{onlineCount}</span> online ·{" "}
-                    <span className="font-semibold text-foreground">{visible.length}</span> total
+                    <span className="font-semibold text-foreground">{totalCount}</span> total
                   </span>
                 )}
                 <RekuestAgent.ListLink className="hover:text-foreground">All agents →</RekuestAgent.ListLink>
@@ -129,14 +144,14 @@ const Page = () => {
                   <EmptyTitle>
                     {hasFilter
                       ? "No apps match your filters"
-                      : visible.length > 0
+                      : totalCount > 0
                         ? "None of your apps is online"
                         : "No apps connected yet"}
                   </EmptyTitle>
                   <EmptyDescription>
                     {hasFilter
                       ? "Try a different search or clear the active filters."
-                      : visible.length > 0
+                      : totalCount > 0
                         ? "Only online apps are listed. Turn Online off to see the ones that are not reachable right now."
                         : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are in the filter row."}
                   </EmptyDescription>
@@ -144,7 +159,7 @@ const Page = () => {
                 {hasFilter ? (
                   <FilterClear onClear={filters.clear} />
                 ) : (
-                  visible.length > 0 && (
+                  totalCount > 0 && (
                     <Button variant="outline" size="sm" onClick={() => filters.setOnlineOnly(false)}>
                       Show offline apps
                     </Button>

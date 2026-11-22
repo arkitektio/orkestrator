@@ -2,40 +2,55 @@ import * as React from 'react';
 import {
   ComponentContext,
   useRunTaskQuery,
+  WatchTaskEventsDocument,
   type ActionBlokFragment,
   type RunTaskFragment,
+  type WatchTaskEventsSubscription,
+  type WatchTaskEventsSubscriptionVariables,
 } from '../api/graphql';
+import {useRekuest} from '../api/hooks';
+import {createTaskEventQueue} from '../lib/taskCache';
+import {taskEventChangeToEvent} from '../lib/taskTracker';
 import {runOfTask, type ActionBlokRun} from './ActionBlokRenderer';
 
 /**
- * How often a run that is not one of the viewer's own is read again while it
- * goes on. The viewer's own runs move with every event (the global task
- * updater writes them into the cache); another person's run has no stream
- * here, so it is polled.
- */
-export const RUN_POLL_MS = 5_000;
-
-/**
  * A run as its action's bloks draw it; null until it is read. The viewer's own
- * runs follow every event through the cache. `follow` also polls while the run
- * goes on, for a run that may be someone else's:
- * each poll reads its whole event history, so only one place should ask.
+ * runs follow every event through the cache (the global task updater writes
+ * them). `follow` also streams this one task's events while it goes on
+ * (`taskEvents`), for a run that may be someone else's: only the events newer
+ * than what was read arrive, and each is merged into the cached task.
  */
 export const useRunTask = (
   id: string | null | undefined,
   {follow = false}: {follow?: boolean} = {},
 ): {task: RunTaskFragment | null; error?: Error} => {
-  const {data, error, startPolling, stopPolling} = useRunTaskQuery({variables: {id: id ?? ''}, skip: !id});
+  const client = useRekuest();
+  const {data, error} = useRunTaskQuery({variables: {id: id ?? ''}, skip: !id});
   const task = data?.task ?? null;
   const ended = task?.isDone ?? false;
+  const loaded = task !== null;
+  // Read once when the stream opens: events are ordered newest first.
+  const newest = React.useRef<string | null>(null);
+  newest.current = task?.events[0]?.id ?? null;
   React.useEffect(() => {
-    if (!follow || !id || ended || error) {
-      stopPolling();
-      return undefined;
-    }
-    startPolling(RUN_POLL_MS);
-    return () => stopPolling();
-  }, [ended, error, follow, id, startPolling, stopPolling]);
+    if (!follow || !id || !loaded || ended || error || !client) return undefined;
+    // A task not in the cache any more has nothing to merge into: the query
+    // above reads it again.
+    const queue = createTaskEventQueue(client, () => undefined);
+    const subscription = client
+      .subscribe<WatchTaskEventsSubscription, WatchTaskEventsSubscriptionVariables>({
+        query: WatchTaskEventsDocument,
+        variables: {task: id, after: newest.current},
+      })
+      .subscribe(({data: next}) => {
+        const change = next?.taskEvents;
+        if (change) queue.push(change, taskEventChangeToEvent(change));
+      });
+    return () => {
+      subscription.unsubscribe();
+      queue.flush();
+    };
+  }, [client, ended, error, follow, id, loaded]);
   return {task, error};
 };
 

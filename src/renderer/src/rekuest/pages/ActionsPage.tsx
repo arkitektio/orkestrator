@@ -41,6 +41,7 @@ import {
   ACTION_GROUPINGS,
   ActionGroupKey,
   getActionGrouping,
+  groupOrdering,
 } from "../components/lists/actionGroupings";
 import {
   ACTION_SORTS,
@@ -124,15 +125,17 @@ const Page = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey, capabilities, runnable],
   );
-  const ordering = useMemo(
-    () => buildActionOrdering(sort === "default" ? null : sort),
-    [sort],
-  );
-
   const grouping = getActionGrouping(groupKey);
-  // Grouping is client-side over the loaded page — load more so groups aren't
-  // truncated to a single page's worth of items.
-  const limit = grouping ? 100 : 30;
+  // A grouping the server can order by goes first, so its groups stay whole
+  // across pages; the chosen sort orders within each group.
+  const ordering = useMemo(() => {
+    const sorted = buildActionOrdering(sort === "default" ? null : sort);
+    const groupOrder = groupOrdering(groupKey);
+    return groupOrder ? [groupOrder, ...(sorted ?? [])] : sorted;
+  }, [sort, groupKey]);
+  // Availability is grouped over the loaded page only, so it loads more.
+  const pageOnlyGrouping = grouping !== undefined && groupOrdering(groupKey) === undefined;
+  const limit = pageOnlyGrouping ? 100 : 30;
 
   const hasFilter = Object.keys(filters).length > 0;
   const clearAll = () => {
@@ -273,10 +276,10 @@ const Page = () => {
       }
     >
       <div className="p-3">
-        {grouping && (
+        {pageOnlyGrouping && (
           <p className="mb-3 text-xs text-muted-foreground">
-            Groups cover the {limit} actions loaded per page. Follow a group
-            title, or add filters, to see a whole group.
+            Groups cover the {limit} actions loaded per page. Add filters to
+            see a whole group.
           </p>
         )}
 

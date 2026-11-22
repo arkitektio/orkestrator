@@ -8,6 +8,17 @@ query Agents(
   }
 }
 
+# The home page's "N online · M total": both counted by the server over the same
+# filters, so they are right however many agents there are.
+query AgentCounts($filters: AgentFilter, $online: AgentFilter) {
+  total: agentStats(filters: $filters) {
+    count
+  }
+  online: agentStats(filters: $online) {
+    count
+  }
+}
+
 query Agent($id: ID!) {
   agent(id: $id) {
     ...Agent
@@ -54,5 +65,14 @@ query AgentForDependency($search: String, $values: [ID!], $dependency: ID, $blok
 query HoverAgent($id: ID!) {
   agent(id: $id) {
     ...HoverAgent
+  }
+}
+
+# A member's profile feed: the agents they installed, newest first. The feed
+# merges services by date, which `installedAt` is for an agent.
+query ProfileFeedAgents($filters: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(filters: $filters, pagination: $pagination, ordering: [{ installedAt: DESC }]) {
+    ...ListAgent
+    installedAt
   }
 }

@@ -12,7 +12,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
-import { useListSchedulesQuery, useListTriggersQuery } from "@/rekuest/api/graphql";
+import { Ordering, useListSchedulesQuery, useListTriggersQuery } from "@/rekuest/api/graphql";
 import {
   AutomationKind,
   scheduleRow,
@@ -27,6 +27,8 @@ import { REKUEST_HELP } from "../help";
 
 const KINDS = ["clock", "signal"] as const;
 const PAGE = 50;
+/** The page is cut after the rules that fail most often. */
+const FAILING_FIRST = [{ consecutiveFailures: Ordering.Desc }];
 
 /**
  * Everything that runs by itself, in one list: actions on a clock
@@ -34,10 +36,12 @@ const PAGE = 50;
  * sentence and where it stands; what needs a look comes first.
  *
  * The backend lists the two apart, so both are loaded up to one shared
- * limit and merged here. The search and "Failing" are the server's filters
- * (the search reads a rule's name and description, its action, agent and
- * interface, what sets it off and its wiregram), so they reach rules not
- * loaded yet.
+ * limit and merged here. Each list comes failing rules first (ordered by
+ * `consecutiveFailures` on the server), so a failing rule is never left past
+ * the limit while a healthy one is shown. The search and "Failing" are the
+ * server's filters (the search reads a rule's name and description, its
+ * action, agent and interface, what sets it off and its wiregram), so they
+ * reach rules not loaded yet.
  */
 const Page = () => {
   const { openDialog } = useDialog();
@@ -52,12 +56,12 @@ const Page = () => {
     [term, failing],
   );
   const schedules = useListSchedulesQuery({
-    variables: { filters, pagination: { limit } },
+    variables: { filters, ordering: FAILING_FIRST, pagination: { limit } },
     skip: kind === "signal",
     fetchPolicy: "cache-and-network",
   });
   const triggers = useListTriggersQuery({
-    variables: { filters, pagination: { limit } },
+    variables: { filters, ordering: FAILING_FIRST, pagination: { limit } },
     skip: kind === "clock",
     fetchPolicy: "cache-and-network",
   });

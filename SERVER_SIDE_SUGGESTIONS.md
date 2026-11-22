@@ -102,36 +102,15 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ## rekuest
 
-### `AgentFilter.kind: AgentKind` (perf → correctness)
-- **Add:** a kind filter (`AgentKind` is already an enum).
-- **Workaround:** `rekuest/pages/Home.tsx` loads every agent (no pagination) and narrows by kind on the client. It also re-checks user and supervisor, because new agents are inserted into every cached list. The page becomes incorrect as soon as it is paginated.
+### Action grouping by availability (correctness, low)
+- **Add:** an ordering (or facet count) by availability: runnable now, recently active, offline, no implementation.
+- **Workaround:** `rekuest/pages/ActionsPage.tsx` with `components/lists/actionGroupings.tsx` groups by availability over the loaded page only (limit 100). Grouping by app, collection and kind is ordered on the server.
 
-### Agent counts and a `connected` filter (perf → correctness)
-- **Add:** `AgentFilter.connected: Boolean` (today only `available`, which also needs a fresh heartbeat and counts webhooks) and `agentsStats { count connected }`.
-- **Workaround:** `rekuest/pages/Home.tsx` loads every agent to show "N online · M total" and its empty states, and filters "Online" on the client.
+### Fit changes for blok dependency pickers (perf, unverified)
+- **Workaround:** `components/blokDependencyBindings.tsx` polls candidate agents every 15 s and picked agents every 10 s. That may be to catch changes in which agents fit, which no event reports (unverified).
 
-### Action grouping across pages (correctness)
-- **Add:** `ActionOrder.appIdentifier`, `kind` and `collection` so groups stay together across pages, or a facet-count aggregate.
-- **Workaround:** `rekuest/pages/ActionsPage.tsx` with `components/lists/actionGroupings.tsx` groups the loaded page only and raises the limit to 100; groups are still cut off.
-
-### Automations in one list (correctness)
-- **Add:** a combined `automations` query, or `ScheduleOrder`/`TriggerOrder` by `consecutiveFailures` / state.
-- **Workaround:** `rekuest/pages/AutomationsPage.tsx` loads schedules and triggers separately up to a limit, merges them and puts failing rules first (`lib/automation.ts`). A failing rule just past the limit never shows.
-
-### Task events for one task, asset uploads (perf)
-- **Add:** `Subscription.taskEvents(task: ID!)` and an asset-uploaded event (`Subscription.agentAssets(agent: ID!)`, unless `AgentChangeEvent.update` already carries assets; unverified).
-- **Workaround:**
-  - `rekuest/run/useRun.ts` polls another person's run every 5 s, re-reading its whole event history.
-  - `scene/RekuestAssetHost.tsx` polls every 5 s for an awaited asset.
-  - `components/blokDependencyBindings.tsx` polls candidate agents every 15 s and picked agents every 10 s. That may be to catch changes in which agents fit, which no event reports (unverified).
-
-### Smaller rekuest gaps
-- **Exact blok lookup (correctness, low):** `MaterializedBlokFilter.blokName` (exact match). `scene/RekuestSceneHost.tsx` uses fuzzy `search`, then matches the exact name within one page.
-- **Signal count (cosmetic):** a count for "would have fired on N" (e.g. `matchingSignalCount`). `components/automation/builder/AutomationBuilder.tsx` counts a capped list and shows "N or more".
-
-### Agents and tasks by member (blocks a feature)
-- **Add:** `Agent.createdAt` with `AgentOrder.createdAt` (today only `lastSeen`). Also clarify `TaskFilter.caller` ("client/user/organization"), or add `TaskFilter.user: ID` taking a sub.
-- **Blocks:** agents and tasks in a member's profile feed. Agents are a sidebar list sorted by last seen.
+### Live task events need the new takt (note)
+- `rekuest/run/useRun.ts` follows another person's run with `taskEvents(task, after)`. takt publishes those events from the release that added them; a hub on an older takt image only replays the recorded history, so such a run stops moving until it is reloaded.
 
 ---
 
@@ -163,8 +142,6 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 - **Workaround:** `components/store/storeModel.ts` (behind `AppStorePage.tsx`, `InstalledApps.tsx`, `StoreShelf.tsx`) fetches every release with flavours and deployments, with no pagination. It then groups them into apps, works out deployment, running, pod, hardware and service facts, and filters and sorts on the client.
 
 ### Smaller kabinet gaps
-- **Blok search over descriptions (perf):** `BlokFilter.search` matches names only. The store also matches descriptions, so `components/store/BlokStoreCard.tsx` still searches on the client.
-- **Bloks by context (perf):** `BlokFilter.context`. `components/store/BlokStoreCard.tsx` loads all custom bloks and filters by context. `RepoBlokCard.tsx` scans the same list to see what is installed.
 - **App by identifier (correctness, low):** `app(identifier:)` or `AppFilter.identifier`. `pages/AppStoreRedirect.tsx` uses substring `search` (limit 20), then matches exactly.
 - **Approvals (low):** `ReleaseApprovalFilter.approver` and `active`. `components/store/StoreParts.tsx` and `lib/approvals.ts` work out "installed by me" from all approvals of a release.
 - **Repos by member (blocks a feature):** a creator filter taking a lok sub. `GithubRepoFilter.user` is a GitHub name. This keeps repos out of the profile feed.

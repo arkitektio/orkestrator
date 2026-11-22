@@ -448,12 +448,17 @@ export enum ActionKind {
 }
 
 export type ActionOrder =
-  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
-  { assignable: Ordering; definedAt?: never; estimatedRuntime?: never; usedAt?: never; }
-  |  { assignable?: never; definedAt: Ordering; estimatedRuntime?: never; usedAt?: never; }
+  /** By the identifier of the app the action belongs to, so one app's actions stay together across pages. */
+  { appIdentifier: Ordering; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
+  { appIdentifier?: never; assignable: Ordering; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  /** By the name of the action's first collection (alphabetically): the collection a grouped list files it under. Actions in no collection come last. */
+  { appIdentifier?: never; assignable?: never; collection: Ordering; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt: Ordering; estimatedRuntime?: never; kind?: never; usedAt?: never; }
   |  /** Runnable first, then by the estimate for the object named in the `estimatedRuntime` filter, with no estimate last. Does nothing without that filter. */
-  { assignable?: never; definedAt?: never; estimatedRuntime: Ordering; usedAt?: never; }
-  |  { assignable?: never; definedAt?: never; estimatedRuntime?: never; usedAt: Ordering; };
+  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime: Ordering; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind: Ordering; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt: Ordering; };
 
 export enum ActionScope {
   BridgeGlobalToLocal = 'BRIDGE_GLOBAL_TO_LOCAL',
@@ -736,6 +741,12 @@ export type AgentDependencyInput = {
   version?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Numeric/aggregatable fields of Agent */
+export enum AgentField {
+  InstalledAt = 'INSTALLED_AT',
+  LastSeen = 'LAST_SEEN'
+}
+
 /** A way to filter agents */
 export type AgentFilter = {
   AND?: InputMaybe<AgentFilter>;
@@ -752,6 +763,8 @@ export type AgentFilter = {
   callerOf?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by client ID of the app the agent is registered to */
   clientId?: InputMaybe<Scalars['String']['input']>;
+  /** Agents with a live connection (true): connected, with a fresh heartbeat. False keeps every other agent, webhook agents included. Unlike `available`, a webhook agent is never connected. */
+  connected?: InputMaybe<Scalars['Boolean']['input']>;
   dependency?: InputMaybe<Scalars['ID']['input']>;
   /** Filter based on device */
   deviceId?: InputMaybe<Scalars['ID']['input']>;
@@ -764,6 +777,8 @@ export type AgentFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** The agents with at least one implementation listed under any of these protocols, declared as a hint (`on_scene_annotation`) or inferred. Each agent once, however many of its actions match. */
   implementsProtocols?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Filter by the kind of agent (websocket, webhook, ...) */
+  kind?: InputMaybe<AgentKind>;
   /** Filter by pinned agents */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Agents meeting a port's descriptor constraints (a picker hands them in as $requires). The only descriptor of @rekuest/agent is @rekuest/supervisor; any other key is refused. */
@@ -828,7 +843,8 @@ export type AgentMapping = {
 };
 
 export type AgentOrder =
-  { lastSeen: Ordering; };
+  { installedAt: Ordering; lastSeen?: never; }
+  |  { installedAt?: never; lastSeen: Ordering; };
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentProbeInput = {
@@ -852,11 +868,67 @@ export type AgentSnapshotEvent = {
 
 export type AgentSnapshotEventStatePatchEvent = AgentSnapshotEvent | StatePatchEvent;
 
+export type AgentStats = {
+  __typename?: 'AgentStats';
+  /** Average */
+  avg?: Maybe<Scalars['Float']['output']>;
+  /** Total number of agents in the selection. Ask once with `filters: {connected: true}` (aliased) for how many are online. */
+  count: Scalars['Int']['output'];
+  /** Number of distinct values for the field */
+  distinctCount: Scalars['Int']['output'];
+  /** Maximum */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** Minimum */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
+  /** Sum */
+  sum?: Maybe<Scalars['Float']['output']>;
+};
+
+
+export type AgentStatsAvgArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsDistinctCountArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsMaxArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsMinArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsSeriesArgs = {
+  by: Granularity;
+  field: AgentField;
+  timestampField: AgentTimestampField;
+};
+
+
+export type AgentStatsSumArgs = {
+  field: AgentField;
+};
+
 export type AgentTaskUpdate = {
   __typename?: 'AgentTaskUpdate';
   create?: Maybe<TaskChange>;
   update?: Maybe<TaskChange>;
 };
+
+/** Datetime fields of Agent for bucketing */
+export enum AgentTimestampField {
+  InstalledAt = 'INSTALLED_AT',
+  LastSeen = 'LAST_SEEN'
+}
 
 export type AgentWithValues = {
   __typename?: 'AgentWithValues';
@@ -1006,6 +1078,16 @@ export type Asset = {
   stats?: Maybe<ModelStats>;
   /** An image's width in pixels. Null for other kinds. */
   width?: Maybe<Scalars['Int']['output']>;
+};
+
+/** An asset that was just stored: enough to tell whether it is the one awaited. */
+export type AssetChange = {
+  __typename?: 'AssetChange';
+  id: Scalars['ID']['output'];
+  /** What the file is (AssetKind). */
+  kind: Scalars['String']['output'];
+  /** 'sha256:' and the hex SHA-256 of the file's bytes: what an agent's declared asset names. */
+  ref: Scalars['String']['output'];
 };
 
 /** Where an asset's bytes are: a kulisse store for a 3D model, a media store for an image. */
@@ -1408,6 +1490,8 @@ export type BlokFilter = {
   OR?: InputMaybe<BlokFilter>;
   /** Only bloks whose args accept at least one of these demand sets (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error. */
   anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
+  /** Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action. */
+  contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Only bloks installed from an origin (true) or only ones made here (false). */
@@ -1418,7 +1502,7 @@ export type BlokFilter = {
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Only bloks an app provides (true) or only custom bloks users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by name */
+  /** Search by name or description (case-insensitive substring). */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -3233,6 +3317,8 @@ export type MaterializedBlokFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Only materialized bloks whose blok's args accept at least one of these demand sets. See `BlokFilter.anyDemands`. */
   anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
+  /** Only materializations of the blok with exactly this name (case-sensitive), unlike the substring `search`. */
+  blokName?: InputMaybe<Scalars['String']['input']>;
   /** Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action. */
   contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`. */
@@ -4368,6 +4454,8 @@ export type Query = {
   actions: Array<Action>;
   /** Fetch a specific agent by ID or by app, version and device_id. */
   agent: Agent;
+  /** Statistics about agents: how many (narrowed by filters, e.g. connected or kind) and when they registered or were last seen. */
+  agentStats: AgentStats;
   /** Retrieve all compute agents. */
   agents: Array<Agent>;
   /** The stored asset of this reference ('sha256:...') in the caller's organization, or null if no agent has uploaded it. */
@@ -4422,6 +4510,8 @@ export type Query = {
   interface: Interface;
   /** All interfaces referenced by the org's action ports (derived, not registered). */
   interfaces: Array<Interface>;
+  /** How many of the organization's stored signals of this kind and structure satisfy the conditions: the uncapped count behind `matchingSignals`. Fires nothing. */
+  matchingSignalCount: Scalars['Int']['output'];
   /** A dry run for a trigger not written yet: the organization's stored signals of this kind and structure whose descriptors satisfy the conditions, newest first. Fires nothing. */
   matchingSignals: Array<Signal>;
   /** Get a materialized blok by ID. */
@@ -4581,6 +4671,11 @@ export type QueryAgentArgs = {
 };
 
 
+export type QueryAgentStatsArgs = {
+  filters?: InputMaybe<AgentFilter>;
+};
+
+
 export type QueryAgentsArgs = {
   filters?: InputMaybe<AgentFilter>;
   ordering?: Array<AgentOrder>;
@@ -4727,6 +4822,13 @@ export type QueryInterfaceArgs = {
 
 export type QueryInterfacesArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMatchingSignalCountArgs = {
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  identifier: Scalars['String']['input'];
+  kind: SignalKind;
 };
 
 
@@ -5507,9 +5609,10 @@ export type ScheduleIdInput = {
 };
 
 export type ScheduleOrder =
-  { createdAt: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+  { consecutiveFailures: Ordering; createdAt?: never; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name?: never; updatedAt: Ordering; };
 
 /** Whether a schedule's run may start while its previous one is still open. SKIP: the next run is planned once the previous finished. ALLOW: it is planned as soon as the previous was handed over, so runs may overlap. */
 export enum ScheduleOverlap {
@@ -6239,6 +6342,8 @@ export type Subscription = {
   agentTasks: AgentTaskUpdate;
   /** Subscribe to updates on agent connections and statuses. */
   agents: AgentChangeEvent;
+  /** The organization's assets as they are stored (only those of `refs`, if given): an agent's declared asset becomes available the moment one with its ref arrives. */
+  assets: AssetChange;
   /** Subscribe to all descendant task changes of a task. */
   childTasks: ChildTaskEvent;
   /** Subscribe to changes in implementations. */
@@ -6257,6 +6362,8 @@ export type Subscription = {
   signals: SignalChangeEvent;
   /** Subscribe to updates of state values and patches. */
   stateUpdateEvents: State;
+  /** One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history. */
+  taskEvents: TaskEventChange;
   /** Subscribe to root task changes across the whole organization. */
   tasks: TaskChangeEvent;
   /** Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted. */
@@ -6271,6 +6378,12 @@ export type Subscription = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionAgentTasksArgs = {
   agent: Scalars['ID']['input'];
+};
+
+
+/** Root subscription type for real-time event streams from the system. */
+export type SubscriptionAssetsArgs = {
+  refs?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 
@@ -6308,6 +6421,13 @@ export type SubscriptionProbeEventsArgs = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionStateUpdateEventsArgs = {
   stateId: Scalars['ID']['input'];
+};
+
+
+/** Root subscription type for real-time event streams from the system. */
+export type SubscriptionTaskEventsArgs = {
+  after?: InputMaybe<Scalars['ID']['input']>;
+  task: Scalars['ID']['input'];
 };
 
 
@@ -6632,7 +6752,7 @@ export type TaskFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the canonical args hash (the replay-discovery key) */
   argsHash?: InputMaybe<Scalars['String']['input']>;
-  /** Filter by the caller (client/user/organization) that created the task */
+  /** Filter by the caller that created the task: the ID of a Caller row (one client, user and organization), not a user. For a person use `user`. */
   caller?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the client ID of the app the executing agent is registered to */
   clientId?: InputMaybe<Scalars['ID']['input']>;
@@ -6662,6 +6782,8 @@ export type TaskFilter = {
   state?: InputMaybe<Array<TaskEventKind>>;
   /** Keep the runs this trigger fired */
   trigger?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the user (their sub) on whose behalf the task was created, whatever client they used. */
+  user?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** What is known of a task someone asked about: what its agent said of it, or, where the agent was not asked (it is away, or has not acknowledged the assign yet), what the server knows. */
@@ -7027,9 +7149,10 @@ export type TriggerIdInput = {
 };
 
 export type TriggerOrder =
-  { createdAt: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+  { consecutiveFailures: Ordering; createdAt?: never; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name?: never; updatedAt: Ordering; };
 
 /** Remove a shortcut's binding to a user. */
 export type UnbindShortcutInput = {
@@ -9489,6 +9612,14 @@ export type AgentsQuery = { __typename?: 'Query', agents: Array<(
     & ListAgentFragment
   )> };
 
+export type AgentCountsQueryVariables = Exact<{
+  filters?: InputMaybe<AgentFilter>;
+  online?: InputMaybe<AgentFilter>;
+}>;
+
+
+export type AgentCountsQuery = { __typename?: 'Query', total: { __typename?: 'AgentStats', count: number }, online: { __typename?: 'AgentStats', count: number } };
+
 export type AgentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -9551,6 +9682,17 @@ export type HoverAgentQuery = { __typename?: 'Query', agent: (
     { __typename?: 'Agent' }
     & HoverAgentFragment
   ) };
+
+export type ProfileFeedAgentsQueryVariables = Exact<{
+  filters?: InputMaybe<AgentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedAgentsQuery = { __typename?: 'Query', agents: Array<(
+    { __typename?: 'Agent', installedAt: any }
+    & ListAgentFragment
+  )> };
 
 export type ActionAllowanceFragment = { __typename?: 'ActionAllowance', id: string, key: string, askerKey?: string | null, createdAt: any, app: { __typename?: 'App', id: string, identifier: string }, action?: { __typename?: 'Action', id: string, name: string } | null, asker?: { __typename?: 'Action', id: string, name: string } | null };
 
@@ -9784,6 +9926,15 @@ export type AutomationPinOptionsQueryVariables = Exact<{
 
 
 export type AutomationPinOptionsQuery = { __typename?: 'Query', implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+
+export type MatchingSignalCountQueryVariables = Exact<{
+  kind: SignalKind;
+  identifier: Scalars['String']['input'];
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+}>;
+
+
+export type MatchingSignalCountQuery = { __typename?: 'Query', matchingSignalCount: number };
 
 export type GetBlokQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10560,6 +10711,13 @@ export type WatchAgentsSubscription = { __typename?: 'Subscription', agents: (
     & AgentChangeEventFragment
   ) };
 
+export type WatchAssetsSubscriptionVariables = Exact<{
+  refs?: InputMaybe<Array<Scalars['String']['input']>>;
+}>;
+
+
+export type WatchAssetsSubscription = { __typename?: 'Subscription', assets: { __typename?: 'AssetChange', id: string, ref: string, kind: string } };
+
 export type WatchSchedulesSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -10679,6 +10837,17 @@ export type WatchAgentTasksSubscription = { __typename?: 'Subscription', agentTa
       { __typename?: 'TaskChange' }
       & TaskChangeFragment
     ) | null } };
+
+export type WatchTaskEventsSubscriptionVariables = Exact<{
+  task: Scalars['ID']['input'];
+  after?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type WatchTaskEventsSubscription = { __typename?: 'Subscription', taskEvents: (
+    { __typename?: 'TaskEventChange' }
+    & TaskEventChangeFragment
+  ) };
 
 export type WatchImplementationSubscriptionVariables = Exact<{
   implementation: Scalars['ID']['input'];
@@ -17362,6 +17531,45 @@ export function useAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookO
 export type AgentsQueryHookResult = ReturnType<typeof useAgentsQuery>;
 export type AgentsLazyQueryHookResult = ReturnType<typeof useAgentsLazyQuery>;
 export type AgentsQueryResult = Apollo.QueryResult<AgentsQuery, AgentsQueryVariables>;
+export const AgentCountsDocument = gql`
+    query AgentCounts($filters: AgentFilter, $online: AgentFilter) {
+  total: agentStats(filters: $filters) {
+    count
+  }
+  online: agentStats(filters: $online) {
+    count
+  }
+}
+    `;
+
+/**
+ * __useAgentCountsQuery__
+ *
+ * To run a query within a React component, call `useAgentCountsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAgentCountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAgentCountsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      online: // value for 'online'
+ *   },
+ * });
+ */
+export function useAgentCountsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AgentCountsQuery, AgentCountsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AgentCountsQuery, AgentCountsQueryVariables>(AgentCountsDocument, options);
+      }
+export function useAgentCountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AgentCountsQuery, AgentCountsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AgentCountsQuery, AgentCountsQueryVariables>(AgentCountsDocument, options);
+        }
+export type AgentCountsQueryHookResult = ReturnType<typeof useAgentCountsQuery>;
+export type AgentCountsLazyQueryHookResult = ReturnType<typeof useAgentCountsLazyQuery>;
+export type AgentCountsQueryResult = Apollo.QueryResult<AgentCountsQuery, AgentCountsQueryVariables>;
 export const AgentDocument = gql`
     query Agent($id: ID!) {
   agent(id: $id) {
@@ -17585,6 +17793,47 @@ export function useHoverAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type HoverAgentQueryHookResult = ReturnType<typeof useHoverAgentQuery>;
 export type HoverAgentLazyQueryHookResult = ReturnType<typeof useHoverAgentLazyQuery>;
 export type HoverAgentQueryResult = Apollo.QueryResult<HoverAgentQuery, HoverAgentQueryVariables>;
+export const ProfileFeedAgentsDocument = gql`
+    query ProfileFeedAgents($filters: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{installedAt: DESC}]
+  ) {
+    ...ListAgent
+    installedAt
+  }
+}
+    ${ListAgentFragmentDoc}`;
+
+/**
+ * __useProfileFeedAgentsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedAgentsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedAgentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedAgentsQuery, ProfileFeedAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedAgentsQuery, ProfileFeedAgentsQueryVariables>(ProfileFeedAgentsDocument, options);
+      }
+export function useProfileFeedAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedAgentsQuery, ProfileFeedAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedAgentsQuery, ProfileFeedAgentsQueryVariables>(ProfileFeedAgentsDocument, options);
+        }
+export type ProfileFeedAgentsQueryHookResult = ReturnType<typeof useProfileFeedAgentsQuery>;
+export type ProfileFeedAgentsLazyQueryHookResult = ReturnType<typeof useProfileFeedAgentsLazyQuery>;
+export type ProfileFeedAgentsQueryResult = Apollo.QueryResult<ProfileFeedAgentsQuery, ProfileFeedAgentsQueryVariables>;
 export const MyAllowancesDocument = gql`
     query MyAllowances($action: ID) {
   myAllowances(action: $action) {
@@ -18451,6 +18700,45 @@ export function useAutomationPinOptionsLazyQuery(baseOptions?: ApolloReactHooks.
 export type AutomationPinOptionsQueryHookResult = ReturnType<typeof useAutomationPinOptionsQuery>;
 export type AutomationPinOptionsLazyQueryHookResult = ReturnType<typeof useAutomationPinOptionsLazyQuery>;
 export type AutomationPinOptionsQueryResult = Apollo.QueryResult<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>;
+export const MatchingSignalCountDocument = gql`
+    query MatchingSignalCount($kind: SignalKind!, $identifier: String!, $conditions: AnyDefault) {
+  matchingSignalCount(
+    kind: $kind
+    identifier: $identifier
+    conditions: $conditions
+  )
+}
+    `;
+
+/**
+ * __useMatchingSignalCountQuery__
+ *
+ * To run a query within a React component, call `useMatchingSignalCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMatchingSignalCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMatchingSignalCountQuery({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      identifier: // value for 'identifier'
+ *      conditions: // value for 'conditions'
+ *   },
+ * });
+ */
+export function useMatchingSignalCountQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MatchingSignalCountQuery, MatchingSignalCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MatchingSignalCountQuery, MatchingSignalCountQueryVariables>(MatchingSignalCountDocument, options);
+      }
+export function useMatchingSignalCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MatchingSignalCountQuery, MatchingSignalCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MatchingSignalCountQuery, MatchingSignalCountQueryVariables>(MatchingSignalCountDocument, options);
+        }
+export type MatchingSignalCountQueryHookResult = ReturnType<typeof useMatchingSignalCountQuery>;
+export type MatchingSignalCountLazyQueryHookResult = ReturnType<typeof useMatchingSignalCountLazyQuery>;
+export type MatchingSignalCountQueryResult = Apollo.QueryResult<MatchingSignalCountQuery, MatchingSignalCountQueryVariables>;
 export const GetBlokDocument = gql`
     query GetBlok($id: ID!) {
   blok(id: $id) {
@@ -21284,6 +21572,38 @@ export function useWatchAgentsSubscription(baseOptions?: ApolloReactHooks.Subscr
       }
 export type WatchAgentsSubscriptionHookResult = ReturnType<typeof useWatchAgentsSubscription>;
 export type WatchAgentsSubscriptionResult = Apollo.SubscriptionResult<WatchAgentsSubscription>;
+export const WatchAssetsDocument = gql`
+    subscription WatchAssets($refs: [String!]) {
+  assets(refs: $refs) {
+    id
+    ref
+    kind
+  }
+}
+    `;
+
+/**
+ * __useWatchAssetsSubscription__
+ *
+ * To run a query within a React component, call `useWatchAssetsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchAssetsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchAssetsSubscription({
+ *   variables: {
+ *      refs: // value for 'refs'
+ *   },
+ * });
+ */
+export function useWatchAssetsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchAssetsSubscription, WatchAssetsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchAssetsSubscription, WatchAssetsSubscriptionVariables>(WatchAssetsDocument, options);
+      }
+export type WatchAssetsSubscriptionHookResult = ReturnType<typeof useWatchAssetsSubscription>;
+export type WatchAssetsSubscriptionResult = Apollo.SubscriptionResult<WatchAssetsSubscription>;
 export const WatchSchedulesDocument = gql`
     subscription WatchSchedules {
   schedules {
@@ -21637,6 +21957,37 @@ export function useWatchAgentTasksSubscription(baseOptions: ApolloReactHooks.Sub
       }
 export type WatchAgentTasksSubscriptionHookResult = ReturnType<typeof useWatchAgentTasksSubscription>;
 export type WatchAgentTasksSubscriptionResult = Apollo.SubscriptionResult<WatchAgentTasksSubscription>;
+export const WatchTaskEventsDocument = gql`
+    subscription WatchTaskEvents($task: ID!, $after: ID) {
+  taskEvents(task: $task, after: $after) {
+    ...TaskEventChange
+  }
+}
+    ${TaskEventChangeFragmentDoc}`;
+
+/**
+ * __useWatchTaskEventsSubscription__
+ *
+ * To run a query within a React component, call `useWatchTaskEventsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchTaskEventsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchTaskEventsSubscription({
+ *   variables: {
+ *      task: // value for 'task'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useWatchTaskEventsSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchTaskEventsSubscription, WatchTaskEventsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchTaskEventsSubscription, WatchTaskEventsSubscriptionVariables>(WatchTaskEventsDocument, options);
+      }
+export type WatchTaskEventsSubscriptionHookResult = ReturnType<typeof useWatchTaskEventsSubscription>;
+export type WatchTaskEventsSubscriptionResult = Apollo.SubscriptionResult<WatchTaskEventsSubscription>;
 export const WatchImplementationDocument = gql`
     subscription WatchImplementation($implementation: ID!) {
   implementationChange(implementation: $implementation) {

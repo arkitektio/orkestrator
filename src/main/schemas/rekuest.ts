@@ -441,12 +441,17 @@ export enum ActionKind {
 }
 
 export type ActionOrder =
-  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
-  { assignable: Ordering; definedAt?: never; estimatedRuntime?: never; usedAt?: never; }
-  |  { assignable?: never; definedAt: Ordering; estimatedRuntime?: never; usedAt?: never; }
+  /** By the identifier of the app the action belongs to, so one app's actions stay together across pages. */
+  { appIdentifier: Ordering; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
+  { appIdentifier?: never; assignable: Ordering; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  /** By the name of the action's first collection (alphabetically): the collection a grouped list files it under. Actions in no collection come last. */
+  { appIdentifier?: never; assignable?: never; collection: Ordering; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt: Ordering; estimatedRuntime?: never; kind?: never; usedAt?: never; }
   |  /** Runnable first, then by the estimate for the object named in the `estimatedRuntime` filter, with no estimate last. Does nothing without that filter. */
-  { assignable?: never; definedAt?: never; estimatedRuntime: Ordering; usedAt?: never; }
-  |  { assignable?: never; definedAt?: never; estimatedRuntime?: never; usedAt: Ordering; };
+  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime: Ordering; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind: Ordering; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt: Ordering; };
 
 export enum ActionScope {
   BridgeGlobalToLocal = 'BRIDGE_GLOBAL_TO_LOCAL',
@@ -729,6 +734,12 @@ export type AgentDependencyInput = {
   version?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Numeric/aggregatable fields of Agent */
+export enum AgentField {
+  InstalledAt = 'INSTALLED_AT',
+  LastSeen = 'LAST_SEEN'
+}
+
 /** A way to filter agents */
 export type AgentFilter = {
   AND?: InputMaybe<AgentFilter>;
@@ -745,6 +756,8 @@ export type AgentFilter = {
   callerOf?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by client ID of the app the agent is registered to */
   clientId?: InputMaybe<Scalars['String']['input']>;
+  /** Agents with a live connection (true): connected, with a fresh heartbeat. False keeps every other agent, webhook agents included. Unlike `available`, a webhook agent is never connected. */
+  connected?: InputMaybe<Scalars['Boolean']['input']>;
   dependency?: InputMaybe<Scalars['ID']['input']>;
   /** Filter based on device */
   deviceId?: InputMaybe<Scalars['ID']['input']>;
@@ -757,6 +770,8 @@ export type AgentFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** The agents with at least one implementation listed under any of these protocols, declared as a hint (`on_scene_annotation`) or inferred. Each agent once, however many of its actions match. */
   implementsProtocols?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Filter by the kind of agent (websocket, webhook, ...) */
+  kind?: InputMaybe<AgentKind>;
   /** Filter by pinned agents */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Agents meeting a port's descriptor constraints (a picker hands them in as $requires). The only descriptor of @rekuest/agent is @rekuest/supervisor; any other key is refused. */
@@ -821,7 +836,8 @@ export type AgentMapping = {
 };
 
 export type AgentOrder =
-  { lastSeen: Ordering; };
+  { installedAt: Ordering; lastSeen?: never; }
+  |  { installedAt?: never; lastSeen: Ordering; };
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentProbeInput = {
@@ -845,11 +861,67 @@ export type AgentSnapshotEvent = {
 
 export type AgentSnapshotEventStatePatchEvent = AgentSnapshotEvent | StatePatchEvent;
 
+export type AgentStats = {
+  __typename?: 'AgentStats';
+  /** Average */
+  avg?: Maybe<Scalars['Float']['output']>;
+  /** Total number of agents in the selection. Ask once with `filters: {connected: true}` (aliased) for how many are online. */
+  count: Scalars['Int']['output'];
+  /** Number of distinct values for the field */
+  distinctCount: Scalars['Int']['output'];
+  /** Maximum */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** Minimum */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
+  /** Sum */
+  sum?: Maybe<Scalars['Float']['output']>;
+};
+
+
+export type AgentStatsAvgArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsDistinctCountArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsMaxArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsMinArgs = {
+  field: AgentField;
+};
+
+
+export type AgentStatsSeriesArgs = {
+  by: Granularity;
+  field: AgentField;
+  timestampField: AgentTimestampField;
+};
+
+
+export type AgentStatsSumArgs = {
+  field: AgentField;
+};
+
 export type AgentTaskUpdate = {
   __typename?: 'AgentTaskUpdate';
   create?: Maybe<TaskChange>;
   update?: Maybe<TaskChange>;
 };
+
+/** Datetime fields of Agent for bucketing */
+export enum AgentTimestampField {
+  InstalledAt = 'INSTALLED_AT',
+  LastSeen = 'LAST_SEEN'
+}
 
 export type AgentWithValues = {
   __typename?: 'AgentWithValues';
@@ -999,6 +1071,16 @@ export type Asset = {
   stats?: Maybe<ModelStats>;
   /** An image's width in pixels. Null for other kinds. */
   width?: Maybe<Scalars['Int']['output']>;
+};
+
+/** An asset that was just stored: enough to tell whether it is the one awaited. */
+export type AssetChange = {
+  __typename?: 'AssetChange';
+  id: Scalars['ID']['output'];
+  /** What the file is (AssetKind). */
+  kind: Scalars['String']['output'];
+  /** 'sha256:' and the hex SHA-256 of the file's bytes: what an agent's declared asset names. */
+  ref: Scalars['String']['output'];
 };
 
 /** Where an asset's bytes are: a kulisse store for a 3D model, a media store for an image. */
@@ -1411,6 +1493,8 @@ export type BlokFilter = {
   OR?: InputMaybe<BlokFilter>;
   /** Only bloks whose args accept at least one of these demand sets (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error. */
   anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
+  /** Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action. */
+  contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Only bloks installed from an origin (true) or only ones made here (false). */
@@ -1421,7 +1505,7 @@ export type BlokFilter = {
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Only bloks an app provides (true) or only custom bloks users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by name */
+  /** Search by name or description (case-insensitive substring). */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -3252,6 +3336,8 @@ export type MaterializedBlokFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Only materialized bloks whose blok's args accept at least one of these demand sets. See `BlokFilter.anyDemands`. */
   anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
+  /** Only materializations of the blok with exactly this name (case-sensitive), unlike the substring `search`. */
+  blokName?: InputMaybe<Scalars['String']['input']>;
   /** Only bloks that render in one of these contexts: PANEL and SCENE are interfaces to open, LOGO draws an agent or an action. */
   contexts?: InputMaybe<Array<ComponentContext>>;
   /** Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`. */
@@ -4422,6 +4508,8 @@ export type Query = {
   actions: Array<Action>;
   /** Fetch a specific agent by ID or by app, version and device_id. */
   agent: Agent;
+  /** Statistics about agents: how many (narrowed by filters, e.g. connected or kind) and when they registered or were last seen. */
+  agentStats: AgentStats;
   /** Retrieve all compute agents. */
   agents: Array<Agent>;
   /** The stored asset of this reference ('sha256:...') in the caller's organization, or null if no agent has uploaded it. */
@@ -4476,6 +4564,8 @@ export type Query = {
   interface: Interface;
   /** All interfaces referenced by the org's action ports (derived, not registered). */
   interfaces: Array<Interface>;
+  /** How many of the organization's stored signals of this kind and structure satisfy the conditions: the uncapped count behind `matchingSignals`. Fires nothing. */
+  matchingSignalCount: Scalars['Int']['output'];
   /** A dry run for a trigger not written yet: the organization's stored signals of this kind and structure whose descriptors satisfy the conditions, newest first. Fires nothing. */
   matchingSignals: Array<Signal>;
   /** Get a materialized blok by ID. */
@@ -4635,6 +4725,11 @@ export type QueryAgentArgs = {
 };
 
 
+export type QueryAgentStatsArgs = {
+  filters?: InputMaybe<AgentFilter>;
+};
+
+
 export type QueryAgentsArgs = {
   filters?: InputMaybe<AgentFilter>;
   ordering?: Array<AgentOrder>;
@@ -4781,6 +4876,13 @@ export type QueryInterfaceArgs = {
 
 export type QueryInterfacesArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMatchingSignalCountArgs = {
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  identifier: Scalars['String']['input'];
+  kind: SignalKind;
 };
 
 
@@ -5565,9 +5667,10 @@ export type ScheduleIdInput = {
 };
 
 export type ScheduleOrder =
-  { createdAt: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+  { consecutiveFailures: Ordering; createdAt?: never; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name?: never; updatedAt: Ordering; };
 
 /** Whether a schedule's run may start while its previous one is still open. SKIP: the next run is planned once the previous finished. ALLOW: it is planned as soon as the previous was handed over, so runs may overlap. */
 export enum ScheduleOverlap {
@@ -6297,6 +6400,8 @@ export type Subscription = {
   agentTasks: AgentTaskUpdate;
   /** Subscribe to updates on agent connections and statuses. */
   agents: AgentChangeEvent;
+  /** The organization's assets as they are stored (only those of `refs`, if given): an agent's declared asset becomes available the moment one with its ref arrives. */
+  assets: AssetChange;
   /** Subscribe to all descendant task changes of a task. */
   childTasks: ChildTaskEvent;
   /** Subscribe to changes in implementations. */
@@ -6315,6 +6420,8 @@ export type Subscription = {
   signals: SignalChangeEvent;
   /** Subscribe to updates of state values and patches. */
   stateUpdateEvents: State;
+  /** One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history. */
+  taskEvents: TaskEventChange;
   /** Subscribe to root task changes across the whole organization. */
   tasks: TaskChangeEvent;
   /** Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted. */
@@ -6329,6 +6436,12 @@ export type Subscription = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionAgentTasksArgs = {
   agent: Scalars['ID']['input'];
+};
+
+
+/** Root subscription type for real-time event streams from the system. */
+export type SubscriptionAssetsArgs = {
+  refs?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 
@@ -6366,6 +6479,13 @@ export type SubscriptionProbeEventsArgs = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionStateUpdateEventsArgs = {
   stateId: Scalars['ID']['input'];
+};
+
+
+/** Root subscription type for real-time event streams from the system. */
+export type SubscriptionTaskEventsArgs = {
+  after?: InputMaybe<Scalars['ID']['input']>;
+  task: Scalars['ID']['input'];
 };
 
 
@@ -6690,7 +6810,7 @@ export type TaskFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the canonical args hash (the replay-discovery key) */
   argsHash?: InputMaybe<Scalars['String']['input']>;
-  /** Filter by the caller (client/user/organization) that created the task */
+  /** Filter by the caller that created the task: the ID of a Caller row (one client, user and organization), not a user. For a person use `user`. */
   caller?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the client ID of the app the executing agent is registered to */
   clientId?: InputMaybe<Scalars['ID']['input']>;
@@ -6720,6 +6840,8 @@ export type TaskFilter = {
   state?: InputMaybe<Array<TaskEventKind>>;
   /** Keep the runs this trigger fired */
   trigger?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the user (their sub) on whose behalf the task was created, whatever client they used. */
+  user?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** What is known of a task someone asked about: what its agent said of it, or, where the agent was not asked (it is away, or has not acknowledged the assign yet), what the server knows. */
@@ -7085,9 +7207,10 @@ export type TriggerIdInput = {
 };
 
 export type TriggerOrder =
-  { createdAt: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+  { consecutiveFailures: Ordering; createdAt?: never; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { consecutiveFailures?: never; createdAt?: never; name?: never; updatedAt: Ordering; };
 
 /** Remove a shortcut's binding to a user. */
 export type UnbindShortcutInput = {
@@ -8455,6 +8578,14 @@ export type AgentsQueryVariables = Exact<{
 
 export type AgentsQuery = { __typename?: 'Query', agents: Array<{ __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, supervisor?: string | null, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null }> };
 
+export type AgentCountsQueryVariables = Exact<{
+  filters?: InputMaybe<AgentFilter>;
+  online?: InputMaybe<AgentFilter>;
+}>;
+
+
+export type AgentCountsQuery = { __typename?: 'Query', total: { __typename?: 'AgentStats', count: number }, online: { __typename?: 'AgentStats', count: number } };
+
 export type AgentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -8502,6 +8633,14 @@ export type HoverAgentQueryVariables = Exact<{
 
 
 export type HoverAgentQuery = { __typename?: 'Query', agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, supervisor?: string | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }>, logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null } };
+
+export type ProfileFeedAgentsQueryVariables = Exact<{
+  filters?: InputMaybe<AgentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedAgentsQuery = { __typename?: 'Query', agents: Array<{ __typename?: 'Agent', installedAt: any, id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, supervisor?: string | null, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null }> };
 
 export type ActionAllowanceFragment = { __typename?: 'ActionAllowance', id: string, key: string, askerKey?: string | null, createdAt: any, app: { __typename?: 'App', id: string, identifier: string }, action?: { __typename?: 'Action', id: string, name: string } | null, asker?: { __typename?: 'Action', id: string, name: string } | null };
 
@@ -8675,6 +8814,15 @@ export type AutomationPinOptionsQueryVariables = Exact<{
 
 
 export type AutomationPinOptionsQuery = { __typename?: 'Query', implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+
+export type MatchingSignalCountQueryVariables = Exact<{
+  kind: SignalKind;
+  identifier: Scalars['String']['input'];
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+}>;
+
+
+export type MatchingSignalCountQuery = { __typename?: 'Query', matchingSignalCount: number };
 
 export type GetBlokQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -9238,6 +9386,13 @@ export type WatchAgentsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 export type WatchAgentsSubscription = { __typename?: 'Subscription', agents: { __typename?: 'AgentChangeEvent', delete?: string | null, create?: { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string } | null, update?: { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string } | null } };
 
+export type WatchAssetsSubscriptionVariables = Exact<{
+  refs?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+}>;
+
+
+export type WatchAssetsSubscription = { __typename?: 'Subscription', assets: { __typename?: 'AssetChange', id: string, ref: string, kind: string } };
+
 export type WatchSchedulesSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -9306,6 +9461,14 @@ export type WatchAgentTasksSubscriptionVariables = Exact<{
 
 
 export type WatchAgentTasksSubscription = { __typename?: 'Subscription', agentTasks: { __typename?: 'AgentTaskUpdate', create?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null, update?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null } };
+
+export type WatchTaskEventsSubscriptionVariables = Exact<{
+  task: Scalars['ID']['input'];
+  after?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type WatchTaskEventsSubscription = { __typename?: 'Subscription', taskEvents: { __typename?: 'TaskEventChange', id: string, task: string, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any } };
 
 export type WatchImplementationSubscriptionVariables = Exact<{
   implementation: Scalars['ID']['input'];
@@ -13630,6 +13793,16 @@ export const AgentsDocument = gql`
   }
 }
     ${ListAgentFragmentDoc}`;
+export const AgentCountsDocument = gql`
+    query AgentCounts($filters: AgentFilter, $online: AgentFilter) {
+  total: agentStats(filters: $filters) {
+    count
+  }
+  online: agentStats(filters: $online) {
+    count
+  }
+}
+    `;
 export const AgentDocument = gql`
     query Agent($id: ID!) {
   agent(id: $id) {
@@ -13679,6 +13852,18 @@ export const HoverAgentDocument = gql`
   }
 }
     ${HoverAgentFragmentDoc}`;
+export const ProfileFeedAgentsDocument = gql`
+    query ProfileFeedAgents($filters: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{installedAt: DESC}]
+  ) {
+    ...ListAgent
+    installedAt
+  }
+}
+    ${ListAgentFragmentDoc}`;
 export const MyAllowancesDocument = gql`
     query MyAllowances($action: ID) {
   myAllowances(action: $action) {
@@ -13887,6 +14072,15 @@ export const AutomationPinOptionsDocument = gql`
       connected
     }
   }
+}
+    `;
+export const MatchingSignalCountDocument = gql`
+    query MatchingSignalCount($kind: SignalKind!, $identifier: String!, $conditions: AnyDefault) {
+  matchingSignalCount(
+    kind: $kind
+    identifier: $identifier
+    conditions: $conditions
+  )
 }
     `;
 export const GetBlokDocument = gql`
@@ -14601,6 +14795,15 @@ export const WatchAgentsDocument = gql`
   }
 }
     ${AgentChangeEventFragmentDoc}`;
+export const WatchAssetsDocument = gql`
+    subscription WatchAssets($refs: [String!]) {
+  assets(refs: $refs) {
+    id
+    ref
+    kind
+  }
+}
+    `;
 export const WatchSchedulesDocument = gql`
     subscription WatchSchedules {
   schedules {
@@ -14704,6 +14907,13 @@ export const WatchAgentTasksDocument = gql`
   }
 }
     ${TaskChangeFragmentDoc}`;
+export const WatchTaskEventsDocument = gql`
+    subscription WatchTaskEvents($task: ID!, $after: ID) {
+  taskEvents(task: $task, after: $after) {
+    ...TaskEventChange
+  }
+}
+    ${TaskEventChangeFragmentDoc}`;
 export const WatchImplementationDocument = gql`
     subscription WatchImplementation($implementation: ID!) {
   implementationChange(implementation: $implementation) {
@@ -14996,6 +15206,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     Agents(variables?: AgentsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AgentsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<AgentsQuery>({ document: AgentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Agents', 'query', variables);
     },
+    AgentCounts(variables?: AgentCountsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AgentCountsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AgentCountsQuery>({ document: AgentCountsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AgentCounts', 'query', variables);
+    },
     Agent(variables: AgentQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AgentQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<AgentQuery>({ document: AgentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Agent', 'query', variables);
     },
@@ -15013,6 +15226,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     HoverAgent(variables: HoverAgentQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<HoverAgentQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<HoverAgentQuery>({ document: HoverAgentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'HoverAgent', 'query', variables);
+    },
+    ProfileFeedAgents(variables?: ProfileFeedAgentsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ProfileFeedAgentsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ProfileFeedAgentsQuery>({ document: ProfileFeedAgentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ProfileFeedAgents', 'query', variables);
     },
     MyAllowances(variables?: MyAllowancesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyAllowancesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MyAllowancesQuery>({ document: MyAllowancesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyAllowances', 'query', variables);
@@ -15082,6 +15298,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     AutomationPinOptions(variables: AutomationPinOptionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AutomationPinOptionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<AutomationPinOptionsQuery>({ document: AutomationPinOptionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AutomationPinOptions', 'query', variables);
+    },
+    MatchingSignalCount(variables: MatchingSignalCountQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MatchingSignalCountQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MatchingSignalCountQuery>({ document: MatchingSignalCountDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MatchingSignalCount', 'query', variables);
     },
     GetBlok(variables: GetBlokQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetBlokQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetBlokQuery>({ document: GetBlokDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetBlok', 'query', variables);
@@ -15305,6 +15524,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     WatchAgents(variables?: WatchAgentsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAgentsSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchAgentsSubscription>({ document: WatchAgentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAgents', 'subscription', variables);
     },
+    WatchAssets(variables?: WatchAssetsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAssetsSubscription> {
+      return withWrapper((wrappedRequestHeaders) => client.request<WatchAssetsSubscription>({ document: WatchAssetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAssets', 'subscription', variables);
+    },
     WatchSchedules(variables?: WatchSchedulesSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchSchedulesSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchSchedulesSubscription>({ document: WatchSchedulesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchSchedules', 'subscription', variables);
     },
@@ -15337,6 +15559,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     WatchAgentTasks(variables: WatchAgentTasksSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAgentTasksSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchAgentTasksSubscription>({ document: WatchAgentTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAgentTasks', 'subscription', variables);
+    },
+    WatchTaskEvents(variables: WatchTaskEventsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchTaskEventsSubscription> {
+      return withWrapper((wrappedRequestHeaders) => client.request<WatchTaskEventsSubscription>({ document: WatchTaskEventsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchTaskEvents', 'subscription', variables);
     },
     WatchImplementation(variables: WatchImplementationSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchImplementationSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchImplementationSubscription>({ document: WatchImplementationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchImplementation', 'subscription', variables);

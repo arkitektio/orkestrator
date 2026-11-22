@@ -15,6 +15,7 @@ import {
   CreateAssetDocument,
   RequestAssetUploadDocument,
   useAgentAssetsQuery,
+  useWatchAssetsSubscription,
   type AgentAssetFragment,
   type AssetPolicyQuery,
   type CreateAssetMutation,
@@ -116,8 +117,6 @@ const useAssetSource = (declared: AgentAssetFragment | undefined): BlokAssetSour
   );
 };
 
-const AWAITED_ASSET_POLL_MS = 5000;
-
 /** The agent each dependency key of the blok being rendered is bound to. */
 const BoundAgentsContext = React.createContext<ReadonlyMap<string, string>>(new Map());
 
@@ -126,18 +125,19 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
   const endpoint = useDatalayerEndpoint();
   const profileId = Arkitekt.useActiveProfileId();
   const agent = React.useContext(BoundAgentsContext).get(dependency);
-  const {data, loading, error, startPolling, stopPolling} = useAgentAssetsQuery({
+  const {data, loading, error, refetch} = useAgentAssetsQuery({
     variables: {id: agent ?? ''},
     skip: !agent || !name,
   });
 
   const declared = data?.agent.assets.find(candidate => candidate.name === name);
   const awaited = Boolean(declared) && !declared?.asset;
-  React.useEffect(() => {
-    if (!awaited) return;
-    startPolling(AWAITED_ASSET_POLL_MS);
-    return stopPolling;
-  }, [awaited, startPolling, stopPolling]);
+  // An awaited asset is read again once one with its ref is stored (whoever uploads it).
+  useWatchAssetsSubscription({
+    variables: {refs: declared ? [declared.ref] : []},
+    skip: !awaited,
+    onData: () => void refetch(),
+  });
 
   const source = useAssetSource(declared);
   const stored = declared?.asset?.ref;

@@ -40,6 +40,7 @@ import { REKUEST_OPTION_SOURCES } from "./options";
 import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
 import { REKUEST_PROFILE_SECTIONS } from "./profile/sections";
+import { REKUEST_PROFILE_FEED } from "./profile/feed";
 import { RekuestEntitySearch } from "./search";
 import { PinnedSource } from "./palette/PinnedSource";
 import { ClientFailedTasks } from "./sections/ClientFailedTasks";
@@ -141,6 +142,8 @@ export const REKUEST_MODULE = defineModule({
     // One "Run on" picker per menu, around (not inside) its command list.
     menuWrappers: [RunOnSubmenu],
     profileSections: REKUEST_PROFILE_SECTIONS,
+    // Their agents and runs, in the profile's newest-first feed.
+    profileFeed: REKUEST_PROFILE_FEED,
     background: [
       TaskUpdater,
       AgentUpdater,

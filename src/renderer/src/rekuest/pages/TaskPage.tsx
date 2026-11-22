@@ -207,7 +207,7 @@ export const TPage = asDetailQueryRoute(
     );
 
     // The run as its action draws it, when the action declared a blok for the panel.
-    // The viewer's own runs follow every event through the cache; anyone else's is polled.
+    // The viewer's own runs follow every event through the cache; anyone else's streams its events.
     const own = useTask({ task: data.task.id });
     const { task: run, error: runError } = useRunTask(data.task.id, {
       follow: own === undefined,

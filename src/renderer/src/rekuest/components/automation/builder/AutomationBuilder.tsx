@@ -34,7 +34,7 @@ import {
   useCreateScheduleMutation,
   useCreateTriggerMutation,
   useDetailActionQuery,
-  useMatchingSignalsQuery,
+  useMatchingSignalCountQuery,
   useSignalDeclarationsQuery,
   useUpdateScheduleMutation,
   useUpdateTriggerMutation,
@@ -82,8 +82,6 @@ const positiveInt = (value: string) => {
   const number = Number.parseInt(value, 10);
   return Number.isFinite(number) && number > 0 ? number : null;
 };
-
-const MATCH_LIMIT = 20;
 
 export const BuilderLoading = ({ title }: { title: string }) => (
   <div className="space-y-4">
@@ -181,23 +179,22 @@ const MatchingHint = ({
 }) => {
   const debounced = useDebounce(conditions, 400);
   const checked = useMemo(() => toWireConditions(debounced), [debounced]);
-  const { data } = useMatchingSignalsQuery({
+  const { data } = useMatchingSignalCountQuery({
     variables: {
       kind: when.kind,
       identifier: when.identifier,
       conditions: checked.ok ? checked.conditions : [],
-      limit: MATCH_LIMIT,
     },
     skip: !checked.ok,
     fetchPolicy: "cache-and-network",
   });
   if (!checked.ok || !data) return null;
-  const count = data.matchingSignals.length;
+  const count = data.matchingSignalCount;
   return (
     <p className="text-xs text-muted-foreground">
       {count === 0
         ? "No stored signal would have fired this."
-        : `Would have fired on ${count >= MATCH_LIMIT ? `${MATCH_LIMIT} or more` : count} of the stored signals.`}
+        : `Would have fired on ${count} of the stored signals.`}
     </p>
   );
 };

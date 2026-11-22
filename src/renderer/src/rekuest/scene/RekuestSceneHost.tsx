@@ -27,8 +27,10 @@ const MaterializedBlokCard = ({id}: {id: string}) => (
 );
 
 const NamedBlok = ({name}: {name: string}) => {
-  const {data, loading} = useListMaterializedBloksQuery({variables: {filters: {search: name}}});
-  const match = data?.materializedBloks.find(candidate => candidate.blok.name === name);
+  const {data, loading} = useListMaterializedBloksQuery({
+    variables: {filters: {blokName: name}, pagination: {limit: 1}},
+  });
+  const match = data?.materializedBloks[0];
   if (match) return <MaterializedBlokCard id={match.id} />;
   return <div className="text-xs text-muted-foreground">{loading ? 'Loading…' : `No blok named "${name}".`}</div>;
 };

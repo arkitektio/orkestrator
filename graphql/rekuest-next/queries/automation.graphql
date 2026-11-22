@@ -169,3 +169,9 @@ query AutomationPinOptions($action: ID!) {
     }
   }
 }
+
+# How many stored signals a rule being built would have fired on: counted by the
+# server, uncapped.
+query MatchingSignalCount($kind: SignalKind!, $identifier: String!, $conditions: AnyDefault) {
+  matchingSignalCount(kind: $kind, identifier: $identifier, conditions: $conditions)
+}
