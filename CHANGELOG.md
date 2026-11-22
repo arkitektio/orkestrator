@@ -1,3 +1,26 @@
+# [8.20.0](https://github.com/arkitektio/orkestrator/compare/v8.19.0...v8.20.0) (2026-11-22)
+
+
+### Bug Fixes
+
+* **omeroark:** paginate the project, dataset and image lists ([1b0fd27](https://github.com/arkitektio/orkestrator/commit/1b0fd27d03fda5dce3d5a796c492c4d9b0b89284))
+* **rekuest,kabinet:** ask the server for what it already filters ([19ec452](https://github.com/arkitektio/orkestrator/commit/19ec4524cbdbad0853e1b3e84bee58c879b585af))
+
+
+### Features
+
+* **lok:** one team-focused Team page ([bd42f31](https://github.com/arkitektio/orkestrator/commit/bd42f31b898d86f4df7d6abf16e3045ddf32130e))
+* **profile:** a member's work across every service; server filters in mikro and kraph ([e3a14d5](https://github.com/arkitektio/orkestrator/commit/e3a14d5f828f123462284a4d9655dda20e4f7c2a))
+
+
+### Performance Improvements
+
+* **boot:** load every split chunk before the first render; warm DuckDB and WebGPU ([eb62407](https://github.com/arkitektio/orkestrator/commit/eb62407f0dba7b18542b48805eabf60b497fb497))
+* **boot:** parse GraphQL documents on first use, code-cache the app scheme ([a942140](https://github.com/arkitektio/orkestrator/commit/a942140b28429db18f80f1ef2dcb01fcbfadd593))
+* **idle:** stop hidden blok scenes, still update label, no polls while hidden ([a4477f0](https://github.com/arkitektio/orkestrator/commit/a4477f024c719c117f67cc2c503ad28d092d370b))
+* **scene:** one decoded-chunk budget for every scene in the window ([aab6318](https://github.com/arkitektio/orkestrator/commit/aab63188e2f6117a4fd13c4a36354a3fca18770c))
+* **zarr:** stop codec workers and empty module caches after a quiet minute ([133d82d](https://github.com/arkitektio/orkestrator/commit/133d82d08aa31b149c7c3f038f6bbc6b1457c6d0))
+
 # [8.19.0](https://github.com/arkitektio/orkestrator/compare/v8.18.0...v8.19.0) (2026-11-21)
 
 
