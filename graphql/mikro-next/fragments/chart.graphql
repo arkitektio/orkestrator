@@ -38,6 +38,10 @@ fragment ChartLayerCommon on ChartLayer {
   visible
   order
   opacity
+  # The value range its row is drawn over, as an autoscale stored it; null
+  # until one did (the first data seeds it).
+  valueMin
+  valueMax
   # RGBA; null lets the viewer choose.
   color
   # PLACED | CONDITIONAL | UNREGISTERED | UNMAPPABLE: four different
@@ -254,6 +258,8 @@ fragment ChartLayerStyle on ChartLayer {
   visible
   order
   opacity
+  valueMin
+  valueMax
   color
   ... on TraceChartLayer {
     mark

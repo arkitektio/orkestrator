@@ -10,5 +10,6 @@ subscription WatchLenses($kind: LensKind, $container: ID) {
       ...ListLens
     }
     delete
+    deleteKind
   }
 }

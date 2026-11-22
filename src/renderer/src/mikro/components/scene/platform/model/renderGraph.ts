@@ -53,8 +53,8 @@ export type TransferFn = {
   climMax: number | null;
   colormap: ColorMap | null;
   color: number[] | null;
-  /** Session-local color gradient; when ≥2 are present they take precedence
-   * over `colormap`/`color` for the LUT row. */
+  /** The color gradient (server-persisted `colorStops`); when ≥2 are present
+   * they take precedence over `colormap`/`color` for the LUT row. */
   colorStops: TransferStop[] | null;
   /** The intensity transfer curve (server-persisted `stops`). */
   stops: TransferCurveStop[] | null;
@@ -254,9 +254,7 @@ const parseTransfer = (transfer: Partial<TransferFn> | null | undefined): Transf
   climMax: transfer?.climMax ?? null,
   colormap: transfer?.colormap ?? null,
   color: transfer?.color ?? null,
-  // Session-local only — a fragment never carries it, a re-parse of domain
-  // state preserves it.
-  colorStops: transfer?.colorStops ?? null,
+  colorStops: transfer?.colorStops?.map((stop) => ({ position: stop.position, color: [...stop.color] })) ?? null,
   stops: parseCurveStops(transfer?.stops),
   gamma: transfer?.gamma ?? null,
   opacity: transfer?.opacity ?? null,
@@ -533,8 +531,11 @@ const serializeTransfer = (transfer: TransferFn): TransferFunctionInput => ({
   gamma: transfer.gamma,
   opacity: transfer.opacity,
   invert: transfer.invert,
-  // The intensity CURVE persists; `colorStops` (the session-local color
-  // gradient) deliberately does not — the server has no field for it.
+  // Both persist: the colour gradient and the intensity CURVE.
+  colorStops:
+    transfer.colorStops && transfer.colorStops.length >= 2
+      ? transfer.colorStops.map((stop) => ({ position: stop.position, color: toRgba(stop.color) ?? [0, 0, 0, 255] }))
+      : null,
   stops:
     transfer.stops && transfer.stops.length >= 2
       ? transfer.stops.map((stop) => ({ position: stop.position, value: stop.value }))

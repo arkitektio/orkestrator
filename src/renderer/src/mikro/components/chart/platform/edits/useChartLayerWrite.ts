@@ -43,6 +43,8 @@ export const useChartLayerWrite = () => {
               lineWidth: patch.lineWidth ?? undefined,
               markerSize: patch.markerSize ?? undefined,
               markerShape: (patch.markerShape ?? undefined) as ChartMarkerShape | undefined,
+              valueMin: patch.valueMin ?? undefined,
+              valueMax: patch.valueMax ?? undefined,
             },
           },
         });

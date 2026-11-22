@@ -32,13 +32,9 @@ import { LayerCardActions } from "../../platform/layerui/LayerCardActions";
  * file reads the way it does:
  *
  *  - **STORED** (`updateTrackLayer`): line width, colouring column, colormap,
- *    opacity, visibility. These now have a home on the server — the mutation
- *    was added alongside this card, since without it every knob here would have
- *    been a setting that silently forgot itself on reload.
- *  - **SESSION** (`sceneStore.trackTailWindows`): the tail length. Deliberately
- *    NOT stored, and not for want of a field: a tail window is a property of how
- *    you are looking at a trajectory, not of the trajectory. Two people reading
- *    one scene should not fight over it.
+ *    opacity, visibility and the tail length (`tailWindow`), so none of them
+ *    forgets itself on reload. The tail previews through the session store
+ *    (`sceneStore.trackTailWindows`) while dragging and is stored on release.
  *  - **FACTS** (`Badge`): which columns provide the coordinates, the time and
  *    the track identity. Shown, never edited. The dataset declares them by
  *    ROLE, and a per-layer override could disagree with the schema the table
@@ -83,7 +79,7 @@ export const TrackLayerCard = memo(
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
     const setTailWindow = useSceneStore((s) => s.setTrackTailWindow);
     const tailWindow = useSceneStore(
-      (s) => s.trackTailWindows[layer.id] ?? DEFAULT_TAIL_WINDOW,
+      (s) => s.trackTailWindows[layer.id] ?? layer.tailWindow ?? DEFAULT_TAIL_WINDOW,
     );
     // A SCALAR selector: the extents record is rewritten whenever any layer
     // finishes a read, and subscribing to the object — or to this layer's own
@@ -143,6 +139,7 @@ export const TrackLayerCard = memo(
                 step={1}
                 value={[Math.min(tailWindow, timepoints)]}
                 onValueChange={([value]) => setTailWindow(layer.id, value)}
+                onValueCommit={([value]) => persist({ tailWindow: value })}
                 className="flex-1 py-1"
               />
               <span

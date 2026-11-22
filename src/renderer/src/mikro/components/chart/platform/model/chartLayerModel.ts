@@ -60,6 +60,9 @@ export type PersistedChartLayer = {
   markerSize: number | null;
   /** The symbol a marker is drawn as; null: a circle. */
   markerShape: MarkerShape | null;
+  /** The value range the row is drawn over, as an autoscale stored it; null: seeded from the data. */
+  valueMin: number | null;
+  valueMax: number | null;
 };
 
 /** A table read as a series: one numeric column against a coordinate column. */
@@ -194,6 +197,8 @@ export type ChartLayerCommonLike = {
   visible?: boolean | null;
   opacity?: number | null;
   color?: readonly number[] | null;
+  valueMin?: number | null;
+  valueMax?: number | null;
   placement?: string | null;
   placementInvariance?: string | null;
   alongAxis?: string | null;
@@ -353,6 +358,8 @@ const persistedOf = (layer: ChartLayerCommonLike & MarkedLike): PersistedChartLa
   lineWidth: layer.lineWidth ?? null,
   markerSize: layer.markerSize ?? null,
   markerShape: markerShapeOf(layer.markerShape),
+  valueMin: layer.valueMin ?? null,
+  valueMax: layer.valueMax ?? null,
 });
 
 /**

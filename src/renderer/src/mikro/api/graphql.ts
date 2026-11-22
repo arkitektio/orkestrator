@@ -13998,27 +13998,27 @@ export type RowPlanHopFragment = (
 
 export type ChartAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> };
 
-type ChartLayerCommon_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+type ChartLayerCommon_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-type ChartLayerCommon_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+type ChartLayerCommon_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-type ChartLayerCommon_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+type ChartLayerCommon_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-type ChartLayerCommon_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+type ChartLayerCommon_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
-type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
+type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
   ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
@@ -14133,15 +14133,15 @@ export type ChartDistributionLayerFragment = (
   & ChartLayerCommon_DistributionChartLayer_Fragment
 );
 
-type ChartLayerStyle_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null };
 
-type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, lineWidth?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_DistributionChartLayer_Fragment = { __typename: 'DistributionChartLayer', mark: ChartMark, lineWidth?: number | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null };
 
-type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_PointsChartLayer_Fragment = { __typename: 'PointsChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null };
 
-type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null };
 
-type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null };
+type ChartLayerStyle_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, markerShape?: ChartMarkerShape | null, id: string, name?: string | null, visible: boolean, order: number, opacity: number, valueMin?: number | null, valueMax?: number | null, color?: Array<number> | null };
 
 export type ChartLayerStyleFragment = ChartLayerStyle_AnnotationChartLayer_Fragment | ChartLayerStyle_DistributionChartLayer_Fragment | ChartLayerStyle_PointsChartLayer_Fragment | ChartLayerStyle_SeriesChartLayer_Fragment | ChartLayerStyle_TraceChartLayer_Fragment;
 
@@ -14614,7 +14614,7 @@ export type ListGridFragment = { __typename?: 'Grid', descriptors: any, id: stri
     & AxisFragment
   ) | null };
 
-export type TransferFunctionFragment = { __typename?: 'TransferFunction', climMin?: number | null, climMax?: number | null, colormap?: ColorMap | null, color?: Array<number> | null, gamma?: number | null, opacity?: number | null, invert?: boolean | null, stops?: Array<{ __typename?: 'LookupStop', position: number, value: number }> | null };
+export type TransferFunctionFragment = { __typename?: 'TransferFunction', climMin?: number | null, climMax?: number | null, colormap?: ColorMap | null, color?: Array<number> | null, gamma?: number | null, opacity?: number | null, invert?: boolean | null, stops?: Array<{ __typename?: 'LookupStop', position: number, value: number }> | null, colorStops?: Array<{ __typename?: 'ColorStop', position: number, color: Array<number> }> | null };
 
 export type LabelColorByFragment = { __typename?: 'LabelColorBy', table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, hideBelowMin: boolean, label?: string | null, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
@@ -14912,7 +14912,7 @@ type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', climMin?: number |
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
-type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
+type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, tailWindow?: number | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
   ), lens: (
@@ -20143,7 +20143,7 @@ export type WatchLensesSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchLensesSubscription = { __typename?: 'Subscription', lenses: { __typename?: 'LensEvent', delete?: string | null, create?: (
+export type WatchLensesSubscription = { __typename?: 'Subscription', lenses: { __typename?: 'LensEvent', delete?: string | null, deleteKind?: LensKind | null, create?: (
       { __typename?: 'AnnotationLens' }
       & ListLens_AnnotationLens_Fragment
     ) | (
@@ -21588,6 +21588,8 @@ export const ChartLayerStyleFragmentDoc = gql`
   visible
   order
   opacity
+  valueMin
+  valueMax
   color
   ... on TraceChartLayer {
     mark
@@ -21633,6 +21635,8 @@ export const ChartLayerCommonFragmentDoc = gql`
   visible
   order
   opacity
+  valueMin
+  valueMax
   color
   placement
   placementValidity
@@ -22908,6 +22912,10 @@ export const TransferFunctionFragmentDoc = gql`
     position
     value
   }
+  colorStops {
+    position
+    color
+  }
 }
     `;
 export const ChannelSourceNodeFragmentDoc = gql`
@@ -23358,6 +23366,7 @@ export const SceneLayerFragmentDoc = gql`
     colorByColumn
     lineWidth
     colormap
+    tailWindow
     placementInvariance
   }
   ... on MeshLayer {
@@ -33350,6 +33359,7 @@ export const WatchLensesDocument = gql`
       ...ListLens
     }
     delete
+    deleteKind
   }
 }
     ${ListLensFragmentDoc}`;

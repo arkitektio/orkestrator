@@ -13,6 +13,12 @@ fragment TransferFunction on TransferFunction {
     position
     value
   }
+  # A colour gradient (RGBA per position on the normalized 0..1); with two or
+  # more stops it takes over from `colormap`/`color` for the lookup row.
+  colorStops {
+    position
+    color
+  }
 }
 
 # One entry of a label layer's colour picker: a column of the table this mask's
@@ -585,6 +591,8 @@ fragment SceneLayer on Layer {
     colorByColumn
     lineWidth
     colormap
+    # How many timepoints of trail it draws (0: the whole track); null until set.
+    tailWindow
     # Whether a world-space `lineWidth` is a well-defined length at all: from
     # SIMILARITY up. The schema names `lineWidth` explicitly among the scalars
     # this governs.

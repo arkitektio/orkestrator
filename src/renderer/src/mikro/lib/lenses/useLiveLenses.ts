@@ -5,7 +5,7 @@ import {
   useWatchLensesSubscription,
   type LensKind,
 } from "@/mikro/api/graphql";
-import { LENS_KIND_ORDER } from "@/mikro/lenses";
+import { LENS_KIND_ORDER, LENS_KINDS } from "@/mikro/lenses";
 
 /** Lenses arriving in a burst (a task cutting a hundred crops) refetch once. */
 const REFETCH_DELAY_MS = 400;
@@ -21,8 +21,8 @@ const DEFAULT_REFETCH = [ListLensesDocument];
  * - **create** refetches the `ListLenses` queries on screen. Where a new lens
  *   belongs depends on each list's own filters, ordering and page, which only
  *   the server can answer, so it is not spliced in by hand.
- * - **delete** evicts the lens under each of its six possible typenames (the
- *   event carries only an id), and the lists drop the dangling reference.
+ * - **delete** evicts the lens under the one typename its kind names
+ *   (`deleteKind`), and the lists drop the dangling reference.
  *
  * Mount it where a lens list is shown; mounting IS listening. `refetch` names
  * the queries a create refetches, for a page whose lists are not lens lists
@@ -56,7 +56,12 @@ export const useLiveLenses = ({
       }
 
       if (event.delete) {
-        for (const __typename of LENS_KIND_ORDER) {
+        // The kind names the typename it was cached under; without it (an
+        // older server) every lens typename is tried.
+        const typenames = event.deleteKind
+          ? LENS_KIND_ORDER.filter((typename) => LENS_KINDS[typename].kind === event.deleteKind)
+          : LENS_KIND_ORDER;
+        for (const __typename of typenames) {
           client.cache.evict({ id: client.cache.identify({ __typename, id: event.delete }) });
         }
         // No `gc()` here: lists drop the dangling reference on read, and a full

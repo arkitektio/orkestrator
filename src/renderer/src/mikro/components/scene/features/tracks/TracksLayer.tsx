@@ -246,7 +246,7 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
 
   // ------------------------------------------------------------------- time
   const tailWindow = useSceneStore(
-    (s) => s.trackTailWindows[layer.id] ?? DEFAULT_TAIL_WINDOW,
+    (s) => s.trackTailWindows[layer.id] ?? layer.tailWindow ?? DEFAULT_TAIL_WINDOW,
   );
 
   /**

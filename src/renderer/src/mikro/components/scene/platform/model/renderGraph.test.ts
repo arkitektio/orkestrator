@@ -80,15 +80,25 @@ describe("transfer curve stops (server LookupStops)", () => {
     });
   });
 
-  it("keeps the session-local color GRADIENT out of the server payload", () => {
+  it("stores the color GRADIENT as colorStops, apart from the curve", () => {
     const node = parseRenderNode(channelFragment(null)) as ChannelRenderNode;
     node.transfer.colorStops = [
-      { position: 0, color: [10, 20, 30, 255] },
+      { position: 0, color: [10, 20, 30] },
       { position: 1, color: [200, 210, 220, 255] },
     ];
     const input = serializeRenderNode(node, () => null) as { transfer?: Record<string, unknown> };
-    expect(input.transfer && "colorStops" in input.transfer).toBe(false);
+    expect(input.transfer?.colorStops).toEqual([
+      { position: 0, color: [10, 20, 30, 255] },
+      { position: 1, color: [200, 210, 220, 255] },
+    ]);
     expect(input.transfer?.stops).toBeNull(); // and never leaks into the curve
+  });
+
+  it("leaves a one-stop gradient unstored", () => {
+    const node = parseRenderNode(channelFragment(null)) as ChannelRenderNode;
+    node.transfer.colorStops = [{ position: 0, color: [10, 20, 30, 255] }];
+    const input = serializeRenderNode(node, () => null) as { transfer?: Record<string, unknown> };
+    expect(input.transfer?.colorStops).toBeNull();
   });
 });
 

@@ -23,7 +23,7 @@ import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { ChartAnnotationDrawer } from "../features/annotations/ChartAnnotationDrawer";
 import { ChartAnnotationOverlay } from "../features/annotations/ChartAnnotationOverlay";
 import { ChartAnnotationToolbar } from "../features/annotations/ChartAnnotationToolbar";
-import { useChartAutoscale } from "../platform/edits/useChartAutoscale";
+import { useChartAutoscale, useStoredChartRanges } from "../platform/edits/useChartAutoscale";
 import { useChartLayoutWrite } from "../platform/edits/useChartLayoutWrite";
 import { isValuesKind, type ChartLayerState } from "../platform/model/chartLayerModel";
 import { useChartStore } from "../platform/stores/chartStore";
@@ -128,6 +128,7 @@ const ReadyViewport = () => {
   const rowCount = useViewerStore((s) => s.rowCount);
   const axis = useChartStore((s) => s.axis);
   const autoscale = useChartAutoscale();
+  useStoredChartRanges();
   const writeLayout = useChartLayoutWrite();
   const viewerApi = useViewerStoreApi();
   // A chart is read off its axes: the value axis and the grid start shown
