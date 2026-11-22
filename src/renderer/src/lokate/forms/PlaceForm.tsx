@@ -8,7 +8,6 @@ import { Input } from "@/core/ui/input";
 import { Slider } from "@/core/ui/slider";
 import { lazy, Suspense, useState } from "react";
 import {
-  GetPlaceDocument,
   ListPlacesDocument,
   PlaceFragment,
   useGetPlaceQuery,
@@ -21,7 +20,6 @@ import { formatDistance } from "../format";
 const PointPicker = lazy(() => import("@/core/map/PointPicker"));
 
 const DEFAULT_RADIUS = 75;
-const REFETCH = [ListPlacesDocument, GetPlaceDocument];
 
 type PlaceAt = { lat: number; lon: number; radius?: number };
 
@@ -34,14 +32,19 @@ const PlaceFields = ({ place, at }: { place?: PlaceFragment; at?: PlaceAt }) => 
     return lat != null && lon != null ? { latitude: lat, longitude: lon } : null;
   });
   const [radius, setRadius] = useState(Math.round(place?.radius ?? at?.radius ?? DEFAULT_RADIUS));
-  const [sync, { loading }] = useSyncPlacesMutation({ refetchQueries: REFETCH });
+  // `syncPlaces` answers with the saved place, which updates it wherever it is
+  // cached. Only a list's membership or its name order can change: refetched
+  // for a new place or a rename, never for a moved pin or radius.
+  const [sync, { loading }] = useSyncPlacesMutation();
   const ready = name.trim() !== "" && pin != null;
 
   // The place shows up in the list and on the map: closing is the
   // confirmation. Only a phone's newer copy winning is said.
   const { submit: save } = useDialogSubmit(
     async (point: Point) => {
+      const renamed = !place || place.name !== name.trim();
       const { data } = await sync({
+        refetchQueries: renamed ? [ListPlacesDocument] : [],
         variables: {
           deleted: [],
           places: [

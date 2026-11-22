@@ -4,7 +4,7 @@ import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { ListPlacesDocument, useGetPlaceQuery, useSyncPlacesMutation } from "../api/graphql";
+import { useGetPlaceQuery, useSyncPlacesMutation } from "../api/graphql";
 
 /**
  * Delete a named place everywhere: a tombstone through `syncPlaces`, so the
@@ -15,7 +15,7 @@ export const DeletePlaceForm = ({ id }: { id: string }) => {
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
   const { data } = useGetPlaceQuery({ variables: { id } });
-  const [sync, { loading }] = useSyncPlacesMutation({ refetchQueries: [ListPlacesDocument] });
+  const [sync, { loading, client }] = useSyncPlacesMutation();
   const place = data?.place;
 
   // Gone, it leaves the list: only a phone's newer copy winning is said.
@@ -25,8 +25,15 @@ export const DeletePlaceForm = ({ id }: { id: string }) => {
       const { data: result } = await sync({
         variables: { places: [], deleted: [{ clientId: place.clientId, deletedAt: new Date().toISOString() }] },
       });
-      if (result?.syncPlaces.stale.length) toast.info("A phone changed this place more recently; it was kept");
-      else navigate("/lokate/places");
+      if (result?.syncPlaces.stale.length) {
+        toast.info("A phone changed this place more recently; it was kept");
+        return;
+      }
+      // Gone from every list, and from the visits that named it: they lose the
+      // reference and read their place again.
+      client.cache.evict({ id: client.cache.identify({ __typename: "Place", id: place.id }) });
+      client.cache.gc();
+      navigate("/lokate/places");
     },
     { errorTitle: "Couldn't delete the place" },
   );

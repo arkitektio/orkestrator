@@ -19,7 +19,7 @@ const PlacePage = asDetailQueryRoute(useGetPlaceQuery, ({ data }) => {
   const place = data.place;
   const { openDialog } = useDialog();
   const { data: visitData } = useListVisitsQuery({
-    variables: { filters: { places: [place.id] }, ordering: [{ start: Ordering.Desc }], pagination: { limit: VISITS } },
+    variables: { filters: { places: [place.clientId] }, ordering: [{ start: Ordering.Desc }], pagination: { limit: VISITS } },
   });
   const visits = visitData?.visits ?? [];
   const places = useMemo(() => [place], [place]);

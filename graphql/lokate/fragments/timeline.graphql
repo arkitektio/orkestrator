@@ -16,10 +16,12 @@ fragment ListVisit on Visit {
   }
 }
 
+# A detail page reads only which phone it was; `Device.pointCount` counts every
+# point that phone ever uploaded, so it is asked of the privacy page alone.
 fragment Visit on Visit {
   ...ListVisit
   device {
-    ...Device
+    id
   }
 }
 
@@ -39,7 +41,7 @@ fragment ListTrip on Trip {
 fragment Trip on Trip {
   ...ListTrip
   device {
-    ...Device
+    id
   }
 }
 
@@ -78,7 +80,6 @@ fragment ModeStat on ModeStat {
 
 fragment StatsBucket on StatsBucket {
   start
-  pointCount
   visitCount
   tripCount
   distance
@@ -89,8 +90,10 @@ fragment StatsBucket on StatsBucket {
 
 fragment PlaceStat on PlaceStat {
   placeClientId
+  # The name and the link only: the stat carries its own counts.
   place {
-    ...ListPlace
+    id
+    name
   }
   visitCount
   seconds

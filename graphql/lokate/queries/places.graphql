@@ -10,13 +10,6 @@ query GetPlace($id: ID!) {
   }
 }
 
-query SearchPlaces($search: String, $values: [ID!]) {
-  options: places(filters: { search: $search, ids: $values }, pagination: { limit: 10 }) {
-    value: id
-    label: name
-  }
-}
-
 query PlaceStats($since: DateTime, $until: DateTime, $limit: Int = 100) {
   placeStats(since: $since, until: $until, limit: $limit) {
     ...PlaceStat

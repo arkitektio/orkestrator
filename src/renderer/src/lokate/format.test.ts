@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bboxOf,
   circleRing,
+  dayBounds,
   formatDayTitle,
   formatDistance,
   formatDuration,
@@ -62,6 +63,14 @@ describe("lokate format", () => {
     expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 9);
     // North of the centre by ~100 m is ~0.0009° of latitude.
     expect(ring[0][1] - 48.2).toBeCloseTo(0.0009, 4);
+  });
+
+  it("spans a local day from its midnight to the next", () => {
+    const { since, until } = dayBounds(new Date(2026, 2, 28, 15, 30));
+    expect(new Date(since).getTime()).toBe(new Date(2026, 2, 28).getTime());
+    expect(new Date(until).getTime()).toBe(new Date(2026, 2, 29).getTime());
+    // Across a month end the next midnight is the 1st.
+    expect(new Date(dayBounds(new Date(2026, 0, 31)).until).getTime()).toBe(new Date(2026, 1, 1).getTime());
   });
 
   it("reads a track's line, and nothing from anything else", () => {

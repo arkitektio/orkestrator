@@ -237,6 +237,8 @@ export type PlaceStat = {
 export type PlaceSyncResult = {
   __typename?: 'PlaceSyncResult';
   applied: Scalars['Int']['output'];
+  /** The server's copy of every place sent, after the merge (ones a tombstone kept deleted left out). */
+  places: Array<Place>;
   /** Places whose server copy is newer; the phone takes them (deletedAt set: delete it). */
   stale: Array<Place>;
 };
@@ -628,20 +630,14 @@ export type DeviceFragment = { __typename?: 'Device', id: string, deviceId: stri
 export type ListVisitFragment = { __typename?: 'Visit', id: string, clientId: string, start: string, end: string, lat: number, lon: number, radius: number, pointCount: number, duration: number, deviceId: string, place?: { __typename?: 'Place', id: string, clientId: string, name?: string | null } | null };
 
 export type VisitFragment = (
-  { __typename?: 'Visit', device: (
-    { __typename?: 'Device' }
-    & DeviceFragment
-  ) }
+  { __typename?: 'Visit', device: { __typename?: 'Device', id: string } }
   & ListVisitFragment
 );
 
 export type ListTripFragment = { __typename?: 'Trip', id: string, clientId: string, start: string, end: string, distance: number, duration: number, mode: TripMode, deviceId: string, fromVisit?: string | null, toVisit?: string | null };
 
 export type TripFragment = (
-  { __typename?: 'Trip', device: (
-    { __typename?: 'Device' }
-    & DeviceFragment
-  ) }
+  { __typename?: 'Trip', device: { __typename?: 'Device', id: string } }
   & ListTripFragment
 );
 
@@ -657,15 +653,12 @@ export type DayFragment = { __typename?: 'Day', date: string, start: string, end
 
 export type ModeStatFragment = { __typename?: 'ModeStat', mode: TripMode, trips: number, distance: number, seconds: number };
 
-export type StatsBucketFragment = { __typename?: 'StatsBucket', start: string, pointCount: number, visitCount: number, tripCount: number, distance: number, byMode: Array<(
+export type StatsBucketFragment = { __typename?: 'StatsBucket', start: string, visitCount: number, tripCount: number, distance: number, byMode: Array<(
     { __typename?: 'ModeStat' }
     & ModeStatFragment
   )> };
 
-export type PlaceStatFragment = { __typename?: 'PlaceStat', placeClientId: string, visitCount: number, seconds: number, firstVisitAt: string, lastVisitAt: string, place?: (
-    { __typename?: 'Place' }
-    & ListPlaceFragment
-  ) | null };
+export type PlaceStatFragment = { __typename?: 'PlaceStat', placeClientId: string, visitCount: number, seconds: number, firstVisitAt: string, lastVisitAt: string, place?: { __typename?: 'Place', id: string, name?: string | null } | null };
 
 export type SyncPlacesMutationVariables = Exact<{
   places: Array<PlaceInput> | PlaceInput;
@@ -674,6 +667,9 @@ export type SyncPlacesMutationVariables = Exact<{
 
 
 export type SyncPlacesMutation = { __typename?: 'Mutation', syncPlaces: { __typename?: 'PlaceSyncResult', applied: number, stale: Array<(
+      { __typename?: 'Place' }
+      & PlaceFragment
+    )>, places: Array<(
       { __typename?: 'Place' }
       & PlaceFragment
     )> } };
@@ -706,14 +702,6 @@ export type GetPlaceQuery = { __typename?: 'Query', place: (
     { __typename?: 'Place' }
     & PlaceFragment
   ) };
-
-export type SearchPlacesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchPlacesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Place', value: string, label?: string | null }> };
 
 export type PlaceStatsQueryVariables = Exact<{
   since?: InputMaybe<Scalars['DateTime']['input']>;
@@ -838,6 +826,16 @@ export const PlaceFragmentDoc = gql`
   deletedAt
 }
     ${ListPlaceFragmentDoc}`;
+export const DeviceFragmentDoc = gql`
+    fragment Device on Device {
+  id
+  deviceId
+  firstSeenAt
+  lastUploadAt
+  segmentsFrom
+  pointCount
+}
+    `;
 export const ListVisitFragmentDoc = gql`
     fragment ListVisit on Visit {
   id
@@ -857,25 +855,14 @@ export const ListVisitFragmentDoc = gql`
   }
 }
     `;
-export const DeviceFragmentDoc = gql`
-    fragment Device on Device {
-  id
-  deviceId
-  firstSeenAt
-  lastUploadAt
-  segmentsFrom
-  pointCount
-}
-    `;
 export const VisitFragmentDoc = gql`
     fragment Visit on Visit {
   ...ListVisit
   device {
-    ...Device
+    id
   }
 }
-    ${ListVisitFragmentDoc}
-${DeviceFragmentDoc}`;
+    ${ListVisitFragmentDoc}`;
 export const ListTripFragmentDoc = gql`
     fragment ListTrip on Trip {
   id
@@ -894,11 +881,10 @@ export const TripFragmentDoc = gql`
     fragment Trip on Trip {
   ...ListTrip
   device {
-    ...Device
+    id
   }
 }
-    ${ListTripFragmentDoc}
-${DeviceFragmentDoc}`;
+    ${ListTripFragmentDoc}`;
 export const TrackFragmentDoc = gql`
     fragment Track on Track {
   device {
@@ -939,7 +925,6 @@ export const ModeStatFragmentDoc = gql`
 export const StatsBucketFragmentDoc = gql`
     fragment StatsBucket on StatsBucket {
   start
-  pointCount
   visitCount
   tripCount
   distance
@@ -952,19 +937,23 @@ export const PlaceStatFragmentDoc = gql`
     fragment PlaceStat on PlaceStat {
   placeClientId
   place {
-    ...ListPlace
+    id
+    name
   }
   visitCount
   seconds
   firstVisitAt
   lastVisitAt
 }
-    ${ListPlaceFragmentDoc}`;
+    `;
 export const SyncPlacesDocument = gql`
     mutation SyncPlaces($places: [PlaceInput!]!, $deleted: [DeletedInput!]!) {
   syncPlaces(places: $places, deleted: $deleted) {
     applied
     stale {
+      ...Place
+    }
+    places {
       ...Place
     }
   }
@@ -1100,46 +1089,6 @@ export function useGetPlaceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type GetPlaceQueryHookResult = ReturnType<typeof useGetPlaceQuery>;
 export type GetPlaceLazyQueryHookResult = ReturnType<typeof useGetPlaceLazyQuery>;
 export type GetPlaceQueryResult = Apollo.QueryResult<GetPlaceQuery, GetPlaceQueryVariables>;
-export const SearchPlacesDocument = gql`
-    query SearchPlaces($search: String, $values: [ID!]) {
-  options: places(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useSearchPlacesQuery__
- *
- * To run a query within a React component, call `useSearchPlacesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchPlacesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchPlacesQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchPlacesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchPlacesQuery, SearchPlacesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchPlacesQuery, SearchPlacesQueryVariables>(SearchPlacesDocument, options);
-      }
-export function useSearchPlacesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchPlacesQuery, SearchPlacesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchPlacesQuery, SearchPlacesQueryVariables>(SearchPlacesDocument, options);
-        }
-export type SearchPlacesQueryHookResult = ReturnType<typeof useSearchPlacesQuery>;
-export type SearchPlacesLazyQueryHookResult = ReturnType<typeof useSearchPlacesLazyQuery>;
-export type SearchPlacesQueryResult = Apollo.QueryResult<SearchPlacesQuery, SearchPlacesQueryVariables>;
 export const PlaceStatsDocument = gql`
     query PlaceStats($since: DateTime, $until: DateTime, $limit: Int = 100) {
   placeStats(since: $since, until: $until, limit: $limit) {

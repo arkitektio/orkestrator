@@ -219,6 +219,11 @@ type PlaceSyncResult {
   applied: Int!
 
   """
+  The server's copy of every place sent, after the merge (ones a tombstone kept deleted left out).
+  """
+  places: [Place!]!
+
+  """
   Places whose server copy is newer; the phone takes them (deletedAt set: delete it).
   """
   stale: [Place!]!

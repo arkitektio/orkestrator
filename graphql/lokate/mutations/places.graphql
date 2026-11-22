@@ -4,5 +4,8 @@ mutation SyncPlaces($places: [PlaceInput!]!, $deleted: [DeletedInput!]!) {
     stale {
       ...Place
     }
+    places {
+      ...Place
+    }
   }
 }

@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { useGetDayQuery, useGetRouteQuery } from "../api/graphql";
 import LokateMap from "../components/LokateMap";
 import { TimelineList, timelineOf } from "../components/TimelineRows";
-import { formatDayTitle, formatDistance, isoDate, localTimeZone, parseIsoDate, shiftDay } from "../format";
+import { dayBounds, formatDayTitle, formatDistance, isoDate, localTimeZone, parseIsoDate, shiftDay } from "../format";
 import { LOKATE_HELP } from "../help";
 
 /** Tolerance for thinning a day's path, meters: invisible at street zoom, far fewer vertices. */
@@ -38,9 +38,10 @@ const TimelinePage = () => {
   const { data, previousData, loading } = useGetDayQuery({ variables: { date, timezone } });
   const shown = data ?? previousData;
   const summary = shown?.day;
+  // Asked alongside the day, not after it: its bounds are the local midnights
+  // (equal strings every render, so Apollo sees the same variables).
   const { data: route } = useGetRouteQuery({
-    variables: { since: summary?.start ?? "", until: summary?.end ?? "", simplify: SIMPLIFY },
-    skip: !data?.day,
+    variables: { ...dayBounds(day), simplify: SIMPLIFY },
   });
 
   const entries = useMemo(() => (summary ? timelineOf(summary.visits, summary.trips) : []), [summary]);

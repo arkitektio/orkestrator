@@ -74,6 +74,16 @@ export const parseIsoDate = (value: string | null | undefined): Date | null => {
 export const shiftDay = (date: Date, days: number) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 
+/**
+ * A local day as the instants it spans: its midnight and the next one, the same
+ * bounds `day(date, timezone: localTimeZone())` answers with, so the route can be
+ * asked alongside the day instead of after it.
+ */
+export const dayBounds = (date: Date) => ({
+  since: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
+  until: shiftDay(date, 1).toISOString(),
+});
+
 /** "Today", "Yesterday", or the weekday and date. */
 export const formatDayTitle = (date: Date, now = new Date()) => {
   const today = isoDate(now);
