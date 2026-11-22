@@ -6937,6 +6937,30 @@
             "deprecationReason": null
           },
           {
+            "name": "createdAfter",
+            "description": "Only the memberships made at or after this time. A membership whose creation time is unknown (older than the record) never matches.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdBefore",
+            "description": "Only the memberships made before this time. A membership whose creation time is unknown never matches.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ids",
             "description": null,
             "type": {
@@ -7019,6 +7043,18 @@
           {
             "name": "id",
             "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "Ordering",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "username",
+            "description": "By the member's username.",
             "type": {
               "kind": "ENUM",
               "name": "Ordering",

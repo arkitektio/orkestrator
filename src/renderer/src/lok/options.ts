@@ -11,8 +11,8 @@ import {
   type UserOptionsQueryVariables,
 } from "./api/graphql";
 
-const matches = (term: string | undefined, ...texts: (string | null | undefined)[]) =>
-  !term || texts.some((text) => text?.toLowerCase().includes(term.toLowerCase()));
+/** How many options a typed search offers. */
+const SEARCH_LIMIT = 20;
 
 /** Lok's models as options for pickers elsewhere (an `optionSources` builtin). */
 export const LOK_OPTION_SOURCES: OptionSource[] = [
@@ -32,17 +32,15 @@ export const LOK_OPTION_SOURCES: OptionSource[] = [
     by: "identifier",
     service: "lok",
     search: async (client, { search, values }) => {
-      // Known values are looked up by identifier on the server. A search reads
-      // the identifier, which `AppFilter.search` (the name, case-sensitive)
-      // does not, so it still runs over the list here.
+      // Known values are looked up by identifier, a typed search by
+      // `AppFilter.search` (name or identifier, case-insensitive): both on the server.
       const { data } = await client.query<AppsQuery, AppsQueryVariables>({
         query: AppsDocument,
-        variables: values?.length ? { filters: { identifiers: values }, pagination: { limit: values.length } } : {},
+        variables: values?.length
+          ? { filters: { identifiers: values }, pagination: { limit: values.length } }
+          : { filters: search ? { search } : undefined, pagination: { limit: SEARCH_LIMIT } },
       });
-      return (data?.apps ?? [])
-        .map((app) => String(app.identifier))
-        .filter((identifier) => (values?.length ? true : matches(search, identifier)))
-        .map((identifier) => ({ value: identifier, label: identifier }));
+      return (data?.apps ?? []).map((app) => ({ value: String(app.identifier), label: String(app.identifier) }));
     },
   },
   {
@@ -50,16 +48,15 @@ export const LOK_OPTION_SOURCES: OptionSource[] = [
     by: "nodeId",
     service: "lok",
     search: async (client, { search, values }) => {
-      // Known values are looked up by device id on the server. A search reads
-      // the device id too, which `DeviceFilter.search` (the name,
-      // case-sensitive) does not, so it still runs over the list here.
+      // Known values are looked up by device id, a typed search by
+      // `DeviceFilter.search` (case-insensitive): both on the server.
       const { data } = await client.query<ListDevicesQuery, ListDevicesQueryVariables>({
         query: ListDevicesDocument,
-        variables: values?.length ? { filters: { deviceIds: values }, pagination: { limit: values.length } } : {},
+        variables: values?.length
+          ? { filters: { deviceIds: values }, pagination: { limit: values.length } }
+          : { filters: search ? { search } : undefined, pagination: { limit: SEARCH_LIMIT } },
       });
-      return (data?.devices ?? [])
-        .filter((device) => (values?.length ? true : matches(search, device.name, device.nodeId)))
-        .map((device) => ({
+      return (data?.devices ?? []).map((device) => ({
           value: device.nodeId,
           label: device.name || `Unnamed device (${device.nodeId})`,
         }));

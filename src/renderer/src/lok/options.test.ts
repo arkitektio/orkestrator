@@ -8,11 +8,14 @@ const source = (identifier: string) => LOK_OPTION_SOURCES.find((s) => s.identifi
 const client = (data: unknown) => ({ query: vi.fn(async () => ({ data })) }) as never;
 
 describe("lok's option sources", () => {
-  it("offers apps by identifier, narrowed by the search", async () => {
-    const apps = client({ apps: [{ identifier: "live.arkitekt.napari" }, { identifier: "io.other.tool" }] });
+  it("offers apps by identifier, searched on the server", async () => {
+    const apps = client({ apps: [{ identifier: "live.arkitekt.napari" }] });
     expect(await source("@lok/app").search(apps, { search: "napari" })).toEqual([
       { value: "live.arkitekt.napari", label: "live.arkitekt.napari" },
     ]);
+    expect((apps as { query: ReturnType<typeof vi.fn> }).query).toHaveBeenCalledWith(
+      expect.objectContaining({ variables: { filters: { search: "napari" }, pagination: { limit: 20 } } }),
+    );
   });
 
   it("looks known apps and devices up on the server, by identifier and device id", async () => {

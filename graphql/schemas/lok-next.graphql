@@ -1214,6 +1214,16 @@ input MembershipFilter {
   DISTINCT: Boolean
   NOT: MembershipFilter
   OR: MembershipFilter
+
+  """
+  Only the memberships made at or after this time. A membership whose creation time is unknown (older than the record) never matches.
+  """
+  createdAfter: DateTime
+
+  """
+  Only the memberships made before this time. A membership whose creation time is unknown never matches.
+  """
+  createdBefore: DateTime
   ids: [ID!]
 
   """Only the organization's admins (true) or only the others (false)."""
@@ -1227,6 +1237,9 @@ input MembershipFilter {
 input MembershipOrdering @oneOf {
   createdAt: Ordering
   id: Ordering
+
+  """By the member's username."""
+  username: Ordering
 }
 
 """

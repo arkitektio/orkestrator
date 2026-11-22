@@ -1037,6 +1037,10 @@ export type MembershipFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<MembershipFilter>;
   OR?: InputMaybe<MembershipFilter>;
+  /** Only the memberships made at or after this time. A membership whose creation time is unknown (older than the record) never matches. */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only the memberships made before this time. A membership whose creation time is unknown never matches. */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Only the organization's admins (true) or only the others (false). */
   isAdmin?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1046,8 +1050,10 @@ export type MembershipFilter = {
 };
 
 export type MembershipOrdering =
-  { createdAt: Ordering; id?: never; }
-  |  { createdAt?: never; id: Ordering; };
+  { createdAt: Ordering; id?: never; username?: never; }
+  |  { createdAt?: never; id: Ordering; username?: never; }
+  |  /** By the member's username. */
+  { createdAt?: never; id?: never; username: Ordering; };
 
 /** A request of a user who is not a member of an organization to become one. */
 export type MembershipRequest = {
@@ -3192,6 +3198,18 @@ export type TeamCountsQueryVariables = Exact<{
 
 
 export type TeamCountsQuery = { __typename?: 'Query', members: { __typename?: 'MembershipStats', count: number }, admins: { __typename?: 'MembershipStats', count: number } };
+
+export type NewMembersQueryVariables = Exact<{
+  organization: Scalars['ID']['input'];
+  since: Scalars['DateTime']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type NewMembersQuery = { __typename?: 'Query', organization: { __typename?: 'Organization', id: string, newMembers: Array<(
+      { __typename?: 'Membership', createdAt?: any | null }
+      & TeamMemberFragment
+    )> } };
 
 export type PendingMembershipRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6348,7 +6366,7 @@ export const TeamMembersDocument = gql`
     memberships(
       filters: $filters
       pagination: {limit: $limit}
-      ordering: [{id: ASC}]
+      ordering: [{username: ASC}]
     ) {
       ...TeamMember
     }
@@ -6426,6 +6444,51 @@ export function useTeamCountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type TeamCountsQueryHookResult = ReturnType<typeof useTeamCountsQuery>;
 export type TeamCountsLazyQueryHookResult = ReturnType<typeof useTeamCountsLazyQuery>;
 export type TeamCountsQueryResult = Apollo.QueryResult<TeamCountsQuery, TeamCountsQueryVariables>;
+export const NewMembersDocument = gql`
+    query NewMembers($organization: ID!, $since: DateTime!, $limit: Int!) {
+  organization(id: $organization) {
+    id
+    newMembers: memberships(
+      filters: {createdAfter: $since}
+      ordering: [{createdAt: DESC}]
+      pagination: {limit: $limit}
+    ) {
+      ...TeamMember
+      createdAt
+    }
+  }
+}
+    ${TeamMemberFragmentDoc}`;
+
+/**
+ * __useNewMembersQuery__
+ *
+ * To run a query within a React component, call `useNewMembersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNewMembersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNewMembersQuery({
+ *   variables: {
+ *      organization: // value for 'organization'
+ *      since: // value for 'since'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useNewMembersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<NewMembersQuery, NewMembersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<NewMembersQuery, NewMembersQueryVariables>(NewMembersDocument, options);
+      }
+export function useNewMembersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<NewMembersQuery, NewMembersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<NewMembersQuery, NewMembersQueryVariables>(NewMembersDocument, options);
+        }
+export type NewMembersQueryHookResult = ReturnType<typeof useNewMembersQuery>;
+export type NewMembersLazyQueryHookResult = ReturnType<typeof useNewMembersLazyQuery>;
+export type NewMembersQueryResult = Apollo.QueryResult<NewMembersQuery, NewMembersQueryVariables>;
 export const PendingMembershipRequestsDocument = gql`
     query PendingMembershipRequests {
   membershipRequests(filters: {status: [PENDING]}, ordering: [{createdAt: DESC}]) {

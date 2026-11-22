@@ -27,6 +27,7 @@ import {
   useOrganizationQuery,
   usePendingMembershipRequestsQuery,
   useTeamCountsQuery,
+  useNewMembersQuery,
   useTeamMembersQuery,
   useUpdateOrganizationMutation,
   useWatchMembershipRequestsSubscription,
@@ -205,6 +206,36 @@ const RoleHeading = ({
 
 /** How many members a role's group shows before "Show more". */
 const GROUP_PAGE = 48;
+/** How many of the newest members "New this month" shows. */
+const NEW_SHOWN = 8;
+const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The newest members, joined in the last 30 days (`MembershipFilter.createdAfter`),
+ * newest first. A membership made before lok recorded when has no date and is
+ * never listed here. Nothing new draws nothing.
+ */
+const NewMembersSection = ({ organization, me }: { organization: string; me?: string | null }) => {
+  // Fixed per mount: a moving `since` would refetch on every render.
+  const [since] = useState(() => new Date(Date.now() - MONTH_MS).toISOString());
+  const { data } = useNewMembersQuery({
+    variables: { organization, since, limit: NEW_SHOWN },
+    fetchPolicy: "cache-and-network",
+  });
+  const members = data?.organization.newMembers ?? [];
+  if (members.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold">New this month</h3>
+      <div className={CARD_FRAME_GRID}>
+        {members.map((membership) => (
+          <MemberCard key={membership.id} membership={membership} isMe={membership.user.id === me} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /**
  * One role's people, asked of the server: the members its filter picks, a page
@@ -451,6 +482,7 @@ const TeamHomePage = () => {
             </Empty>
           ) : (
             <div className="flex flex-col gap-6">
+              {!filtering && <NewMembersSection organization={organization.id} me={me} />}
               {groups.map((group) => (
                 <RoleGroupSection
                   key={group.role?.id ?? "none"}

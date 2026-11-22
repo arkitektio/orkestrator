@@ -76,9 +76,11 @@ export const roleGroupFilters = (
   return groups;
 };
 
-/** Within a group's loaded members: you first, then by username. */
-export const sortMembers = <M extends TeamMember>(members: readonly M[], me?: string | null): M[] =>
-  [...members].sort(
-    (a, b) =>
-      Number(b.user.id === me) - Number(a.user.id === me) || a.user.username.localeCompare(b.user.username),
-  );
+/**
+ * Within a group's loaded members: you first, the rest in the server's order
+ * (by username, `MembershipOrdering.username`), so "Show more" continues it.
+ */
+export const sortMembers = <M extends TeamMember>(members: readonly M[], me?: string | null): M[] => [
+  ...members.filter((member) => member.user.id === me),
+  ...members.filter((member) => member.user.id !== me),
+];

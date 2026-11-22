@@ -65,8 +65,8 @@ describe("anyRole", () => {
 });
 
 describe("sortMembers", () => {
-  it("sorts you first, then by username", () => {
-    const sorted = sortMembers([member("zed", "member"), member("bo", "member"), member("me", "member")], "me");
+  it("puts you first and keeps the server's order for the rest", () => {
+    const sorted = sortMembers([member("bo", "member"), member("me", "member"), member("zed", "member")], "me");
     expect(sorted.map((m) => m.user.username)).toEqual(["me", "bo", "zed"]);
   });
 });

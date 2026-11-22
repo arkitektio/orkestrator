@@ -3,7 +3,7 @@
 query TeamMembers($organization: ID!, $filters: MembershipFilter, $limit: Int!) {
   organization(id: $organization) {
     id
-    memberships(filters: $filters, pagination: { limit: $limit }, ordering: [{ id: ASC }]) {
+    memberships(filters: $filters, pagination: { limit: $limit }, ordering: [{ username: ASC }]) {
       ...TeamMember
     }
   }
@@ -19,5 +19,21 @@ query TeamCounts($admins: MembershipFilter) {
   }
   admins: membershipStats(filters: $admins) {
     count
+  }
+}
+
+# The Team page's "New this month": the newest members since `since`. A
+# membership made before lok recorded the date has none, and never matches.
+query NewMembers($organization: ID!, $since: DateTime!, $limit: Int!) {
+  organization(id: $organization) {
+    id
+    newMembers: memberships(
+      filters: { createdAfter: $since }
+      ordering: [{ createdAt: DESC }]
+      pagination: { limit: $limit }
+    ) {
+      ...TeamMember
+      createdAt
+    }
   }
 }
