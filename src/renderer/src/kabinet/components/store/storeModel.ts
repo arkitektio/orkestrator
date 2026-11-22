@@ -236,6 +236,7 @@ export const storeAppFilter = ({
   ...(filter === "gpu" ? { hardware: [AppHardware.Gpu] } : {}),
   ...(filter === "cpu" ? { hardware: [AppHardware.Cpu] } : {}),
   ...(filter === "installed" ? { deployed: true } : {}),
+  ...(filter === "bloks" ? { bloks: true } : {}),
   ...(service ? { service } : {}),
 });
 
@@ -252,9 +253,9 @@ export type StoreAppBlok = { app: StoreApp; blok: StoreBlok };
 
 /**
  * The panels and scenes of the listed apps, narrowed to the bloks the search
- * names unless it names their app. The apps are the server's answer already
- * (search, service); which of them bring a blok is only known from their newest
- * release, so this reads the apps listed, not every app.
+ * names unless it names their app. Which apps bring one, and which a search
+ * names, is the server's answer (`AppFilter.bloks`, `search`); this only picks
+ * the bloks within each app.
  */
 export const filterAppBloks = (apps: StoreApp[], { search }: { search: string }): StoreAppBlok[] => {
   const needle = search.trim().toLowerCase();

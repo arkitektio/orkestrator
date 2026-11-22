@@ -138,6 +138,10 @@ describe("storeModel", () => {
       service: "live.arkitekt.mikro",
     });
     expect(storeAppFilter({ search: "", filter: "all", service: null })).toEqual({});
+    expect(storeAppFilter({ search: "volume", filter: "bloks", service: null })).toEqual({
+      search: "volume",
+      bloks: true,
+    });
     expect(storeAppOrder("recent")).toEqual([{ releasedAt: Ordering.Desc }]);
     expect(storeAppOrder("name")).toEqual([{ identifier: Ordering.Asc }]);
   });

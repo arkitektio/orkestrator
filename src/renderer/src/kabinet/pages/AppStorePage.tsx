@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useAppStoreQuery, useRepoBloksQuery } from "../api/graphql";
+import { useAppStoreQuery, useAppStoreTotalsQuery, useRepoBloksQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard } from "../components/store/AppStoreCard";
 import { AppBlokGrid, CustomBlokSection } from "../components/store/BlokStoreCard";
 import { FeaturedApp } from "../components/store/FeaturedApp";
@@ -59,12 +59,19 @@ const SORTS: { value: StoreSort; label: string }[] = [
   { value: "name", label: "A–Z" },
 ];
 
+const Stat = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col">
+    <span className="text-2xl font-semibold tabular-nums tracking-tight">{value}</span>
+    <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+      {label}
+    </span>
+  </div>
+);
+
 /** Apps a page of the store asks for; "Show more" asks for as many again. */
 const PAGE = 48;
 /** Apps a shelf shows. */
 const SHELF = 12;
-/** Apps the bloks view reads the panels and scenes of. */
-const BLOK_APPS = 100;
 
 /** A shelf of the store: its own small query, so it is not cut by the page above. */
 const useShelf = (filters: AppFilter, skip: boolean) => {
@@ -141,37 +148,40 @@ export const AppStorePage = () => {
   const debouncedSearch = useDebounce(search, 150);
 
   // The apps the chips, search and sort ask for, filtered and paged on the
-  // server. The bloks view reads the panels and scenes of the apps instead, so
-  // it asks for apps by service only and narrows the bloks by the search.
+  // server. The bloks view asks for the apps that bring a panel or scene, and
+  // picks the bloks the search names within each.
   const bloksView = filter === "bloks";
+  const filters = storeAppFilter({ search: debouncedSearch, filter, service });
   const { data, loading, error } = useAppStoreQuery({
-    variables: {
-      filters: bloksView
-        ? storeAppFilter({ search: "", filter: "all", service })
-        : storeAppFilter({ search: debouncedSearch, filter, service }),
-      ordering: storeAppOrder(sort),
-      pagination: { limit: bloksView ? BLOK_APPS : limit },
-    },
+    variables: { filters, ordering: storeAppOrder(sort), pagination: { limit } },
     fetchPolicy: "cache-and-network",
   });
-  // Unfiltered, newest first: what the store has at all, its spotlight, the
-  // bloks it shows while browsing and the services it offers as chips.
+  // Unfiltered, newest first: what the store has at all and its spotlight.
   const { data: allData } = useAppStoreQuery({
     variables: { pagination: { limit: PAGE } },
     fetchPolicy: "cache-and-network",
   });
+  // Counts over every app, not a page: the stats, the service chips, and how
+  // many apps the chosen filters keep.
+  const { data: totalsData } = useAppStoreTotalsQuery({ fetchPolicy: "cache-and-network" });
+  const { data: resultData } = useAppStoreTotalsQuery({
+    variables: { filters },
+    fetchPolicy: "cache-and-network",
+  });
+  const totals = totalsData?.appStoreTotals;
+  const resultCount = resultData?.appStoreTotals.apps;
 
   const visible = useMemo(() => fromStoreApps(data?.apps ?? []), [data]);
   const apps = useMemo(() => fromStoreApps(allData?.apps ?? []), [allData]);
-  const hasMore = !bloksView && (data?.apps.length ?? 0) >= limit;
-  const services = useMemo(
-    () => [...new Set([...apps, ...visible].flatMap((a) => a.services))].sort(),
-    [apps, visible],
-  );
+  const hasMore = (data?.apps.length ?? 0) >= limit;
+  const services = useMemo(() => (totals?.services ?? []).map((s) => s.service), [totals]);
   const featured = useMemo(() => pickFeatured(apps), [apps]);
+  const browsing = !debouncedSearch && filter === "all" && !service;
+  // While browsing, a few apps that bring panels or scenes, whatever page they are on.
+  const blokShelf = useShelf({ bloks: true }, !browsing);
   const appBloks = useMemo(
-    () => filterAppBloks(bloksView ? visible : apps, { search: debouncedSearch }),
-    [bloksView, visible, apps, debouncedSearch],
+    () => filterAppBloks(bloksView ? visible : blokShelf, { search: debouncedSearch }),
+    [bloksView, visible, blokShelf, debouncedSearch],
   );
   // Bloks GitHub repositories publish on their own. They need no service, so
   // a service chip leaves none of them.
@@ -186,7 +196,6 @@ export const AppStorePage = () => {
     [repoData],
   );
 
-  const browsing = !debouncedSearch && filter === "all" && !service;
   const gpuShelf = useShelf({ hardware: [AppHardware.Gpu] }, !browsing);
   const runningShelf = useShelf({ deployed: true }, !browsing);
 
@@ -215,6 +224,14 @@ export const AppStorePage = () => {
                 Browse the apps registered with your organization and the bloks they bring, and deploy them on a running engine.
               </p>
             </div>
+            {totals && totals.apps > 0 && (
+              <div className="flex gap-6">
+                <Stat value={totals.apps} label="Apps" />
+                <Stat value={totals.actions} label="Actions" />
+                <Stat value={totals.flavours} label="Flavours" />
+                <Stat value={totals.running} label="Running" />
+              </div>
+            )}
           </div>
 
           <div className="relative">
@@ -299,7 +316,7 @@ export const AppStorePage = () => {
                       Panels and scenes an app brings: get the app to use them.
                     </p>
                   </div>
-                  <Badge variant="secondary">{appBloks.length}</Badge>
+                  <Badge variant="secondary">{resultCount ?? appBloks.length} apps</Badge>
                 </div>
                 {appBloks.length === 0 ? (
                   <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
@@ -307,6 +324,11 @@ export const AppStorePage = () => {
                   </div>
                 ) : (
                   <AppBlokGrid bloks={appBloks} />
+                )}
+                {hasMore && (
+                  <Button variant="outline" size="sm" className="self-center rounded-full" onClick={() => setLimit((n) => n + PAGE)}>
+                    Show more
+                  </Button>
                 )}
               </section>
             )}
@@ -375,7 +397,7 @@ export const AppStorePage = () => {
                 <h3 className="text-base font-semibold tracking-tight">
                   {browsing ? "All apps" : "Results"}
                 </h3>
-                <Badge variant="secondary">{hasMore ? `${visible.length}+` : visible.length}</Badge>
+                <Badge variant="secondary">{resultCount ?? (hasMore ? `${visible.length}+` : visible.length)}</Badge>
               </div>
               {visible.length === 0 ? (
                 <div className="flex flex-col items-start gap-2 rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">

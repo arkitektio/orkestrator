@@ -258,6 +258,8 @@ export type AppFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<AppFilter>;
   OR?: InputMaybe<AppFilter>;
+  /** true: only apps whose newest release brings a panel or a scene (a blok the store offers); false: only apps whose newest release brings none. */
+  bloks?: InputMaybe<Scalars['Boolean']['input']>;
   /** true: only apps with at least one deployment of any of their flavours (installed); false: only apps with none. */
   deployed?: InputMaybe<Scalars['Boolean']['input']>;
   /** Keep only apps with a flavour for each of these: GPU, a flavour that requires an accelerator; CPU, one that runs on a plain CPU backend. Read from the flavours' required selectors (`@kabinet/gpu`). */
@@ -268,7 +270,7 @@ export type AppFilter = {
   identifiers?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Keep only apps whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  /** Search by identifier, by the names of the actions its newest release brings, and by the keys and descriptions of its panels and scenes (each a case-insensitive substring), or by semantic similarity of the query to the identifier. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Keep only apps with a flavour that requires this service (e.g. `live.arkitekt.mikro`). */
   service?: InputMaybe<Scalars['String']['input']>;
@@ -295,6 +297,21 @@ export type AppOrder =
   |  { id?: never; identifier: Ordering; releasedAt?: never; }
   |  /** By the time of the app's newest release (`Release.releasedAt`): DESC for the most recently released first. */
   { id?: never; identifier?: never; releasedAt: Ordering; };
+
+/** The store's totals over every app a filter keeps, not a page of them. */
+export type AppStoreTotals = {
+  __typename?: 'AppStoreTotals';
+  /** How many distinct actions their newest releases bring. */
+  actions: Scalars['Int']['output'];
+  /** How many apps. */
+  apps: Scalars['Int']['output'];
+  /** How many flavours their newest releases have. */
+  flavours: Scalars['Int']['output'];
+  /** How many of their deployments (of any release) are RUNNING. */
+  running: Scalars['Int']['output'];
+  /** The services any of their flavours require, most required first, then by name. */
+  services: Array<ServiceCount>;
+};
 
 /** Record that you pre-authorized a release (via a lok mandate) so deployers may install it. */
 export type ApproveReleaseInput = {
@@ -2279,6 +2296,8 @@ export type Query = {
   __typename?: 'Query';
   /** Return a single app by its ID. */
   app: App;
+  /** The store's totals over every app `filters` keeps (as `apps` takes them): apps, actions, flavours, running deployments, and how many apps require each service. */
+  appStoreTotals: AppStoreTotals;
   /** List all apps visible to the current organization. */
   apps: Array<App>;
   /** Return a single backend by its ID. */
@@ -2340,6 +2359,11 @@ export type Query = {
 
 export type QueryAppArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryAppStoreTotalsArgs = {
+  filters?: InputMaybe<AppFilter>;
 };
 
 
@@ -3000,6 +3024,15 @@ export type SelectorInput = {
   value?: InputMaybe<Scalars['String']['input']>;
   /** (cpu, ram, cuda, rocm, oneapi, label) Scoring weight of a preferred (non-required) selector; deployers prefer candidates with the highest sum of satisfied weights. */
   weight?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** A service apps require, and how many of the counted apps have a flavour that requires it. */
+export type ServiceCount = {
+  __typename?: 'ServiceCount';
+  /** How many of the apps require it. */
+  apps: Scalars['Int']['output'];
+  /** The service, e.g. `live.arkitekt.mikro`. */
+  service: Scalars['String']['output'];
 };
 
 export type SliderAssignWidget = AssignWidget & {
@@ -4415,6 +4448,13 @@ export type AppStoreQuery = { __typename?: 'Query', apps: Array<(
     { __typename?: 'App' }
     & StoreAppFragment
   )> };
+
+export type AppStoreTotalsQueryVariables = Exact<{
+  filters?: InputMaybe<AppFilter>;
+}>;
+
+
+export type AppStoreTotalsQuery = { __typename?: 'Query', appStoreTotals: { __typename?: 'AppStoreTotals', apps: number, actions: number, flavours: number, running: number, services: Array<{ __typename?: 'ServiceCount', service: string, apps: number }> } };
 
 export type WatchPodsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -7388,6 +7428,48 @@ export function useAppStoreLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type AppStoreQueryHookResult = ReturnType<typeof useAppStoreQuery>;
 export type AppStoreLazyQueryHookResult = ReturnType<typeof useAppStoreLazyQuery>;
 export type AppStoreQueryResult = Apollo.QueryResult<AppStoreQuery, AppStoreQueryVariables>;
+export const AppStoreTotalsDocument = gql`
+    query AppStoreTotals($filters: AppFilter) {
+  appStoreTotals(filters: $filters) {
+    apps
+    actions
+    flavours
+    running
+    services {
+      service
+      apps
+    }
+  }
+}
+    `;
+
+/**
+ * __useAppStoreTotalsQuery__
+ *
+ * To run a query within a React component, call `useAppStoreTotalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAppStoreTotalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAppStoreTotalsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useAppStoreTotalsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AppStoreTotalsQuery, AppStoreTotalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AppStoreTotalsQuery, AppStoreTotalsQueryVariables>(AppStoreTotalsDocument, options);
+      }
+export function useAppStoreTotalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AppStoreTotalsQuery, AppStoreTotalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AppStoreTotalsQuery, AppStoreTotalsQueryVariables>(AppStoreTotalsDocument, options);
+        }
+export type AppStoreTotalsQueryHookResult = ReturnType<typeof useAppStoreTotalsQuery>;
+export type AppStoreTotalsLazyQueryHookResult = ReturnType<typeof useAppStoreTotalsLazyQuery>;
+export type AppStoreTotalsQueryResult = Apollo.QueryResult<AppStoreTotalsQuery, AppStoreTotalsQueryVariables>;
 export const WatchPodsDocument = gql`
     subscription WatchPods {
   pods {

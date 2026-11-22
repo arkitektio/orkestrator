@@ -37,10 +37,6 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ## rekuest
 
-### Action grouping by availability (correctness, low)
-- **Add:** an ordering (or facet count) by availability: runnable now, recently active, offline, no implementation.
-- **Workaround:** `rekuest/pages/ActionsPage.tsx` with `components/lists/actionGroupings.tsx` groups by availability over the loaded page only (limit 100). Grouping by app, collection and kind is ordered on the server.
-
 ### Fit changes for blok dependency pickers (perf, unverified)
 - **Workaround:** `components/blokDependencyBindings.tsx` polls candidate agents every 15 s and picked agents every 10 s. That may be to catch changes in which agents fit, which no event reports (unverified).
 
@@ -48,9 +44,9 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ## kabinet
 
-### The store's bloks, services and totals (correctness, low)
-- **Add:** an `AppFilter` for apps that bring a panel or scene blok, search over action and blok names, the services offered (a facet), and an `appStats` (apps, actions, flavours, running).
-- **Workaround:** `pages/AppStorePage.tsx` now asks `apps` filtered, ordered and paged on the server, but the "Bloks" view reads the panels and scenes of the first 100 apps, the service chips come from the apps loaded, and a search matches identifiers only (by text or meaning). The totals row and the "Most actions" sort were dropped rather than computed over a page.
+### Sort by most actions (cosmetic)
+- **Add:** an `AppOrder` by how many actions an app's newest release brings.
+- **Workaround:** none: the store's "Most actions" sort was dropped rather than computed over a page. Its bloks, search and totals are the server's (`AppFilter.bloks`, `search`, `appStoreTotals`).
 
 ### Approvals (note)
 - `components/store/StoreParts.tsx` works out "installed by me" from one release's own `approvals`, a short list that is not paged, so it is not a page-bound filter. `ReleaseApprovalFilter.approver` is there for a list of approvals across releases.
@@ -62,11 +58,3 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 ### Deferred
 - **Media access grants (cosmetic, unverified):** an access grant on lok's `MediaStore`, as dokuments, kuvert and bank have. Every avatar is a server-signed `presignedUrl` cached in Apollo. `Organization.avatar` (documented "prefer `profile.avatar`") is still read as a fallback, and is the only logo in `ListOrganization`. Deferred: cosmetic, and a new store contract for one service.
 - **Mesh alias push (correctness, connectivity):** a fakts/lok protocol gap, not GraphQL. lok leaves a mesh alias out of fakts while it cannot resolve the hub node, and nothing pushes it back. While a service stays down, `core/connection/arkitekt/controller/controller.ts` forces a token or fakts refresh at most every 5 minutes. Deferred: it belongs to the fakts protocol, not to this list.
-
----
-
-## bank
-
-### Holdings of one depot on a past day (cosmetic, precision)
-- **Add:** `mergedPositions` for one depot as of a day (`portfolioInsights(accounts:, asOf:)`), or the same fields on `holdings(asOf:)`.
-- **Workaround:** the portfolio uses the server's `mergedPositions`. `bank/pages/AccountPage.tsx` still sums one depot's snapshot (today's or a past day's) with `components/holdings/holdings.ts`, in floating point.

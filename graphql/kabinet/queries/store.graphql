@@ -1,5 +1,6 @@
 # The store's apps, one row per app, filtered, ordered and paged on the server:
-# search (identifier, ranked by meaning), deployed, hardware and service.
+# search (identifier, ranked by meaning; action names; panel and scene names),
+# deployed, hardware, service, and bringing a panel or scene (`bloks`).
 query AppStore(
   $filters: AppFilter
   $ordering: [AppOrder!]! = [{ releasedAt: DESC }]
@@ -7,5 +8,20 @@ query AppStore(
 ) {
   apps(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...StoreApp
+  }
+}
+
+# Counts over every app a filter keeps, not a page: the store's stats and its
+# service chips (how many apps require each service).
+query AppStoreTotals($filters: AppFilter) {
+  appStoreTotals(filters: $filters) {
+    apps
+    actions
+    flavours
+    running
+    services {
+      service
+      apps
+    }
   }
 }

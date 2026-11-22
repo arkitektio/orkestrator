@@ -363,6 +363,11 @@ input AppFilter {
   OR: AppFilter
 
   """
+  true: only apps whose newest release brings a panel or a scene (a blok the store offers); false: only apps whose newest release brings none.
+  """
+  bloks: Boolean
+
+  """
   true: only apps with at least one deployment of any of their flavours (installed); false: only apps with none.
   """
   deployed: Boolean
@@ -384,7 +389,7 @@ input AppFilter {
   ids: [ID!]
 
   """
-  Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  Search by identifier, by the names of the actions its newest release brings, and by the keys and descriptions of its panels and scenes (each a case-insensitive substring), or by semantic similarity of the query to the identifier. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
 
@@ -422,6 +427,26 @@ input AppOrder @oneOf {
   By the time of the app's newest release (`Release.releasedAt`): DESC for the most recently released first.
   """
   releasedAt: Ordering
+}
+
+"""The store's totals over every app a filter keeps, not a page of them."""
+type AppStoreTotals {
+  """How many distinct actions their newest releases bring."""
+  actions: Int!
+
+  """How many apps."""
+  apps: Int!
+
+  """How many flavours their newest releases have."""
+  flavours: Int!
+
+  """How many of their deployments (of any release) are RUNNING."""
+  running: Int!
+
+  """
+  The services any of their flavours require, most required first, then by name.
+  """
+  services: [ServiceCount!]!
 }
 
 """
@@ -3063,6 +3088,11 @@ type Query {
   """Return a single app by its ID."""
   app(id: ID!): App!
 
+  """
+  The store's totals over every app `filters` keeps (as `apps` takes them): apps, actions, flavours, running deployments, and how many apps require each service.
+  """
+  appStoreTotals(filters: AppFilter = null): AppStoreTotals!
+
   """List all apps visible to the current organization."""
   apps(filters: AppFilter, ordering: [AppOrder!]! = [], pagination: OffsetPaginationInput): [App!]!
 
@@ -3869,6 +3899,17 @@ input SelectorInput {
   (cpu, ram, cuda, rocm, oneapi, label) Scoring weight of a preferred (non-required) selector; deployers prefer candidates with the highest sum of satisfied weights.
   """
   weight: Int = null
+}
+
+"""
+A service apps require, and how many of the counted apps have a flavour that requires it.
+"""
+type ServiceCount {
+  """How many of the apps require it."""
+  apps: Int!
+
+  """The service, e.g. `live.arkitekt.mikro`."""
+  service: String!
 }
 
 type SliderAssignWidget implements AssignWidget {
