@@ -6,13 +6,13 @@ import { callAnnouncementStore, useCallAnnouncements } from "./announcements";
 import { useCallState } from "./store";
 
 /**
- * Hears of the calls the organization starts and keeps the announcements
- * honest: lovekit's `calls` subscription delivers a call the moment someone
- * else starts it (never the user's own), and while any is announced the
- * server is re-asked now and then, so a call that has ended stops being
- * offered. The same subscription carries a call's new topics ("Add to the
- * call") to every open app. A `background` builtin, mounted for as long as
- * lovekit is up.
+ * Hears of the calls the organization starts and ends, and keeps the
+ * announcements honest: lovekit's `calls` subscription delivers a call the
+ * moment someone else starts it (never the user's own) and the moment LiveKit
+ * closes its room (`ended`), so an ended call stops being offered. The same
+ * subscription carries a call's new topics ("Add to the call") to every open
+ * app, and re-reads the call lists (Calls, "Join calls", an object's calls), which
+ * therefore do not poll. A `background` builtin, mounted for as long as lovekit is up.
  */
 export const CallAnnouncementsWatcher = () => {
   const joined = useCallState((state) => state.call?.id);
@@ -23,14 +23,17 @@ export const CallAnnouncementsWatcher = () => {
     onData: ({ data, client }) => {
       // A new topic needs nothing for the pages: the answer lands in the
       // cache. The announcement holds its own copy of the row.
-      const changed = data.data?.calls.update;
+      const event = data.data?.calls;
+      if (!event) return;
+      const changed = event.update;
       if (changed) callAnnouncementStore.getState().sync([changed.id], [changed]);
-      const call = data.data?.calls.create;
-      if (!call) return;
-      callAnnouncementStore.getState().announce(call);
-      // "Join calls" and the calls about an object list it without waiting
-      // for their next poll. Filtered rather than named: naming a query
-      // nobody has mounted is a console warning.
+      if (event.ended) callAnnouncementStore.getState().sync([event.ended.id], []);
+      const call = event.create ?? event.resumed;
+      if (call) callAnnouncementStore.getState().announce(call);
+      if (!event.create && !event.ended && !event.resumed) return;
+      // "Join calls" and the calls about an object list it, or drop it, as it
+      // happens. Filtered rather than named: naming a query nobody has
+      // mounted is a console warning.
       void client.refetchQueries({ include: "active", onQueryUpdated: (query) => query.queryName === "ListCalls" });
     },
   });
@@ -38,7 +41,6 @@ export const CallAnnouncementsWatcher = () => {
   const { data, variables } = useListCallsQuery({
     variables: { filter: { live: true, ids }, pagination: { limit: Math.max(ids.length, 1) } },
     skip: ids.length === 0,
-    pollInterval: 30_000,
     fetchPolicy: "network-only",
   });
 

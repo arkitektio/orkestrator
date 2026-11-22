@@ -3,7 +3,7 @@ import { Button } from "@/core/ui/button";
 import { Spinner } from "@/core/ui/spinner";
 import { useElementSize } from "@/core/util/useElementSize";
 import { cn } from "@/core/util/utils";
-import { type CallFragment, useCallParticipantsQuery } from "@/lovekit/api/graphql";
+import { type CallFragment, useCallParticipantsQuery, useWatchCallParticipantsSubscription } from "@/lovekit/api/graphql";
 import { RoomContext, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { AlertCircle, Phone, Users } from "lucide-react";
@@ -56,14 +56,14 @@ const Stage = () => {
   );
 };
 
-/** Who is in the call now, asked of lovekit while this window is not. */
+/** Who is in the call now, asked of lovekit and re-asked as people join and leave. */
 const Lobby = ({ call }: { call: CallFragment }) => {
   const { join, joining, error, active } = useJoinCall();
-  const { data } = useCallParticipantsQuery({
+  const { data, refetch } = useCallParticipantsQuery({
     variables: { id: call.id },
-    pollInterval: 10_000,
     fetchPolicy: "cache-and-network",
   });
+  useWatchCallParticipantsSubscription({ variables: { call: call.id }, onData: () => void refetch() });
   const participants = data?.call.participants ?? call.participants;
   // One person may be in from two devices; they are one name with a count.
   const devices = new Map<string, number>();

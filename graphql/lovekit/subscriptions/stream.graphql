@@ -7,5 +7,11 @@ subscription WatchStreams {
       ...ListStream
     }
     delete
+    live {
+      ...ListStream
+    }
+    offline {
+      ...ListStream
+    }
   }
 }

@@ -15,7 +15,6 @@ const CallsPage = () => {
   const active = useCallState((state) => state.call);
   const { data, refetch } = useListCallsQuery({
     variables: { filter: { live: true }, pagination: { limit: 30 } },
-    pollInterval: 15_000,
     fetchPolicy: "cache-and-network",
   });
 

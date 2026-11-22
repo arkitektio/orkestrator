@@ -20,7 +20,6 @@ export const JoinCallsSection = () => {
   const openCall = useOpenCall();
   const { data } = useListCallsQuery({
     variables: { filter: { live: true }, pagination: { limit: 10 } },
-    pollInterval: 15_000,
     fetchPolicy: "cache-and-network",
   });
   const calls = data?.calls ?? [];

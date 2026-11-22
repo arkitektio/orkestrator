@@ -118,6 +118,11 @@ type Call {
   about: [Structure!]!
   createdAt: DateTime!
   creator: User
+
+  """
+  When the call's room last closed, everyone gone; null while it is live (or was never seen to end)
+  """
+  endedAt: DateTime
   id: ID!
 
   """How many are in the call right now."""
@@ -133,10 +138,18 @@ type Call {
   title: String!
 }
 
-"""A call starting in your organization, or changing what it is about"""
+"""
+A call starting in your organization, changing what it is about, ending, or coming back
+"""
 type CallEvent {
   """A call someone else just started, which you can join"""
   create: Call
+
+  """A call whose room closed: everyone left. `endedAt` says when"""
+  ended: Call
+
+  """A call that had ended and is live again: someone joined it"""
+  resumed: Call
 
   """
   A call that turned to something else; what it was about before is still in `about`
@@ -189,6 +202,15 @@ type CallParticipant {
   identity: String!
   joinedAt: Int!
   name: String!
+}
+
+"""Someone joining or leaving a call"""
+type CallParticipantEvent {
+  """Who just joined the call"""
+  joined: CallParticipant
+
+  """Who just left the call"""
+  left: CallParticipant
 }
 
 type Client {
@@ -507,7 +529,7 @@ input StreamDeclarationInput {
 }
 
 """
-A stream an agent of your organization declared, changed or no longer offers
+A stream an agent of your organization declared, changed, no longer offers, or started or stopped publishing
 """
 type StreamEvent {
   """A stream an agent declared for the first time"""
@@ -515,6 +537,14 @@ type StreamEvent {
 
   """A stream its agent no longer offers"""
   delete: ID
+
+  """A stream its agent started publishing: it is live now"""
+  live: Stream
+
+  """
+  A stream its agent stopped publishing, or whose agent left: it is not live now
+  """
+  offline: Stream
 
   """A stream whose title, kind or description changed"""
   update: Stream
@@ -576,8 +606,11 @@ type Subscription {
   """Your invitations to calls as they arrive and go away"""
   callInvites: CallInviteEvent!
 
+  """Who joins and leaves one call, as they do"""
+  callParticipants(call: ID!): CallParticipantEvent!
+
   """
-  The calls others start in your organization as they start, and any call's new topics
+  The calls others start in your organization as they start, any call's new topics, and calls ending and coming back
   """
   calls: CallEvent!
 

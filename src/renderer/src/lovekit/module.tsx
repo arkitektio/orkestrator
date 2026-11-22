@@ -6,6 +6,7 @@ import { CallConnection } from "./call/CallConnection";
 import { CallInviteNotifications } from "./call/CallInviteNotifications";
 import { CallIsland } from "./call/CallIsland";
 import { CallInvitesWatcher } from "./call/invites";
+import { StreamLivenessWatcher } from "./components/StreamLivenessWatcher";
 import { JoinCallsSection } from "./call/JoinCallsSection";
 import { StructureCallsSection } from "./call/StructureCallsSection";
 import { LOVEKIT_DIALOGS } from "./dialogRegistry";
@@ -64,7 +65,7 @@ export const LOVEKIT_MODULE = defineModule({
     // The call's connection outlives the page it was joined from; the
     // invitations ring on every device the app is open on, and a call the
     // organization starts is announced in the rail.
-    background: [CallConnection, CallInvitesWatcher, CallAnnouncementsWatcher],
+    background: [CallConnection, CallInvitesWatcher, CallAnnouncementsWatcher, StreamLivenessWatcher],
     railIslands: [CallIsland, CallAnnouncementIsland],
   },
 });

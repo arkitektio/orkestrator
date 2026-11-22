@@ -10,7 +10,7 @@ import { AgentUser, LiveDot } from "../components/agent";
  * ("card"); a line naming it and how many streams it offers elsewhere.
  */
 export const AgentDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetAgentQuery({ variables: { id: props.id }, pollInterval: 15_000 });
+  const { data } = useGetAgentQuery({ variables: { id: props.id } });
   const agent = data?.agent;
 
   if (!showsCard(props.variant) || props.context === "command") {

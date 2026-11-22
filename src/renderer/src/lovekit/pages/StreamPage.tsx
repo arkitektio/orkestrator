@@ -8,8 +8,9 @@ import { StreamView } from "../components/StreamView";
 import { LOVEKIT_HELP } from "../help";
 
 export default asDetailQueryRoute(
-  // Polled: whether it is live is LiveKit's, not something lovekit announces.
-  (options: Parameters<typeof useGetStreamQuery>[0]) => useGetStreamQuery({ ...options, pollInterval: 15_000 }),
+  // Not polled: lovekit announces a stream going live or offline (LiveKit's
+  // webhook), and StreamLivenessWatcher writes it into the cache.
+  useGetStreamQuery,
   ({ data }) => {
     const stream = data.stream;
     return (

@@ -5,8 +5,9 @@ import { AgentApp, AgentUser } from "../components/agent";
 import { AgentStreams } from "../components/AgentStreams";
 import { LOVEKIT_HELP } from "../help";
 
+// Liveness arrives as events (StreamLivenessWatcher), so the page does not poll.
 export default asDetailQueryRoute(
-  (options: Parameters<typeof useGetAgentQuery>[0]) => useGetAgentQuery({ ...options, pollInterval: 15_000 }),
+  useGetAgentQuery,
   ({ data }) => {
     const agent = data.agent;
     return (

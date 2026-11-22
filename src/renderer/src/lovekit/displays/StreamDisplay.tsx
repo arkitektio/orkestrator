@@ -11,7 +11,7 @@ import { StreamView } from "../components/StreamView";
  * a line naming it and the app it comes from everywhere else.
  */
 export const StreamDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetStreamQuery({ variables: { id: props.id }, pollInterval: 15_000 });
+  const { data } = useGetStreamQuery({ variables: { id: props.id } });
   const stream = data?.stream;
 
   if (!showsCard(props.variant) || props.context === "command") {

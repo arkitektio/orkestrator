@@ -21,7 +21,6 @@ export const StructureCallsSection = ({ identifier, object }: { identifier: Iden
   const { data } = useListCallsQuery({
     variables: { filter: { about: about ?? { identifier, object: -1 }, live: true } },
     skip: !about,
-    pollInterval: 15_000,
     fetchPolicy: "cache-and-network",
   });
 

@@ -130,6 +130,8 @@ export type Call = {
   about: Array<Structure>;
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
+  /** When the call's room last closed, everyone gone; null while it is live (or was never seen to end) */
+  endedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   /** How many are in the call right now. */
   participantCount: Scalars['Int']['output'];
@@ -140,11 +142,15 @@ export type Call = {
   title: Scalars['String']['output'];
 };
 
-/** A call starting in your organization, or changing what it is about */
+/** A call starting in your organization, changing what it is about, ending, or coming back */
 export type CallEvent = {
   __typename?: 'CallEvent';
   /** A call someone else just started, which you can join */
   create?: Maybe<Call>;
+  /** A call whose room closed: everyone left. `endedAt` says when */
+  ended?: Maybe<Call>;
+  /** A call that had ended and is live again: someone joined it */
+  resumed?: Maybe<Call>;
   /** A call that turned to something else; what it was about before is still in `about` */
   update?: Maybe<Call>;
 };
@@ -191,6 +197,15 @@ export type CallParticipant = {
   identity: Scalars['String']['output'];
   joinedAt: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+};
+
+/** Someone joining or leaving a call */
+export type CallParticipantEvent = {
+  __typename?: 'CallParticipantEvent';
+  /** Who just joined the call */
+  joined?: Maybe<CallParticipant>;
+  /** Who just left the call */
+  left?: Maybe<CallParticipant>;
 };
 
 export type Client = {
@@ -526,13 +541,17 @@ export type StreamDeclarationInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A stream an agent of your organization declared, changed or no longer offers */
+/** A stream an agent of your organization declared, changed, no longer offers, or started or stopped publishing */
 export type StreamEvent = {
   __typename?: 'StreamEvent';
   /** A stream an agent declared for the first time */
   create?: Maybe<Stream>;
   /** A stream its agent no longer offers */
   delete?: Maybe<Scalars['ID']['output']>;
+  /** A stream its agent started publishing: it is live now */
+  live?: Maybe<Stream>;
+  /** A stream its agent stopped publishing, or whose agent left: it is not live now */
+  offline?: Maybe<Stream>;
   /** A stream whose title, kind or description changed */
   update?: Maybe<Stream>;
 };
@@ -583,10 +602,17 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Your invitations to calls as they arrive and go away */
   callInvites: CallInviteEvent;
-  /** The calls others start in your organization as they start, and any call's new topics */
+  /** Who joins and leaves one call, as they do */
+  callParticipants: CallParticipantEvent;
+  /** The calls others start in your organization as they start, any call's new topics, and calls ending and coming back */
   calls: CallEvent;
   /** Streams your organization's agents declare, change and drop, as they do */
   streams: StreamEvent;
+};
+
+
+export type SubscriptionCallParticipantsArgs = {
+  call: Scalars['ID']['input'];
 };
 
 /** How a stream is carried from its agent to whoever watches */
@@ -878,7 +904,20 @@ export type WatchCallsSubscription = { __typename?: 'Subscription', calls: { __t
     ) | null, update?: (
       { __typename?: 'Call' }
       & ListCallFragment
+    ) | null, ended?: { __typename?: 'Call', id: string } | null, resumed?: (
+      { __typename?: 'Call' }
+      & ListCallFragment
     ) | null } };
+
+export type WatchCallParticipantsSubscriptionVariables = Exact<{
+  call: Scalars['ID']['input'];
+}>;
+
+
+export type WatchCallParticipantsSubscription = { __typename?: 'Subscription', callParticipants: { __typename?: 'CallParticipantEvent', joined?: (
+      { __typename?: 'CallParticipant' }
+      & CallParticipantFragment
+    ) | null, left?: { __typename?: 'CallParticipant', identity: string } | null } };
 
 export type WatchStreamsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -887,6 +926,12 @@ export type WatchStreamsSubscription = { __typename?: 'Subscription', streams: {
       { __typename?: 'Stream' }
       & ListStreamFragment
     ) | null, update?: (
+      { __typename?: 'Stream' }
+      & ListStreamFragment
+    ) | null, live?: (
+      { __typename?: 'Stream' }
+      & ListStreamFragment
+    ) | null, offline?: (
       { __typename?: 'Stream' }
       & ListStreamFragment
     ) | null } };
@@ -1724,6 +1769,12 @@ export const WatchCallsDocument = gql`
     update {
       ...ListCall
     }
+    ended {
+      id
+    }
+    resumed {
+      ...ListCall
+    }
   }
 }
     ${ListCallFragmentDoc}`;
@@ -1749,6 +1800,41 @@ export function useWatchCallsSubscription(baseOptions?: ApolloReactHooks.Subscri
       }
 export type WatchCallsSubscriptionHookResult = ReturnType<typeof useWatchCallsSubscription>;
 export type WatchCallsSubscriptionResult = Apollo.SubscriptionResult<WatchCallsSubscription>;
+export const WatchCallParticipantsDocument = gql`
+    subscription WatchCallParticipants($call: ID!) {
+  callParticipants(call: $call) {
+    joined {
+      ...CallParticipant
+    }
+    left {
+      identity
+    }
+  }
+}
+    ${CallParticipantFragmentDoc}`;
+
+/**
+ * __useWatchCallParticipantsSubscription__
+ *
+ * To run a query within a React component, call `useWatchCallParticipantsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchCallParticipantsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchCallParticipantsSubscription({
+ *   variables: {
+ *      call: // value for 'call'
+ *   },
+ * });
+ */
+export function useWatchCallParticipantsSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchCallParticipantsSubscription, WatchCallParticipantsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchCallParticipantsSubscription, WatchCallParticipantsSubscriptionVariables>(WatchCallParticipantsDocument, options);
+      }
+export type WatchCallParticipantsSubscriptionHookResult = ReturnType<typeof useWatchCallParticipantsSubscription>;
+export type WatchCallParticipantsSubscriptionResult = Apollo.SubscriptionResult<WatchCallParticipantsSubscription>;
 export const WatchStreamsDocument = gql`
     subscription WatchStreams {
   streams {
@@ -1759,6 +1845,12 @@ export const WatchStreamsDocument = gql`
       ...ListStream
     }
     delete
+    live {
+      ...ListStream
+    }
+    offline {
+      ...ListStream
+    }
   }
 }
     ${ListStreamFragmentDoc}`;

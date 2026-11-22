@@ -792,6 +792,18 @@
             "deprecationReason": null
           },
           {
+            "name": "endedAt",
+            "description": "When the call's room last closed, everyone gone; null while it is live (or was never seen to end)",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -888,12 +900,36 @@
       {
         "kind": "OBJECT",
         "name": "CallEvent",
-        "description": "A call starting in your organization, or changing what it is about",
+        "description": "A call starting in your organization, changing what it is about, ending, or coming back",
         "isOneOf": null,
         "fields": [
           {
             "name": "create",
             "description": "A call someone else just started, which you can join",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Call",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ended",
+            "description": "A call whose room closed: everyone left. `endedAt` says when",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Call",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "resumed",
+            "description": "A call that had ended and is live again: someone joined it",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -1239,6 +1275,42 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "CallParticipantEvent",
+        "description": "Someone joining or leaving a call",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "joined",
+            "description": "Who just joined the call",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CallParticipant",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "left",
+            "description": "Who just left the call",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CallParticipant",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -3423,7 +3495,7 @@
       {
         "kind": "OBJECT",
         "name": "StreamEvent",
-        "description": "A stream an agent of your organization declared, changed or no longer offers",
+        "description": "A stream an agent of your organization declared, changed, no longer offers, or started or stopped publishing",
         "isOneOf": null,
         "fields": [
           {
@@ -3445,6 +3517,30 @@
             "type": {
               "kind": "SCALAR",
               "name": "ID",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "live",
+            "description": "A stream its agent started publishing: it is live now",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Stream",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "offline",
+            "description": "A stream its agent stopped publishing, or whose agent left: it is not live now",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Stream",
               "ofType": null
             },
             "isDeprecated": false,
@@ -3796,8 +3892,41 @@
             "deprecationReason": null
           },
           {
+            "name": "callParticipants",
+            "description": "Who joins and leaves one call, as they do",
+            "args": [
+              {
+                "name": "call",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "CallParticipantEvent",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "calls",
-            "description": "The calls others start in your organization as they start, and any call's new topics",
+            "description": "The calls others start in your organization as they start, any call's new topics, and calls ending and coming back",
             "args": [],
             "type": {
               "kind": "NON_NULL",

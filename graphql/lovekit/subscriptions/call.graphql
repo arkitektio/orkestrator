@@ -7,6 +7,7 @@ subscription WatchCallInvites {
   }
 }
 
+# Calls as they start, change topic, end (LiveKit closed the room) and resume.
 subscription WatchCalls {
   calls {
     create {
@@ -14,6 +15,24 @@ subscription WatchCalls {
     }
     update {
       ...ListCall
+    }
+    ended {
+      id
+    }
+    resumed {
+      ...ListCall
+    }
+  }
+}
+
+# Who joins and leaves one call, as LiveKit reports it.
+subscription WatchCallParticipants($call: ID!) {
+  callParticipants(call: $call) {
+    joined {
+      ...CallParticipant
+    }
+    left {
+      identity
     }
   }
 }

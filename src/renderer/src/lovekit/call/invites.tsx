@@ -36,15 +36,15 @@ export const useDismissInvite = () => {
 };
 
 /**
- * Keeps the invitations current: asks once, subscribes for the ones that
- * arrive and go away while the app is open, and re-asks now and then so an
- * invitation to a call that has since ended stops ringing. A `background`
- * builtin, mounted on every device the user has the app open on.
+ * Keeps the invitations current: asks once, then subscribes for the ones that
+ * arrive and go away while the app is open. An invitation to a call that ends
+ * goes away the same way (lovekit sends its `delete` when the room closes), so
+ * it stops ringing without re-asking. A `background` builtin, mounted on every
+ * device the user has the app open on.
  */
 export const CallInvitesWatcher = () => {
   const { subscribeToMore } = useMyCallInvitesQuery({
     fetchPolicy: "cache-and-network",
-    pollInterval: 30_000,
   });
 
   useEffect(
