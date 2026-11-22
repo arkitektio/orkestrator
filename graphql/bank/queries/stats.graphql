@@ -27,8 +27,3 @@ query SpendingByCategory($dateFrom: Date, $dateTo: Date, $accounts: [ID!], $incl
   }
 }
 
-query TopCounterparties($dateFrom: Date, $dateTo: Date, $direction: Direction! = OUT, $limit: Int! = 10, $accounts: [ID!]) {
-  topCounterparties(dateFrom: $dateFrom, dateTo: $dateTo, direction: $direction, limit: $limit, accounts: $accounts) {
-    ...CounterpartyTotal
-  }
-}

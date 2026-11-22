@@ -6,8 +6,6 @@ fragment ListMerchant on Merchant {
   logoUrl
   website
   transactionCount
-  firstSeen
-  lastSeen
   net {
     amount
     currency
@@ -41,6 +39,8 @@ fragment MerchantLocation on MerchantLocation {
 
 fragment Merchant on Merchant {
   ...ListMerchant
+  firstSeen
+  lastSeen
   description
   createdAt
   aliases {

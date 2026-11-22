@@ -7,10 +7,23 @@ query Portfolio {
     latestBalance {
       ...Balance
     }
-    currentHoldings {
-      ...Holding
-    }
+    holdingsCount
   }
+}
+
+fragment MergedPosition on MergedPosition {
+  isin
+  name
+  securityType
+  currency
+  depots
+  quantity
+  price
+  fifoPrice
+  costBasis
+  valuation
+  unrealizedGain
+  weight
 }
 
 # Positions summed by ISIN and currency on the server, exactly (decimals),
@@ -20,18 +33,7 @@ query Portfolio {
 query MergedPositions($accounts: [ID!], $asOf: Date, $dateFrom: Date) {
   portfolioInsights(accounts: $accounts, asOf: $asOf, dateFrom: $dateFrom) {
     mergedPositions {
-      isin
-      name
-      securityType
-      currency
-      depots
-      quantity
-      price
-      fifoPrice
-      costBasis
-      valuation
-      unrealizedGain
-      weight
+      ...MergedPosition
     }
   }
 }

@@ -27,7 +27,7 @@ import AccountCard from "../components/cards/AccountCard";
 import BudgetStatusCard from "../components/cards/BudgetStatusCard";
 import RecurringCard from "../components/cards/RecurringCard";
 import { CashflowChart } from "../components/charts/CashflowChart";
-import { dominantCurrency } from "../components/charts/currency";
+import { bucketsOf, dominantCurrency } from "../components/charts/currency";
 import { SpendingBreakdown } from "../components/charts/SpendingBreakdown";
 import { AttentionChips } from "../components/home/AttentionChips";
 import { ExploreLinks } from "../components/home/ExploreLinks";
@@ -102,7 +102,8 @@ const Overview = () => {
       ? { dateFrom: daysAgo(7 * 16), granularity: Granularity.Week }
       : { dateFrom: firstOfMonth(new Date(), 11), granularity: Granularity.Month },
   });
-  const thisMonth = useCashflowQuery({ variables: { dateFrom: monthStart, granularity: Granularity.Month } });
+  // The chart's monthly buckets end with this month: asked for apart only while it shows weeks.
+  const thisMonth = useCashflowQuery({ variables: { dateFrom: monthStart, granularity: Granularity.Month }, skip: !weekly });
   const spending = useSpendingByCategoryQuery({ variables: { dateFrom: monthStart } });
   const budgets = useBudgetStatusQuery();
   const merchants = useSpendingByMerchantQuery({ variables: { dateFrom: monthStart, limit: 12 } });
@@ -136,10 +137,10 @@ const Overview = () => {
   }, [balanceTotals.data]);
 
   const month = useMemo(() => {
-    const buckets = thisMonth.data?.cashflow ?? [];
+    const buckets = weekly ? (thisMonth.data?.cashflow ?? []) : bucketsOf(cashflow.data?.cashflow ?? [], monthStart);
     const currency = dominantCurrency(buckets);
     return buckets.find((bucket) => bucket.currency === currency);
-  }, [thisMonth.data]);
+  }, [weekly, thisMonth.data, cashflow.data, monthStart]);
 
   // Server-ordered by nextExpected (the query's default ordering).
   const upcoming = recurring.data?.recurringPayments ?? [];

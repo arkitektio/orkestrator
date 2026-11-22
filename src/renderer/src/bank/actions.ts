@@ -41,9 +41,11 @@ import {
   GetTransactionDocument,
   GetTransactionQuery,
   ListBankConnectionsDocument,
-  ListBankProvidersDocument,
   MarkTransfersDocument,
   MergeMerchantsDocument,
+  PendingAuthStatesDocument,
+  PendingAuthStatesQuery,
+  PendingAuthStatesQueryVariables,
   RecurringStatus,
   RevokeBankConnectionDocument,
   SetRecurringStatusesDocument,
@@ -166,11 +168,8 @@ export const BANK_ACTIONS: Record<string, Action> = {
     conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
     execute: async ({ services, state, onProgress }) => {
       await forEach(idsOf(state, PROVIDER), onProgress, (id) =>
-        bankMutate(services, {
-          mutation: UpdateProviderDocument,
-          variables: { input: { id, enabled: true } },
-          refetchQueries: [ListBankProvidersDocument],
-        }),
+        // The answer is the provider: the cache updates its row.
+        bankMutate(services, { mutation: UpdateProviderDocument, variables: { input: { id, enabled: true } } }),
       );
     },
   },
@@ -182,11 +181,7 @@ export const BANK_ACTIONS: Record<string, Action> = {
     conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
     execute: async ({ services, state, onProgress }) => {
       await forEach(idsOf(state, PROVIDER), onProgress, (id) =>
-        bankMutate(services, {
-          mutation: UpdateProviderDocument,
-          variables: { input: { id, enabled: false } },
-          refetchQueries: [ListBankProvidersDocument],
-        }),
+        bankMutate(services, { mutation: UpdateProviderDocument, variables: { input: { id, enabled: false } } }),
       );
     },
   },
@@ -251,26 +246,17 @@ export const BANK_ACTIONS: Record<string, Action> = {
         destructive: true,
       });
       if (!ok) return;
-      // A login is cancelled by its state, which only its starter is told.
-      let skipped = 0;
-      await forEach(ids, onProgress, async (id) => {
-        const { data } = await bankClient(services).query<GetBankConnectionQuery>({
-          query: GetBankConnectionDocument,
-          variables: { id },
-          fetchPolicy: "network-only",
-        });
-        const state = data.bankConnection.pendingAuth?.state;
-        if (!state) {
-          skipped += 1;
-          return;
-        }
-        await bankMutate(services, {
-          mutation: CancelAuthDocument,
-          variables: { state },
-          refetchQueries: [ListBankConnectionsDocument],
-        });
+      // A login is cancelled by its state, which only its starter is told: every
+      // selected connection's in one ask, then the list read once at the end.
+      const { data } = await bankClient(services).query<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>({
+        query: PendingAuthStatesDocument,
+        variables: { ids },
+        fetchPolicy: "network-only",
       });
-      if (skipped === ids.length) throw new Error("There is no unfinished login of yours here to cancel");
+      const states = data.bankConnections.flatMap((connection) => (connection.pendingAuth ? [connection.pendingAuth.state] : []));
+      if (states.length === 0) throw new Error("There is no unfinished login of yours here to cancel");
+      await forEach(states, onProgress, (state) => bankMutate(services, { mutation: CancelAuthDocument, variables: { state } }));
+      await bankClient(services).refetchQueries({ include: [ListBankConnectionsDocument] });
     },
   },
   "bank-categorize": {

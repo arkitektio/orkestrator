@@ -24,8 +24,8 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
   // A parent category shows its children's transactions too, as its budget counts them.
   const base = useMemo(() => ({ categories: [category.id], includeChildCategories: true }), [category.id]);
   const { filters, ordering, actions } = useTransactionFilterBar(base);
-  const { data: budgets } = useBudgetStatusQuery();
-  const budget = budgets?.budgetStatus.find((status) => status.budget.category.id === category.id);
+  const { data: budgets } = useBudgetStatusQuery({ variables: { category: category.id } });
+  const budget = budgets?.budgetStatus[0];
 
   return (
     <BankCategory.ModelPage

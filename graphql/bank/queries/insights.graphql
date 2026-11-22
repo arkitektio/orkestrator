@@ -55,8 +55,13 @@ query RecurringInsights($includeDetected: Boolean! = false) {
   }
 }
 
+# The portfolio page's one ask: the insights and the merged positions come out
+# of the same server answer, so they are asked for together.
 query PortfolioInsights($accounts: [ID!], $dateFrom: Date) {
   portfolioInsights(accounts: $accounts, dateFrom: $dateFrom) {
     ...PortfolioInsights
+    mergedPositions {
+      ...MergedPosition
+    }
   }
 }

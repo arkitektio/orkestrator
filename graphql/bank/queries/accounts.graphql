@@ -14,10 +14,10 @@ query GetBankAccount($id: ID!) {
   }
 }
 
-query SearchBankAccounts($search: String, $values: [ID!]) {
-  options: bankAccounts(filters: { search: $search, ids: $values }, pagination: { limit: 10 }) {
-    value: id
-    label: name
+# An account where another module shows one (a chip, a card): the row only.
+query GetListBankAccount($id: ID!) {
+  bankAccount(id: $id) {
+    ...ListBankAccount
   }
 }
 

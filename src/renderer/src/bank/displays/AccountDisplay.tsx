@@ -1,13 +1,13 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { BankAccount } from "@/bank/linkers";
-import { useGetBankAccountQuery } from "../api/graphql";
+import { useGetListBankAccountQuery } from "../api/graphql";
 import AccountCard from "../components/cards/AccountCard";
 import { Money } from "../components/Money";
 import { formatIban } from "../format";
 
 /** `@bank/account` wherever another module shows one. */
 export const AccountDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetBankAccountQuery({ variables: { id: props.id } });
+  const { data } = useGetListBankAccountQuery({ variables: { id: props.id } });
   const account = data?.bankAccount;
   if (!account) return <span className="text-xs text-muted-foreground">Account</span>;
 

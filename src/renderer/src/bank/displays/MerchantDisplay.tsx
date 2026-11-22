@@ -1,12 +1,12 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { BankMerchant } from "@/bank/linkers";
-import { useGetMerchantQuery } from "../api/graphql";
+import { useGetListMerchantQuery } from "../api/graphql";
 import MerchantCard from "../components/cards/MerchantCard";
 import { MerchantLogo } from "../components/MerchantLogo";
 
 /** `@bank/merchant` wherever another module shows one. */
 export const MerchantDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetMerchantQuery({ variables: { id: props.id } });
+  const { data } = useGetListMerchantQuery({ variables: { id: props.id } });
   const merchant = data?.merchant;
   if (!merchant) return <span className="text-xs text-muted-foreground">Merchant</span>;
 

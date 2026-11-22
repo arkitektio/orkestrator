@@ -98,6 +98,8 @@ input AreaInput {
 """Spending at located places inside a map area."""
 type AreaInsights {
   categories: [RankedCategory!]!
+
+  """Its places by expense, largest first (ranked only when asked for)."""
   locations: [RankedLocation!]!
   merchants: [RankedMerchant!]!
   monthly: [CashflowBucket!]!
@@ -265,6 +267,11 @@ type BankAccount {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  How many positions a depot held at its latest sync (`currentHoldings`, counted; 0 for other accounts).
+  """
+  holdingsCount: Int!
 
   """The account's IBAN, if known."""
   iban: String
@@ -864,6 +871,10 @@ type CategoryInsights {
   """Its part of all expense."""
   shareOfSpending: [Share!]!
   tickets: [TicketStats!]!
+
+  """
+  The counterparties it pays most, largest first (ranked only when asked for).
+  """
   topCounterparties: [CounterpartyTotal!]!
   topMerchants: [RankedMerchant!]!
   totals: [MoneyTotals!]!
@@ -2530,7 +2541,7 @@ type Query {
   budget(id: ID!): Budget!
 
   """Budgeted vs. spent for a month."""
-  budgetStatus(month: Date = null): [BudgetStatus!]!
+  budgetStatus(category: ID = null, month: Date = null): [BudgetStatus!]!
 
   """The organization's budgets."""
   budgets(filters: BudgetFilter, ordering: [BudgetOrder!]! = [], pagination: OffsetPaginationInput): [Budget!]!
@@ -3157,9 +3168,9 @@ type Transaction {
   status: TransactionStatus!
 
   """
-  The categories this transaction most likely belongs to, best first — from similar transactions the organization categorized and from category terms. Empty when it has no embedding yet.
+  The categories this transaction most likely belongs to, best first — from similar transactions the organization categorized and from category terms. Empty when it has no embedding yet. `unsettledOnly`: also empty for a settled row (a transfer, a provider `kind`, or a category set by a user, rule, merchant or import), so a list ranks only the rows it offers suggestions on.
   """
-  suggestedCategories(limit: Int! = 3): [CategorySuggestion!]!
+  suggestedCategories(limit: Int! = 3, unsettledOnly: Boolean! = false): [CategorySuggestion!]!
 
   """The syncer that last wrote the bank fields; null for imported rows."""
   syncer: AccountSyncer

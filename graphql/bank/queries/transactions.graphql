@@ -7,7 +7,7 @@ query ListTransactions(
   transactions(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTransaction
     # Only for lists that offer one-click categorizing (the server ranks per row).
-    suggestedCategories(limit: 3) @include(if: $withSuggestions) {
+    suggestedCategories(limit: 3, unsettledOnly: true) @include(if: $withSuggestions) {
       ...SuggestionChip
     }
   }

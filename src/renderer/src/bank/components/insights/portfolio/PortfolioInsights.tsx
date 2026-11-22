@@ -1,5 +1,5 @@
 import { cn } from "@/core/util/utils";
-import { usePortfolioInsightsQuery } from "../../../api/graphql";
+import { PortfolioInsightsFragment } from "../../../api/graphql";
 import { formatMoney, toNumber } from "../../../format";
 import { Money } from "../../Money";
 import { inCurrency, InsightBlock, InsightStat, percent, RankedBars } from "../parts";
@@ -8,11 +8,10 @@ import { ValuationChart } from "./ValuationChart";
 /**
  * The depot as a whole: value, what went in, the gain on it, the value over
  * time, the split by security type and the payouts (and fees) per year. Parts
- * without data are left out.
+ * without data are left out. The page asks for the insights (with its
+ * positions, from the same server answer) and hands them in.
  */
-export const PortfolioInsights = ({ accounts }: { accounts?: string[] }) => {
-  const { data } = usePortfolioInsightsQuery({ variables: { accounts: accounts?.length ? accounts : null } });
-  const insights = data?.portfolioInsights;
+export const PortfolioInsights = ({ insights }: { insights?: PortfolioInsightsFragment }) => {
   if (!insights || insights.valuation.length === 0) return null;
 
   // The currency most of the depot is valued in.

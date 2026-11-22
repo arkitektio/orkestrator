@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dominantCurrency } from "./components/charts/currency";
+import { bucketsOf, dominantCurrency } from "./components/charts/currency";
 import { firstOfMonth, formatIban, formatMoney, intervalLabel, isoDay, toNumber } from "./format";
 
 describe("bank format", () => {
@@ -39,5 +39,15 @@ describe("bank format", () => {
       ]),
     ).toBe("EUR");
     expect(dominantCurrency([])).toBeUndefined();
+  });
+
+  it("picks one period's buckets out of a series, every currency", () => {
+    const rows = [
+      { periodStart: "2026-10-01", currency: "EUR" },
+      { periodStart: "2026-11-01", currency: "EUR" },
+      { periodStart: "2026-11-01", currency: "USD" },
+    ];
+    expect(bucketsOf(rows, "2026-11-01").map((row) => row.currency)).toEqual(["EUR", "USD"]);
+    expect(bucketsOf(rows, "2026-12-01")).toEqual([]);
   });
 });

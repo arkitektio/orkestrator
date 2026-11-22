@@ -16,12 +16,12 @@ fragment ListBankConnection on BankConnection {
   lastErrorCode
   pendingExpiresAt
   isAbandoned
-  nextSyncAllowedAt
-  syncsRemainingToday
 }
 
 fragment BankConnection on BankConnection {
   ...ListBankConnection
+  nextSyncAllowedAt
+  syncsRemainingToday
   createdAt
   linkedAt
   pendingAuth {

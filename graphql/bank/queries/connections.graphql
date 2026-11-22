@@ -10,6 +10,16 @@ query GetBankConnection($id: ID!) {
   }
 }
 
+# The unfinished logins of several connections, in one ask (only the starter is told a state).
+query PendingAuthStates($ids: [ID!]!) {
+  bankConnections(filters: { ids: $ids }, pagination: { limit: 100 }) {
+    id
+    pendingAuth {
+      state
+    }
+  }
+}
+
 query BankInstitutions($provider: ID!, $country: String!) {
   bankInstitutions(provider: $provider, country: $country) {
     name

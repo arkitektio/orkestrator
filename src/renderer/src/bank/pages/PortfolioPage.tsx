@@ -3,7 +3,7 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { BankAccount } from "@/bank/linkers";
 import { LineChart } from "lucide-react";
 import { useMemo } from "react";
-import { Provider, useMergedPositionsQuery, usePortfolioQuery } from "../api/graphql";
+import { Provider, usePortfolioInsightsQuery, usePortfolioQuery } from "../api/graphql";
 import { positionsOf } from "../components/holdings/holdings";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { PortfolioInsights } from "../components/insights/portfolio/PortfolioInsights";
@@ -18,12 +18,11 @@ const PortfolioPage = () => {
   const { data } = usePortfolioQuery();
   // The query asks for depots only (`kind: DEPOT`).
   const depots = useMemo(() => data?.bankAccounts ?? [], [data]);
-  // A security held in several depots is merged by the server, exactly.
-  const merged = useMergedPositionsQuery();
-  const positions = useMemo(
-    () => positionsOf(merged.data?.portfolioInsights.mergedPositions ?? []),
-    [merged.data],
-  );
+  // One server answer carries both the insights and the positions (a security
+  // held in several depots merged by the server, exactly): asked for once.
+  const { data: portfolio } = usePortfolioInsightsQuery({ variables: { accounts: null } });
+  const insights = portfolio?.portfolioInsights;
+  const positions = useMemo(() => positionsOf(insights?.mergedPositions ?? []), [insights]);
 
   return (
     <PageLayout
@@ -56,7 +55,7 @@ const PortfolioPage = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-8 p-6">
-          <PortfolioInsights />
+          <PortfolioInsights insights={insights} />
           <PortfolioOverview positions={positions} />
           {depots.length > 1 && (
             <section className="flex flex-col gap-2">
@@ -70,7 +69,7 @@ const PortfolioPage = () => {
                     <span className="tabular-nums text-muted-foreground">
                       {depot.latestBalance
                         ? formatMoney(depot.latestBalance.amount, depot.latestBalance.currency)
-                        : `${depot.currentHoldings.length} positions`}
+                        : `${depot.holdingsCount} positions`}
                     </span>
                   </div>
                 ))}

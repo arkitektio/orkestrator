@@ -8,7 +8,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { useDialog } from "@/core/dialogs/registry";
 import { BankProvider } from "@/bank/linkers";
 import { Check, Minus, Pencil, Power, PowerOff } from "lucide-react";
-import { ListBankProvidersDocument, useGetBankProviderQuery, useUpdateProviderMutation } from "../api/graphql";
+import { useGetBankProviderQuery, useUpdateProviderMutation } from "../api/graphql";
 import ConnectionList from "../components/lists/ConnectionList";
 import { reportBankErrorAs } from "../errors";
 import { BANK_HELP } from "../help";
@@ -18,7 +18,8 @@ const ProviderPage = asDetailQueryRoute(useGetBankProviderQuery, ({ data }) => {
   const provider = data.bankProvider;
   const settings = provider.enableBanking;
   const { openDialog } = useDialog();
-  const [update, { loading }] = useUpdateProviderMutation({ refetchQueries: [ListBankProvidersDocument] });
+  // The answer is the provider: the cache updates its row wherever it is listed.
+  const [update, { loading }] = useUpdateProviderMutation();
 
   const setEnabled = (enabled: boolean) =>
     update({ variables: { input: { id: provider.id, enabled } } }).catch(

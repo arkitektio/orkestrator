@@ -13,12 +13,8 @@ fragment ListBankAccount on BankAccount {
   kind
   currency
   product
-  lastSyncedAt
   lastError
-  lastErrorCode
   isSyncing
-  nextSyncAllowedAt
-  syncsRemainingToday
   latestBalance {
     ...Balance
   }
@@ -35,10 +31,17 @@ fragment ListBankAccount on BankAccount {
   }
 }
 
+# What the account page reads besides the row: its sync budget (each field
+# walks the account's syncers, so lists leave them out).
+fragment AccountSyncState on BankAccount {
+  lastSyncedAt
+  lastErrorCode
+  nextSyncAllowedAt
+  syncsRemainingToday
+}
+
 fragment BankAccount on BankAccount {
   ...ListBankAccount
+  ...AccountSyncState
   createdAt
-  currentHoldings {
-    ...Holding
-  }
 }

@@ -18,13 +18,6 @@ fragment CategoryTotal on CategoryTotal {
   }
 }
 
-fragment CounterpartyTotal on CounterpartyTotal {
-  counterparty
-  currency
-  total
-  count
-}
-
 fragment SyncResult on SyncResult {
   created
   updated
@@ -34,5 +27,7 @@ fragment SyncResult on SyncResult {
   holdings
   account {
     ...ListBankAccount
+    # A sync spends the budget the account page shows.
+    ...AccountSyncState
   }
 }

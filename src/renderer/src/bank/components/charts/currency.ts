@@ -9,3 +9,7 @@ export const dominantCurrency = <T extends { currency: string; count: number }>(
   for (const [currency, count] of counts) if (best === undefined || count > counts.get(best)!) best = currency;
   return best;
 };
+
+/** The buckets of one period (a `periodStart` day), every currency: a month's row out of a year's cashflow. */
+export const bucketsOf = <T extends { periodStart: string }>(rows: readonly T[], periodStart: string) =>
+  rows.filter((row) => row.periodStart.slice(0, 10) === periodStart);

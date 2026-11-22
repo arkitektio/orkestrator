@@ -106,9 +106,6 @@ fragment PeriodOverview on PeriodOverview {
   totals {
     ...MoneyTotals
   }
-  previous {
-    ...MoneyTotals
-  }
   changes {
     ...Change
   }
@@ -161,9 +158,6 @@ fragment MerchantInsights on MerchantInsights {
   totals {
     ...MoneyTotals
   }
-  previous {
-    ...MoneyTotals
-  }
   changes {
     ...Change
   }
@@ -194,9 +188,6 @@ fragment CategoryInsights on CategoryInsights {
   totals {
     ...MoneyTotals
   }
-  previous {
-    ...MoneyTotals
-  }
   changes {
     ...Change
   }
@@ -214,9 +205,6 @@ fragment CategoryInsights on CategoryInsights {
   }
   topMerchants {
     ...RankedMerchant
-  }
-  topCounterparties {
-    ...CounterpartyTotal
   }
   tickets {
     ...TicketStats
@@ -282,10 +270,8 @@ fragment AccountInsights on AccountInsights {
   }
 }
 
+# Asked again on every pan of the map: only what the panel draws.
 fragment AreaInsights on AreaInsights {
-  window {
-    ...WindowInfo
-  }
   totals {
     ...MoneyTotals
   }
@@ -294,9 +280,6 @@ fragment AreaInsights on AreaInsights {
   }
   categories {
     ...RankedCategory
-  }
-  locations {
-    ...RankedLocation
   }
 }
 

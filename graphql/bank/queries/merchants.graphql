@@ -14,6 +14,14 @@ query GetMerchant($id: ID!) {
   }
 }
 
+# A merchant where another module shows one (a chip, a card): the row, not
+# its places and rules.
+query GetListMerchant($id: ID!) {
+  merchant(id: $id) {
+    ...ListMerchant
+  }
+}
+
 query SimilarMerchants($id: ID!, $limit: Int! = 5) {
   merchant(id: $id) {
     id

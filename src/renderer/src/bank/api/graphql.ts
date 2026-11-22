@@ -113,6 +113,7 @@ export type AreaInput = {
 export type AreaInsights = {
   __typename?: 'AreaInsights';
   categories: Array<RankedCategory>;
+  /** Its places by expense, largest first (ranked only when asked for). */
   locations: Array<RankedLocation>;
   merchants: Array<RankedMerchant>;
   monthly: Array<CashflowBucket>;
@@ -241,6 +242,8 @@ export type BankAccount = {
   currentHoldings: Array<HoldingSnapshot>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** How many positions a depot held at its latest sync (`currentHoldings`, counted; 0 for other accounts). */
+  holdingsCount: Scalars['Int']['output'];
   /** The account's IBAN, if known. */
   iban?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -709,6 +712,7 @@ export type CategoryInsights = {
   /** Its part of all expense. */
   shareOfSpending: Array<Share>;
   tickets: Array<TicketStats>;
+  /** The counterparties it pays most, largest first (ranked only when asked for). */
   topCounterparties: Array<CounterpartyTotal>;
   topMerchants: Array<RankedMerchant>;
   totals: Array<MoneyTotals>;
@@ -2466,6 +2470,7 @@ export type QueryBudgetArgs = {
 
 
 export type QueryBudgetStatusArgs = {
+  category?: InputMaybe<Scalars['ID']['input']>;
   month?: InputMaybe<Scalars['Date']['input']>;
 };
 
@@ -3111,7 +3116,7 @@ export type Transaction = {
   similarTransactions: Array<Transaction>;
   /** Booked or pending. */
   status: TransactionStatus;
-  /** The categories this transaction most likely belongs to, best first — from similar transactions the organization categorized and from category terms. Empty when it has no embedding yet. */
+  /** The categories this transaction most likely belongs to, best first — from similar transactions the organization categorized and from category terms. Empty when it has no embedding yet. `unsettledOnly`: also empty for a settled row (a transfer, a provider `kind`, or a category set by a user, rule, merchant or import), so a list ranks only the rows it offers suggestions on. */
   suggestedCategories: Array<CategorySuggestion>;
   /** The syncer that last wrote the bank fields; null for imported rows. */
   syncer?: Maybe<AccountSyncer>;
@@ -3134,6 +3139,7 @@ export type TransactionSimilarTransactionsArgs = {
 /** A booked or pending transaction. Amounts are signed: negative is money out. */
 export type TransactionSuggestedCategoriesArgs = {
   limit?: Scalars['Int']['input'];
+  unsettledOnly?: Scalars['Boolean']['input'];
 };
 
 /**
@@ -3426,17 +3432,17 @@ export type _Service = {
 
 export type BalanceFragment = { __typename?: 'BalanceSnapshot', id: string, date: string, balanceType: string, amount: string, currency: string };
 
-export type ListBankAccountFragment = { __typename?: 'BankAccount', id: string, iban?: string | null, name?: string | null, kind: AccountKind, currency: string, product?: string | null, lastSyncedAt?: string | null, lastError?: string | null, lastErrorCode?: BankErrorCode | null, isSyncing: boolean, nextSyncAllowedAt?: string | null, syncsRemainingToday?: number | null, latestBalance?: (
+export type ListBankAccountFragment = { __typename?: 'BankAccount', id: string, iban?: string | null, name?: string | null, kind: AccountKind, currency: string, product?: string | null, lastError?: string | null, isSyncing: boolean, latestBalance?: (
     { __typename?: 'BalanceSnapshot' }
     & BalanceFragment
   ) | null, connection?: { __typename?: 'BankConnection', id: string, aspspName: string, aspspCountry: string, provider: Provider, status: ConnectionStatus, needsReauth: boolean, bankProvider?: { __typename?: 'BankProvider', id: string } | null } | null };
 
+export type AccountSyncStateFragment = { __typename?: 'BankAccount', lastSyncedAt?: string | null, lastErrorCode?: BankErrorCode | null, nextSyncAllowedAt?: string | null, syncsRemainingToday?: number | null };
+
 export type BankAccountFragment = (
-  { __typename?: 'BankAccount', createdAt: string, currentHoldings: Array<(
-    { __typename?: 'HoldingSnapshot' }
-    & HoldingFragment
-  )> }
+  { __typename?: 'BankAccount', createdAt: string }
   & ListBankAccountFragment
+  & AccountSyncStateFragment
 );
 
 export type AuthSessionFragment = { __typename?: 'AuthSession', state: string, status: AuthStatus, finish: AuthFinish, openUrl: string, expiresAt: string, redirectUrl?: string | null, interval?: number | null, userCode?: string | null, step?: string | null, errorCode?: string | null, errorMessage?: string | null, result?: { __typename?: 'AuthResult', identifier: string, id: string, label?: string | null } | null };
@@ -3481,21 +3487,14 @@ export type SuggestionChipFragment = { __typename?: 'CategorySuggestion', score:
     & TransactionCategoryFragment
   ) };
 
-export type ListBankConnectionFragment = { __typename?: 'BankConnection', id: string, aspspName: string, aspspCountry: string, provider: Provider, status: ConnectionStatus, linkStep?: LinkStep | null, validUntil?: string | null, needsReauth: boolean, lastError?: string | null, lastErrorCode?: BankErrorCode | null, pendingExpiresAt?: string | null, isAbandoned: boolean, nextSyncAllowedAt?: string | null, syncsRemainingToday?: number | null, bankProvider?: { __typename?: 'BankProvider', id: string, name: string, enabled: boolean } | null };
+export type ListBankConnectionFragment = { __typename?: 'BankConnection', id: string, aspspName: string, aspspCountry: string, provider: Provider, status: ConnectionStatus, linkStep?: LinkStep | null, validUntil?: string | null, needsReauth: boolean, lastError?: string | null, lastErrorCode?: BankErrorCode | null, pendingExpiresAt?: string | null, isAbandoned: boolean, bankProvider?: { __typename?: 'BankProvider', id: string, name: string, enabled: boolean } | null };
 
 export type BankConnectionFragment = (
-  { __typename?: 'BankConnection', createdAt: string, linkedAt?: string | null, pendingAuth?: { __typename?: 'AuthSession', state: string } | null, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, accounts: Array<(
+  { __typename?: 'BankConnection', nextSyncAllowedAt?: string | null, syncsRemainingToday?: number | null, createdAt: string, linkedAt?: string | null, pendingAuth?: { __typename?: 'AuthSession', state: string } | null, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, accounts: Array<(
     { __typename?: 'BankAccount' }
     & ListBankAccountFragment
   )> }
   & ListBankConnectionFragment
-);
-
-export type HoldingFragment = { __typename?: 'HoldingSnapshot', id: string, date: string, isin: string, name: string, securityType?: string | null, quantity: string, fifoPrice?: string | null, price?: string | null, valuation: string, currency: string, unrealizedGain?: string | null };
-
-export type PortfolioHoldingFragment = (
-  { __typename?: 'HoldingSnapshot', account: { __typename?: 'BankAccount', id: string, name?: string | null } }
-  & HoldingFragment
 );
 
 export type WindowInfoFragment = { __typename?: 'WindowInfo', start: string, end: string, previousStart?: string | null, previousEnd?: string | null };
@@ -3528,9 +3527,6 @@ export type PeriodOverviewFragment = { __typename?: 'PeriodOverview', window: (
     { __typename?: 'WindowInfo' }
     & WindowInfoFragment
   ), totals: Array<(
-    { __typename?: 'MoneyTotals' }
-    & MoneyTotalsFragment
-  )>, previous: Array<(
     { __typename?: 'MoneyTotals' }
     & MoneyTotalsFragment
   )>, changes: Array<(
@@ -3568,9 +3564,6 @@ export type MerchantInsightsFragment = { __typename?: 'MerchantInsights', window
   ), totals: Array<(
     { __typename?: 'MoneyTotals' }
     & MoneyTotalsFragment
-  )>, previous: Array<(
-    { __typename?: 'MoneyTotals' }
-    & MoneyTotalsFragment
   )>, changes: Array<(
     { __typename?: 'Change' }
     & ChangeFragment
@@ -3600,9 +3593,6 @@ export type CategoryInsightsFragment = { __typename?: 'CategoryInsights', window
   ), totals: Array<(
     { __typename?: 'MoneyTotals' }
     & MoneyTotalsFragment
-  )>, previous: Array<(
-    { __typename?: 'MoneyTotals' }
-    & MoneyTotalsFragment
   )>, changes: Array<(
     { __typename?: 'Change' }
     & ChangeFragment
@@ -3621,9 +3611,6 @@ export type CategoryInsightsFragment = { __typename?: 'CategoryInsights', window
   )>, topMerchants: Array<(
     { __typename?: 'RankedMerchant' }
     & RankedMerchantFragment
-  )>, topCounterparties: Array<(
-    { __typename?: 'CounterpartyTotal' }
-    & CounterpartyTotalFragment
   )>, tickets: Array<(
     { __typename?: 'TicketStats' }
     & TicketStatsFragment
@@ -3672,10 +3659,7 @@ export type AccountInsightsFragment = { __typename?: 'AccountInsights', window: 
     & RankedMerchantFragment
   )> };
 
-export type AreaInsightsFragment = { __typename?: 'AreaInsights', window: (
-    { __typename?: 'WindowInfo' }
-    & WindowInfoFragment
-  ), totals: Array<(
+export type AreaInsightsFragment = { __typename?: 'AreaInsights', totals: Array<(
     { __typename?: 'MoneyTotals' }
     & MoneyTotalsFragment
   )>, merchants: Array<(
@@ -3684,9 +3668,6 @@ export type AreaInsightsFragment = { __typename?: 'AreaInsights', window: (
   )>, categories: Array<(
     { __typename?: 'RankedCategory' }
     & RankedCategoryFragment
-  )>, locations: Array<(
-    { __typename?: 'RankedLocation' }
-    & RankedLocationFragment
   )> };
 
 export type GridCellFragment = { __typename?: 'GridCell', type: string, id: string, geometry: { __typename?: 'PointGeometry', type: string, coordinates: Array<number> }, properties: { __typename?: 'GridCellProperties', currency: string, income: string, expense: string, count: number, merchants: number, locations: number } };
@@ -3710,7 +3691,7 @@ export type RecurringInsightsFragment = { __typename?: 'RecurringInsights', mont
 
 export type PortfolioInsightsFragment = { __typename?: 'PortfolioInsights', valuation: Array<{ __typename?: 'CurrencyTotal', amount: string, currency: string }>, costBasis: Array<{ __typename?: 'CurrencyTotal', amount: string, currency: string }>, unrealizedGain: Array<{ __typename?: 'CurrencyTotal', amount: string, currency: string }>, valuationHistory: Array<{ __typename?: 'ValuationPoint', date: string, currency: string, valuation: string, invested: string, gain: string }>, allocation: Array<{ __typename?: 'Allocation', securityType: string, currency: string, valuation: string, share: number }>, income: Array<{ __typename?: 'InvestmentIncome', year: number, kind: TransactionKind, currency: string, amount: string, count: number }> };
 
-export type ListMerchantFragment = { __typename?: 'Merchant', id: string, name: string, key: string, online: boolean, logoUrl?: string | null, website?: string | null, transactionCount: number, firstSeen?: string | null, lastSeen?: string | null, net: Array<{ __typename?: 'CurrencyTotal', amount: string, currency: string }>, category?: (
+export type ListMerchantFragment = { __typename?: 'Merchant', id: string, name: string, key: string, online: boolean, logoUrl?: string | null, website?: string | null, transactionCount: number, net: Array<{ __typename?: 'CurrencyTotal', amount: string, currency: string }>, category?: (
     { __typename?: 'Category' }
     & TransactionCategoryFragment
   ) | null };
@@ -3718,7 +3699,7 @@ export type ListMerchantFragment = { __typename?: 'Merchant', id: string, name: 
 export type MerchantLocationFragment = { __typename?: 'MerchantLocation', id: string, name: string, street?: string | null, postalCode?: string | null, city?: string | null, region?: string | null, country?: string | null, latitude?: string | null, longitude?: string | null, source: LocationSource, storeCode?: string | null, transactionCount: number, lastVisit?: string | null, notes: string, geocodedAt?: string | null, merchant: { __typename?: 'Merchant', id: string, name: string } };
 
 export type MerchantFragment = (
-  { __typename?: 'Merchant', description: string, createdAt: string, aliases: Array<{ __typename?: 'MerchantAlias', id: string, pattern: string }>, locations: Array<(
+  { __typename?: 'Merchant', firstSeen?: string | null, lastSeen?: string | null, description: string, createdAt: string, aliases: Array<{ __typename?: 'MerchantAlias', id: string, pattern: string }>, locations: Array<(
     { __typename?: 'MerchantLocation' }
     & MerchantLocationFragment
   )>, rules: Array<(
@@ -3771,11 +3752,10 @@ export type CategoryTotalFragment = { __typename?: 'CategoryTotal', currency: st
     & TransactionCategoryFragment
   ) | null };
 
-export type CounterpartyTotalFragment = { __typename?: 'CounterpartyTotal', counterparty: string, currency: string, total: string, count: number };
-
 export type SyncResultFragment = { __typename?: 'SyncResult', created: number, updated: number, pendingReplaced: number, balances: number, categorized: number, holdings: number, account: (
     { __typename?: 'BankAccount' }
     & ListBankAccountFragment
+    & AccountSyncStateFragment
   ) };
 
 export type TransactionCategoryFragment = { __typename?: 'Category', id: string, name: string, color?: string | null, kind: CategoryKind };
@@ -4241,13 +4221,15 @@ export type GetBankAccountQuery = { __typename?: 'Query', bankAccount: (
     & BankAccountFragment
   ) };
 
-export type SearchBankAccountsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+export type GetListBankAccountQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type SearchBankAccountsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'BankAccount', value: string, label?: string | null }> };
+export type GetListBankAccountQuery = { __typename?: 'Query', bankAccount: (
+    { __typename?: 'BankAccount' }
+    & ListBankAccountFragment
+  ) };
 
 export type BalanceHistoryQueryVariables = Exact<{
   account: Scalars['ID']['input'];
@@ -4299,6 +4281,7 @@ export type GetBudgetQuery = { __typename?: 'Query', budget: (
 
 export type BudgetStatusQueryVariables = Exact<{
   month?: InputMaybe<Scalars['Date']['input']>;
+  category?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -4390,6 +4373,13 @@ export type GetBankConnectionQuery = { __typename?: 'Query', bankConnection: (
     & BankConnectionFragment
   ) };
 
+export type PendingAuthStatesQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type PendingAuthStatesQuery = { __typename?: 'Query', bankConnections: Array<{ __typename?: 'BankConnection', id: string, pendingAuth?: { __typename?: 'AuthSession', state: string } | null }> };
+
 export type BankInstitutionsQueryVariables = Exact<{
   provider: Scalars['ID']['input'];
   country: Scalars['String']['input'];
@@ -4416,13 +4406,12 @@ export type ReauthConnectionsQuery = { __typename?: 'Query', bankConnections: Ar
 export type PortfolioQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PortfolioQuery = { __typename?: 'Query', bankAccounts: Array<{ __typename?: 'BankAccount', id: string, name?: string | null, kind: AccountKind, currency: string, latestBalance?: (
+export type PortfolioQuery = { __typename?: 'Query', bankAccounts: Array<{ __typename?: 'BankAccount', id: string, name?: string | null, kind: AccountKind, currency: string, holdingsCount: number, latestBalance?: (
       { __typename?: 'BalanceSnapshot' }
       & BalanceFragment
-    ) | null, currentHoldings: Array<(
-      { __typename?: 'HoldingSnapshot' }
-      & HoldingFragment
-    )> }> };
+    ) | null }> };
+
+export type MergedPositionFragment = { __typename?: 'MergedPosition', isin: string, name: string, securityType?: string | null, currency: string, depots: number, quantity: string, price?: string | null, fifoPrice?: string | null, costBasis?: string | null, valuation: string, unrealizedGain?: string | null, weight: number };
 
 export type MergedPositionsQueryVariables = Exact<{
   accounts?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
@@ -4431,7 +4420,10 @@ export type MergedPositionsQueryVariables = Exact<{
 }>;
 
 
-export type MergedPositionsQuery = { __typename?: 'Query', portfolioInsights: { __typename?: 'PortfolioInsights', mergedPositions: Array<{ __typename?: 'MergedPosition', isin: string, name: string, securityType?: string | null, currency: string, depots: number, quantity: string, price?: string | null, fifoPrice?: string | null, costBasis?: string | null, valuation: string, unrealizedGain?: string | null, weight: number }> } };
+export type MergedPositionsQuery = { __typename?: 'Query', portfolioInsights: { __typename?: 'PortfolioInsights', mergedPositions: Array<(
+      { __typename?: 'MergedPosition' }
+      & MergedPositionFragment
+    )> } };
 
 export type PeriodOverviewQueryVariables = Exact<{
   window?: InputMaybe<StatsWindowInput>;
@@ -4534,7 +4526,10 @@ export type PortfolioInsightsQueryVariables = Exact<{
 
 
 export type PortfolioInsightsQuery = { __typename?: 'Query', portfolioInsights: (
-    { __typename?: 'PortfolioInsights' }
+    { __typename?: 'PortfolioInsights', mergedPositions: Array<(
+      { __typename?: 'MergedPosition' }
+      & MergedPositionFragment
+    )> }
     & PortfolioInsightsFragment
   ) };
 
@@ -4558,6 +4553,16 @@ export type GetMerchantQueryVariables = Exact<{
 export type GetMerchantQuery = { __typename?: 'Query', merchant: (
     { __typename?: 'Merchant' }
     & MerchantFragment
+  ) };
+
+export type GetListMerchantQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetListMerchantQuery = { __typename?: 'Query', merchant: (
+    { __typename?: 'Merchant' }
+    & ListMerchantFragment
   ) };
 
 export type SimilarMerchantsQueryVariables = Exact<{
@@ -4747,20 +4752,6 @@ export type SpendingByCategoryQuery = { __typename?: 'Query', spendingByCategory
     & CategoryTotalFragment
   )> };
 
-export type TopCounterpartiesQueryVariables = Exact<{
-  dateFrom?: InputMaybe<Scalars['Date']['input']>;
-  dateTo?: InputMaybe<Scalars['Date']['input']>;
-  direction?: Direction;
-  limit?: Scalars['Int']['input'];
-  accounts?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type TopCounterpartiesQuery = { __typename?: 'Query', topCounterparties: Array<(
-    { __typename?: 'CounterpartyTotal' }
-    & CounterpartyTotalFragment
-  )> };
-
 export type ListTransactionsQueryVariables = Exact<{
   filters?: InputMaybe<TransactionFilter>;
   ordering?: Array<TransactionOrder> | TransactionOrder;
@@ -4839,12 +4830,8 @@ export const ListBankAccountFragmentDoc = gql`
   kind
   currency
   product
-  lastSyncedAt
   lastError
-  lastErrorCode
   isSyncing
-  nextSyncAllowedAt
-  syncsRemainingToday
   latestBalance {
     ...Balance
   }
@@ -4861,31 +4848,22 @@ export const ListBankAccountFragmentDoc = gql`
   }
 }
     ${BalanceFragmentDoc}`;
-export const HoldingFragmentDoc = gql`
-    fragment Holding on HoldingSnapshot {
-  id
-  date
-  isin
-  name
-  securityType
-  quantity
-  fifoPrice
-  price
-  valuation
-  currency
-  unrealizedGain
+export const AccountSyncStateFragmentDoc = gql`
+    fragment AccountSyncState on BankAccount {
+  lastSyncedAt
+  lastErrorCode
+  nextSyncAllowedAt
+  syncsRemainingToday
 }
     `;
 export const BankAccountFragmentDoc = gql`
     fragment BankAccount on BankAccount {
   ...ListBankAccount
+  ...AccountSyncState
   createdAt
-  currentHoldings {
-    ...Holding
-  }
 }
     ${ListBankAccountFragmentDoc}
-${HoldingFragmentDoc}`;
+${AccountSyncStateFragmentDoc}`;
 export const AuthSessionFragmentDoc = gql`
     fragment AuthSession on AuthSession {
   state
@@ -5043,13 +5021,13 @@ export const ListBankConnectionFragmentDoc = gql`
   lastErrorCode
   pendingExpiresAt
   isAbandoned
-  nextSyncAllowedAt
-  syncsRemainingToday
 }
     `;
 export const BankConnectionFragmentDoc = gql`
     fragment BankConnection on BankConnection {
   ...ListBankConnection
+  nextSyncAllowedAt
+  syncsRemainingToday
   createdAt
   linkedAt
   pendingAuth {
@@ -5066,15 +5044,6 @@ export const BankConnectionFragmentDoc = gql`
 }
     ${ListBankConnectionFragmentDoc}
 ${ListBankAccountFragmentDoc}`;
-export const PortfolioHoldingFragmentDoc = gql`
-    fragment PortfolioHolding on HoldingSnapshot {
-  ...Holding
-  account {
-    id
-    name
-  }
-}
-    ${HoldingFragmentDoc}`;
 export const WindowInfoFragmentDoc = gql`
     fragment WindowInfo on WindowInfo {
   start
@@ -5150,8 +5119,6 @@ export const ListMerchantFragmentDoc = gql`
   logoUrl
   website
   transactionCount
-  firstSeen
-  lastSeen
   net {
     amount
     currency
@@ -5194,9 +5161,6 @@ export const PeriodOverviewFragmentDoc = gql`
     ...WindowInfo
   }
   totals {
-    ...MoneyTotals
-  }
-  previous {
     ...MoneyTotals
   }
   changes {
@@ -5308,9 +5272,6 @@ export const MerchantInsightsFragmentDoc = gql`
   totals {
     ...MoneyTotals
   }
-  previous {
-    ...MoneyTotals
-  }
   changes {
     ...Change
   }
@@ -5373,23 +5334,12 @@ export const RankedMerchantFragmentDoc = gql`
   }
 }
     ${TransactionCategoryFragmentDoc}`;
-export const CounterpartyTotalFragmentDoc = gql`
-    fragment CounterpartyTotal on CounterpartyTotal {
-  counterparty
-  currency
-  total
-  count
-}
-    `;
 export const CategoryInsightsFragmentDoc = gql`
     fragment CategoryInsights on CategoryInsights {
   window {
     ...WindowInfo
   }
   totals {
-    ...MoneyTotals
-  }
-  previous {
     ...MoneyTotals
   }
   changes {
@@ -5410,9 +5360,6 @@ export const CategoryInsightsFragmentDoc = gql`
   topMerchants {
     ...RankedMerchant
   }
-  topCounterparties {
-    ...CounterpartyTotal
-  }
   tickets {
     ...TicketStats
   }
@@ -5424,7 +5371,6 @@ ${CashflowBucketFragmentDoc}
 ${ShareFragmentDoc}
 ${RankedCategoryFragmentDoc}
 ${RankedMerchantFragmentDoc}
-${CounterpartyTotalFragmentDoc}
 ${TicketStatsFragmentDoc}`;
 export const LocationInsightsFragmentDoc = gql`
     fragment LocationInsights on LocationInsights {
@@ -5499,9 +5445,6 @@ ${RankedCategoryFragmentDoc}
 ${RankedMerchantFragmentDoc}`;
 export const AreaInsightsFragmentDoc = gql`
     fragment AreaInsights on AreaInsights {
-  window {
-    ...WindowInfo
-  }
   totals {
     ...MoneyTotals
   }
@@ -5511,15 +5454,10 @@ export const AreaInsightsFragmentDoc = gql`
   categories {
     ...RankedCategory
   }
-  locations {
-    ...RankedLocation
-  }
 }
-    ${WindowInfoFragmentDoc}
-${MoneyTotalsFragmentDoc}
+    ${MoneyTotalsFragmentDoc}
 ${RankedMerchantFragmentDoc}
-${RankedCategoryFragmentDoc}
-${RankedLocationFragmentDoc}`;
+${RankedCategoryFragmentDoc}`;
 export const GridCellFragmentDoc = gql`
     fragment GridCell on GridCell {
   type
@@ -5650,6 +5588,8 @@ export const MerchantRuleFragmentDoc = gql`
 export const MerchantFragmentDoc = gql`
     fragment Merchant on Merchant {
   ...ListMerchant
+  firstSeen
+  lastSeen
   description
   createdAt
   aliases {
@@ -5802,9 +5742,11 @@ export const SyncResultFragmentDoc = gql`
   holdings
   account {
     ...ListBankAccount
+    ...AccountSyncState
   }
 }
-    ${ListBankAccountFragmentDoc}`;
+    ${ListBankAccountFragmentDoc}
+${AccountSyncStateFragmentDoc}`;
 export const TransactionFragmentDoc = gql`
     fragment Transaction on Transaction {
   ...ListTransaction
@@ -5823,6 +5765,22 @@ export const TransactionFragmentDoc = gql`
   updatedAt
 }
     ${ListTransactionFragmentDoc}`;
+export const MergedPositionFragmentDoc = gql`
+    fragment MergedPosition on MergedPosition {
+  isin
+  name
+  securityType
+  currency
+  depots
+  quantity
+  price
+  fifoPrice
+  costBasis
+  valuation
+  unrealizedGain
+  weight
+}
+    `;
 export const CreateBudgetDocument = gql`
     mutation CreateBudget($input: CreateBudgetInput!) {
   createBudget(input: $input) {
@@ -7385,46 +7343,41 @@ export function useGetBankAccountLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetBankAccountQueryHookResult = ReturnType<typeof useGetBankAccountQuery>;
 export type GetBankAccountLazyQueryHookResult = ReturnType<typeof useGetBankAccountLazyQuery>;
 export type GetBankAccountQueryResult = Apollo.QueryResult<GetBankAccountQuery, GetBankAccountQueryVariables>;
-export const SearchBankAccountsDocument = gql`
-    query SearchBankAccounts($search: String, $values: [ID!]) {
-  options: bankAccounts(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: name
+export const GetListBankAccountDocument = gql`
+    query GetListBankAccount($id: ID!) {
+  bankAccount(id: $id) {
+    ...ListBankAccount
   }
 }
-    `;
+    ${ListBankAccountFragmentDoc}`;
 
 /**
- * __useSearchBankAccountsQuery__
+ * __useGetListBankAccountQuery__
  *
- * To run a query within a React component, call `useSearchBankAccountsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchBankAccountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetListBankAccountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListBankAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSearchBankAccountsQuery({
+ * const { data, loading, error } = useGetListBankAccountQuery({
  *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useSearchBankAccountsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchBankAccountsQuery, SearchBankAccountsQueryVariables>) {
+export function useGetListBankAccountQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListBankAccountQuery, GetListBankAccountQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchBankAccountsQuery, SearchBankAccountsQueryVariables>(SearchBankAccountsDocument, options);
+        return ApolloReactHooks.useQuery<GetListBankAccountQuery, GetListBankAccountQueryVariables>(GetListBankAccountDocument, options);
       }
-export function useSearchBankAccountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchBankAccountsQuery, SearchBankAccountsQueryVariables>) {
+export function useGetListBankAccountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListBankAccountQuery, GetListBankAccountQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchBankAccountsQuery, SearchBankAccountsQueryVariables>(SearchBankAccountsDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetListBankAccountQuery, GetListBankAccountQueryVariables>(GetListBankAccountDocument, options);
         }
-export type SearchBankAccountsQueryHookResult = ReturnType<typeof useSearchBankAccountsQuery>;
-export type SearchBankAccountsLazyQueryHookResult = ReturnType<typeof useSearchBankAccountsLazyQuery>;
-export type SearchBankAccountsQueryResult = Apollo.QueryResult<SearchBankAccountsQuery, SearchBankAccountsQueryVariables>;
+export type GetListBankAccountQueryHookResult = ReturnType<typeof useGetListBankAccountQuery>;
+export type GetListBankAccountLazyQueryHookResult = ReturnType<typeof useGetListBankAccountLazyQuery>;
+export type GetListBankAccountQueryResult = Apollo.QueryResult<GetListBankAccountQuery, GetListBankAccountQueryVariables>;
 export const BalanceHistoryDocument = gql`
     query BalanceHistory($account: ID!, $dateFrom: Date!, $dateTo: Date) {
   balanceHistory(account: $account, dateFrom: $dateFrom, dateTo: $dateTo) {
@@ -7621,8 +7574,8 @@ export type GetBudgetQueryHookResult = ReturnType<typeof useGetBudgetQuery>;
 export type GetBudgetLazyQueryHookResult = ReturnType<typeof useGetBudgetLazyQuery>;
 export type GetBudgetQueryResult = Apollo.QueryResult<GetBudgetQuery, GetBudgetQueryVariables>;
 export const BudgetStatusDocument = gql`
-    query BudgetStatus($month: Date) {
-  budgetStatus(month: $month) {
+    query BudgetStatus($month: Date, $category: ID) {
+  budgetStatus(month: $month, category: $category) {
     ...BudgetStatus
   }
 }
@@ -7641,6 +7594,7 @@ export const BudgetStatusDocument = gql`
  * const { data, loading, error } = useBudgetStatusQuery({
  *   variables: {
  *      month: // value for 'month'
+ *      category: // value for 'category'
  *   },
  * });
  */
@@ -7949,6 +7903,44 @@ export function useGetBankConnectionLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetBankConnectionQueryHookResult = ReturnType<typeof useGetBankConnectionQuery>;
 export type GetBankConnectionLazyQueryHookResult = ReturnType<typeof useGetBankConnectionLazyQuery>;
 export type GetBankConnectionQueryResult = Apollo.QueryResult<GetBankConnectionQuery, GetBankConnectionQueryVariables>;
+export const PendingAuthStatesDocument = gql`
+    query PendingAuthStates($ids: [ID!]!) {
+  bankConnections(filters: {ids: $ids}, pagination: {limit: 100}) {
+    id
+    pendingAuth {
+      state
+    }
+  }
+}
+    `;
+
+/**
+ * __usePendingAuthStatesQuery__
+ *
+ * To run a query within a React component, call `usePendingAuthStatesQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePendingAuthStatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePendingAuthStatesQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function usePendingAuthStatesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>(PendingAuthStatesDocument, options);
+      }
+export function usePendingAuthStatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>(PendingAuthStatesDocument, options);
+        }
+export type PendingAuthStatesQueryHookResult = ReturnType<typeof usePendingAuthStatesQuery>;
+export type PendingAuthStatesLazyQueryHookResult = ReturnType<typeof usePendingAuthStatesLazyQuery>;
+export type PendingAuthStatesQueryResult = Apollo.QueryResult<PendingAuthStatesQuery, PendingAuthStatesQueryVariables>;
 export const BankInstitutionsDocument = gql`
     query BankInstitutions($provider: ID!, $country: String!) {
   bankInstitutions(provider: $provider, country: $country) {
@@ -8072,13 +8064,10 @@ export const PortfolioDocument = gql`
     latestBalance {
       ...Balance
     }
-    currentHoldings {
-      ...Holding
-    }
+    holdingsCount
   }
 }
-    ${BalanceFragmentDoc}
-${HoldingFragmentDoc}`;
+    ${BalanceFragmentDoc}`;
 
 /**
  * __usePortfolioQuery__
@@ -8110,22 +8099,11 @@ export const MergedPositionsDocument = gql`
     query MergedPositions($accounts: [ID!], $asOf: Date, $dateFrom: Date) {
   portfolioInsights(accounts: $accounts, asOf: $asOf, dateFrom: $dateFrom) {
     mergedPositions {
-      isin
-      name
-      securityType
-      currency
-      depots
-      quantity
-      price
-      fifoPrice
-      costBasis
-      valuation
-      unrealizedGain
-      weight
+      ...MergedPosition
     }
   }
 }
-    `;
+    ${MergedPositionFragmentDoc}`;
 
 /**
  * __useMergedPositionsQuery__
@@ -8463,9 +8441,13 @@ export const PortfolioInsightsDocument = gql`
     query PortfolioInsights($accounts: [ID!], $dateFrom: Date) {
   portfolioInsights(accounts: $accounts, dateFrom: $dateFrom) {
     ...PortfolioInsights
+    mergedPositions {
+      ...MergedPosition
+    }
   }
 }
-    ${PortfolioInsightsFragmentDoc}`;
+    ${PortfolioInsightsFragmentDoc}
+${MergedPositionFragmentDoc}`;
 
 /**
  * __usePortfolioInsightsQuery__
@@ -8567,6 +8549,41 @@ export function useGetMerchantLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetMerchantQueryHookResult = ReturnType<typeof useGetMerchantQuery>;
 export type GetMerchantLazyQueryHookResult = ReturnType<typeof useGetMerchantLazyQuery>;
 export type GetMerchantQueryResult = Apollo.QueryResult<GetMerchantQuery, GetMerchantQueryVariables>;
+export const GetListMerchantDocument = gql`
+    query GetListMerchant($id: ID!) {
+  merchant(id: $id) {
+    ...ListMerchant
+  }
+}
+    ${ListMerchantFragmentDoc}`;
+
+/**
+ * __useGetListMerchantQuery__
+ *
+ * To run a query within a React component, call `useGetListMerchantQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetListMerchantQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetListMerchantQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetListMerchantQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListMerchantQuery, GetListMerchantQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetListMerchantQuery, GetListMerchantQueryVariables>(GetListMerchantDocument, options);
+      }
+export function useGetListMerchantLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListMerchantQuery, GetListMerchantQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetListMerchantQuery, GetListMerchantQueryVariables>(GetListMerchantDocument, options);
+        }
+export type GetListMerchantQueryHookResult = ReturnType<typeof useGetListMerchantQuery>;
+export type GetListMerchantLazyQueryHookResult = ReturnType<typeof useGetListMerchantLazyQuery>;
+export type GetListMerchantQueryResult = Apollo.QueryResult<GetListMerchantQuery, GetListMerchantQueryVariables>;
 export const SimilarMerchantsDocument = gql`
     query SimilarMerchants($id: ID!, $limit: Int! = 5) {
   merchant(id: $id) {
@@ -9292,56 +9309,11 @@ export function useSpendingByCategoryLazyQuery(baseOptions?: ApolloReactHooks.La
 export type SpendingByCategoryQueryHookResult = ReturnType<typeof useSpendingByCategoryQuery>;
 export type SpendingByCategoryLazyQueryHookResult = ReturnType<typeof useSpendingByCategoryLazyQuery>;
 export type SpendingByCategoryQueryResult = Apollo.QueryResult<SpendingByCategoryQuery, SpendingByCategoryQueryVariables>;
-export const TopCounterpartiesDocument = gql`
-    query TopCounterparties($dateFrom: Date, $dateTo: Date, $direction: Direction! = OUT, $limit: Int! = 10, $accounts: [ID!]) {
-  topCounterparties(
-    dateFrom: $dateFrom
-    dateTo: $dateTo
-    direction: $direction
-    limit: $limit
-    accounts: $accounts
-  ) {
-    ...CounterpartyTotal
-  }
-}
-    ${CounterpartyTotalFragmentDoc}`;
-
-/**
- * __useTopCounterpartiesQuery__
- *
- * To run a query within a React component, call `useTopCounterpartiesQuery` and pass it any options that fit your needs.
- * When your component renders, `useTopCounterpartiesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTopCounterpartiesQuery({
- *   variables: {
- *      dateFrom: // value for 'dateFrom'
- *      dateTo: // value for 'dateTo'
- *      direction: // value for 'direction'
- *      limit: // value for 'limit'
- *      accounts: // value for 'accounts'
- *   },
- * });
- */
-export function useTopCounterpartiesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TopCounterpartiesQuery, TopCounterpartiesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<TopCounterpartiesQuery, TopCounterpartiesQueryVariables>(TopCounterpartiesDocument, options);
-      }
-export function useTopCounterpartiesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TopCounterpartiesQuery, TopCounterpartiesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<TopCounterpartiesQuery, TopCounterpartiesQueryVariables>(TopCounterpartiesDocument, options);
-        }
-export type TopCounterpartiesQueryHookResult = ReturnType<typeof useTopCounterpartiesQuery>;
-export type TopCounterpartiesLazyQueryHookResult = ReturnType<typeof useTopCounterpartiesLazyQuery>;
-export type TopCounterpartiesQueryResult = Apollo.QueryResult<TopCounterpartiesQuery, TopCounterpartiesQueryVariables>;
 export const ListTransactionsDocument = gql`
     query ListTransactions($filters: TransactionFilter, $ordering: [TransactionOrder!]! = [{bookingDate: DESC}], $pagination: OffsetPaginationInput, $withSuggestions: Boolean! = false) {
   transactions(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTransaction
-    suggestedCategories(limit: 3) @include(if: $withSuggestions) {
+    suggestedCategories(limit: 3, unsettledOnly: true) @include(if: $withSuggestions) {
       ...SuggestionChip
     }
   }

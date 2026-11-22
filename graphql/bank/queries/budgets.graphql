@@ -14,8 +14,8 @@ query GetBudget($id: ID!) {
   }
 }
 
-query BudgetStatus($month: Date) {
-  budgetStatus(month: $month) {
+query BudgetStatus($month: Date, $category: ID) {
+  budgetStatus(month: $month, category: $category) {
     ...BudgetStatus
   }
 }
