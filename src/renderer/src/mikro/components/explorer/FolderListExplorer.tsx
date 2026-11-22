@@ -19,15 +19,19 @@ import {
   PageActionGroup,
 } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
-import { MikroArrayDataset, MikroFixture, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
+import { MikroArrayDataset, MikroFixture, MikroFile, MikroFolder, MikroSparseDataset, MikroTableDataset } from "@/core/linkers";
 
 import { useTabActions } from "@/core/tabs/TabsProvider";
 import { Name } from "@/core/ui/name";
 import { SmartObjectButtonProps } from "@/core/smart/buildSmartAdapters";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
+  ChildrenOrderDirection,
+  ChildrenOrderField,
   ChildrenQuery,
+  FolderChildKind,
   FolderFragment,
+  useChildrenCountsQuery,
   useChildrenQuery,
   usePutArrayDatasetsInFolderMutation,
   usePutFilesInFolderMutation,
@@ -56,6 +60,8 @@ import {
   RefreshCw,
   Search,
   Shapes,
+  Share2,
+  Grid3x3,
   Box,
   SortAsc,
   SortDesc,
@@ -114,8 +120,10 @@ const RENDERABLE_KINDS = [
   "File",
   "ArrayDataset",
   "TableDataset",
+  "SparseDataset",
   "MeshCollection",
   "AnnotationCollection",
+  "NetworkCollection",
   "Fixture",
 ] as const;
 
@@ -127,24 +135,11 @@ type ExplorerItem = Extract<RawChild, { __typename?: ExplorerKind }> & {
 const isRenderable = (item: RawChild): item is ExplorerItem =>
   RENDERABLE_KINDS.includes(item.__typename as ExplorerKind);
 
-/**
- * The order "sort by kind" uses. Not the type labels alphabetically — a file
- * manager puts containers first and loose files last, and `RENDERABLE_KINDS`
- * already reads in an arbitrary order — so the ranking is spelled out.
- */
-const KIND_ORDER: Record<ExplorerKind, number> = {
-  Folder: 0,
-  ArrayDataset: 1,
-  TableDataset: 2,
-  MeshCollection: 3,
-  AnnotationCollection: 4,
-  Fixture: 5,
-  File: 6,
-};
-
-/** A mesh collection's and a fixture's name is optional: their label is that, or what names their file. */
+/** A mesh or network collection's and a fixture's name is optional: their label is that, or what names their file. */
 const itemName = (item: ExplorerItem) =>
-  item.__typename === "MeshCollection" || item.__typename === "Fixture" ? item.label : item.name;
+  item.__typename === "MeshCollection" || item.__typename === "NetworkCollection" || item.__typename === "Fixture"
+    ? item.label
+    : item.name;
 
 const formatFileSize = (fileSizeInBytes?: number | null) => {
   if (!fileSizeInBytes) return "-";
@@ -161,18 +156,6 @@ const formatFileSize = (fileSizeInBytes?: number | null) => {
   return `${Math.max(size, 0.1).toFixed(1)} ${byteUnits[unitIndex]}`;
 };
 
-/** What an item holds on disk, where the API says: a file's size, a dataset's measured stores. */
-const itemBytes = (item: ExplorerItem): number | undefined => {
-  switch (item.__typename) {
-    case "File":
-      return item.size ?? undefined;
-    case "ArrayDataset":
-      return datasetStoredBytes(item.dataArrays);
-    default:
-      return undefined;
-  }
-};
-
 const getItemTypeLabel = (item: ExplorerItem) => {
   switch (item.__typename) {
     case "Folder":
@@ -181,10 +164,14 @@ const getItemTypeLabel = (item: ExplorerItem) => {
       return "Dataset";
     case "TableDataset":
       return "Table";
+    case "SparseDataset":
+      return "Sparse";
     case "MeshCollection":
       return "Meshes";
     case "AnnotationCollection":
       return "Annotations";
+    case "NetworkCollection":
+      return "Network";
     case "Fixture":
       return "Fixture";
     case "File":
@@ -207,10 +194,14 @@ const getItemMeta = (item: ExplorerItem): React.ReactNode => {
     }
     case "TableDataset":
       return item.description || item.axisNames.join(" × ");
+    case "SparseDataset":
+      return item.description || "Sparse dataset";
     case "MeshCollection":
       return "Mesh collection";
     case "AnnotationCollection":
       return "Annotation collection";
+    case "NetworkCollection":
+      return "Network collection";
     case "Fixture":
       return "Fixture";
     case "File":
@@ -222,8 +213,10 @@ const ITEM_ICONS: Record<ExplorerKind, typeof Folder> = {
   Folder,
   ArrayDataset: Boxes,
   TableDataset: Table2,
+  SparseDataset: Grid3x3,
   MeshCollection: Shapes,
   AnnotationCollection: PenLine,
+  NetworkCollection: Share2,
   Fixture: Box,
   File: FileIcon,
 };
@@ -238,6 +231,7 @@ const KIND_IDENTIFIERS: Partial<Record<ExplorerKind, string>> = {
   File: "@mikro/file",
   ArrayDataset: "@mikro/arraydataset",
   TableDataset: "@mikro/tabledataset",
+  SparseDataset: "@mikro/sparsedataset",
   Fixture: "@mikro/fixture",
 };
 
@@ -249,6 +243,7 @@ const KIND_LINKS: Partial<Record<ExplorerKind, (id: string) => string>> = {
   File: MikroFile.linkBuilder,
   ArrayDataset: MikroArrayDataset.linkBuilder,
   TableDataset: MikroTableDataset.linkBuilder,
+  SparseDataset: MikroSparseDataset.linkBuilder,
   Fixture: MikroFixture.linkBuilder,
 };
 
@@ -259,6 +254,7 @@ const KIND_OBJECT_BUTTONS: Partial<
   File: MikroFile.ObjectButton,
   ArrayDataset: MikroArrayDataset.ObjectButton,
   TableDataset: MikroTableDataset.ObjectButton,
+  SparseDataset: MikroSparseDataset.ObjectButton,
   Fixture: MikroFixture.ObjectButton,
 };
 
@@ -704,12 +700,12 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
     renderableChildren,
     refetch,
     debouncedSearch,
+    totalCount,
   } = props.explorerState;
 
-  const totalItems = filteredAndSortedData.length;
-  // Only the type filter is applied here: the search runs on the backend, so
-  // `renderableChildren` is already the matches and "5 of 5" would be a lie.
-  const hiddenByType = renderableChildren.length - totalItems;
+  // The server counts what the search and the type filter page through, so
+  // the footer says how many there are, not how many this page holds.
+  const totalItems = totalCount ?? filteredAndSortedData.length;
 
   /**
    * What this folder already holds, by structure key — plus the folder
@@ -881,7 +877,6 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
           <div className="flex items-center justify-between gap-3 border-t border-border/70 px-4 py-2 text-xs text-muted-foreground">
             <span>
               {totalItems} item{totalItems === 1 ? "" : "s"}
-              {hiddenByType > 0 ? ` of ${renderableChildren.length}` : ""}
             </span>
             {/* Every narrowing in force, each one clearable. The type filter
                 also shows on its own column; the search has no column to show
@@ -928,6 +923,7 @@ export const FolderExplorerActions = ({ folder, explorerState }: FolderActionsPr
     pagination,
     setPagination,
     data,
+    totalCount,
     refetch,
   } = explorerState;
   const { selection, bselection } = useSelection();
@@ -1069,7 +1065,11 @@ export const FolderExplorerActions = ({ folder, explorerState }: FolderActionsPr
               offset: pagination.offset + pagination.limit,
             })
           }
-          disabled={data?.children && data.children.length < pagination.limit}
+          disabled={
+            totalCount !== undefined
+              ? pagination.offset + pagination.limit >= totalCount
+              : !!data?.children && data.children.length < pagination.limit
+          }
         />
       </PageActionGroup>
 
@@ -1083,11 +1083,18 @@ export const FolderExplorerActions = ({ folder, explorerState }: FolderActionsPr
 };
 
 
-const MATCHES_FILTER: Record<Exclude<FilterType, "all">, ExplorerKind[]> = {
-  folders: ["Folder"],
-  datasets: ["ArrayDataset"],
-  tables: ["TableDataset"],
-  files: ["File"],
+/** The kinds each type filter asks the server for. */
+const MATCHES_FILTER: Record<Exclude<FilterType, "all">, FolderChildKind[]> = {
+  folders: [FolderChildKind.Folder],
+  datasets: [FolderChildKind.ArrayDataset],
+  tables: [FolderChildKind.TableDataset],
+  files: [FolderChildKind.File],
+};
+
+const ORDER_FIELDS: Record<SortField, ChildrenOrderField> = {
+  name: ChildrenOrderField.Name,
+  kind: ChildrenOrderField.Kind,
+  size: ChildrenOrderField.Size,
 };
 
 // Hook to manage folder explorer state
@@ -1116,17 +1123,30 @@ export const useFolderExplorer = (folder: FolderFragment) => {
 
   const debouncedSearch = useDebounce(searchInput, 300);
 
+  // The type filter, the sort and the page are the server's: a page of tables
+  // is a page of tables, and a sort covers the whole folder, not one page.
   const { data, loading, error, refetch } = useChildrenQuery({
     variables: {
       id: folder.id,
       pagination: pagination,
       filters: {
         search: debouncedSearch || undefined,
+        kinds: filters.type === 'all' ? undefined : MATCHES_FILTER[filters.type],
+      },
+      order: {
+        field: ORDER_FIELDS[filters.sortField],
+        direction: filters.sortDirection === 'asc' ? ChildrenOrderDirection.Asc : ChildrenOrderDirection.Desc,
       },
     },
     notifyOnNetworkStatusChange: true,
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
+  });
+  // What the folder holds with this search, in total and per kind: the type
+  // filter's counts and where the pager ends.
+  const { data: countData, refetch: refetchCounts } = useChildrenCountsQuery({
+    variables: { id: folder.id, filters: { search: debouncedSearch || undefined } },
+    fetchPolicy: 'cache-and-network',
   });
 
   // Sync state to URL parameters
@@ -1145,49 +1165,13 @@ export const useFolderExplorer = (folder: FolderFragment) => {
   }, [searchInput, filters, viewMode, pagination, setSearchParams]);
 
   const children = data?.children;
-  const renderableChildren = useMemo(
+  // The page as the server filtered and ordered it, less the kinds the explorer
+  // does not draw (the legacy `Image`).
+  const filteredAndSortedData = useMemo(
     () => (children ?? []).filter(isRenderable),
     [children],
   );
-
-  const { type: filterType, sortField, sortDirection } = filters;
-  const filteredAndSortedData = useMemo(() => {
-    let items = [...renderableChildren];
-
-    // Filter by type (client-side for now)
-    if (filterType !== "all") {
-      const allowed = MATCHES_FILTER[filterType];
-      items = items.filter((item) => allowed.includes(item.__typename));
-    }
-
-    // Sort items (client-side for now)
-    items.sort((a, b) => {
-      const aName = itemName(a).toLowerCase();
-      const bName = itemName(b).toLowerCase();
-
-      let aValue: string | number = aName;
-      let bValue: string | number = bName;
-
-      if (sortField === "size") {
-        aValue = itemBytes(a) ?? 0;
-        bValue = itemBytes(b) ?? 0;
-      }
-
-      if (sortField === "kind") {
-        aValue = KIND_ORDER[a.__typename];
-        bValue = KIND_ORDER[b.__typename];
-      }
-
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-      // Within one kind (and for equally sized files) the name decides, always
-      // ascending: a secondary key that flipped with the primary would shuffle
-      // each group for no reason anyone asked for.
-      return aName < bName ? -1 : aName > bName ? 1 : 0;
-    });
-
-    return items;
-  }, [renderableChildren, filterType, sortField, sortDirection]);
+  const renderableChildren = filteredAndSortedData;
 
   const setSearchInputValue = useCallback((value: string) => {
     setSearchInput(value);
@@ -1202,11 +1186,16 @@ export const useFolderExplorer = (folder: FolderFragment) => {
     setPagination({ limit: 30, offset: 0 });
   }, []);
 
+  const counts = countData?.childrenCounts;
+  /** How many of a type the whole folder holds with this search (`childrenCounts`). */
   const getTypeCount = (type: FilterType) => {
-    if (type === "all") return renderableChildren.length;
-    const allowed = MATCHES_FILTER[type];
-    return renderableChildren.filter((item) => allowed.includes(item.__typename)).length;
+    if (!counts) return 0;
+    if (type === "all") return counts.total;
+    const kinds = MATCHES_FILTER[type];
+    return counts.kinds.filter((entry) => kinds.includes(entry.kind)).reduce((sum, entry) => sum + entry.count, 0);
   };
+  /** Everything the current filter pages through. */
+  const totalCount = counts ? getTypeCount(filters.type) : undefined;
 
   return {
     // State
@@ -1230,6 +1219,7 @@ export const useFolderExplorer = (folder: FolderFragment) => {
     setPagination,
     updateFilters,
     getTypeCount,
-    refetch,
+    totalCount,
+    refetch: () => Promise.all([refetch(), refetchCounts()]),
   };
 };

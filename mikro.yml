@@ -35,6 +35,8 @@ generates:
         GenericQuantity: "@/mikro/api/scalars#GenericQuantity"
         # 64-bit byte counts (store sizes, upload limits): a JSON number.
         ByteCount: "number"
+        # 64-bit row and value counts (a parquet's rows, a column's nulls): a JSON number.
+        RowCount: "number"
   src/main/schemas/mikro.ts:
     plugins:
       - "typescript"

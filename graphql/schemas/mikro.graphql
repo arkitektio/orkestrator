@@ -279,6 +279,11 @@ type Annotation {
   The discrete coordinates this annotation is pinned to. A coordinate the annotation does not pin is one it spans
   """
   coordinates: [Coordinate!]!
+
+  """
+  When this annotation was drawn. Null for a shape drawn before the time was kept whose history records none
+  """
+  createdAt: DateTime
   createdWithTransforms: Int!
 
   """
@@ -305,6 +310,11 @@ type Annotation {
   Everything computed from this annotation, whatever kind of container it is: the data whose `derivedFrom` named this shape as an ANNOTATION source -- a crop written out as a dataset, an image straightened along a path, a table measured inside an ROI. The other end of those edges, exactly as `ArrayDataset.derivedResidents` is, and as kind-blind: the shape is usually named with no transform. A record of the act: editing the shape afterwards changes none of it. The edge itself, with the lens the pixels came from beside it, is on each child's own `derivedFrom`
   """
   derivedResidents: [Resident!]!
+
+  """
+  How many containers `derivedResidents` lists: a count for a tile, without loading what they are
+  """
+  derivedResidentsCount: Int!
   description: String
 
   """
@@ -409,6 +419,16 @@ type AnnotationChartLayer implements ChartLayer {
   How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
   visible: Boolean!
 }
 
@@ -623,6 +643,12 @@ input AnnotationFilter {
   """
   coordinateSystem: ID
 
+  """Filter for items created after this datetime"""
+  createdAfter: DateTime
+
+  """Filter for items created before this datetime"""
+  createdBefore: DateTime
+
   """
   Filter by the dataset the annotations are drawn over, following the collection's derivation edge
   """
@@ -778,7 +804,14 @@ type AnnotationLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
   annotationCollection: AnnotationCollection!
 
   """
@@ -865,6 +898,7 @@ type AnnotationLens implements Lens {
 }
 
 input AnnotationOrder @oneOf {
+  createdAt: Ordering
   id: Ordering
   name: Ordering
 }
@@ -934,8 +968,16 @@ type AnnotationStats {
   """Minimum"""
   min(field: AnnotationField!): Float
 
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: AnnotationField!, timestampField: AnnotationTimestampField!): [TimeBucket!]!
+
   """Sum"""
   sum(field: AnnotationField!): Float
+}
+
+"""Datetime fields of Annotation for bucketing"""
+enum AnnotationTimestampField {
+  CREATED_AT
 }
 
 """The `Any` scalar any type"""
@@ -1003,6 +1045,9 @@ type ArrayDataset {
   """
   axisNames: [String!]!
 
+  """When this dataset was created"""
+  createdAt: DateTime!
+
   """The task this dataset was created through, if any"""
   createdThrough: Task
 
@@ -1036,6 +1081,11 @@ type ArrayDataset {
   Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the measurement tables, mesh collections and annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive
   """
   derivedResidents: [Resident!]!
+
+  """
+  How many containers `derivedResidents` lists: a count for a tile, without loading what they are
+  """
+  derivedResidentsCount: Int!
   description: String
 
   """
@@ -1107,6 +1157,11 @@ type ArrayDataset {
 
   """The dataset's shape: that of its level-0 array"""
   shape: [Int!]!
+
+  """
+  The bytes this dataset holds: every level of its pyramid, as their stores measured them when the upload finished. Null when no store could be measured
+  """
+  sizeBytes: ByteCount
 
   """
   The files this dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
@@ -1380,7 +1435,14 @@ type ArrayLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The lens' axis names, in array order. A selection never drops or reorders an axis
@@ -1664,6 +1726,17 @@ input AxisInput {
   metricGroup: String = null
   name: String!
   type: AxisType!
+}
+
+"""
+How much one step along an axis spans, measured against another grid's steps
+"""
+type AxisScaleFactor {
+  """The axis, by name"""
+  axis: String!
+
+  """How many steps of the other grid one step along this axis spans"""
+  factor: Float!
 }
 
 """
@@ -2345,6 +2418,16 @@ interface ChartLayer {
   How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
   visible: Boolean!
 }
 
@@ -2471,7 +2554,9 @@ enum ChildrenOrderDirection {
 
 enum ChildrenOrderField {
   CREATED_AT
+  KIND
   NAME
+  SIZE
 }
 
 input ChildrenPaginationInput {
@@ -2512,8 +2597,15 @@ type Collaboration {
   description: String
   id: ID!
 
-  """What is in the collaboration; what is part of these is in it too"""
-  items: [CollaborationItem!]!
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
   name: String!
 }
 
@@ -2554,6 +2646,17 @@ input CollaborationObjectRef {
 
   """The object's id"""
   object: ID!
+}
+
+"""
+How many collaborations the organization has (a guest: theirs), and how much is in them
+"""
+type CollaborationStats {
+  """How many collaborations"""
+  count: Int!
+
+  """How many objects are in them altogether, brought along ones included"""
+  itemCount: Int!
 }
 
 """
@@ -2719,6 +2822,22 @@ enum ColorSourceKind {
 }
 
 """
+One stop of a colour gradient: a position on the normalized 0..1 the colormap is indexed with, and the RGBA colour there
+"""
+type ColorStop {
+  color: [Int!]!
+  position: Float!
+}
+
+"""
+One stop of a colour gradient: a position on the normalized 0..1 the colormap is indexed with, and the RGBA colour there
+"""
+input ColorStopInput {
+  color: [Int!]!
+  position: Float!
+}
+
+"""
 One declared column of a table dataset: its name, dtype and role. A COORDINATE column is also an axis of the table's space
 """
 type Column {
@@ -2740,6 +2859,16 @@ type Column {
   """
   references: TableDataset
   role: ColumnRole!
+
+  """
+  What the parquet footer says of this column: its range and how many values are null. Read once, never by scanning the rows. Null until the footer was read
+  """
+  stats: ColumnStats
+
+  """
+  What a client computed over this column for the whole table -- its histogram, its distinct values -- pinned to the table's global anchor (`createCoordinateAnchor` with `columnSummaries`). Null until someone computed it. A summary at a narrower coordinate is on that anchor's `columnSummaries`
+  """
+  summary: ColumnSummary
 
   """
   The table this column is declared on. Trivial when the column was read through its table, load-bearing when it was not -- an options list is flat, and a column with no table on it cannot be named in a `colorBy`
@@ -2867,6 +2996,72 @@ enum ColumnRole {
   TRACK_ID
 }
 
+"""What a parquet footer says of one column, read without scanning a row"""
+type ColumnStats {
+  """
+  The largest value. Null for a column whose statistics are not numbers, or that a row group states none for
+  """
+  max: Float
+
+  """
+  The smallest value. Null for a column whose statistics are not numbers, or that a row group states none for
+  """
+  min: Float
+
+  """How many values are null. Null where a row group does not say"""
+  nullCount: RowCount
+}
+
+"""
+What a client computed over one column of a table and pinned to an anchor of it: a histogram, the distinct values. The table twin of `ValueHistogram`
+"""
+type ColumnSummary {
+  """
+  The bins (x values): their edges, one more than the counts, or their centres, as many as the counts
+  """
+  bins: [Float!]!
+
+  """The column summarised"""
+  column: Column!
+
+  """When this summary was last pinned"""
+  createdAt: DateTime!
+
+  """How many distinct values the column holds. Null when not computed"""
+  distinctCount: RowCount
+
+  """
+  The distinct values as a JSON list, most frequent first, as many as were listed. Null when not computed
+  """
+  distinctValues: JSON
+
+  """The counts per bin (y values)"""
+  histogram: [Float!]!
+  id: ID!
+}
+
+"""
+What a client computed over one column of a table, pinned to an anchor of it so every later reader finds it: a histogram, the distinct values. The server never scans a table's rows; whoever holds an access grant computes this once
+"""
+input ColumnSummaryInput {
+  """
+  The bins (x values): their edges, one more than the counts, or their centres, as many
+  """
+  bins: [Float!]! = []
+
+  """The name of the column summarised"""
+  column: String!
+
+  """How many distinct values the column holds"""
+  distinctCount: RowCount = null
+
+  """The distinct values, most frequent first"""
+  distinctValues: Any = null
+
+  """The counts per bin (y values)"""
+  histogram: [Float!]! = []
+}
+
 """
 A discrete coordinate an annotation is pinned to, e.g. a timepoint or a channel
 """
@@ -2887,6 +3082,11 @@ type CoordinateAnchor {
 
   """The channel label ingest recorded at this coordinate"""
   channelLabel: ChannelLabel
+
+  """
+  (table) What clients computed over the table's columns at this coordinate: one summary per column summarised
+  """
+  columnSummaries: [ColumnSummary!]!
 
   """
   The coordinates this anchor is pinned to, e.g. {'c': 0, 't': 5}. For an array dataset these are level-0 pixel indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it
@@ -2944,6 +3144,7 @@ Input type for a coordinate anchor, which specifies a list of dimension anchors 
 input CoordinateAnchorInput {
   acquisitionWindow: AcquisitionWindowInput = null
   axisAnchors: [AxisAnchorInput!]!
+  columnSummaries: [ColumnSummaryInput!] = null
   label: LabelInput = null
   lightGraph: LightpathGraphInput = null
   microscope: OptikitStateInput = null
@@ -3008,6 +3209,11 @@ type CoordinateSystem {
   name: String!
 
   """
+  Whether this is a physical space: every axis carries a unit (a calibration, a stage frame, a world). False for a unitless index space -- a pixel grid, a pyramid level, a lens grid -- and for a space with no axes. `a.u.` counts as a unit. The same rule `CoordinateSystemFilter.physical` filters by
+  """
+  physical: Boolean!
+
+  """
   Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in
   """
   placedSystems: [CoordinateSystem!]!
@@ -3051,6 +3257,11 @@ type CoordinateSystem {
   Everything laid out over this system as its world, of every kind: its scenes, then its charts. The inverse of `Visualization.worldCoordinateSystem`. Unpaginated -- for a filtered or paged list of one kind, ask `scenes` here or the top-level `charts`
   """
   visualizations: [Visualization!]!
+
+  """
+  Every physical space this space reaches with the edges, each by its best route and with the size one step along each axis measures there, canonical first -- ranked as `ArrayLens.voxelSizes` ranks them (the weakest validity on the route, then fewest hops), so a calibration several steps away is found. Empty for a space that is itself physical, or that reaches none
+  """
+  voxelSizes: [VoxelSize!]!
 }
 
 """
@@ -3092,6 +3303,11 @@ input CoordinateSystemFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the physical spaces -- every axis carries a unit: a calibration, a stage frame, a world -- or, with false, to the unitless index spaces: pixel grids, pyramid levels, lens grids. `a.u.` counts as a unit. A space with no axes is not physical
+  """
+  physical: Boolean
 
   """
   Filter to the space holding this reference, in the scope it resolves to: a URI (`nifti:mni152`) finds the organization's one space for that frame, a plain key (`stage`) finds the calling app's own -- never another app's space under the same key
@@ -3756,6 +3972,8 @@ input CreatePointsChartLayerInput {
   name: String = null
   opacity: Float = null
   order: Int = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
   xColumn: String!
   yColumn: String!
@@ -3830,6 +4048,8 @@ input CreateSeriesChartLayerInput {
   opacity: Float = null
   order: Int = null
   valueColumn: String = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
 }
 
@@ -3927,6 +4147,8 @@ input CreateTraceChartLayerInput {
   name: String = null
   opacity: Float = null
   order: Int = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
 }
 
@@ -4005,6 +4227,11 @@ type DataArray {
   coordinateSystem: CoordinateSystem
   id: ID!
   level: Int!
+
+  """
+  How many level-0 voxels one voxel of this level spans, per axis of this level, read off `toParent`: 4.0 on y and x for a level downsampled by four, 1.0 on an axis it keeps. Every 1.0 for level 0. Null when the edge does not condense into an affine map, which a stored level edge always does
+  """
+  relativeScale: [AxisScaleFactor!]
 
   """
   How this level's voxels were computed from the level above it. Null for level 0, which was downsampled from nothing, and null for a level whose writer did not say. Over a dataset whose values are object ids only NEAREST and MODE are honest -- see `ArrayDataset.pyramidIsLabelCompliant`
@@ -4719,6 +4946,16 @@ type DistributionChartLayer implements ChartLayer {
   valueColumn: String!
 
   """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
+
+  """
   The unit of `valueColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none
   """
   valueUnit: Unit
@@ -4976,6 +5213,9 @@ type File {
   """The content type of the file"""
   contentType: String
 
+  """When this file was registered"""
+  createdAt: DateTime!
+
   """The task this file was created through, if any"""
   createdThrough: Task
 
@@ -4988,7 +5228,12 @@ type File {
   """
   The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing
   """
-  derivedContainers(filters: FileLinkFilter): [FileLink!]!
+  derivedContainers(filters: FileLinkFilter, pagination: OffsetPaginationInput = null): [FileLink!]!
+
+  """
+  How many containers `derivedContainers` lists, optionally of one kind: a count for a tile, without loading the links
+  """
+  derivedContainersCount(kind: FileLinkContainerKind = null): Int!
 
   """
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
@@ -5248,6 +5493,11 @@ input FileLinkFilter {
 
   """Filter by the sub of the user that assigned the creating task"""
   assignedBy: ID
+
+  """
+  Filter by the sort of container the link names: only the array datasets, only the tables, and so on
+  """
+  containerKind: FileLinkContainerKind
 
   """Filter for items created after this datetime"""
   createdAfter: DateTime
@@ -5659,7 +5909,14 @@ type FixtureLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -5793,11 +6050,51 @@ type Folder {
 }
 
 """
-Anything filed in a folder: a sub-folder, a file, or one of the four containers
+Anything filed in a folder: a sub-folder, a file, or one of the containers
 """
-union FolderChild = AnnotationCollection | ArrayDataset | File | Fixture | Folder | MeshCollection | TableDataset
+union FolderChild = AnnotationCollection | ArrayDataset | File | Fixture | Folder | MeshCollection | NetworkCollection | SparseDataset | TableDataset
+
+"""
+How much a folder holds, under the same filter as `children`: the total, and per kind
+"""
+type FolderChildCounts {
+  """
+  One entry per kind the filter admits, zeros included, in the order KIND sorts them
+  """
+  kinds: [FolderChildKindCount!]!
+
+  """Everything `children` would page through with this filter"""
+  total: Int!
+}
+
+"""
+What sort of thing a folder holds: a sub-folder, a file, or one of the containers. The order here is the order a KIND sort lists them in
+"""
+enum FolderChildKind {
+  ANNOTATION_COLLECTION
+  ARRAY_DATASET
+  FILE
+  FIXTURE
+  FOLDER
+  MESH_COLLECTION
+  NETWORK_COLLECTION
+  SPARSE_DATASET
+  TABLE_DATASET
+}
+
+"""
+How many of one kind of thing a folder holds, under the same filter as `children`
+"""
+type FolderChildKindCount {
+  count: Int!
+  kind: FolderChildKind!
+}
 
 input FolderChildrenFilter {
+  """
+  Only these kinds of thing. Filtered before paging, so a page of tables is a page of tables however many folders and files sit beside them
+  """
+  kinds: [FolderChildKind!] = null
   search: String = null
   showChildren: Boolean = null
 
@@ -6043,6 +6340,24 @@ input GraphColorByInput {
   max: Float = null
   min: Float = null
   target: GraphTarget! = NODE
+}
+
+"""Which way a walk over the coordinate graph follows an edge"""
+enum GraphDirection {
+  """
+  Either way: the whole connected component, which reaches everything else registered into a shared world.
+  """
+  BOTH
+
+  """
+  From an edge's output to its input only: what maps into this space -- the grids, levels and lenses registered into it, and theirs.
+  """
+  INCOMING
+
+  """
+  From an edge's input to its output only: where this space maps to -- its physical spaces, the worlds it is registered into, and onward.
+  """
+  OUTGOING
 }
 
 """
@@ -7372,7 +7687,14 @@ interface Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -7519,6 +7841,11 @@ type LensEvent {
 
   """The ID of a lens that was deleted, on its own or with its container"""
   delete: ID
+
+  """
+  The kind of the lens `delete` names, so a client evicts it under the one typename it cached it as. Set exactly when `delete` is
+  """
+  deleteKind: LensKind
 
   """A lens that was renamed or nominated a scene, in its new state"""
   update: Lens
@@ -8553,7 +8880,14 @@ type MeshLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -8645,6 +8979,11 @@ type MeshObject {
   Everything computed from this one object: the data whose `derivedFrom` named it as a MESH_OBJECT source. The object-level twin of `Annotation.derivedResidents`, kind-blind like it. These are listed on the collection's own lineage too: an object is part of its collection
   """
   derivedResidents: [Resident!]!
+
+  """
+  How many containers `derivedResidents` lists: a count for a card, without loading what they are
+  """
+  derivedResidentsCount: Int!
 
   """`<collection>:<object>`: a stable handle, unique across collections"""
   id: ID!
@@ -10015,7 +10354,14 @@ type NetworkLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -11228,6 +11574,16 @@ type PointsChartLayer implements ChartLayer {
 
   """The table dataset whose columns are read: the container of the lens"""
   tableDataset: TableDataset!
+
+  """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
   visible: Boolean!
 
   """
@@ -11502,8 +11858,15 @@ type Query {
   """
   chartsStats(filters: ChartFilter = null): ChartStats!
 
-  """List the child folders of a folder"""
+  """
+  List what a folder holds -- sub-folders, files and every container -- ordered across all of them at once, then paged
+  """
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
+
+  """
+  Count what `children` pages through with the same filter: the total and one count per kind
+  """
+  childrenCounts(filters: FolderChildrenFilter = null, parent: ID!): FolderChildCounts!
 
   """Get a single collaboration by ID"""
   collaboration(id: ID!): Collaboration!
@@ -11511,7 +11874,12 @@ type Query {
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
   """
-  collaborations: [Collaboration!]!
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
+
+  """
+  Count the collaborations `collaborations` lists, and the objects in them
+  """
+  collaborationsStats: CollaborationStats!
 
   """
   Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for
@@ -11526,7 +11894,7 @@ type Query {
   """
   Walk the coordinate graph out from one system: every coordinate system it reaches and every edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not
   """
-  coordinateGraph(coordinateSystem: ID!, maxDepth: Int = null): CoordinateGraph!
+  coordinateGraph(coordinateSystem: ID!, direction: GraphDirection! = BOTH, maxDepth: Int = null): CoordinateGraph!
 
   """Get a single coordinate system by ID"""
   coordinateSystem(id: ID!): CoordinateSystem!
@@ -12198,6 +12566,11 @@ type RotationTransformation implements Transformation {
 }
 
 """
+A count of rows or values: an integer that may pass 2^31 (GraphQL's `Int` is 32-bit), exact up to 2^53
+"""
+scalar RowCount
+
+"""
 What a picked row of a table reaches -- a point of a chart of values. There is no sample: the row's INDEX value IS the id, so a client holding it binds `key` and runs `hops` in order, exactly as it runs an `AttributePlan`'s after its sample. `hops[0]` is the row itself; later hops cross every fact the schema allows from it, including two only a row's plan takes: REVERSE references (a cluster's member rows) and SAME_ROWS crossings (the PCA row of a measurement row). Like an attribute plan it takes no id and reads no store, so fetch it once per table
 """
 type RowPlan {
@@ -12422,6 +12795,11 @@ type Scene implements Visualization {
   backgroundColor: [Float!]
 
   """
+  When this scene was created. Null for a scene made before the time was kept whose history records none
+  """
+  createdAt: DateTime
+
+  """
   The lenses that nominate this scene as the one to open for them, and take their thumbnail from it -- a container's whole lens where the container was nominated for. Several may: a scene staging a plate is a reasonable landing place for every well in it. Not the lenses this scene *shows* -- for that, ask each lens' `scenes`, which the coordinate graph derives
   """
   defaultFor: [Lens!]!
@@ -12483,6 +12861,12 @@ input SceneFilter {
   OR: SceneFilter
   blending: BlendingChoices
 
+  """Filter for items created after this datetime"""
+  createdAfter: DateTime
+
+  """Filter for items created before this datetime"""
+  createdBefore: DateTime
+
   """
   Filter to the scene this lens nominates as its default -- a container's whole lens for the container. A choice someone made, not the set of scenes that show the lens; for that, ask the lens' `scenes`
   """
@@ -12508,6 +12892,7 @@ input SceneFilter {
 }
 
 input SceneOrder @oneOf {
+  createdAt: Ordering
   id: Ordering
   name: Ordering
 }
@@ -12640,8 +13025,16 @@ type SceneStats {
   """Minimum"""
   min(field: SceneField!): Float
 
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: SceneField!, timestampField: SceneTimestampField!): [TimeBucket!]!
+
   """Sum"""
   sum(field: SceneField!): Float
+}
+
+"""Datetime fields of Scene for bucketing"""
+enum SceneTimestampField {
+  CREATED_AT
 }
 
 """Where along one axis a transformation applies"""
@@ -12801,6 +13194,16 @@ type SeriesChartLayer implements ChartLayer {
 
   """The numeric attribute column read as the value"""
   valueColumn: String!
+
+  """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
 
   """
   The unit the value column's values are in, as the table declares it. Null when the column declares none. A chart may hold layers in several units: it commits only to its axis
@@ -13088,6 +13491,9 @@ type SparseDataset {
   """
   coordinateSystem: CoordinateSystem!
 
+  """When this sparse dataset was created"""
+  createdAt: DateTime!
+
   """The task this dataset was created through, if any"""
   createdThrough: Task
 
@@ -13317,7 +13723,14 @@ type SparseLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -13568,6 +13981,9 @@ type TableDataset {
   """
   coordinateSystem: CoordinateSystem!
 
+  """When this table dataset was created"""
+  createdAt: DateTime!
+
   """The task this table was created through, if any"""
   createdThrough: Task
 
@@ -13629,6 +14045,11 @@ type TableDataset {
   Every column, in any table, that declares this table as its reference target -- the reverse of `Column.references`. This table cannot be deleted while any of them exist
   """
   referencedBy: [Column!]!
+
+  """
+  How many rows the parquet holds, read off its footer -- never by scanning. Null until the footer was read
+  """
+  rowCount: RowCount
 
   """
   The files this table dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
@@ -13896,7 +14317,14 @@ type TableLens implements Lens {
   """
   The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the container's own anchor coordinates (an array's indices, a table's values): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [WindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
@@ -14147,6 +14575,16 @@ type TraceChartLayer implements ChartLayer {
   The CHANNEL or INDEX axis the lens leaves free beside `alongAxis`, drawn as one line per position along it. Null when the lens is a single line. Read from the lens' shape, not stored
   """
   seriesAxis: String
+
+  """
+  The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMax: Float
+
+  """
+  The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data
+  """
+  valueMin: Float
   visible: Boolean!
 }
 
@@ -14199,6 +14637,11 @@ type TrackLayer implements Layer {
   """
   tableDataset: TableDataset!
 
+  """
+  How many timepoints of each track's past are drawn behind the current one; 0 draws the whole track. Null lets the viewer choose
+  """
+  tailWindow: Int
+
   """The dataset's TRACK_ID column, which groups rows into tracks"""
   trackIdColumn: String
   visible: Boolean!
@@ -14216,6 +14659,7 @@ type TransferFunction {
   climMax: Float
   climMin: Float
   color: [Int!]
+  colorStops: [ColorStop!]
   colormap: ColorMap
   gamma: Float
   invert: Boolean
@@ -14230,6 +14674,7 @@ input TransferFunctionInput {
   climMax: Float = null
   climMin: Float = null
   color: [Int!] = null
+  colorStops: [ColorStopInput!] = null
   colormap: ColorMap = null
   gamma: Float = null
   invert: Boolean = null
@@ -14760,6 +15205,7 @@ input UpdateChartInput {
 Input for restyling a chart layer of any kind: view state only. What a layer reads -- its lens and its columns -- is changed by its kind's own update (updateTraceChartLayer, updateSeriesChartLayer, updatePointsChartLayer, updateDistributionChartLayer); where its data sits along the chart's axis is the graph's, changed by editing the registration
 """
 input UpdateChartLayerInput {
+  autoscale: Boolean = null
   color: [Float!] = null
   id: ID!
   lineWidth: Float = null
@@ -14769,6 +15215,8 @@ input UpdateChartLayerInput {
   name: String = null
   opacity: Float = null
   order: Int = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
 }
 
@@ -15059,6 +15507,7 @@ input UpdatePointLayerInput {
 Retune a points layer: plot other columns, or another table lens' rows, or change how they are drawn
 """
 input UpdatePointsChartLayerInput {
+  autoscale: Boolean = null
   clearZColumn: Boolean! = false
   color: [Float!] = null
   id: ID!
@@ -15070,6 +15519,8 @@ input UpdatePointsChartLayerInput {
   name: String = null
   opacity: Float = null
   order: Int = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
   xColumn: String = null
   yColumn: String = null
@@ -15108,6 +15559,7 @@ input UpdateSceneInput {
 Retune a series: read another value column, or another table lens, against the chart's axis
 """
 input UpdateSeriesChartLayerInput {
+  autoscale: Boolean = null
   color: [Float!] = null
   id: ID!
   lens: ID = null
@@ -15119,6 +15571,8 @@ input UpdateSeriesChartLayerInput {
   opacity: Float = null
   order: Int = null
   valueColumn: String = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
 }
 
@@ -15142,6 +15596,7 @@ input UpdateTableDatasetInput {
 Retune a trace: draw another array lens along the chart's axis, or change how it is drawn
 """
 input UpdateTraceChartLayerInput {
+  autoscale: Boolean = null
   color: [Float!] = null
   id: ID!
   lens: ID = null
@@ -15152,6 +15607,8 @@ input UpdateTraceChartLayerInput {
   name: String = null
   opacity: Float = null
   order: Int = null
+  valueMax: Float = null
+  valueMin: Float = null
   visible: Boolean = null
 }
 
@@ -15166,6 +15623,7 @@ input UpdateTrackLayerInput {
   lineWidth: Float = null
   opacity: Float = null
   order: Int = null
+  tailWindow: Int = null
   visible: Boolean = null
 }
 
@@ -15556,7 +16014,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | ColumnSummary | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

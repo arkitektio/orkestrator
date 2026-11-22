@@ -60,6 +60,8 @@ export type Scalars = {
   ParquetLike: { input: any; output: any; }
   /** A power (``"5 mW"``, ``"2 W"``). */
   Power: { input: Power; output: Power; }
+  /** A count of rows or values: an integer that may pass 2^31 (GraphQL's `Int` is 32-bit), exact up to 2^53 */
+  RowCount: { input: number; output: number; }
   /** A reference to an uploaded **sporadik store**: one prefix holding one child per axis made contiguous, under `layouts/axis{k}`, each an anndata-spelled sparse group of `data`, `indices` and `indptr`. Named for the wire format the way `FabriksLike` is. Request it with `requestSparseUpload`, write the layouts, land the `sporadik` block last, then `finishSparseUpload` -- which reads that block and refuses a prefix without one, because zarr fills a missing chunk rather than failing and a torn upload is otherwise indistinguishable from a finished one. A dataset registered this way declares no encoding, no shape and no chunking: the server reads them from the artifact, so they cannot be stated wrong */
   SporadikLike: { input: any; output: any; }
   /** A temperature (``"310 K"``, ``"37 degC"``). */
@@ -263,6 +265,8 @@ export type Annotation = {
   coordinateSystem?: Maybe<CoordinateSystem>;
   /** The discrete coordinates this annotation is pinned to. A coordinate the annotation does not pin is one it spans */
   coordinates: Array<Coordinate>;
+  /** When this annotation was drawn. Null for a shape drawn before the time was kept whose history records none */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
   createdWithTransforms: Scalars['Int']['output'];
   /** The user that drew this annotation, or null when that user is gone or a client created it without one */
   creator?: Maybe<User>;
@@ -274,6 +278,8 @@ export type Annotation = {
   derivedLenses: Array<ArrayLens>;
   /** Everything computed from this annotation, whatever kind of container it is: the data whose `derivedFrom` named this shape as an ANNOTATION source -- a crop written out as a dataset, an image straightened along a path, a table measured inside an ROI. The other end of those edges, exactly as `ArrayDataset.derivedResidents` is, and as kind-blind: the shape is usually named with no transform. A record of the act: editing the shape afterwards changes none of it. The edge itself, with the lens the pixels came from beside it, is on each child's own `derivedFrom` */
   derivedResidents: Array<Resident>;
+  /** How many containers `derivedResidents` lists: a count for a tile, without loading what they are */
+  derivedResidentsCount: Scalars['Int']['output'];
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -342,6 +348,10 @@ export type AnnotationChartLayer = ChartLayer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
   placementValidity: PlacementValidity;
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   visible: Scalars['Boolean']['output'];
 };
 
@@ -550,6 +560,10 @@ export type AnnotationFilter = {
   containsPoint?: InputMaybe<Array<Scalars['Float']['input']>>;
   /** Filter by the coordinate system this annotation is drawn in (its collection's own) */
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter by the dataset the annotations are drawn over, following the collection's derivation edge */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
@@ -711,9 +725,17 @@ export type AnnotationLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over an annotation collection by windows in its drawing space */
+export type AnnotationLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 export type AnnotationOrder =
-  { id: Ordering; name?: never; }
-  |  { id?: never; name: Ordering; };
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
 
 /** How a shape came from the shape it names in `derivedFrom`: the act, not the algorithm (that is the creating task's). A record of where a new shape came from -- editing a shape in place is its history, never a derivation */
 export enum AnnotationRelation {
@@ -761,6 +783,8 @@ export type AnnotationStats = {
   max?: Maybe<Scalars['Float']['output']>;
   /** Minimum */
   min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
   /** Sum */
   sum?: Maybe<Scalars['Float']['output']>;
 };
@@ -786,9 +810,21 @@ export type AnnotationStatsMinArgs = {
 };
 
 
+export type AnnotationStatsSeriesArgs = {
+  by: Granularity;
+  field: AnnotationField;
+  timestampField: AnnotationTimestampField;
+};
+
+
 export type AnnotationStatsSumArgs = {
   field: AnnotationField;
 };
+
+/** Datetime fields of Annotation for bucketing */
+export enum AnnotationTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
 
 /** A stop: a hole of some diameter. A pinhole with no confocal claim attached */
 export type ApertureElement = OpticalElement & {
@@ -832,6 +868,8 @@ export type ArrayDataset = {
   anchors: Array<CoordinateAnchor>;
   /** The dataset's axis names, in array order. Derived from the axes of its intrinsic coordinate system */
   axisNames: Array<Scalars['String']['output']>;
+  /** When this dataset was created */
+  createdAt: Scalars['DateTime']['output'];
   /** The task this dataset was created through, if any */
   createdThrough?: Maybe<Task>;
   /** The assigner of the creating task, if any */
@@ -848,6 +886,8 @@ export type ArrayDataset = {
   derivedFrom: Array<Transformation>;
   /** Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the measurement tables, mesh collections and annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive */
   derivedResidents: Array<Resident>;
+  /** How many containers `derivedResidents` lists: a count for a tile, without loading what they are */
+  derivedResidentsCount: Scalars['Int']['output'];
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -879,6 +919,8 @@ export type ArrayDataset = {
   scenes: Array<Scene>;
   /** The dataset's shape: that of its level-0 array */
   shape: Array<Scalars['Int']['output']>;
+  /** The bytes this dataset holds: every level of its pyramid, as their stores measured them when the upload finished. Null when no store could be measured */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The files this dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
   /** What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per non-spatial axis type: the acquisition ones (TIMESERIES, MULTICHANNEL, SPECTRAL, FLIM), then the ones that say what the values or positions are (DISPLACEMENT_FIELD, COORDINATE_FIELD, INDEXED). An axis counts only when it has more than one position. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]; a 2D flow field is [IMAGE, DISPLACEMENT_FIELD]. Last comes TRACE, for a dataset that is a curve along one measured axis: a decay is [SCALAR, FLIM, TRACE], a line profile per channel [PROFILE, MULTICHANNEL, TRACE]. A stack stored with a single plane is an IMAGE, and a single frame is not a TIMESERIES; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet */
@@ -1170,6 +1212,13 @@ export type ArrayLens = Lens & {
 
 
 /** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
+export type ArrayLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
+
+/** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
 export type ArrayLensColorByOptionsArgs = {
   maxJoinDepth?: Scalars['Int']['input'];
 };
@@ -1282,6 +1331,15 @@ export type AxisInput = {
   metricGroup?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
+};
+
+/** How much one step along an axis spans, measured against another grid's steps */
+export type AxisScaleFactor = {
+  __typename?: 'AxisScaleFactor';
+  /** The axis, by name */
+  axis: Scalars['String']['output'];
+  /** How many steps of the other grid one step along this axis spans */
+  factor: Scalars['Float']['output'];
 };
 
 /** The semantic kind of an axis. Axes are declared in the order the data has them -- for an array, its store's dimension order; for a table, its coordinate columns as declared -- and no ordering by type is required of them: the time, channel and phasor axes are found by type rather than by position. What the render axes are derived from is the relative order of the SPACE axes, the last being x. */
@@ -1767,6 +1825,10 @@ export type ChartLayer = {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
   placementValidity: PlacementValidity;
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   visible: Scalars['Boolean']['output'];
 };
 
@@ -1944,7 +2006,9 @@ export enum ChildrenOrderDirection {
 
 export enum ChildrenOrderField {
   CreatedAt = 'CREATED_AT',
-  Name = 'NAME'
+  Kind = 'KIND',
+  Name = 'NAME',
+  Size = 'SIZE'
 }
 
 export type ChildrenPaginationInput = {
@@ -1978,9 +2042,24 @@ export type Collaboration = {
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  /** What is in the collaboration; what is part of these is in it too */
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
   items: Array<CollaborationItem>;
   name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
@@ -2011,6 +2090,15 @@ export type CollaborationObjectRef = {
   identifier: Scalars['String']['input'];
   /** The object's id */
   object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
 };
 
 /** One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set */
@@ -2100,6 +2188,19 @@ export enum ColorSourceKind {
   Sparse = 'SPARSE'
 }
 
+/** One stop of a colour gradient: a position on the normalized 0..1 the colormap is indexed with, and the RGBA colour there */
+export type ColorStop = {
+  __typename?: 'ColorStop';
+  color: Array<Scalars['Int']['output']>;
+  position: Scalars['Float']['output'];
+};
+
+/** One stop of a colour gradient: a position on the normalized 0..1 the colormap is indexed with, and the RGBA colour there */
+export type ColorStopInput = {
+  color: Array<Scalars['Int']['input']>;
+  position: Scalars['Float']['input'];
+};
+
 /** One declared column of a table dataset: its name, dtype and role. A COORDINATE column is also an axis of the table's space */
 export type Column = {
   __typename?: 'Column';
@@ -2115,6 +2216,10 @@ export type Column = {
   /** The table whose rows this column's values identify -- a declared foreign key, e.g. an `instance_id` column referencing a table of tracks. The target is keyed by its single INDEX coordinate column; look a value up there. Null for a column that identifies nothing */
   references?: Maybe<TableDataset>;
   role: ColumnRole;
+  /** What the parquet footer says of this column: its range and how many values are null. Read once, never by scanning the rows. Null until the footer was read */
+  stats?: Maybe<ColumnStats>;
+  /** What a client computed over this column for the whole table -- its histogram, its distinct values -- pinned to the table's global anchor (`createCoordinateAnchor` with `columnSummaries`). Null until someone computed it. A summary at a narrower coordinate is on that anchor's `columnSummaries` */
+  summary?: Maybe<ColumnSummary>;
   /** The table this column is declared on. Trivial when the column was read through its table, load-bearing when it was not -- an options list is flat, and a column with no table on it cannot be named in a `colorBy` */
   table: TableDataset;
   unit?: Maybe<Scalars['Unit']['output']>;
@@ -2195,6 +2300,49 @@ export enum ColumnRole {
   TrackId = 'TRACK_ID'
 }
 
+/** What a parquet footer says of one column, read without scanning a row */
+export type ColumnStats = {
+  __typename?: 'ColumnStats';
+  /** The largest value. Null for a column whose statistics are not numbers, or that a row group states none for */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The smallest value. Null for a column whose statistics are not numbers, or that a row group states none for */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** How many values are null. Null where a row group does not say */
+  nullCount?: Maybe<Scalars['RowCount']['output']>;
+};
+
+/** What a client computed over one column of a table and pinned to an anchor of it: a histogram, the distinct values. The table twin of `ValueHistogram` */
+export type ColumnSummary = {
+  __typename?: 'ColumnSummary';
+  /** The bins (x values): their edges, one more than the counts, or their centres, as many as the counts */
+  bins: Array<Scalars['Float']['output']>;
+  /** The column summarised */
+  column: Column;
+  /** When this summary was last pinned */
+  createdAt: Scalars['DateTime']['output'];
+  /** How many distinct values the column holds. Null when not computed */
+  distinctCount?: Maybe<Scalars['RowCount']['output']>;
+  /** The distinct values as a JSON list, most frequent first, as many as were listed. Null when not computed */
+  distinctValues?: Maybe<Scalars['JSON']['output']>;
+  /** The counts per bin (y values) */
+  histogram: Array<Scalars['Float']['output']>;
+  id: Scalars['ID']['output'];
+};
+
+/** What a client computed over one column of a table, pinned to an anchor of it so every later reader finds it: a histogram, the distinct values. The server never scans a table's rows; whoever holds an access grant computes this once */
+export type ColumnSummaryInput = {
+  /** The bins (x values): their edges, one more than the counts, or their centres, as many */
+  bins?: Array<Scalars['Float']['input']>;
+  /** The name of the column summarised */
+  column: Scalars['String']['input'];
+  /** How many distinct values the column holds */
+  distinctCount?: InputMaybe<Scalars['RowCount']['input']>;
+  /** The distinct values, most frequent first */
+  distinctValues?: InputMaybe<Scalars['Any']['input']>;
+  /** The counts per bin (y values) */
+  histogram?: Array<Scalars['Float']['input']>;
+};
+
 /** A discrete coordinate an annotation is pinned to, e.g. a timepoint or a channel */
 export type Coordinate = {
   __typename?: 'Coordinate';
@@ -2211,6 +2359,8 @@ export type CoordinateAnchor = {
   acquisitionWindow?: Maybe<AcquisitionWindow>;
   /** The channel label ingest recorded at this coordinate */
   channelLabel?: Maybe<ChannelLabel>;
+  /** (table) What clients computed over the table's columns at this coordinate: one summary per column summarised */
+  columnSummaries: Array<ColumnSummary>;
   /** The coordinates this anchor is pinned to, e.g. {'c': 0, 't': 5}. For an array dataset these are level-0 pixel indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it */
   coordinates: Scalars['Any']['output'];
   /** The array dataset this anchor pins into, or null otherwise */
@@ -2263,6 +2413,7 @@ export type CoordinateAnchorFilter = {
 export type CoordinateAnchorInput = {
   acquisitionWindow?: InputMaybe<AcquisitionWindowInput>;
   axisAnchors: Array<AxisAnchorInput>;
+  columnSummaries?: InputMaybe<Array<ColumnSummaryInput>>;
   label?: InputMaybe<LabelInput>;
   lightGraph?: InputMaybe<LightpathGraphInput>;
   microscope?: InputMaybe<OptikitStateInput>;
@@ -2304,6 +2455,8 @@ export type CoordinateSystem = {
   /** Which registered sources are in view of an axis-aligned region asked in *this* system's coordinates, each with its extent here, the path of edges that places it, and its in-view coordinate anchors. The field hangs off the coordinate system because the system IS the frame the region is written in -- there is no ambient world to be wrong about, and no camera: a region is a box, and projecting a frustum into one is the client's job. `region` names a leading prefix of this system's axes and says nothing about the rest, so a 2D box asked of a 4D space constrains only its first two axes. Sources the server cannot bound (a mesh collection's vertices and a table's rows live in Parquet it never opens) come back with an empty `extent` and an `extentState` saying why, rather than being culled -- refusing to bound something is not the same as knowing it is out of view. Nothing is stored: the extent is composed per request from the shapes and the edges, so refining a registration moves everything that looks through it and no cached box can disagree. A source registered per index -- a per-channel or per-timepoint correction -- comes back with `extentState: CONDITIONAL` and no extent unless you pass `at`: it is genuinely in the space, but which box it occupies depends on the coordinate. Individual annotations are out of scope; selecting those needs the region pulled back into their frame, and this server composes forward only */
   inView: Array<SourcePlacement>;
   name: Scalars['String']['output'];
+  /** Whether this is a physical space: every axis carries a unit (a calibration, a stage frame, a world). False for a unitless index space -- a pixel grid, a pyramid level, a lens grid -- and for a space with no axes. `a.u.` counts as a unit. The same rule `CoordinateSystemFilter.physical` filters by */
+  physical: Scalars['Boolean']['output'];
   /** Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in */
   placedSystems: Array<CoordinateSystem>;
   /** Provenance entries for this coordinate system: who created it, and every subsequent change */
@@ -2322,6 +2475,8 @@ export type CoordinateSystem = {
   transformVersion: Scalars['Int']['output'];
   /** Everything laid out over this system as its world, of every kind: its scenes, then its charts. The inverse of `Visualization.worldCoordinateSystem`. Unpaginated -- for a filtered or paged list of one kind, ask `scenes` here or the top-level `charts` */
   visualizations: Array<Visualization>;
+  /** Every physical space this space reaches with the edges, each by its best route and with the size one step along each axis measures there, canonical first -- ranked as `ArrayLens.voxelSizes` ranks them (the weakest validity on the route, then fewest hops), so a calibration several steps away is found. Empty for a space that is itself physical, or that reaches none */
+  voxelSizes: Array<VoxelSize>;
 };
 
 
@@ -2382,6 +2537,8 @@ export type CoordinateSystemFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the physical spaces -- every axis carries a unit: a calibration, a stage frame, a world -- or, with false, to the unitless index spaces: pixel grids, pyramid levels, lens grids. `a.u.` counts as a unit. A space with no axes is not physical */
+  physical?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the space holding this reference, in the scope it resolves to: a URI (`nifti:mni152`) finds the organization's one space for that frame, a plain key (`stage`) finds the calling app's own -- never another app's space under the same key */
   reference?: InputMaybe<Scalars['String']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
@@ -2917,6 +3074,8 @@ export type CreatePointsChartLayerInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
   xColumn: Scalars['String']['input'];
   yColumn: Scalars['String']['input'];
@@ -2981,6 +3140,8 @@ export type CreateSeriesChartLayerInput = {
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   valueColumn?: InputMaybe<Scalars['String']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -3054,6 +3215,8 @@ export type CreateTraceChartLayerInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -3122,6 +3285,8 @@ export type DataArray = {
   coordinateSystem?: Maybe<CoordinateSystem>;
   id: Scalars['ID']['output'];
   level: Scalars['Int']['output'];
+  /** How many level-0 voxels one voxel of this level spans, per axis of this level, read off `toParent`: 4.0 on y and x for a level downsampled by four, 1.0 on an axis it keeps. Every 1.0 for level 0. Null when the edge does not condense into an affine map, which a stored level edge always does */
+  relativeScale?: Maybe<Array<AxisScaleFactor>>;
   /** How this level's voxels were computed from the level above it. Null for level 0, which was downsampled from nothing, and null for a level whose writer did not say. Over a dataset whose values are object ids only NEAREST and MODE are honest -- see `ArrayDataset.pyramidIsLabelCompliant` */
   scaleMethod?: Maybe<ScaleMethod>;
   shape: Array<Scalars['Int']['output']>;
@@ -3615,6 +3780,10 @@ export type DistributionChartLayer = ChartLayer & {
   tableDataset: TableDataset;
   /** The numeric column whose values are summarised: the chart's horizontal axis */
   valueColumn: Scalars['String']['output'];
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   /** The unit of `valueColumn`, as the table declares it: the chart's horizontal axis. Null when the column declares none */
   valueUnit?: Maybe<Scalars['Unit']['output']>;
   visible: Scalars['Boolean']['output'];
@@ -3824,6 +3993,8 @@ export type File = {
   __typename?: 'File';
   /** The content type of the file */
   contentType?: Maybe<Scalars['String']['output']>;
+  /** When this file was registered */
+  createdAt: Scalars['DateTime']['output'];
   /** The task this file was created through, if any */
   createdThrough?: Maybe<Task>;
   /** The assigner of the creating task, if any */
@@ -3832,6 +4003,8 @@ export type File = {
   creator: User;
   /** The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing */
   derivedContainers: Array<FileLink>;
+  /** How many containers `derivedContainers` lists, optionally of one kind: a count for a tile, without loading the links */
+  derivedContainersCount: Scalars['Int']['output'];
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   /** The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers` */
@@ -3853,6 +4026,13 @@ export type File = {
 /** A file in its original format (e.g. a microscopy vendor file), stored in a BigFileStore. Files are the raw bytes that array datasets, table datasets and mesh collections are converted from. */
 export type FileDerivedContainersArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A file in its original format (e.g. a microscopy vendor file), stored in a BigFileStore. Files are the raw bytes that array datasets, table datasets and mesh collections are converted from. */
+export type FileDerivedContainersCountArgs = {
+  kind?: InputMaybe<FileLinkContainerKind>;
 };
 
 
@@ -4008,6 +4188,8 @@ export type FileLinkFilter = {
   OR?: InputMaybe<FileLinkFilter>;
   /** Filter by the sub of the user that assigned the creating task */
   assignedBy?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the sort of container the link names: only the array datasets, only the tables, and so on */
+  containerKind?: InputMaybe<FileLinkContainerKind>;
   /** Filter for items created after this datetime */
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
@@ -4388,6 +4570,13 @@ export type FixtureLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over a fixture by windows in its own space: a clip box, or the whole model */
+export type FixtureLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** A folder is a collection of the things mikro stores. It mimics a folder in a file system and is the top-level container for organising data. */
 export type Folder = {
   __typename?: 'Folder';
@@ -4484,10 +4673,41 @@ export type FolderTableDatasetsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** Anything filed in a folder: a sub-folder, a file, or one of the four containers */
-export type FolderChild = AnnotationCollection | ArrayDataset | File | Fixture | Folder | MeshCollection | TableDataset;
+/** Anything filed in a folder: a sub-folder, a file, or one of the containers */
+export type FolderChild = AnnotationCollection | ArrayDataset | File | Fixture | Folder | MeshCollection | NetworkCollection | SparseDataset | TableDataset;
+
+/** How much a folder holds, under the same filter as `children`: the total, and per kind */
+export type FolderChildCounts = {
+  __typename?: 'FolderChildCounts';
+  /** One entry per kind the filter admits, zeros included, in the order KIND sorts them */
+  kinds: Array<FolderChildKindCount>;
+  /** Everything `children` would page through with this filter */
+  total: Scalars['Int']['output'];
+};
+
+/** What sort of thing a folder holds: a sub-folder, a file, or one of the containers. The order here is the order a KIND sort lists them in */
+export enum FolderChildKind {
+  AnnotationCollection = 'ANNOTATION_COLLECTION',
+  ArrayDataset = 'ARRAY_DATASET',
+  File = 'FILE',
+  Fixture = 'FIXTURE',
+  Folder = 'FOLDER',
+  MeshCollection = 'MESH_COLLECTION',
+  NetworkCollection = 'NETWORK_COLLECTION',
+  SparseDataset = 'SPARSE_DATASET',
+  TableDataset = 'TABLE_DATASET'
+}
+
+/** How many of one kind of thing a folder holds, under the same filter as `children` */
+export type FolderChildKindCount = {
+  __typename?: 'FolderChildKindCount';
+  count: Scalars['Int']['output'];
+  kind: FolderChildKind;
+};
 
 export type FolderChildrenFilter = {
+  /** Only these kinds of thing. Filtered before paging, so a page of tables is a page of tables however many folders and files sit beside them */
+  kinds?: InputMaybe<Array<FolderChildKind>>;
   search?: InputMaybe<Scalars['String']['input']>;
   showChildren?: InputMaybe<Scalars['Boolean']['input']>;
   /** Also list the containers that were converted from a file (those with a SOURCE file link). Hidden unless this is true, because the file they were made from is listed already. Any SOURCE link hides a container, wherever its file is kept; a RENDITION link (an export) never does */
@@ -4718,6 +4938,16 @@ export type GraphColorByInput = {
   min?: InputMaybe<Scalars['Float']['input']>;
   target?: GraphTarget;
 };
+
+/** Which way a walk over the coordinate graph follows an edge */
+export enum GraphDirection {
+  /** Either way: the whole connected component, which reaches everything else registered into a shared world. */
+  Both = 'BOTH',
+  /** From an edge's output to its input only: what maps into this space -- the grids, levels and lenses registered into it, and theirs. */
+  Incoming = 'INCOMING',
+  /** From an edge's input to its output only: where this space maps to -- its physical spaces, the worlds it is registered into, and onward. */
+  Outgoing = 'OUTGOING'
+}
 
 /** Which of a network's two row sets a GRAPH colouring or rule addresses. A network is the one layer kind with two -- every other source has exactly one set of objects -- and an edge has no durable identity of its own (simplification re-links edges between levels), so an edge's value is *derived*: it takes its start node's value, the same convention the renderer already uses for an edge's object ordinal */
 export enum GraphTarget {
@@ -5845,6 +6075,13 @@ export type Lens = {
   title: Scalars['String']['output'];
 };
 
+
+/** A selection over a container that lives in a coordinate system: one row per (container, selection), so the same selection asked for twice is the same id. An ArrayLens selects over an array dataset by index slices and, when sliced, owns the crop's space and the edge back into the dataset's grid; every other kind selects over its container by value windows in the container's own axes and lives in the container's space. Every container has its whole lens from creation. */
+export type LensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** A box in any coordinate system an array dataset reaches -- micrometres in a physical space, a sibling dataset's grid through a shared world -- as the selection of a lens: the voxels whose cells the box meets, once the box is composed into the dataset's pixel grid */
 export type LensBoxInput = {
   /** The coordinate system the windows are stated in. The dataset's pixel grid must reach it affinely, walking the transformation edges either way */
@@ -5899,6 +6136,8 @@ export type LensEvent = {
   create?: Maybe<Lens>;
   /** The ID of a lens that was deleted, on its own or with its container */
   delete?: Maybe<Scalars['ID']['output']>;
+  /** The kind of the lens `delete` names, so a client evicts it under the one typename it cached it as. Set exactly when `delete` is */
+  deleteKind?: Maybe<LensKind>;
   /** A lens that was renamed or nominated a scene, in its new state */
   update?: Maybe<Lens>;
 };
@@ -6735,6 +6974,13 @@ export type MeshLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over a mesh collection by windows in its own space */
+export type MeshLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** One object of a mesh collection: a row of its object catalog, not a row here -- the meshes live in the collection's Parquet store. What the data computed from that one surface hangs off (a MESH_OBJECT derivation). Asked for with `meshObject(collection:, object:)` */
 export type MeshObject = {
   __typename?: 'MeshObject';
@@ -6742,6 +6988,8 @@ export type MeshObject = {
   collection: MeshCollection;
   /** Everything computed from this one object: the data whose `derivedFrom` named it as a MESH_OBJECT source. The object-level twin of `Annotation.derivedResidents`, kind-blind like it. These are listed on the collection's own lineage too: an object is part of its collection */
   derivedResidents: Array<Resident>;
+  /** How many containers `derivedResidents` lists: a count for a card, without loading what they are */
+  derivedResidentsCount: Scalars['Int']['output'];
   /** `<collection>:<object>`: a stable handle, unique across collections */
   id: Scalars['ID']['output'];
   /** The object's id in the collection's object catalog: what a picked mesh reports */
@@ -8456,6 +8704,13 @@ export type NetworkLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over a network collection by windows in its own space */
+export type NetworkLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** A network collection whose geometry carries the ids -- `MeshSample`'s sentence over a wireframe. **Nothing is sampled at a coordinate here**: an OBJECT id (one per traced filament or arbor, never per node) rides on the geometry rows and the object catalog, so a client that picked a segment is already holding one and goes straight to the lookup. The store is named for a headless worker that did not do the picking and must read the object catalog itself */
 export type NetworkSample = SampleStep & {
   __typename?: 'NetworkSample';
@@ -9307,6 +9562,10 @@ export type PointsChartLayer = ChartLayer & {
   placementValidity: PlacementValidity;
   /** The table dataset whose columns are read: the container of the lens */
   tableDataset: TableDataset;
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   visible: Scalars['Boolean']['output'];
   /** The lens' selection as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open). Derived from the lens; empty for a whole lens */
   windowFilters: Array<LabelFilterBy>;
@@ -9531,12 +9790,16 @@ export type Query = {
   charts: Array<Chart>;
   /** Get statistics about charts: counts and time-bucketed series over the charts of the current organization */
   chartsStats: ChartStats;
-  /** List the child folders of a folder */
+  /** List what a folder holds -- sub-folders, files and every container -- ordered across all of them at once, then paged */
   children: Array<FolderChild>;
+  /** Count what `children` pages through with the same filter: the total and one count per kind */
+  childrenCounts: FolderChildCounts;
   /** Get a single collaboration by ID */
   collaboration: Collaboration;
   /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
   collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them */
+  collaborationsStats: CollaborationStats;
   /** Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   colorByOptions: Array<ColorByOption>;
   /** List coordinate anchors (the hubs pinning metadata spokes to coordinates of an array, table or sparse dataset) */
@@ -9804,8 +10067,19 @@ export type QueryChildrenArgs = {
 };
 
 
+export type QueryChildrenCountsArgs = {
+  filters?: InputMaybe<FolderChildrenFilter>;
+  parent: Scalars['ID']['input'];
+};
+
+
 export type QueryCollaborationArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -9825,6 +10099,7 @@ export type QueryCoordinateAnchorsArgs = {
 
 export type QueryCoordinateGraphArgs = {
   coordinateSystem: Scalars['ID']['input'];
+  direction?: GraphDirection;
   maxDepth?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -10672,6 +10947,8 @@ export type Scene = Visualization & {
   annotationCollection?: Maybe<AnnotationCollection>;
   /** The viewer background, as RGBA. Null lets the viewer use its own */
   backgroundColor?: Maybe<Array<Scalars['Float']['output']>>;
+  /** When this scene was created. Null for a scene made before the time was kept whose history records none */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
   /** The lenses that nominate this scene as the one to open for them, and take their thumbnail from it -- a container's whole lens where the container was nominated for. Several may: a scene staging a plate is a reasonable landing place for every well in it. Not the lenses this scene *shows* -- for that, ask each lens' `scenes`, which the coordinate graph derives */
   defaultFor: Array<Lens>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
@@ -10736,6 +11013,10 @@ export type SceneFilter = {
   NOT?: InputMaybe<SceneFilter>;
   OR?: InputMaybe<SceneFilter>;
   blending?: InputMaybe<BlendingChoices>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter to the scene this lens nominates as its default -- a container's whole lens for the container. A choice someone made, not the set of scenes that show the lens; for that, ask the lens' `scenes` */
   defaultForLens?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
@@ -10751,8 +11032,9 @@ export type SceneFilter = {
 };
 
 export type SceneOrder =
-  { id: Ordering; name?: never; }
-  |  { id?: never; name: Ordering; };
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
 
 /** The policy createSceneFromCoordinateSystem follows: at most `nchildren` sources, materialized from what lives in or is registered into the space, filtered by source kind and drawn by the recipe in `kind`. A source may become several layers -- a multi-channel image becomes one layer per channel */
 export type ScenePolicyInput = {
@@ -10843,6 +11125,8 @@ export type SceneStats = {
   max?: Maybe<Scalars['Float']['output']>;
   /** Minimum */
   min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
   /** Sum */
   sum?: Maybe<Scalars['Float']['output']>;
 };
@@ -10868,9 +11152,21 @@ export type SceneStatsMinArgs = {
 };
 
 
+export type SceneStatsSeriesArgs = {
+  by: Granularity;
+  field: SceneField;
+  timestampField: SceneTimestampField;
+};
+
+
 export type SceneStatsSumArgs = {
   field: SceneField;
 };
+
+/** Datetime fields of Scene for bucketing */
+export enum SceneTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
 
 /** Where along one axis a transformation applies */
 export type Selector = {
@@ -10966,6 +11262,10 @@ export type SeriesChartLayer = ChartLayer & {
   tableDataset: TableDataset;
   /** The numeric attribute column read as the value */
   valueColumn: Scalars['String']['output'];
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   /** The unit the value column's values are in, as the table declares it. Null when the column declares none. A chart may hold layers in several units: it commits only to its axis */
   valueUnit?: Maybe<Scalars['Unit']['output']>;
   visible: Scalars['Boolean']['output'];
@@ -11206,6 +11506,8 @@ export type SparseDataset = {
   axisReferences: Array<SparseAxisReference>;
   /** The coordinate system whose axes are this matrix's two enumerations. Owned by the dataset, and the space a FIELD edge lands in */
   coordinateSystem: CoordinateSystem;
+  /** When this sparse dataset was created */
+  createdAt: Scalars['DateTime']['output'];
   /** The task this dataset was created through, if any */
   createdThrough?: Maybe<Task>;
   /** Who assigned that task */
@@ -11441,6 +11743,13 @@ export type SparseLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over a sparse dataset by windows on its axes: the positions kept, never re-indexed. Lives in the dataset's own space */
+export type SparseLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** A sparse matrix stored as an anndata-spelled zarr group behind the S3 datalayer: `data`, `indices` and `indptr`, with the encoding, shape and chunking read from the group itself rather than declared. Its `encoding` says which axis `indptr` indexes, and so which question it answers in one contiguous read -- ask the other and there is no range to read at all. */
 export type SparseStore = {
   __typename?: 'SparseStore';
@@ -11589,6 +11898,8 @@ export type TableDataset = {
   columns: Array<Column>;
   /** The coordinate system this table owns. Its axes are the table's coordinate columns (or a single INDEX axis for a pure measurement table) */
   coordinateSystem: CoordinateSystem;
+  /** When this table dataset was created */
+  createdAt: Scalars['DateTime']['output'];
   /** The task this table was created through, if any */
   createdThrough?: Maybe<Task>;
   /** The assigner of the creating task, if any */
@@ -11618,6 +11929,8 @@ export type TableDataset = {
   provenanceMetadata: Scalars['Any']['output'];
   /** Every column, in any table, that declares this table as its reference target -- the reverse of `Column.references`. This table cannot be deleted while any of them exist */
   referencedBy: Array<Column>;
+  /** How many rows the parquet holds, read off its footer -- never by scanning. Null until the footer was read */
+  rowCount?: Maybe<Scalars['RowCount']['output']>;
   /** The files this table dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
   /** What this table structurally is, materialized at creation from its declared columns: the one placement member its SPACE coordinate columns denote (RECORDS for none, then POINTS_1D, POINTS_2D, POINTS_3D, POINTS_ND), then a modifier per declared fact (TIMED, TRACKED, GROUPED, KEYED, NODE_TABLE, EDGE_TABLE), then SERIES for a table that is one value against one measured coordinate. A tracking result is [POINTS_2D, TIMED, TRACKED]; a table of per-object measurements keyed to a label mask is [RECORDS, KEYED]; a readout over time is [RECORDS, TIMED, SERIES]. Declared, not measured: the server never scans the rows, so TIMED says a TIME coordinate column exists, not that the rows span more than one instant */
@@ -11885,6 +12198,13 @@ export type TableLens = Lens & {
   windows: Array<Window>;
 };
 
+
+/** A selection over a table dataset by value windows on its columns: the rows kept. A window on a coordinate column bounds a region of space; one on a numeric measurement column is a gate (`area >= 50`), which bounds nothing in space. Lives in the table's own space */
+export type TableLensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<WindowInput>>;
+};
+
 /** A validated Rekuest task under which objects were created or changed. */
 export type Task = {
   __typename?: 'Task';
@@ -11992,6 +12312,10 @@ export type TraceChartLayer = ChartLayer & {
   placementValidity: PlacementValidity;
   /** The CHANNEL or INDEX axis the lens leaves free beside `alongAxis`, drawn as one line per position along it. Null when the lens is a single line. Read from the lens' shape, not stored */
   seriesAxis?: Maybe<Scalars['String']['output']>;
+  /** The highest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMax?: Maybe<Scalars['Float']['output']>;
+  /** The lowest value the layer's value scale shows, as last set. Null lets the viewer scale to the data */
+  valueMin?: Maybe<Scalars['Float']['output']>;
   visible: Scalars['Boolean']['output'];
 };
 
@@ -12058,6 +12382,8 @@ export type TrackLayer = Layer & {
   scene: Scene;
   /** The table dataset the tracks are drawn from: the container of the lens. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer */
   tableDataset: TableDataset;
+  /** How many timepoints of each track's past are drawn behind the current one; 0 draws the whole track. Null lets the viewer choose */
+  tailWindow?: Maybe<Scalars['Int']['output']>;
   /** The dataset's TRACK_ID column, which groups rows into tracks */
   trackIdColumn?: Maybe<Scalars['String']['output']>;
   visible: Scalars['Boolean']['output'];
@@ -12102,6 +12428,7 @@ export type TransferFunction = {
   climMax?: Maybe<Scalars['Float']['output']>;
   climMin?: Maybe<Scalars['Float']['output']>;
   color?: Maybe<Array<Scalars['Int']['output']>>;
+  colorStops?: Maybe<Array<ColorStop>>;
   colormap?: Maybe<ColorMap>;
   gamma?: Maybe<Scalars['Float']['output']>;
   invert?: Maybe<Scalars['Boolean']['output']>;
@@ -12114,6 +12441,7 @@ export type TransferFunctionInput = {
   climMax?: InputMaybe<Scalars['Float']['input']>;
   climMin?: InputMaybe<Scalars['Float']['input']>;
   color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  colorStops?: InputMaybe<Array<ColorStopInput>>;
   colormap?: InputMaybe<ColorMap>;
   gamma?: InputMaybe<Scalars['Float']['input']>;
   invert?: InputMaybe<Scalars['Boolean']['input']>;
@@ -12452,6 +12780,7 @@ export type UpdateChartInput = {
 
 /** Input for restyling a chart layer of any kind: view state only. What a layer reads -- its lens and its columns -- is changed by its kind's own update (updateTraceChartLayer, updateSeriesChartLayer, updatePointsChartLayer, updateDistributionChartLayer); where its data sits along the chart's axis is the graph's, changed by editing the registration */
 export type UpdateChartLayerInput = {
+  autoscale?: InputMaybe<Scalars['Boolean']['input']>;
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
@@ -12461,6 +12790,8 @@ export type UpdateChartLayerInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -12660,6 +12991,7 @@ export type UpdatePointLayerInput = {
 
 /** Retune a points layer: plot other columns, or another table lens' rows, or change how they are drawn */
 export type UpdatePointsChartLayerInput = {
+  autoscale?: InputMaybe<Scalars['Boolean']['input']>;
   clearZColumn?: Scalars['Boolean']['input'];
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
@@ -12671,6 +13003,8 @@ export type UpdatePointsChartLayerInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
   xColumn?: InputMaybe<Scalars['String']['input']>;
   yColumn?: InputMaybe<Scalars['String']['input']>;
@@ -12702,6 +13036,7 @@ export type UpdateSceneInput = {
 
 /** Retune a series: read another value column, or another table lens, against the chart's axis */
 export type UpdateSeriesChartLayerInput = {
+  autoscale?: InputMaybe<Scalars['Boolean']['input']>;
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -12713,6 +13048,8 @@ export type UpdateSeriesChartLayerInput = {
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   valueColumn?: InputMaybe<Scalars['String']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -12732,6 +13069,7 @@ export type UpdateTableDatasetInput = {
 
 /** Retune a trace: draw another array lens along the chart's axis, or change how it is drawn */
 export type UpdateTraceChartLayerInput = {
+  autoscale?: InputMaybe<Scalars['Boolean']['input']>;
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
   id: Scalars['ID']['input'];
   lens?: InputMaybe<Scalars['ID']['input']>;
@@ -12742,6 +13080,8 @@ export type UpdateTraceChartLayerInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  valueMax?: InputMaybe<Scalars['Float']['input']>;
+  valueMin?: InputMaybe<Scalars['Float']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -12754,6 +13094,7 @@ export type UpdateTrackLayerInput = {
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
+  tailWindow?: InputMaybe<Scalars['Int']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -13073,7 +13414,7 @@ export type ZarrUploadGrant = {
   uploadFileName: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationDerivation | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CellsGridLayer | ChannelLabel | Chart | Client | Column | ColumnSummary | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | DistributionChartLayer | FabriksStore | File | FileLink | Fixture | FixtureLayer | FixtureLens | Folder | Grid | HeatmapGridLayer | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | KulisseStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | PointsChartLayer | PositionLabel | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -18237,11 +18578,12 @@ export type ChildrenQueryVariables = Exact<{
   id: Scalars['ID']['input'];
   pagination?: InputMaybe<ChildrenPaginationInput>;
   filters?: InputMaybe<FolderChildrenFilter>;
+  order?: InputMaybe<ChildrenOrder>;
 }>;
 
 
 export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename?: 'AnnotationCollection', id: string, name: string } | (
-    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: number | null } }> }
+    { __typename?: 'ArrayDataset', sizeBytes?: number | null, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: number | null } }> }
     & ListArrayDatasetFragment
   ) | (
     { __typename?: 'File' }
@@ -18249,10 +18591,21 @@ export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename
   ) | { __typename?: 'Fixture', id: string, label: string } | (
     { __typename?: 'Folder' }
     & ListFolderFragment
-  ) | { __typename?: 'MeshCollection', id: string, label: string } | (
+  ) | { __typename?: 'MeshCollection', id: string, label: string } | { __typename?: 'NetworkCollection', id: string, label: string } | (
+    { __typename?: 'SparseDataset' }
+    & ListSparseDatasetFragment
+  ) | (
     { __typename?: 'TableDataset' }
     & ListTableDatasetFragment
   )> };
+
+export type ChildrenCountsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  filters?: InputMaybe<FolderChildrenFilter>;
+}>;
+
+
+export type ChildrenCountsQuery = { __typename?: 'Query', childrenCounts: { __typename?: 'FolderChildCounts', total: number, kinds: Array<{ __typename?: 'FolderChildKindCount', kind: FolderChildKind, count: number }> } };
 
 export type GetCollaborationsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -29002,12 +29355,13 @@ export type ChartAddLayerCandidatesQueryHookResult = ReturnType<typeof useChartA
 export type ChartAddLayerCandidatesLazyQueryHookResult = ReturnType<typeof useChartAddLayerCandidatesLazyQuery>;
 export type ChartAddLayerCandidatesQueryResult = Apollo.QueryResult<ChartAddLayerCandidatesQuery, ChartAddLayerCandidatesQueryVariables>;
 export const ChildrenDocument = gql`
-    query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderChildrenFilter) {
-  children(parent: $id, pagination: $pagination, filters: $filters) {
+    query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderChildrenFilter, $order: ChildrenOrder) {
+  children(parent: $id, pagination: $pagination, filters: $filters, order: $order) {
     ...ListFile
     ...ListFolder
     ...ListArrayDataset
     ... on ArrayDataset {
+      sizeBytes
       dataArrays {
         id
         level
@@ -29031,12 +29385,18 @@ export const ChildrenDocument = gql`
       id
       label
     }
+    ...ListSparseDataset
+    ... on NetworkCollection {
+      id
+      label
+    }
   }
 }
     ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}
 ${ListArrayDatasetFragmentDoc}
-${ListTableDatasetFragmentDoc}`;
+${ListTableDatasetFragmentDoc}
+${ListSparseDatasetFragmentDoc}`;
 
 /**
  * __useChildrenQuery__
@@ -29053,6 +29413,7 @@ ${ListTableDatasetFragmentDoc}`;
  *      id: // value for 'id'
  *      pagination: // value for 'pagination'
  *      filters: // value for 'filters'
+ *      order: // value for 'order'
  *   },
  * });
  */
@@ -29067,6 +29428,46 @@ export function useChildrenLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ChildrenQueryHookResult = ReturnType<typeof useChildrenQuery>;
 export type ChildrenLazyQueryHookResult = ReturnType<typeof useChildrenLazyQuery>;
 export type ChildrenQueryResult = Apollo.QueryResult<ChildrenQuery, ChildrenQueryVariables>;
+export const ChildrenCountsDocument = gql`
+    query ChildrenCounts($id: ID!, $filters: FolderChildrenFilter) {
+  childrenCounts(parent: $id, filters: $filters) {
+    total
+    kinds {
+      kind
+      count
+    }
+  }
+}
+    `;
+
+/**
+ * __useChildrenCountsQuery__
+ *
+ * To run a query within a React component, call `useChildrenCountsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useChildrenCountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useChildrenCountsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useChildrenCountsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ChildrenCountsQuery, ChildrenCountsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ChildrenCountsQuery, ChildrenCountsQueryVariables>(ChildrenCountsDocument, options);
+      }
+export function useChildrenCountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ChildrenCountsQuery, ChildrenCountsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ChildrenCountsQuery, ChildrenCountsQueryVariables>(ChildrenCountsDocument, options);
+        }
+export type ChildrenCountsQueryHookResult = ReturnType<typeof useChildrenCountsQuery>;
+export type ChildrenCountsLazyQueryHookResult = ReturnType<typeof useChildrenCountsLazyQuery>;
+export type ChildrenCountsQueryResult = Apollo.QueryResult<ChildrenCountsQuery, ChildrenCountsQueryVariables>;
 export const GetCollaborationsDocument = gql`
     query GetCollaborations {
   collaborations {

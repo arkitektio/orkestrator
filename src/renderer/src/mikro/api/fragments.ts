@@ -26,6 +26,8 @@
       "Fixture",
       "Folder",
       "MeshCollection",
+      "NetworkCollection",
+      "SparseDataset",
       "TableDataset"
     ],
     "GridLayer": [
@@ -145,6 +147,7 @@
       "Chart",
       "Client",
       "Column",
+      "ColumnSummary",
       "CoordinateAnchor",
       "CoordinateSystem",
       "DataArray",

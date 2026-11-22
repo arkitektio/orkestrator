@@ -5,11 +5,19 @@
 # them. The explorer skips any `__typename` it does not know rather than
 # rendering an empty row, so a future union member degrades gracefully too.
 #
-# `MeshCollection` and `AnnotationCollection` have no detail route yet, so they
-# are selected thin (id + name) and render as unlinked rows: better a visible
-# item than a silently missing one.
-query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderChildrenFilter) {
-  children(parent: $id, pagination: $pagination, filters: $filters) {
+# `MeshCollection`, `AnnotationCollection` and `NetworkCollection` have no detail
+# route yet, so they are selected thin (id + name) and render as unlinked rows:
+# better a visible item than a silently missing one.
+#
+# The kinds, the order and the page are the server's (`filters.kinds`, `order`),
+# so a page of tables is a page of tables and a sort covers the whole folder.
+query Children(
+  $id: ID!
+  $pagination: ChildrenPaginationInput
+  $filters: FolderChildrenFilter
+  $order: ChildrenOrder
+) {
+  children(parent: $id, pagination: $pagination, filters: $filters, order: $order) {
     ...ListFile
     ...ListFolder
     ...ListArrayDataset
@@ -17,6 +25,7 @@ query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderC
     # holds on disk, the sum of every level's measured `sizeBytes`, and breaks
     # that sum down per level in a tooltip.
     ... on ArrayDataset {
+      sizeBytes
       dataArrays {
         id
         level
@@ -41,6 +50,23 @@ query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderC
     ... on Fixture {
       id
       label
+    }
+    ...ListSparseDataset
+    ... on NetworkCollection {
+      id
+      label
+    }
+  }
+}
+
+# How many children `Children` pages through with the same search, in total and
+# per kind: the type filter's counts and the pager's end.
+query ChildrenCounts($id: ID!, $filters: FolderChildrenFilter) {
+  childrenCounts(parent: $id, filters: $filters) {
+    total
+    kinds {
+      kind
+      count
     }
   }
 }

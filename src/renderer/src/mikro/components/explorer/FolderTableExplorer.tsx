@@ -8,7 +8,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -55,7 +54,10 @@ import { SlotSections } from "@/core/layout/PageSections";
 import {
   ChildrenQuery,
   FolderFragment,
+  useChildrenCountsQuery,
   useChildrenQuery,
+  ChildrenOrderDirection,
+  ChildrenOrderField,
 } from "@/mikro/api/graphql";
 import { ViewType } from "@/mikro/pages/FolderPage";
 import { ProvenanceSidebar } from "../sidebars/ProvenanceSidebar";
@@ -63,6 +65,14 @@ import { datasetStoredBytes, formatBytes } from "../../specs";
 import { DatasetStoredSize } from "./DatasetStoredSize";
 
 export type Item = ChildrenQuery["children"][0];
+
+/** The columns the server can order a folder by. */
+const SORTABLE_COLUMNS: Record<string, ChildrenOrderField> = {
+  name: ChildrenOrderField.Name,
+  type: ChildrenOrderField.Kind,
+  size: ChildrenOrderField.Size,
+  createdAt: ChildrenOrderField.CreatedAt,
+};
 
 export const columns: ColumnDef<Item>[] = [
   {
@@ -92,6 +102,8 @@ export const columns: ColumnDef<Item>[] = [
   {
     id: "id",
     accessorKey: "id",
+    // The server orders a folder by name, kind, size or creation, not by id.
+    enableSorting: false,
     header: ({ column }) => {
       return (
         <Button
@@ -188,7 +200,7 @@ export const columns: ColumnDef<Item>[] = [
     id: "size",
     accessorFn: (item) => {
       if (item.__typename === "File") return item.size ?? undefined;
-      if (item.__typename === "ArrayDataset") return datasetStoredBytes(item.dataArrays);
+      if (item.__typename === "ArrayDataset") return item.sizeBytes ?? datasetStoredBytes(item.dataArrays);
       return undefined;
     },
     sortUndefined: "last",
@@ -287,6 +299,11 @@ export const FolderTableExplorer = (props: {
   const [search, setSearch] = React.useState("");
   const debouncedSearch = useDebounce(search, 300);
 
+  // A column's sort is the server's, over the whole folder, not one page.
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const sorted = sorting[0];
+  const orderField = sorted ? SORTABLE_COLUMNS[sorted.id] : undefined;
+
   const { data, loading } = useChildrenQuery({
     variables: {
       id: props.folder.id,
@@ -297,7 +314,13 @@ export const FolderTableExplorer = (props: {
       filters: {
         search: debouncedSearch || undefined,
       },
+      order: orderField
+        ? { field: orderField, direction: sorted.desc ? ChildrenOrderDirection.Desc : ChildrenOrderDirection.Asc }
+        : undefined,
     },
+  });
+  const { data: countData } = useChildrenCountsQuery({
+    variables: { id: props.folder.id, filters: { search: debouncedSearch || undefined } },
   });
 
   const handleSearchChange = React.useCallback((value: string) => {
@@ -307,16 +330,18 @@ export const FolderTableExplorer = (props: {
     );
   }, []);
 
-  // `children` has no total in the schema, so "there is a next page" means
-  // "this page came back full".
+  // `childrenCounts` says how many the search pages through.
   const rows = data?.children ?? [];
-  const hasNextPage = rows.length === pagination.pageSize;
+  const total = countData?.childrenCounts.total;
+  const hasNextPage =
+    total !== undefined
+      ? (pagination.pageIndex + 1) * pagination.pageSize < total
+      : rows.length === pagination.pageSize;
 
   const [columns] = React.useState<ColumnDef<Item>[]>(() =>
     calculateColumns(),
   );
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
@@ -329,6 +354,7 @@ export const FolderTableExplorer = (props: {
     columns,
     pageCount: -1,
     manualPagination: true,
+    manualSorting: true,
     onPaginationChange: setPagination,
     state: {
       sorting,
@@ -338,7 +364,6 @@ export const FolderTableExplorer = (props: {
       pagination,
     },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
