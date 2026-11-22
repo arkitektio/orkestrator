@@ -1,0 +1,35 @@
+# What the server knows of a table's columns without a scan: the footer's
+# range and null count, and the summary a client computed once and pinned
+# (histogram, distinct values). The column editor reads these first and scans
+# the parquet only for what is missing.
+query TableColumnStats($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    rowCount
+    columns {
+      id
+      name
+      stats {
+        min
+        max
+        nullCount
+      }
+      summary {
+        id
+        histogram
+        bins
+        distinctValues
+        distinctCount
+      }
+    }
+  }
+}
+
+# Pins what a client computed over a column (its histogram, or its distinct
+# values) to the table's global anchor, so the next open reads it instead of
+# scanning the parquet again. A parquet never changes, so it never goes stale.
+mutation PinColumnSummary($table: ID!, $summary: ColumnSummaryInput!) {
+  createCoordinateAnchor(input: { table: $table, anchor: { axisAnchors: [], columnSummaries: [$summary] } }) {
+    id
+  }
+}

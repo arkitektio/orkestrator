@@ -72,6 +72,8 @@ fragment TableDataset on TableDataset {
   name
   description
   axisNames
+  # Read off the parquet's footer at upload, never by scanning; null until read.
+  rowCount
   store {
     ...ParquetStore
   }

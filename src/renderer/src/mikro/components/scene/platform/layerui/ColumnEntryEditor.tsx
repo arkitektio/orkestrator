@@ -6,7 +6,10 @@ import { Switch } from "@/core/ui/switch";
 import {
   ColorMap,
   ColumnControl,
+  type ColumnSummaryInput,
   useGetTableDatasetLazyQuery,
+  usePinColumnSummaryMutation,
+  useTableColumnStatsLazyQuery,
 } from "@/mikro/api/graphql";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
@@ -63,15 +66,12 @@ import { formatUnit } from "@/core/util/units";
  *
  * A stored entry carries only its table ID and its column NAME — enough to
  * execute, not enough to draw a control — so this resolves the table lazily on
- * mount to learn the column's role, and reads the column's real contents (its
- * numeric range and histogram, its distinct values) straight out of the
- * parquet. The server publishes neither: `withValues` was removed from the
- * options query precisely so the cheap question (which columns exist) stops
- * paying for the expensive one (what is in them), which only the entry being
- * edited ever needs.
- *
- * All reads are on-mount and uncached beyond Apollo's own cache — this is a
- * user unfolding a row, not a hot path.
+ * mount to learn the column's role, then its contents: the range comes off the
+ * parquet's footer (`Column.stats`, read by the server at upload), and the
+ * histogram or distinct values from `Column.summary`, which the first client to
+ * need them computed with DuckDB and pinned to the table (`PinColumnSummary`).
+ * A parquet never changes, so a pinned summary never goes stale and the scan
+ * happens once per column, not once per unfold.
  */
 
 /**
@@ -566,6 +566,8 @@ export const ColumnEntrySettings = ({
 }) => {
   const service = useAttributeServiceOrNull();
   const [loadTable, tableResult] = useGetTableDatasetLazyQuery();
+  const [loadStats, statsResult] = useTableColumnStatsLazyQuery({ fetchPolicy: "cache-first" });
+  const [pinSummary] = usePinColumnSummaryMutation();
   const [domain, setDomain] = useState<ColumnDomain>(null);
   const [histogram, setHistogram] = useState<number[] | null>(null);
   const [distinct, setDistinct] = useState<{ values: string[]; truncated: boolean } | null>(
@@ -585,28 +587,69 @@ export const ColumnEntrySettings = ({
     void loadTable({ variables: { id: tableId } }).catch((error) => {
       console.warn("[layer] could not resolve the entry's table:", error);
     });
-  }, [entry.table, loadTable]);
+    void loadStats({ variables: { id: tableId } }).catch((error) => {
+      console.warn("[layer] could not read the table's column stats:", error);
+    });
+  }, [entry.table, loadTable, loadStats]);
+  const known = statsResult.data?.tableDataset.columns.find((candidate) => candidate.name === entry.column);
 
   // The values read is gated on the ROLE, which only arrives with the table —
   // a distinct scan over a measure column, or a min/max over a label one, is
   // the wrong question asked expensively. A measure reads its domain and then
   // its histogram off that domain, so the bars and the slider agree on the
   // axis by construction.
+  //
+  // What the server already has is used first: the footer's range
+  // (`stats`), and a summary pinned by an earlier read (`summary`). Only what
+  // is missing is scanned, and what was scanned is pinned for the next one.
   useEffect(() => {
-    if (!service || !table || !column || !control) return;
+    // Wait for the server's answer; an older server without the fields errors,
+    // and then everything is scanned as before.
+    if (!table || !column || !control || (!statsResult.data && !statsResult.error)) return;
     let cancelled = false;
     const target = { table: { store: table.store }, column: { name: column.name } };
+    const stored = known?.summary;
+    const footer =
+      known?.stats?.min != null && known.stats.max != null
+        ? { min: known.stats.min, max: known.stats.max }
+        : null;
+    const pin = (summary: Omit<ColumnSummaryInput, "column">) =>
+      void pinSummary({ variables: { table: table.id, summary: { column: column.name, ...summary } } }).catch(
+        (error: unknown) => console.warn("[layer] could not pin the column summary:", error),
+      );
+
+    if (control === ColumnControl.Measure && footer && stored && stored.histogram.length > 0) {
+      setDomain(footer);
+      setHistogram(stored.histogram);
+      return;
+    }
+    if (control !== ColumnControl.Measure && Array.isArray(stored?.distinctValues)) {
+      const values = (stored.distinctValues as unknown[]).map(String);
+      setDistinct({ values, truncated: (stored.distinctCount ?? values.length) > values.length });
+      return;
+    }
+    if (!service) return;
     const read =
       control === ColumnControl.Measure
-        ? readColumnDomain(service.engine, target).then(async (result) => {
+        ? (footer ? Promise.resolve(footer) : readColumnDomain(service.engine, target)).then(async (result) => {
             if (cancelled) return;
             setDomain(result);
             if (!result) return;
-            const bins = await readColumnHistogram(service.engine, target, result);
-            if (!cancelled) setHistogram(bins);
+            const counts = await readColumnHistogram(service.engine, target, result);
+            if (cancelled) return;
+            setHistogram(counts);
+            const step = (result.max - result.min) / counts.length;
+            pin({ histogram: counts, bins: counts.map((_, i) => result.min + i * step).concat(result.max) });
           })
         : readColumnDistinct(service.engine, target).then((result) => {
-            if (!cancelled) setDistinct(result);
+            if (cancelled) return;
+            setDistinct(result);
+            // A truncated list is still the first DISTINCT_LIMIT; the count is
+            // unknown then, so it is stated as one more than listed.
+            pin({
+              distinctValues: result.values,
+              distinctCount: result.truncated ? result.values.length + 1 : result.values.length,
+            });
           });
     read.catch((error: unknown) => {
       if (cancelled) return;
@@ -619,7 +662,7 @@ export const ColumnEntrySettings = ({
     return () => {
       cancelled = true;
     };
-  }, [service, table, column, control]);
+  }, [service, table, column, control, known, statsResult.data, statsResult.error, pinSummary]);
 
   const isFilter = mode === "filter";
   const rule = entry as FilterByEntry;

@@ -26,6 +26,9 @@ import { filterPredicates, type TableColumnFilters } from "./tableFilters";
 export type DuckDbParquetSource = {
   store: { id: string };
   columns: { name: string }[];
+  /** The row count the server read off the parquet's footer, when it did: the
+   *  unfiltered count, so the loader need not scan for it. */
+  rowCount?: number | null;
 };
 
 type PaginationState = {
@@ -746,7 +749,12 @@ export const useDuckDbTable = ({
               columnFilters,
               sorting,
               pagination,
-              countCache: countCacheRef.current,
+              // Unfiltered, the footer's row count is the count: no scan.
+              countCache:
+                countCacheRef.current ??
+                (table.rowCount != null
+                  ? { key: resolveCountCacheKey(table, parquetUrl, "", {}), total: table.rowCount }
+                  : null),
               isCurrent: () => runs.isCurrent(runId),
             });
           } finally {

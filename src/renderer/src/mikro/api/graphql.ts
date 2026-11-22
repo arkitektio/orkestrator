@@ -15718,7 +15718,7 @@ export type ListTableDatasetFragment = { __typename?: 'TableDataset', id: string
 
 export type BrowseTableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, spec: Array<TableDatasetSpec>, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, dtype: string, role: ColumnRole, order: number }>, store: { __typename?: 'ParquetStore', id: string, sizeBytes?: number | null }, folder?: { __typename?: 'Folder', id: string, name: string } | null, createdThroughBy?: { __typename?: 'User', sub: string } | null, createdThrough?: { __typename?: 'Task', id: string, createdAt: any } | null };
 
-export type TableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, store: (
+export type TableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, rowCount?: number | null, store: (
     { __typename?: 'ParquetStore' }
     & ParquetStoreFragment
   ), columns: Array<(
@@ -18645,6 +18645,21 @@ export type CollaborationDerivedQueryVariables = Exact<{
 
 
 export type CollaborationDerivedQuery = { __typename?: 'Query', descendants: Array<{ __typename?: 'Descendants', root: string, more: boolean, nodes: Array<{ __typename?: 'DescendantNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, parent: string }> }> };
+
+export type TableColumnStatsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TableColumnStatsQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, rowCount?: number | null, columns: Array<{ __typename?: 'Column', id: string, name: string, stats?: { __typename?: 'ColumnStats', min?: number | null, max?: number | null, nullCount?: number | null } | null, summary?: { __typename?: 'ColumnSummary', id: string, histogram: Array<number>, bins: Array<number>, distinctValues?: any | null, distinctCount?: number | null } | null }> } };
+
+export type PinColumnSummaryMutationVariables = Exact<{
+  table: Scalars['ID']['input'];
+  summary: ColumnSummaryInput;
+}>;
+
+
+export type PinColumnSummaryMutation = { __typename?: 'Mutation', createCoordinateAnchor: { __typename?: 'CoordinateAnchor', id: string } };
 
 export type ColumnOptionJoinStepFragment = { __typename?: 'ColumnOptionJoinStep', table: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
@@ -23096,6 +23111,7 @@ export const TableDatasetFragmentDoc = gql`
   name
   description
   axisNames
+  rowCount
   store {
     ...ParquetStore
   }
@@ -29655,6 +29671,94 @@ export function useCollaborationDerivedLazyQuery(baseOptions?: ApolloReactHooks.
 export type CollaborationDerivedQueryHookResult = ReturnType<typeof useCollaborationDerivedQuery>;
 export type CollaborationDerivedLazyQueryHookResult = ReturnType<typeof useCollaborationDerivedLazyQuery>;
 export type CollaborationDerivedQueryResult = Apollo.QueryResult<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>;
+export const TableColumnStatsDocument = gql`
+    query TableColumnStats($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    rowCount
+    columns {
+      id
+      name
+      stats {
+        min
+        max
+        nullCount
+      }
+      summary {
+        id
+        histogram
+        bins
+        distinctValues
+        distinctCount
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useTableColumnStatsQuery__
+ *
+ * To run a query within a React component, call `useTableColumnStatsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTableColumnStatsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTableColumnStatsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTableColumnStatsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TableColumnStatsQuery, TableColumnStatsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TableColumnStatsQuery, TableColumnStatsQueryVariables>(TableColumnStatsDocument, options);
+      }
+export function useTableColumnStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TableColumnStatsQuery, TableColumnStatsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TableColumnStatsQuery, TableColumnStatsQueryVariables>(TableColumnStatsDocument, options);
+        }
+export type TableColumnStatsQueryHookResult = ReturnType<typeof useTableColumnStatsQuery>;
+export type TableColumnStatsLazyQueryHookResult = ReturnType<typeof useTableColumnStatsLazyQuery>;
+export type TableColumnStatsQueryResult = Apollo.QueryResult<TableColumnStatsQuery, TableColumnStatsQueryVariables>;
+export const PinColumnSummaryDocument = gql`
+    mutation PinColumnSummary($table: ID!, $summary: ColumnSummaryInput!) {
+  createCoordinateAnchor(
+    input: {table: $table, anchor: {axisAnchors: [], columnSummaries: [$summary]}}
+  ) {
+    id
+  }
+}
+    `;
+export type PinColumnSummaryMutationFn = Apollo.MutationFunction<PinColumnSummaryMutation, PinColumnSummaryMutationVariables>;
+
+/**
+ * __usePinColumnSummaryMutation__
+ *
+ * To run a mutation, you first call `usePinColumnSummaryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinColumnSummaryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinColumnSummaryMutation, { data, loading, error }] = usePinColumnSummaryMutation({
+ *   variables: {
+ *      table: // value for 'table'
+ *      summary: // value for 'summary'
+ *   },
+ * });
+ */
+export function usePinColumnSummaryMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PinColumnSummaryMutation, PinColumnSummaryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PinColumnSummaryMutation, PinColumnSummaryMutationVariables>(PinColumnSummaryDocument, options);
+      }
+export type PinColumnSummaryMutationHookResult = ReturnType<typeof usePinColumnSummaryMutation>;
+export type PinColumnSummaryMutationResult = Apollo.MutationResult<PinColumnSummaryMutation>;
+export type PinColumnSummaryMutationOptions = Apollo.BaseMutationOptions<PinColumnSummaryMutation, PinColumnSummaryMutationVariables>;
 export const MeshColorByOptionsDocument = gql`
     query MeshColorByOptions($meshCollection: ID!, $filters: ColumnOptionFilter, $maxJoinDepth: Int) {
   options: colorByOptions(
