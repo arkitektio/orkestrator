@@ -14,7 +14,7 @@ import { effectiveChunkShapeOf } from "@/core/data/zarr/runner/index";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/core/data/zarr/pool/types";
 import { selectTrimCandidates } from "../octree/brickPoolState";
 import type { BrickArray } from "../octree/brickRepack";
-import { getDecodedChunkCacheBytes, poolHeadroomSlots } from "../octree/poolBudget";
+import { poolHeadroomSlots } from "../octree/poolBudget";
 import { normalizeSlabRanges } from "../octree/occupancySlabs";
 import type { RepackDispatcher } from "../octree/repackDispatcher";
 import {
@@ -67,6 +67,7 @@ import {
   warmShardIndexes,
 } from "./brickChunks";
 import { ChunkService } from "./chunkService";
+import { sceneChunkCache } from "./sceneDecodeBudget";
 import {
   applyGpuOutcomeToPools,
   type GpuOutcomeContext,
@@ -143,7 +144,6 @@ const REFILL_WINDOW_MS = 4;
 // In-flight fetch count, residency-bump throttle and upload time budget are
 // TIER-scaled — read from the quality governor's profile at use sites (P19).
 
-const DECODED_CHUNK_CACHE_BYTES = getDecodedChunkCacheBytes();
 
 /**
  * Margin-only prefetch (fetchBand 2) dispatch gate — see startNextFetchesGlobal.
@@ -334,7 +334,7 @@ export class BrickResidencyManager {
     aggregateWrites: 0,
   };
   /** Decoded-chunk cache, in-flight sharing and referrer cancellation. */
-  private readonly chunks = new ChunkService(this.stats, DECODED_CHUNK_CACHE_BYTES);
+  private readonly chunks = new ChunkService(this.stats, sceneChunkCache());
   /** Idle-edge neighbour warm-up (z±1 slabs, ±1 collapsed-dim selections). */
   private readonly prefetcher = new AdjacentPrefetcher(
     this.pools,
@@ -437,6 +437,16 @@ export class BrickResidencyManager {
    * the decoded-chunk cache, which is the same cost the previous
    * unmount-the-whole-manager arrangement paid.
    */
+  /**
+   * The scene is on screen or not (its tab, or a split pane). A hidden scene
+   * gives its share of the window's decode budget to the visible ones: they
+   * replan against the larger share, and its chunks age out of the shared
+   * cache first. Shown again, it takes its share back.
+   */
+  setVisible(visible: boolean): void {
+    this.chunks.setVisible(visible);
+  }
+
   detachRenderer(): void {
     this.gpuRepacker?.dispose();
     // undefined, not null: null MEMOIZES "unavailable", and the next attach

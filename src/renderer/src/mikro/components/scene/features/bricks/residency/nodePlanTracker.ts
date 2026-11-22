@@ -7,12 +7,12 @@ import { resolveBrickSpec } from "../octree/brickSpec";
 import { atlasKindForGeometry, atlasSlotBytes } from "../octree/atlasFormat";
 import { totalBrickCount } from "../octree/nodeAddress";
 import {
-  getDecodedChunkCacheBytes,
   resolveDecodeCacheShareBytes,
   resolvePlanBytesForAtlas,
   resolvePoolBudget,
 } from "../octree/poolBudget";
 import { assessPoolViability } from "../octree/poolViability";
+import { decodeCacheBytesPerScene, onDecodeShareChange } from "./sceneDecodeBudget";
 import { buildPlanInputSignature } from "../octree/planInputSignature";
 import { buildPoolKey, poolValueSemantics } from "../octree/poolKey";
 import { buildSliceSignature } from "../../../platform/model/sliceSignature";
@@ -350,8 +350,10 @@ export function startNodePlanTracking({
       // Each EQUIVALENCE CLASS runs its own plan and spends its own share of
       // the decode cache; dividing by the (possibly smaller) pool count would
       // let multiple classes on one pool exceed the shared-cache cap.
+      // The window's decode budget is shared by every scene on screen
+      // (`sceneDecodeBudget`): this scene plans against its share of it.
       const decodeCacheShareBytes = resolveDecodeCacheShareBytes({
-        decodedChunkCacheBytes: getDecodedChunkCacheBytes(),
+        decodedChunkCacheBytes: decodeCacheBytesPerScene(),
         poolCount: Math.max(poolKeys.size, classes.size),
       });
 
@@ -672,6 +674,11 @@ export function startNodePlanTracking({
     }
   });
 
+  // Another scene shown or hidden moves this scene's share of the decode
+  // budget: plan again against it, or two scenes on screen would each plan
+  // against the whole cache they share.
+  const unsubscribeShare = onDecodeShareChange(schedule);
+
   schedule();
 
   return () => {
@@ -681,5 +688,6 @@ export function startNodePlanTracking({
     unsubscribeScene();
     unsubscribeView();
     unsubscribeMode();
+    unsubscribeShare();
   };
 }

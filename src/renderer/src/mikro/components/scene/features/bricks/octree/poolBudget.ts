@@ -113,8 +113,9 @@ let decodedChunkCacheBytes: number | undefined;
 
 /**
  * FROZEN at its first read, for the session. The cache itself is built once
- * (`brickResidency` sizes it at import) while the planner asks on every
- * replan, and the planner's floor and sub-floor allowance are only safe
+ * (`sceneDecodeBudget` sizes the one cache every scene shares at first use)
+ * while the planner asks on every replan, and the planner's floor and
+ * sub-floor allowance are only safe
  * against the cache that EXISTS: let this follow a settings change — or the
  * first-start hardware probe, which raises the automatic size several-fold —
  * and the planner admits a working set the cache cannot hold (P24). A new

@@ -8,10 +8,12 @@ import {
 } from "@/core/data/zarr/runner/index";
 import { workerPool } from "@/core/data/zarr/pool/sharedWorkerPool";
 import { TaskPriority } from "@/core/data/zarr/pool/types";
-import { ByteBudgetChunkCache } from "@/core/data/zarr/caches/byteBudgetChunkCache";
+import type { SharedChunkCache } from "@/core/data/zarr/caches/sharedChunkCache";
+import type { ChunkCache } from "@/core/data/zarr/runner/types";
 import { chunkFidelityForDtype } from "../octree/atlasFormat";
 import { ChunkRefRegistry } from "../octree/chunkRefRegistry";
 import type { BrickSystemStats } from "./residencyTypes";
+import { forgetScene, setSceneVisible } from "./sceneDecodeBudget";
 
 /** How many chunk keys `bytesDecoded` dedupes over (a few scenes' working sets). */
 const COUNTED_CHUNK_KEYS_CAP = 8192;
@@ -20,8 +22,8 @@ export type ZarrArrayHandle = Parameters<typeof getChunkWorker>[0];
 
 /**
  * The residency manager's decoded-chunk layer — the closed field set that IS
- * the P8/P10 mechanism (OCTREE_RENDERER.md §2.8): the byte-budgeted chunk
- * cache, in-flight sharing (one decode per chunk however many bricks want
+ * the P8/P10 mechanism (OCTREE_RENDERER.md §2.8): its view of the window's
+ * one shared, byte-budgeted chunk cache (`sceneDecodeBudget`), in-flight sharing (one decode per chunk however many bricks want
  * it), per-chunk referrer counting with last-referrer cancellation, the
  * dispose-scoped abort, first-seen-honest `bytesDecoded`, and the sync
  * probe's chunk-key encoders + single-entry memo.
@@ -30,7 +32,8 @@ export type ZarrArrayHandle = Parameters<typeof getChunkWorker>[0];
  * object directly (`bytesDecoded`, `rangeRequests`, `cancelledDecodes`).
  */
 export class ChunkService {
-  private readonly cache: ByteBudgetChunkCache;
+  /** This scene's view of the shared cache: reads every entry, writes its own. */
+  private readonly cache: ChunkCache;
   /** Per store: the array metadata the probe path keys the chunk cache with
    * (encoder + sharding layout); `null` while resolving. */
   private readonly chunkKeyEncoders = new Map<string, ArrayMetadata | null>();
@@ -75,13 +78,20 @@ export class ChunkService {
 
   constructor(
     private readonly stats: BrickSystemStats,
-    cacheBytes: number,
+    private readonly shared: SharedChunkCache,
   ) {
-    this.cache = new ByteBudgetChunkCache(cacheBytes);
+    this.cache = shared.view(this);
+    setSceneVisible(this, true);
   }
 
+  /** Bytes of the shared cache this scene's decodes hold. */
   get sizeBytes(): number {
-    return this.cache.sizeBytes;
+    return this.shared.ownerSizeBytes(this);
+  }
+
+  /** On screen or not: a hidden scene takes no share of the decode budget. */
+  setVisible(visible: boolean): void {
+    setSceneVisible(this, visible);
   }
 
   /** The resolved metadata for a store (undefined = never asked, null =
@@ -343,8 +353,11 @@ export class ChunkService {
     this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
   }
 
-  /** Cancel every chunk fetch and drop the in-flight bookkeeping. */
+  /** Cancel every chunk fetch, drop the in-flight bookkeeping and free this
+   * scene's chunks (a decode still finishing is not cached). */
   dispose(): void {
+    this.shared.release(this);
+    forgetScene(this);
     this.fetchAbort.abort();
     this.inFlightChunks.clear();
     this.inFlightChunkAborts.clear();

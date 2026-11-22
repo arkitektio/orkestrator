@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import { useSceneStoreApi } from "../../../platform/stores/sceneStore";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
@@ -33,6 +35,12 @@ export function BrickSystemHost() {
   const sceneStore = useSceneStoreApi();
   const viewStore = useViewStoreApi();
   const ledger = usePressLedger();
+  // A hidden tab's scene gives its share of the decode budget to the visible
+  // ones (`sceneDecodeBudget`). Read through a ref so a tab switch does not
+  // rebuild the system.
+  const visible = useTabVisible();
+  const visibleRef = useLatestRef(visible);
+  const systemRef = useRef<ReturnType<typeof createBrickSystem> | null>(null);
 
   // Read once per mount, not per render: a mid-session toggle must not tear
   // down a running system (and the DebugPanel tooltip says "next scene open").
@@ -47,8 +55,19 @@ export function BrickSystemHost() {
       viewStore,
       isInputBusy: () => toolPressOpen(ledger),
     });
-    return () => system.dispose();
+    system.manager.setVisible(visibleRef.current);
+    systemRef.current = system;
+    return () => {
+      systemRef.current = null;
+      system.dispose();
+    };
+    // visibleRef is a ref: read at build time, not a reason to rebuild.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewerStore, sceneStore, viewStore, ledger]);
+
+  useEffect(() => {
+    systemRef.current?.manager.setVisible(visible);
+  }, [visible]);
 
   return null;
 }
