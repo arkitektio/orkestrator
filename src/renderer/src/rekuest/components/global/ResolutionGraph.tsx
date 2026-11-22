@@ -24,7 +24,9 @@ import { AgentSelectionDialog } from "@/rekuest/dialogs/AgentSelectionDialog";
 import { Button } from "@/core/ui/button";
 import { ResolutionFragment } from "@/rekuest/api/graphql";
 
-const elk = new ELK();
+// Built on first layout, not at import: every window imports this file.
+let elkEngine: InstanceType<typeof ELK> | undefined;
+const elkInstance = () => (elkEngine ??= new ELK());
 
 interface GraphResolution {
   id: string;
@@ -116,7 +118,7 @@ const useLayout = () => {
         })),
       };
 
-      elk
+      elkInstance()
         .layout(graph)
         .then((g) => {
           const newNodes: Node[] = [];

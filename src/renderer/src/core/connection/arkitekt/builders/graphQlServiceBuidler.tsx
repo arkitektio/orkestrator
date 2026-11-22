@@ -31,6 +31,9 @@ export type GraphQLServiceBuilderOptions = {
 };
 
 /** The service a request went to, as a report names it: "mikro", from ".../mikro/graphql". */
+/** Every client's default: no poll while the window cannot be seen. */
+const skipPollWhileHidden = () => typeof document !== "undefined" && document.hidden;
+
 const serviceLabel = (uri: string): string => {
   try {
     const url = new URL(uri);
@@ -157,6 +160,13 @@ export const createGraphQLServiceBuilder =
           possibleTypes,
           typePolicies: builderOptions?.typePolicies,
         }),
+        defaultOptions: {
+          // A poll skips its tick while the window is hidden (minimised, on
+          // another space, fully covered): nobody can see what it would
+          // refresh. Background throttling slows timers but not these
+          // requests. A query can still override it with its own option.
+          watchQuery: { skipPollAttempt: skipPollWhileHidden },
+        },
         devtools: { enabled: import.meta.env.DEV },
       });
 

@@ -124,9 +124,11 @@
 }
 
 /* The update island's label: a new Orkestrator arrived, so it says so in
- * colour. A gradient clipped to the glyphs that drifts slowly sideways;
- * background-position only, and it holds still under reduced motion. Mid
- * lightness so it reads on the light and the dark rail alike. */
+ * colour. A gradient clipped to the glyphs; `.rainbow-drift` moves it slowly
+ * sideways, and only while the download runs: animating background-position
+ * repaints the label every frame (it cannot go to the compositor), and a
+ * finished update can wait for its restart for days. Holds still under reduced
+ * motion. Mid lightness so it reads on the light and the dark rail alike. */
 @keyframes rainbow-drift {
   from { background-position: 0% 50%; }
   to { background-position: 200% 50%; }
@@ -148,6 +150,8 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+  .rainbow-text.rainbow-drift {
     animation: rainbow-drift 6s linear infinite;
   }
 }

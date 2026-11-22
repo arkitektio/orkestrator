@@ -85,7 +85,6 @@ export const ResourcePage = asDetailQueryRoute(
   {
     queryOptions: {
       pollInterval: 15000,
-      skipPollAttempt: () => document.hidden,
     },
   },
 );

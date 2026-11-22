@@ -29,7 +29,9 @@ import {
 
 const nodeTypes = { section: SectionNode };
 
-const elk = new ELK();
+// Built on first layout, not at import: every window imports this file.
+let elkEngine: InstanceType<typeof ELK> | undefined;
+const elkInstance = () => (elkEngine ??= new ELK());
 
 // Top-down layered layout: parents above, children below — the natural shape
 // for a NEURON morphology tree (and forests, when a model has multiple roots).
@@ -103,7 +105,7 @@ export const NeuronModelTree: React.FC<Props> = ({ model, embedded = false }) =>
     };
 
     let cancelled = false;
-    elk.layout(graph).then(({ children }) => {
+    elkInstance().layout(graph).then(({ children }) => {
       if (cancelled || !children) return;
 
       const positioned = the_nodes

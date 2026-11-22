@@ -37,7 +37,9 @@ const nodeTypes = {
 // done. `new ELK()` per effect meant every mounted graph on a page (a dataset
 // page shows several) built its own, and they all contended for the one thread
 // they share. Constructed once, reused, and it serialises its own work.
-const elk = new ELK();
+// Built on first layout, not at import: every window imports this file.
+let elkEngine: InstanceType<typeof ELK> | undefined;
+const elkInstance = () => (elkEngine ??= new ELK());
 
 // `currentColor`, not `hsl(var(--muted-foreground))`: this app's design tokens
 // are Tailwind v4 oklch() values, so wrapping one in hsl() yields an invalid
@@ -379,7 +381,7 @@ export const CoordinateGraphFlow = ({
     setDropped(dropped);
     setLaidOut(false);
 
-    elk
+    elkInstance()
       .layout({
         id: "root",
         // Chosen by size: the stress layout tells the truth about a web of

@@ -59,8 +59,15 @@ export const LAYOUT_OPTIONS = {
 // One engine each, module-scoped, as the coordinate graph does: each serialises
 // its own work. The inline one is what the tests use (no Worker there) and what
 // takes over if the worker never answers.
-const inline = new ELK();
-const worker = typeof Worker === "undefined" ? null : new ELKWorker({ workerUrl: elkWorkerUrl });
+// Both built on first layout, not at import: `elk-api` starts its Worker (the
+// 1.6 MB layout script) in its constructor, and every window imports this file.
+let inlineEngine: InstanceType<typeof ELK> | undefined;
+const inline = () => (inlineEngine ??= new ELK());
+let workerEngine: InstanceType<typeof ELKWorker> | null | undefined;
+const worker = () =>
+  workerEngine !== undefined
+    ? workerEngine
+    : (workerEngine = typeof Worker === "undefined" ? null : new ELKWorker({ workerUrl: elkWorkerUrl }));
 
 // `elk-api` does not reject when its worker script fails to load (a packaged
 // build that lost the asset): the layout just never settles. So the worker gets
@@ -121,11 +128,12 @@ const graphOf = (nodes: LayoutNode[], edges: LayoutEdge[]) => {
 };
 
 const inWorker = async (nodes: LayoutNode[], edges: LayoutEdge[]) => {
-  if (!worker || workerFailed) return undefined;
+  const engine = workerFailed ? null : worker();
+  if (!engine) return undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      worker.layout(graphOf(nodes, edges)),
+      engine.layout(graphOf(nodes, edges)),
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error(`no answer in ${WORKER_DEADLINE_MS}ms`)), WORKER_DEADLINE_MS);
       }),
@@ -143,7 +151,7 @@ export const layoutLineage = async (
   nodes: LayoutNode[],
   edges: LayoutEdge[],
 ): Promise<Map<string, { x: number; y: number }>> => {
-  const result = (await inWorker(nodes, edges)) ?? (await inline.layout(graphOf(nodes, edges)));
+  const result = (await inWorker(nodes, edges)) ?? (await inline().layout(graphOf(nodes, edges)));
   return new Map((result.children ?? []).map((child) => [child.id, { x: child.x ?? 0, y: child.y ?? 0 }]));
 };
 

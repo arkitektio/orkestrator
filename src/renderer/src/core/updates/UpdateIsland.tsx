@@ -18,8 +18,8 @@ import { dismissUpdate, useUpdateState } from "./updateStore";
  * being fetched, and that a restart is now worth it.
  *
  * A new release is good news, and the row looks it: a party popper and a
- * rainbow label (`.rainbow-text` in index.css) while it downloads and once it
- * is ready, so it reads as an invitation rather than one more status line.
+ * rainbow label (`.rainbow-text` in index.css, drifting only while it
+ * downloads) while it downloads and once it is ready, so it reads as an invitation rather than one more status line.
  *
  * This row replaces the native "Restart now / Later" modal the main process used
  * to open on completion. Ignoring it is safe: `autoInstallOnAppQuit` installs on
@@ -63,7 +63,9 @@ export const UpdateIsland = () => {
                   : label
             }
             working={phase === "downloading"}
-            className={phase === "error" ? undefined : "rainbow-text"}
+            className={
+              phase === "error" ? undefined : phase === "downloading" ? "rainbow-text rainbow-drift" : "rainbow-text"
+            }
           />
 
           {phase === "downloading" && percent != null && (

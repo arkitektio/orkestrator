@@ -37,6 +37,7 @@ import {
 } from '@arkitektio/bsx/renderer/bloks/scene/context';
 import {BlokSceneEmbedProvider, useBlokSceneControls, useBlokSceneEmbedded} from '@arkitektio/bsx/renderer/bloks/scene/host';
 import { useKeepTabLive } from '@arkitektio/bsx/platform';
+import {useTabVisible} from '@/core/tabs/TabVisibilityContext';
 import {usePersistedComponentState} from '@arkitektio/bsx/renderer/persist';
 import {useBlokReady, useBlokSnapshotMode} from '@arkitektio/bsx/preview/snapshotMode';
 
@@ -787,6 +788,11 @@ export const SceneSurface = ({
   const cards = React.useRef(new Map<string, CardHandle>());
   // A frozen tab would drop the GPU context: stay live hidden.
   useKeepTabLive();
+  // ...but draw nothing while hidden. Kept live, the tab is only `display:none`,
+  // and the loop (scene, grid, card tracking) ran at full rate behind other tabs.
+  // Visible it still draws every frame, not on demand: the package's joint and
+  // clip motions ease over frames without asking for them (`bindings.js`).
+  const visible = useTabVisible();
   // A preview reads the canvas after it painted: keep the drawing buffer.
   const snapshot = useBlokSnapshotMode();
   // A thumbnail, or a host that shows the scene as a preview, gets no view controls.
@@ -817,6 +823,7 @@ export const SceneSurface = ({
         onContextMenu={event => event.preventDefault()}
       >
         <Canvas
+          frameloop={visible ? 'always' : 'never'}
           className="absolute! inset-0"
           gl={snapshot ? {preserveDrawingBuffer: true} : undefined}
           camera={{position: VIEW_DIRECTIONS[view], fov: 40, near: 0.005, far: 200}}
