@@ -625,6 +625,58 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "AnchorWindowInput",
+        "description": "A value window along one axis of a container's anchor coordinates: a time window in samples, one channel (`min == max`)",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "axis",
+            "description": "The name of the axis the window constrains, e.g. 't' for a recording's time axis",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "max",
+            "description": "The largest position kept, inclusive, or None for no upper bound",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "min",
+            "description": "The smallest position kept, inclusive, or None for no lower bound",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "Annotation",
         "description": "A mark on a dataset, a clock or a timeline: an event, an epoch, a measurement, in its collection's coordinate system. It belongs to the collection, not to an experiment: delete the experiment and the annotation survives",
@@ -1589,6 +1641,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "timed",
+            "description": "Filter by whether the collection is drawn in a space with a TIME axis -- events and epochs on a clock -- or in one without (shapes over a static map)",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "defaultValue": null,
@@ -3738,6 +3802,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "timed",
+            "description": "Filter by whether the dataset's sample grid has a TIME axis -- a recording, a stimulus, placeable on a clock -- or none (a unit's waveform templates, a static map). The same question `timed` asks of sparse and table datasets; `hasAxisTypes: [TIME]` is its true half",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -6035,6 +6111,36 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "ChannelColoring",
+        "description": "When a multi-channel trace gives each channel its own colour, stepped round the wheel from the layer's colour",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "ALWAYS",
+            "description": "Every channel its own colour, stacked or overlaid.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "NEVER",
+            "description": "Every channel in the layer's one colour.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OVERLAY",
+            "description": "Only where the channels share one plot; stacked channels are already told apart by their bands. The default.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ChannelLabel",
         "description": "The channel truth: a human-readable label for a channel, pinned to a coordinate anchor",
@@ -6371,9 +6477,63 @@
             "deprecationReason": null
           },
           {
+            "name": "itemCount",
+            "description": "How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)",
+            "args": [
+              {
+                "name": "brought",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "items",
-            "description": "What is in the collaboration; what is part of these is in it too",
-            "args": [],
+            "description": "What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)",
+            "args": [
+              {
+                "name": "brought",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -6561,6 +6721,50 @@
           }
         ],
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "CollaborationStats",
+        "description": "How many collaborations the organization has (a guest: theirs), and how much is in them",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "count",
+            "description": "How many collaborations",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "itemCount",
+            "description": "How many objects are in them altogether, brought along ones included",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -9009,6 +9213,26 @@
               "kind": "SCALAR",
               "name": "ID",
               "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "hasAxisTypes",
+            "description": "Filter to the spaces carrying every one of these axis types, e.g. [TIME] for clocks and the spaces sampled on one. The same question `hasAxisTypes` asks of array datasets, asked of the space itself",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "AxisType",
+                  "kind": "ENUM",
+                  "ofType": null
+                }
+              }
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -12526,6 +12750,18 @@
             "type": {
               "kind": "ENUM",
               "name": "Blending",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "channelColoring",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "ChannelColoring",
               "ofType": null
             },
             "defaultValue": "null",
@@ -20950,6 +21186,36 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "GraphDirection",
+        "description": "Which way a walk over the coordinate graph follows an edge",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "BOTH",
+            "description": "Either way: the whole connected component, which reaches everything else registered into a shared world.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INCOMING",
+            "description": "From an edge's output to its input only: what maps into this space -- the grids, levels and lenses registered into it, and theirs.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OUTGOING",
+            "description": "From an edge's input to its output only: where this space maps to -- its physical spaces, the clocks and worlds it is registered into, and onward.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "HeatmapLayer",
         "description": "A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma`",
@@ -22697,8 +22963,41 @@
         "fields": [
           {
             "name": "activeAnchors",
-            "description": "The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called",
-            "args": [],
+            "description": "The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called. `within` narrows to a channel and a time window, oldest anchor first",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "within",
+                "description": "Narrow further to the anchors inside every one of these windows, in the dataset's own anchor coordinates (sample indices): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it",
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "name": null,
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "name": "AnchorWindowInput",
+                      "kind": "INPUT_OBJECT",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -25083,6 +25382,34 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "createdAt",
+            "description": "When the collection was made",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "creator",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "description",
             "description": null,
@@ -30767,6 +31094,22 @@
             "deprecationReason": null
           },
           {
+            "name": "createdAt",
+            "description": "When the model was made",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": null,
             "args": [],
@@ -34230,7 +34573,20 @@
           {
             "name": "collaborations",
             "description": "List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)",
-            "args": [],
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -34246,6 +34602,22 @@
                     "ofType": null
                   }
                 }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "collaborationsStats",
+            "description": "Count the collaborations `collaborations` lists, and the objects in them",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "CollaborationStats",
+                "kind": "OBJECT",
+                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -34302,7 +34674,7 @@
           },
           {
             "name": "coordinateGraph",
-            "description": "Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not",
+            "description": "Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected by default (an edge pointing into the system relates to it as much as one pointing out); `direction` follows edges one way only, so a walk does not cross a shared world into everything else registered there. The edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not",
             "args": [
               {
                 "name": "coordinateSystem",
@@ -34317,6 +34689,22 @@
                   }
                 },
                 "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "direction",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "GraphDirection",
+                    "kind": "ENUM",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": "BOTH",
                 "isDeprecated": false,
                 "deprecationReason": null
               },
@@ -45199,6 +45587,22 @@
             "deprecationReason": null
           },
           {
+            "name": "channelColoring",
+            "description": "When the channels each get their own colour, stepped round the wheel from the layer's: only where they share a plot (the default), always, or never",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ChannelColoring",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "channelIndex",
             "description": "The one channel of the lens' CHANNEL axis to draw; null draws every channel, stacked",
             "args": [],
@@ -48649,6 +49053,18 @@
             "type": {
               "kind": "ENUM",
               "name": "Blending",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "channelColoring",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "ChannelColoring",
               "ofType": null
             },
             "defaultValue": "null",

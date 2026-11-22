@@ -3,7 +3,7 @@
 # dataset that would land UNREGISTERED with no way to fix it from here.
 
 query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
-  arrayDatasets(filters: { search: $search }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+  arrayDatasets(filters: { search: $search, timed: true }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
     ...ListArrayDataset
     axisNames
     shape
@@ -23,7 +23,7 @@ query LayerPickerTableDatasets($search: String, $pagination: OffsetPaginationInp
 }
 
 query LayerPickerAnnotationCollections($search: String, $pagination: OffsetPaginationInput) {
-  annotationCollections(filters: { search: $search }, pagination: $pagination) {
+  annotationCollections(filters: { search: $search, timed: true }, pagination: $pagination) {
     id
     name
   }

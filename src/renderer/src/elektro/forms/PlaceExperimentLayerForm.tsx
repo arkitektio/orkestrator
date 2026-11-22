@@ -79,7 +79,8 @@ const PlaceExperimentLayer = ({ source, world, worldName, label }: PlaceExperime
   const clockOptions = useMemo(
     () => [
       { id: world, name: `${worldName ?? "World"} (this experiment's clock)` },
-      ...(clocks.data?.coordinateSystems ?? []).filter((c) => c.id !== world && c.id !== source && hasTime(c)),
+      // The server lists clocks only (`hasAxisTypes: [TIME]`).
+      ...(clocks.data?.coordinateSystems ?? []).filter((c) => c.id !== world && c.id !== source),
     ],
     [clocks.data, world, worldName, source],
   );

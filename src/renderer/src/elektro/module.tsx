@@ -12,7 +12,6 @@ import { manifest } from "./manifest";
 import { service } from "./service";
 import { ELEKTRO_NAV_LINKS } from "./navLinks";
 import { ELEKTRO_PROFILE_FEED } from "./profile/feed";
-import { ELEKTRO_PROFILE_SECTIONS } from "./profile/sections";
 
 export const ELEKTRO_MODULE = defineModule({
   manifest,
@@ -29,8 +28,8 @@ export const ELEKTRO_MODULE = defineModule({
     },
     dialogs: ELEKTRO_DIALOGS,
     actions: ELEKTRO_ACTIONS,
-    profileSections: ELEKTRO_PROFILE_SECTIONS,
-    // Their experiments and workspaces, in the profile's newest-first feed.
+    // What they made (experiments, workspaces, neuron models, collections), in
+    // the profile's newest-first feed.
     profileFeed: ELEKTRO_PROFILE_FEED,
     taskHooks: ELEKTRO_TASK_HOOKS,
     fileDownloaders: ELEKTRO_FILE_DOWNLOADERS,

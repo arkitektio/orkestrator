@@ -19,6 +19,7 @@ import { cn } from "@/core/util/utils";
 import {
   anchorInView,
   anchorsForChannel,
+  anchorWindows,
   mergeChannelAnchors,
   sampleWindowOf,
   type AnchorCoverage,
@@ -43,7 +44,9 @@ import { formatUnit } from "@/core/util/units";
  *
  * The name draws from what the experiment load already carries;
  * `GetExpLensAnchors` — the heavy payload — mounts only while a card is open,
- * cache-first, one per lens.
+ * cache-first, and asks the server for this channel's anchors in the window on
+ * screen only (`activeAnchors(within:)`). How many wait off screen is counted
+ * from the thin projection the load already has.
  */
 
 const KIND_LABELS: Record<string, string> = {
@@ -251,33 +254,48 @@ const ChannelCard = memo(function ChannelCard({
   // Settled, not live: the card is read once the view stops moving.
   const visibleWindow = useRangeStore((s) => s.committedRange);
   const lensId = raw?.lens.id;
+  const source = layer?.source ?? null;
+  const site = layer?.channelSites[slot] ?? null;
+
+  // What is on screen for this channel: the card's coverage, and the same as the
+  // server's window.
+  const coverage = useMemo((): AnchorCoverage | null => {
+    if (!source) return null;
+    const channelAxis =
+      source.channelAxisIndex === null ? null : (source.axisNames[source.channelAxisIndex] ?? null);
+    const datasetIndex = source.channelIndices[slot] ?? null;
+    return {
+      channelAxis,
+      channelIndices: datasetIndex === null ? [] : [datasetIndex],
+      timeAxis: source.axisNames[source.timeAxisIndex] ?? null,
+      timeSamples: sampleWindowOf(source.levels[0], visibleWindow),
+    };
+  }, [source, slot, visibleWindow]);
+  const within = useMemo(() => (coverage ? anchorWindows(coverage) : null), [coverage]);
+
   const { data, loading } = useGetExpLensAnchorsQuery({
-    variables: { id: lensId ?? "" },
+    variables: { id: lensId ?? "", within },
     skip: !lensId,
     fetchPolicy: "cache-first",
   });
 
   const anchors: readonly PanelAnchor[] =
     data?.lens.activeAnchors ?? raw?.lens.activeAnchors ?? NO_ANCHORS;
-  const source = layer?.source ?? null;
-  const site = layer?.channelSites[slot] ?? null;
 
   const { merged, offScreen } = useMemo(() => {
-    if (!source) return { merged: mergeChannelAnchors(anchors), offScreen: 0 };
-    const channelAxis =
-      source.channelAxisIndex === null ? null : (source.axisNames[source.channelAxisIndex] ?? null);
-    const datasetIndex = source.channelIndices[slot] ?? null;
-    const coverage: AnchorCoverage = {
-      channelAxis,
-      channelIndices: datasetIndex === null ? [] : [datasetIndex],
-      timeAxis: source.axisNames[source.timeAxisIndex] ?? null,
-      timeSamples: sampleWindowOf(source.levels[0], visibleWindow),
-    };
+    if (!coverage) return { merged: mergeChannelAnchors(anchors), offScreen: 0 };
+    const channelAxis = coverage.channelAxis;
+    const datasetIndex = coverage.channelIndices[0] ?? null;
     // Pinned to this channel first, then dataset-wide; other channels dropped.
+    // The server sent only what is in view; until it answers, the thin
+    // projection stands in and is narrowed here.
     const own = anchorsForChannel(anchors, channelAxis, datasetIndex);
-    const inView = own.filter((anchor) => anchorInView(anchor.coordinates, coverage));
-    return { merged: mergeChannelAnchors(inView), offScreen: own.length - inView.length };
-  }, [anchors, source, slot, visibleWindow]);
+    const inView = data ? own : own.filter((anchor) => anchorInView(anchor.coordinates, coverage));
+    // Every anchor of the channel, thin, from the load: the ones not in view wait off screen.
+    const thin: readonly PanelAnchor[] = raw?.lens.activeAnchors ?? NO_ANCHORS;
+    const all = anchorsForChannel(thin, channelAxis, datasetIndex);
+    return { merged: mergeChannelAnchors(inView), offScreen: Math.max(0, all.length - inView.length) };
+  }, [anchors, coverage, data, raw]);
 
   const model = useMemo(() => {
     if (!site) return null;

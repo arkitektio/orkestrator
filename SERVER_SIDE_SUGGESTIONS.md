@@ -65,6 +65,10 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
   - `mikro/pages/FilePage.tsx` reads `createdThrough.createdAt`, falling back to the provenance `Create` entry.
   - The home overview can show no "new this week" for scenes or annotations (`homepage.graphql`).
 
+### `activeAnchors(within:, pagination:)` in the anchor overlays (perf, unverified)
+- **Add:** nothing new: mikro's `activeAnchors` takes a window like elektro's. The overlays should ask for the viewport.
+- **Workaround:** the mikro anchor overlays (`SparseAnchorsOverlay.tsx`, `TableAnchorsOverlay.tsx`, `AnchorMetadata.tsx`) fetch all anchors (viewport filtering unverified).
+
 ### Smaller mikro gaps
 - **Pyramid level scale (low):** `DataArray.relativeScale` (or the old `scaleFactors`). `core/data/scene/coords/levelScale.ts` rebuilds it from `toParent` edges.
 - **Lens delete events (perf, minor):** a `__typename` or kind on `LensEvent.delete`. `lib/lenses/useLiveLenses.ts` evicts a deleted id under all 6 lens typenames.
@@ -73,30 +77,6 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
   - `tailWindow` on `UpdateTrackLayerInput` (`scene/platform/stores/sceneStore.ts`).
   - Transfer `colorStops` (`scene/platform/model/renderGraph.ts`).
   - `valueMin` / `valueMax` on `UpdateTraceChartLayerInput` and `UpdateChartLayerInput` (`chart/platform/edits/useChartAutoscale.ts`).
-
----
-
-## elektro
-
-### `CoordinateSystemFilter.hasAxisTypes: [AxisType!]` (correctness)
-- **Add:** the axis-type filter elektro's `ArrayDatasetFilter` already has.
-- **Workaround:** `elektro/forms/PlaceExperimentLayerForm.tsx` (`ClockPicker`) fetches 30 coordinate systems and keeps the ones with a TIME axis on the client. The list can come back short or empty while clocks exist.
-
-### `timed` on `ArrayDatasetFilter` and `AnnotationCollectionFilter` (correctness)
-- **Add:** `timed: Boolean`, which Sparse and Table filters already have.
-- **Workaround:** none; the add-layer pickers (`graphql/elektro/queries/pickers.graphql`) offer untimed data, although their comment says the list is server-filtered.
-
-### `TraceLayer.channelColoring` (cosmetic)
-- **Add:** the field and `UpdateTraceLayerInput.channelColoring` (`OVERLAY | ALWAYS | NEVER`).
-- **Workaround:** `elektro/components/experiment/platform/edits/useLayerWrite.ts` applies it optimistically and never sends it, so it is lost on reload.
-
-### `activeAnchors(at:, pagination:)` (perf)
-- **Add:** arguments on `activeAnchors`.
-- **Workaround:** `elektro/components/experiment/features/metadata/ChannelMetadata.tsx` fetches every anchor with its payload and filters by channel and time window. The mikro anchor overlays (`SparseAnchorsOverlay.tsx`, `TableAnchorsOverlay.tsx`, `AnchorMetadata.tsx`) also fetch all anchors (viewport filtering unverified).
-
-### `createdAt` on `NeuronModel` and `ModelCollection` (blocks a feature)
-- **Add:** the field. `NeuronModelOrder` / `ModelCollectionOrder` already sort by it.
-- **Blocks:** neither can join a member's profile feed, which merges services by date. Neuron models are a sidebar list instead; collections are not shown.
 
 ---
 

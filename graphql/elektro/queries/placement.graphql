@@ -35,8 +35,10 @@ query PlacementContext($system: ID!) {
 }
 
 # Clocks to time data on: systems with a TIME axis, searchable.
+# Clocks: coordinate systems with a TIME axis, filtered by the server so a
+# page is never short of clocks that exist.
 query ClockPicker($search: String, $pagination: OffsetPaginationInput) {
-  coordinateSystems(filters: { search: $search }, pagination: $pagination) {
+  coordinateSystems(filters: { search: $search, hasAxisTypes: [TIME] }, pagination: $pagination) {
     id
     name
     axes {

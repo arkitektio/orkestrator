@@ -6,3 +6,19 @@ query ProfileFeedWorkspaces($filters: ModelWorkspaceFilter, $pagination: OffsetP
     createdAt
   }
 }
+
+# A member's profile feed: the neuron models they made, newest first.
+query ProfileFeedNeuronModels($filters: NeuronModelFilter, $pagination: OffsetPaginationInput) {
+  neuronModels(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListNeuronModel
+    createdAt
+  }
+}
+
+# A member's profile feed: the model collections they made, newest first.
+query ProfileFeedModelCollections($filters: ModelCollectionFilter, $pagination: OffsetPaginationInput) {
+  modelCollections(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListModelCollection
+    createdAt
+  }
+}

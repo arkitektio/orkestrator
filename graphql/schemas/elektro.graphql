@@ -117,6 +117,22 @@ type AffineTransformation implements Transformation {
 }
 
 """
+A value window along one axis of a container's anchor coordinates: a time window in samples, one channel (`min == max`)
+"""
+input AnchorWindowInput {
+  """
+  The name of the axis the window constrains, e.g. 't' for a recording's time axis
+  """
+  axis: String!
+
+  """The largest position kept, inclusive, or None for no upper bound"""
+  max: Float = null
+
+  """The smallest position kept, inclusive, or None for no lower bound"""
+  min: Float = null
+}
+
+"""
 A mark on a dataset, a clock or a timeline: an event, an epoch, a measurement, in its collection's coordinate system. It belongs to the collection, not to an experiment: delete the experiment and the annotation survives
 """
 type Annotation {
@@ -270,6 +286,11 @@ input AnnotationCollectionFilter {
 
   """Search by name (case-insensitive substring)"""
   search: String
+
+  """
+  Filter by whether the collection is drawn in a space with a TIME axis -- events and epochs on a clock -- or in one without (shapes over a static map)
+  """
+  timed: Boolean
 }
 
 input AnnotationCollectionOrder @oneOf {
@@ -669,6 +690,11 @@ input ArrayDatasetFilter {
   Filter to datasets satisfying every one of these specs, e.g. [TIMESERIES, MULTICHANNEL] for multi-channel recordings. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per such acquisition axis, so two spatial specs together match nothing
   """
   spec: [ArrayDatasetSpec!]
+
+  """
+  Filter by whether the dataset's sample grid has a TIME axis -- a recording, a stimulus, placeable on a clock -- or none (a unit's waveform templates, a static map). The same question `timed` asks of sparse and table datasets; `hasAxisTypes: [TIME]` is its true half
+  """
+  timed: Boolean
 
   """
   Filter by the unit of the dataset's VALUES, as stated by its dataset-wide `ValueUnit` anchor, e.g. 'mV'. Compared after normalization, so 'mV' and 'millivolt' are the same request
@@ -1117,6 +1143,22 @@ enum ChangeType {
 }
 
 """
+When a multi-channel trace gives each channel its own colour, stepped round the wheel from the layer's colour
+"""
+enum ChannelColoring {
+  """Every channel its own colour, stacked or overlaid."""
+  ALWAYS
+
+  """Every channel in the layer's one colour."""
+  NEVER
+
+  """
+  Only where the channels share one plot; stacked channels are already told apart by their bands. The default.
+  """
+  OVERLAY
+}
+
+"""
 The channel truth: a human-readable label for a channel, pinned to a coordinate anchor
 """
 type ChannelLabel {
@@ -1175,8 +1217,15 @@ type Collaboration {
   description: String
   id: ID!
 
-  """What is in the collaboration; what is part of these is in it too"""
-  items: [CollaborationItem!]!
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
   name: String!
 }
 
@@ -1208,6 +1257,17 @@ input CollaborationObjectInput {
 
   """The object's id"""
   object: ID!
+}
+
+"""
+How many collaborations the organization has (a guest: theirs), and how much is in them
+"""
+type CollaborationStats {
+  """How many collaborations"""
+  count: Int!
+
+  """How many objects are in them altogether, brought along ones included"""
+  itemCount: Int!
 }
 
 """
@@ -1727,6 +1787,11 @@ input CoordinateSystemFilter {
   Filter to the spaces this dataset's data lives in: its own sample grid, and the grids of its sliced lenses
   """
   dataset: ID
+
+  """
+  Filter to the spaces carrying every one of these axis types, e.g. [TIME] for clocks and the spaces sampled on one. The same question `hasAxisTypes` asks of array datasets, asked of the space itself
+  """
+  hasAxisTypes: [AxisType!]
   id: ID
 
   """Filter by list of IDs"""
@@ -2256,6 +2321,7 @@ Draw an array dataset -- a recording, a stimulus, any signal -- as a trace: a le
 """
 input CreateTraceLayerInput {
   blending: Blending = null
+  channelColoring: ChannelColoring = null
   channelIndex: Int = null
   climMax: Float = null
   climMin: Float = null
@@ -3752,6 +3818,24 @@ mechanism parameter) is the caller's job.
 """
 scalar GenericQuantity
 
+"""Which way a walk over the coordinate graph follows an edge"""
+enum GraphDirection {
+  """
+  Either way: the whole connected component, which reaches everything else registered into a shared world.
+  """
+  BOTH
+
+  """
+  From an edge's output to its input only: what maps into this space -- the grids, levels and lenses registered into it, and theirs.
+  """
+  INCOMING
+
+  """
+  From an edge's input to its output only: where this space maps to -- its physical spaces, the clocks and worlds it is registered into, and onward.
+  """
+  OUTGOING
+}
+
 """
 A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma`
 """
@@ -4079,9 +4163,16 @@ A lens is a way of looking at a dataset: a selection (slices) along its axes -- 
 """
 type Lens {
   """
-  The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called
+  The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called. `within` narrows to a channel and a time window, oldest anchor first
   """
-  activeAnchors: [CoordinateAnchor!]!
+  activeAnchors(
+    pagination: OffsetPaginationInput = null
+
+    """
+    Narrow further to the anchors inside every one of these windows, in the dataset's own anchor coordinates (sample indices): a time window, one channel (`min == max`). An anchor that says nothing about an axis is inside any window on it
+    """
+    within: [AnchorWindowInput!] = null
+  ): [CoordinateAnchor!]!
 
   """
   The lens' axis names, in array order. A selection never drops or reorders an axis
@@ -4442,6 +4533,9 @@ type ModelChange {
 }
 
 type ModelCollection {
+  """When the collection was made"""
+  createdAt: DateTime!
+  creator: User
   description: String
 
   """
@@ -5213,6 +5307,9 @@ type NeuronModel {
   The coordinate system this model owns. It carries one INDEX axis and nothing placeable; its derivation edges are the model's lineage
   """
   coordinateSystem: CoordinateSystem
+
+  """When the model was made"""
+  createdAt: DateTime!
   creator: User
 
   """
@@ -5718,7 +5815,12 @@ type Query {
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
   """
-  collaborations: [Collaboration!]!
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
+
+  """
+  Count the collaborations `collaborations` lists, and the objects in them
+  """
+  collaborationsStats: CollaborationStats!
 
   """
   List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset
@@ -5726,9 +5828,9 @@ type Query {
   coordinateAnchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
 
   """
-  Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not
+  Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected by default (an edge pointing into the system relates to it as much as one pointing out); `direction` follows edges one way only, so a walk does not cross a shared world into everything else registered there. The edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not
   """
-  coordinateGraph(coordinateSystem: ID!, maxDepth: Int = null): CoordinateGraph!
+  coordinateGraph(coordinateSystem: ID!, direction: GraphDirection! = BOTH, maxDepth: Int = null): CoordinateGraph!
 
   """Get a single coordinate system by ID"""
   coordinateSystem(
@@ -7527,6 +7629,11 @@ type TraceLayer implements ExperimentLayer {
   blending: Blending!
 
   """
+  When the channels each get their own colour, stepped round the wheel from the layer's: only where they share a plot (the default), always, or never
+  """
+  channelColoring: ChannelColoring!
+
+  """
   The one channel of the lens' CHANNEL axis to draw; null draws every channel, stacked
   """
   channelIndex: Int
@@ -8124,6 +8231,7 @@ Restyle a trace layer, or point it at another lens. Only the supplied fields cha
 """
 input UpdateTraceLayerInput {
   blending: Blending = null
+  channelColoring: ChannelColoring = null
   channelIndex: Int = null
   climMax: Float = null
   climMin: Float = null

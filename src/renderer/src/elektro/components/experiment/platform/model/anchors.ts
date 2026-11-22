@@ -178,6 +178,30 @@ export const anchorInView = (coordinates: unknown, coverage: AnchorCoverage): bo
   return true;
 };
 
+/**
+ * The coverage as the server's `activeAnchors(within:)` windows, keeping the
+ * same anchors `anchorInView` keeps: the drawn channel, and every sample whose
+ * `[i, i + 1)` overlaps the time window. Positions are inclusive there.
+ */
+export const anchorWindows = (coverage: AnchorCoverage): { axis: string; min: number; max: number }[] => {
+  const windows: { axis: string; min: number; max: number }[] = [];
+  if (coverage.channelAxis && coverage.channelIndices.length > 0) {
+    windows.push({
+      axis: coverage.channelAxis,
+      min: Math.min(...coverage.channelIndices),
+      max: Math.max(...coverage.channelIndices),
+    });
+  }
+  if (coverage.timeAxis && coverage.timeSamples) {
+    windows.push({
+      axis: coverage.timeAxis,
+      min: Math.floor(coverage.timeSamples.start),
+      max: Math.ceil(coverage.timeSamples.end) - 1,
+    });
+  }
+  return windows;
+};
+
 /** Split anchors into the ones describing what is on screen and the rest, order kept. */
 export const partitionAnchors = <A extends { coordinates?: unknown }>(
   anchors: readonly A[],

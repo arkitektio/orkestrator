@@ -6,11 +6,12 @@
 # histogram's range, the site) — enough to name and scale a row; this is the
 # reference view, fetched only when someone unfolds the row: the histogram's
 # shape, the rig state and the raw acquisition metadata are too heavy to ride
-# along with every experiment load.
-query GetExpLensAnchors($id: ID!) {
+# along with every experiment load. `within` narrows it to one channel and the
+# time window on screen, so only what the card shows carries its payload.
+query GetExpLensAnchors($id: ID!, $within: [AnchorWindowInput!]) {
   lens(id: $id) {
     id
-    activeAnchors {
+    activeAnchors(within: $within) {
       ...ExpFullAnchor
     }
     dataset {

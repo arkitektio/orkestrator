@@ -83,6 +83,8 @@ fragment ExpTraceLayer on TraceLayer {
   climMax
   lineWidth
   color
+  # Whether each channel gets its own colour (OVERLAY: only where they share a plot).
+  channelColoring
   # DERIVED server-side off the lens extent and the sampling law. Null when the
   # source is timed by a lookup, where a sample count is not a duration.
   duration

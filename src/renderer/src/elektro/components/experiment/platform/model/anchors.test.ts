@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   anchorInView,
   anchorsForChannel,
+  anchorWindows,
   channelLabelsOf,
   channelSitesOf,
   climSeedOf,
@@ -167,5 +168,33 @@ describe("mergeChannelAnchors", () => {
         ["nested", { a: 1 }],
       ],
     });
+  });
+});
+
+describe("anchorWindows", () => {
+  it("asks the server for the anchors anchorInView keeps: the channel, and every sample overlapping the window", () => {
+    const coverage = {
+      channelAxis: "c",
+      channelIndices: [2],
+      timeAxis: "t",
+      timeSamples: { start: 9.5, end: 20 },
+    };
+    const windows = anchorWindows(coverage);
+    expect(windows).toEqual([
+      { axis: "c", min: 2, max: 2 },
+      { axis: "t", min: 9, max: 19 },
+    ]);
+    // The inclusive window keeps exactly the samples anchorInView keeps.
+    const kept = (t: number) => {
+      const w = windows[1];
+      return t >= w.min && t <= w.max;
+    };
+    for (const t of [8, 9, 10, 19, 20, 21]) {
+      expect(kept(t)).toBe(anchorInView({ c: 2, t }, coverage));
+    }
+  });
+
+  it("asks for no window along an axis it does not cover", () => {
+    expect(anchorWindows({ channelAxis: null, channelIndices: [], timeAxis: "t", timeSamples: null })).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { reportError } from "@/core/notify";
 import {
+  ChannelColoring as WireChannelColoring,
   useUpdateEventsLayerMutation,
   useUpdateLayerMutation,
   useUpdateSpikesLayerMutation,
@@ -29,18 +30,12 @@ import { useExperimentStoreApi } from "../stores/experimentStore";
 
 const SHARED = ["name", "visible", "order", "opacity"] as const;
 
-/**
- * Fields the backend does not store YET: laid over the layer optimistically and
- * never sent, so the edit holds for the session (a refetch does not agree with
- * it, so `foldPatches` keeps it) instead of failing on an unknown input field.
- *
- * `channelColoring` waits for `TraceLayer.channelColoring: ChannelColoring!` and
- * `UpdateTraceLayerInput.channelColoring: ChannelColoring` (OVERLAY | ALWAYS |
- * NEVER). When they land: select the field in `ExpTraceLayer`, pass
- * `channelColoring: patch.channelColoring` to `updateTrace` below, and delete it
- * from this list — `layerModel.persistedOf` already reads it.
- */
-const LOCAL_ONLY = ["channelColoring"] as const;
+/** The model's channel colouring as the wire's enum. */
+const WIRE_COLORING = {
+  OVERLAY: WireChannelColoring.Overlay,
+  ALWAYS: WireChannelColoring.Always,
+  NEVER: WireChannelColoring.Never,
+} as const;
 
 const pick = <T extends object, K extends keyof T>(from: T, keys: readonly K[]): Partial<Pick<T, K>> => {
   const out: Partial<Pick<T, K>> = {};
@@ -60,9 +55,7 @@ export const useLayerWrite = () => {
       const layer = api.getState().layers.find((l) => l.id === layerId);
       if (!layer) return false;
       const rollback = api.getState().patchLayer(layerId, patch);
-      const sent = Object.keys(patch).filter(
-        (key) => !(LOCAL_ONLY as readonly string[]).includes(key),
-      );
+      const sent = Object.keys(patch);
       if (sent.length === 0) return true;
 
       const shared = pick(patch, SHARED);
@@ -84,6 +77,7 @@ export const useLayerWrite = () => {
                 lineWidth: patch.lineWidth ?? undefined,
                 climMin: patch.climMin ?? undefined,
                 climMax: patch.climMax ?? undefined,
+                channelColoring: patch.channelColoring ? WIRE_COLORING[patch.channelColoring] : undefined,
               },
             },
           });

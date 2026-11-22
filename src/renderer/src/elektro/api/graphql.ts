@@ -178,6 +178,16 @@ export type AffineTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** A value window along one axis of a container's anchor coordinates: a time window in samples, one channel (`min == max`) */
+export type AnchorWindowInput = {
+  /** The name of the axis the window constrains, e.g. 't' for a recording's time axis */
+  axis: Scalars['String']['input'];
+  /** The largest position kept, inclusive, or None for no upper bound */
+  max?: InputMaybe<Scalars['Float']['input']>;
+  /** The smallest position kept, inclusive, or None for no lower bound */
+  min?: InputMaybe<Scalars['Float']['input']>;
+};
+
 /** A mark on a dataset, a clock or a timeline: an event, an epoch, a measurement, in its collection's coordinate system. It belongs to the collection, not to an experiment: delete the experiment and the annotation survives */
 export type Annotation = {
   __typename?: 'Annotation';
@@ -302,6 +312,8 @@ export type AnnotationCollectionFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by whether the collection is drawn in a space with a TIME axis -- events and epochs on a clock -- or in one without (shapes over a static map) */
+  timed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type AnnotationCollectionOrder =
@@ -600,6 +612,8 @@ export type ArrayDatasetFilter = {
   sourceSeriesIdentifier?: InputMaybe<Scalars['String']['input']>;
   /** Filter to datasets satisfying every one of these specs, e.g. [TIMESERIES, MULTICHANNEL] for multi-channel recordings. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per such acquisition axis, so two spatial specs together match nothing */
   spec?: InputMaybe<Array<ArrayDatasetSpec>>;
+  /** Filter by whether the dataset's sample grid has a TIME axis -- a recording, a stimulus, placeable on a clock -- or none (a unit's waveform templates, a static map). The same question `timed` asks of sparse and table datasets; `hasAxisTypes: [TIME]` is its true half */
+  timed?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by the unit of the dataset's VALUES, as stated by its dataset-wide `ValueUnit` anchor, e.g. 'mV'. Compared after normalization, so 'mV' and 'millivolt' are the same request */
   valueUnit?: InputMaybe<Scalars['String']['input']>;
 };
@@ -900,6 +914,16 @@ export enum ChangeType {
   Removed = 'REMOVED'
 }
 
+/** When a multi-channel trace gives each channel its own colour, stepped round the wheel from the layer's colour */
+export enum ChannelColoring {
+  /** Every channel its own colour, stacked or overlaid. */
+  Always = 'ALWAYS',
+  /** Every channel in the layer's one colour. */
+  Never = 'NEVER',
+  /** Only where the channels share one plot; stacked channels are already told apart by their bands. The default. */
+  Overlay = 'OVERLAY'
+}
+
 /** The channel truth: a human-readable label for a channel, pinned to a coordinate anchor */
 export type ChannelLabel = {
   __typename?: 'ChannelLabel';
@@ -953,9 +977,24 @@ export type Collaboration = {
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  /** What is in the collaboration; what is part of these is in it too */
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
   items: Array<CollaborationItem>;
   name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
@@ -978,6 +1017,15 @@ export type CollaborationObjectInput = {
   identifier: Scalars['String']['input'];
   /** The object's id */
   object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
 };
 
 /** One entry of a spikes or events layer's colour picker: a column of a table the layer's rows (events) or units (spikes) reach, and how it becomes colour. mikro's COLUMN colour-by, field for field */
@@ -1345,6 +1393,8 @@ export type CoordinateSystemFilter = {
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter to the spaces this dataset's data lives in: its own sample grid, and the grids of its sliced lenses */
   dataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the spaces carrying every one of these axis types, e.g. [TIME] for clocks and the spaces sampled on one. The same question `hasAxisTypes` asks of array datasets, asked of the space itself */
+  hasAxisTypes?: InputMaybe<Array<AxisType>>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1730,6 +1780,7 @@ export type CreateTableDatasetInput = {
 /** Draw an array dataset -- a recording, a stimulus, any signal -- as a trace: a lens over it, and how the lines look. Name a `lens`, or a `dataset` with an optional `window` of time */
 export type CreateTraceLayerInput = {
   blending?: InputMaybe<Blending>;
+  channelColoring?: InputMaybe<ChannelColoring>;
   channelIndex?: InputMaybe<Scalars['Int']['input']>;
   climMax?: InputMaybe<Scalars['Float']['input']>;
   climMin?: InputMaybe<Scalars['Float']['input']>;
@@ -2870,6 +2921,16 @@ export type GeneralZarrAccessGrant = {
   status: Scalars['String']['output'];
 };
 
+/** Which way a walk over the coordinate graph follows an edge */
+export enum GraphDirection {
+  /** Either way: the whole connected component, which reaches everything else registered into a shared world. */
+  Both = 'BOTH',
+  /** From an edge's output to its input only: what maps into this space -- the grids, levels and lenses registered into it, and theirs. */
+  Incoming = 'INCOMING',
+  /** From an edge's input to its output only: where this space maps to -- its physical spaces, the clocks and worlds it is registered into, and onward. */
+  Outgoing = 'OUTGOING'
+}
+
 /** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
 export type HeatmapLayer = ExperimentLayer & {
   __typename?: 'HeatmapLayer';
@@ -3107,7 +3168,7 @@ export type LabelInput = {
 /** A lens is a way of looking at a dataset: a selection (slices) along its axes -- a sweep, an epoch window, a run of channels. Immutable: there is no updateLens */
 export type Lens = {
   __typename?: 'Lens';
-  /** The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called */
+  /** The dataset's coordinate anchors that fall inside this lens: an anchor pinned along an axis is in when its position is within the slice, and an anchor global along it always is. How a view of channels 2 to 5 learns what those four channels are called. `within` narrows to a channel and a time window, oldest anchor first */
   activeAnchors: Array<CoordinateAnchor>;
   /** The lens' axis names, in array order. A selection never drops or reorders an axis */
   axisNames: Array<Scalars['String']['output']>;
@@ -3125,6 +3186,13 @@ export type Lens = {
   slices: Array<Slice>;
   /** The edge from this lens' space back into its dataset's sample grid. A window is a translation of the slice starts; a strided lens also rescales. Without this edge sample 0 of a window would read as sample 0 of the recording. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
   toParent?: Maybe<Transformation>;
+};
+
+
+/** A lens is a way of looking at a dataset: a selection (slices) along its axes -- a sweep, an epoch window, a run of channels. Immutable: there is no updateLens */
+export type LensActiveAnchorsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  within?: InputMaybe<Array<AnchorWindowInput>>;
 };
 
 /** The fields a LENS derivation reads. Published for codegen; the wire type is the flat DerivedFromInput */
@@ -3389,6 +3457,9 @@ export type ModelChange = {
 
 export type ModelCollection = {
   __typename?: 'ModelCollection';
+  /** When the collection was made */
+  createdAt: Scalars['DateTime']['output'];
+  creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -4428,6 +4499,8 @@ export type NeuronModel = {
   config: ModelConfig;
   /** The coordinate system this model owns. It carries one INDEX axis and nothing placeable; its derivation edges are the model's lineage */
   coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When the model was made */
+  createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   /** Every edge from this model's space back into what it was computed from, in declared order -- the first is the primary parent, the model it was edited out of. Always UNMAPPABLE: a model's space carries one INDEX axis and nothing placeable, so the edge records the lineage and claims no geometry. Empty for a model written from scratch. This replaces the old `parent` field, which recorded no validity, no value relation and no provenance, and which `lineageGraph` could not see */
   derivedFrom: Array<Transformation>;
@@ -4821,9 +4894,11 @@ export type Query = {
   collaboration: Collaboration;
   /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
   collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them */
+  collaborationsStats: CollaborationStats;
   /** List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset */
   coordinateAnchors: Array<CoordinateAnchor>;
-  /** Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not */
+  /** Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected by default (an edge pointing into the system relates to it as much as one pointing out); `direction` follows edges one way only, so a walk does not cross a shared world into everything else registered there. The edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not */
   coordinateGraph: CoordinateGraph;
   /** Get a single coordinate system by ID */
   coordinateSystem: CoordinateSystem;
@@ -4958,6 +5033,11 @@ export type QueryCollaborationArgs = {
 };
 
 
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryCoordinateAnchorsArgs = {
   filters?: InputMaybe<CoordinateAnchorFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -4966,6 +5046,7 @@ export type QueryCoordinateAnchorsArgs = {
 
 export type QueryCoordinateGraphArgs = {
   coordinateSystem: Scalars['ID']['input'];
+  direction?: GraphDirection;
   maxDepth?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -6384,6 +6465,8 @@ export type TraceLayer = ExperimentLayer & {
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
+  /** When the channels each get their own colour, stepped round the wheel from the layer's: only where they share a plot (the default), always, or never */
+  channelColoring: ChannelColoring;
   /** The one channel of the lens' CHANNEL axis to draw; null draws every channel, stacked */
   channelIndex?: Maybe<Scalars['Int']['output']>;
   /** The top of the value range, in the dataset's value unit. Null reads it from the value histogram */
@@ -6805,6 +6888,7 @@ export type UpdateTableDatasetInput = {
 /** Restyle a trace layer, or point it at another lens. Only the supplied fields change */
 export type UpdateTraceLayerInput = {
   blending?: InputMaybe<Blending>;
+  channelColoring?: InputMaybe<ChannelColoring>;
   channelIndex?: InputMaybe<Scalars['Int']['input']>;
   climMax?: InputMaybe<Scalars['Float']['input']>;
   climMin?: InputMaybe<Scalars['Float']['input']>;
@@ -7559,7 +7643,7 @@ export type ExpColorByFragment = { __typename?: 'ColorBy', kind: string, table: 
 export type ExpFilterByFragment = { __typename?: 'FilterBy', kind: string, table: string, column: string, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, label?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
 export type ExpTraceLayerFragment = (
-  { __typename?: 'TraceLayer', channelIndex?: number | null, climMin?: number | null, climMax?: number | null, lineWidth?: number | null, color?: RGBAColor | null, duration?: Duration | null, lens: (
+  { __typename?: 'TraceLayer', channelIndex?: number | null, climMin?: number | null, climMax?: number | null, lineWidth?: number | null, color?: RGBAColor | null, channelColoring: ChannelColoring, duration?: Duration | null, lens: (
     { __typename?: 'Lens' }
     & ExpLensFragment
   ) }
@@ -8482,6 +8566,7 @@ export type HomePageQuery = { __typename?: 'Query', experiments: Array<(
 
 export type GetExpLensAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
+  within?: InputMaybe<Array<AnchorWindowInput> | AnchorWindowInput>;
 }>;
 
 
@@ -8698,6 +8783,28 @@ export type ProfileFeedWorkspacesQueryVariables = Exact<{
 export type ProfileFeedWorkspacesQuery = { __typename?: 'Query', modelWorkspaces: Array<(
     { __typename?: 'ModelWorkspace', createdAt: any }
     & ListModelWorkspaceFragment
+  )> };
+
+export type ProfileFeedNeuronModelsQueryVariables = Exact<{
+  filters?: InputMaybe<NeuronModelFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedNeuronModelsQuery = { __typename?: 'Query', neuronModels: Array<(
+    { __typename?: 'NeuronModel', createdAt: any }
+    & ListNeuronModelFragment
+  )> };
+
+export type ProfileFeedModelCollectionsQueryVariables = Exact<{
+  filters?: InputMaybe<ModelCollectionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedModelCollectionsQuery = { __typename?: 'Query', modelCollections: Array<(
+    { __typename?: 'ModelCollection', createdAt: any }
+    & ListModelCollectionFragment
   )> };
 
 export type GlobalSearchQueryVariables = Exact<{
@@ -9135,6 +9242,7 @@ export const ExpTraceLayerFragmentDoc = gql`
   climMax
   lineWidth
   color
+  channelColoring
   duration
 }
     ${ExpLayerCommonFragmentDoc}
@@ -12029,10 +12137,10 @@ export type HomePageQueryHookResult = ReturnType<typeof useHomePageQuery>;
 export type HomePageLazyQueryHookResult = ReturnType<typeof useHomePageLazyQuery>;
 export type HomePageQueryResult = Apollo.QueryResult<HomePageQuery, HomePageQueryVariables>;
 export const GetExpLensAnchorsDocument = gql`
-    query GetExpLensAnchors($id: ID!) {
+    query GetExpLensAnchors($id: ID!, $within: [AnchorWindowInput!]) {
   lens(id: $id) {
     id
-    activeAnchors {
+    activeAnchors(within: $within) {
       ...ExpFullAnchor
     }
     dataset {
@@ -12065,6 +12173,7 @@ export const GetExpLensAnchorsDocument = gql`
  * const { data, loading, error } = useGetExpLensAnchorsQuery({
  *   variables: {
  *      id: // value for 'id'
+ *      within: // value for 'within'
  *   },
  * });
  */
@@ -12528,7 +12637,7 @@ export type DetailSectionQueryResult = Apollo.QueryResult<DetailSectionQuery, De
 export const LayerPickerArrayDatasetsDocument = gql`
     query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets(
-    filters: {search: $search}
+    filters: {search: $search, timed: true}
     pagination: $pagination
     ordering: [{createdAt: DESC}]
   ) {
@@ -12649,7 +12758,10 @@ export type LayerPickerTableDatasetsLazyQueryHookResult = ReturnType<typeof useL
 export type LayerPickerTableDatasetsQueryResult = Apollo.QueryResult<LayerPickerTableDatasetsQuery, LayerPickerTableDatasetsQueryVariables>;
 export const LayerPickerAnnotationCollectionsDocument = gql`
     query LayerPickerAnnotationCollections($search: String, $pagination: OffsetPaginationInput) {
-  annotationCollections(filters: {search: $search}, pagination: $pagination) {
+  annotationCollections(
+    filters: {search: $search, timed: true}
+    pagination: $pagination
+  ) {
     id
     name
   }
@@ -12778,7 +12890,10 @@ export type PlacementContextLazyQueryHookResult = ReturnType<typeof usePlacement
 export type PlacementContextQueryResult = Apollo.QueryResult<PlacementContextQuery, PlacementContextQueryVariables>;
 export const ClockPickerDocument = gql`
     query ClockPicker($search: String, $pagination: OffsetPaginationInput) {
-  coordinateSystems(filters: {search: $search}, pagination: $pagination) {
+  coordinateSystems(
+    filters: {search: $search, hasAxisTypes: [TIME]}
+    pagination: $pagination
+  ) {
     id
     name
     axes {
@@ -12859,6 +12974,88 @@ export function useProfileFeedWorkspacesLazyQuery(baseOptions?: ApolloReactHooks
 export type ProfileFeedWorkspacesQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesQuery>;
 export type ProfileFeedWorkspacesLazyQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesLazyQuery>;
 export type ProfileFeedWorkspacesQueryResult = Apollo.QueryResult<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>;
+export const ProfileFeedNeuronModelsDocument = gql`
+    query ProfileFeedNeuronModels($filters: NeuronModelFilter, $pagination: OffsetPaginationInput) {
+  neuronModels(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListNeuronModel
+    createdAt
+  }
+}
+    ${ListNeuronModelFragmentDoc}`;
+
+/**
+ * __useProfileFeedNeuronModelsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedNeuronModelsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedNeuronModelsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedNeuronModelsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedNeuronModelsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedNeuronModelsQuery, ProfileFeedNeuronModelsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedNeuronModelsQuery, ProfileFeedNeuronModelsQueryVariables>(ProfileFeedNeuronModelsDocument, options);
+      }
+export function useProfileFeedNeuronModelsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedNeuronModelsQuery, ProfileFeedNeuronModelsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedNeuronModelsQuery, ProfileFeedNeuronModelsQueryVariables>(ProfileFeedNeuronModelsDocument, options);
+        }
+export type ProfileFeedNeuronModelsQueryHookResult = ReturnType<typeof useProfileFeedNeuronModelsQuery>;
+export type ProfileFeedNeuronModelsLazyQueryHookResult = ReturnType<typeof useProfileFeedNeuronModelsLazyQuery>;
+export type ProfileFeedNeuronModelsQueryResult = Apollo.QueryResult<ProfileFeedNeuronModelsQuery, ProfileFeedNeuronModelsQueryVariables>;
+export const ProfileFeedModelCollectionsDocument = gql`
+    query ProfileFeedModelCollections($filters: ModelCollectionFilter, $pagination: OffsetPaginationInput) {
+  modelCollections(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListModelCollection
+    createdAt
+  }
+}
+    ${ListModelCollectionFragmentDoc}`;
+
+/**
+ * __useProfileFeedModelCollectionsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedModelCollectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedModelCollectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedModelCollectionsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedModelCollectionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>(ProfileFeedModelCollectionsDocument, options);
+      }
+export function useProfileFeedModelCollectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>(ProfileFeedModelCollectionsDocument, options);
+        }
+export type ProfileFeedModelCollectionsQueryHookResult = ReturnType<typeof useProfileFeedModelCollectionsQuery>;
+export type ProfileFeedModelCollectionsLazyQueryHookResult = ReturnType<typeof useProfileFeedModelCollectionsLazyQuery>;
+export type ProfileFeedModelCollectionsQueryResult = Apollo.QueryResult<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets: arrayDatasets(

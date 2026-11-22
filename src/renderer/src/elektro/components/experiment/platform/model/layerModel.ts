@@ -68,9 +68,8 @@ export type PersistedLayer = {
   climMin: number | null;
   climMax: number | null;
   /**
-   * Traces: whether each channel gets its own colour (`channelColor.ts`).
-   * Read from `TraceLayer.channelColoring` once the backend serves it; until
-   * then absent, so "OVERLAY", and edited locally (see `useLayerWrite`).
+   * Traces: whether each channel gets its own colour (`channelColor.ts`),
+   * `TraceLayer.channelColoring`; "OVERLAY" for a layer kind without one.
    */
   channelColoring: ChannelColoring;
 };
