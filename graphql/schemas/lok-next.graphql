@@ -46,6 +46,9 @@ input AppFilter {
   DISTINCT: Boolean
   NOT: AppFilter
   OR: AppFilter
+
+  """Only the apps with one of these identifiers (exact match)."""
+  identifiers: [AppIdentifier!]
   ids: [ID!]
   search: String
 }
@@ -267,6 +270,19 @@ type Client {
 }
 
 """
+A client looked up by an id another service knows it by (`clientsByClientId`).
+"""
+type ClientByClientId {
+  """The client known by that id."""
+  client: Client!
+
+  """
+  The id that was asked for. The client's current `clientId` may differ: a client keeps one id per release it ran.
+  """
+  requestedId: ID!
+}
+
+"""
 The one client model: every OAuth2 principal is a row here.
 
 Kinds of rows and their lifecycle:
@@ -315,6 +331,15 @@ enum ClientRole {
   INTERFACE
 }
 
+"""One collaboration of a service instance."""
+input CollaborationRefInput {
+  """The collaboration's id in that service."""
+  collaboration: ID!
+
+  """The service instance the collaboration lives in."""
+  instance: ID!
+}
+
 """
 A communication channel through which a user can be notified (e.g. a push token).
 """
@@ -338,12 +363,17 @@ input ComChannelOrdering @oneOf {
   name: Ordering
 }
 
-"""A Communication"""
-type Communication {
-  channel: ID!
-}
-
 type Context {
+  """
+  The brand chroma (0–1) in effect: the member's own choice for the organization, else the organization's default. Null when neither is set.
+  """
+  brandChroma: Float
+
+  """
+  The brand hue (0–360) in effect: the member's own choice for the organization, else the organization's default. Null when neither is set.
+  """
+  brandHue: Float
+
   """Are we acting in the active organization of the user?"""
   fitsActiveOrganization: Boolean!
 
@@ -356,6 +386,11 @@ type Context {
   Is the user a member of this organization? False for an organization that does not exist, so it says nothing about other tenants.
   """
   memberOf(organization: ID!): Boolean!
+
+  """
+  The user's membership in the organization, or null when they are not a member of it.
+  """
+  membership: Membership
 
   """The organization that is associated with this app"""
   organization: Organization!
@@ -514,6 +549,14 @@ input DeviceFilter {
   DISTINCT: Boolean
   NOT: DeviceFilter
   OR: DeviceFilter
+
+  """Only the devices in this device group."""
+  deviceGroup: ID
+
+  """
+  Only the devices with one of these device ids: the ids the other services know a device by (`Device.deviceId`, a token's `client_device` claim), used as they are, never hashed again.
+  """
+  deviceIds: [ID!]
   ids: [ID!]
   search: String
 }
@@ -648,6 +691,11 @@ type Hub {
 
   """The name of the hub. This should be a human readable name of the hub."""
   name: String!
+
+  """
+  When the hub stops counting as online unless it reports again: its last report plus three reporting intervals. Null if it never reported. A client watching `hubHealth` sets a timer for it instead of polling.
+  """
+  offlineAt: DateTime
 
   """
   Whether the hub reported its health within the last three reporting intervals.
@@ -811,9 +859,17 @@ input InviteFilter {
   DISTINCT: Boolean
   NOT: InviteFilter
   OR: InviteFilter
+
+  """Only the invites granting this collaboration."""
+  collaboration: CollaborationRefInput
   ids: [ID!]
   search: String
   status: String
+
+  """
+  Only the invites that can still be accepted (true: pending and not expired), or only the others (false).
+  """
+  valid: Boolean
 }
 
 input InviteOrdering @oneOf {
@@ -1134,12 +1190,22 @@ type Membership {
   The member's personal brand hue (0–360) for this organization, if set. Null means they have not overridden the organization's default — fall back to `organization.brandHue`.
   """
   brandHue: Float
+
+  """
+  When the user became a member. Null for an old membership whose invite or request did not tell.
+  """
+  createdAt: DateTime
   id: ID!
   organization: Organization!
 
   """The roles that the user has in the organization"""
   roles(filters: RoleFilter, ordering: [RoleOrdering!]! = [], pagination: OffsetPaginationInput): [Role!]!
   user: User!
+}
+
+"""Numeric/aggregatable fields of Membership"""
+enum MembershipField {
+  CREATED_AT
 }
 
 """__doc__"""
@@ -1149,10 +1215,17 @@ input MembershipFilter {
   NOT: MembershipFilter
   OR: MembershipFilter
   ids: [ID!]
+
+  """Only the organization's admins (true) or only the others (false)."""
+  isAdmin: Boolean
+
+  """Only the memberships holding this role."""
+  role: ID
   search: String
 }
 
 input MembershipOrdering @oneOf {
+  createdAt: Ordering
   id: Ordering
 }
 
@@ -1167,12 +1240,83 @@ type MembershipRequest {
   reason: String
   resolvedBy: User
   respondedAt: DateTime
+
+  """
+  `pending`, `approved` or `declined` (filter with `MembershipRequestStatus`).
+  """
   status: String!
 
   """
   The user who asks to join. Not a member yet, so they are visible here and nowhere else.
   """
   user: User!
+}
+
+"""
+A membership request into the active organization was made or answered. Exactly one field is set.
+"""
+type MembershipRequestEvent {
+  """A new request."""
+  create: MembershipRequest
+
+  """A request that was answered."""
+  update: MembershipRequest
+}
+
+"""__doc__"""
+input MembershipRequestFilter {
+  AND: MembershipRequestFilter
+  DISTINCT: Boolean
+  NOT: MembershipRequestFilter
+  OR: MembershipRequestFilter
+  ids: [ID!]
+
+  """Matches the requester's username or their reason."""
+  search: String
+
+  """Only the requests in one of these states."""
+  status: [MembershipRequestStatus!]
+}
+
+input MembershipRequestOrdering @oneOf {
+  createdAt: Ordering
+  id: Ordering
+  respondedAt: Ordering
+}
+
+"""Where a membership request stands."""
+enum MembershipRequestStatus {
+  APPROVED
+  DECLINED
+  PENDING
+}
+
+type MembershipStats {
+  """Average"""
+  avg(field: MembershipField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: MembershipField!): Int!
+
+  """Maximum"""
+  max(field: MembershipField!): Float
+
+  """Minimum"""
+  min(field: MembershipField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: MembershipField!, timestampField: MembershipTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: MembershipField!): Float
+}
+
+"""Datetime fields of Membership for bucketing"""
+enum MembershipTimestampField {
+  CREATED_AT
 }
 
 type Mutation {
@@ -1262,7 +1406,7 @@ type Organization {
   """
   Requests of non-members to join this organization. Only its owner and admins see any.
   """
-  membershipRequests: [MembershipRequest!]!
+  membershipRequests(filters: MembershipRequestFilter, ordering: [MembershipRequestOrdering!]! = [], pagination: OffsetPaginationInput): [MembershipRequest!]!
 
   """the memberships of people"""
   memberships(filters: MembershipFilter, ordering: [MembershipOrdering!]! = [], pagination: OffsetPaginationInput): [Membership!]!
@@ -1371,10 +1515,15 @@ type Query {
   bugReports(filters: BugReportFilter, ordering: [BugReportOrdering!]! = [], pagination: OffsetPaginationInput): [BugReport!]!
   client(clientId: ID = null, id: ID = null): Client!
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
+
+  """
+  The clients of the organization other services know by these ids (a token's `client_id` claim), in one query.
+  """
+  clientsByClientId(clientIds: [ID!]!): [ClientByClientId!]!
   device(id: ID!): Device!
 
   """
-  Look a device up by its raw device id, as reported by the client. Device ids are stored as a per-organization hash, so the raw id is hashed with the caller's organization before lookup.
+  Look a device up by its device id: the id the other services know it by (`Device.deviceId`, a token's `client_device` claim, rekuest's `Agent.device.deviceId`). The raw id a client reports about itself is accepted too.
   """
   deviceByDeviceId(id: ID!): Device!
   deviceGroup(id: ID!): DeviceGroup!
@@ -1399,6 +1548,16 @@ type Query {
   """
   mandates(filters: MandateFilter, ordering: [MandateOrdering!]! = [], pagination: OffsetPaginationInput): [Mandate!]!
   me: User!
+
+  """
+  Requests of non-members to join the active organization. Only its owner and admins see any.
+  """
+  membershipRequests(filters: MembershipRequestFilter, ordering: [MembershipRequestOrdering!]! = [], pagination: OffsetPaginationInput): [MembershipRequest!]!
+
+  """
+  Counts over the memberships of the active organization, e.g. per role with `filters: { role }`.
+  """
+  membershipStats(filters: MembershipFilter = null): MembershipStats!
   message(id: ID!): SystemMessage!
   myActiveMessages: [SystemMessage!]!
   myManagedClients(kind: ClientKind!): [Client!]!
@@ -1791,7 +1950,9 @@ input StrFilterLookup {
 }
 
 type Subscription {
-  communications(channels: [ID!]!): Communication!
+  hubHealth(hub: ID = null): Hub!
+  membershipRequests: MembershipRequestEvent!
+  myMessages: SystemMessageEvent!
 }
 
 "\nA System Message is a message that is sent to a user. \nIt can be used to notify the user of important events or to request their attention.\nSystem messages can use Rekuest Hooks as actions to allow the user to interact with the message.\n\n\n"
@@ -1802,6 +1963,20 @@ type SystemMessage {
   message: String
   title: String
   user: User!
+}
+
+"""
+A change to one of the caller's system messages. Exactly one field is set.
+"""
+type SystemMessageEvent {
+  """A message the caller just got."""
+  create: SystemMessage
+
+  """The id of a message of the caller that was deleted."""
+  delete: ID
+
+  """A message of the caller that changed (e.g. was acknowledged)."""
+  update: SystemMessage
 }
 
 type TimeBucket {

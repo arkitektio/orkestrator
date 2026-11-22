@@ -24,25 +24,6 @@ fragment Organization on Organization {
       presignedUrl
     }
   }
-  memberships {
-    id
-    roles {
-      id
-      identifier
-    }
-    user {
-      id
-      username
-      firstName
-      lastName
-      profile {
-        id
-        avatar {
-          presignedUrl
-        }
-      }
-    }
-  }
   invites {
     id
     createdAt

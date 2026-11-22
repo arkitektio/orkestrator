@@ -23,8 +23,7 @@ const SORT_ORDER: Record<DeviceSort, DeviceOrdering> = {
 
 /**
  * The device list's filters, in the URL so a narrowed list is a link. All of
- * them narrow on the server: the search as `search`, a group as its members'
- * ids (`DeviceFilter` has no group field of its own).
+ * them narrow on the server: the search as `search`, a group as `deviceGroup`.
  */
 export const useDeviceFilters = () => {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
@@ -33,18 +32,13 @@ export const useDeviceFilters = () => {
   const debounced = useDebounce(search.trim(), 300);
   const { data } = useDeviceFilterOptionsQuery({ fetchPolicy: "cache-first" });
   const groups = data?.deviceGroups ?? [];
-  const members = groups.find((candidate) => candidate.id === group)?.devices.map((device) => device.id);
 
   const filters: DeviceFilter = useMemo(
     () => ({
       ...(debounced ? { search: debounced } : {}),
-      // An empty group lists nothing, as it should; an unknown one (still
-      // loading, or a stale link) narrows nothing until it is known.
-      ...(group && members ? { ids: members } : {}),
+      ...(group ? { deviceGroup: group } : {}),
     }),
-    // `members` is rebuilt per render; its contents are what matter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [debounced, group, members?.join(",")],
+    [debounced, group],
   );
   const ordering = useMemo(() => [SORT_ORDER[sort]], [sort]);
 

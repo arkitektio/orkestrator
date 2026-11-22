@@ -4,24 +4,16 @@ import { EMPTY_BRAND, resolveContextBrand } from "./membershipBrand";
 
 type Brand = { brandHue?: number | null; brandChroma?: number | null };
 
-const context = (
-  organization: Brand & { id?: string },
-  memberships: Array<Brand & { organizationId: string }> = [],
-): ContextFragment =>
+/** A context in org-1; `membership` is the caller's membership there (lok answers only that one). */
+const context = (organization: Brand & { id?: string }, membership?: Brand): ContextFragment =>
   ({
     roles: [],
     scope: [],
     organization: { id: "org-1", name: "Org", slug: "org", ...organization },
-    user: {
-      id: "user-1",
-      username: "me",
-      memberships: memberships.map((membership, index) => ({
-        id: `membership-${index}`,
-        brandHue: membership.brandHue,
-        brandChroma: membership.brandChroma,
-        organization: { id: membership.organizationId },
-      })),
-    },
+    user: { id: "user-1", username: "me" },
+    membership: membership
+      ? { id: "membership-1", brandHue: membership.brandHue ?? null, brandChroma: membership.brandChroma ?? null }
+      : null,
   }) as ContextFragment;
 
 describe("resolveContextBrand", () => {
@@ -39,29 +31,16 @@ describe("resolveContextBrand", () => {
 
   it("lets the membership override the organization", () => {
     const resolved = resolveContextBrand(
-      context({ brandHue: 200, brandChroma: 0.1 }, [
-        { organizationId: "org-1", brandHue: 40, brandChroma: 0.3 },
-      ]),
+      context({ brandHue: 200, brandChroma: 0.1 }, { brandHue: 40, brandChroma: 0.3 }),
     );
     expect(resolved).toEqual({ hue: 40, chroma: 0.3 });
   });
 
   it("merges field by field — a hue-only override keeps the org chroma", () => {
     const resolved = resolveContextBrand(
-      context({ brandHue: 200, brandChroma: 0.1 }, [
-        { organizationId: "org-1", brandHue: 40, brandChroma: null },
-      ]),
+      context({ brandHue: 200, brandChroma: 0.1 }, { brandHue: 40, brandChroma: null }),
     );
     expect(resolved).toEqual({ hue: 40, chroma: 0.1 });
-  });
-
-  it("ignores memberships in other organizations", () => {
-    const resolved = resolveContextBrand(
-      context({ brandHue: 200, brandChroma: 0.1 }, [
-        { organizationId: "org-2", brandHue: 40, brandChroma: 0.3 },
-      ]),
-    );
-    expect(resolved).toEqual({ hue: 200, chroma: 0.1 });
   });
 
   it("is empty when neither side sets anything", () => {
@@ -72,18 +51,14 @@ describe("resolveContextBrand", () => {
 
   it("drops out-of-range values instead of clamping them", () => {
     const resolved = resolveContextBrand(
-      context({ brandHue: 200, brandChroma: 0.1 }, [
-        { organizationId: "org-1", brandHue: 400, brandChroma: 5 },
-      ]),
+      context({ brandHue: 200, brandChroma: 0.1 }, { brandHue: 400, brandChroma: 5 }),
     );
     expect(resolved).toEqual({ hue: 200, chroma: 0.1 });
   });
 
   it("keeps a zero chroma, which is a real achromatic brand", () => {
     const resolved = resolveContextBrand(
-      context({ brandHue: 200, brandChroma: 0.1 }, [
-        { organizationId: "org-1", brandChroma: 0 },
-      ]),
+      context({ brandHue: 200, brandChroma: 0.1 }, { brandChroma: 0 }),
     );
     expect(resolved).toEqual({ hue: 200, chroma: 0 });
   });

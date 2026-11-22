@@ -72,6 +72,8 @@ export type AppFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<AppFilter>;
   OR?: InputMaybe<AppFilter>;
+  /** Only the apps with one of these identifiers (exact match). */
+  identifiers?: InputMaybe<Array<Scalars['AppIdentifier']['input']>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -226,6 +228,15 @@ export type ClientMappingsArgs = {
   ordering?: Array<ServiceInstanceMappingOrdering>;
 };
 
+/** A client looked up by an id another service knows it by (`clientsByClientId`). */
+export type ClientByClientId = {
+  __typename?: 'ClientByClientId';
+  /** The client known by that id. */
+  client: Client;
+  /** The id that was asked for. The client's current `clientId` may differ: a client keeps one id per release it ran. */
+  requestedId: Scalars['ID']['output'];
+};
+
 /**
  * The one client model: every OAuth2 principal is a row here.
  *
@@ -274,6 +285,14 @@ export enum ClientRole {
   Interface = 'INTERFACE'
 }
 
+/** One collaboration of a service instance. */
+export type CollaborationRefInput = {
+  /** The collaboration's id in that service. */
+  collaboration: Scalars['ID']['input'];
+  /** The service instance the collaboration lives in. */
+  instance: Scalars['ID']['input'];
+};
+
 /** A communication channel through which a user can be notified (e.g. a push token). */
 export type ComChannel = {
   __typename?: 'ComChannel';
@@ -295,20 +314,20 @@ export type ComChannelOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
-/** A Communication */
-export type Communication = {
-  __typename?: 'Communication';
-  channel: Scalars['ID']['output'];
-};
-
 export type Context = {
   __typename?: 'Context';
+  /** The brand chroma (0–1) in effect: the member's own choice for the organization, else the organization's default. Null when neither is set. */
+  brandChroma?: Maybe<Scalars['Float']['output']>;
+  /** The brand hue (0–360) in effect: the member's own choice for the organization, else the organization's default. Null when neither is set. */
+  brandHue?: Maybe<Scalars['Float']['output']>;
   /** Are we acting in the active organization of the user? */
   fitsActiveOrganization: Scalars['Boolean']['output'];
   /** The hub this client was approved into (for an app client) or is the identity of (for a hub client). Null for clients bound to no hub, e.g. plain OIDC relying parties. Apps can pass its id back as `?hub=` on a later configure link to preselect it. */
   hub?: Maybe<Hub>;
   /** Is the user a member of this organization? False for an organization that does not exist, so it says nothing about other tenants. */
   memberOf: Scalars['Boolean']['output'];
+  /** The user's membership in the organization, or null when they are not a member of it. */
+  membership?: Maybe<Membership>;
   /** The organization that is associated with this app */
   organization: Organization;
   /** The roles that the user has in the organization */
@@ -448,6 +467,10 @@ export type DeviceFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<DeviceFilter>;
   OR?: InputMaybe<DeviceFilter>;
+  /** Only the devices in this device group. */
+  deviceGroup?: InputMaybe<Scalars['ID']['input']>;
+  /** Only the devices with one of these device ids: the ids the other services know a device by (`Device.deviceId`, a token's `client_device` claim), used as they are, never hashed again. */
+  deviceIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -572,6 +595,8 @@ export type Hub = {
   meshHost: Scalars['String']['output'];
   /** The name of the hub. This should be a human readable name of the hub. */
   name: Scalars['String']['output'];
+  /** When the hub stops counting as online unless it reports again: its last report plus three reporting intervals. Null if it never reported. A client watching `hubHealth` sets a timer for it instead of polling. */
+  offlineAt?: Maybe<Scalars['DateTime']['output']>;
   /** Whether the hub reported its health within the last three reporting intervals. */
   online: Scalars['Boolean']['output'];
   /** The organization that this hub belongs to. */
@@ -699,9 +724,13 @@ export type InviteFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<InviteFilter>;
   OR?: InputMaybe<InviteFilter>;
+  /** Only the invites granting this collaboration. */
+  collaboration?: InputMaybe<CollaborationRefInput>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  /** Only the invites that can still be accepted (true: pending and not expired), or only the others (false). */
+  valid?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type InviteOrdering =
@@ -976,6 +1005,8 @@ export type Membership = {
   brandChroma?: Maybe<Scalars['Float']['output']>;
   /** The member's personal brand hue (0–360) for this organization, if set. Null means they have not overridden the organization's default — fall back to `organization.brandHue`. */
   brandHue?: Maybe<Scalars['Float']['output']>;
+  /** When the user became a member. Null for an old membership whose invite or request did not tell. */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   organization: Organization;
   /** The roles that the user has in the organization */
@@ -995,6 +1026,11 @@ export type MembershipRolesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** Numeric/aggregatable fields of Membership */
+export enum MembershipField {
+  CreatedAt = 'CREATED_AT'
+}
+
 /** __doc__ */
 export type MembershipFilter = {
   AND?: InputMaybe<MembershipFilter>;
@@ -1002,11 +1038,16 @@ export type MembershipFilter = {
   NOT?: InputMaybe<MembershipFilter>;
   OR?: InputMaybe<MembershipFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only the organization's admins (true) or only the others (false). */
+  isAdmin?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only the memberships holding this role. */
+  role?: InputMaybe<Scalars['ID']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type MembershipOrdering =
-  { id: Ordering; };
+  { createdAt: Ordering; id?: never; }
+  |  { createdAt?: never; id: Ordering; };
 
 /** A request of a user who is not a member of an organization to become one. */
 export type MembershipRequest = {
@@ -1017,10 +1058,100 @@ export type MembershipRequest = {
   reason?: Maybe<Scalars['String']['output']>;
   resolvedBy?: Maybe<User>;
   respondedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** `pending`, `approved` or `declined` (filter with `MembershipRequestStatus`). */
   status: Scalars['String']['output'];
   /** The user who asks to join. Not a member yet, so they are visible here and nowhere else. */
   user: User;
 };
+
+/** A membership request into the active organization was made or answered. Exactly one field is set. */
+export type MembershipRequestEvent = {
+  __typename?: 'MembershipRequestEvent';
+  /** A new request. */
+  create?: Maybe<MembershipRequest>;
+  /** A request that was answered. */
+  update?: Maybe<MembershipRequest>;
+};
+
+/** __doc__ */
+export type MembershipRequestFilter = {
+  AND?: InputMaybe<MembershipRequestFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MembershipRequestFilter>;
+  OR?: InputMaybe<MembershipRequestFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Matches the requester's username or their reason. */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Only the requests in one of these states. */
+  status?: InputMaybe<Array<MembershipRequestStatus>>;
+};
+
+export type MembershipRequestOrdering =
+  { createdAt: Ordering; id?: never; respondedAt?: never; }
+  |  { createdAt?: never; id: Ordering; respondedAt?: never; }
+  |  { createdAt?: never; id?: never; respondedAt: Ordering; };
+
+/** Where a membership request stands. */
+export enum MembershipRequestStatus {
+  Approved = 'APPROVED',
+  Declined = 'DECLINED',
+  Pending = 'PENDING'
+}
+
+export type MembershipStats = {
+  __typename?: 'MembershipStats';
+  /** Average */
+  avg?: Maybe<Scalars['Float']['output']>;
+  /** Total number of items in the selection */
+  count: Scalars['Int']['output'];
+  /** Number of distinct values for the field */
+  distinctCount: Scalars['Int']['output'];
+  /** Maximum */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** Minimum */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Time-bucketed stats over a datetime field. */
+  series: Array<TimeBucket>;
+  /** Sum */
+  sum?: Maybe<Scalars['Float']['output']>;
+};
+
+
+export type MembershipStatsAvgArgs = {
+  field: MembershipField;
+};
+
+
+export type MembershipStatsDistinctCountArgs = {
+  field: MembershipField;
+};
+
+
+export type MembershipStatsMaxArgs = {
+  field: MembershipField;
+};
+
+
+export type MembershipStatsMinArgs = {
+  field: MembershipField;
+};
+
+
+export type MembershipStatsSeriesArgs = {
+  by: Granularity;
+  field: MembershipField;
+  timestampField: MembershipTimestampField;
+};
+
+
+export type MembershipStatsSumArgs = {
+  field: MembershipField;
+};
+
+/** Datetime fields of Membership for bucketing */
+export enum MembershipTimestampField {
+  CreatedAt = 'CREATED_AT'
+}
 
 export type Mutation = {
   __typename?: 'Mutation';
@@ -1286,6 +1417,14 @@ export type OrganizationInvitesArgs = {
 
 
 /** An Organization is a group of users that can work together on a project. */
+export type OrganizationMembershipRequestsArgs = {
+  filters?: InputMaybe<MembershipRequestFilter>;
+  ordering?: Array<MembershipRequestOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** An Organization is a group of users that can work together on a project. */
 export type OrganizationMembershipsArgs = {
   filters?: InputMaybe<MembershipFilter>;
   ordering?: Array<MembershipOrdering>;
@@ -1385,8 +1524,10 @@ export type Query = {
   bugReports: Array<BugReport>;
   client: Client;
   clients: Array<Client>;
+  /** The clients of the organization other services know by these ids (a token's `client_id` claim), in one query. */
+  clientsByClientId: Array<ClientByClientId>;
   device: Device;
-  /** Look a device up by its raw device id, as reported by the client. Device ids are stored as a per-organization hash, so the raw id is hashed with the caller's organization before lookup. */
+  /** Look a device up by its device id: the id the other services know it by (`Device.deviceId`, a token's `client_device` claim, rekuest's `Agent.device.deviceId`). The raw id a client reports about itself is accepted too. */
   deviceByDeviceId: Device;
   deviceGroup: DeviceGroup;
   deviceGroups: Array<DeviceGroup>;
@@ -1404,6 +1545,10 @@ export type Query = {
   /** Mandates you granted, your app issued, or (as an agent app) you may issue under or did. Org admins see all. */
   mandates: Array<Mandate>;
   me: User;
+  /** Requests of non-members to join the active organization. Only its owner and admins see any. */
+  membershipRequests: Array<MembershipRequest>;
+  /** Counts over the memberships of the active organization, e.g. per role with `filters: { role }`. */
+  membershipStats: MembershipStats;
   message: SystemMessage;
   myActiveMessages: Array<SystemMessage>;
   myManagedClients: Array<Client>;
@@ -1464,6 +1609,11 @@ export type QueryClientsArgs = {
   filters?: InputMaybe<ClientFilter>;
   ordering?: Array<ClientOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryClientsByClientIdArgs = {
+  clientIds: Array<Scalars['ID']['input']>;
 };
 
 
@@ -1548,6 +1698,18 @@ export type QueryMandatesArgs = {
   filters?: InputMaybe<MandateFilter>;
   ordering?: Array<MandateOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMembershipRequestsArgs = {
+  filters?: InputMaybe<MembershipRequestFilter>;
+  ordering?: Array<MembershipRequestOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMembershipStatsArgs = {
+  filters?: InputMaybe<MembershipFilter>;
 };
 
 
@@ -1987,12 +2149,14 @@ export type StrFilterLookup = {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  communications: Communication;
+  hubHealth: Hub;
+  membershipRequests: MembershipRequestEvent;
+  myMessages: SystemMessageEvent;
 };
 
 
-export type SubscriptionCommunicationsArgs = {
-  channels: Array<Scalars['ID']['input']>;
+export type SubscriptionHubHealthArgs = {
+  hub?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /**
@@ -2012,6 +2176,17 @@ export type SystemMessage = {
   message?: Maybe<Scalars['String']['output']>;
   title?: Maybe<Scalars['String']['output']>;
   user: User;
+};
+
+/** A change to one of the caller's system messages. Exactly one field is set. */
+export type SystemMessageEvent = {
+  __typename?: 'SystemMessageEvent';
+  /** A message the caller just got. */
+  create?: Maybe<SystemMessage>;
+  /** The id of a message of the caller that was deleted. */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** A message of the caller that changed (e.g. was acknowledged). */
+  update?: Maybe<SystemMessage>;
 };
 
 export type TimeBucket = {
@@ -2269,6 +2444,8 @@ export type DetailClientFragment = { __typename?: 'Client', id: string, clientId
 
 export type ListClientFragment = { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
 
+export type ClientChipFragment = { __typename?: 'Client', id: string, clientId: string, name: string, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, release?: { __typename?: 'Release', id: string, version: any, app: { __typename?: 'App', id: string, identifier: any } } | null };
+
 export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceId: string, deviceGroups: Array<(
     { __typename?: 'DeviceGroup' }
     & ListDeviceGroupFragment
@@ -2281,7 +2458,9 @@ export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: str
 
 export type BrowseDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }>, clients: Array<{ __typename?: 'Client', id: string }> };
 
-export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> }, hub?: { __typename?: 'Hub', id: string, name: string, identifier: any } | null };
+export type DeviceChipFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string };
+
+export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string }, membership?: { __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null } | null, hub?: { __typename?: 'Hub', id: string, name: string, identifier: any } | null };
 
 export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string, contentType: string };
 
@@ -2306,7 +2485,7 @@ export type GroupProfileFragment = { __typename?: 'GroupProfile', id: string, na
 
 export type InstanceHealthFragment = { __typename?: 'InstanceHealth', healthy: boolean, reason?: string | null, instance: { __typename?: 'ServiceInstance', id: string, instanceId: string, name: string, aliases: Array<{ __typename?: 'InstanceAlias', id: string }> } };
 
-export type HubHealthFragment = { __typename?: 'Hub', id: string, name: string, identifier: any, version: string, online: boolean, lastSeenAt?: any | null, lastHealthy?: boolean | null, meshConnected?: boolean | null, meshHost: string, latestHealth?: { __typename?: 'HubHealthReport', id: string, healthy: boolean, createdAt: any, instances: Array<(
+export type HubHealthFragment = { __typename?: 'Hub', id: string, name: string, identifier: any, version: string, online: boolean, lastSeenAt?: any | null, offlineAt?: any | null, lastHealthy?: boolean | null, meshConnected?: boolean | null, meshHost: string, latestHealth?: { __typename?: 'HubHealthReport', id: string, healthy: boolean, createdAt: any, instances: Array<(
       { __typename?: 'InstanceHealth' }
       & InstanceHealthFragment
     )> } | null };
@@ -2339,9 +2518,11 @@ export type MembershipFragment = { __typename?: 'Membership', id: string, brandH
     & ListOrganizationFragment
   ) };
 
+export type TeamMemberFragment = { __typename?: 'Membership', id: string, createdAt?: any | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, user: { __typename?: 'User', id: string, username: string, firstName?: string | null, lastName?: string | null, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } };
+
 export type MembershipRequestFragment = { __typename?: 'MembershipRequest', id: string, reason?: string | null, status: string, createdAt: any, user: { __typename?: 'User', id: string, username: string } };
 
-export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string, isAdminRole: boolean, isDefaultRole: boolean }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, user: { __typename?: 'User', id: string, username: string, firstName?: string | null, lastName?: string | null, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string, isAdminRole: boolean, isDefaultRole: boolean }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, invites: Array<{ __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
 
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
@@ -2775,6 +2956,26 @@ export type ClientQuery = { __typename?: 'Query', client: (
     & DetailClientFragment
   ) };
 
+export type ClientChipQueryVariables = Exact<{
+  clientId: Scalars['ID']['input'];
+}>;
+
+
+export type ClientChipQuery = { __typename?: 'Query', client: (
+    { __typename?: 'Client' }
+    & ClientChipFragment
+  ) };
+
+export type ClientChipsQueryVariables = Exact<{
+  clientIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ClientChipsQuery = { __typename?: 'Query', clientsByClientId: Array<{ __typename?: 'ClientByClientId', requestedId: string, client: (
+      { __typename?: 'Client' }
+      & ClientChipFragment
+    ) }> };
+
 export type MyContextQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2805,7 +3006,7 @@ export type BrowseDevicesQuery = { __typename?: 'Query', devices: Array<(
 export type DeviceFilterOptionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DeviceFilterOptionsQuery = { __typename?: 'Query', deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string, devices: Array<{ __typename?: 'Device', id: string }> }> };
+export type DeviceFilterOptionsQuery = { __typename?: 'Query', deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> };
 
 export type ListDevicesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2837,6 +3038,27 @@ export type GetDeviceByDeviceIdQuery = { __typename?: 'Query', deviceByDeviceId:
     { __typename?: 'Device' }
     & DetailDeviceFragment
   ) };
+
+export type DeviceChipQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeviceChipQuery = { __typename?: 'Query', deviceByDeviceId: (
+    { __typename?: 'Device' }
+    & DeviceChipFragment
+  ) };
+
+export type DeviceChipsQueryVariables = Exact<{
+  deviceIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type DeviceChipsQuery = { __typename?: 'Query', devices: Array<(
+    { __typename?: 'Device' }
+    & DeviceChipFragment
+  )> };
 
 export type ListDeviceGroupQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2896,7 +3118,9 @@ export type MyHubHealthQuery = { __typename?: 'Query', mycontext: { __typename?:
       & HubHealthFragment
     ) | null } };
 
-export type CollaborationLinksQueryVariables = Exact<{ [key: string]: never; }>;
+export type CollaborationLinksQueryVariables = Exact<{
+  collaboration?: InputMaybe<CollaborationRefInput>;
+}>;
 
 
 export type CollaborationLinksQuery = { __typename?: 'Query', invites: Array<(
@@ -2950,15 +3174,32 @@ export type StandingMandatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type StandingMandatesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, agentIdentifier?: string | null, claimant: MandateClaimant, allowMesh: boolean, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null }, parent?: { __typename?: 'Mandate', id: string } | null }> };
 
-export type MembershipRequestsQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
+export type TeamMembersQueryVariables = Exact<{
+  organization: Scalars['ID']['input'];
+  filters?: InputMaybe<MembershipFilter>;
+  limit: Scalars['Int']['input'];
 }>;
 
 
-export type MembershipRequestsQuery = { __typename?: 'Query', organization: { __typename?: 'Organization', id: string, membershipRequests: Array<(
-      { __typename?: 'MembershipRequest' }
-      & MembershipRequestFragment
-    )> } };
+export type TeamMembersQuery = { __typename?: 'Query', organization: { __typename?: 'Organization', id: string, memberships: Array<(
+      { __typename?: 'Membership' }
+      & TeamMemberFragment
+    )> }, membershipStats: { __typename?: 'MembershipStats', count: number } };
+
+export type TeamCountsQueryVariables = Exact<{
+  admins?: InputMaybe<MembershipFilter>;
+}>;
+
+
+export type TeamCountsQuery = { __typename?: 'Query', members: { __typename?: 'MembershipStats', count: number }, admins: { __typename?: 'MembershipStats', count: number } };
+
+export type PendingMembershipRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PendingMembershipRequestsQuery = { __typename?: 'Query', membershipRequests: Array<(
+    { __typename?: 'MembershipRequest' }
+    & MembershipRequestFragment
+  )> };
 
 export type MyActiveMessagesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3198,6 +3439,32 @@ export type ProfileQuery = { __typename?: 'Query', me: (
     & MeUserFragment
   ) };
 
+export type WatchMyMessagesSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchMyMessagesSubscription = { __typename?: 'Subscription', myMessages: { __typename?: 'SystemMessageEvent', delete?: string | null, create?: { __typename?: 'SystemMessage', id: string } | null, update?: { __typename?: 'SystemMessage', id: string } | null } };
+
+export type WatchMembershipRequestsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchMembershipRequestsSubscription = { __typename?: 'Subscription', membershipRequests: { __typename?: 'MembershipRequestEvent', create?: (
+      { __typename?: 'MembershipRequest' }
+      & MembershipRequestFragment
+    ) | null, update?: (
+      { __typename?: 'MembershipRequest' }
+      & MembershipRequestFragment
+    ) | null } };
+
+export type WatchHubHealthSubscriptionVariables = Exact<{
+  hub?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type WatchHubHealthSubscription = { __typename?: 'Subscription', hubHealth: (
+    { __typename?: 'Hub' }
+    & HubHealthFragment
+  ) };
+
 export const InstanceAliasFragmentDoc = gql`
     fragment InstanceAlias on InstanceAlias {
   host
@@ -3331,6 +3598,24 @@ export const DetailClientFragmentDoc = gql`
   }
 }
     ${ListReleaseFragmentDoc}`;
+export const ClientChipFragmentDoc = gql`
+    fragment ClientChip on Client {
+  id
+  clientId
+  name
+  logo {
+    presignedUrl
+  }
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
+}
+    `;
 export const ListDeviceGroupFragmentDoc = gql`
     fragment ListDeviceGroup on DeviceGroup {
   id
@@ -3397,6 +3682,13 @@ export const BrowseDeviceFragmentDoc = gql`
   }
 }
     `;
+export const DeviceChipFragmentDoc = gql`
+    fragment DeviceChip on Device {
+  id
+  name
+  deviceId
+}
+    `;
 export const ContextFragmentDoc = gql`
     fragment Context on Context {
   organization {
@@ -3409,14 +3701,11 @@ export const ContextFragmentDoc = gql`
   user {
     id
     username
-    memberships {
-      id
-      brandHue
-      brandChroma
-      organization {
-        id
-      }
-    }
+  }
+  membership {
+    id
+    brandHue
+    brandChroma
   }
   hub {
     id
@@ -3524,6 +3813,7 @@ export const HubHealthFragmentDoc = gql`
   version
   online
   lastSeenAt
+  offlineAt
   lastHealthy
   meshConnected
   meshHost
@@ -3588,25 +3878,6 @@ export const OrganizationFragmentDoc = gql`
     bio
     avatar {
       presignedUrl
-    }
-  }
-  memberships {
-    id
-    roles {
-      id
-      identifier
-    }
-    user {
-      id
-      username
-      firstName
-      lastName
-      profile {
-        id
-        avatar {
-          presignedUrl
-        }
-      }
     }
   }
   invites {
@@ -3758,6 +4029,28 @@ export const DetailMandateFragmentDoc = gql`
   }
 }
     ${ListMandateFragmentDoc}`;
+export const TeamMemberFragmentDoc = gql`
+    fragment TeamMember on Membership {
+  id
+  roles {
+    id
+    identifier
+  }
+  user {
+    id
+    username
+    firstName
+    lastName
+    profile {
+      id
+      avatar {
+        presignedUrl
+      }
+    }
+  }
+  createdAt
+}
+    `;
 export const MembershipRequestFragmentDoc = gql`
     fragment MembershipRequest on MembershipRequest {
   id
@@ -5222,6 +5515,79 @@ export function useClientLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookO
 export type ClientQueryHookResult = ReturnType<typeof useClientQuery>;
 export type ClientLazyQueryHookResult = ReturnType<typeof useClientLazyQuery>;
 export type ClientQueryResult = Apollo.QueryResult<ClientQuery, ClientQueryVariables>;
+export const ClientChipDocument = gql`
+    query ClientChip($clientId: ID!) {
+  client(clientId: $clientId) {
+    ...ClientChip
+  }
+}
+    ${ClientChipFragmentDoc}`;
+
+/**
+ * __useClientChipQuery__
+ *
+ * To run a query within a React component, call `useClientChipQuery` and pass it any options that fit your needs.
+ * When your component renders, `useClientChipQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useClientChipQuery({
+ *   variables: {
+ *      clientId: // value for 'clientId'
+ *   },
+ * });
+ */
+export function useClientChipQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ClientChipQuery, ClientChipQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ClientChipQuery, ClientChipQueryVariables>(ClientChipDocument, options);
+      }
+export function useClientChipLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ClientChipQuery, ClientChipQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ClientChipQuery, ClientChipQueryVariables>(ClientChipDocument, options);
+        }
+export type ClientChipQueryHookResult = ReturnType<typeof useClientChipQuery>;
+export type ClientChipLazyQueryHookResult = ReturnType<typeof useClientChipLazyQuery>;
+export type ClientChipQueryResult = Apollo.QueryResult<ClientChipQuery, ClientChipQueryVariables>;
+export const ClientChipsDocument = gql`
+    query ClientChips($clientIds: [ID!]!) {
+  clientsByClientId(clientIds: $clientIds) {
+    requestedId
+    client {
+      ...ClientChip
+    }
+  }
+}
+    ${ClientChipFragmentDoc}`;
+
+/**
+ * __useClientChipsQuery__
+ *
+ * To run a query within a React component, call `useClientChipsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useClientChipsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useClientChipsQuery({
+ *   variables: {
+ *      clientIds: // value for 'clientIds'
+ *   },
+ * });
+ */
+export function useClientChipsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ClientChipsQuery, ClientChipsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ClientChipsQuery, ClientChipsQueryVariables>(ClientChipsDocument, options);
+      }
+export function useClientChipsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ClientChipsQuery, ClientChipsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ClientChipsQuery, ClientChipsQueryVariables>(ClientChipsDocument, options);
+        }
+export type ClientChipsQueryHookResult = ReturnType<typeof useClientChipsQuery>;
+export type ClientChipsLazyQueryHookResult = ReturnType<typeof useClientChipsLazyQuery>;
+export type ClientChipsQueryResult = Apollo.QueryResult<ClientChipsQuery, ClientChipsQueryVariables>;
 export const MyContextDocument = gql`
     query MyContext {
   mycontext {
@@ -5333,9 +5699,6 @@ export const DeviceFilterOptionsDocument = gql`
   deviceGroups {
     id
     name
-    devices {
-      id
-    }
   }
 }
     `;
@@ -5472,6 +5835,77 @@ export function useGetDeviceByDeviceIdLazyQuery(baseOptions?: ApolloReactHooks.L
 export type GetDeviceByDeviceIdQueryHookResult = ReturnType<typeof useGetDeviceByDeviceIdQuery>;
 export type GetDeviceByDeviceIdLazyQueryHookResult = ReturnType<typeof useGetDeviceByDeviceIdLazyQuery>;
 export type GetDeviceByDeviceIdQueryResult = Apollo.QueryResult<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>;
+export const DeviceChipDocument = gql`
+    query DeviceChip($id: ID!) {
+  deviceByDeviceId(id: $id) {
+    ...DeviceChip
+  }
+}
+    ${DeviceChipFragmentDoc}`;
+
+/**
+ * __useDeviceChipQuery__
+ *
+ * To run a query within a React component, call `useDeviceChipQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeviceChipQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeviceChipQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeviceChipQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DeviceChipQuery, DeviceChipQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DeviceChipQuery, DeviceChipQueryVariables>(DeviceChipDocument, options);
+      }
+export function useDeviceChipLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DeviceChipQuery, DeviceChipQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DeviceChipQuery, DeviceChipQueryVariables>(DeviceChipDocument, options);
+        }
+export type DeviceChipQueryHookResult = ReturnType<typeof useDeviceChipQuery>;
+export type DeviceChipLazyQueryHookResult = ReturnType<typeof useDeviceChipLazyQuery>;
+export type DeviceChipQueryResult = Apollo.QueryResult<DeviceChipQuery, DeviceChipQueryVariables>;
+export const DeviceChipsDocument = gql`
+    query DeviceChips($deviceIds: [ID!]!, $limit: Int!) {
+  devices(filters: {deviceIds: $deviceIds}, pagination: {limit: $limit}) {
+    ...DeviceChip
+  }
+}
+    ${DeviceChipFragmentDoc}`;
+
+/**
+ * __useDeviceChipsQuery__
+ *
+ * To run a query within a React component, call `useDeviceChipsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeviceChipsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeviceChipsQuery({
+ *   variables: {
+ *      deviceIds: // value for 'deviceIds'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useDeviceChipsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DeviceChipsQuery, DeviceChipsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DeviceChipsQuery, DeviceChipsQueryVariables>(DeviceChipsDocument, options);
+      }
+export function useDeviceChipsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DeviceChipsQuery, DeviceChipsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DeviceChipsQuery, DeviceChipsQueryVariables>(DeviceChipsDocument, options);
+        }
+export type DeviceChipsQueryHookResult = ReturnType<typeof useDeviceChipsQuery>;
+export type DeviceChipsLazyQueryHookResult = ReturnType<typeof useDeviceChipsLazyQuery>;
+export type DeviceChipsQueryResult = Apollo.QueryResult<DeviceChipsQuery, DeviceChipsQueryVariables>;
 export const ListDeviceGroupDocument = gql`
     query ListDeviceGroup($pagination: OffsetPaginationInput, $filters: DeviceGroupFilter) {
   deviceGroups(pagination: $pagination, filters: $filters) {
@@ -5688,8 +6122,8 @@ export type MyHubHealthQueryHookResult = ReturnType<typeof useMyHubHealthQuery>;
 export type MyHubHealthLazyQueryHookResult = ReturnType<typeof useMyHubHealthLazyQuery>;
 export type MyHubHealthQueryResult = Apollo.QueryResult<MyHubHealthQuery, MyHubHealthQueryVariables>;
 export const CollaborationLinksDocument = gql`
-    query CollaborationLinks {
-  invites {
+    query CollaborationLinks($collaboration: CollaborationRefInput) {
+  invites(filters: {collaboration: $collaboration}) {
     ...CollaborationLink
   }
 }
@@ -5707,6 +6141,7 @@ export const CollaborationLinksDocument = gql`
  * @example
  * const { data, loading, error } = useCollaborationLinksQuery({
  *   variables: {
+ *      collaboration: // value for 'collaboration'
  *   },
  * });
  */
@@ -5906,44 +6341,125 @@ export function useStandingMandatesLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type StandingMandatesQueryHookResult = ReturnType<typeof useStandingMandatesQuery>;
 export type StandingMandatesLazyQueryHookResult = ReturnType<typeof useStandingMandatesLazyQuery>;
 export type StandingMandatesQueryResult = Apollo.QueryResult<StandingMandatesQuery, StandingMandatesQueryVariables>;
-export const MembershipRequestsDocument = gql`
-    query MembershipRequests($id: ID!) {
-  organization(id: $id) {
+export const TeamMembersDocument = gql`
+    query TeamMembers($organization: ID!, $filters: MembershipFilter, $limit: Int!) {
+  organization(id: $organization) {
     id
-    membershipRequests {
-      ...MembershipRequest
+    memberships(
+      filters: $filters
+      pagination: {limit: $limit}
+      ordering: [{id: ASC}]
+    ) {
+      ...TeamMember
     }
   }
+  membershipStats(filters: $filters) {
+    count
+  }
 }
-    ${MembershipRequestFragmentDoc}`;
+    ${TeamMemberFragmentDoc}`;
 
 /**
- * __useMembershipRequestsQuery__
+ * __useTeamMembersQuery__
  *
- * To run a query within a React component, call `useMembershipRequestsQuery` and pass it any options that fit your needs.
- * When your component renders, `useMembershipRequestsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useTeamMembersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTeamMembersQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useMembershipRequestsQuery({
+ * const { data, loading, error } = useTeamMembersQuery({
  *   variables: {
- *      id: // value for 'id'
+ *      organization: // value for 'organization'
+ *      filters: // value for 'filters'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
-export function useMembershipRequestsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MembershipRequestsQuery, MembershipRequestsQueryVariables>) {
+export function useTeamMembersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TeamMembersQuery, TeamMembersQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<MembershipRequestsQuery, MembershipRequestsQueryVariables>(MembershipRequestsDocument, options);
+        return ApolloReactHooks.useQuery<TeamMembersQuery, TeamMembersQueryVariables>(TeamMembersDocument, options);
       }
-export function useMembershipRequestsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MembershipRequestsQuery, MembershipRequestsQueryVariables>) {
+export function useTeamMembersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TeamMembersQuery, TeamMembersQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<MembershipRequestsQuery, MembershipRequestsQueryVariables>(MembershipRequestsDocument, options);
+          return ApolloReactHooks.useLazyQuery<TeamMembersQuery, TeamMembersQueryVariables>(TeamMembersDocument, options);
         }
-export type MembershipRequestsQueryHookResult = ReturnType<typeof useMembershipRequestsQuery>;
-export type MembershipRequestsLazyQueryHookResult = ReturnType<typeof useMembershipRequestsLazyQuery>;
-export type MembershipRequestsQueryResult = Apollo.QueryResult<MembershipRequestsQuery, MembershipRequestsQueryVariables>;
+export type TeamMembersQueryHookResult = ReturnType<typeof useTeamMembersQuery>;
+export type TeamMembersLazyQueryHookResult = ReturnType<typeof useTeamMembersLazyQuery>;
+export type TeamMembersQueryResult = Apollo.QueryResult<TeamMembersQuery, TeamMembersQueryVariables>;
+export const TeamCountsDocument = gql`
+    query TeamCounts($admins: MembershipFilter) {
+  members: membershipStats {
+    count
+  }
+  admins: membershipStats(filters: $admins) {
+    count
+  }
+}
+    `;
+
+/**
+ * __useTeamCountsQuery__
+ *
+ * To run a query within a React component, call `useTeamCountsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTeamCountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTeamCountsQuery({
+ *   variables: {
+ *      admins: // value for 'admins'
+ *   },
+ * });
+ */
+export function useTeamCountsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TeamCountsQuery, TeamCountsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TeamCountsQuery, TeamCountsQueryVariables>(TeamCountsDocument, options);
+      }
+export function useTeamCountsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TeamCountsQuery, TeamCountsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TeamCountsQuery, TeamCountsQueryVariables>(TeamCountsDocument, options);
+        }
+export type TeamCountsQueryHookResult = ReturnType<typeof useTeamCountsQuery>;
+export type TeamCountsLazyQueryHookResult = ReturnType<typeof useTeamCountsLazyQuery>;
+export type TeamCountsQueryResult = Apollo.QueryResult<TeamCountsQuery, TeamCountsQueryVariables>;
+export const PendingMembershipRequestsDocument = gql`
+    query PendingMembershipRequests {
+  membershipRequests(filters: {status: [PENDING]}, ordering: [{createdAt: DESC}]) {
+    ...MembershipRequest
+  }
+}
+    ${MembershipRequestFragmentDoc}`;
+
+/**
+ * __usePendingMembershipRequestsQuery__
+ *
+ * To run a query within a React component, call `usePendingMembershipRequestsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePendingMembershipRequestsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePendingMembershipRequestsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function usePendingMembershipRequestsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PendingMembershipRequestsQuery, PendingMembershipRequestsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PendingMembershipRequestsQuery, PendingMembershipRequestsQueryVariables>(PendingMembershipRequestsDocument, options);
+      }
+export function usePendingMembershipRequestsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PendingMembershipRequestsQuery, PendingMembershipRequestsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PendingMembershipRequestsQuery, PendingMembershipRequestsQueryVariables>(PendingMembershipRequestsDocument, options);
+        }
+export type PendingMembershipRequestsQueryHookResult = ReturnType<typeof usePendingMembershipRequestsQuery>;
+export type PendingMembershipRequestsLazyQueryHookResult = ReturnType<typeof usePendingMembershipRequestsLazyQuery>;
+export type PendingMembershipRequestsQueryResult = Apollo.QueryResult<PendingMembershipRequestsQuery, PendingMembershipRequestsQueryVariables>;
 export const MyActiveMessagesDocument = gql`
     query MyActiveMessages {
   myActiveMessages {
@@ -6846,3 +7362,102 @@ export function useProfileLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type ProfileQueryHookResult = ReturnType<typeof useProfileQuery>;
 export type ProfileLazyQueryHookResult = ReturnType<typeof useProfileLazyQuery>;
 export type ProfileQueryResult = Apollo.QueryResult<ProfileQuery, ProfileQueryVariables>;
+export const WatchMyMessagesDocument = gql`
+    subscription WatchMyMessages {
+  myMessages {
+    create {
+      id
+    }
+    update {
+      id
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchMyMessagesSubscription__
+ *
+ * To run a query within a React component, call `useWatchMyMessagesSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchMyMessagesSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchMyMessagesSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchMyMessagesSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchMyMessagesSubscription, WatchMyMessagesSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchMyMessagesSubscription, WatchMyMessagesSubscriptionVariables>(WatchMyMessagesDocument, options);
+      }
+export type WatchMyMessagesSubscriptionHookResult = ReturnType<typeof useWatchMyMessagesSubscription>;
+export type WatchMyMessagesSubscriptionResult = Apollo.SubscriptionResult<WatchMyMessagesSubscription>;
+export const WatchMembershipRequestsDocument = gql`
+    subscription WatchMembershipRequests {
+  membershipRequests {
+    create {
+      ...MembershipRequest
+    }
+    update {
+      ...MembershipRequest
+    }
+  }
+}
+    ${MembershipRequestFragmentDoc}`;
+
+/**
+ * __useWatchMembershipRequestsSubscription__
+ *
+ * To run a query within a React component, call `useWatchMembershipRequestsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchMembershipRequestsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchMembershipRequestsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchMembershipRequestsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchMembershipRequestsSubscription, WatchMembershipRequestsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchMembershipRequestsSubscription, WatchMembershipRequestsSubscriptionVariables>(WatchMembershipRequestsDocument, options);
+      }
+export type WatchMembershipRequestsSubscriptionHookResult = ReturnType<typeof useWatchMembershipRequestsSubscription>;
+export type WatchMembershipRequestsSubscriptionResult = Apollo.SubscriptionResult<WatchMembershipRequestsSubscription>;
+export const WatchHubHealthDocument = gql`
+    subscription WatchHubHealth($hub: ID) {
+  hubHealth(hub: $hub) {
+    ...HubHealth
+  }
+}
+    ${HubHealthFragmentDoc}`;
+
+/**
+ * __useWatchHubHealthSubscription__
+ *
+ * To run a query within a React component, call `useWatchHubHealthSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchHubHealthSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchHubHealthSubscription({
+ *   variables: {
+ *      hub: // value for 'hub'
+ *   },
+ * });
+ */
+export function useWatchHubHealthSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchHubHealthSubscription, WatchHubHealthSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchHubHealthSubscription, WatchHubHealthSubscriptionVariables>(WatchHubHealthDocument, options);
+      }
+export type WatchHubHealthSubscriptionHookResult = ReturnType<typeof useWatchHubHealthSubscription>;
+export type WatchHubHealthSubscriptionResult = Apollo.SubscriptionResult<WatchHubHealthSubscription>;

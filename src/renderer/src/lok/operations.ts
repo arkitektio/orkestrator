@@ -7,6 +7,7 @@ import {
   type CreateBugReportMutationVariables,
   CollaborationLinksDocument,
   type CollaborationLinksQuery,
+  type CollaborationLinksQueryVariables,
   type CollaborationLinkFragment,
   CreateMandateDocument,
   GetMandateDocument,
@@ -186,9 +187,6 @@ const asLink = (invite: CollaborationLinkFragment, instance: string, collaborati
     invite.collaborations?.find((entry) => entry.instance === instance && entry.collaboration === collaboration)?.roles ?? [],
 });
 
-const grants = (invite: CollaborationLinkFragment, instance: string, collaboration: string) =>
-  !!invite.collaborations?.some((entry) => entry.instance === instance && entry.collaboration === collaboration);
-
 /**
  * `lok.shareCollaboration`: a link (a collaboration invite) that grants one collaboration of a
  * service instance to whoever opens it and signs in, with `roles` holding only inside it. Args
@@ -230,8 +228,12 @@ const collaborationLinks: OperationHandler = {
     const instance = optionalString(args.instance);
     const collaboration = optionalString(args.collaboration);
     if (!instance || !collaboration) throw new Error("Which collaboration, of which instance?");
-    const result = await client.query<CollaborationLinksQuery>({ query: CollaborationLinksDocument, fetchPolicy: "network-only" });
-    return result.data.invites.filter((invite) => grants(invite, instance, collaboration)).map((invite) => asLink(invite, instance, collaboration));
+    const result = await client.query<CollaborationLinksQuery, CollaborationLinksQueryVariables>({
+      query: CollaborationLinksDocument,
+      variables: { collaboration: { instance, collaboration } },
+      fetchPolicy: "network-only",
+    });
+    return result.data.invites.map((invite) => asLink(invite, instance, collaboration));
   },
 };
 

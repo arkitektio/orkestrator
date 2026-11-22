@@ -4,9 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
 import { CARD_FRAME_SIZE, CardFrame, type CardFact } from "@/core/ui/card-frame";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokUser } from "@/core/linkers";
-import { OrganizationFragment } from "../../api/graphql";
+import { TeamMemberFragment } from "../../api/graphql";
 
-type Membership = OrganizationFragment["memberships"][number];
+type Membership = TeamMemberFragment;
 
 /**
  * One member on the Team page, in the shared card frame like every other

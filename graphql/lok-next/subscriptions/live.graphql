@@ -1,0 +1,31 @@
+# The signed-in user's system messages, as they are sent, read or removed.
+subscription WatchMyMessages {
+  myMessages {
+    create {
+      id
+    }
+    update {
+      id
+    }
+    delete
+  }
+}
+
+# Requests to join the active organization, as they arrive or are answered.
+subscription WatchMembershipRequests {
+  membershipRequests {
+    create {
+      ...MembershipRequest
+    }
+    update {
+      ...MembershipRequest
+    }
+  }
+}
+
+# A hub's health, as it reports (`hub`, or every hub of the organization).
+subscription WatchHubHealth($hub: ID) {
+  hubHealth(hub: $hub) {
+    ...HubHealth
+  }
+}

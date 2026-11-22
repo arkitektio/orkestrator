@@ -33,3 +33,11 @@ fragment BrowseDevice on Device {
     id
   }
 }
+
+# A device as a row names it (an agent's card): looked up by the id other
+# services know it by, batched (`lok/lib/keyedChips.ts`).
+fragment DeviceChip on Device {
+  id
+  name
+  deviceId
+}

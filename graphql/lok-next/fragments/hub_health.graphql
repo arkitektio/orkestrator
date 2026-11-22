@@ -18,6 +18,9 @@ fragment HubHealth on Hub {
   version
   online
   lastSeenAt
+  # When it stops counting as online unless it reports again: a watcher sets a
+  # timer for it instead of polling.
+  offlineAt
   lastHealthy
   meshConnected
   meshHost

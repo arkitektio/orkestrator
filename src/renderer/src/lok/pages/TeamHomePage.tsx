@@ -12,7 +12,8 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { FilterClear, FilterPicker, FilterSearchField } from "@/core/ui/filter-bar";
 import Timestamp from "@/core/ui/timestamp";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { ADMIN_ROLE, useHasRoles } from "@/core/connection/roles";
 import { useDialog } from "@/core/dialogs/registry";
 import { useCopyToClipboard } from "@/core/ui/copy-button";
@@ -22,16 +23,19 @@ import {
   MembershipRequestFragment,
   OrganizationFragment,
   useCancelInviteMutation,
-  useMembershipRequestsQuery,
   useMyContextQuery,
   useOrganizationQuery,
+  usePendingMembershipRequestsQuery,
+  useTeamCountsQuery,
+  useTeamMembersQuery,
   useUpdateOrganizationMutation,
+  useWatchMembershipRequestsSubscription,
 } from "../api/graphql";
 import { EditablePortrait } from "../components/BrandBanner";
 import { useLokImageUpload } from "../hooks/useLokImageUpload";
 import MemberCard from "../components/cards/MemberCard";
 import { CreateInviteDialog } from "../dialogs/CreateInviteDialog";
-import { groupMembersByRole, orderRoles } from "../lib/teamRoles";
+import { anyRole, orderRoles, roleGroupFilters, sortMembers, type RoleGroupQuery } from "../lib/teamRoles";
 
 type Invite = OrganizationFragment["invites"][number];
 
@@ -199,6 +203,55 @@ const RoleHeading = ({
   </div>
 );
 
+/** How many members a role's group shows before "Show more". */
+const GROUP_PAGE = 48;
+
+/**
+ * One role's people, asked of the server: the members its filter picks, a page
+ * at a time, with how many there are. Draws nothing while empty, and reports
+ * its count so the page knows when every group is.
+ */
+const RoleGroupSection = ({
+  organization,
+  group,
+  me,
+  onCount,
+}: {
+  organization: string;
+  group: RoleGroupQuery;
+  me?: string | null;
+  onCount: (key: string, count: number) => void;
+}) => {
+  const [limit, setLimit] = useState(GROUP_PAGE);
+  const key = group.role?.id ?? "none";
+  const { data } = useTeamMembersQuery({
+    variables: { organization, filters: group.filters, limit },
+    fetchPolicy: "cache-and-network",
+  });
+  const count = data?.membershipStats.count;
+  useEffect(() => {
+    if (count !== undefined) onCount(key, count);
+  }, [count, key, onCount]);
+  const members = useMemo(() => sortMembers(data?.organization.memberships ?? [], me), [data, me]);
+  if (!count) return null;
+
+  return (
+    <div>
+      <RoleHeading role={group.role} count={count} />
+      <div className={CARD_FRAME_GRID}>
+        {members.map((membership) => (
+          <MemberCard key={membership.id} membership={membership} isMe={membership.user.id === me} />
+        ))}
+      </div>
+      {members.length < count && (
+        <Button variant="ghost" size="sm" className="mt-2" onClick={() => setLimit(limit + GROUP_PAGE)}>
+          Show more ({count - members.length})
+        </Button>
+      )}
+    </div>
+  );
+};
+
 /**
  * Team's start page — the organization this profile acts in, which is the
  * only one it has — laid out like the other modules' homes: its name and logo
@@ -219,13 +272,15 @@ const TeamHomePage = () => {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   // Inviting, the invites themselves and the requests are for the organization's admins.
   const isAdmin = useHasRoles(ADMIN_ROLE);
-  // Asked apart from the organization: a lok without membership requests
-  // fails this query alone, and the page just has none to show.
-  const { data: requested } = useMembershipRequestsQuery({
-    variables: { id: organizationId ?? "" },
+  // The open requests, filtered by the server, and read again when one
+  // arrives or is answered (instead of on focus).
+  const { data: requested, refetch: refetchRequests } = usePendingMembershipRequestsQuery({
     skip: !organizationId || !isAdmin,
     fetchPolicy: "cache-and-network",
-    errorPolicy: "ignore",
+  });
+  useWatchMembershipRequestsSubscription({
+    skip: !organizationId || !isAdmin,
+    onData: () => void refetchRequests(),
   });
   const resolve = useLokResolve();
   const [updateOrganization] = useUpdateOrganizationMutation();
@@ -240,17 +295,28 @@ const TeamHomePage = () => {
   const organization = data?.organization;
   const me = context?.mycontext.user.id;
 
+  // Each group is its own server query; the search reads usernames.
+  const debouncedSearch = useDebounce(search, 300);
   const groups = useMemo(
-    () =>
-      organization
-        ? groupMembersByRole(organization.memberships, organization.roles, {
-            me,
-            query: search,
-            role: roleFilter,
-          })
-        : [],
-    [organization, me, search, roleFilter],
+    () => (organization ? roleGroupFilters(organization.roles, { query: debouncedSearch, role: roleFilter }) : []),
+    [organization, debouncedSearch, roleFilter],
   );
+  // Whether every group came back empty: the page's empty state.
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const onCount = useCallback((key: string, count: number) => {
+    setCounts((current) => (current[key] === count ? current : { ...current, [key]: count }));
+  }, []);
+  const groupKeys = groups.map((group) => group.role?.id ?? "none");
+  const nobody = groupKeys.length > 0 && groupKeys.every((key) => counts[key] === 0);
+  const adminRoleIds = useMemo(
+    () => (organization?.roles ?? []).filter((role) => role.isAdminRole).map((role) => role.id),
+    [organization],
+  );
+  const { data: totals } = useTeamCountsQuery({
+    variables: { admins: anyRole(adminRoleIds) ?? { ids: [] } },
+    skip: !organization,
+    fetchPolicy: "cache-and-network",
+  });
   const roleOptions = useMemo(
     () =>
       orderRoles(organization?.roles ?? []).map((role) => ({ value: role.id, label: role.identifier })),
@@ -262,19 +328,15 @@ const TeamHomePage = () => {
   }
   if (!organization) return <LoadingPage />;
 
-  const memberCount = organization.memberships.length;
-  const adminRoles = new Set(organization.roles.filter((role) => role.isAdminRole).map((role) => role.id));
-  const adminCount = organization.memberships.filter((m) => m.roles.some((role) => adminRoles.has(role.id))).length;
+  const memberCount = totals?.members.count ?? 0;
+  const adminCount = adminRoleIds.length > 0 ? (totals?.admins.count ?? 0) : 0;
   const filtering = search.trim() !== "" || roleFilter !== null;
   const clearFilters = () => {
     setSearch("");
     setRoleFilter(null);
   };
 
-  // Answered requests stay on record in lok; only the open ones need someone.
-  const openRequests = (requested?.organization?.membershipRequests ?? []).filter(
-    (request) => request.status === "pending",
-  );
+  const openRequests = requested?.membershipRequests ?? [];
   const openInvites = organization.invites.filter((invite) => !invite.acceptedBy && invite.valid);
 
   const logo = organization.profile.avatar ?? organization.avatar;
@@ -372,7 +434,7 @@ const TeamHomePage = () => {
             {filtering && <FilterClear onClear={clearFilters} />}
           </div>
 
-          {groups.length === 0 ? (
+          {nobody ? (
             <Empty className="border py-12">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
@@ -390,14 +452,13 @@ const TeamHomePage = () => {
           ) : (
             <div className="flex flex-col gap-6">
               {groups.map((group) => (
-                <div key={group.role?.id ?? "none"}>
-                  <RoleHeading role={group.role} count={group.members.length} />
-                  <div className={CARD_FRAME_GRID}>
-                    {group.members.map((membership) => (
-                      <MemberCard key={membership.id} membership={membership} isMe={membership.user.id === me} />
-                    ))}
-                  </div>
-                </div>
+                <RoleGroupSection
+                  key={group.role?.id ?? "none"}
+                  organization={organization.id}
+                  group={group}
+                  me={me}
+                  onCount={onCount}
+                />
               ))}
             </div>
           )}

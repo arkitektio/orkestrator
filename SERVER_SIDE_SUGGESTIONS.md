@@ -72,7 +72,7 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 ### Smaller mikro gaps
 - **Pyramid level scale (low):** `DataArray.relativeScale` (or the old `scaleFactors`). `core/data/scene/coords/levelScale.ts` rebuilds it from `toParent` edges.
 - **Lens delete events (perf, minor):** a `__typename` or kind on `LensEvent.delete`. `lib/lenses/useLiveLenses.ts` evicts a deleted id under all 6 lens typenames.
-- **Landmark registration (feature):** a server `registerByLandmarks`. `mikro/components/registration/math/solvers.ts` fits the affine on the client.
+- **Landmark registration (declined):** a server `registerByLandmarks`. `mikro/components/registration/math/solvers.ts` fits the affine on the client, which is enough: nothing on the server needs the fit, and the result is written as an ordinary edge.
 - **Settings lost on reload (cosmetic):**
   - `tailWindow` on `UpdateTrackLayerInput` (`scene/platform/stores/sceneStore.ts`).
   - Transfer `colorStops` (`scene/platform/model/renderGraph.ts`).
@@ -183,38 +183,21 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 
 ## lok
 
-### Devices: lookup by device id, group filter (correctness)
-- **Add:** `DeviceFilter.deviceIds: [ID!]` and `DeviceFilter.deviceGroup: ID`, and rekuest/lok agreeing on `deviceId` (`Device.nodeId` is deprecated).
-- **Workaround:**
-  - `lok/components/UserAvatar.tsx` (`DeviceImprint`, drawn on every agent card) and `lok/options.ts` fetch the whole unpaginated `devices` list and match on the deprecated `nodeId`.
-  - `lok/components/filter/DeviceFilterRow.tsx` loads every group with its member ids and sends them as `ids`.
+### Searching apps and devices by identifier (perf, minor)
+- **Add:** `AppFilter.search` over the identifier, `DeviceFilter.search` over the device id, both case-insensitive (today: the name, case-sensitive).
+- **Workaround:** `lok/options.ts` looks known values up on the server (`identifiers`, `deviceIds`), but a typed search over `@lok/app` / `@lok/device` still fetches the list and matches on the client.
 
-### Clients by client id (perf)
-- **Add:** `ClientFilter.clientIds: [ID!]`, or a slim `clientsByClientId`.
-- **Workaround:** `lok/displays/ClientDisplay.tsx` → `ClientAvatar.tsx` / `AppAvatar.tsx` runs one full `client(clientId)` query per row (N+1). It is used in kraph's metrics table, elektro's history card and mikro's provenance entries. It can't be batched the way `lok/lib/userChips.ts` batches users.
+### Team page order within a role (cosmetic)
+- **Add:** `MembershipOrdering.username`.
+- **Workaround:** `lok/pages/TeamHomePage.tsx` asks each role's members of the server (paginated, counted), then sorts the loaded page by username (`teamRoles.sortMembers`). Past the first 48 of a role, "Show more" adds members in id order.
 
-### Memberships: filters and counts (perf)
-- **Add:** `MembershipFilter.role: ID` / `isAdmin: Boolean`, pagination on `Organization.memberships`, and a member count per role.
-- **Workaround:** `lok/pages/TeamHomePage.tsx` with `lok/lib/teamRoles.ts` fetches every membership, then groups, searches and counts on the client.
-
-### Membership requests: filter, status enum (perf)
-- **Add:** `membershipRequests(filters: { status }, pagination:)` with a `MembershipRequestStatus` enum.
-- **Workaround:** `lok/pages/TeamHomePage.tsx` downloads the whole answered history and keeps `pending`. The query is also kept apart with `errorPolicy: "ignore"` so an older lok without the field doesn't break the page. That swallows real errors too; a capability or version flag would fix it.
-
-### `Membership.createdAt` and `MembershipOrdering.createdAt` (blocks a feature)
+### `MembershipFilter.createdAfter` (blocks a feature)
+- **Add:** `createdAfter` / `createdBefore` on `MembershipFilter`. `Membership.createdAt` and its ordering exist, but memberships made before it are null, and a descending order puts those first.
 - **Blocks:** a "New this month" section of the newest members on the Team page. Accepted invites are not used as a stand-in.
 
-### The active membership on `Context` (perf)
-- **Add:** `Context.membership: Membership` and/or `MembershipFilter.organization`, and optionally a resolved `Context.brandHue` / `brandChroma`.
-- **Workaround:** `lok/lib/membershipBrand.ts` and `lok/pages/UserPage.tsx` fetch a user's memberships across organizations and `.find` the active one, merging brand colours field by field.
-
-### Smaller lok gaps
-- **Invites by collaboration (perf):** `InviteFilter.collaboration { instance collaboration }` and `valid: Boolean`. `lok/operations.ts` (`lok.collaborationLinks`) fetches every invite and filters on the client.
-- **App by identifier (perf):** `AppFilter.identifiers: [AppIdentifier!]`. `lok/options.ts` (`@lok/app` options) fetches every app and matches on the client.
-- **Media access grants (cosmetic, unverified):** an access grant on lok's `MediaStore`, as dokuments, kuvert and bank have. Every avatar is a server-signed `presignedUrl` cached in Apollo. `Organization.avatar` (documented "prefer `profile.avatar`") is still read as a fallback, and is the only logo in `ListOrganization`.
-- **Message and request events (cosmetic):** `myMessages` / `membershipRequests` subscriptions. `lok/dashboard/MessageNotifications.tsx` and the Team page refresh only on focus.
-- **Hub health event (cosmetic):** a `hubHealth` subscription. `app/settings/pages/ServicesPage.tsx` polls every 30 s.
-- **Mesh alias push (correctness, connectivity):** a fakts/lok protocol gap, not GraphQL. lok leaves a mesh alias out of fakts while it cannot resolve the hub node, and nothing pushes it back. While a service stays down, `core/connection/arkitekt/controller/controller.ts` forces a token or fakts refresh at most every 5 minutes.
+### Deferred
+- **Media access grants (cosmetic, unverified):** an access grant on lok's `MediaStore`, as dokuments, kuvert and bank have. Every avatar is a server-signed `presignedUrl` cached in Apollo. `Organization.avatar` (documented "prefer `profile.avatar`") is still read as a fallback, and is the only logo in `ListOrganization`. Deferred: cosmetic, and a new store contract for one service.
+- **Mesh alias push (correctness, connectivity):** a fakts/lok protocol gap, not GraphQL. lok leaves a mesh alias out of fakts while it cannot resolve the hub node, and nothing pushes it back. While a service stays down, `core/connection/arkitekt/controller/controller.ts` forces a token or fakts refresh at most every 5 minutes. Deferred: it belongs to the fakts protocol, not to this list.
 
 ---
 

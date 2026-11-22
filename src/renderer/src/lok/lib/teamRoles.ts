@@ -1,3 +1,5 @@
+import type { MembershipFilter } from "../api/graphql";
+
 /**
  * The Team page's people, grouped by what they may do here. Pure, so the
  * placement rules are tested without a page.
@@ -18,12 +20,6 @@ export type TeamMember = {
   user: { id: string; username: string };
 };
 
-export type RoleGroup<M extends TeamMember> = {
-  /** Null: the members holding none of the organization's roles. */
-  role: TeamRole | null;
-  members: M[];
-};
-
 /**
  * Admin roles first, then the organization's own order. The default role comes
  * last, since nearly everyone holds it and it says little.
@@ -36,50 +32,53 @@ export const orderRoles = (roles: readonly TeamRole[]): TeamRole[] =>
     .sort((a, b) => rank(a.role) - rank(b.role) || a.index - b.index)
     .map(({ role }) => role);
 
-/** Whether a member matches what was typed: their username or one of their roles. */
-export const memberMatches = (member: TeamMember, query: string): boolean => {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return true;
-  return (
-    member.user.username.toLowerCase().includes(needle) ||
-    member.roles.some((role) => role.identifier.toLowerCase().includes(needle))
+/** Members holding any of these roles; undefined for none. */
+export const anyRole = (ids: readonly string[]): MembershipFilter | undefined =>
+  ids.reduceRight<MembershipFilter | undefined>(
+    (rest, id) => ({ role: id, ...(rest ? { OR: rest } : {}) }),
+    undefined,
   );
+
+/** One group of the Team page, as the server's filter that picks its members. */
+export type RoleGroupQuery = {
+  /** Null: the members holding none of the organization's roles. */
+  role: TeamRole | null;
+  filters: MembershipFilter;
 };
 
 /**
  * One group per role, each member ONCE, under the highest role they hold (the
- * card still lists every role). Members without a role close the list. Within
- * a group: you first, then by username. Empty groups are left out.
+ * card still lists every role): a role's group is its holders that hold none
+ * of the roles above it. Members without a role close the list. Each group is
+ * asked of the server on its own, paginated and counted, so it is right however
+ * many members there are; a group that comes back empty is not drawn.
  *
- * `role`, when given, keeps only its holders, all of them under that role.
+ * `search` reads usernames (`MembershipFilter.search`). `role`, when given,
+ * keeps only its holders, all of them under that role.
  */
-export const groupMembersByRole = <M extends TeamMember>(
-  memberships: readonly M[],
+export const roleGroupFilters = (
   roles: readonly TeamRole[],
-  {
-    me,
-    query = "",
-    role: only = null,
-  }: { me?: string | null; query?: string; role?: string | null } = {},
-): RoleGroup<M>[] => {
-  const ordered = orderRoles(roles);
-  const groups = new Map<string | null, M[]>();
-
-  for (const member of memberships) {
-    if (!memberMatches(member, query)) continue;
-    const held = new Set(member.roles.map((role) => role.id));
-    if (only !== null && !held.has(only)) continue;
-    const home = only ?? ordered.find((role) => held.has(role.id))?.id ?? null;
-    const group = groups.get(home);
-    if (group) group.push(member);
-    else groups.set(home, [member]);
+  { query = "", role: only = null }: { query?: string; role?: string | null } = {},
+): RoleGroupQuery[] => {
+  const needle = query.trim();
+  const search: MembershipFilter = needle ? { search: needle } : {};
+  if (only !== null) {
+    const picked = roles.find((role) => role.id === only);
+    return picked ? [{ role: picked, filters: { role: picked.id, ...search } }] : [];
   }
-
-  const byMeThenName = (a: M, b: M) =>
-    Number(b.user.id === me) - Number(a.user.id === me) ||
-    a.user.username.localeCompare(b.user.username);
-
-  return [...ordered, null]
-    .map((role) => ({ role, members: (groups.get(role?.id ?? null) ?? []).sort(byMeThenName) }))
-    .filter((group) => group.members.length > 0);
+  const ordered = orderRoles(roles);
+  const groups: RoleGroupQuery[] = ordered.map((role, index) => {
+    const above = anyRole(ordered.slice(0, index).map((higher) => higher.id));
+    return { role, filters: { role: role.id, ...(above ? { NOT: above } : {}), ...search } };
+  });
+  const anyOf = anyRole(ordered.map((role) => role.id));
+  groups.push({ role: null, filters: { ...(anyOf ? { NOT: anyOf } : {}), ...search } });
+  return groups;
 };
+
+/** Within a group's loaded members: you first, then by username. */
+export const sortMembers = <M extends TeamMember>(members: readonly M[], me?: string | null): M[] =>
+  [...members].sort(
+    (a, b) =>
+      Number(b.user.id === me) - Number(a.user.id === me) || a.user.username.localeCompare(b.user.username),
+  );

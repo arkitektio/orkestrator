@@ -71,7 +71,8 @@ const ProfileSidebar = ({
   isMe: boolean;
   organization?: { id: string; name: string };
 }) => {
-  const membership = user.memberships.find((m) => m.organization.id === organization?.id);
+  // lok lists only their membership in the active organization.
+  const membership = user.memberships[0];
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
 
   return (
@@ -127,7 +128,8 @@ const ProfileSidebar = ({
  */
 const describeMember = (user: User, organization?: { id: string; name: string }): string => {
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
-  const member = user.memberships.some((m) => m.organization.id === organization?.id);
+  // lok lists only their membership in the active organization.
+  const member = user.memberships.length > 0;
   const here = organization && (member ? organization.name : `Not a member of ${organization.name}`);
   return [fullName, here].filter(Boolean).join(" · ");
 };

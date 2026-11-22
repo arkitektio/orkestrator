@@ -1,0 +1,23 @@
+# One group of the Team page's people: the members a filter picks (a role, and
+# none of the roles above it), a page at a time, with how many there are.
+query TeamMembers($organization: ID!, $filters: MembershipFilter, $limit: Int!) {
+  organization(id: $organization) {
+    id
+    memberships(filters: $filters, pagination: { limit: $limit }, ordering: [{ id: ASC }]) {
+      ...TeamMember
+    }
+  }
+  membershipStats(filters: $filters) {
+    count
+  }
+}
+
+# The Team page's "N members · M admins", counted by the server.
+query TeamCounts($admins: MembershipFilter) {
+  members: membershipStats {
+    count
+  }
+  admins: membershipStats(filters: $admins) {
+    count
+  }
+}

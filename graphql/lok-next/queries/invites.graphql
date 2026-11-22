@@ -1,5 +1,7 @@
-query CollaborationLinks {
-  invites {
+# The links that grant one collaboration of a service instance, picked by the
+# server. Without a collaboration: every link the caller may see.
+query CollaborationLinks($collaboration: CollaborationRefInput) {
+  invites(filters: { collaboration: $collaboration }) {
     ...CollaborationLink
   }
 }

@@ -55,3 +55,22 @@ fragment ListClient on Client {
     }
   }
 }
+
+# A client as a row names it (its app, version and logo): looked up by the
+# OAuth client id other services know it by, batched (`lok/lib/keyedChips.ts`).
+fragment ClientChip on Client {
+  id
+  clientId
+  name
+  logo {
+    presignedUrl
+  }
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
+}

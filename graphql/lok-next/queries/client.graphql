@@ -21,3 +21,22 @@ query Client($clientId: ID!) {
     ...DetailClient
   }
 }
+
+# One client's chip by a client id: what the batcher writes each answer as.
+query ClientChip($clientId: ID!) {
+  client(clientId: $clientId) {
+    ...ClientChip
+  }
+}
+
+# Many clients' chips by the client ids other services know them by, in one
+# request. A client keeps one id per release it ran: `requestedId` says which
+# id each answer is for.
+query ClientChips($clientIds: [ID!]!) {
+  clientsByClientId(clientIds: $clientIds) {
+    requestedId
+    client {
+      ...ClientChip
+    }
+  }
+}

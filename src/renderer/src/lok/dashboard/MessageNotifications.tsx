@@ -1,13 +1,15 @@
 import { useReportNotificationCount } from "@/core/dashboard/notificationCount";
 import { Bell } from "lucide-react";
-import { useMyActiveMessagesQuery } from "../api/graphql";
+import { useMyActiveMessagesQuery, useWatchMyMessagesSubscription } from "../api/graphql";
 
 /**
  * The messages sent to the member, under "Needs you" on the home page (lok's
  * `notifications` slot section on `@lok/user`).
  */
 export const MessageNotifications = () => {
-  const { data } = useMyActiveMessagesQuery({ fetchPolicy: "cache-and-network" });
+  const { data, refetch } = useMyActiveMessagesQuery({ fetchPolicy: "cache-and-network" });
+  // Read again when a message is sent, read or removed, not only on focus.
+  useWatchMyMessagesSubscription({ onData: () => void refetch() });
   const messages = data?.myActiveMessages ?? [];
 
   // Derived from `data`, not `onCompleted`: the latter does not fire when

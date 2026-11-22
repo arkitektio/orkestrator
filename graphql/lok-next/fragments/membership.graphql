@@ -10,3 +10,26 @@ fragment Membership on Membership {
     ...ListOrganization
   }
 }
+
+# A member as the Team page's card shows them. The page asks for them per role,
+# paginated (`TeamMembers`), never as the organization's whole list.
+fragment TeamMember on Membership {
+  id
+  roles {
+    id
+    identifier
+  }
+  user {
+    id
+    username
+    firstName
+    lastName
+    profile {
+      id
+      avatar {
+        presignedUrl
+      }
+    }
+  }
+  createdAt
+}

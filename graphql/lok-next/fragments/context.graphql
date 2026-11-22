@@ -9,14 +9,13 @@ fragment Context on Context {
   user {
     id
     username
-    memberships {
-      id
-      brandHue
-      brandChroma
-      organization {
-        id
-      }
-    }
+  }
+  # The caller's membership in THIS organization (its brand override), asked
+  # directly rather than found among every organization's.
+  membership {
+    id
+    brandHue
+    brandChroma
   }
   hub {
     id

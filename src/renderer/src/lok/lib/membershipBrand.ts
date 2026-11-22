@@ -30,11 +30,10 @@ export const EMPTY_BRAND: PartialBrand = { hue: undefined, chroma: undefined };
 /**
  * The brand for the context's ACTIVE organization.
  *
- * `mycontext.user.memberships` spans every organization the user belongs to, so
- * the one matching `mycontext.organization` is the only one that may speak —
- * otherwise switching organizations would leave the previous one's colour on.
- * Returns an empty brand when there is no context, no membership, and nothing
- * set on the organization either.
+ * `mycontext.membership` is the caller's membership in the active organization
+ * (lok answers it), so switching organizations never leaves the previous
+ * one's colour on. Returns an empty brand when there is no context, no
+ * membership, and nothing set on the organization either.
  */
 export const resolveContextBrand = (
   context: ContextFragment | null | undefined,
@@ -44,9 +43,7 @@ export const resolveContextBrand = (
   }
 
   const organization = context.organization;
-  const membership = context.user.memberships.find(
-    (candidate) => candidate.organization.id === organization.id,
-  );
+  const membership = context.membership;
 
   return {
     hue: inRange(membership?.brandHue, 360) ?? inRange(organization.brandHue, 360),

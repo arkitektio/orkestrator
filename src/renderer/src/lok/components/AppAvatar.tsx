@@ -1,16 +1,13 @@
-import { useClientQuery } from "../api/graphql";
 import { clientAppIdentifier } from "../lib/clientLabels";
+import { useClientChip } from "../lib/keyedChips";
 
+/** A client's app, by its OAuth client id: looked up with every other row in one request. */
 export const AppAvatar = (props: { clientId: string }) => {
-  const { data } = useClientQuery({
-    variables: {
-      clientId: props.clientId,
-    },
-  });
+  const client = useClientChip(props.clientId);
 
   return (
     <div className="px-2 bg-muted rounded rounded-md inline">
-      {data?.client && clientAppIdentifier(data.client)}
+      {client && clientAppIdentifier(client)}
     </div>
   );
 };

@@ -11,13 +11,12 @@ query BrowseDevices(
 }
 
 # What the device list's filter row offers: the groups, with their members.
+# The device list's group picker: the groups by name. A picked group narrows on
+# the server (`DeviceFilter.deviceGroup`).
 query DeviceFilterOptions {
   deviceGroups {
     id
     name
-    devices {
-      id
-    }
   }
 }
 
@@ -40,5 +39,19 @@ query GetDevice($id: ID!) {
 query GetDeviceByDeviceId($id: ID!) {
   deviceByDeviceId(id: $id) {
     ...DetailDevice
+  }
+}
+
+# One device's chip by its device id: what the batcher writes each answer as.
+query DeviceChip($id: ID!) {
+  deviceByDeviceId(id: $id) {
+    ...DeviceChip
+  }
+}
+
+# Many devices' chips by their device ids, in one request.
+query DeviceChips($deviceIds: [ID!]!, $limit: Int!) {
+  devices(filters: { deviceIds: $deviceIds }, pagination: { limit: $limit }) {
+    ...DeviceChip
   }
 }

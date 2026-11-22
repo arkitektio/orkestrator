@@ -19,14 +19,14 @@ import {
   DialogTrigger,
 } from "@/core/ui/dialog";
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { reportError, toast } from "@/core/notify";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { toHubHealthFacts, type HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
 import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
-import { useMyHubHealthQuery } from "@/lok/api/graphql";
+import { useMyHubHealthQuery, useWatchHubHealthSubscription } from "@/lok/api/graphql";
 import type { ProbeTarget } from "../../../../../main/doctor/protocol";
 import { DeploymentDiagram } from "../components/DeploymentDiagram";
 import { FaktsViewer } from "../components/FaktsViewer";
@@ -58,14 +58,24 @@ const ServiceGrid = ({ services, hub }: { services: ServiceRuntimeState[]; hub?:
   );
 };
 
-/** Hubs report on an interval; a slow poll keeps "last report" honest while the page is open. */
-const HUB_POLL_MS = 30_000;
 
 /** Only mounted under `Guard.Lok`: the hub's word, then the services with it. */
 const ServicesWithHub = ({ services }: { services: ServiceRuntimeState[] }) => {
   const fakts = Arkitekt.useFakts();
-  const { data } = useMyHubHealthQuery({ pollInterval: HUB_POLL_MS });
+  const { data, refetch } = useMyHubHealthQuery();
   const raw = data?.mycontext.hub;
+  // Each report arrives as it is made (`hubHealth`, normalized into the cache).
+  useWatchHubHealthSubscription({ variables: { hub: raw?.id ?? null }, skip: !raw });
+  // A hub that goes quiet sends nothing: read it again when it would stop
+  // counting as online (`offlineAt`), so "offline" shows without a poll.
+  const offlineAt = raw?.offlineAt;
+  useEffect(() => {
+    if (!offlineAt) return undefined;
+    const wait = new Date(offlineAt).getTime() - Date.now() + 1_000;
+    if (wait <= 0) return undefined;
+    const timer = window.setTimeout(() => void refetch(), wait);
+    return () => window.clearTimeout(timer);
+  }, [offlineAt, refetch]);
   const hub = raw ? toHubHealthFacts(raw, fakts?.instances ?? {}) : undefined;
 
   return (

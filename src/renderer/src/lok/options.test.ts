@@ -13,7 +13,23 @@ describe("lok's option sources", () => {
     expect(await source("@lok/app").search(apps, { search: "napari" })).toEqual([
       { value: "live.arkitekt.napari", label: "live.arkitekt.napari" },
     ]);
-    expect(await source("@lok/app").search(apps, { values: ["io.other.tool"] })).toHaveLength(1);
+  });
+
+  it("looks known apps and devices up on the server, by identifier and device id", async () => {
+    const apps = client({ apps: [{ identifier: "io.other.tool" }] });
+    expect(await source("@lok/app").search(apps, { values: ["io.other.tool"] })).toEqual([
+      { value: "io.other.tool", label: "io.other.tool" },
+    ]);
+    expect((apps as { query: ReturnType<typeof vi.fn> }).query).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { filters: { identifiers: ["io.other.tool"] }, pagination: { limit: 1 } },
+      }),
+    );
+    const devices = client({ devices: [{ nodeId: "n2", name: "scope" }] });
+    expect(await source("@lok/device").search(devices, { values: ["n2"] })).toEqual([{ value: "n2", label: "scope" }]);
+    expect((devices as { query: ReturnType<typeof vi.fn> }).query).toHaveBeenCalledWith(
+      expect.objectContaining({ variables: { filters: { deviceIds: ["n2"] }, pagination: { limit: 1 } } }),
+    );
   });
 
   it("offers devices by nodeId, named where they have a name", async () => {
