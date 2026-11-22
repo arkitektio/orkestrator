@@ -1,15 +1,16 @@
-import { lazy } from "react";
+import { preloadable } from "@/core/util/preloadable";
 
 import type { ViewerWidgetProps } from "@/core/smart/display/registry";
 
-// Lazy: the scene renderer (three, WebGPU) is only fetched once a viewer is
-// actually mounted, never by registering the module.
-const LazyArrayDatasetViewer = lazy(() => import("./ArrayDatasetViewer"));
-const LazyArrayLensViewer = lazy(() => import("./ArrayLensViewer"));
-const LazySceneViewer = lazy(() => import("./SceneViewer"));
-const LazyMeshObjectViewer = lazy(() => import("./MeshObjectViewer"));
-const LazyTableDatasetViewer = lazy(() => import("./TableDatasetViewer"));
-const LazyTableLensViewer = lazy(() => import("./TableLensViewer"));
+// Own chunks, loaded before the window's first render (`preloadAll`), never
+// by importing the module: the offline blok-catalog export reads mikro's
+// module entry, and plain node cannot load the scene (three, WebGPU).
+const LazyArrayDatasetViewer = preloadable(() => import("./ArrayDatasetViewer"));
+const LazyArrayLensViewer = preloadable(() => import("./ArrayLensViewer"));
+const LazySceneViewer = preloadable(() => import("./SceneViewer"));
+const LazyMeshObjectViewer = preloadable(() => import("./MeshObjectViewer"));
+const LazyTableDatasetViewer = preloadable(() => import("./TableDatasetViewer"));
+const LazyTableLensViewer = preloadable(() => import("./TableLensViewer"));
 
 export const ArrayDatasetViewer = (props: ViewerWidgetProps) => <LazyArrayDatasetViewer {...props} />;
 export const ArrayLensViewer = (props: ViewerWidgetProps) => <LazyArrayLensViewer {...props} />;

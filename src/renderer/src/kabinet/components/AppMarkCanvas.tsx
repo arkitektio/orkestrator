@@ -11,8 +11,8 @@ import { useKeepTabLive } from "@/core/tabs/keepLive";
  * instead — browsers cap live WebGL contexts at roughly 8-16 and silently drop
  * the oldest past that, so a grid of these would lose most of its icons.
  *
- * Always lazy-loaded by its page, so a kabinet route only pulls three and the
- * mark data when an app actually lands on it without a logo.
+ * Its pages declare it with `preloadable`, so it stays in its own chunk and is
+ * loaded at startup with the rest (`core/util/preloadable`).
  */
 export const AppMarkCanvas = ({
   app,

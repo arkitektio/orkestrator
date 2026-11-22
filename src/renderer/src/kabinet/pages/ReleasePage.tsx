@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { KabinetApp, KabinetRelease } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Shapes, ShieldCheck } from "lucide-react";
 import { bringsBloks, ReleaseBloks } from "../components/bloks/FlavourBloks";
-import { lazy, Suspense, useMemo } from "react";
+import { Suspense, useMemo } from "react";
+import { preloadable } from "@/core/util/preloadable";
 import { useSearchParams } from "react-router-dom";
 import { useGetReleaseQuery, useListReleaseApprovalsQuery } from "../api/graphql";
 import { hasOwnLogo, releaseIdentity } from "../appIdentity";
@@ -17,9 +18,10 @@ import { KABINET_HELP } from "../help";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
- * with no logo — so it is loaded on demand rather than by every visit.
+ * with no logo. Its own chunk (three.js and the mark data), loaded before the
+ * window's first render: see `core/util/preloadable`.
  */
-const AppMarkCanvas = lazy(() => import("../components/AppMarkCanvas"));
+const AppMarkCanvas = preloadable(() => import("../components/AppMarkCanvas"));
 
 /**
  * The app's other versions.

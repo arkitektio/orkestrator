@@ -1,4 +1,3 @@
-import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { HomePage } from "./pages/HomePage";
@@ -13,14 +12,14 @@ import { NotFound } from "../core/layout/fallbacks/NotFound";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { modulePages } from "../core/modules/registries";
+import { preloadable } from "@/core/util/preloadable";
 
-// Each module root is its own chunk: the scene renderer (three.js), DuckDB,
-// Monaco and the flow editor only load when their route is first visited
-// instead of being parsed before the first paint for every user.
-// Modules come from their builtins (`page`), one lazy chunk each; only the
-// host's own routes are named here.
-const BlokModule = React.lazy(() => import("@/core/blok/BlokModule"));
-const SettingsModule = React.lazy(() => import("@/app/settings/SettingsModule"));
+// Each module root is its own chunk, loaded before the window's first render
+// (`preloadAll` in main.tsx): in a built app a chunk is on local disk, and
+// loading it on first visit only flashed the loading fallback. Modules come
+// from their builtins (`page`); only the host's own routes are named here.
+const BlokModule = preloadable(() => import("@/core/blok/BlokModule"));
+const SettingsModule = preloadable(() => import("@/app/settings/SettingsModule"));
 
 /**
  * The app's routes, as one component.

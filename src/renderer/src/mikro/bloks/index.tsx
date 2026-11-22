@@ -11,6 +11,8 @@ import {
 } from "@arkitektio/bsx/catalogs";
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
+import { preloadable } from "@/core/util/preloadable";
+
 import { lazily } from "./lazily";
 import { MIKRO_SERVICE, MIKRO_TABLE_BLOKS } from "./table";
 
@@ -33,17 +35,17 @@ import { MIKRO_SERVICE, MIKRO_TABLE_BLOKS } from "./table";
  */
 
 const Parts = {
-  MikroScene: React.lazy(() => import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneRender }))),
-  MikroSceneViewport: React.lazy(() =>
+  MikroScene: preloadable<BlokRenderArgs>(() => import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneRender }))),
+  MikroSceneViewport: preloadable<BlokRenderArgs>(() =>
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneViewportRender })),
   ),
-  MikroSceneLayers: React.lazy(() =>
+  MikroSceneLayers: preloadable<BlokRenderArgs>(() =>
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneLayersRender })),
   ),
-  MikroSceneAnnotations: React.lazy(() =>
+  MikroSceneAnnotations: preloadable<BlokRenderArgs>(() =>
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneAnnotationsRender })),
   ),
-  MikroSceneProbe: React.lazy(() =>
+  MikroSceneProbe: preloadable<BlokRenderArgs>(() =>
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneProbeRender })),
   ),
 };

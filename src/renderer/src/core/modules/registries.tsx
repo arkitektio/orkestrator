@@ -1,4 +1,4 @@
-import React, { type ComponentType, type ReactNode } from "react";
+import { type ComponentType, type ReactNode } from "react";
 
 import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { DialogDescription, DialogTitle } from "@/core/ui/dialog";
@@ -17,6 +17,7 @@ import { dialogNeeds, dialogRoles, keepPreferredSize } from "@/core/modules/host
 import { describeRoles, RoleGuard, satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
 import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
+import { preloadable, type Preloadable } from "@/core/util/preloadable";
 import type { ProfileSection } from "@/core/connection/profile/section";
 import type { AuthFlowHandler } from "@/core/authflow/types";
 import type { IntentDecl } from "@/core/links/intents";
@@ -382,17 +383,21 @@ export const moduleSearches = derived((): ModuleSearch[] =>
   ),
 );
 
-const pageCache = new WeakMap<ModuleDefinition, React.LazyExoticComponent<ComponentType>>();
+const pageCache = new WeakMap<ModuleDefinition, Preloadable<object>>();
 
 /**
- * Each module's routes, one lazy chunk per module, by namespace. Cached per
+ * Each module's routes, one chunk per module, by namespace. Cached per
  * definition, so a module arriving or leaving does not remount the others.
+ *
+ * Preloadable: the window loads every page before its first render
+ * (`preloadAll`), so opening a module never flashes its loading fallback. A
+ * module that arrives later loads on first visit.
  */
 export const modulePages = derived(() =>
   (moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
     let Page = pageCache.get(definition);
     if (!Page) {
-      Page = React.lazy(definition.builtins.page);
+      Page = preloadable(definition.builtins.page);
       pageCache.set(definition, Page);
     }
     return { namespace: namespaceOf(definition), roles: definition.roles, serviceKey: definition.serviceKey, Page };

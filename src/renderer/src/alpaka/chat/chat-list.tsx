@@ -15,13 +15,14 @@ import type { HoldRequest, TaskInform } from "@/rekuest/lib/holds";
 import { MaterializedBlokEmbedById } from "@/rekuest/components/MaterializedBlokEmbed";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
+import { preloadable } from "@/core/util/preloadable";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import { Avatar, AvatarFallback } from "@/core/ui/avatar";
 import ChatBottombar from "./chat-bottombar";
 import { Markdown, type CodeRenderers } from "@/core/ui/markdown";
 
 /** A ```bsx fence in a message is a blok draft (the blok assistant streams one): drawn as a live preview. */
-const BsxDraftPreview = React.lazy(() => import("@/rekuest/components/BsxDraftPreview"));
+const BsxDraftPreview = preloadable(() => import("@/rekuest/components/BsxDraftPreview"));
 const CODE_RENDERERS: CodeRenderers = {
   bsx: (content) => (
     <React.Suspense fallback={null}>

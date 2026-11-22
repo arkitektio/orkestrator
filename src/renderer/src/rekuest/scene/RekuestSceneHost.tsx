@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { preloadable } from '@/core/util/preloadable';
 import {
   BlokSceneHostProvider,
   type BlokModelDecoration,
@@ -13,8 +14,8 @@ import {useAssetPolicyQuery, useBloksForModelQuery, useListMaterializedBloksQuer
  * model's file comes from is `RekuestAssetHost`'s.
  */
 
-/** Lazy: `MaterializedBlokRenderer` wraps itself in this host, so the import is a cycle until render time. */
-const MaterializedBlokById = React.lazy(
+/** Deferred: `MaterializedBlokRenderer` wraps itself in this host, so a static import is a cycle. */
+const MaterializedBlokById = preloadable(
   () => import('@/rekuest/components/MaterializedBlokById'),
 );
 

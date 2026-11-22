@@ -10,6 +10,8 @@ import {
 } from "@arkitektio/bsx/catalogs";
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
+import { preloadable } from "@/core/util/preloadable";
+
 import { lazily } from "./lazily";
 import { ROW_OPS, ROWS_LIMIT_DEFAULT, ROWS_LIMIT_MAX } from "./tableSql";
 
@@ -35,12 +37,12 @@ export const MIKRO_SERVICE = "mikro";
  */
 
 const Parts = {
-  TableColumns: React.lazy(() => import("./TableParts").then((module) => ({ default: module.TableColumnsRender }))),
-  ColumnStat: React.lazy(() => import("./TableParts").then((module) => ({ default: module.ColumnStatRender }))),
-  ColumnHistogram: React.lazy(() =>
+  TableColumns: preloadable<BlokRenderArgs>(() => import("./TableParts").then((module) => ({ default: module.TableColumnsRender }))),
+  ColumnStat: preloadable<BlokRenderArgs>(() => import("./TableParts").then((module) => ({ default: module.ColumnStatRender }))),
+  ColumnHistogram: preloadable<BlokRenderArgs>(() =>
     import("./TableParts").then((module) => ({ default: module.ColumnHistogramRender })),
   ),
-  TableRows: React.lazy(() => import("./TableParts").then((module) => ({ default: module.TableRowsRender }))),
+  TableRows: preloadable<BlokRenderArgs>(() => import("./TableParts").then((module) => ({ default: module.TableRowsRender }))),
 };
 
 const tableValueSchema = structureValueSchema.describe(
