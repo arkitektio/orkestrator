@@ -4,6 +4,17 @@ query GetFile($id: ID!) {
   }
 }
 
+# A file named elsewhere: name, size, type and folder.
+query GetFileLine($id: ID!) {
+  file(id: $id) {
+    ...ListFile
+    folder {
+      id
+      name
+    }
+  }
+}
+
 query GetFiles(
   $filters: FileFilter
   $pagination: OffsetPaginationInput

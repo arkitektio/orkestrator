@@ -94,7 +94,11 @@ fragment ProvenanceEntry on ProvenanceEntry {
   }
 }
 
-fragment DetailNeuronModel on NeuronModel {
+# What draws a model: its id, name, configuration and the section-dominance
+# heatmap. Everything a model elsewhere needs — a display chip, an inline section
+# viewer, the model under a cell or section page — and nothing of its runs,
+# comparisons, environment or provenance, which only its own page shows.
+fragment MorphologyModel on NeuronModel {
   id
   name
   config {
@@ -156,6 +160,10 @@ fragment DetailNeuronModel on NeuronModel {
   sectionDominance {
     ...SectionDominance
   }
+}
+
+fragment DetailNeuronModel on NeuronModel {
+  ...MorphologyModel
   description
   comparisons {
     collection {
@@ -210,7 +218,7 @@ fragment DetailCell on Cell {
   id
   compoundId
   model {
-    ...DetailNeuronModel
+    ...MorphologyModel
   }
   sessions {
     ...NeuronModelSession
@@ -232,7 +240,7 @@ fragment DetailCell on Cell {
 fragment DetailSection on Section {
   ...Section
   model {
-    ...DetailNeuronModel
+    ...MorphologyModel
   }
   cell {
     id

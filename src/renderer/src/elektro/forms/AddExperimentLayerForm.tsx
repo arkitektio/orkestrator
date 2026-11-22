@@ -13,6 +13,7 @@ import { Input } from "@/core/ui/input";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { useState } from "react";
+import { appendLayer } from "../components/experiment/features/annotations/annotationCache";
 import {
   useCreateAnnotationLayerMutation,
   useCreateEventsLayerMutation,
@@ -60,17 +61,27 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
   const [picked, setPicked] = useState<string | null>(null);
   const debounced = useDebounce(search, 250);
   const variables = { search: debounced || null, pagination: { limit: 30 } };
-  const refetch = { refetchQueries: ["GetExperimentScene"] };
+  // A created layer comes back whole and is appended to the cached scene. Only
+  // when the answer errors (a placement the server cannot condense) is the scene
+  // read again, to learn what was made.
+  const [createTrace, trace] = useCreateTraceLayerMutation({
+    update: (cache, { data }) => appendLayer(cache, experiment, data?.createTraceLayer),
+  });
+  const [createSpikes, spikes] = useCreateSpikesLayerMutation({
+    update: (cache, { data }) => appendLayer(cache, experiment, data?.createSpikesLayer),
+  });
+  const [createEvents, events] = useCreateEventsLayerMutation({
+    update: (cache, { data }) => appendLayer(cache, experiment, data?.createEventsLayer),
+  });
+  const [createAnnotation, annotation] = useCreateAnnotationLayerMutation({
+    update: (cache, { data }) => appendLayer(cache, experiment, data?.createAnnotationLayer),
+  });
 
   const arrays = useLayerPickerArrayDatasetsQuery({ variables, skip: kind !== "trace" });
   const sparse = useLayerPickerSparseDatasetsQuery({ variables, skip: kind !== "spikes" });
   const tables = useLayerPickerTableDatasetsQuery({ variables, skip: kind !== "events" });
   const collections = useLayerPickerAnnotationCollectionsQuery({ variables, skip: kind !== "annotation" });
 
-  const [createTrace, trace] = useCreateTraceLayerMutation(refetch);
-  const [createSpikes, spikes] = useCreateSpikesLayerMutation(refetch);
-  const [createEvents, events] = useCreateEventsLayerMutation(refetch);
-  const [createAnnotation, annotation] = useCreateAnnotationLayerMutation(refetch);
   const creating = trace.loading || spikes.loading || events.loading || annotation.loading;
 
   const items: { id: string; name: string; detail: string | null }[] =
@@ -95,11 +106,17 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
   // The new layer appears in the scene behind the dialog: no success toast.
   const { submit } = useDialogSubmit(
     async (id: string) => {
-      if (kind === "trace") await createTrace({ variables: { input: { experiment, dataset: id } } });
-      if (kind === "spikes") await createSpikes({ variables: { input: { experiment, sparseDataset: id } } });
-      if (kind === "events") await createEvents({ variables: { input: { experiment, tableDataset: id } } });
-      if (kind === "annotation") {
-        await createAnnotation({ variables: { input: { experiment, annotationCollection: id } } });
+      try {
+        if (kind === "trace") await createTrace({ variables: { input: { experiment, dataset: id } } });
+        if (kind === "spikes") await createSpikes({ variables: { input: { experiment, sparseDataset: id } } });
+        if (kind === "events") await createEvents({ variables: { input: { experiment, tableDataset: id } } });
+        if (kind === "annotation") {
+          await createAnnotation({ variables: { input: { experiment, annotationCollection: id } } });
+        }
+      } catch (error) {
+        // The layer may exist even so: let the scene say what the server holds.
+        void trace.client.refetchQueries({ include: ["GetExperimentScene"] });
+        throw error;
       }
     },
     { errorTitle: "Couldn't add the layer" },

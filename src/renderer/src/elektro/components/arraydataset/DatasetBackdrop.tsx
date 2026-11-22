@@ -72,7 +72,7 @@ export const CreateExperimentControl = ({
   const grid = dataset.intrinsicSystem;
 
   const [create, { loading }] = useCreateExperimentFromCoordinateSystemMutation({
-    // The new experiment draws this dataset, and `experimentLayers` is what the
+    // The new experiment draws this dataset, and `experiments` is what the
     // switcher reads — awaited so `onCreated` never names one it cannot list.
     refetchQueries: ["GetArrayDataset"],
     awaitRefetchQueries: true,

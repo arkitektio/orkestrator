@@ -1,6 +1,6 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import React from "react";
-import { useDetailNeuronModelQuery } from "../api/graphql";
+import { useMorphologyModelQuery } from "../api/graphql";
 
 // The display registry is mounted at the app root, and this was the only path
 // pulling three.js into the entry chunk — the renderer loads when a neuron
@@ -12,7 +12,7 @@ const EmbeddedMorphology = React.lazy(() =>
 );
 
 export const NeuronModelDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useDetailNeuronModelQuery({
+  const { data } = useMorphologyModelQuery({
     variables: {
       id: props.id,
     },

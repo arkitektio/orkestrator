@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { ElektroSection } from "@/core/linkers";
-import { useDetailNeuronModelQuery } from "../../api/graphql";
+import { useMorphologyModelQuery } from "../../api/graphql";
 import { MorphologyScene } from "./MorphologyScene";
 
 /**
@@ -22,7 +22,7 @@ export const InlineSectionViewer = ({
   cell?: string | null;
   section: string;
 }) => {
-  const { data, error } = useDetailNeuronModelQuery({ variables: { id: modelId } });
+  const { data, error } = useMorphologyModelQuery({ variables: { id: modelId } });
   const model = data?.neuronModel;
   const focus = useMemo(() => [section], [section]);
 

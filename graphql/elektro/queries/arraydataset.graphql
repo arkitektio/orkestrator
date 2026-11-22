@@ -4,6 +4,27 @@ query GetArrayDataset($id: ID!) {
   }
 }
 
+# A dataset named elsewhere (a task's result, a firing's input): a list row's facts.
+query GetArrayDatasetLine($id: ID!) {
+  arrayDataset(id: $id) {
+    ...ListArrayDataset
+  }
+}
+
+# "Open on timeline": the experiment already drawing it, or its own grid to compose one over.
+query ArrayDatasetTimeline($id: ID!) {
+  arrayDataset(id: $id) {
+    id
+    name
+    intrinsicSystem {
+      id
+    }
+    experiments {
+      id
+    }
+  }
+}
+
 query ListArrayDatasets(
   $pagination: OffsetPaginationInput
   $filters: ArrayDatasetFilter

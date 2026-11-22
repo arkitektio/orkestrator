@@ -6,9 +6,9 @@ import {
   CreateModelWorkspaceMutation,
   CreateModelWorkspaceMutationVariables,
   DeleteExperimentDocument,
-  GetArrayDatasetDocument,
-  GetArrayDatasetQuery,
-  GetArrayDatasetQueryVariables,
+  ArrayDatasetTimelineDocument,
+  ArrayDatasetTimelineQuery,
+  ArrayDatasetTimelineQueryVariables,
   DeleteModelWorkspaceDocument,
   DeleteNeuronModelDocument,
 } from '@/elektro/api/graphql'
@@ -104,13 +104,14 @@ const openArrayDatasetOnTimeline: Action = {
       throw new Error('Elektro service not available')
     }
 
-    const result = await client.query<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>({
-      query: GetArrayDatasetDocument,
+    // Network-only: an experiment composed elsewhere since the last read must be found.
+    const result = await client.query<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>({
+      query: ArrayDatasetTimelineDocument,
       variables: { id: dataset.id },
       fetchPolicy: 'network-only',
     })
     const detail = result.data?.arrayDataset
-    const drawnIn = detail?.experimentLayers.at(0)?.experiment.id
+    const drawnIn = detail?.experiments.at(0)?.id
     if (drawnIn) {
       navigate(ElektroExperiment.linkBuilder(drawnIn))
       return

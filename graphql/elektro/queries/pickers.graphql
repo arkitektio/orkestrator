@@ -4,9 +4,11 @@
 
 query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets(filters: { search: $search, timed: true }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
-    ...ListArrayDataset
+    # What a picker row shows, nothing more.
+    id
+    name
     axisNames
-    shape
+    valueUnit
   }
 }
 

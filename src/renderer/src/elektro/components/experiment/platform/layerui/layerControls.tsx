@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { LayerMenu as PlotLayerMenu } from "@/core/data/plot/layerui/layerControls";
 import { useDeleteLayerMutation } from "@/elektro/api/graphql";
+import { evictLayer } from "@/elektro/components/experiment/platform/edits/layerCache";
 
 export { ColorInput, LineWidthSelect } from "@/core/data/plot/layerui/layerControls";
 
@@ -17,7 +18,8 @@ export const LayerMenu = ({
   label: string;
   children?: ReactNode;
 }) => {
-  const [remove, { loading }] = useDeleteLayerMutation({ refetchQueries: ["GetExperimentScene"] });
+  // The layer leaves the cache; the rest of the scene stands as it is.
+  const [remove, { loading }] = useDeleteLayerMutation({ update: (cache) => evictLayer(cache, layerId) });
   return (
     <PlotLayerMenu
       label={label}

@@ -3007,6 +3007,30 @@
             "deprecationReason": null
           },
           {
+            "name": "experiments",
+            "description": "The experiments drawing this dataset, through any layer over any of its lenses: each once, oldest first. `experimentLayers` lists the layers themselves",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Experiment",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "exports",
             "description": "The files written out of this dataset: an NWB export, a CSV of samples. The mirror of `sourceFiles`",
             "args": [

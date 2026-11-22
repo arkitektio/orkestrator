@@ -4,6 +4,16 @@ query DetailModelWorkspace($id: ID!) {
   }
 }
 
+# A workspace named elsewhere: its name and how many models it maps.
+query GetModelWorkspaceLine($id: ID!) {
+  modelWorkspace(id: $id) {
+    ...ListModelWorkspace
+    mappings {
+      id
+    }
+  }
+}
+
 query ListModelWorkspaces(
   $pagination: OffsetPaginationInput
   $filters: ModelWorkspaceFilter

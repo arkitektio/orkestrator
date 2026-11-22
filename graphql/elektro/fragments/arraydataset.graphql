@@ -137,7 +137,6 @@ fragment ListArrayDataset on ArrayDataset {
   description
   axisNames
   shape
-  multiscale
   # What the server says it IS from its axes — the "By kind" pages filter on it.
   spec
   valueUnit
@@ -177,12 +176,10 @@ fragment DetailArrayDataset on ArrayDataset {
       name
     }
   }
-  experimentLayers {
+  # Each experiment drawing it, once: the page's switcher.
+  experiments {
     id
-    experiment {
-      id
-      name
-    }
+    name
   }
   provenanceEntries {
     ...ProvenanceEntry

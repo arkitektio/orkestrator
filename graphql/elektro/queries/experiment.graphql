@@ -11,6 +11,17 @@ query GetExperimentScene($id: ID!) {
   }
 }
 
+# An experiment named elsewhere: its name and how many layers it draws. Not the
+# scene: no layer placement is asked, so nothing here can error.
+query GetExperimentLine($id: ID!) {
+  experiment(id: $id) {
+    ...ListExperiment
+    layers {
+      id
+    }
+  }
+}
+
 query ListExperiments(
   $pagination: OffsetPaginationInput
   $filters: ExperimentFilter
@@ -24,7 +35,7 @@ query ListExperiments(
 # The experiments composed over one world — how a run (a clock) or a dataset's
 # own grid finds the timeline it is already on before minting another.
 query ExperimentsForWorld($world: ID!) {
-  experiments(filters: { world: $world }) {
+  experiments(filters: { world: $world }, ordering: [{ createdAt: ASC }], pagination: { limit: 1 }) {
     id
     name
   }

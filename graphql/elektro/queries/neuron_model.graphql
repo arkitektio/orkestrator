@@ -4,6 +4,13 @@ query DetailNeuronModel($id: ID!) {
   }
 }
 
+# A model drawn somewhere else than its own page (a display, an inline viewer).
+query MorphologyModel($id: ID!) {
+  neuronModel(id: $id) {
+    ...MorphologyModel
+  }
+}
+
 query SectionDominance(
   $id: ID!
   $weightAxial: Float

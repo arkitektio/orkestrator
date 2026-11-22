@@ -481,6 +481,8 @@ export type ArrayDataset = {
   descriptors: Scalars['JSON']['output'];
   /** The experiment layers drawing this dataset, through any of its lenses */
   experimentLayers: Array<ExperimentLayer>;
+  /** The experiments drawing this dataset, through any layer over any of its lenses: each once, oldest first. `experimentLayers` lists the layers themselves */
+  experiments: Array<Experiment>;
   /** The files written out of this dataset: an NWB export, a CSV of samples. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this dataset is filed in. Organisational only: it says where a user keeps this dataset, never where the data sits in space -- that is `intrinsicSystem` and the edges out of it */
@@ -7303,10 +7305,10 @@ export type ExpLensFragment = { __typename?: 'Lens', id: string, axisNames: Arra
     & ExpArrayDatasetFragment
   ) };
 
-export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, valueUnit?: Unit | null, createdAt: any, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null };
+export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, spec: Array<ArrayDatasetSpec>, valueUnit?: Unit | null, createdAt: any, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null };
 
 export type DetailArrayDatasetFragment = (
-  { __typename?: 'ArrayDataset', createdAt: any, spec: Array<ArrayDatasetSpec>, creator?: { __typename?: 'User', sub: string } | null, folder?: { __typename?: 'Folder', id: string, name: string } | null, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, experimentLayers: Array<{ __typename?: 'AnnotationLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'EventsLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'HeatmapLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'PointLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'SeriesLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'SpikesLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'TraceLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'WaveformLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } }>, provenanceEntries: Array<(
+  { __typename?: 'ArrayDataset', createdAt: any, spec: Array<ArrayDatasetSpec>, creator?: { __typename?: 'User', sub: string } | null, folder?: { __typename?: 'Folder', id: string, name: string } | null, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
   )> }
@@ -7567,10 +7569,7 @@ export type ModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string
     & MechanismFragment
   )> };
 
-export type ListModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<(
-    { __typename?: 'Mechanism' }
-    & MechanismFragment
-  )> };
+export type ListModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string }> };
 
 type ExpLayerCommon_AnnotationLayer_Fragment = { __typename: 'AnnotationLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
     { __typename?: 'AffinePlacement' }
@@ -7802,7 +7801,7 @@ export type CompartmentFragment = { __typename?: 'Compartment', id: string, colo
 
 export type ProvenanceEntryFragment = { __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> };
 
-export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<(
+export type MorphologyModelFragment = { __typename?: 'NeuronModel', id: string, name: string, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<(
       { __typename?: 'Ion' }
       & IonFragment
     )>, mechanismGlobals: Array<(
@@ -7817,7 +7816,10 @@ export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string
         )> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<(
     { __typename?: 'SectionDominance' }
     & SectionDominanceFragment
-  )>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, sessions: Array<(
+  )> };
+
+export type DetailNeuronModelFragment = (
+  { __typename?: 'NeuronModel', description?: string | null, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, sessions: Array<(
     { __typename?: 'NeuronModelSession' }
     & NeuronModelSessionFragment
   )>, environment: (
@@ -7826,7 +7828,9 @@ export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string
   ), provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
-  )> };
+  )> }
+  & MorphologyModelFragment
+);
 
 export type NeuronModelSessionFragment = { __typename?: 'NeuronModelSession', clock?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, datasets: Array<(
     { __typename?: 'ArrayDataset', intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null }
@@ -7837,7 +7841,7 @@ export type ListNeuronModelFragment = { __typename?: 'NeuronModel', id: string, 
 
 export type DetailCellFragment = { __typename?: 'Cell', id: string, compoundId?: string | null, model?: (
     { __typename?: 'NeuronModel' }
-    & DetailNeuronModelFragment
+    & MorphologyModelFragment
   ) | null, sessions: Array<(
     { __typename?: 'NeuronModelSession' }
     & NeuronModelSessionFragment
@@ -7852,7 +7856,7 @@ export type DetailCellFragment = { __typename?: 'Cell', id: string, compoundId?:
 export type DetailSectionFragment = (
   { __typename?: 'Section', model?: (
     { __typename?: 'NeuronModel' }
-    & DetailNeuronModelFragment
+    & MorphologyModelFragment
   ) | null, cell?: { __typename?: 'Cell', id: string, compoundId?: string | null } | null, sessions: Array<(
     { __typename?: 'NeuronModelSession' }
     & NeuronModelSessionFragment
@@ -8434,6 +8438,23 @@ export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
     & DetailArrayDatasetFragment
   ) };
 
+export type GetArrayDatasetLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetArrayDatasetLineQuery = { __typename?: 'Query', arrayDataset: (
+    { __typename?: 'ArrayDataset' }
+    & ListArrayDatasetFragment
+  ) };
+
+export type ArrayDatasetTimelineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ArrayDatasetTimelineQuery = { __typename?: 'Query', arrayDataset: { __typename?: 'ArrayDataset', id: string, name: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null, experiments: Array<{ __typename?: 'Experiment', id: string }> } };
+
 export type ListArrayDatasetsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ArrayDatasetFilter>;
@@ -8478,6 +8499,16 @@ export type GetExperimentSceneQuery = { __typename?: 'Query', experiment: (
     & ExperimentSceneFragment
   ) };
 
+export type GetExperimentLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetExperimentLineQuery = { __typename?: 'Query', experiment: (
+    { __typename?: 'Experiment', layers: Array<{ __typename?: 'AnnotationLayer', id: string } | { __typename?: 'EventsLayer', id: string } | { __typename?: 'HeatmapLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'SeriesLayer', id: string } | { __typename?: 'SpikesLayer', id: string } | { __typename?: 'TraceLayer', id: string } | { __typename?: 'WaveformLayer', id: string }> }
+    & ListExperimentFragment
+  ) };
+
 export type ListExperimentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ExperimentFilter>;
@@ -8507,6 +8538,16 @@ export type GetFileQuery = { __typename?: 'Query', file: (
     & FileFragment
   ) };
 
+export type GetFileLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetFileLineQuery = { __typename?: 'Query', file: (
+    { __typename?: 'File', folder?: { __typename?: 'Folder', id: string, name: string } | null }
+    & ListFileFragment
+  ) };
+
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -8519,40 +8560,6 @@ export type GetFilesQuery = { __typename?: 'Query', files: Array<(
     & ListFileFragment
   )> };
 
-export type GetFolderQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetFolderQuery = { __typename?: 'Query', folder: (
-    { __typename?: 'Folder' }
-    & FolderFragment
-  ) };
-
-export type GetFoldersQueryVariables = Exact<{
-  filters?: InputMaybe<FolderFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-  ordering?: InputMaybe<Array<FolderOrder> | FolderOrder>;
-}>;
-
-
-export type GetFoldersQuery = { __typename?: 'Query', folders: Array<(
-    { __typename?: 'Folder' }
-    & ListFolderFragment
-  )> };
-
-export type GetMyFoldersQueryVariables = Exact<{
-  filters?: InputMaybe<FolderFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-  ordering?: InputMaybe<Array<FolderOrder> | FolderOrder>;
-}>;
-
-
-export type GetMyFoldersQuery = { __typename?: 'Query', myfolders: Array<(
-    { __typename?: 'Folder' }
-    & ListFolderFragment
-  )> };
-
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -8562,7 +8569,7 @@ export type HomePageQuery = { __typename?: 'Query', experiments: Array<(
   )>, models: Array<(
     { __typename?: 'NeuronModel' }
     & ListNeuronModelFragment
-  )> };
+  )>, datasets: Array<{ __typename?: 'ArrayDataset', id: string }> };
 
 export type GetExpLensAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8629,6 +8636,16 @@ export type DetailModelWorkspaceQuery = { __typename?: 'Query', modelWorkspace: 
     & DetailModelWorkspaceFragment
   ) };
 
+export type GetModelWorkspaceLineQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetModelWorkspaceLineQuery = { __typename?: 'Query', modelWorkspace: (
+    { __typename?: 'ModelWorkspace', mappings: Array<{ __typename?: 'WorkspaceMapping', id: string }> }
+    & ListModelWorkspaceFragment
+  ) };
+
 export type ListModelWorkspacesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ModelWorkspaceFilter>;
@@ -8649,6 +8666,16 @@ export type DetailNeuronModelQueryVariables = Exact<{
 export type DetailNeuronModelQuery = { __typename?: 'Query', neuronModel: (
     { __typename?: 'NeuronModel' }
     & DetailNeuronModelFragment
+  ) };
+
+export type MorphologyModelQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type MorphologyModelQuery = { __typename?: 'Query', neuronModel: (
+    { __typename?: 'NeuronModel' }
+    & MorphologyModelFragment
   ) };
 
 export type SectionDominanceQueryVariables = Exact<{
@@ -8714,10 +8741,7 @@ export type LayerPickerArrayDatasetsQueryVariables = Exact<{
 }>;
 
 
-export type LayerPickerArrayDatasetsQuery = { __typename?: 'Query', arrayDatasets: Array<(
-    { __typename?: 'ArrayDataset', axisNames: Array<string>, shape: Array<number> }
-    & ListArrayDatasetFragment
-  )> };
+export type LayerPickerArrayDatasetsQuery = { __typename?: 'Query', arrayDatasets: Array<{ __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, valueUnit?: Unit | null }> };
 
 export type LayerPickerSparseDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -8805,20 +8829,6 @@ export type ProfileFeedModelCollectionsQueryVariables = Exact<{
 export type ProfileFeedModelCollectionsQuery = { __typename?: 'Query', modelCollections: Array<(
     { __typename?: 'ModelCollection', createdAt: any }
     & ListModelCollectionFragment
-  )> };
-
-export type GlobalSearchQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets: Array<(
-    { __typename?: 'ArrayDataset' }
-    & ListArrayDatasetFragment
-  )>, experiments: Array<(
-    { __typename?: 'Experiment' }
-    & ListExperimentFragment
   )> };
 
 export const ExpDefaultAnnotationCollectionFragmentDoc = gql`
@@ -9001,12 +9011,9 @@ export const DetailArrayDatasetFragmentDoc = gql`
       name
     }
   }
-  experimentLayers {
+  experiments {
     id
-    experiment {
-      id
-      name
-    }
+    name
   }
   provenanceEntries {
     ...ProvenanceEntry
@@ -9136,39 +9143,16 @@ export const BigFileUploadGrantFragmentDoc = gql`
   store
 }
     `;
-export const ParameterFragmentDoc = gql`
-    fragment Parameter on Parameter {
-  key
-  label
-  kind
-  description
-  default
-  nullable
-  referenceUnit
-  proposedUnits
-  dimension
-}
-    `;
-export const MechanismFragmentDoc = gql`
-    fragment Mechanism on Mechanism {
-  id
-  name
-  description
-  parameters {
-    ...Parameter
-  }
-}
-    ${ParameterFragmentDoc}`;
 export const ListModEnvironmentFragmentDoc = gql`
     fragment ListModEnvironment on ModEnvironment {
   id
   name
   description
   mechanisms {
-    ...Mechanism
+    id
   }
 }
-    ${MechanismFragmentDoc}`;
+    `;
 export const ExpAffinePlacementFragmentDoc = gql`
     fragment ExpAffinePlacement on AffinePlacement {
   matrix
@@ -9549,7 +9533,6 @@ export const ListArrayDatasetFragmentDoc = gql`
   description
   axisNames
   shape
-  multiscale
   spec
   valueUnit
   createdAt
@@ -9630,6 +9613,19 @@ ${ListFileFragmentDoc}
 ${ListSparseDatasetFragmentDoc}
 ${ListTableDatasetFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const ParameterFragmentDoc = gql`
+    fragment Parameter on Parameter {
+  key
+  label
+  kind
+  description
+  default
+  nullable
+  referenceUnit
+  proposedUnits
+  dimension
+}
+    `;
 export const ListMechanismFragmentDoc = gql`
     fragment ListMechanism on Mechanism {
   id
@@ -9767,32 +9763,8 @@ export const SectionDominanceFragmentDoc = gql`
   electrotonicDistance
 }
     `;
-export const NeuronModelSessionFragmentDoc = gql`
-    fragment NeuronModelSession on NeuronModelSession {
-  clock {
-    id
-    name
-  }
-  datasets {
-    ...ListArrayDataset
-    intrinsicSystem {
-      id
-    }
-  }
-}
-    ${ListArrayDatasetFragmentDoc}`;
-export const ModEnvironmentFragmentDoc = gql`
-    fragment ModEnvironment on ModEnvironment {
-  id
-  name
-  description
-  mechanisms {
-    ...Mechanism
-  }
-}
-    ${MechanismFragmentDoc}`;
-export const DetailNeuronModelFragmentDoc = gql`
-    fragment DetailNeuronModel on NeuronModel {
+export const MorphologyModelFragmentDoc = gql`
+    fragment MorphologyModel on NeuronModel {
   id
   name
   config {
@@ -9853,6 +9825,49 @@ export const DetailNeuronModelFragmentDoc = gql`
   sectionDominance {
     ...SectionDominance
   }
+}
+    ${IonFragmentDoc}
+${MechanismGlobalParamFragmentDoc}
+${CompartmentFragmentDoc}
+${SectionFragmentDoc}
+${SectionDominanceFragmentDoc}`;
+export const NeuronModelSessionFragmentDoc = gql`
+    fragment NeuronModelSession on NeuronModelSession {
+  clock {
+    id
+    name
+  }
+  datasets {
+    ...ListArrayDataset
+    intrinsicSystem {
+      id
+    }
+  }
+}
+    ${ListArrayDatasetFragmentDoc}`;
+export const MechanismFragmentDoc = gql`
+    fragment Mechanism on Mechanism {
+  id
+  name
+  description
+  parameters {
+    ...Parameter
+  }
+}
+    ${ParameterFragmentDoc}`;
+export const ModEnvironmentFragmentDoc = gql`
+    fragment ModEnvironment on ModEnvironment {
+  id
+  name
+  description
+  mechanisms {
+    ...Mechanism
+  }
+}
+    ${MechanismFragmentDoc}`;
+export const DetailNeuronModelFragmentDoc = gql`
+    fragment DetailNeuronModel on NeuronModel {
+  ...MorphologyModel
   description
   comparisons {
     collection {
@@ -9876,11 +9891,7 @@ export const DetailNeuronModelFragmentDoc = gql`
     ...ProvenanceEntry
   }
 }
-    ${IonFragmentDoc}
-${MechanismGlobalParamFragmentDoc}
-${CompartmentFragmentDoc}
-${SectionFragmentDoc}
-${SectionDominanceFragmentDoc}
+    ${MorphologyModelFragmentDoc}
 ${NeuronModelSessionFragmentDoc}
 ${ModEnvironmentFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
@@ -9889,7 +9900,7 @@ export const DetailCellFragmentDoc = gql`
   id
   compoundId
   model {
-    ...DetailNeuronModel
+    ...MorphologyModel
   }
   sessions {
     ...NeuronModelSession
@@ -9905,7 +9916,7 @@ export const DetailCellFragmentDoc = gql`
     }
   }
 }
-    ${DetailNeuronModelFragmentDoc}
+    ${MorphologyModelFragmentDoc}
 ${NeuronModelSessionFragmentDoc}
 ${CompartmentFragmentDoc}
 ${SectionFragmentDoc}`;
@@ -9913,7 +9924,7 @@ export const DetailSectionFragmentDoc = gql`
     fragment DetailSection on Section {
   ...Section
   model {
-    ...DetailNeuronModel
+    ...MorphologyModel
   }
   cell {
     id
@@ -9924,7 +9935,7 @@ export const DetailSectionFragmentDoc = gql`
   }
 }
     ${SectionFragmentDoc}
-${DetailNeuronModelFragmentDoc}
+${MorphologyModelFragmentDoc}
 ${NeuronModelSessionFragmentDoc}`;
 export const GeneralSparseAccessGrantFragmentDoc = gql`
     fragment GeneralSparseAccessGrant on GeneralSparseAccessGrant {
@@ -11700,6 +11711,83 @@ export function useGetArrayDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type GetArrayDatasetQueryHookResult = ReturnType<typeof useGetArrayDatasetQuery>;
 export type GetArrayDatasetLazyQueryHookResult = ReturnType<typeof useGetArrayDatasetLazyQuery>;
 export type GetArrayDatasetQueryResult = Apollo.QueryResult<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>;
+export const GetArrayDatasetLineDocument = gql`
+    query GetArrayDatasetLine($id: ID!) {
+  arrayDataset(id: $id) {
+    ...ListArrayDataset
+  }
+}
+    ${ListArrayDatasetFragmentDoc}`;
+
+/**
+ * __useGetArrayDatasetLineQuery__
+ *
+ * To run a query within a React component, call `useGetArrayDatasetLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetArrayDatasetLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetArrayDatasetLineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetArrayDatasetLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetArrayDatasetLineQuery, GetArrayDatasetLineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetArrayDatasetLineQuery, GetArrayDatasetLineQueryVariables>(GetArrayDatasetLineDocument, options);
+      }
+export function useGetArrayDatasetLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetArrayDatasetLineQuery, GetArrayDatasetLineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetArrayDatasetLineQuery, GetArrayDatasetLineQueryVariables>(GetArrayDatasetLineDocument, options);
+        }
+export type GetArrayDatasetLineQueryHookResult = ReturnType<typeof useGetArrayDatasetLineQuery>;
+export type GetArrayDatasetLineLazyQueryHookResult = ReturnType<typeof useGetArrayDatasetLineLazyQuery>;
+export type GetArrayDatasetLineQueryResult = Apollo.QueryResult<GetArrayDatasetLineQuery, GetArrayDatasetLineQueryVariables>;
+export const ArrayDatasetTimelineDocument = gql`
+    query ArrayDatasetTimeline($id: ID!) {
+  arrayDataset(id: $id) {
+    id
+    name
+    intrinsicSystem {
+      id
+    }
+    experiments {
+      id
+    }
+  }
+}
+    `;
+
+/**
+ * __useArrayDatasetTimelineQuery__
+ *
+ * To run a query within a React component, call `useArrayDatasetTimelineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useArrayDatasetTimelineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useArrayDatasetTimelineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useArrayDatasetTimelineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>(ArrayDatasetTimelineDocument, options);
+      }
+export function useArrayDatasetTimelineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>(ArrayDatasetTimelineDocument, options);
+        }
+export type ArrayDatasetTimelineQueryHookResult = ReturnType<typeof useArrayDatasetTimelineQuery>;
+export type ArrayDatasetTimelineLazyQueryHookResult = ReturnType<typeof useArrayDatasetTimelineLazyQuery>;
+export type ArrayDatasetTimelineQueryResult = Apollo.QueryResult<ArrayDatasetTimelineQuery, ArrayDatasetTimelineQueryVariables>;
 export const ListArrayDatasetsDocument = gql`
     query ListArrayDatasets($pagination: OffsetPaginationInput, $filters: ArrayDatasetFilter, $ordering: [ArrayDatasetOrder!]) {
   arrayDatasets(pagination: $pagination, filters: $filters, ordering: $ordering) {
@@ -11844,6 +11932,44 @@ export function useGetExperimentSceneLazyQuery(baseOptions?: ApolloReactHooks.La
 export type GetExperimentSceneQueryHookResult = ReturnType<typeof useGetExperimentSceneQuery>;
 export type GetExperimentSceneLazyQueryHookResult = ReturnType<typeof useGetExperimentSceneLazyQuery>;
 export type GetExperimentSceneQueryResult = Apollo.QueryResult<GetExperimentSceneQuery, GetExperimentSceneQueryVariables>;
+export const GetExperimentLineDocument = gql`
+    query GetExperimentLine($id: ID!) {
+  experiment(id: $id) {
+    ...ListExperiment
+    layers {
+      id
+    }
+  }
+}
+    ${ListExperimentFragmentDoc}`;
+
+/**
+ * __useGetExperimentLineQuery__
+ *
+ * To run a query within a React component, call `useGetExperimentLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetExperimentLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetExperimentLineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetExperimentLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetExperimentLineQuery, GetExperimentLineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetExperimentLineQuery, GetExperimentLineQueryVariables>(GetExperimentLineDocument, options);
+      }
+export function useGetExperimentLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetExperimentLineQuery, GetExperimentLineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetExperimentLineQuery, GetExperimentLineQueryVariables>(GetExperimentLineDocument, options);
+        }
+export type GetExperimentLineQueryHookResult = ReturnType<typeof useGetExperimentLineQuery>;
+export type GetExperimentLineLazyQueryHookResult = ReturnType<typeof useGetExperimentLineLazyQuery>;
+export type GetExperimentLineQueryResult = Apollo.QueryResult<GetExperimentLineQuery, GetExperimentLineQueryVariables>;
 export const ListExperimentsDocument = gql`
     query ListExperiments($pagination: OffsetPaginationInput, $filters: ExperimentFilter, $ordering: [ExperimentOrder!]) {
   experiments(pagination: $pagination, filters: $filters, ordering: $ordering) {
@@ -11883,7 +12009,11 @@ export type ListExperimentsLazyQueryHookResult = ReturnType<typeof useListExperi
 export type ListExperimentsQueryResult = Apollo.QueryResult<ListExperimentsQuery, ListExperimentsQueryVariables>;
 export const ExperimentsForWorldDocument = gql`
     query ExperimentsForWorld($world: ID!) {
-  experiments(filters: {world: $world}) {
+  experiments(
+    filters: {world: $world}
+    ordering: [{createdAt: ASC}]
+    pagination: {limit: 1}
+  ) {
     id
     name
   }
@@ -11952,6 +12082,45 @@ export function useGetFileLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetFileQueryHookResult = ReturnType<typeof useGetFileQuery>;
 export type GetFileLazyQueryHookResult = ReturnType<typeof useGetFileLazyQuery>;
 export type GetFileQueryResult = Apollo.QueryResult<GetFileQuery, GetFileQueryVariables>;
+export const GetFileLineDocument = gql`
+    query GetFileLine($id: ID!) {
+  file(id: $id) {
+    ...ListFile
+    folder {
+      id
+      name
+    }
+  }
+}
+    ${ListFileFragmentDoc}`;
+
+/**
+ * __useGetFileLineQuery__
+ *
+ * To run a query within a React component, call `useGetFileLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetFileLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetFileLineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetFileLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetFileLineQuery, GetFileLineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetFileLineQuery, GetFileLineQueryVariables>(GetFileLineDocument, options);
+      }
+export function useGetFileLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFileLineQuery, GetFileLineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetFileLineQuery, GetFileLineQueryVariables>(GetFileLineDocument, options);
+        }
+export type GetFileLineQueryHookResult = ReturnType<typeof useGetFileLineQuery>;
+export type GetFileLineLazyQueryHookResult = ReturnType<typeof useGetFileLineLazyQuery>;
+export type GetFileLineQueryResult = Apollo.QueryResult<GetFileLineQuery, GetFileLineQueryVariables>;
 export const GetFilesDocument = gql`
     query GetFiles($filters: FileFilter, $pagination: OffsetPaginationInput, $ordering: [FileOrder!]) {
   files(filters: $filters, pagination: $pagination, ordering: $ordering) {
@@ -11989,115 +12158,6 @@ export function useGetFilesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type GetFilesQueryHookResult = ReturnType<typeof useGetFilesQuery>;
 export type GetFilesLazyQueryHookResult = ReturnType<typeof useGetFilesLazyQuery>;
 export type GetFilesQueryResult = Apollo.QueryResult<GetFilesQuery, GetFilesQueryVariables>;
-export const GetFolderDocument = gql`
-    query GetFolder($id: ID!) {
-  folder(id: $id) {
-    ...Folder
-  }
-}
-    ${FolderFragmentDoc}`;
-
-/**
- * __useGetFolderQuery__
- *
- * To run a query within a React component, call `useGetFolderQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetFolderQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetFolderQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetFolderQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetFolderQuery, GetFolderQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetFolderQuery, GetFolderQueryVariables>(GetFolderDocument, options);
-      }
-export function useGetFolderLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFolderQuery, GetFolderQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetFolderQuery, GetFolderQueryVariables>(GetFolderDocument, options);
-        }
-export type GetFolderQueryHookResult = ReturnType<typeof useGetFolderQuery>;
-export type GetFolderLazyQueryHookResult = ReturnType<typeof useGetFolderLazyQuery>;
-export type GetFolderQueryResult = Apollo.QueryResult<GetFolderQuery, GetFolderQueryVariables>;
-export const GetFoldersDocument = gql`
-    query GetFolders($filters: FolderFilter, $pagination: OffsetPaginationInput, $ordering: [FolderOrder!]) {
-  folders(filters: $filters, pagination: $pagination, ordering: $ordering) {
-    ...ListFolder
-  }
-}
-    ${ListFolderFragmentDoc}`;
-
-/**
- * __useGetFoldersQuery__
- *
- * To run a query within a React component, call `useGetFoldersQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetFoldersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetFoldersQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *      ordering: // value for 'ordering'
- *   },
- * });
- */
-export function useGetFoldersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetFoldersQuery, GetFoldersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetFoldersQuery, GetFoldersQueryVariables>(GetFoldersDocument, options);
-      }
-export function useGetFoldersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFoldersQuery, GetFoldersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetFoldersQuery, GetFoldersQueryVariables>(GetFoldersDocument, options);
-        }
-export type GetFoldersQueryHookResult = ReturnType<typeof useGetFoldersQuery>;
-export type GetFoldersLazyQueryHookResult = ReturnType<typeof useGetFoldersLazyQuery>;
-export type GetFoldersQueryResult = Apollo.QueryResult<GetFoldersQuery, GetFoldersQueryVariables>;
-export const GetMyFoldersDocument = gql`
-    query GetMyFolders($filters: FolderFilter, $pagination: OffsetPaginationInput, $ordering: [FolderOrder!]) {
-  myfolders(filters: $filters, pagination: $pagination, ordering: $ordering) {
-    ...ListFolder
-  }
-}
-    ${ListFolderFragmentDoc}`;
-
-/**
- * __useGetMyFoldersQuery__
- *
- * To run a query within a React component, call `useGetMyFoldersQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetMyFoldersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetMyFoldersQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *      ordering: // value for 'ordering'
- *   },
- * });
- */
-export function useGetMyFoldersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetMyFoldersQuery, GetMyFoldersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetMyFoldersQuery, GetMyFoldersQueryVariables>(GetMyFoldersDocument, options);
-      }
-export function useGetMyFoldersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMyFoldersQuery, GetMyFoldersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetMyFoldersQuery, GetMyFoldersQueryVariables>(GetMyFoldersDocument, options);
-        }
-export type GetMyFoldersQueryHookResult = ReturnType<typeof useGetMyFoldersQuery>;
-export type GetMyFoldersLazyQueryHookResult = ReturnType<typeof useGetMyFoldersLazyQuery>;
-export type GetMyFoldersQueryResult = Apollo.QueryResult<GetMyFoldersQuery, GetMyFoldersQueryVariables>;
 export const HomePageDocument = gql`
     query HomePage {
   experiments: experiments(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
@@ -12105,6 +12165,9 @@ export const HomePageDocument = gql`
   }
   models: neuronModels(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
     ...ListNeuronModel
+  }
+  datasets: arrayDatasets(pagination: {limit: 1}) {
+    id
   }
 }
     ${ListExperimentFragmentDoc}
@@ -12371,6 +12434,44 @@ export function useDetailModelWorkspaceLazyQuery(baseOptions?: ApolloReactHooks.
 export type DetailModelWorkspaceQueryHookResult = ReturnType<typeof useDetailModelWorkspaceQuery>;
 export type DetailModelWorkspaceLazyQueryHookResult = ReturnType<typeof useDetailModelWorkspaceLazyQuery>;
 export type DetailModelWorkspaceQueryResult = Apollo.QueryResult<DetailModelWorkspaceQuery, DetailModelWorkspaceQueryVariables>;
+export const GetModelWorkspaceLineDocument = gql`
+    query GetModelWorkspaceLine($id: ID!) {
+  modelWorkspace(id: $id) {
+    ...ListModelWorkspace
+    mappings {
+      id
+    }
+  }
+}
+    ${ListModelWorkspaceFragmentDoc}`;
+
+/**
+ * __useGetModelWorkspaceLineQuery__
+ *
+ * To run a query within a React component, call `useGetModelWorkspaceLineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetModelWorkspaceLineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetModelWorkspaceLineQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetModelWorkspaceLineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetModelWorkspaceLineQuery, GetModelWorkspaceLineQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetModelWorkspaceLineQuery, GetModelWorkspaceLineQueryVariables>(GetModelWorkspaceLineDocument, options);
+      }
+export function useGetModelWorkspaceLineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetModelWorkspaceLineQuery, GetModelWorkspaceLineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetModelWorkspaceLineQuery, GetModelWorkspaceLineQueryVariables>(GetModelWorkspaceLineDocument, options);
+        }
+export type GetModelWorkspaceLineQueryHookResult = ReturnType<typeof useGetModelWorkspaceLineQuery>;
+export type GetModelWorkspaceLineLazyQueryHookResult = ReturnType<typeof useGetModelWorkspaceLineLazyQuery>;
+export type GetModelWorkspaceLineQueryResult = Apollo.QueryResult<GetModelWorkspaceLineQuery, GetModelWorkspaceLineQueryVariables>;
 export const ListModelWorkspacesDocument = gql`
     query ListModelWorkspaces($pagination: OffsetPaginationInput, $filters: ModelWorkspaceFilter, $ordering: [ModelWorkspaceOrder!]) {
   modelWorkspaces(pagination: $pagination, filters: $filters, ordering: $ordering) {
@@ -12443,6 +12544,41 @@ export function useDetailNeuronModelLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type DetailNeuronModelQueryHookResult = ReturnType<typeof useDetailNeuronModelQuery>;
 export type DetailNeuronModelLazyQueryHookResult = ReturnType<typeof useDetailNeuronModelLazyQuery>;
 export type DetailNeuronModelQueryResult = Apollo.QueryResult<DetailNeuronModelQuery, DetailNeuronModelQueryVariables>;
+export const MorphologyModelDocument = gql`
+    query MorphologyModel($id: ID!) {
+  neuronModel(id: $id) {
+    ...MorphologyModel
+  }
+}
+    ${MorphologyModelFragmentDoc}`;
+
+/**
+ * __useMorphologyModelQuery__
+ *
+ * To run a query within a React component, call `useMorphologyModelQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMorphologyModelQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMorphologyModelQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useMorphologyModelQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MorphologyModelQuery, MorphologyModelQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MorphologyModelQuery, MorphologyModelQueryVariables>(MorphologyModelDocument, options);
+      }
+export function useMorphologyModelLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MorphologyModelQuery, MorphologyModelQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MorphologyModelQuery, MorphologyModelQueryVariables>(MorphologyModelDocument, options);
+        }
+export type MorphologyModelQueryHookResult = ReturnType<typeof useMorphologyModelQuery>;
+export type MorphologyModelLazyQueryHookResult = ReturnType<typeof useMorphologyModelLazyQuery>;
+export type MorphologyModelQueryResult = Apollo.QueryResult<MorphologyModelQuery, MorphologyModelQueryVariables>;
 export const SectionDominanceDocument = gql`
     query SectionDominance($id: ID!, $weightAxial: Float, $weightCapacitance: Float, $weightConductance: Float) {
   neuronModel(id: $id) {
@@ -12641,12 +12777,13 @@ export const LayerPickerArrayDatasetsDocument = gql`
     pagination: $pagination
     ordering: [{createdAt: DESC}]
   ) {
-    ...ListArrayDataset
+    id
+    name
     axisNames
-    shape
+    valueUnit
   }
 }
-    ${ListArrayDatasetFragmentDoc}`;
+    `;
 
 /**
  * __useLayerPickerArrayDatasetsQuery__
@@ -13056,46 +13193,3 @@ export function useProfileFeedModelCollectionsLazyQuery(baseOptions?: ApolloReac
 export type ProfileFeedModelCollectionsQueryHookResult = ReturnType<typeof useProfileFeedModelCollectionsQuery>;
 export type ProfileFeedModelCollectionsLazyQueryHookResult = ReturnType<typeof useProfileFeedModelCollectionsLazyQuery>;
 export type ProfileFeedModelCollectionsQueryResult = Apollo.QueryResult<ProfileFeedModelCollectionsQuery, ProfileFeedModelCollectionsQueryVariables>;
-export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
-  arrayDatasets: arrayDatasets(
-    filters: {search: $search}
-    pagination: $pagination
-  ) {
-    ...ListArrayDataset
-  }
-  experiments: experiments(filters: {search: $search}, pagination: $pagination) {
-    ...ListExperiment
-  }
-}
-    ${ListArrayDatasetFragmentDoc}
-${ListExperimentFragmentDoc}`;
-
-/**
- * __useGlobalSearchQuery__
- *
- * To run a query within a React component, call `useGlobalSearchQuery` and pass it any options that fit your needs.
- * When your component renders, `useGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGlobalSearchQuery({
- *   variables: {
- *      search: // value for 'search'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useGlobalSearchQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-      }
-export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-        }
-export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
-export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
-export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  DetailNeuronModelFragment,
+  MorphologyModelFragment,
   SectionDominanceFragment,
   useSectionDominanceQuery,
 } from "../api/graphql";
@@ -120,7 +120,7 @@ export const buildImportanceColors = (
  * we keep showing the last good colors so the heatmap doesn't flicker away.
  */
 export const useImportanceColors = (
-  model: DetailNeuronModelFragment,
+  model: MorphologyModelFragment,
   weights: DominanceWeights,
 ): ImportanceColors => {
   const custom = !isDefaultWeights(weights);
@@ -133,8 +133,9 @@ export const useImportanceColors = (
       weightConductance: weights.conductance,
     },
     skip: !custom,
-    // Keep the previous heatmap visible while a new weighting resolves.
-    fetchPolicy: "cache-and-network",
+    // A weighting's heatmap is fixed for the model: going back to a weighting
+    // already seen reads it from the cache instead of asking again.
+    fetchPolicy: "cache-first",
   });
 
   const dominance =

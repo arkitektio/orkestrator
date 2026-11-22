@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import type {
   CompartmentFragment,
-  DetailNeuronModelFragment,
+  MorphologyModelFragment,
   SectionFragment,
 } from "../../api/graphql";
 import { type ImportanceColors, useImportanceColors } from "../../lib/importance";
@@ -18,7 +18,7 @@ import { useMorphologyStore } from "./stores/morphologyStore";
  * is what the server said.
  */
 export type MorphologyData = {
-  model: DetailNeuronModelFragment;
+  model: MorphologyModelFragment;
   morphology: Morphology;
   network: NetworkLayout;
   /** Compartment id → CSS colour, for the compartments that set one. */
@@ -48,7 +48,7 @@ export const MorphologyDataProvider = ({
   focus: focusIds,
   children,
 }: {
-  model: DetailNeuronModelFragment;
+  model: MorphologyModelFragment;
   focus?: readonly string[] | null;
   children: React.ReactNode;
 }) => {

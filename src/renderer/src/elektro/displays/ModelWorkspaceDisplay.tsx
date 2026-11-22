@@ -1,8 +1,8 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
-import { useDetailModelWorkspaceQuery } from "../api/graphql";
+import { useGetModelWorkspaceLineQuery } from "../api/graphql";
 
 export const ModelWorkspaceDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useDetailModelWorkspaceQuery({
+  const { data } = useGetModelWorkspaceLineQuery({
     variables: {
       id: props.id,
     },

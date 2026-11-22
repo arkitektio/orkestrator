@@ -516,6 +516,11 @@ type ArrayDataset {
   experimentLayers: [ExperimentLayer!]!
 
   """
+  The experiments drawing this dataset, through any layer over any of its lenses: each once, oldest first. `experimentLayers` lists the layers themselves
+  """
+  experiments: [Experiment!]!
+
+  """
   The files written out of this dataset: an NWB export, a CSV of samples. The mirror of `sourceFiles`
   """
   exports(filters: FileLinkFilter): [FileLink!]!

@@ -18,9 +18,7 @@ type PageDataset = GetArrayDatasetQuery["arrayDataset"];
  * Sections with nothing to say are left out.
  */
 export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
-  const experiments = [
-    ...new Map(dataset.experimentLayers.map((layer) => [layer.experiment.id, layer.experiment])).values(),
-  ];
+  const experiments = dataset.experiments;
   const levels = [...dataset.dataArrays].sort((a, b) => a.level - b.level);
 
   return (

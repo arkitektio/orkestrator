@@ -1,5 +1,5 @@
 import type { ApolloError } from "@apollo/client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { ElektroArrayDataset } from "@/core/linkers";
@@ -30,16 +30,8 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
   const dataset = data.arrayDataset;
   const [selectedExperimentId, setSelectedExperimentId] = useState<string>();
 
-  // Every experiment drawing the dataset, once — a dataset drawn by three layers
-  // of one experiment is in ONE experiment.
-  const experiments = useMemo(
-    () => [
-      ...new Map(
-        dataset.experimentLayers.map((layer) => [layer.experiment.id, layer.experiment]),
-      ).values(),
-    ],
-    [dataset.experimentLayers],
-  );
+  // Every experiment drawing the dataset, once (the server's `experiments`).
+  const experiments = dataset.experiments;
 
   const handleExperimentCreated = useCallback(
     (experimentId: string) => setSelectedExperimentId(experimentId),

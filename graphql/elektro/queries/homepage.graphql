@@ -6,4 +6,9 @@ query HomePage {
   models: neuronModels(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
     ...ListNeuronModel
   }
+
+  # Recordings alone are something too: the page lists them first.
+  datasets: arrayDatasets(pagination: { limit: 1 }) {
+    id
+  }
 }

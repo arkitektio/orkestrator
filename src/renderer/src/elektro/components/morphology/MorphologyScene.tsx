@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useRef, useState } from "react";
-import type { DetailNeuronModelFragment } from "../../api/graphql";
+import type { MorphologyModelFragment } from "../../api/graphql";
 import { NeuronModelTree } from "../tree/NeuronModelTree";
 import { MorphologyModeControls } from "./chrome/MorphologyModeControls";
 import { MorphologyScaleBar } from "./chrome/MorphologyScaleBar";
@@ -47,7 +47,7 @@ const Provider = ({
   embedded = false,
   children,
 }: {
-  model: DetailNeuronModelFragment;
+  model: MorphologyModelFragment;
   /**
    * Section ids to zoom in on (a cell's, or one section) — framed and orbited,
    * the rest of the model kept as context. Omit for the whole model.
@@ -203,13 +203,13 @@ const MiniViewport = () => {
 
 const LayersSidebar = () => <MorphologyLayerCards />;
 
-const Embedded = ({ model }: { model: DetailNeuronModelFragment }) => (
+const Embedded = ({ model }: { model: MorphologyModelFragment }) => (
   <Provider key={model.id} model={model} embedded>
     <Viewport showDisplaySwitch={false} />
   </Provider>
 );
 
-const Mini = ({ model, focus }: { model: DetailNeuronModelFragment; focus?: readonly string[] | null }) => (
+const Mini = ({ model, focus }: { model: MorphologyModelFragment; focus?: readonly string[] | null }) => (
   <Provider key={model.id} model={model} focus={focus} embedded>
     <MiniViewport />
   </Provider>

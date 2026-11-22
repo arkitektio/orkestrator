@@ -1,4 +1,4 @@
-import { DetailNeuronModelFragment } from "../../api/graphql";
+import { MorphologyModelFragment } from "../../api/graphql";
 import { rgbaToCss } from "../../lib/color";
 import { SectionEdge, SectionNode } from "./types";
 
@@ -21,7 +21,7 @@ const getFallbackColor = (index: number) =>
  * when no color is set. Encounter order is stable, so colors are deterministic.
  */
 export const buildCompartmentColors = (
-  model: DetailNeuronModelFragment,
+  model: MorphologyModelFragment,
 ): Map<string, string> => {
   const colors = new Map<string, string>();
   let index = 0;
@@ -48,7 +48,7 @@ export type CompartmentLegendEntry = {
  * each with its resolved color and section count, sorted by id.
  */
 export const buildCompartmentLegend = (
-  model: DetailNeuronModelFragment,
+  model: MorphologyModelFragment,
 ): CompartmentLegendEntry[] => {
   const colors = buildCompartmentColors(model);
   const counts = new Map<string, number>();
@@ -74,7 +74,7 @@ export const buildCompartmentLegend = (
  * compartment fall back to a neutral grey.
  */
 export const sectionsToNodes = (
-  model: DetailNeuronModelFragment,
+  model: MorphologyModelFragment,
 ): SectionNode[] => {
   const compartmentColor = buildCompartmentColors(model);
 
@@ -107,7 +107,7 @@ export const sectionsToNodes = (
  * missing node.
  */
 export const sectionsToEdges = (
-  model: DetailNeuronModelFragment,
+  model: MorphologyModelFragment,
 ): SectionEdge[] => {
   const sectionIds = new Set<string>();
   model.config.cells.forEach((cell) =>

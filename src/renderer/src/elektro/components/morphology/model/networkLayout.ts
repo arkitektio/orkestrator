@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { DetailNeuronModelFragment } from "../../../api/graphql";
+import type { MorphologyModelFragment } from "../../../api/graphql";
 import { toBase } from "@/core/util/quantities";
 import { Morphology, perpendicularTo, pointAlong } from "./buildMorphology";
 
@@ -18,19 +18,19 @@ import { Morphology, perpendicularTo, pointAlong } from "./buildMorphology";
  */
 
 export type NetSynapse = NonNullable<
-  DetailNeuronModelFragment["config"]["netSynapses"]
+  MorphologyModelFragment["config"]["netSynapses"]
 >[number];
 export type NetStimulator = NonNullable<
-  DetailNeuronModelFragment["config"]["netStimulators"]
+  MorphologyModelFragment["config"]["netStimulators"]
 >[number];
 export type NetConnection = NonNullable<
-  DetailNeuronModelFragment["config"]["netConnections"]
+  MorphologyModelFragment["config"]["netConnections"]
 >[number];
 
 /** The network-layer slice of a model config (viewer passes `model.config`; the
  *  editor passes its live net state). */
 export type NetData = Pick<
-  DetailNeuronModelFragment["config"],
+  MorphologyModelFragment["config"],
   "netSynapses" | "netStimulators" | "netConnections"
 >;
 

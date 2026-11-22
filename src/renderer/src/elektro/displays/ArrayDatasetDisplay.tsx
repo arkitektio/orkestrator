@@ -1,14 +1,14 @@
 import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { Activity } from "lucide-react";
-import { useGetArrayDatasetQuery } from "../api/graphql";
+import { useGetArrayDatasetLineQuery } from "../api/graphql";
 
 /**
  * `@elektro/arraydataset` elsewhere: its axes and, for a simulation's output,
- * the model it simulated. Same query as its hover card, so one cache entry.
+ * the model it simulated: a list row's facts, not the dataset page's.
  */
 export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetArrayDatasetQuery({ variables: { id: props.id } });
+  const { data } = useGetArrayDatasetLineQuery({ variables: { id: props.id } });
   const dataset = data?.arrayDataset;
   if (!dataset) return <DisplayLinePlaceholder {...props} icon={Activity} />;
 

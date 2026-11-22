@@ -11,7 +11,7 @@ import "@xyflow/react/dist/style.css";
 import ELK from "elkjs/lib/elk.bundled.js";
 import { Maximize, Minus, Plus } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
-import { DetailNeuronModelFragment } from "../../api/graphql";
+import { MorphologyModelFragment } from "../../api/graphql";
 import {
   DEFAULT_WEIGHTS,
   DominanceWeights,
@@ -44,7 +44,7 @@ const treeLayout = {
 };
 
 export type Props = {
-  model: DetailNeuronModelFragment;
+  model: MorphologyModelFragment;
   /**
    * Hosted inside the neuron viewport (the "Tree" display mode) rather than on
    * its own page: the zoom controls move out of the top-left corner, which the

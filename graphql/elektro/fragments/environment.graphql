@@ -8,11 +8,12 @@ fragment ModEnvironment on ModEnvironment {
 }
 
 
+# A list card counts the mechanisms; their parameters are the detail page's.
 fragment ListModEnvironment on ModEnvironment {
   id
   name
   description
   mechanisms {
-    ...Mechanism
+    id
   }
 }

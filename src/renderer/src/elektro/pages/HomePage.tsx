@@ -27,7 +27,7 @@ const RECENT = [{ createdAt: Ordering.Desc }];
  * and experiments. Search, sort and date ranges are the list pages'.
  */
 const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
-  const isEmpty = data?.experiments.length == 0 && data?.models.length == 0;
+  const isEmpty = data?.experiments.length == 0 && data?.models.length == 0 && data?.datasets.length == 0;
 
   return (
     <PageLayout
