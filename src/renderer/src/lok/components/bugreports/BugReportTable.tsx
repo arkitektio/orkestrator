@@ -7,9 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Timestamp from "@/core/ui/timestamp";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useState } from "react";
-import { useBugReportsQuery, type BugReportFilter } from "../../api/graphql";
+import { useBugReportsQuery, type BugReportFilter, type BugReportsQueryVariables } from "../../api/graphql";
+import { growingWindowFetchPolicy } from "../../lib/growingWindow";
 
 const PAGE = 30;
+
+/** The window asked for: what is shown plus one row that says whether there is more. */
+const windowFetchPolicy = growingWindowFetchPolicy<BugReportsQueryVariables>(
+  (variables) => variables?.pagination?.limit ?? undefined,
+  PAGE + 1,
+);
 
 type Show = "open" | "resolved" | "all";
 
@@ -37,20 +44,41 @@ export const BugReportTable = ({
   const [show, setShow] = useState<Show>("open");
   const [term, setTerm] = useState("");
   const [limit, setLimit] = useState(PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const needle = term.trim();
 
-  const { data, previousData, error, refetch } = useBugReportsQuery({
+  // Shown rows plus one that says whether there is more. "Show more" fetches
+  // the next page on its own (lok caps a page at 100) and reads the grown
+  // window from the cache.
+  const { data, previousData, error, refetch, fetchMore } = useBugReportsQuery({
     variables: {
       filters: {
         ...filters,
         ...(show === "all" ? {} : { resolved: show === "resolved" }),
-        ...(term.trim() ? { search: term.trim() } : {}),
+        ...(needle ? { search: needle } : {}),
       },
       pagination: { limit: limit + 1, offset: 0 },
     },
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: windowFetchPolicy,
   });
 
-  if (error) return <QueryError error={error} onRetry={() => refetch()} resource="list of bug reports" />;
+  const showMore = async () => {
+    setLoadingMore(true);
+    try {
+      await fetchMore({ variables: { pagination: { offset: limit + 1, limit: PAGE } } });
+      setLimit((value) => value + PAGE);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const retry = () => {
+    setLimit(PAGE);
+    void refetch({ pagination: { limit: PAGE + 1, offset: 0 } });
+  };
+
+  if (error) return <QueryError error={error} onRetry={retry} resource="list of bug reports" />;
 
   const rows = (data ?? previousData)?.bugReports ?? [];
   const shown = rows.slice(0, limit);
@@ -65,7 +93,11 @@ export const BugReportTable = ({
         {search && (
           <Input
             value={term}
-            onChange={(event) => setTerm(event.target.value)}
+            onChange={(event) => {
+              // A new filter starts at the first page again.
+              setLimit(PAGE);
+              setTerm(event.target.value);
+            }}
             placeholder="Search reports"
             className="h-8 w-56"
           />
@@ -75,7 +107,11 @@ export const BugReportTable = ({
           size="sm"
           variant="outline"
           value={show}
-          onValueChange={(value) => value && setShow(value as Show)}
+          onValueChange={(value) => {
+            if (!value) return;
+            setLimit(PAGE);
+            setShow(value as Show);
+          }}
         >
           <ToggleGroupItem value="open">Open</ToggleGroupItem>
           <ToggleGroupItem value="resolved">Resolved</ToggleGroupItem>
@@ -130,7 +166,7 @@ export const BugReportTable = ({
         </Table>
       )}
       {rows.length > limit && (
-        <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + PAGE)}>
+        <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => void showMore()}>
           Show more
         </Button>
       )}

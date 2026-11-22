@@ -1,11 +1,3 @@
-fragment InstanceAlias on InstanceAlias {
-  host
-  port
-  ssl
-  challenge
-  kind
-}
-
 fragment ListInstanceAlias on InstanceAlias {
   host
   port

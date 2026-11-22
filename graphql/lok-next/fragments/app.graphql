@@ -4,7 +4,9 @@ fragment DetailApp on App {
   logo {
     presignedUrl
   }
-  releases {
+  # How many releases it has, and the newest ones.
+  releaseCount
+  releases(pagination: { limit: 50 }, ordering: [{ id: DESC }]) {
     ...ListRelease
   }
 }

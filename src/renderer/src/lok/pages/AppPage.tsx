@@ -37,7 +37,7 @@ export const AppPage = asDetailQueryRoute(useDetailAppQuery, ({ data }) => {
                   <CopyButton value={app.identifier} title="Copy identifier" />
                 </span>,
               ],
-              ["Releases", app.releases.length],
+              ["Releases", app.releaseCount],
               ["App ID", <span className="break-all font-mono text-xs">{app.id}</span>],
             ]}
           />
@@ -51,12 +51,12 @@ export const AppPage = asDetailQueryRoute(useDetailAppQuery, ({ data }) => {
           icon={<LogoOrIcon src={app.logo?.presignedUrl} fallback={<AppWindow />} />}
           title={app.identifier}
           description={[
-            `${app.releases.length} ${app.releases.length === 1 ? "release" : "releases"}`,
+            `${app.releaseCount} ${app.releaseCount === 1 ? "release" : "releases"}`,
             ...(latest ? [`latest ${latest}`] : []),
           ].join(" · ")}
         />
 
-        <DetailSection title="Releases" count={app.releases.length}>
+        <DetailSection title="Releases" count={app.releaseCount}>
           <DetailGrid>
             {app.releases.map((release) => (
               <ReleaseCard key={release.id} item={release} />

@@ -5,3 +5,11 @@ query CollaborationLinks($collaboration: CollaborationRefInput) {
     ...CollaborationLink
   }
 }
+
+# Invites to become a member of the active organization (never collaboration
+# links), newest first: `valid: true` for the open ones.
+query TeamInvites($filters: InviteFilter, $pagination: OffsetPaginationInput) {
+  invites(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...TeamInvite
+  }
+}

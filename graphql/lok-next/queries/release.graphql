@@ -1,22 +1,6 @@
-query Releases {
-  releases {
+query Releases($filters: ReleaseFilter, $pagination: OffsetPaginationInput) {
+  releases(filters: $filters, pagination: $pagination, ordering: [{ id: DESC }]) {
     ...ListRelease
-  }
-}
-
-query Release(
-  $identifier: AppIdentifier
-  $version: Version
-  $id: ID
-  $clientId: ID
-) {
-  release(
-    identifier: $identifier
-    version: $version
-    id: $id
-    clientId: $clientId
-  ) {
-    ...DetailRelease
   }
 }
 

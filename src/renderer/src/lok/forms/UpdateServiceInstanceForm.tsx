@@ -19,6 +19,8 @@ import {
   useUserOptionsLazyQuery,
 } from "../api/graphql";
 
+const PICKER_LIMIT = 20;
+
 export const UpdateServiceInstanceForm = (props: {
   instance: Partial<ServiceInstanceFragment>;
 }) => {
@@ -28,8 +30,13 @@ export const UpdateServiceInstanceForm = (props: {
     errorTitle: "Couldn't update the service instance",
   });
 
-  const [userSearch] = useUserOptionsLazyQuery();
-  const [groupSearch] = useGroupOptionsLazyQuery();
+  const [searchUsers] = useUserOptionsLazyQuery();
+  const [searchGroups] = useGroupOptionsLazyQuery();
+  // A page of matches while typing; every picked one when they are looked up.
+  const userSearch = ({ variables }: { variables: { search?: string; values?: string[] } }) =>
+    searchUsers({ variables: { ...variables, limit: variables.values?.length || PICKER_LIMIT } });
+  const groupSearch = ({ variables }: { variables: { search?: string; values?: string[] } }) =>
+    searchGroups({ variables: { ...variables, limit: variables.values?.length || PICKER_LIMIT } });
 
   const form = useForm<UpdateServiceInstanceMutationVariables["input"]>({
     defaultValues: {

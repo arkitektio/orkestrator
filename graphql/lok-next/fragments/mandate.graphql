@@ -33,6 +33,11 @@ fragment ListMandate on Mandate {
     id
     username
   }
+  clientCount
+}
+
+fragment DetailMandate on Mandate {
+  ...ListMandate
   clients {
     id
     clientId
@@ -42,10 +47,6 @@ fragment ListMandate on Mandate {
       name
     }
   }
-}
-
-fragment DetailMandate on Mandate {
-  ...ListMandate
   hub {
     id
     name

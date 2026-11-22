@@ -22,6 +22,11 @@ import { Check, Copy, Link2, ShieldCheck, UserPlus, Users } from "lucide-react";
 import {
   MembershipRequestFragment,
   OrganizationFragment,
+  PendingMembershipRequestsDocument,
+  type PendingMembershipRequestsQuery,
+  TeamInvitesDocument,
+  type TeamInviteFragment,
+  useTeamInvitesQuery,
   useCancelInviteMutation,
   useMyContextQuery,
   useOrganizationQuery,
@@ -29,6 +34,8 @@ import {
   useTeamCountsQuery,
   useNewMembersQuery,
   useTeamMembersQuery,
+  type TeamMembersQueryVariables,
+  type TeamInvitesQueryVariables,
   useUpdateOrganizationMutation,
   useWatchMembershipRequestsSubscription,
 } from "../api/graphql";
@@ -37,8 +44,10 @@ import { useLokImageUpload } from "../hooks/useLokImageUpload";
 import MemberCard from "../components/cards/MemberCard";
 import { CreateInviteDialog } from "../dialogs/CreateInviteDialog";
 import { anyRole, orderRoles, roleGroupFilters, sortMembers, type RoleGroupQuery } from "../lib/teamRoles";
+import { growingWindowFetchPolicy } from "../lib/growingWindow";
+import { applyMembershipRequestEvent } from "../lib/membershipRequests";
 
-type Invite = OrganizationFragment["invites"][number];
+type Invite = TeamInviteFragment;
 
 /** An invite's link; a click copies it and the icon flips to a check. */
 const InviteLink = ({ url }: { url: string }) => {
@@ -57,8 +66,36 @@ const InviteLink = ({ url }: { url: string }) => {
   );
 };
 
-/** Every invite the organization made, accepted ones included: the sidebar's history. */
-const InviteHistory = ({ invites }: { invites: Invite[] }) => {
+const HISTORY_PAGE = 30;
+/** How many open invites "Needs you" lists. */
+const OPEN_INVITES = 50;
+const historyFetchPolicy = growingWindowFetchPolicy<TeamInvitesQueryVariables>(
+  (variables) => variables?.pagination?.limit ?? undefined,
+  HISTORY_PAGE + 1,
+);
+
+/** Every invite to become a member, accepted ones included, newest first: the sidebar's history. */
+const InviteHistory = () => {
+  const [limit, setLimit] = useState(HISTORY_PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // Shown rows plus one that says whether there is more.
+  const { data, fetchMore } = useTeamInvitesQuery({
+    variables: { filters: { grantsCollaborations: false }, pagination: { offset: 0, limit: limit + 1 } },
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: historyFetchPolicy,
+  });
+  const rows = data?.invites ?? [];
+  const invites = rows.slice(0, limit);
+  const showMore = async () => {
+    setLoadingMore(true);
+    try {
+      await fetchMore({ variables: { pagination: { offset: limit + 1, limit: HISTORY_PAGE } } });
+      setLimit(limit + HISTORY_PAGE);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+  if (!data) return null;
   if (invites.length === 0) {
     return <p className="p-4 text-sm text-muted-foreground">No invites yet.</p>;
   }
@@ -79,6 +116,11 @@ const InviteHistory = ({ invites }: { invites: Invite[] }) => {
           <InviteLink url={invite.inviteUrl} />
         </div>
       ))}
+      {rows.length > limit && (
+        <Button variant="ghost" size="sm" className="mt-1" disabled={loadingMore} onClick={() => void showMore()}>
+          Show more
+        </Button>
+      )}
     </div>
   );
 };
@@ -119,7 +161,8 @@ const RequestRow = ({ request }: { request: MembershipRequestFragment }) => {
 
 /** One open invite: the roles it grants, until when, its link, and a way to take it back. */
 const InviteRow = ({ invite }: { invite: Invite }) => {
-  const [cancel, { loading }] = useCancelInviteMutation();
+  // The open invites are a filtered list: it is read again without this one.
+  const [cancel, { loading }] = useCancelInviteMutation({ refetchQueries: [TeamInvitesDocument] });
   const roles = invite.roles.map((role) => role.identifier).join(" · ");
   return (
     <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2">
@@ -206,6 +249,7 @@ const RoleHeading = ({
 
 /** How many members a role's group shows before "Show more". */
 const GROUP_PAGE = 48;
+const teamWindowFetchPolicy = growingWindowFetchPolicy<TeamMembersQueryVariables>((variables) => variables?.limit, GROUP_PAGE);
 /** How many of the newest members "New this month" shows. */
 const NEW_SHOWN = 8;
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
@@ -254,11 +298,24 @@ const RoleGroupSection = ({
   onCount: (key: string, count: number) => void;
 }) => {
   const [limit, setLimit] = useState(GROUP_PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const key = group.role?.id ?? "none";
-  const { data } = useTeamMembersQuery({
-    variables: { organization, filters: group.filters, limit },
+  // The shown window grows a page at a time: each page is fetched on its own
+  // (lok caps a page at 100) and the window is read from the cache.
+  const { data, fetchMore } = useTeamMembersQuery({
+    variables: { organization, filters: group.filters, offset: 0, limit },
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: teamWindowFetchPolicy,
   });
+  const showMore = async () => {
+    setLoadingMore(true);
+    try {
+      await fetchMore({ variables: { offset: limit, limit: GROUP_PAGE } });
+      setLimit(limit + GROUP_PAGE);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const count = data?.membershipStats.count;
   useEffect(() => {
     if (count !== undefined) onCount(key, count);
@@ -275,7 +332,7 @@ const RoleGroupSection = ({
         ))}
       </div>
       {members.length < count && (
-        <Button variant="ghost" size="sm" className="mt-2" onClick={() => setLimit(limit + GROUP_PAGE)}>
+        <Button variant="ghost" size="sm" className="mt-2" disabled={loadingMore} onClick={() => void showMore()}>
           Show more ({count - members.length})
         </Button>
       )}
@@ -303,16 +360,29 @@ const TeamHomePage = () => {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   // Inviting, the invites themselves and the requests are for the organization's admins.
   const isAdmin = useHasRoles(ADMIN_ROLE);
-  // The open requests, filtered by the server, and read again when one
-  // arrives or is answered (instead of on focus).
-  const { data: requested, refetch: refetchRequests } = usePendingMembershipRequestsQuery({
+  // The open requests, filtered by the server, and kept current by the
+  // event that carries each new or answered one.
+  const { data: requested } = usePendingMembershipRequestsQuery({
     skip: !organizationId || !isAdmin,
     fetchPolicy: "cache-and-network",
   });
   useWatchMembershipRequestsSubscription({
     skip: !organizationId || !isAdmin,
-    onData: () => void refetchRequests(),
+    onData: ({ client, data: event }) => {
+      const change = event.data?.membershipRequests;
+      if (!change) return;
+      client.cache.updateQuery({ query: PendingMembershipRequestsDocument }, (current: PendingMembershipRequestsQuery | null) =>
+        current ? { membershipRequests: applyMembershipRequestEvent(current.membershipRequests, change) } : current,
+      );
+    },
   });
+  // The invites nobody took yet, for "Needs you".
+  const { data: open } = useTeamInvitesQuery({
+    variables: { filters: { valid: true, grantsCollaborations: false }, pagination: { offset: 0, limit: OPEN_INVITES } },
+    skip: !organizationId || !isAdmin,
+    fetchPolicy: "cache-and-network",
+  });
+  const openInvites = open?.invites ?? [];
   const resolve = useLokResolve();
   const [updateOrganization] = useUpdateOrganizationMutation();
   // Lands on `OrganizationProfile.avatar`, the one logo field lok keeps; lok
@@ -368,7 +438,6 @@ const TeamHomePage = () => {
   };
 
   const openRequests = requested?.membershipRequests ?? [];
-  const openInvites = organization.invites.filter((invite) => !invite.acceptedBy && invite.valid);
 
   const logo = organization.profile.avatar ?? organization.avatar;
   const about = organization.description || organization.profile.bio;
@@ -403,7 +472,7 @@ const TeamHomePage = () => {
           </Sidebars.Tab>
           {isAdmin && (
             <Sidebars.Tab label="Invites">
-              <InviteHistory invites={organization.invites} />
+              <InviteHistory />
             </Sidebars.Tab>
           )}
           <Sidebars.Tab label="Help">

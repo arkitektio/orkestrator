@@ -36,12 +36,6 @@ query GetDevice($id: ID!) {
 }
 
 
-query GetDeviceByDeviceId($id: ID!) {
-  deviceByDeviceId(id: $id) {
-    ...DetailDevice
-  }
-}
-
 # One device's chip by its device id: what the batcher writes each answer as.
 query DeviceChip($id: ID!) {
   deviceByDeviceId(id: $id) {

@@ -34,10 +34,13 @@ type App {
   """The name of the app"""
   name: String!
 
+  """How many releases the app has."""
+  releaseCount: Int!
+
   """
   The releases of the app. A release is a version of the app that can be installed by a user.
   """
-  releases(ordering: [ReleaseOrdering!]! = []): [Release!]!
+  releases(filters: ReleaseFilter, ordering: [ReleaseOrdering!]! = [], pagination: OffsetPaginationInput): [Release!]!
 }
 
 """App(id, name, identifier, organization, logo)"""
@@ -531,6 +534,8 @@ input DeleteBugReportInput {
 
 """Device(id, node_id, name, organization)"""
 type Device {
+  """How many clients run on this device."""
+  clientCount: Int!
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
 
   """The device groups that belong to this device."""
@@ -862,6 +867,11 @@ input InviteFilter {
 
   """Only the invites granting this collaboration."""
   collaboration: CollaborationRefInput
+
+  """
+  Only the links that grant collaborations (true), or only the invites to become a member (false).
+  """
+  grantsCollaborations: Boolean
   ids: [ID!]
   search: String
   status: String
@@ -1012,6 +1022,9 @@ type Mandate {
   """Who may use the mandate."""
   claimant: MandateClaimant!
 
+  """How many clients are logged in with the key."""
+  clientCount: Int!
+
   """The clients logged in with the key, one per device."""
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
   createdAt: DateTime!
@@ -1095,9 +1108,30 @@ input MandateFilter {
   DISTINCT: Boolean
   NOT: MandateFilter
   OR: MandateFilter
+
+  """Only the agent mandates this app (by identifier) may issue keys under."""
+  agentIdentifier: AppIdentifier
+
+  """
+  Only the mandates whose clients may (true) or may not (false) ask for a mesh key.
+  """
+  allowMesh: Boolean
+
+  """
+  Only the mandates this claimant may use: KEY (keyed) or AGENT (an agent app issues keys under it).
+  """
+  claimant: MandateClaimant
+
+  """
+  Only the mandates issued under a parent agent mandate (true), or only the top-level ones (false).
+  """
+  hasParent: Boolean
   ids: [ID!]
   live: Boolean
   search: String
+
+  """Only the mandates admitting this app (by identifier, exact)."""
+  subjectIdentifier: AppIdentifier
 }
 
 input MandateOrdering @oneOf {
@@ -1579,7 +1613,7 @@ type Query {
   organization(id: ID!): Organization!
   organizations(filters: OrganizationFilter, ordering: [OrganizationOrdering!]! = [], pagination: OffsetPaginationInput): [Organization!]!
   release(clientId: ID = null, id: ID = null, identifier: AppIdentifier = null, version: Version = null): Release!
-  releases(ordering: [ReleaseOrdering!]! = []): [Release!]!
+  releases(filters: ReleaseFilter, ordering: [ReleaseOrdering!]! = [], pagination: OffsetPaginationInput): [Release!]!
   role(id: ID!): Role!
   roles(filters: RoleFilter, ordering: [RoleOrdering!]! = [], pagination: OffsetPaginationInput): [Role!]!
   scopes: [Scope!]!
@@ -1604,6 +1638,9 @@ A Release is a version of an app. Releases might change over time. E.g. a releas
 type Release {
   """The app that this release belongs to."""
   app: App!
+
+  """How many clients run the release."""
+  clientCount: Int!
 
   """The clients of the release"""
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
@@ -1633,6 +1670,25 @@ type Release {
   The version of the release. This should be a string that identifies the version of the release. We enforce semantic versioning notation. E.g. `0.1.0`. The version is unique per app.
   """
   version: Version!
+}
+
+"""
+Release(id, app, version, is_latest, is_dev, name, logo, scopes, requirements)
+"""
+input ReleaseFilter {
+  AND: ReleaseFilter
+  DISTINCT: Boolean
+  NOT: ReleaseFilter
+  OR: ReleaseFilter
+
+  """Only the releases of these apps."""
+  apps: [ID!]
+  ids: [ID!]
+
+  """
+  Releases whose version, name or app name or identifier contain this (any case).
+  """
+  search: String
 }
 
 input ReleaseOrdering @oneOf {

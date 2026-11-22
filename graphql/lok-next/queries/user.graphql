@@ -1,9 +1,3 @@
-query Me {
-  me {
-    ...DetailUser
-  }
-}
-
 query User($id: ID!) {
   user(id: $id) {
     ...DetailUser
@@ -27,25 +21,21 @@ query UserChip($id: ID!) {
   }
 }
 
-query DetailUser($id: ID!) {
-  user(id: $id) {
-    ...DetailUser
-  }
-}
-
 query Users($filters: UserFilter, $pagination: OffsetPaginationInput) {
   users(filters: $filters, pagination: $pagination) {
     ...ListUser
   }
 }
 
-query UserOptions($search: String, $values: [ID!]) {
-  options: users(filters: { search: $search, ids: $values }) {
+# A picker's options: a page of matches, or the picked `values` (pass their count as `limit`).
+query UserOptions($search: String, $values: [ID!], $limit: Int! = 20) {
+  options: users(filters: { search: $search, ids: $values }, pagination: { limit: $limit }) {
     value: id
     label: username
   }
 }
 
+# The signed-in user, as the record page names them.
 query Profile {
   me {
     ...MeUser

@@ -10,12 +10,6 @@ query DetailClient($id: ID!) {
   }
 }
 
-query MyManagedClients($kind: ClientKind!) {
-  myManagedClients(kind: $kind) {
-    ...ListClient
-  }
-}
-
 query Client($clientId: ID!) {
   client(clientId: $clientId) {
     ...DetailClient

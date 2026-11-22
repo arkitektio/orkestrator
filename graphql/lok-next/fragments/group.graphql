@@ -1,14 +1,3 @@
-fragment DetailGroup on Group {
-  id
-  name
-  users {
-    ...ListUser
-  }
-  profile {
-    ...GroupProfile
-  }
-}
-
 fragment ListGroup on Group {
   id
   name

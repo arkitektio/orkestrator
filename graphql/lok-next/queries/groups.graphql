@@ -1,18 +1,7 @@
-query GroupOptions($search: String, $values: [ID!]) {
-  options: groups(filters: { search: $search, ids: $values }) {
+# A picker's options: a page of matches, or the picked `values` (pass their count as `limit`).
+query GroupOptions($search: String, $values: [ID!], $limit: Int! = 20) {
+  options: groups(filters: { search: $search, ids: $values }, pagination: { limit: $limit }) {
     value: id
     label: name
-  }
-}
-
-query DetailGroup($id: ID!) {
-  group(id: $id) {
-    ...DetailGroup
-  }
-}
-
-query Groups($filters: GroupFilter, $pagination: OffsetPaginationInput) {
-  groups(filters: $filters, pagination: $pagination) {
-    ...ListGroup
   }
 }

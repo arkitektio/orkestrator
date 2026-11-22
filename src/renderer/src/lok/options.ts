@@ -22,7 +22,9 @@ export const LOK_OPTION_SOURCES: OptionSource[] = [
     search: async (client, { search, values }) => {
       const { data } = await client.query<UserOptionsQuery, UserOptionsQueryVariables>({
         query: UserOptionsDocument,
-        variables: { search: search || undefined, values: values?.length ? values : undefined },
+        variables: values?.length
+          ? { values, limit: values.length }
+          : { search: search || undefined, limit: SEARCH_LIMIT },
       });
       return data?.options ?? [];
     },

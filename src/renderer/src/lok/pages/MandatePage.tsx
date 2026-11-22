@@ -80,7 +80,7 @@ export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => 
               ["Only for operator", mandate.agentUser?.username],
               [
                 "Instances",
-                `${mandate.clients.length}${mandate.maxClients != null ? ` of at most ${mandate.maxClients}` : ""}`,
+                `${mandate.clientCount}${mandate.maxClients != null ? ` of at most ${mandate.maxClients}` : ""}`,
               ],
               ["Granted", <Timestamp date={mandate.createdAt} relative />],
               [status === "expired" ? "Expired" : "Expires", mandate.expiresAt && <Timestamp date={mandate.expiresAt} relative />],

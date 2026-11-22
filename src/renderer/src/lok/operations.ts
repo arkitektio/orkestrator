@@ -1,5 +1,6 @@
 import type { OperationHandler } from "@/core/modules/host/operations";
 import type { JSONObject } from "@/core/types";
+import { SERVER_PAGE_CAP } from "@/core/connection/graphql/cachePolicies";
 import {
   BugReportsDocument,
   CreateBugReportDocument,
@@ -10,9 +11,9 @@ import {
   type CollaborationLinksQueryVariables,
   type CollaborationLinkFragment,
   CreateMandateDocument,
-  GetMandateDocument,
-  type GetMandateQuery,
-  type GetMandateQueryVariables,
+  MandateStatusesDocument,
+  type MandateStatusesQuery,
+  type MandateStatusesQueryVariables,
   type CreateMandateMutation,
   type CreateMandateMutationVariables,
   IsMemberOfDocument,
@@ -105,19 +106,24 @@ const revokeMandate: OperationHandler = {
 const mandateStatus: OperationHandler = {
   service: "lok",
   run: async (client, args: JSONObject) => {
-    const ids = Array.isArray(args.ids) ? args.ids.filter((id): id is string => typeof id === "string") : [];
-    const answers = await Promise.all(
-      [...new Set(ids)].map((id) =>
+    const ids = [...new Set(Array.isArray(args.ids) ? args.ids.filter((id): id is string => typeof id === "string") : [])];
+    // One request per 100 ids (lok's page cap); a failed one leaves its ids unknown.
+    const chunks = Array.from({ length: Math.ceil(ids.length / SERVER_PAGE_CAP) }, (_, i) =>
+      ids.slice(i * SERVER_PAGE_CAP, (i + 1) * SERVER_PAGE_CAP),
+    );
+    const pages = await Promise.all(
+      chunks.map((chunk) =>
         client
-          .query<GetMandateQuery, GetMandateQueryVariables>({
-            query: GetMandateDocument,
-            variables: { id },
+          .query<MandateStatusesQuery, MandateStatusesQueryVariables>({
+            query: MandateStatusesDocument,
+            variables: { ids: chunk, limit: chunk.length },
             fetchPolicy: "network-only",
           })
-          .then((result) => result.data?.mandate)
-          .catch(() => undefined),
+          .then((result) => result.data?.mandates ?? [])
+          .catch(() => []),
       ),
     );
+    const answers = pages.flat();
     const statuses: JSONObject = {};
     for (const mandate of answers) {
       if (!mandate) continue;
@@ -209,7 +215,6 @@ const shareCollaboration: OperationHandler = {
           allowMesh: args.allowMesh !== false,
         },
       },
-      refetchQueries: [CollaborationLinksDocument],
     });
     const invite = result.data?.createInvite;
     if (!invite) throw new Error("lok did not make the link");
@@ -249,7 +254,6 @@ const revokeLink: OperationHandler = {
     await client.mutate<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>({
       mutation: RevokeCollaborationLinkDocument,
       variables: { id },
-      refetchQueries: [CollaborationLinksDocument],
     });
     return { id };
   },

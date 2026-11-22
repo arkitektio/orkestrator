@@ -7,8 +7,9 @@ fragment DetailDevice on Device {
   deviceGroups {
     ...ListDeviceGroup
   }
-  # The apps registered on it, for the page body.
-  clients {
+  # The apps registered on it, for the page body: how many, and the first page.
+  clientCount
+  clients(pagination: { limit: 50 }) {
     ...ListClient
   }
 }
@@ -29,9 +30,7 @@ fragment BrowseDevice on Device {
     id
     name
   }
-  clients {
-    id
-  }
+  clientCount
 }
 
 # A device as a row names it (an agent's card): looked up by the id other

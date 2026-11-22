@@ -20,7 +20,7 @@ const TheCard = ({ item }: Props) => {
     ...(groups ? [{ icon: Group, content: groups, title: "Groups" }] : []),
     {
       icon: AppWindow,
-      content: `${item.clients.length} ${item.clients.length === 1 ? "app" : "apps"}`,
+      content: `${item.clientCount} ${item.clientCount === 1 ? "app" : "apps"}`,
       title: "Apps registered on it",
     },
     { icon: Fingerprint, content: <span className="font-mono">{item.deviceId}</span>, title: item.deviceId, at: "end" },

@@ -27,11 +27,10 @@ import {
   useCreateMandateMutation,
   useIssueChildMandateKeyMutation,
   useRevokeMandateMutation,
-  useStandingMandatesLazyQuery,
+  useStandingMandateLazyQuery,
 } from "../api/graphql";
 import { LOK_HELP } from "../help";
 import { ProvisionError, runProvisioning, type ProvisionProgress } from "../provisioning/flow";
-import { findStandingMandate } from "../provisioning/standing";
 import {
   DEVICE_NAME_PREFIX,
   PROVISIONING_SERVICE,
@@ -212,7 +211,11 @@ export const ProvisionDevicePage = () => {
   /** The mandate whose key this device already holds: a retry resends Wi-Fi only. */
   const [heldMandate, setHeldMandate] = useState<string | null>(null);
 
-  const [loadMandates] = useStandingMandatesLazyQuery({ fetchPolicy: "network-only" });
+  // Devices are keyed under ONE standing agent mandate per firmware app and
+  // mesh permission: this app is its agent, the firmware's app its subject.
+  // Each device gets a child key pinned to its device id; lok picks the
+  // standing one (live, top-level, this agent, subject and `allowMesh`).
+  const [loadStanding] = useStandingMandateLazyQuery({ fetchPolicy: "network-only" });
   const [createMandate] = useCreateMandateMutation();
   const [issueChildMandateKey] = useIssueChildMandateKeyMutation();
   const [revokeMandate] = useRevokeMandateMutation();
@@ -282,9 +285,11 @@ export const ProvisionDevicePage = () => {
         },
         issueKey: async ({ manifest }) => {
           // The standing mandate this app holds for the firmware, created on first use.
-          const { data: live, error } = await loadMandates();
+          const { data: standing, error } = await loadStanding({
+            variables: { agent: appManifest.identifier, subject: manifest.identifier, allowMesh },
+          });
           if (error) throw error;
-          let parentId = findStandingMandate(live?.mandates ?? [], appManifest.identifier, manifest.identifier, allowMesh)?.id;
+          let parentId = standing?.mandates[0]?.id;
           if (!parentId) {
             const { data } = await createMandate({
               variables: {

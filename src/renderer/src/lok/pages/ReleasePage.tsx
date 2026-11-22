@@ -37,7 +37,7 @@ export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) 
                 </LokApp.DetailLink>,
               ],
               ["Version", <span className="font-mono">{release.version}</span>],
-              ["Clients", release.clients.length],
+              ["Clients", release.clientCount],
               ["Release ID", <span className="break-all font-mono text-xs">{release.id}</span>],
             ]}
           />
@@ -55,10 +55,10 @@ export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) 
               <span className="font-mono text-lg font-normal text-muted-foreground">{release.version}</span>
             </span>
           }
-          description={`${release.clients.length} ${release.clients.length === 1 ? "client runs" : "clients run"} this release`}
+          description={`${release.clientCount} ${release.clientCount === 1 ? "client runs" : "clients run"} this release`}
         />
 
-        <DetailSection title="Clients" count={release.clients.length}>
+        <DetailSection title="Clients" count={release.clientCount}>
           <DetailGrid>
             {release.clients.map((client) => (
               <ClientCard key={client.id} item={client} />

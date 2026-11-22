@@ -46,10 +46,13 @@ fragment ListServiceInstance on ServiceInstance {
       name
     }
   }
+  # A card names them and counts them.
   allowedUsers {
-    ...ListUser
+    id
+    username
   }
   deniedUsers {
-    ...ListUser
+    id
+    username
   }
 }

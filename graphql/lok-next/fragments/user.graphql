@@ -3,7 +3,6 @@ fragment ListUser on User {
   firstName
   lastName
   email
-  avatar
   id
   profile {
     ...Profile
@@ -16,16 +15,16 @@ fragment DetailUser on User {
   email
   firstName
   lastName
-  avatar
-  groups {
-    id
-    name
-  }
   profile {
     ...Profile
   }
+  # Only the membership in the active organization: the profile page names its roles.
   memberships {
-    ...Membership
+    id
+    roles {
+      id
+      identifier
+    }
   }
 }
 
@@ -35,7 +34,6 @@ fragment MeUser on User {
   email
   firstName
   lastName
-  avatar
 }
 
 # What a person looks like wherever they are mentioned (avatar, name chip):

@@ -1,3 +1,4 @@
+# The palette's slice of lok: a row names a person or a group, nothing more.
 query GlobalSearch(
   $search: String
   $noUsers: Boolean!
@@ -6,11 +7,15 @@ query GlobalSearch(
 ) {
   users: users(filters: { search: $search }, pagination: $pagination)
     @skip(if: $noUsers) {
-    ...ListUser
+    id
+    username
+    firstName
+    lastName
   }
 
   groups: groups(filters: { search: $search }, pagination: $pagination)
     @skip(if: $noGroups) {
-    ...ListGroup
+    id
+    name
   }
 }

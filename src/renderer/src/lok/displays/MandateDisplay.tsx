@@ -40,7 +40,7 @@ export const MandateDisplay = ({ id, variant, className }: DisplayWidgetProps) =
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        {mandate.clients.length} signed in as {mandate.grantor.username}
+        {mandate.clientCount} signed in as {mandate.grantor.username}
         {mandate.maxClients != null && ` (at most ${mandate.maxClients})`}
         {mandate.agentDevice && ` · only on ${mandate.agentDevice.name ?? mandate.agentDevice.deviceId}`}
       </p>

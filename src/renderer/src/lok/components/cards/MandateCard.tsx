@@ -43,7 +43,7 @@ const TheCard = ({ item }: Props) => {
           {
             icon: MonitorPlay,
             title: "Instances signed in under this mandate",
-            content: `${item.clients.length}${item.maxClients != null ? ` / ${item.maxClients}` : ""} running`,
+            content: `${item.clientCount}${item.maxClients != null ? ` / ${item.maxClients}` : ""} running`,
           },
         ]
       : []),

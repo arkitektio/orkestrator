@@ -24,29 +24,6 @@ fragment Organization on Organization {
       presignedUrl
     }
   }
-  invites {
-    id
-    createdAt
-    valid
-    roles {
-      id
-      identifier
-    }
-    acceptedBy {
-      id
-      username
-      profile {
-        id
-        avatar {
-          presignedUrl
-        }
-      }
-    }
-    status
-    expiresAt
-    token
-    inviteUrl
-  }
 }
 
 fragment ListOrganization on Organization {

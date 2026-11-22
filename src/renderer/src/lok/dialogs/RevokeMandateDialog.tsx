@@ -2,6 +2,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { useLok } from "../api/hooks";
 import { MandatesDocument, useRevokeMandateMutation } from "../api/graphql";
 
 /**
@@ -11,7 +12,10 @@ import { MandatesDocument, useRevokeMandateMutation } from "../api/graphql";
  */
 export const RevokeMandateDialog = (props: { ids: string[] }) => {
   const { closeDialog } = useDialog();
-  const [revoke] = useRevokeMandateMutation({ refetchQueries: [MandatesDocument] });
+  // Each answer updates its mandate in the cache; the list (live ones only by
+  // default) is read again once, after every revoke.
+  const [revoke] = useRevokeMandateMutation();
+  const client = useLok();
 
   const plural = props.ids.length === 1 ? "this mandate" : `${props.ids.length} mandates`;
 
@@ -20,6 +24,7 @@ export const RevokeMandateDialog = (props: { ids: string[] }) => {
   const { submit, submitting: busy } = useDialogSubmit(
     async () => {
       const results = await Promise.allSettled(props.ids.map((id) => revoke({ variables: { id } })));
+      await client?.refetchQueries({ include: [MandatesDocument] });
       const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (failed) throw failed.reason;
     },

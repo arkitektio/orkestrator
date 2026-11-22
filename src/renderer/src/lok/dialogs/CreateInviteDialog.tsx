@@ -22,7 +22,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useCreateInviteMutation } from "../api/graphql";
+import { TeamInvitesDocument,
+  useCreateInviteMutation } from "../api/graphql";
 
 const formSchema = z.object({
   expiresInDays: z.coerce.number().min(1).default(1),
@@ -43,7 +44,8 @@ export const CreateInviteDialog = ({
   availableRoles,
 }: CreateInviteDialogProps) => {
   const [createInvite, { loading }] = useCreateInviteMutation({
-    refetchQueries: ['Organization']
+    // The new invite joins the open ones and the history.
+    refetchQueries: [TeamInvitesDocument],
   });
   // Not a registry dialog, so it holds its own failure; the new invite shows
   // in the page's list, so success needs no toast.

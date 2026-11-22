@@ -44,13 +44,21 @@ describe("lok's option sources", () => {
     expect(source("@lok/device").by).toBe("nodeId");
   });
 
-  it("asks lok itself for users (by id), passing search and values through", async () => {
+  it("looks known users up by id, all of them", async () => {
     const users = client({ options: [{ value: "u1", label: "ada" }] });
     expect(await source("@lok/user").search(users, { search: "a", values: ["u1"] })).toEqual([
       { value: "u1", label: "ada" },
     ]);
     expect((users as { query: ReturnType<typeof vi.fn> }).query).toHaveBeenCalledWith(
-      expect.objectContaining({ variables: { search: "a", values: ["u1"] } }),
+      expect.objectContaining({ variables: { values: ["u1"], limit: 1 } }),
+    );
+  });
+
+  it("searches users a page at a time", async () => {
+    const users = client({ options: [] });
+    await source("@lok/user").search(users, { search: "a" });
+    expect((users as { query: ReturnType<typeof vi.fn> }).query).toHaveBeenCalledWith(
+      expect.objectContaining({ variables: { search: "a", limit: 20 } }),
     );
   });
 });

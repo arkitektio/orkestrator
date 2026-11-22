@@ -1,9 +1,10 @@
 # One group of the Team page's people: the members a filter picks (a role, and
 # none of the roles above it), a page at a time, with how many there are.
-query TeamMembers($organization: ID!, $filters: MembershipFilter, $limit: Int!) {
+# "Show more" asks for the next page by `$offset` (lok caps a page at 100).
+query TeamMembers($organization: ID!, $filters: MembershipFilter, $offset: Int! = 0, $limit: Int!) {
   organization(id: $organization) {
     id
-    memberships(filters: $filters, pagination: { limit: $limit }, ordering: [{ username: ASC }]) {
+    memberships(filters: $filters, pagination: { offset: $offset, limit: $limit }, ordering: [{ username: ASC }]) {
       ...TeamMember
     }
   }

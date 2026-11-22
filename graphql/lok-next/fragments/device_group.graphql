@@ -1,11 +1,3 @@
-fragment DetailDeviceGroup on DeviceGroup {
-  id
-  name
-  devices {
-    ...ListDevice
-  }
-}
-
 fragment ListDeviceGroup on DeviceGroup {
   id
   name

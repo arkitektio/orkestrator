@@ -59,7 +59,7 @@ export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) 
                 </span>,
               ],
               ["Groups", groups.length ? groups.join(", ") : "None"],
-              ["Apps", device.clients.length],
+              ["Apps", device.clientCount],
               ["Connected", current && "This app runs on it"],
             ]}
           />
@@ -74,16 +74,16 @@ export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) 
           title={<span className={device.name?.trim() ? undefined : "italic"}>{deviceLabel(device)}</span>}
           description={[
             groups.length ? `In ${groups.join(", ")}` : "In no group",
-            `${device.clients.length} ${device.clients.length === 1 ? "app" : "apps"} registered`,
+            `${device.clientCount} ${device.clientCount === 1 ? "app" : "apps"} registered`,
             ...(current ? ["the device you are connected through"] : []),
           ].join(" · ")}
         />
 
-        {device.clients.length > 0 && (
+        {device.clientCount > 0 && (
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold text-muted-foreground">
               Apps
-              <span className="ml-1.5 font-normal tabular-nums text-muted-foreground/60">{device.clients.length}</span>
+              <span className="ml-1.5 font-normal tabular-nums text-muted-foreground/60">{device.clientCount}</span>
             </h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
               {device.clients.map((client) => (

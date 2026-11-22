@@ -1,47 +1,21 @@
-fragment ListInvite on Invite {
+# An invite to become a member, as the Team page lists it: open ones wait on
+# an admin, every one is in the history.
+fragment TeamInvite on Invite {
   id
-  token
-  createdBy {
-    id
-    username
-  }
-  createdFor {
-    ...ListOrganization
-  }
-  status
   createdAt
+  valid
+  status
   expiresAt
-}
-
-fragment Invite on Invite {
-  id
   token
-  createdBy {
+  inviteUrl
+  roles {
     id
-    username
-    profile {
-      id
-      avatar {
-        presignedUrl
-      }
-    }
-  }
-  createdFor {
-    ...Organization
+    identifier
   }
   acceptedBy {
     id
     username
-    profile {
-      id
-      avatar {
-        presignedUrl
-      }
-    }
   }
-  status
-  createdAt
-  expiresAt
 }
 
 # A link that grants collaborations: what it grants, and how much of it is used.

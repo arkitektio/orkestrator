@@ -4,6 +4,10 @@ import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import {
+  NewMembersDocument,
+  PendingMembershipRequestsDocument,
+  TeamCountsDocument,
+  TeamMembersDocument,
   useApproveMembershipRequestMutation,
   useDeclineMembershipRequestMutation,
   useRoleOptionsLazyQuery,
@@ -24,11 +28,12 @@ export const AnswerMembershipRequestDialog = (props: {
   reason?: string | null;
 }) => {
   const [approve] = useApproveMembershipRequestMutation({
-    // The request leaves the list and its user joins the members.
-    refetchQueries: ["MembershipRequests", "Organization"],
+    // The request leaves the list and its user joins the members (their role
+    // group, the counts, "New this month").
+    refetchQueries: [PendingMembershipRequestsDocument, TeamMembersDocument, TeamCountsDocument, NewMembersDocument],
   });
   const [decline] = useDeclineMembershipRequestMutation({
-    refetchQueries: ["MembershipRequests"],
+    refetchQueries: [PendingMembershipRequestsDocument],
   });
   const [search] = useRoleOptionsLazyQuery();
 

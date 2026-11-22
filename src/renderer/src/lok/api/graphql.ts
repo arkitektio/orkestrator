@@ -56,6 +56,8 @@ export type App = {
   logo?: Maybe<MediaStore>;
   /** The name of the app */
   name: Scalars['String']['output'];
+  /** How many releases the app has. */
+  releaseCount: Scalars['Int']['output'];
   /** The releases of the app. A release is a version of the app that can be installed by a user. */
   releases: Array<Release>;
 };
@@ -63,7 +65,9 @@ export type App = {
 
 /** An App is the Arkitekt equivalent of a Software Application. It is a collection of `Releases` that can be all part of the same application. E.g the App `Napari` could have the releases `0.1.0` and `0.2.0`. */
 export type AppReleasesArgs = {
+  filters?: InputMaybe<ReleaseFilter>;
   ordering?: Array<ReleaseOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** App(id, name, identifier, organization, logo) */
@@ -434,6 +438,8 @@ export type DeleteBugReportInput = {
 /** Device(id, node_id, name, organization) */
 export type Device = {
   __typename?: 'Device';
+  /** How many clients run on this device. */
+  clientCount: Scalars['Int']['output'];
   clients: Array<Client>;
   /** The device groups that belong to this device. */
   deviceGroups: Array<DeviceGroup>;
@@ -726,6 +732,8 @@ export type InviteFilter = {
   OR?: InputMaybe<InviteFilter>;
   /** Only the invites granting this collaboration. */
   collaboration?: InputMaybe<CollaborationRefInput>;
+  /** Only the links that grant collaborations (true), or only the invites to become a member (false). */
+  grantsCollaborations?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
@@ -823,6 +831,8 @@ export type Mandate = {
   children: Array<Mandate>;
   /** Who may use the mandate. */
   claimant: MandateClaimant;
+  /** How many clients are logged in with the key. */
+  clientCount: Scalars['Int']['output'];
   /** The clients logged in with the key, one per device. */
   clients: Array<Client>;
   createdAt: Scalars['DateTime']['output'];
@@ -904,9 +914,19 @@ export type MandateFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<MandateFilter>;
   OR?: InputMaybe<MandateFilter>;
+  /** Only the agent mandates this app (by identifier) may issue keys under. */
+  agentIdentifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
+  /** Only the mandates whose clients may (true) or may not (false) ask for a mesh key. */
+  allowMesh?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only the mandates this claimant may use: KEY (keyed) or AGENT (an agent app issues keys under it). */
+  claimant?: InputMaybe<MandateClaimant>;
+  /** Only the mandates issued under a parent agent mandate (true), or only the top-level ones (false). */
+  hasParent?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   live?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Only the mandates admitting this app (by identifier, exact). */
+  subjectIdentifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
 };
 
 export type MandateOrdering =
@@ -1750,7 +1770,9 @@ export type QueryReleaseArgs = {
 
 
 export type QueryReleasesArgs = {
+  filters?: InputMaybe<ReleaseFilter>;
   ordering?: Array<ReleaseOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1827,6 +1849,8 @@ export type Release = {
   __typename?: 'Release';
   /** The app that this release belongs to. */
   app: App;
+  /** How many clients run the release. */
+  clientCount: Scalars['Int']['output'];
   /** The clients of the release */
   clients: Array<Client>;
   id: Scalars['ID']['output'];
@@ -1848,6 +1872,19 @@ export type ReleaseClientsArgs = {
   filters?: InputMaybe<ClientFilter>;
   ordering?: Array<ClientOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Release(id, app, version, is_latest, is_dev, name, logo, scopes, requirements) */
+export type ReleaseFilter = {
+  AND?: InputMaybe<ReleaseFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<ReleaseFilter>;
+  OR?: InputMaybe<ReleaseFilter>;
+  /** Only the releases of these apps. */
+  apps?: InputMaybe<Array<Scalars['ID']['input']>>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Releases whose version, name or app name or identifier contain this (any case). */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ReleaseOrdering =
@@ -2425,11 +2462,9 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type InstanceAliasFragment = { __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string };
-
 export type ListInstanceAliasFragment = { __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string };
 
-export type DetailAppFragment = { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<(
+export type DetailAppFragment = { __typename?: 'App', id: string, identifier: any, releaseCount: number, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<(
     { __typename?: 'Release' }
     & ListReleaseFragment
   )> };
@@ -2452,7 +2487,7 @@ export type ListClientFragment = { __typename?: 'Client', id: string, name: stri
 
 export type ClientChipFragment = { __typename?: 'Client', id: string, clientId: string, name: string, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, release?: { __typename?: 'Release', id: string, version: any, app: { __typename?: 'App', id: string, identifier: any } } | null };
 
-export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceId: string, deviceGroups: Array<(
+export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceId: string, clientCount: number, deviceGroups: Array<(
     { __typename?: 'DeviceGroup' }
     & ListDeviceGroupFragment
   )>, clients: Array<(
@@ -2462,7 +2497,7 @@ export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: s
 
 export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string };
 
-export type BrowseDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }>, clients: Array<{ __typename?: 'Client', id: string }> };
+export type BrowseDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string, clientCount: number, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> };
 
 export type DeviceChipFragment = { __typename?: 'Device', id: string, name?: string | null, deviceId: string };
 
@@ -2470,20 +2505,7 @@ export type ContextFragment = { __typename?: 'Context', roles: Array<string>, sc
 
 export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string, contentType: string };
 
-export type DetailDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string, devices: Array<(
-    { __typename?: 'Device' }
-    & ListDeviceFragment
-  )> };
-
 export type ListDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string };
-
-export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, users: Array<(
-    { __typename?: 'User' }
-    & ListUserFragment
-  )>, profile?: (
-    { __typename?: 'GroupProfile' }
-    & GroupProfileFragment
-  ) | null };
 
 export type ListGroupFragment = { __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null };
 
@@ -2496,15 +2518,7 @@ export type HubHealthFragment = { __typename?: 'Hub', id: string, name: string, 
       & InstanceHealthFragment
     )> } | null };
 
-export type ListInviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string }, createdFor: (
-    { __typename?: 'Organization' }
-    & ListOrganizationFragment
-  ) };
-
-export type InviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }, createdFor: (
-    { __typename?: 'Organization' }
-    & OrganizationFragment
-  ), acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
+export type TeamInviteFragment = { __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string } | null };
 
 export type CollaborationLinkFragment = { __typename?: 'Invite', id: string, inviteUrl: string, expiresAt?: any | null, uses: number, maxUses?: number | null, mesh: boolean, valid: boolean, collaborations?: Array<{ __typename?: 'SharedCollaboration', instance: string, collaboration: string, roles: Array<string> }> | null };
 
@@ -2512,10 +2526,10 @@ export type LayerFragment = { __typename?: 'Layer', id: string, name: string, id
 
 export type ListLayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ListMandateFragment = { __typename?: 'Mandate', id: string, label: string, keyPrefix: string, claimant: MandateClaimant, origin: MandateOrigin, agentIdentifier?: string | null, attestation: string, maxClients?: number | null, createdAt: any, expiresAt?: any | null, revokedAt?: any | null, isLive: boolean, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null, deviceId?: string | null, scopes?: Array<string> | null }, grantor: { __typename?: 'User', id: string, username: string }, agentDevice?: { __typename?: 'Device', id: string, deviceId: string, name?: string | null } | null, agentUser?: { __typename?: 'User', id: string, username: string } | null, clients: Array<{ __typename?: 'Client', id: string, clientId: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null }> };
+export type ListMandateFragment = { __typename?: 'Mandate', id: string, label: string, keyPrefix: string, claimant: MandateClaimant, origin: MandateOrigin, agentIdentifier?: string | null, attestation: string, maxClients?: number | null, createdAt: any, expiresAt?: any | null, revokedAt?: any | null, isLive: boolean, clientCount: number, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null, deviceId?: string | null, scopes?: Array<string> | null }, grantor: { __typename?: 'User', id: string, username: string }, agentDevice?: { __typename?: 'Device', id: string, deviceId: string, name?: string | null } | null, agentUser?: { __typename?: 'User', id: string, username: string } | null };
 
 export type DetailMandateFragment = (
-  { __typename?: 'Mandate', hub: { __typename?: 'Hub', id: string, name: string, identifier: any } }
+  { __typename?: 'Mandate', clients: Array<{ __typename?: 'Client', id: string, clientId: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null }>, hub: { __typename?: 'Hub', id: string, name: string, identifier: any } }
   & ListMandateFragment
 );
 
@@ -2528,13 +2542,13 @@ export type TeamMemberFragment = { __typename?: 'Membership', id: string, create
 
 export type MembershipRequestFragment = { __typename?: 'MembershipRequest', id: string, reason?: string | null, status: string, createdAt: any, user: { __typename?: 'User', id: string, username: string } };
 
-export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string, isAdminRole: boolean, isDefaultRole: boolean }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, invites: Array<{ __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string, isAdminRole: boolean, isDefaultRole: boolean }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
 
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
 export type ProfileFragment = { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: (
+export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: any, clientCount: number, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: (
     { __typename?: 'App' }
     & ListAppFragment
   ), clients: Array<(
@@ -2546,10 +2560,6 @@ export type ListReleaseFragment = { __typename?: 'Release', id: string, version:
     { __typename?: 'App' }
     & ListAppFragment
   ) };
-
-export type RoleFragment = { __typename?: 'Role', id: string, identifier: string, description: string };
-
-export type ListRoleFragment = { __typename?: 'Role', id: string, identifier: string, description: string };
 
 export type ListServiceFragment = { __typename?: 'Service', identifier: any, id: string, name: string, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
@@ -2575,36 +2585,24 @@ export type ServiceInstanceFragment = { __typename?: 'ServiceInstance', id: stri
     & ListInstanceAliasFragment
   )>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ListServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<(
-    { __typename?: 'User' }
-    & ListUserFragment
-  )>, deniedUsers: Array<(
-    { __typename?: 'User' }
-    & ListUserFragment
-  )> };
+export type ListServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', id: string, username: string }>, deniedUsers: Array<{ __typename?: 'User', id: string, username: string }> };
 
-export type ListServiceInstanceMappingFragment = { __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: (
-    { __typename?: 'ServiceInstance' }
-    & ListServiceInstanceFragment
-  ), client: (
+export type ListServiceInstanceMappingFragment = { __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string }, client: (
     { __typename?: 'Client' }
     & ListClientFragment
   ) };
 
-export type ListUserFragment = { __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: (
+export type ListUserFragment = { __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, id: string, profile: (
     { __typename?: 'Profile' }
     & ProfileFragment
   ) };
 
-export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: (
+export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, profile: (
     { __typename?: 'Profile' }
     & ProfileFragment
-  ), memberships: Array<(
-    { __typename?: 'Membership' }
-    & MembershipFragment
-  )> };
+  ), memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }> }> };
 
-export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null };
+export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null };
 
 export type UserChipFragment = { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
 
@@ -2709,7 +2707,7 @@ export type CreateInviteMutationVariables = Exact<{
 
 export type CreateInviteMutation = { __typename?: 'Mutation', createInvite: (
     { __typename?: 'Invite' }
-    & InviteFragment
+    & TeamInviteFragment
   ) };
 
 export type ShareCollaborationMutationVariables = Exact<{
@@ -2877,18 +2875,6 @@ export type AppsQuery = { __typename?: 'Query', apps: Array<(
     & ListAppFragment
   )> };
 
-export type AppQueryVariables = Exact<{
-  identifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  clientId?: InputMaybe<Scalars['ID']['input']>;
-}>;
-
-
-export type AppQuery = { __typename?: 'Query', app: (
-    { __typename?: 'App' }
-    & DetailAppFragment
-  ) };
-
 export type DetailAppQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2941,16 +2927,6 @@ export type DetailClientQuery = { __typename?: 'Query', client: (
     { __typename?: 'Client' }
     & DetailClientFragment
   ) };
-
-export type MyManagedClientsQueryVariables = Exact<{
-  kind: ClientKind;
-}>;
-
-
-export type MyManagedClientsQuery = { __typename?: 'Query', myManagedClients: Array<(
-    { __typename?: 'Client' }
-    & ListClientFragment
-  )> };
 
 export type ClientQueryVariables = Exact<{
   clientId: Scalars['ID']['input'];
@@ -3035,16 +3011,6 @@ export type GetDeviceQuery = { __typename?: 'Query', device: (
     & DetailDeviceFragment
   ) };
 
-export type GetDeviceByDeviceIdQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetDeviceByDeviceIdQuery = { __typename?: 'Query', deviceByDeviceId: (
-    { __typename?: 'Device' }
-    & DetailDeviceFragment
-  ) };
-
 export type DeviceChipQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3066,55 +3032,14 @@ export type DeviceChipsQuery = { __typename?: 'Query', devices: Array<(
     & DeviceChipFragment
   )> };
 
-export type ListDeviceGroupQueryVariables = Exact<{
-  pagination?: InputMaybe<OffsetPaginationInput>;
-  filters?: InputMaybe<DeviceGroupFilter>;
-}>;
-
-
-export type ListDeviceGroupQuery = { __typename?: 'Query', deviceGroups: Array<(
-    { __typename?: 'DeviceGroup' }
-    & ListDeviceGroupFragment
-  )> };
-
-export type GetDeviceGroupQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetDeviceGroupQuery = { __typename?: 'Query', deviceGroup: (
-    { __typename?: 'DeviceGroup' }
-    & DetailDeviceGroupFragment
-  ) };
-
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  limit?: Scalars['Int']['input'];
 }>;
 
 
 export type GroupOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Group', value: string, label: string }> };
-
-export type DetailGroupQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DetailGroupQuery = { __typename?: 'Query', group: (
-    { __typename?: 'Group' }
-    & DetailGroupFragment
-  ) };
-
-export type GroupsQueryVariables = Exact<{
-  filters?: InputMaybe<GroupFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type GroupsQuery = { __typename?: 'Query', groups: Array<(
-    { __typename?: 'Group' }
-    & ListGroupFragment
-  )> };
 
 export type MyHubHealthQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3132,6 +3057,17 @@ export type CollaborationLinksQueryVariables = Exact<{
 export type CollaborationLinksQuery = { __typename?: 'Query', invites: Array<(
     { __typename?: 'Invite' }
     & CollaborationLinkFragment
+  )> };
+
+export type TeamInvitesQueryVariables = Exact<{
+  filters?: InputMaybe<InviteFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type TeamInvitesQuery = { __typename?: 'Query', invites: Array<(
+    { __typename?: 'Invite' }
+    & TeamInviteFragment
   )> };
 
 export type LayersQueryVariables = Exact<{
@@ -3156,6 +3092,7 @@ export type DetailLayerQuery = { __typename?: 'Query', layer: (
   ) };
 
 export type MandatesQueryVariables = Exact<{
+  filters?: InputMaybe<MandateFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -3175,14 +3112,27 @@ export type GetMandateQuery = { __typename?: 'Query', mandate: (
     & DetailMandateFragment
   ) };
 
-export type StandingMandatesQueryVariables = Exact<{ [key: string]: never; }>;
+export type MandateStatusesQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
 
 
-export type StandingMandatesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, agentIdentifier?: string | null, claimant: MandateClaimant, allowMesh: boolean, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null }, parent?: { __typename?: 'Mandate', id: string } | null }> };
+export type MandateStatusesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, isLive: boolean, expiresAt?: any | null, revokedAt?: any | null }> };
+
+export type StandingMandateQueryVariables = Exact<{
+  agent: Scalars['AppIdentifier']['input'];
+  subject: Scalars['AppIdentifier']['input'];
+  allowMesh: Scalars['Boolean']['input'];
+}>;
+
+
+export type StandingMandateQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string }> };
 
 export type TeamMembersQueryVariables = Exact<{
   organization: Scalars['ID']['input'];
   filters?: InputMaybe<MembershipFilter>;
+  offset?: Scalars['Int']['input'];
   limit: Scalars['Int']['input'];
 }>;
 
@@ -3234,45 +3184,16 @@ export type OrganizationQuery = { __typename?: 'Query', organization: (
     & OrganizationFragment
   ) };
 
-export type ListOrganizationsQueryVariables = Exact<{
-  filters?: InputMaybe<OrganizationFilter>;
+export type ReleasesQueryVariables = Exact<{
+  filters?: InputMaybe<ReleaseFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
-
-
-export type ListOrganizationsQuery = { __typename?: 'Query', organizations: Array<(
-    { __typename?: 'Organization' }
-    & ListOrganizationFragment
-  )> };
-
-export type OrganizationOptionsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type OrganizationOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Organization', value: string, label: string }> };
-
-export type ReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ReleasesQuery = { __typename?: 'Query', releases: Array<(
     { __typename?: 'Release' }
     & ListReleaseFragment
   )> };
-
-export type ReleaseQueryVariables = Exact<{
-  identifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
-  version?: InputMaybe<Scalars['Version']['input']>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  clientId?: InputMaybe<Scalars['ID']['input']>;
-}>;
-
-
-export type ReleaseQuery = { __typename?: 'Query', release: (
-    { __typename?: 'Release' }
-    & DetailReleaseFragment
-  ) };
 
 export type DetailReleaseQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3284,27 +3205,6 @@ export type DetailReleaseQuery = { __typename?: 'Query', release: (
     & DetailReleaseFragment
   ) };
 
-export type RoleQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type RoleQuery = { __typename?: 'Query', role: (
-    { __typename?: 'Role' }
-    & RoleFragment
-  ) };
-
-export type ListRolesQueryVariables = Exact<{
-  filters?: InputMaybe<RoleFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListRolesQuery = { __typename?: 'Query', roles: Array<(
-    { __typename?: 'Role' }
-    & ListRoleFragment
-  )> };
-
 export type RoleOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
@@ -3312,16 +3212,6 @@ export type RoleOptionsQueryVariables = Exact<{
 
 
 export type RoleOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Role', value: string, label: string }> };
-
-export type ScopesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ScopesQuery = { __typename?: 'Query', scopes: Array<{ __typename?: 'Scope', description: string, value: string, label: string }> };
-
-export type ScopesOptionsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ScopesOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Scope', value: string, label: string }> };
 
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -3331,13 +3221,7 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', users?: Array<(
-    { __typename?: 'User' }
-    & ListUserFragment
-  )>, groups?: Array<(
-    { __typename?: 'Group' }
-    & ListGroupFragment
-  )> };
+export type GlobalSearchQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', id: string, username: string, firstName?: string | null, lastName?: string | null }>, groups?: Array<{ __typename?: 'Group', id: string, name: string }> };
 
 export type ListServiceInstancesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3381,14 +3265,6 @@ export type GetServiceQuery = { __typename?: 'Query', service: (
     & ServiceFragment
   ) };
 
-export type MeQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MeQuery = { __typename?: 'Query', me: (
-    { __typename?: 'User' }
-    & DetailUserFragment
-  ) };
-
 export type UserQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3420,16 +3296,6 @@ export type UserChipQuery = { __typename?: 'Query', user: (
     & UserChipFragment
   ) };
 
-export type DetailUserQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DetailUserQuery = { __typename?: 'Query', user: (
-    { __typename?: 'User' }
-    & DetailUserFragment
-  ) };
-
 export type UsersQueryVariables = Exact<{
   filters?: InputMaybe<UserFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3444,6 +3310,7 @@ export type UsersQuery = { __typename?: 'Query', users: Array<(
 export type UserOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  limit?: Scalars['Int']['input'];
 }>;
 
 
@@ -3483,15 +3350,6 @@ export type WatchHubHealthSubscription = { __typename?: 'Subscription', hubHealt
     & HubHealthFragment
   ) };
 
-export const InstanceAliasFragmentDoc = gql`
-    fragment InstanceAlias on InstanceAlias {
-  host
-  port
-  ssl
-  challenge
-  kind
-}
-    `;
 export const ListAppFragmentDoc = gql`
     fragment ListApp on App {
   id
@@ -3520,7 +3378,8 @@ export const DetailAppFragmentDoc = gql`
   logo {
     presignedUrl
   }
-  releases {
+  releaseCount
+  releases(pagination: {limit: 50}, ordering: [{id: DESC}]) {
     ...ListRelease
   }
 }
@@ -3680,12 +3539,20 @@ export const DetailDeviceFragmentDoc = gql`
   deviceGroups {
     ...ListDeviceGroup
   }
-  clients {
+  clientCount
+  clients(pagination: {limit: 50}) {
     ...ListClient
   }
 }
     ${ListDeviceGroupFragmentDoc}
 ${ListClientFragmentDoc}`;
+export const ListDeviceFragmentDoc = gql`
+    fragment ListDevice on Device {
+  id
+  name
+  nodeId
+}
+    `;
 export const BrowseDeviceFragmentDoc = gql`
     fragment BrowseDevice on Device {
   id
@@ -3695,9 +3562,7 @@ export const BrowseDeviceFragmentDoc = gql`
     id
     name
   }
-  clients {
-    id
-  }
+  clientCount
 }
     `;
 export const DeviceChipFragmentDoc = gql`
@@ -3748,45 +3613,6 @@ export const PresignedPostCredentialsFragmentDoc = gql`
   contentType
 }
     `;
-export const ListDeviceFragmentDoc = gql`
-    fragment ListDevice on Device {
-  id
-  name
-  nodeId
-}
-    `;
-export const DetailDeviceGroupFragmentDoc = gql`
-    fragment DetailDeviceGroup on DeviceGroup {
-  id
-  name
-  devices {
-    ...ListDevice
-  }
-}
-    ${ListDeviceFragmentDoc}`;
-export const ProfileFragmentDoc = gql`
-    fragment Profile on Profile {
-  id
-  name
-  avatar {
-    presignedUrl
-  }
-  bio
-}
-    `;
-export const ListUserFragmentDoc = gql`
-    fragment ListUser on User {
-  username
-  firstName
-  lastName
-  email
-  avatar
-  id
-  profile {
-    ...Profile
-  }
-}
-    ${ProfileFragmentDoc}`;
 export const GroupProfileFragmentDoc = gql`
     fragment GroupProfile on GroupProfile {
   id
@@ -3796,19 +3622,6 @@ export const GroupProfileFragmentDoc = gql`
   }
 }
     `;
-export const DetailGroupFragmentDoc = gql`
-    fragment DetailGroup on Group {
-  id
-  name
-  users {
-    ...ListUser
-  }
-  profile {
-    ...GroupProfile
-  }
-}
-    ${ListUserFragmentDoc}
-${GroupProfileFragmentDoc}`;
 export const InstanceHealthFragmentDoc = gql`
     fragment InstanceHealth on InstanceHealth {
   healthy
@@ -3845,116 +3658,25 @@ export const HubHealthFragmentDoc = gql`
   }
 }
     ${InstanceHealthFragmentDoc}`;
-export const ListOrganizationFragmentDoc = gql`
-    fragment ListOrganization on Organization {
+export const TeamInviteFragmentDoc = gql`
+    fragment TeamInvite on Invite {
   id
-  name
-  slug
-  brandHue
-  brandChroma
-  avatar {
-    presignedUrl
-  }
-}
-    `;
-export const ListInviteFragmentDoc = gql`
-    fragment ListInvite on Invite {
-  id
-  token
-  createdBy {
-    id
-    username
-  }
-  createdFor {
-    ...ListOrganization
-  }
-  status
   createdAt
+  valid
+  status
   expiresAt
-}
-    ${ListOrganizationFragmentDoc}`;
-export const OrganizationFragmentDoc = gql`
-    fragment Organization on Organization {
-  id
-  name
-  slug
-  description
-  brandHue
-  brandChroma
+  token
+  inviteUrl
   roles {
     id
     identifier
-    description
-    isAdminRole
-    isDefaultRole
-  }
-  avatar {
-    presignedUrl
-  }
-  profile {
-    id
-    bio
-    avatar {
-      presignedUrl
-    }
-  }
-  invites {
-    id
-    createdAt
-    valid
-    roles {
-      id
-      identifier
-    }
-    acceptedBy {
-      id
-      username
-      profile {
-        id
-        avatar {
-          presignedUrl
-        }
-      }
-    }
-    status
-    expiresAt
-    token
-    inviteUrl
-  }
-}
-    `;
-export const InviteFragmentDoc = gql`
-    fragment Invite on Invite {
-  id
-  token
-  createdBy {
-    id
-    username
-    profile {
-      id
-      avatar {
-        presignedUrl
-      }
-    }
-  }
-  createdFor {
-    ...Organization
   }
   acceptedBy {
     id
     username
-    profile {
-      id
-      avatar {
-        presignedUrl
-      }
-    }
   }
-  status
-  createdAt
-  expiresAt
 }
-    ${OrganizationFragmentDoc}`;
+    `;
 export const CollaborationLinkFragmentDoc = gql`
     fragment CollaborationLink on Invite {
   id
@@ -4026,6 +3748,12 @@ export const ListMandateFragmentDoc = gql`
     id
     username
   }
+  clientCount
+}
+    `;
+export const DetailMandateFragmentDoc = gql`
+    fragment DetailMandate on Mandate {
+  ...ListMandate
   clients {
     id
     clientId
@@ -4035,11 +3763,6 @@ export const ListMandateFragmentDoc = gql`
       name
     }
   }
-}
-    `;
-export const DetailMandateFragmentDoc = gql`
-    fragment DetailMandate on Mandate {
-  ...ListMandate
   hub {
     id
     name
@@ -4047,6 +3770,32 @@ export const DetailMandateFragmentDoc = gql`
   }
 }
     ${ListMandateFragmentDoc}`;
+export const ListOrganizationFragmentDoc = gql`
+    fragment ListOrganization on Organization {
+  id
+  name
+  slug
+  brandHue
+  brandChroma
+  avatar {
+    presignedUrl
+  }
+}
+    `;
+export const MembershipFragmentDoc = gql`
+    fragment Membership on Membership {
+  id
+  brandHue
+  brandChroma
+  roles {
+    identifier
+    id
+  }
+  organization {
+    ...ListOrganization
+  }
+}
+    ${ListOrganizationFragmentDoc}`;
 export const TeamMemberFragmentDoc = gql`
     fragment TeamMember on Membership {
   id
@@ -4081,6 +3830,33 @@ export const MembershipRequestFragmentDoc = gql`
   }
 }
     `;
+export const OrganizationFragmentDoc = gql`
+    fragment Organization on Organization {
+  id
+  name
+  slug
+  description
+  brandHue
+  brandChroma
+  roles {
+    id
+    identifier
+    description
+    isAdminRole
+    isDefaultRole
+  }
+  avatar {
+    presignedUrl
+  }
+  profile {
+    id
+    bio
+    avatar {
+      presignedUrl
+    }
+  }
+}
+    `;
 export const DetailReleaseFragmentDoc = gql`
     fragment DetailRelease on Release {
   id
@@ -4091,26 +3867,13 @@ export const DetailReleaseFragmentDoc = gql`
   app {
     ...ListApp
   }
-  clients {
+  clientCount
+  clients(pagination: {limit: 50}) {
     ...ListClient
   }
 }
     ${ListAppFragmentDoc}
 ${ListClientFragmentDoc}`;
-export const RoleFragmentDoc = gql`
-    fragment Role on Role {
-  id
-  identifier
-  description
-}
-    `;
-export const ListRoleFragmentDoc = gql`
-    fragment ListRole on Role {
-  id
-  identifier
-  description
-}
-    `;
 export const ListServiceFragmentDoc = gql`
     fragment ListService on Service {
   identifier
@@ -4133,6 +3896,28 @@ export const ServiceFragmentDoc = gql`
   description
 }
     `;
+export const ProfileFragmentDoc = gql`
+    fragment Profile on Profile {
+  id
+  name
+  avatar {
+    presignedUrl
+  }
+  bio
+}
+    `;
+export const ListUserFragmentDoc = gql`
+    fragment ListUser on User {
+  username
+  firstName
+  lastName
+  email
+  id
+  profile {
+    ...Profile
+  }
+}
+    ${ProfileFragmentDoc}`;
 export const ListGroupFragmentDoc = gql`
     fragment ListGroup on Group {
   id
@@ -4146,40 +3931,19 @@ export const ListGroupFragmentDoc = gql`
   }
 }
     `;
-export const ListServiceInstanceFragmentDoc = gql`
-    fragment ListServiceInstance on ServiceInstance {
-  id
-  release {
-    version
-    service {
-      identifier
-      id
-      description
-      name
-    }
-  }
-  allowedUsers {
-    ...ListUser
-  }
-  deniedUsers {
-    ...ListUser
-  }
-}
-    ${ListUserFragmentDoc}`;
 export const ListServiceInstanceMappingFragmentDoc = gql`
     fragment ListServiceInstanceMapping on ServiceInstanceMapping {
   id
   key
   instance {
-    ...ListServiceInstance
+    id
   }
   client {
     ...ListClient
   }
   optional
 }
-    ${ListServiceInstanceFragmentDoc}
-${ListClientFragmentDoc}`;
+    ${ListClientFragmentDoc}`;
 export const ListInstanceAliasFragmentDoc = gql`
     fragment ListInstanceAlias on InstanceAlias {
   host
@@ -4227,20 +3991,28 @@ export const ServiceInstanceFragmentDoc = gql`
 ${ListGroupFragmentDoc}
 ${ListServiceInstanceMappingFragmentDoc}
 ${ListInstanceAliasFragmentDoc}`;
-export const MembershipFragmentDoc = gql`
-    fragment Membership on Membership {
+export const ListServiceInstanceFragmentDoc = gql`
+    fragment ListServiceInstance on ServiceInstance {
   id
-  brandHue
-  brandChroma
-  roles {
-    identifier
-    id
+  release {
+    version
+    service {
+      identifier
+      id
+      description
+      name
+    }
   }
-  organization {
-    ...ListOrganization
+  allowedUsers {
+    id
+    username
+  }
+  deniedUsers {
+    id
+    username
   }
 }
-    ${ListOrganizationFragmentDoc}`;
+    `;
 export const DetailUserFragmentDoc = gql`
     fragment DetailUser on User {
   id
@@ -4248,20 +4020,18 @@ export const DetailUserFragmentDoc = gql`
   email
   firstName
   lastName
-  avatar
-  groups {
-    id
-    name
-  }
   profile {
     ...Profile
   }
   memberships {
-    ...Membership
+    id
+    roles {
+      id
+      identifier
+    }
   }
 }
-    ${ProfileFragmentDoc}
-${MembershipFragmentDoc}`;
+    ${ProfileFragmentDoc}`;
 export const MeUserFragmentDoc = gql`
     fragment MeUser on User {
   id
@@ -4269,7 +4039,6 @@ export const MeUserFragmentDoc = gql`
   email
   firstName
   lastName
-  avatar
 }
     `;
 export const UserChipFragmentDoc = gql`
@@ -4616,10 +4385,10 @@ export type CreateServiceInstanceMutationOptions = Apollo.BaseMutationOptions<Cr
 export const CreateInviteDocument = gql`
     mutation CreateInvite($input: CreateInviteInput!) {
   createInvite(input: $input) {
-    ...Invite
+    ...TeamInvite
   }
 }
-    ${InviteFragmentDoc}`;
+    ${TeamInviteFragmentDoc}`;
 export type CreateInviteMutationFn = Apollo.MutationFunction<CreateInviteMutation, CreateInviteMutationVariables>;
 
 /**
@@ -5248,43 +5017,6 @@ export function useAppsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOpt
 export type AppsQueryHookResult = ReturnType<typeof useAppsQuery>;
 export type AppsLazyQueryHookResult = ReturnType<typeof useAppsLazyQuery>;
 export type AppsQueryResult = Apollo.QueryResult<AppsQuery, AppsQueryVariables>;
-export const AppDocument = gql`
-    query App($identifier: AppIdentifier, $id: ID, $clientId: ID) {
-  app(identifier: $identifier, id: $id, clientId: $clientId) {
-    ...DetailApp
-  }
-}
-    ${DetailAppFragmentDoc}`;
-
-/**
- * __useAppQuery__
- *
- * To run a query within a React component, call `useAppQuery` and pass it any options that fit your needs.
- * When your component renders, `useAppQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useAppQuery({
- *   variables: {
- *      identifier: // value for 'identifier'
- *      id: // value for 'id'
- *      clientId: // value for 'clientId'
- *   },
- * });
- */
-export function useAppQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AppQuery, AppQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<AppQuery, AppQueryVariables>(AppDocument, options);
-      }
-export function useAppLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AppQuery, AppQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<AppQuery, AppQueryVariables>(AppDocument, options);
-        }
-export type AppQueryHookResult = ReturnType<typeof useAppQuery>;
-export type AppLazyQueryHookResult = ReturnType<typeof useAppLazyQuery>;
-export type AppQueryResult = Apollo.QueryResult<AppQuery, AppQueryVariables>;
 export const DetailAppDocument = gql`
     query DetailApp($id: ID!) {
   app(id: $id) {
@@ -5463,41 +5195,6 @@ export function useDetailClientLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type DetailClientQueryHookResult = ReturnType<typeof useDetailClientQuery>;
 export type DetailClientLazyQueryHookResult = ReturnType<typeof useDetailClientLazyQuery>;
 export type DetailClientQueryResult = Apollo.QueryResult<DetailClientQuery, DetailClientQueryVariables>;
-export const MyManagedClientsDocument = gql`
-    query MyManagedClients($kind: ClientKind!) {
-  myManagedClients(kind: $kind) {
-    ...ListClient
-  }
-}
-    ${ListClientFragmentDoc}`;
-
-/**
- * __useMyManagedClientsQuery__
- *
- * To run a query within a React component, call `useMyManagedClientsQuery` and pass it any options that fit your needs.
- * When your component renders, `useMyManagedClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMyManagedClientsQuery({
- *   variables: {
- *      kind: // value for 'kind'
- *   },
- * });
- */
-export function useMyManagedClientsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MyManagedClientsQuery, MyManagedClientsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<MyManagedClientsQuery, MyManagedClientsQueryVariables>(MyManagedClientsDocument, options);
-      }
-export function useMyManagedClientsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MyManagedClientsQuery, MyManagedClientsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<MyManagedClientsQuery, MyManagedClientsQueryVariables>(MyManagedClientsDocument, options);
-        }
-export type MyManagedClientsQueryHookResult = ReturnType<typeof useMyManagedClientsQuery>;
-export type MyManagedClientsLazyQueryHookResult = ReturnType<typeof useMyManagedClientsLazyQuery>;
-export type MyManagedClientsQueryResult = Apollo.QueryResult<MyManagedClientsQuery, MyManagedClientsQueryVariables>;
 export const ClientDocument = gql`
     query Client($clientId: ID!) {
   client(clientId: $clientId) {
@@ -5818,41 +5515,6 @@ export function useGetDeviceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetDeviceQueryHookResult = ReturnType<typeof useGetDeviceQuery>;
 export type GetDeviceLazyQueryHookResult = ReturnType<typeof useGetDeviceLazyQuery>;
 export type GetDeviceQueryResult = Apollo.QueryResult<GetDeviceQuery, GetDeviceQueryVariables>;
-export const GetDeviceByDeviceIdDocument = gql`
-    query GetDeviceByDeviceId($id: ID!) {
-  deviceByDeviceId(id: $id) {
-    ...DetailDevice
-  }
-}
-    ${DetailDeviceFragmentDoc}`;
-
-/**
- * __useGetDeviceByDeviceIdQuery__
- *
- * To run a query within a React component, call `useGetDeviceByDeviceIdQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetDeviceByDeviceIdQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetDeviceByDeviceIdQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetDeviceByDeviceIdQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>(GetDeviceByDeviceIdDocument, options);
-      }
-export function useGetDeviceByDeviceIdLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>(GetDeviceByDeviceIdDocument, options);
-        }
-export type GetDeviceByDeviceIdQueryHookResult = ReturnType<typeof useGetDeviceByDeviceIdQuery>;
-export type GetDeviceByDeviceIdLazyQueryHookResult = ReturnType<typeof useGetDeviceByDeviceIdLazyQuery>;
-export type GetDeviceByDeviceIdQueryResult = Apollo.QueryResult<GetDeviceByDeviceIdQuery, GetDeviceByDeviceIdQueryVariables>;
 export const DeviceChipDocument = gql`
     query DeviceChip($id: ID!) {
   deviceByDeviceId(id: $id) {
@@ -5924,80 +5586,12 @@ export function useDeviceChipsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type DeviceChipsQueryHookResult = ReturnType<typeof useDeviceChipsQuery>;
 export type DeviceChipsLazyQueryHookResult = ReturnType<typeof useDeviceChipsLazyQuery>;
 export type DeviceChipsQueryResult = Apollo.QueryResult<DeviceChipsQuery, DeviceChipsQueryVariables>;
-export const ListDeviceGroupDocument = gql`
-    query ListDeviceGroup($pagination: OffsetPaginationInput, $filters: DeviceGroupFilter) {
-  deviceGroups(pagination: $pagination, filters: $filters) {
-    ...ListDeviceGroup
-  }
-}
-    ${ListDeviceGroupFragmentDoc}`;
-
-/**
- * __useListDeviceGroupQuery__
- *
- * To run a query within a React component, call `useListDeviceGroupQuery` and pass it any options that fit your needs.
- * When your component renders, `useListDeviceGroupQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListDeviceGroupQuery({
- *   variables: {
- *      pagination: // value for 'pagination'
- *      filters: // value for 'filters'
- *   },
- * });
- */
-export function useListDeviceGroupQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListDeviceGroupQuery, ListDeviceGroupQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListDeviceGroupQuery, ListDeviceGroupQueryVariables>(ListDeviceGroupDocument, options);
-      }
-export function useListDeviceGroupLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListDeviceGroupQuery, ListDeviceGroupQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListDeviceGroupQuery, ListDeviceGroupQueryVariables>(ListDeviceGroupDocument, options);
-        }
-export type ListDeviceGroupQueryHookResult = ReturnType<typeof useListDeviceGroupQuery>;
-export type ListDeviceGroupLazyQueryHookResult = ReturnType<typeof useListDeviceGroupLazyQuery>;
-export type ListDeviceGroupQueryResult = Apollo.QueryResult<ListDeviceGroupQuery, ListDeviceGroupQueryVariables>;
-export const GetDeviceGroupDocument = gql`
-    query GetDeviceGroup($id: ID!) {
-  deviceGroup(id: $id) {
-    ...DetailDeviceGroup
-  }
-}
-    ${DetailDeviceGroupFragmentDoc}`;
-
-/**
- * __useGetDeviceGroupQuery__
- *
- * To run a query within a React component, call `useGetDeviceGroupQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetDeviceGroupQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetDeviceGroupQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetDeviceGroupQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDeviceGroupQuery, GetDeviceGroupQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetDeviceGroupQuery, GetDeviceGroupQueryVariables>(GetDeviceGroupDocument, options);
-      }
-export function useGetDeviceGroupLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDeviceGroupQuery, GetDeviceGroupQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetDeviceGroupQuery, GetDeviceGroupQueryVariables>(GetDeviceGroupDocument, options);
-        }
-export type GetDeviceGroupQueryHookResult = ReturnType<typeof useGetDeviceGroupQuery>;
-export type GetDeviceGroupLazyQueryHookResult = ReturnType<typeof useGetDeviceGroupLazyQuery>;
-export type GetDeviceGroupQueryResult = Apollo.QueryResult<GetDeviceGroupQuery, GetDeviceGroupQueryVariables>;
 export const GroupOptionsDocument = gql`
-    query GroupOptions($search: String, $values: [ID!]) {
-  options: groups(filters: {search: $search, ids: $values}) {
+    query GroupOptions($search: String, $values: [ID!], $limit: Int! = 20) {
+  options: groups(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: $limit}
+  ) {
     value: id
     label: name
   }
@@ -6018,6 +5612,7 @@ export const GroupOptionsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
@@ -6032,77 +5627,6 @@ export function useGroupOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GroupOptionsQueryHookResult = ReturnType<typeof useGroupOptionsQuery>;
 export type GroupOptionsLazyQueryHookResult = ReturnType<typeof useGroupOptionsLazyQuery>;
 export type GroupOptionsQueryResult = Apollo.QueryResult<GroupOptionsQuery, GroupOptionsQueryVariables>;
-export const DetailGroupDocument = gql`
-    query DetailGroup($id: ID!) {
-  group(id: $id) {
-    ...DetailGroup
-  }
-}
-    ${DetailGroupFragmentDoc}`;
-
-/**
- * __useDetailGroupQuery__
- *
- * To run a query within a React component, call `useDetailGroupQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailGroupQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailGroupQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailGroupQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailGroupQuery, DetailGroupQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<DetailGroupQuery, DetailGroupQueryVariables>(DetailGroupDocument, options);
-      }
-export function useDetailGroupLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailGroupQuery, DetailGroupQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<DetailGroupQuery, DetailGroupQueryVariables>(DetailGroupDocument, options);
-        }
-export type DetailGroupQueryHookResult = ReturnType<typeof useDetailGroupQuery>;
-export type DetailGroupLazyQueryHookResult = ReturnType<typeof useDetailGroupLazyQuery>;
-export type DetailGroupQueryResult = Apollo.QueryResult<DetailGroupQuery, DetailGroupQueryVariables>;
-export const GroupsDocument = gql`
-    query Groups($filters: GroupFilter, $pagination: OffsetPaginationInput) {
-  groups(filters: $filters, pagination: $pagination) {
-    ...ListGroup
-  }
-}
-    ${ListGroupFragmentDoc}`;
-
-/**
- * __useGroupsQuery__
- *
- * To run a query within a React component, call `useGroupsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGroupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGroupsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useGroupsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GroupsQuery, GroupsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GroupsQuery, GroupsQueryVariables>(GroupsDocument, options);
-      }
-export function useGroupsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GroupsQuery, GroupsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GroupsQuery, GroupsQueryVariables>(GroupsDocument, options);
-        }
-export type GroupsQueryHookResult = ReturnType<typeof useGroupsQuery>;
-export type GroupsLazyQueryHookResult = ReturnType<typeof useGroupsLazyQuery>;
-export type GroupsQueryResult = Apollo.QueryResult<GroupsQuery, GroupsQueryVariables>;
 export const MyHubHealthDocument = gql`
     query MyHubHealth {
   mycontext {
@@ -6174,6 +5698,46 @@ export function useCollaborationLinksLazyQuery(baseOptions?: ApolloReactHooks.La
 export type CollaborationLinksQueryHookResult = ReturnType<typeof useCollaborationLinksQuery>;
 export type CollaborationLinksLazyQueryHookResult = ReturnType<typeof useCollaborationLinksLazyQuery>;
 export type CollaborationLinksQueryResult = Apollo.QueryResult<CollaborationLinksQuery, CollaborationLinksQueryVariables>;
+export const TeamInvitesDocument = gql`
+    query TeamInvites($filters: InviteFilter, $pagination: OffsetPaginationInput) {
+  invites(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...TeamInvite
+  }
+}
+    ${TeamInviteFragmentDoc}`;
+
+/**
+ * __useTeamInvitesQuery__
+ *
+ * To run a query within a React component, call `useTeamInvitesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTeamInvitesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTeamInvitesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useTeamInvitesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TeamInvitesQuery, TeamInvitesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TeamInvitesQuery, TeamInvitesQueryVariables>(TeamInvitesDocument, options);
+      }
+export function useTeamInvitesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TeamInvitesQuery, TeamInvitesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TeamInvitesQuery, TeamInvitesQueryVariables>(TeamInvitesDocument, options);
+        }
+export type TeamInvitesQueryHookResult = ReturnType<typeof useTeamInvitesQuery>;
+export type TeamInvitesLazyQueryHookResult = ReturnType<typeof useTeamInvitesLazyQuery>;
+export type TeamInvitesQueryResult = Apollo.QueryResult<TeamInvitesQuery, TeamInvitesQueryVariables>;
 export const LayersDocument = gql`
     query Layers($filters: LayerFilter, $pagination: OffsetPaginationInput) {
   layers(filters: $filters, pagination: $pagination) {
@@ -6246,8 +5810,12 @@ export type DetailLayerQueryHookResult = ReturnType<typeof useDetailLayerQuery>;
 export type DetailLayerLazyQueryHookResult = ReturnType<typeof useDetailLayerLazyQuery>;
 export type DetailLayerQueryResult = Apollo.QueryResult<DetailLayerQuery, DetailLayerQueryVariables>;
 export const MandatesDocument = gql`
-    query Mandates($pagination: OffsetPaginationInput) {
-  mandates(pagination: $pagination) {
+    query Mandates($filters: MandateFilter, $pagination: OffsetPaginationInput) {
+  mandates(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
     ...ListMandate
   }
 }
@@ -6265,6 +5833,7 @@ export const MandatesDocument = gql`
  * @example
  * const { data, loading, error } = useMandatesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -6315,57 +5884,92 @@ export function useGetMandateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetMandateQueryHookResult = ReturnType<typeof useGetMandateQuery>;
 export type GetMandateLazyQueryHookResult = ReturnType<typeof useGetMandateLazyQuery>;
 export type GetMandateQueryResult = Apollo.QueryResult<GetMandateQuery, GetMandateQueryVariables>;
-export const StandingMandatesDocument = gql`
-    query StandingMandates {
-  mandates(filters: {live: true}) {
+export const MandateStatusesDocument = gql`
+    query MandateStatuses($ids: [ID!]!, $limit: Int!) {
+  mandates(filters: {ids: $ids}, pagination: {limit: $limit}) {
     id
-    agentIdentifier
-    claimant
-    allowMesh
-    subject {
-      identifier
-      version
-    }
-    parent {
-      id
-    }
+    isLive
+    expiresAt
+    revokedAt
   }
 }
     `;
 
 /**
- * __useStandingMandatesQuery__
+ * __useMandateStatusesQuery__
  *
- * To run a query within a React component, call `useStandingMandatesQuery` and pass it any options that fit your needs.
- * When your component renders, `useStandingMandatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useMandateStatusesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMandateStatusesQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useStandingMandatesQuery({
+ * const { data, loading, error } = useMandateStatusesQuery({
  *   variables: {
+ *      ids: // value for 'ids'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
-export function useStandingMandatesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<StandingMandatesQuery, StandingMandatesQueryVariables>) {
+export function useMandateStatusesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MandateStatusesQuery, MandateStatusesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<StandingMandatesQuery, StandingMandatesQueryVariables>(StandingMandatesDocument, options);
+        return ApolloReactHooks.useQuery<MandateStatusesQuery, MandateStatusesQueryVariables>(MandateStatusesDocument, options);
       }
-export function useStandingMandatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StandingMandatesQuery, StandingMandatesQueryVariables>) {
+export function useMandateStatusesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MandateStatusesQuery, MandateStatusesQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<StandingMandatesQuery, StandingMandatesQueryVariables>(StandingMandatesDocument, options);
+          return ApolloReactHooks.useLazyQuery<MandateStatusesQuery, MandateStatusesQueryVariables>(MandateStatusesDocument, options);
         }
-export type StandingMandatesQueryHookResult = ReturnType<typeof useStandingMandatesQuery>;
-export type StandingMandatesLazyQueryHookResult = ReturnType<typeof useStandingMandatesLazyQuery>;
-export type StandingMandatesQueryResult = Apollo.QueryResult<StandingMandatesQuery, StandingMandatesQueryVariables>;
+export type MandateStatusesQueryHookResult = ReturnType<typeof useMandateStatusesQuery>;
+export type MandateStatusesLazyQueryHookResult = ReturnType<typeof useMandateStatusesLazyQuery>;
+export type MandateStatusesQueryResult = Apollo.QueryResult<MandateStatusesQuery, MandateStatusesQueryVariables>;
+export const StandingMandateDocument = gql`
+    query StandingMandate($agent: AppIdentifier!, $subject: AppIdentifier!, $allowMesh: Boolean!) {
+  mandates(
+    filters: {live: true, claimant: AGENT, hasParent: false, agentIdentifier: $agent, subjectIdentifier: $subject, allowMesh: $allowMesh}
+    pagination: {limit: 1}
+  ) {
+    id
+  }
+}
+    `;
+
+/**
+ * __useStandingMandateQuery__
+ *
+ * To run a query within a React component, call `useStandingMandateQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStandingMandateQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStandingMandateQuery({
+ *   variables: {
+ *      agent: // value for 'agent'
+ *      subject: // value for 'subject'
+ *      allowMesh: // value for 'allowMesh'
+ *   },
+ * });
+ */
+export function useStandingMandateQuery(baseOptions: ApolloReactHooks.QueryHookOptions<StandingMandateQuery, StandingMandateQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<StandingMandateQuery, StandingMandateQueryVariables>(StandingMandateDocument, options);
+      }
+export function useStandingMandateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StandingMandateQuery, StandingMandateQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<StandingMandateQuery, StandingMandateQueryVariables>(StandingMandateDocument, options);
+        }
+export type StandingMandateQueryHookResult = ReturnType<typeof useStandingMandateQuery>;
+export type StandingMandateLazyQueryHookResult = ReturnType<typeof useStandingMandateLazyQuery>;
+export type StandingMandateQueryResult = Apollo.QueryResult<StandingMandateQuery, StandingMandateQueryVariables>;
 export const TeamMembersDocument = gql`
-    query TeamMembers($organization: ID!, $filters: MembershipFilter, $limit: Int!) {
+    query TeamMembers($organization: ID!, $filters: MembershipFilter, $offset: Int! = 0, $limit: Int!) {
   organization(id: $organization) {
     id
     memberships(
       filters: $filters
-      pagination: {limit: $limit}
+      pagination: {offset: $offset, limit: $limit}
       ordering: [{username: ASC}]
     ) {
       ...TeamMember
@@ -6391,6 +5995,7 @@ export const TeamMembersDocument = gql`
  *   variables: {
  *      organization: // value for 'organization'
  *      filters: // value for 'filters'
+ *      offset: // value for 'offset'
  *      limit: // value for 'limit'
  *   },
  * });
@@ -6595,82 +6200,9 @@ export function useOrganizationLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type OrganizationQueryHookResult = ReturnType<typeof useOrganizationQuery>;
 export type OrganizationLazyQueryHookResult = ReturnType<typeof useOrganizationLazyQuery>;
 export type OrganizationQueryResult = Apollo.QueryResult<OrganizationQuery, OrganizationQueryVariables>;
-export const ListOrganizationsDocument = gql`
-    query ListOrganizations($filters: OrganizationFilter, $pagination: OffsetPaginationInput) {
-  organizations(filters: $filters, pagination: $pagination) {
-    ...ListOrganization
-  }
-}
-    ${ListOrganizationFragmentDoc}`;
-
-/**
- * __useListOrganizationsQuery__
- *
- * To run a query within a React component, call `useListOrganizationsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListOrganizationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListOrganizationsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListOrganizationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListOrganizationsQuery, ListOrganizationsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListOrganizationsQuery, ListOrganizationsQueryVariables>(ListOrganizationsDocument, options);
-      }
-export function useListOrganizationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListOrganizationsQuery, ListOrganizationsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListOrganizationsQuery, ListOrganizationsQueryVariables>(ListOrganizationsDocument, options);
-        }
-export type ListOrganizationsQueryHookResult = ReturnType<typeof useListOrganizationsQuery>;
-export type ListOrganizationsLazyQueryHookResult = ReturnType<typeof useListOrganizationsLazyQuery>;
-export type ListOrganizationsQueryResult = Apollo.QueryResult<ListOrganizationsQuery, ListOrganizationsQueryVariables>;
-export const OrganizationOptionsDocument = gql`
-    query OrganizationOptions($search: String, $values: [ID!]) {
-  options: organizations(filters: {search: $search, ids: $values}) {
-    value: id
-    label: name
-  }
-}
-    `;
-
-/**
- * __useOrganizationOptionsQuery__
- *
- * To run a query within a React component, call `useOrganizationOptionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useOrganizationOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useOrganizationOptionsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useOrganizationOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>(OrganizationOptionsDocument, options);
-      }
-export function useOrganizationOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>(OrganizationOptionsDocument, options);
-        }
-export type OrganizationOptionsQueryHookResult = ReturnType<typeof useOrganizationOptionsQuery>;
-export type OrganizationOptionsLazyQueryHookResult = ReturnType<typeof useOrganizationOptionsLazyQuery>;
-export type OrganizationOptionsQueryResult = Apollo.QueryResult<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>;
 export const ReleasesDocument = gql`
-    query Releases {
-  releases {
+    query Releases($filters: ReleaseFilter, $pagination: OffsetPaginationInput) {
+  releases(filters: $filters, pagination: $pagination, ordering: [{id: DESC}]) {
     ...ListRelease
   }
 }
@@ -6688,6 +6220,8 @@ export const ReleasesDocument = gql`
  * @example
  * const { data, loading, error } = useReleasesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */
@@ -6702,49 +6236,6 @@ export function useReleasesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ReleasesQueryHookResult = ReturnType<typeof useReleasesQuery>;
 export type ReleasesLazyQueryHookResult = ReturnType<typeof useReleasesLazyQuery>;
 export type ReleasesQueryResult = Apollo.QueryResult<ReleasesQuery, ReleasesQueryVariables>;
-export const ReleaseDocument = gql`
-    query Release($identifier: AppIdentifier, $version: Version, $id: ID, $clientId: ID) {
-  release(
-    identifier: $identifier
-    version: $version
-    id: $id
-    clientId: $clientId
-  ) {
-    ...DetailRelease
-  }
-}
-    ${DetailReleaseFragmentDoc}`;
-
-/**
- * __useReleaseQuery__
- *
- * To run a query within a React component, call `useReleaseQuery` and pass it any options that fit your needs.
- * When your component renders, `useReleaseQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useReleaseQuery({
- *   variables: {
- *      identifier: // value for 'identifier'
- *      version: // value for 'version'
- *      id: // value for 'id'
- *      clientId: // value for 'clientId'
- *   },
- * });
- */
-export function useReleaseQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ReleaseQuery, ReleaseQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ReleaseQuery, ReleaseQueryVariables>(ReleaseDocument, options);
-      }
-export function useReleaseLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ReleaseQuery, ReleaseQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ReleaseQuery, ReleaseQueryVariables>(ReleaseDocument, options);
-        }
-export type ReleaseQueryHookResult = ReturnType<typeof useReleaseQuery>;
-export type ReleaseLazyQueryHookResult = ReturnType<typeof useReleaseLazyQuery>;
-export type ReleaseQueryResult = Apollo.QueryResult<ReleaseQuery, ReleaseQueryVariables>;
 export const DetailReleaseDocument = gql`
     query DetailRelease($id: ID!) {
   release(id: $id) {
@@ -6780,77 +6271,6 @@ export function useDetailReleaseLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type DetailReleaseQueryHookResult = ReturnType<typeof useDetailReleaseQuery>;
 export type DetailReleaseLazyQueryHookResult = ReturnType<typeof useDetailReleaseLazyQuery>;
 export type DetailReleaseQueryResult = Apollo.QueryResult<DetailReleaseQuery, DetailReleaseQueryVariables>;
-export const RoleDocument = gql`
-    query Role($id: ID!) {
-  role(id: $id) {
-    ...Role
-  }
-}
-    ${RoleFragmentDoc}`;
-
-/**
- * __useRoleQuery__
- *
- * To run a query within a React component, call `useRoleQuery` and pass it any options that fit your needs.
- * When your component renders, `useRoleQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useRoleQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useRoleQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RoleQuery, RoleQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<RoleQuery, RoleQueryVariables>(RoleDocument, options);
-      }
-export function useRoleLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RoleQuery, RoleQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<RoleQuery, RoleQueryVariables>(RoleDocument, options);
-        }
-export type RoleQueryHookResult = ReturnType<typeof useRoleQuery>;
-export type RoleLazyQueryHookResult = ReturnType<typeof useRoleLazyQuery>;
-export type RoleQueryResult = Apollo.QueryResult<RoleQuery, RoleQueryVariables>;
-export const ListRolesDocument = gql`
-    query ListRoles($filters: RoleFilter, $pagination: OffsetPaginationInput) {
-  roles(filters: $filters, pagination: $pagination) {
-    ...ListRole
-  }
-}
-    ${ListRoleFragmentDoc}`;
-
-/**
- * __useListRolesQuery__
- *
- * To run a query within a React component, call `useListRolesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListRolesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListRolesQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListRolesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListRolesQuery, ListRolesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListRolesQuery, ListRolesQueryVariables>(ListRolesDocument, options);
-      }
-export function useListRolesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListRolesQuery, ListRolesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListRolesQuery, ListRolesQueryVariables>(ListRolesDocument, options);
-        }
-export type ListRolesQueryHookResult = ReturnType<typeof useListRolesQuery>;
-export type ListRolesLazyQueryHookResult = ReturnType<typeof useListRolesLazyQuery>;
-export type ListRolesQueryResult = Apollo.QueryResult<ListRolesQuery, ListRolesQueryVariables>;
 export const RoleOptionsDocument = gql`
     query RoleOptions($search: String, $values: [ID!]) {
   options: roles(filters: {search: $search, ids: $values}) {
@@ -6888,88 +6308,20 @@ export function useRoleOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type RoleOptionsQueryHookResult = ReturnType<typeof useRoleOptionsQuery>;
 export type RoleOptionsLazyQueryHookResult = ReturnType<typeof useRoleOptionsLazyQuery>;
 export type RoleOptionsQueryResult = Apollo.QueryResult<RoleOptionsQuery, RoleOptionsQueryVariables>;
-export const ScopesDocument = gql`
-    query Scopes {
-  scopes {
-    description
-    value
-    label
-  }
-}
-    `;
-
-/**
- * __useScopesQuery__
- *
- * To run a query within a React component, call `useScopesQuery` and pass it any options that fit your needs.
- * When your component renders, `useScopesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useScopesQuery({
- *   variables: {
- *   },
- * });
- */
-export function useScopesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ScopesQuery, ScopesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ScopesQuery, ScopesQueryVariables>(ScopesDocument, options);
-      }
-export function useScopesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScopesQuery, ScopesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ScopesQuery, ScopesQueryVariables>(ScopesDocument, options);
-        }
-export type ScopesQueryHookResult = ReturnType<typeof useScopesQuery>;
-export type ScopesLazyQueryHookResult = ReturnType<typeof useScopesLazyQuery>;
-export type ScopesQueryResult = Apollo.QueryResult<ScopesQuery, ScopesQueryVariables>;
-export const ScopesOptionsDocument = gql`
-    query ScopesOptions {
-  options: scopes {
-    value
-    label
-  }
-}
-    `;
-
-/**
- * __useScopesOptionsQuery__
- *
- * To run a query within a React component, call `useScopesOptionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useScopesOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useScopesOptionsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useScopesOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ScopesOptionsQuery, ScopesOptionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ScopesOptionsQuery, ScopesOptionsQueryVariables>(ScopesOptionsDocument, options);
-      }
-export function useScopesOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScopesOptionsQuery, ScopesOptionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ScopesOptionsQuery, ScopesOptionsQueryVariables>(ScopesOptionsDocument, options);
-        }
-export type ScopesOptionsQueryHookResult = ReturnType<typeof useScopesOptionsQuery>;
-export type ScopesOptionsLazyQueryHookResult = ReturnType<typeof useScopesOptionsLazyQuery>;
-export type ScopesOptionsQueryResult = Apollo.QueryResult<ScopesOptionsQuery, ScopesOptionsQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String, $noUsers: Boolean!, $noGroups: Boolean!, $pagination: OffsetPaginationInput) {
   users: users(filters: {search: $search}, pagination: $pagination) @skip(if: $noUsers) {
-    ...ListUser
+    id
+    username
+    firstName
+    lastName
   }
   groups: groups(filters: {search: $search}, pagination: $pagination) @skip(if: $noGroups) {
-    ...ListGroup
+    id
+    name
   }
 }
-    ${ListUserFragmentDoc}
-${ListGroupFragmentDoc}`;
+    `;
 
 /**
  * __useGlobalSearchQuery__
@@ -7143,40 +6495,6 @@ export function useGetServiceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetServiceQueryHookResult = ReturnType<typeof useGetServiceQuery>;
 export type GetServiceLazyQueryHookResult = ReturnType<typeof useGetServiceLazyQuery>;
 export type GetServiceQueryResult = Apollo.QueryResult<GetServiceQuery, GetServiceQueryVariables>;
-export const MeDocument = gql`
-    query Me {
-  me {
-    ...DetailUser
-  }
-}
-    ${DetailUserFragmentDoc}`;
-
-/**
- * __useMeQuery__
- *
- * To run a query within a React component, call `useMeQuery` and pass it any options that fit your needs.
- * When your component renders, `useMeQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMeQuery({
- *   variables: {
- *   },
- * });
- */
-export function useMeQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MeQuery, MeQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-      }
-export function useMeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-        }
-export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
-export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
-export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const UserDocument = gql`
     query User($id: ID!) {
   user(id: $id) {
@@ -7283,41 +6601,6 @@ export function useUserChipLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type UserChipQueryHookResult = ReturnType<typeof useUserChipQuery>;
 export type UserChipLazyQueryHookResult = ReturnType<typeof useUserChipLazyQuery>;
 export type UserChipQueryResult = Apollo.QueryResult<UserChipQuery, UserChipQueryVariables>;
-export const DetailUserDocument = gql`
-    query DetailUser($id: ID!) {
-  user(id: $id) {
-    ...DetailUser
-  }
-}
-    ${DetailUserFragmentDoc}`;
-
-/**
- * __useDetailUserQuery__
- *
- * To run a query within a React component, call `useDetailUserQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailUserQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailUserQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailUserQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailUserQuery, DetailUserQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<DetailUserQuery, DetailUserQueryVariables>(DetailUserDocument, options);
-      }
-export function useDetailUserLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailUserQuery, DetailUserQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<DetailUserQuery, DetailUserQueryVariables>(DetailUserDocument, options);
-        }
-export type DetailUserQueryHookResult = ReturnType<typeof useDetailUserQuery>;
-export type DetailUserLazyQueryHookResult = ReturnType<typeof useDetailUserLazyQuery>;
-export type DetailUserQueryResult = Apollo.QueryResult<DetailUserQuery, DetailUserQueryVariables>;
 export const UsersDocument = gql`
     query Users($filters: UserFilter, $pagination: OffsetPaginationInput) {
   users(filters: $filters, pagination: $pagination) {
@@ -7355,8 +6638,11 @@ export type UsersQueryHookResult = ReturnType<typeof useUsersQuery>;
 export type UsersLazyQueryHookResult = ReturnType<typeof useUsersLazyQuery>;
 export type UsersQueryResult = Apollo.QueryResult<UsersQuery, UsersQueryVariables>;
 export const UserOptionsDocument = gql`
-    query UserOptions($search: String, $values: [ID!]) {
-  options: users(filters: {search: $search, ids: $values}) {
+    query UserOptions($search: String, $values: [ID!], $limit: Int! = 20) {
+  options: users(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: $limit}
+  ) {
     value: id
     label: username
   }
@@ -7377,6 +6663,7 @@ export const UserOptionsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      limit: // value for 'limit'
  *   },
  * });
  */

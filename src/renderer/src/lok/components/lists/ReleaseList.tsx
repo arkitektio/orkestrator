@@ -1,25 +1,21 @@
+import { createList } from "@/core/layout/createList";
 import { CARD_FRAME_MIN_WIDTH } from "@/core/ui/card-frame";
-import { ListRender } from "@/core/layout/ListRender";
 import { LokRelease } from "@/core/linkers";
 import { useReleasesQuery } from "@/lok/api/graphql";
 import ReleaseCard from "../cards/ReleaseCard";
 
-const List = () => {
-  const { data, loading, error, refetch } = useReleasesQuery();
+/** Every app's releases, newest first, a page at a time. */
+const ReleaseList = createList({
+  useHook: useReleasesQuery,
+  dataKey: "releases",
+  ItemComponent: ReleaseCard,
+  title: "Releases",
+  smart: LokRelease,
+  autoHide: false,
+  emptyTitle: "No release",
+  emptyDescription: "Releases appear once an app registers one with your organization.",
+  minItemWidth: CARD_FRAME_MIN_WIDTH,
+  defaultLimit: 40,
+});
 
-  return (
-    <ListRender
-      array={data?.releases}
-      loading={loading}
-      error={error}
-      title={<LokRelease.ListLink className="flex-0">Releases</LokRelease.ListLink>}
-      // The query takes no variables, so paging has nothing to send.
-      refetch={() => refetch()}
-      minItemWidth={CARD_FRAME_MIN_WIDTH}
-    >
-      {(item) => <ReleaseCard key={item.id} item={item} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default ReleaseList;

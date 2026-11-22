@@ -1,5 +1,7 @@
-query Mandates($pagination: OffsetPaginationInput) {
-  mandates(pagination: $pagination) {
+# The mandates page: newest first, a page at a time; `filters: { live: true }`
+# leaves out the revoked and expired ones.
+query Mandates($filters: MandateFilter, $pagination: OffsetPaginationInput) {
+  mandates(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
     ...ListMandate
   }
 }
@@ -10,20 +12,30 @@ query GetMandate($id: ID!) {
   }
 }
 
-# The live mandates, to find the standing one an agent app issues device keys
-# under (matched by agent, subject app, mesh permission and having no parent).
-query StandingMandates {
-  mandates(filters: { live: true }) {
+# Whether these mandates still work (`lok.mandateStatus`), in one request.
+query MandateStatuses($ids: [ID!]!, $limit: Int!) {
+  mandates(filters: { ids: $ids }, pagination: { limit: $limit }) {
     id
-    agentIdentifier
-    claimant
-    allowMesh
-    subject {
-      identifier
-      version
+    isLive
+    expiresAt
+    revokedAt
+  }
+}
+
+# The standing mandate an agent app issues device keys under, picked by the
+# server: live, top-level, this agent, this subject app, this mesh permission.
+query StandingMandate($agent: AppIdentifier!, $subject: AppIdentifier!, $allowMesh: Boolean!) {
+  mandates(
+    filters: {
+      live: true
+      claimant: AGENT
+      hasParent: false
+      agentIdentifier: $agent
+      subjectIdentifier: $subject
+      allowMesh: $allowMesh
     }
-    parent {
-      id
-    }
+    pagination: { limit: 1 }
+  ) {
+    id
   }
 }

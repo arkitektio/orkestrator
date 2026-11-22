@@ -1,8 +1,9 @@
 fragment ListServiceInstanceMapping on ServiceInstanceMapping {
   id
   key
+  # The instance a mapping hangs off is the page's own: its id is enough.
   instance {
-    ...ListServiceInstance
+    id
   }
   client {
     ...ListClient

@@ -7,7 +7,9 @@ fragment DetailRelease on Release {
   app {
     ...ListApp
   }
-  clients {
+  # How many clients run it, and the first page of them.
+  clientCount
+  clients(pagination: { limit: 50 }) {
     ...ListClient
   }
 }
