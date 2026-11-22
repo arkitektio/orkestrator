@@ -1,3 +1,30 @@
+# [8.21.0](https://github.com/arkitektio/orkestrator/compare/v8.20.0...v8.21.0) (2026-11-22)
+
+
+### Bug Fixes
+
+* **mikro:** a pinned column summary is derived, not set from an effect ([10c2698](https://github.com/arkitektio/orkestrator/commit/10c2698a11dddf0eaac7d1adaf21977d7b81d30c))
+* **rekuest,bank:** no ref written during render, no `any` in the auth watch ([9535f46](https://github.com/arkitektio/orkestrator/commit/9535f46595ee16ce98092f7fd83c7850f354d1d2))
+
+
+### Features
+
+* **alpaka:** what a room is about and its latest activity come from the server ([f167a9e](https://github.com/arkitektio/orkestrator/commit/f167a9eced8b7a192c2c0029e045aa4a7b8d64b7))
+* **bank:** counts, totals and merged positions from the server; one account's syncs ([d801128](https://github.com/arkitektio/orkestrator/commit/d801128aa8e309635f049a6f7fbadf7edce089a1))
+* **elektro:** clocks, timed data and a channel's anchors asked of the server; colouring stored ([4546e7e](https://github.com/arkitektio/orkestrator/commit/4546e7e839423b07b7418746e2024a690bd047b8))
+* **fluss:** running runs and each flow's newest version asked of the server; runs heard live ([ed72f2d](https://github.com/arkitektio/orkestrator/commit/ed72f2dc40d8b3e63593c762bd68881468ae69c5))
+* **kabinet:** the app store lists apps the server filters, orders and pages ([24b782d](https://github.com/arkitektio/orkestrator/commit/24b782d59d7d3de47c1f2d3249bf999859079fac))
+* **kraph:** open mentions counted, members' projects and graphs, sameness and relate asked of the server ([42f00ea](https://github.com/arkitektio/orkestrator/commit/42f00ea5af5dd268ee7c2a903128a9929da61377))
+* **kuvert:** the change queue counted and pushed as a whole, live; logins followed, not re-read ([13429e2](https://github.com/arkitektio/orkestrator/commit/13429e2e11d2fbad336a864d67067c2de535f72a))
+* **lok:** devices, clients, members and requests asked of the server; live messages and hub health ([d4612ac](https://github.com/arkitektio/orkestrator/commit/d4612ac0a19059059da0ff49363d234abb8f88b1))
+* **lok:** members ordered by username, New this month, app and device search on the server ([bafc5aa](https://github.com/arkitektio/orkestrator/commit/bafc5aab438c0b9dbed22260f927b5dd8245f833))
+* **lovekit:** calls end, people come and go and streams go live as events, not polls ([986a187](https://github.com/arkitektio/orkestrator/commit/986a1877800eb578fbb02e8147e9d9f80a051ca7))
+* **mikro:** a folder's kinds, order and counts are the server's; sparse data and networks listed ([5e283e3](https://github.com/arkitektio/orkestrator/commit/5e283e3a9442ffcb1b06601f3e989f48b47683a2))
+* **mikro:** column ranges from the parquet footer; histograms and distinct values computed once and pinned ([0449b21](https://github.com/arkitektio/orkestrator/commit/0449b2162bc8eab64f41d4f87754f43894dbd586))
+* **mikro:** physical spaces, multi-hop pixel sizes, counts and dates asked of the server ([2fdc007](https://github.com/arkitektio/orkestrator/commit/2fdc007b8ed02679c4a7c3151e75c6abeba97108))
+* **mikro:** track tails, chart value ranges and colour gradients are stored; a deleted lens is evicted by its kind ([5452c81](https://github.com/arkitektio/orkestrator/commit/5452c810bb0fa1d076396b1d5e65cf07c12d1415))
+* **rekuest:** ask the server what it now answers: kinds, counts, order, one task's events ([9733e29](https://github.com/arkitektio/orkestrator/commit/9733e297c18fb7940511343fe070143812978c0c))
+
 # [8.20.0](https://github.com/arkitektio/orkestrator/compare/v8.19.0...v8.20.0) (2026-11-22)
 
 

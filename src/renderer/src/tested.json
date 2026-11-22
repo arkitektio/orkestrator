@@ -1,15 +1,15 @@
 {
-  "alpaka": "9.4.0",
-  "bank": "9.4.0",
+  "alpaka": "9.5.0",
+  "bank": "9.5.0",
   "dokuments": "6.4.0",
-  "elektro": "9.4.0",
-  "fluss": "11.7.0",
-  "kabinet": "14.7.0",
-  "kraph": "7.5.0",
-  "kuvert": "9.4.0",
-  "lok": "10.14.2",
+  "elektro": "9.6.0",
+  "fluss": "11.8.0",
+  "kabinet": "14.8.0",
+  "kraph": "7.6.0",
+  "kuvert": "9.5.0",
+  "lok": "10.16.0",
   "lokate": "6.3.0",
-  "lovekit": "9.0.0",
-  "mikro": "15.9.1",
-  "rekuest": "22.9.0"
+  "lovekit": "9.1.0",
+  "mikro": "15.10.0",
+  "rekuest": "22.10.0"
 }
