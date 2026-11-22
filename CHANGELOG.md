@@ -1,3 +1,18 @@
+# [8.22.0](https://github.com/arkitektio/orkestrator/compare/v8.21.0...v8.22.0) (2026-11-22)
+
+
+### Bug Fixes
+
+* **bank:** an account's positions ask for one day of valuation history ([3519f0b](https://github.com/arkitektio/orkestrator/commit/3519f0b18088c2ad96f49c940b7a229019f1639b))
+* **rekuest:** an action card says what its group says ([bc89d3f](https://github.com/arkitektio/orkestrator/commit/bc89d3f414cfb8c8d40a70c1e88eb06349c69f3f))
+
+
+### Features
+
+* **bank:** a depot's positions on a past day are merged on the server ([e4d74b8](https://github.com/arkitektio/orkestrator/commit/e4d74b88be73443825c70b5df248f120be7cef9e))
+* **kabinet:** the store's bloks, search and totals over every app ([7270ff6](https://github.com/arkitektio/orkestrator/commit/7270ff66d97e98ffcf70608c2ab597455561f0f9))
+* **rekuest:** actions grouped by availability across every page ([cff9dd1](https://github.com/arkitektio/orkestrator/commit/cff9dd1225663aef95c6d247d3d8ee463a0242bd))
+
 # [8.21.0](https://github.com/arkitektio/orkestrator/compare/v8.20.0...v8.21.0) (2026-11-22)
 
 
