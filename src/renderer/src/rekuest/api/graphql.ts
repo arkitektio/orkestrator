@@ -62,6 +62,8 @@ export type Action = {
   assignBloks: Array<ActionBlok>;
   /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
   assignable: Scalars['Boolean']['output'];
+  /** Whether it can run: RUNNABLE now, RECENT (an implementing agent seen in the last 24 hours), OFFLINE, or NONE (no implementation). The same rank `ActionOrder.availability` orders and `ActionFilter.availability` filters by. */
+  availability: ActionAvailability;
   /** The action's own bloks, at most one per context (PANEL for a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies): declared with the action, the latest registration's. Not part of its hash. */
   bloks: Array<ActionBlok>;
   /** Collections to which this action belongs. */
@@ -256,6 +258,14 @@ export type ActionArgumentInput = {
   valuePath?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Whether an action can run, as a list groups it: RUNNABLE now (`Action.assignable`), RECENT (an implementing agent was seen in the last 24 hours), OFFLINE (implemented, but no agent seen for longer), NONE (no implementation). In that order, which is `ActionOrder.availability` ascending. */
+export enum ActionAvailability {
+  None = 'NONE',
+  Offline = 'OFFLINE',
+  Recent = 'RECENT',
+  Runnable = 'RUNNABLE'
+}
+
 /** An action's own blok for one context: how a client shows a run of the action there. It names devices only by the action's dependency keys: a run binds them through `Task.dependencyAgents`, a preview through the `dependencyTree` dry run. */
 export type ActionBlok = {
   __typename?: 'ActionBlok';
@@ -415,6 +425,8 @@ export type ActionFilter = {
   asks?: InputMaybe<Scalars['Boolean']['input']>;
   /** Whether an agent that can take the action is connected now (`Action.assignable`). */
   assignable?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only actions of these availabilities (`Action.availability`). An empty list is ignored. */
+  availability?: InputMaybe<Array<ActionAvailability>>;
   /** Whether any of its implementations may call other actions (a declared dependency, or `dynamicCalls`). False: none ever calls. */
   calls?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
@@ -449,16 +461,18 @@ export enum ActionKind {
 
 export type ActionOrder =
   /** By the identifier of the app the action belongs to, so one app's actions stay together across pages. */
-  { appIdentifier: Ordering; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  { appIdentifier: Ordering; assignable?: never; availability?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
   |  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
-  { appIdentifier?: never; assignable: Ordering; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  { appIdentifier?: never; assignable: Ordering; availability?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  /** By `Action.availability`: runnable now first (ASC), then recently active, offline, and without an implementation; DESC reverses it. Keeps each availability group together across pages. */
+  { appIdentifier?: never; assignable?: never; availability: Ordering; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
   |  /** By the name of the action's first collection (alphabetically): the collection a grouped list files it under. Actions in no collection come last. */
-  { appIdentifier?: never; assignable?: never; collection: Ordering; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
-  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt: Ordering; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  { appIdentifier?: never; assignable?: never; availability?: never; collection: Ordering; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; availability?: never; collection?: never; definedAt: Ordering; estimatedRuntime?: never; kind?: never; usedAt?: never; }
   |  /** Runnable first, then by the estimate for the object named in the `estimatedRuntime` filter, with no estimate last. Does nothing without that filter. */
-  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime: Ordering; kind?: never; usedAt?: never; }
-  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind: Ordering; usedAt?: never; }
-  |  { appIdentifier?: never; assignable?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt: Ordering; };
+  { appIdentifier?: never; assignable?: never; availability?: never; collection?: never; definedAt?: never; estimatedRuntime: Ordering; kind?: never; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; availability?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind: Ordering; usedAt?: never; }
+  |  { appIdentifier?: never; assignable?: never; availability?: never; collection?: never; definedAt?: never; estimatedRuntime?: never; kind?: never; usedAt: Ordering; };
 
 export enum ActionScope {
   BridgeGlobalToLocal = 'BRIDGE_GLOBAL_TO_LOCAL',
@@ -7490,7 +7504,7 @@ export type ListActionFragment = { __typename?: 'Action', id: string, name: stri
   ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
 export type BrowseActionFragment = (
-  { __typename?: 'Action', definedAt: any, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
+  { __typename?: 'Action', definedAt: any, availability: ActionAvailability, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
   & ListActionFragment
 );
 
@@ -10914,6 +10928,7 @@ export const BrowseActionFragmentDoc = gql`
     fragment BrowseAction on Action {
   ...ListAction
   definedAt
+  availability
   isDev
   collections {
     id

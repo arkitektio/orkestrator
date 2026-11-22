@@ -26,6 +26,11 @@ type Action {
   assignable: Boolean!
 
   """
+  Whether it can run: RUNNABLE now, RECENT (an implementing agent seen in the last 24 hours), OFFLINE, or NONE (no implementation). The same rank `ActionOrder.availability` orders and `ActionFilter.availability` filters by.
+  """
+  availability: ActionAvailability!
+
+  """
   The action's own bloks, at most one per context (PANEL for a task panel, SCENE a 3D view, as a `Space` placing the run's dependencies): declared with the action, the latest registration's. Not part of its hash.
   """
   bloks: [ActionBlok!]!
@@ -221,6 +226,16 @@ input ActionArgumentInput {
 
   """A path the argument reads, as a prop's dynamic_value does."""
   valuePath: String = null
+}
+
+"""
+Whether an action can run, as a list groups it: RUNNABLE now (`Action.assignable`), RECENT (an implementing agent was seen in the last 24 hours), OFFLINE (implemented, but no agent seen for longer), NONE (no implementation). In that order, which is `ActionOrder.availability` ascending.
+"""
+enum ActionAvailability {
+  NONE
+  OFFLINE
+  RECENT
+  RUNNABLE
 }
 
 """
@@ -479,6 +494,11 @@ input ActionFilter {
   assignable: Boolean
 
   """
+  Only actions of these availabilities (`Action.availability`). An empty list is ignored.
+  """
+  availability: [ActionAvailability!]
+
+  """
   Whether any of its implementations may call other actions (a declared dependency, or `dynamicCalls`). False: none ever calls.
   """
   calls: Boolean
@@ -539,6 +559,11 @@ input ActionOrder @oneOf {
   Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance.
   """
   assignable: Ordering
+
+  """
+  By `Action.availability`: runnable now first (ASC), then recently active, offline, and without an implementation; DESC reverses it. Keeps each availability group together across pages.
+  """
+  availability: Ordering
 
   """
   By the name of the action's first collection (alphabetically): the collection a grouped list files it under. Actions in no collection come last.

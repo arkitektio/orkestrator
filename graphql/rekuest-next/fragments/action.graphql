@@ -35,6 +35,7 @@ fragment ListAction on Action {
 fragment BrowseAction on Action {
   ...ListAction
   definedAt
+  availability
   isDev
   collections {
     id

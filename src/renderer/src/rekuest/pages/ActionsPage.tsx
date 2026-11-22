@@ -133,9 +133,7 @@ const Page = () => {
     const groupOrder = groupOrdering(groupKey);
     return groupOrder ? [groupOrder, ...(sorted ?? [])] : sorted;
   }, [sort, groupKey]);
-  // Availability is grouped over the loaded page only, so it loads more.
-  const pageOnlyGrouping = grouping !== undefined && groupOrdering(groupKey) === undefined;
-  const limit = pageOnlyGrouping ? 100 : 30;
+  const limit = 30;
 
   const hasFilter = Object.keys(filters).length > 0;
   const clearAll = () => {
@@ -276,13 +274,6 @@ const Page = () => {
       }
     >
       <div className="p-3">
-        {pageOnlyGrouping && (
-          <p className="mb-3 text-xs text-muted-foreground">
-            Groups cover the {limit} actions loaded per page. Add filters to
-            see a whole group.
-          </p>
-        )}
-
         <ActionBrowseList
           filters={filters}
           ordering={ordering}

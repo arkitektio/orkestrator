@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { ActionKind, BrowseActionFragment, Ordering } from "../../api/graphql";
+import { ActionAvailability, ActionKind, BrowseActionFragment, Ordering } from "../../api/graphql";
 import {
   ACTION_GROUP_KEYS,
   ACTION_GROUPINGS,
@@ -67,33 +67,32 @@ describe("action groupings", () => {
 
   it("orders availability from runnable to unimplemented", () => {
     expect(
-      sortGroups("availability", ["none", "offline", "online", "recent"]),
-    ).toEqual(["online", "recent", "offline", "none"]);
+      sortGroups("availability", [
+        ActionAvailability.None,
+        ActionAvailability.Offline,
+        ActionAvailability.Runnable,
+        ActionAvailability.Recent,
+      ]),
+    ).toEqual([
+      ActionAvailability.Runnable,
+      ActionAvailability.Recent,
+      ActionAvailability.Offline,
+      ActionAvailability.None,
+    ]);
   });
 
-  it("derives the availability group from CONNECTED agents", () => {
+  it("groups by the server's availability", () => {
     const grouping = getActionGrouping("availability")!;
-    expect(
-      grouping.getGroupId(
-        action({
-          implementations: [
-            {
-              id: "i1",
-              agent: { id: "ag", name: "lab", active: true, connected: true },
-            },
-          ],
-        }),
-      ),
-    ).toBe("online");
-    expect(grouping.getGroupId(action({}))).toBe("none");
+    expect(grouping.getGroupId(action({ availability: ActionAvailability.Recent }))).toBe(
+      ActionAvailability.Recent,
+    );
   });
 
-  it("orders by what app, collection and kind group on, so groups stay whole across pages", () => {
+  it("orders by what every grouping groups on, so groups stay whole across pages", () => {
     expect(groupOrdering("app")).toEqual({ appIdentifier: Ordering.Asc });
     expect(groupOrdering("collection")).toEqual({ collection: Ordering.Asc });
     expect(groupOrdering("kind")).toEqual({ kind: Ordering.Asc });
-    // Worked out from implementations: the server cannot order by it.
-    expect(groupOrdering("availability")).toBeUndefined();
+    expect(groupOrdering("availability")).toEqual({ availability: Ordering.Asc });
     expect(groupOrdering("none")).toBeUndefined();
   });
 });
