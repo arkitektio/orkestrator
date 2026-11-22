@@ -62,8 +62,20 @@ export type AuthFlowHandler = {
   title: string;
   /** REDIRECT: finish with the redirect's code, or record its refusal. POLL: advance one step (no code). */
   complete: (client: ApolloClient<any>, input: AuthCompletion) => Promise<AuthUpdate>;
-  /** Where the login is, without moving it; a REDIRECT dialog re-reads with it. */
+  /** Where the login is, without moving it; a REDIRECT dialog re-reads with it when it cannot `watch`. */
   read?: (client: ApolloClient<any>, session: AuthSession) => Promise<AuthUpdate | null>;
+  /**
+   * Follow the login as the server reports it (its `authSession(state)`
+   * subscription): `onUpdate` with where it is now, then on every change.
+   * Answers how to stop. A REDIRECT dialog listens with it instead of
+   * re-reading on a timer.
+   */
+  watch?: (
+    client: ApolloClient<any>,
+    session: AuthSession,
+    onUpdate: (update: AuthUpdate) => void,
+    onError: (error: unknown) => void,
+  ) => () => void;
   /** Drop a login that will not be finished. */
   cancel?: (client: ApolloClient<any>, session: AuthSession) => Promise<void>;
   /** A failed request as a sentence; defaults to the error's message. */

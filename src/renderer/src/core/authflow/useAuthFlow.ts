@@ -39,9 +39,13 @@ export const useAuthFlow = ({
       if (!found) throw new Error(`${handler().service} is not available`);
       return found;
     };
+    const watch = MODULE_AUTH_FLOWS[flow]?.watch;
     return {
       complete: async (input) => handler().complete(client(), input),
       read: async (session) => handler().read?.(client(), session) ?? null,
+      ...(watch
+        ? { watch: (session, onUpdate, onError) => watch(client(), session, onUpdate, onError) }
+        : {}),
       cancel: async (session) => handler().cancel?.(client(), session),
     };
   }, [flow, store]);

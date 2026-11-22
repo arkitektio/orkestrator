@@ -12,7 +12,13 @@ import { CloudCheck, CloudUpload, RotateCcw, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useKuvert } from "../api/funcs";
-import { MailChangeFragment, MailChangeState, useListMailAccountsQuery, useListMailChangesQuery } from "../api/graphql";
+import {
+  MailChangeFragment,
+  MailChangeState,
+  useListMailAccountsQuery,
+  useListMailChangesQuery,
+  useMailChangesSubscription,
+} from "../api/graphql";
 import { changeStatus, describeChange } from "../components/changes/describe";
 import { describeError, reportKuvertError, reportKuvertErrorAs } from "../errors";
 import { KUVERT_HELP } from "../help";
@@ -94,7 +100,7 @@ const ChangeRow = ({ change }: { change: MailChangeFragment }) => {
             size="icon-sm"
             tooltip="Try again"
             disabled={busy}
-            onClick={() => run(() => retryChanges(client, [change.id]), "Couldn't retry the change")}
+            onClick={() => run(() => retryChanges(client, { changes: [change.id] }), "Couldn't retry the change")}
           >
             <RotateCcw />
           </TooltipButton>
@@ -108,6 +114,11 @@ const ChangeRow = ({ change }: { change: MailChangeFragment }) => {
  * Changes made here that have not reached the server yet, oldest first:
  * waiting out their undo window, backing off, or failed. Each can be undone
  * (while it may) or tried again.
+ *
+ * Whether anything is pending or failed comes from the mailboxes' own counts,
+ * not from the listed page, so "Push now" and "Retry failed" are right with
+ * any filter and past any page. The list is read again whenever a mailbox's
+ * queue moves (`mailChanges`).
  */
 const ChangesPage = () => {
   const client = useKuvert();
@@ -116,7 +127,7 @@ const ChangesPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
   const [pushing, setPushing] = useState(false);
   const accounts = useListMailAccountsQuery();
-  const { data, loading } = useListMailChangesQuery({
+  const { data, loading, refetch } = useListMailChangesQuery({
     variables: {
       filters: {
         account,
@@ -124,14 +135,21 @@ const ChangesPage = () => {
       },
       pagination: { limit: 500 },
     },
-    // Pending changes leave on their own as they are pushed.
-    pollInterval: 15000,
+  });
+  // Pending changes leave on their own as they are pushed: read the list (and
+  // the counts) again when a mailbox's queue moves.
+  useMailChangesSubscription({
+    variables: { account: account ?? null },
+    onData: () => {
+      void refetch();
+      void accounts.refetch();
+    },
   });
   const changes = data?.mailChanges ?? [];
-  const failed = changes.filter((c) => c.state === MailChangeState.Failed);
-  const pendingAccounts = account
-    ? [account]
-    : [...new Set(changes.filter((c) => c.state === MailChangeState.Pending).map((c) => c.account.id))];
+  const mailboxes = (accounts.data?.mailAccounts ?? []).filter((a) => !account || a.id === account);
+  const pendingAccounts = mailboxes.filter((a) => a.pendingChanges > 0).map((a) => a.id);
+  const failedAccounts = mailboxes.filter((a) => a.failedChanges > 0);
+  const failedCount = failedAccounts.reduce((sum, a) => sum + a.failedChanges, 0);
 
   const setAccount = (id: string) =>
     setParams(
@@ -184,17 +202,15 @@ const ChangesPage = () => {
               </Select>
             </PageAction.Slot>
           )}
-          {failed.length > 0 && (
+          {failedCount > 0 && (
             <PageAction
               size="sm"
               collapse="icon"
               icon={<RotateCcw className="h-4 w-4" />}
               onClick={() =>
-                retryChanges(
-                  client,
-                  failed.map((c) => c.id),
-                )
-                  .then(() => toast.success(`Queued ${failed.length} again`))
+                // Every failed change of each mailbox with any, however many.
+                Promise.all(failedAccounts.map((a) => retryChanges(client, { account: a.id })))
+                  .then(() => toast.success(`Queued ${failedCount} again`))
                   .catch(reportKuvertErrorAs("Couldn't retry the changes"))
               }
             >

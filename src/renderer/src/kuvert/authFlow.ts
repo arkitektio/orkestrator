@@ -5,6 +5,7 @@ import {
   CompleteAuthDocument,
   ListMailAccountsDocument,
   MailboxTreeDocument,
+  WatchAuthSessionDocument,
 } from "./api/graphql";
 import { toastText } from "./errors";
 
@@ -14,6 +15,11 @@ export const KUVERT_AUTH_FLOW = contractAuthFlow({
   title: "Mailbox sign-in",
   restartDialog: "kuvertlink",
   describeError: toastText,
-  documents: { complete: CompleteAuthDocument, read: AuthSessionDocument, cancel: CancelAuthDocument },
+  documents: {
+    complete: CompleteAuthDocument,
+    read: AuthSessionDocument,
+    cancel: CancelAuthDocument,
+    watch: WatchAuthSessionDocument,
+  },
   refetchOnDone: [ListMailAccountsDocument, MailboxTreeDocument],
 });

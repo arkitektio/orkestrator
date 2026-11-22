@@ -1,0 +1,10 @@
+# Where a mailbox's queue of changes stands, whenever something queues, pushes,
+# fails, retries or undoes a change: one mailbox, or (null) every visible one.
+subscription MailChanges($account: ID) {
+  mailChanges(account: $account) {
+    accountId
+    pending
+    failed
+    pushed
+  }
+}

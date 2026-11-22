@@ -1,0 +1,6 @@
+# A login as it is now, then whenever it changes, until it is no longer PENDING.
+subscription WatchAuthSession($state: String!) {
+  authSession(state: $state) {
+    ...AuthSession
+  }
+}

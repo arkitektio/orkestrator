@@ -9,9 +9,23 @@ mutation PushMailChanges($account: ID!) {
   }
 }
 
-mutation RetryMailChanges($changes: [ID!]!) {
-  retryMailChanges(changes: $changes) {
+# Queue failed changes again: these `changes`, and every failed change of `account`.
+mutation RetryMailChanges($changes: [ID!], $account: ID) {
+  retryMailChanges(changes: $changes, account: $account) {
     ...MailChange
+  }
+}
+
+# Push the due changes of several mailboxes in one call: these `accounts`, or
+# (null) every visible mailbox with pending changes.
+mutation PushAllMailChanges($accounts: [ID!]) {
+  pushAllMailChanges(accounts: $accounts) {
+    pushed
+    failed
+    pending
+    account {
+      ...ListMailAccount
+    }
   }
 }
 

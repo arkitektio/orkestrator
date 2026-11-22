@@ -54,7 +54,8 @@ export const contractAuthFlow = ({
   refetchOnDone,
   ...rest
 }: Pick<AuthFlowHandler, "service" | "title" | "describeError" | "restartDialog"> & {
-  documents: { complete: DocumentNode; read: DocumentNode; cancel: DocumentNode };
+  /** `watch` is the `authSession(state)` subscription, where the service has it. */
+  documents: { complete: DocumentNode; read: DocumentNode; cancel: DocumentNode; watch?: DocumentNode };
   /** The lists a finished login adds to. */
   refetchOnDone?: DocumentNode[];
 }): AuthFlowHandler => ({
@@ -80,4 +81,20 @@ export const contractAuthFlow = ({
   cancel: async (client, session) => {
     await client.mutate({ mutation: documents.cancel, variables: { state: session.state } });
   },
+  ...(documents.watch ? { watch: watchWith(documents.watch) } : {}),
 });
+
+/** `watch` over a service's `authSession(state)` subscription. */
+const watchWith =
+  (document: DocumentNode): NonNullable<AuthFlowHandler["watch"]> =>
+  (client, session, onUpdate, onError) => {
+    const subscription = client
+      .subscribe<{ authSession: WireAuthSession }>({ query: document, variables: { state: session.state } })
+      .subscribe({
+        next: ({ data }) => {
+          if (data) onUpdate(updateOf(data.authSession));
+        },
+        error: onError,
+      });
+    return () => subscription.unsubscribe();
+  };

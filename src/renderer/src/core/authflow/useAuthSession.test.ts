@@ -80,6 +80,32 @@ describe("useAuthSession", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
+  it("REDIRECT with watch: follows the server's reports, never re-reads, stops listening when DONE", async () => {
+    vi.useFakeTimers();
+    const stop = vi.fn();
+    let report: (update: AuthUpdate) => void = () => undefined;
+    const watch = vi.fn((_: AuthSession, onUpdate: (update: AuthUpdate) => void) => {
+      report = onUpdate;
+      return stop;
+    });
+    const { result } = await started("REDIRECT", { ...driver, watch } as typeof driver);
+
+    expect(watch).toHaveBeenCalledTimes(1);
+    expect(watch).toHaveBeenLastCalledWith(
+      expect.objectContaining({ state: "s-1" }),
+      expect.any(Function),
+      expect.any(Function),
+    );
+    act(() => report(pending("CONSENT")));
+    expect(result.current.phase).toEqual({ kind: "step", step: "CONSENT" });
+    act(() => report(done));
+    expect(result.current.phase).toEqual({ kind: "done" });
+    expect(stop).toHaveBeenCalled();
+    for (let i = 0; i < 3; i++) await tick(3_100);
+    expect(read).not.toHaveBeenCalled();
+    expect(watch).toHaveBeenCalledTimes(1);
+  });
+
   it("REDIRECT: finishes the moment the callback page announces it, without a read", async () => {
     vi.useFakeTimers();
     const { result } = await started("REDIRECT", { complete, cancel } as typeof driver);

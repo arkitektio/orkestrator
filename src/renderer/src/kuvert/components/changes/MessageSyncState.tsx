@@ -71,7 +71,7 @@ const Failed = ({ message }: { message: MessageFragment }) => {
             Undo
           </Button>
           {failed.length > 0 && (
-            <Button size="sm" onClick={() => run(() => retryChanges(client, failed.map((c) => c.id)), "Couldn't retry the changes", "Queued again")}>
+            <Button size="sm" onClick={() => run(() => retryChanges(client, { changes: failed.map((c) => c.id) }), "Couldn't retry the changes", "Queued again")}>
               Retry
             </Button>
           )}

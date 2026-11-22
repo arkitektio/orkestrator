@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import React, { useState } from "react";
 import {
   ListMessagesDocument,
@@ -28,8 +29,13 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
   });
   const accounts = [...new Set(selected?.messages.map((m) => m.account.id))];
   const current = new Set(selected?.messages.map((m) => m.folder.id));
+  const search = useDebounce(filter.trim(), 250);
+  // Only folders mail can be moved into: they hold messages and the server still has them.
   const { data } = useListMailFoldersQuery({
-    variables: { filters: { account: accounts[0] }, pagination: { limit: 500 } },
+    variables: {
+      filters: { account: accounts[0], selectable: true, existsOnServer: true, ...(search ? { search } : {}) },
+      pagination: { limit: 500 },
+    },
     skip: accounts.length !== 1,
   });
   const [move, { loading }] = useMoveMessagesMutation({
@@ -41,9 +47,7 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
     { errorTitle: "Couldn't move the mail" },
   );
 
-  const folders = sortFolders(data?.mailFolders ?? []).filter(
-    (f) => f.selectable && f.existsOnServer && f.path.toLowerCase().includes(filter.toLowerCase()),
-  );
+  const folders = sortFolders(data?.mailFolders ?? []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">

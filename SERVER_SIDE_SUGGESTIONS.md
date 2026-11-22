@@ -235,21 +235,6 @@ Paths are relative to `src/renderer/src/`. Audit of existing workarounds:
 - **Message and request events (cosmetic):** `myMessages` / `membershipRequests` subscriptions. `lok/dashboard/MessageNotifications.tsx` and the Team page refresh only on focus.
 - **Hub health event (cosmetic):** a `hubHealth` subscription. `app/settings/pages/ServicesPage.tsx` polls every 30 s.
 - **Mesh alias push (correctness, connectivity):** a fakts/lok protocol gap, not GraphQL. lok leaves a mesh alias out of fakts while it cannot resolve the hub node, and nothing pushes it back. While a service stays down, `core/connection/arkitekt/controller/controller.ts` forces a token or fakts refresh at most every 5 minutes.
-- **Auth session event (cosmetic):** an auth-session subscription. `core/authflow/useAuthSession.ts` re-reads `authSession(state)` on a timer in redirect flows.
-
----
-
-## kuvert
-
-### Mail change events and bulk push/retry (correctness)
-- **Add:** a `mailChanges` subscription, `pushMailChanges(accounts: [ID!])` (or "all"), and `retryMailChanges(account:)`.
-- **Workaround:** `kuvert/pages/ChangesPage.tsx` polls `mailChanges` every 15 s (limit 500) and takes the pending accounts and failed list from that capped, filtered page.
-  - With "Failed" selected, "Push now" disappears even while changes are pending.
-  - Anything past row 500 is ignored.
-  - `mailOps.ts` sends one mutation per account.
-
-### `MailFolderFilter.selectable` / `existsOnServer` / `search` (perf, minor)
-- **Workaround:** `kuvert/forms/MoveMessagesForm.tsx` fetches up to 500 folders and filters on the client.
 
 ---
 

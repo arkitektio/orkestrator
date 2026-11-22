@@ -750,6 +750,7 @@ input MailChangeFilter {
   NOT: MailChangeFilter
   OR: MailChangeFilter
   account: ID
+  accounts: [ID!]
   kind: MailChangeKind
   message: ID
   state: MailChangeState
@@ -771,6 +772,22 @@ Where a queued change is (a pushed one is gone). PENDING: Waiting to be pushed (
 enum MailChangeState {
   FAILED
   PENDING
+}
+
+"""
+Where a mailbox's queue of changes stands, after something queued, pushed, failed, retried or undid changes.
+"""
+type MailChangesEvent {
+  accountId: ID!
+
+  """Changes that did not reach the server."""
+  failed: Int!
+
+  """Changes still waiting."""
+  pending: Int!
+
+  """Changes that reached the server in the pass that caused this event."""
+  pushed: Int!
 }
 
 """
@@ -865,7 +882,10 @@ input MailFolderFilter {
   NOT: MailFolderFilter
   OR: MailFolderFilter
   account: ID
+  existsOnServer: Boolean
   role: FolderRole
+  search: String
+  selectable: Boolean
   syncEnabled: Boolean
 }
 
@@ -1241,6 +1261,11 @@ type Mutation {
   """Move messages to another folder of their mailbox."""
   moveMessages(input: MoveMessagesInput!): [Message!]!
 
+  """
+  Push the due changes of several mailboxes now: these, or every visible one with pending changes.
+  """
+  pushAllMailChanges(accounts: [ID!] = null): [PushResult!]!
+
   """Push a mailbox's due changes now."""
   pushMailChanges(account: ID!): PushResult!
 
@@ -1259,8 +1284,10 @@ type Mutation {
   """
   resumeAuth(state: String!): AuthSession!
 
-  """Queue failed changes again."""
-  retryMailChanges(changes: [ID!]!): [MailChange!]!
+  """
+  Queue failed changes again: these, or every failed change of a mailbox.
+  """
+  retryMailChanges(account: ID = null, changes: [ID!] = null): [MailChange!]!
 
   """
   Drop local-only and queued flag changes of messages: back to what the server has.
@@ -1557,6 +1584,11 @@ type Query {
   """
   mailChanges(filters: MailChangeFilter, pagination: OffsetPaginationInput): [MailChange!]!
 
+  """
+  How many queued changes match the filters (the same as `mailChanges`), past any page.
+  """
+  mailChangesCount(filters: MailChangeFilter = null): Int!
+
   """A folder by id."""
   mailFolder(id: ID!): MailFolder!
 
@@ -1756,6 +1788,16 @@ input StartOAuthLinkInput {
 }
 
 type Subscription {
+  """
+  A login as it is now, then whenever it changes, until it is no longer PENDING. Only its starter may watch it.
+  """
+  authSession(state: String!): AuthSession!
+
+  """
+  Where a visible mailbox's queue of changes stands, whenever something queues, pushes, fails, retries or undoes a change.
+  """
+  mailChanges(account: ID = null): MailChangesEvent!
+
   """Events whenever a visible mailbox finished syncing."""
   mailboxSyncs: MailboxSyncEvent!
 }

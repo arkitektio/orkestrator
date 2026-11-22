@@ -8,12 +8,13 @@ import {
   ListMailFoldersQuery,
   ListMessagesDocument,
   ListMailChangesDocument,
+  ListMailAccountsDocument,
   ListMessagesQuery,
   ListThreadsDocument,
   MailboxTreeDocument,
   MarkMessagesReadDocument,
   MoveMessagesDocument,
-  PushMailChangesDocument,
+  PushAllMailChangesDocument,
   RetryMailChangesDocument,
   RevertMessagesToServerDocument,
   SetMessageFlagsDocument,
@@ -114,7 +115,8 @@ export const threadMessages = async (client: Client, threads: string[]) => {
 };
 
 /** After a change to the queue: mail views plus the queue and the mailbox's counts. */
-const CHANGE_VIEWS = [...MAIL_VIEWS, ListMailChangesDocument, GetMailAccountDocument];
+// The mailbox list carries each mailbox's pending and failed counts.
+const CHANGE_VIEWS = [...MAIL_VIEWS, ListMailChangesDocument, GetMailAccountDocument, ListMailAccountsDocument];
 
 /** Take back changes that have not reached the server: every one of these messages, or these changes. */
 export const undoChanges = (client: Client, input: { messages?: string[]; changes?: string[] }) =>
@@ -127,11 +129,12 @@ export const undoChanges = (client: Client, input: { messages?: string[]; change
   );
 
 /** Queue failed changes again. */
-export const retryChanges = (client: Client, changes: string[]) =>
+/** Queue failed changes again: these `changes`, and every failed change of `account`. */
+export const retryChanges = (client: Client, target: { changes?: string[]; account?: string }) =>
   run(() =>
     client.mutate({
       mutation: RetryMailChangesDocument,
-      variables: { changes },
+      variables: { changes: target.changes ?? null, account: target.account ?? null },
       refetchQueries: CHANGE_VIEWS,
     }),
   );
@@ -147,18 +150,20 @@ export const revertToServer = (client: Client, messages: string[]) =>
   );
 
 /** Push the due changes of one or more mailboxes now; the result, summed, as one sentence. */
-export const pushChanges = async (client: Client, accounts: string | string[]) => {
+/**
+ * Push the due changes of these mailboxes now, in one call; `null` pushes every
+ * visible mailbox with pending changes. Answers with one summary of them all.
+ */
+export const pushChanges = async (client: Client, accounts: string | string[] | null) => {
+  const result = await run(() =>
+    client.mutate({
+      mutation: PushAllMailChangesDocument,
+      variables: { accounts: typeof accounts === "string" ? [accounts] : accounts },
+      refetchQueries: CHANGE_VIEWS,
+    }),
+  );
   const total = { pushed: 0, failed: 0, pending: 0 };
-  for (const account of typeof accounts === "string" ? [accounts] : accounts) {
-    const result = await run(() =>
-      client.mutate({
-        mutation: PushMailChangesDocument,
-        variables: { account },
-        refetchQueries: CHANGE_VIEWS,
-      }),
-    );
-    const r = result.data?.pushMailChanges;
-    if (!r) continue;
+  for (const r of result.data?.pushAllMailChanges ?? []) {
     total.pushed += r.pushed;
     total.failed += r.failed;
     total.pending += r.pending;

@@ -7,6 +7,12 @@ import type { AuthCompletion, AuthSession, AuthUpdate } from "./types";
 export type AuthDriver = {
   complete: (input: AuthCompletion) => Promise<AuthUpdate>;
   read?: (session: AuthSession) => Promise<AuthUpdate | null>;
+  /** Follow the session as the server reports it; answers how to stop. Preferred to `read`. */
+  watch?: (
+    session: AuthSession,
+    onUpdate: (update: AuthUpdate) => void,
+    onError: (error: unknown) => void,
+  ) => () => void;
   cancel?: (session: AuthSession) => Promise<void>;
 };
 
@@ -17,8 +23,9 @@ export type AuthDriver = {
  *   server step (code → second factor → DONE).
  * - REDIRECT: the provider sends the browser to the relay, which hands `code`
  *   and `state` to the host's callback page. That page announces the result
- *   (`announce.ts`); meanwhile this re-reads the session as a safety net.
- *   `completeRedirect` is the paste fallback.
+ *   (`announce.ts`); meanwhile this follows the session as the server reports
+ *   it (`watch`), or re-reads it on a timer where the service cannot report
+ *   it (`read`), as a safety net. `completeRedirect` is the paste fallback.
  *
  * Never two requests in flight; `retries` consecutive errors pause the loop.
  * `open` is how the session is obtained: the module's start, or a resume.
@@ -85,8 +92,25 @@ export const useAuthSession = ({
   // Finished elsewhere: the callback page, in this window or another.
   useEffect(() => (state ? onAuthUpdate(state, merge) : undefined), [state, merge]);
 
+  // REDIRECT, reported by the server: listen rather than ask again and again.
+  const watching = finish !== "POLL" && !!driver.watch;
   useEffect(() => {
-    if (!state || !waiting) return;
+    if (!state || !waiting || !watching || !latest.current) return;
+    return driver.watch!(
+      latest.current,
+      (update) => {
+        setError(null);
+        merge(update);
+        setNow(Date.now());
+      },
+      (e) => setError(e),
+    );
+    // Opened once per session: `latest` is read when the stream opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, waiting, watching, driver, merge]);
+
+  useEffect(() => {
+    if (!state || !waiting || watching) return;
     if (finish !== "POLL" && !driver.read) return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
@@ -114,7 +138,7 @@ export const useAuthSession = ({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [state, finish, waiting, delay, driver, merge, attempt, retries]);
+  }, [state, finish, waiting, watching, delay, driver, merge, attempt, retries]);
 
   /** REDIRECT fallback: finish with the code and state from a pasted redirect. */
   const completeRedirect = useCallback(

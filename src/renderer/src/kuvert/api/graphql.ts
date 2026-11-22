@@ -569,6 +569,7 @@ export type MailChangeFilter = {
   NOT?: InputMaybe<MailChangeFilter>;
   OR?: InputMaybe<MailChangeFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
   kind?: InputMaybe<MailChangeKind>;
   message?: InputMaybe<Scalars['ID']['input']>;
   state?: InputMaybe<MailChangeState>;
@@ -587,6 +588,18 @@ export enum MailChangeState {
   Failed = 'FAILED',
   Pending = 'PENDING'
 }
+
+/** Where a mailbox's queue of changes stands, after something queued, pushed, failed, retried or undid changes. */
+export type MailChangesEvent = {
+  __typename?: 'MailChangesEvent';
+  accountId: Scalars['ID']['output'];
+  /** Changes that did not reach the server. */
+  failed: Scalars['Int']['output'];
+  /** Changes still waiting. */
+  pending: Scalars['Int']['output'];
+  /** Changes that reached the server in the pass that caused this event. */
+  pushed: Scalars['Int']['output'];
+};
 
 /** What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The organization or the service is not set up for this (no usable provider, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder. */
 export enum MailErrorCode {
@@ -663,7 +676,10 @@ export type MailFolderFilter = {
   NOT?: InputMaybe<MailFolderFilter>;
   OR?: InputMaybe<MailFolderFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  existsOnServer?: InputMaybe<Scalars['Boolean']['input']>;
   role?: InputMaybe<FolderRole>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  selectable?: InputMaybe<Scalars['Boolean']['input']>;
   syncEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -935,6 +951,8 @@ export type Mutation = {
   markMessagesRead: Array<Message>;
   /** Move messages to another folder of their mailbox. */
   moveMessages: Array<Message>;
+  /** Push the due changes of several mailboxes now: these, or every visible one with pending changes. */
+  pushAllMailChanges: Array<PushResult>;
   /** Push a mailbox's due changes now. */
   pushMailChanges: PushResult;
   /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
@@ -943,7 +961,7 @@ export type Mutation = {
   requestBigfileUpload: BigFileUploadGrant;
   /** The same login again (a fresh openUrl if the old one cannot be reused). */
   resumeAuth: AuthSession;
-  /** Queue failed changes again. */
+  /** Queue failed changes again: these, or every failed change of a mailbox. */
   retryMailChanges: Array<MailChange>;
   /** Drop local-only and queued flag changes of messages: back to what the server has. */
   revertMessagesToServer: Array<Message>;
@@ -1084,6 +1102,11 @@ export type MutationMoveMessagesArgs = {
 };
 
 
+export type MutationPushAllMailChangesArgs = {
+  accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+
 export type MutationPushMailChangesArgs = {
   account: Scalars['ID']['input'];
 };
@@ -1105,7 +1128,8 @@ export type MutationResumeAuthArgs = {
 
 
 export type MutationRetryMailChangesArgs = {
-  changes: Array<Scalars['ID']['input']>;
+  account?: InputMaybe<Scalars['ID']['input']>;
+  changes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 
@@ -1373,6 +1397,8 @@ export type Query = {
   mailAccounts: Array<MailAccount>;
   /** Changes made here that have not reached the server yet (pending or failed), oldest first. */
   mailChanges: Array<MailChange>;
+  /** How many queued changes match the filters (the same as `mailChanges`), past any page. */
+  mailChangesCount: Scalars['Int']['output'];
   /** A folder by id. */
   mailFolder: MailFolder;
   /** Folders of the visible mailboxes (filter by `account`). */
@@ -1449,6 +1475,11 @@ export type QueryMailAccountsArgs = {
 export type QueryMailChangesArgs = {
   filters?: InputMaybe<MailChangeFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMailChangesCountArgs = {
+  filters?: InputMaybe<MailChangeFilter>;
 };
 
 
@@ -1658,8 +1689,22 @@ export type StartOAuthLinkInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  /** A login as it is now, then whenever it changes, until it is no longer PENDING. Only its starter may watch it. */
+  authSession: AuthSession;
+  /** Where a visible mailbox's queue of changes stands, whenever something queues, pushes, fails, retries or undoes a change. */
+  mailChanges: MailChangesEvent;
   /** Events whenever a visible mailbox finished syncing. */
   mailboxSyncs: MailboxSyncEvent;
+};
+
+
+export type SubscriptionAuthSessionArgs = {
+  state: Scalars['String']['input'];
+};
+
+
+export type SubscriptionMailChangesArgs = {
+  account?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** What one mailbox sync did. */
@@ -2351,7 +2396,8 @@ export type PushMailChangesMutation = { __typename?: 'Mutation', pushMailChanges
     ) } };
 
 export type RetryMailChangesMutationVariables = Exact<{
-  changes: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  changes?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  account?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -2359,6 +2405,16 @@ export type RetryMailChangesMutation = { __typename?: 'Mutation', retryMailChang
     { __typename?: 'MailChange' }
     & MailChangeFragment
   )> };
+
+export type PushAllMailChangesMutationVariables = Exact<{
+  accounts?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type PushAllMailChangesMutation = { __typename?: 'Mutation', pushAllMailChanges: Array<{ __typename?: 'PushResult', pushed: number, failed: number, pending: number, account: (
+      { __typename?: 'MailAccount' }
+      & ListMailAccountFragment
+    ) }> };
 
 export type UndoMailChangesMutationVariables = Exact<{
   input: UndoMailChangesInput;
@@ -2968,6 +3024,23 @@ export type ThreadsCountQueryVariables = Exact<{
 
 
 export type ThreadsCountQuery = { __typename?: 'Query', threadsCount: number };
+
+export type WatchAuthSessionSubscriptionVariables = Exact<{
+  state: Scalars['String']['input'];
+}>;
+
+
+export type WatchAuthSessionSubscription = { __typename?: 'Subscription', authSession: (
+    { __typename?: 'AuthSession' }
+    & AuthSessionFragment
+  ) };
+
+export type MailChangesSubscriptionVariables = Exact<{
+  account?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type MailChangesSubscription = { __typename?: 'Subscription', mailChanges: { __typename?: 'MailChangesEvent', accountId: string, pending: number, failed: number, pushed: number } };
 
 export type MailboxSyncsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -3992,8 +4065,8 @@ export type PushMailChangesMutationHookResult = ReturnType<typeof usePushMailCha
 export type PushMailChangesMutationResult = Apollo.MutationResult<PushMailChangesMutation>;
 export type PushMailChangesMutationOptions = Apollo.BaseMutationOptions<PushMailChangesMutation, PushMailChangesMutationVariables>;
 export const RetryMailChangesDocument = gql`
-    mutation RetryMailChanges($changes: [ID!]!) {
-  retryMailChanges(changes: $changes) {
+    mutation RetryMailChanges($changes: [ID!], $account: ID) {
+  retryMailChanges(changes: $changes, account: $account) {
     ...MailChange
   }
 }
@@ -4014,6 +4087,7 @@ export type RetryMailChangesMutationFn = Apollo.MutationFunction<RetryMailChange
  * const [retryMailChangesMutation, { data, loading, error }] = useRetryMailChangesMutation({
  *   variables: {
  *      changes: // value for 'changes'
+ *      account: // value for 'account'
  *   },
  * });
  */
@@ -4024,6 +4098,44 @@ export function useRetryMailChangesMutation(baseOptions?: ApolloReactHooks.Mutat
 export type RetryMailChangesMutationHookResult = ReturnType<typeof useRetryMailChangesMutation>;
 export type RetryMailChangesMutationResult = Apollo.MutationResult<RetryMailChangesMutation>;
 export type RetryMailChangesMutationOptions = Apollo.BaseMutationOptions<RetryMailChangesMutation, RetryMailChangesMutationVariables>;
+export const PushAllMailChangesDocument = gql`
+    mutation PushAllMailChanges($accounts: [ID!]) {
+  pushAllMailChanges(accounts: $accounts) {
+    pushed
+    failed
+    pending
+    account {
+      ...ListMailAccount
+    }
+  }
+}
+    ${ListMailAccountFragmentDoc}`;
+export type PushAllMailChangesMutationFn = Apollo.MutationFunction<PushAllMailChangesMutation, PushAllMailChangesMutationVariables>;
+
+/**
+ * __usePushAllMailChangesMutation__
+ *
+ * To run a mutation, you first call `usePushAllMailChangesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePushAllMailChangesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pushAllMailChangesMutation, { data, loading, error }] = usePushAllMailChangesMutation({
+ *   variables: {
+ *      accounts: // value for 'accounts'
+ *   },
+ * });
+ */
+export function usePushAllMailChangesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PushAllMailChangesMutation, PushAllMailChangesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PushAllMailChangesMutation, PushAllMailChangesMutationVariables>(PushAllMailChangesDocument, options);
+      }
+export type PushAllMailChangesMutationHookResult = ReturnType<typeof usePushAllMailChangesMutation>;
+export type PushAllMailChangesMutationResult = Apollo.MutationResult<PushAllMailChangesMutation>;
+export type PushAllMailChangesMutationOptions = Apollo.BaseMutationOptions<PushAllMailChangesMutation, PushAllMailChangesMutationVariables>;
 export const UndoMailChangesDocument = gql`
     mutation UndoMailChanges($input: UndoMailChangesInput!) {
   undoMailChanges(input: $input) {
@@ -6197,6 +6309,69 @@ export function useThreadsCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type ThreadsCountQueryHookResult = ReturnType<typeof useThreadsCountQuery>;
 export type ThreadsCountLazyQueryHookResult = ReturnType<typeof useThreadsCountLazyQuery>;
 export type ThreadsCountQueryResult = Apollo.QueryResult<ThreadsCountQuery, ThreadsCountQueryVariables>;
+export const WatchAuthSessionDocument = gql`
+    subscription WatchAuthSession($state: String!) {
+  authSession(state: $state) {
+    ...AuthSession
+  }
+}
+    ${AuthSessionFragmentDoc}`;
+
+/**
+ * __useWatchAuthSessionSubscription__
+ *
+ * To run a query within a React component, call `useWatchAuthSessionSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchAuthSessionSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchAuthSessionSubscription({
+ *   variables: {
+ *      state: // value for 'state'
+ *   },
+ * });
+ */
+export function useWatchAuthSessionSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchAuthSessionSubscription, WatchAuthSessionSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchAuthSessionSubscription, WatchAuthSessionSubscriptionVariables>(WatchAuthSessionDocument, options);
+      }
+export type WatchAuthSessionSubscriptionHookResult = ReturnType<typeof useWatchAuthSessionSubscription>;
+export type WatchAuthSessionSubscriptionResult = Apollo.SubscriptionResult<WatchAuthSessionSubscription>;
+export const MailChangesDocument = gql`
+    subscription MailChanges($account: ID) {
+  mailChanges(account: $account) {
+    accountId
+    pending
+    failed
+    pushed
+  }
+}
+    `;
+
+/**
+ * __useMailChangesSubscription__
+ *
+ * To run a query within a React component, call `useMailChangesSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useMailChangesSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMailChangesSubscription({
+ *   variables: {
+ *      account: // value for 'account'
+ *   },
+ * });
+ */
+export function useMailChangesSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<MailChangesSubscription, MailChangesSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<MailChangesSubscription, MailChangesSubscriptionVariables>(MailChangesDocument, options);
+      }
+export type MailChangesSubscriptionHookResult = ReturnType<typeof useMailChangesSubscription>;
+export type MailChangesSubscriptionResult = Apollo.SubscriptionResult<MailChangesSubscription>;
 export const MailboxSyncsDocument = gql`
     subscription MailboxSyncs {
   mailboxSyncs {
