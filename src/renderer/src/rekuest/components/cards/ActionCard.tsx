@@ -13,7 +13,7 @@ import {
 import { AgentStatusDot } from "@/rekuest/components/displays/AgentStatusDot";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
-import { Availability, deriveAvailability } from "@/rekuest/lib/actionBrowse";
+import { availabilityStatus, deriveAvailability } from "@/rekuest/lib/actionBrowse";
 
 // The catalog selects BrowseAction; every other list (Home, search) selects
 // ListAction. The extra fields only add footer notes, so they stay optional.
@@ -26,10 +26,16 @@ interface Props {
 
 const NEW_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
-const availabilityLabel = (availability: Availability) => {
-  if (availability.status === "none") return "no app";
-  if (availability.online > 0) return `${availability.online} online`;
-  return availability.status === "recent" ? "recent" : "offline";
+// The status is the server's (`Action.availability`, what lists group and
+// order by); the implementations only say how many agents are online.
+const availabilityLabel = (item: Item) => {
+  const status = availabilityStatus(item.availability);
+  if (status === "none") return "no app";
+  if (status === "online") {
+    const online = deriveAvailability(item.implementations).online;
+    return online > 0 ? `${online} online` : "runnable";
+  }
+  return status;
 };
 
 // Only what sets an action apart: a plain stateless function gets no notes.
@@ -56,7 +62,7 @@ const LogoTile = ({ item }: Props) => (
 );
 
 const TheCard = ({ item }: Props) => {
-  const availability = deriveAvailability(item.implementations);
+  const status = availabilityStatus(item.availability);
   const { openDialog } = useDialog();
   const itemNotes = notes(item);
 
@@ -96,11 +102,9 @@ const TheCard = ({ item }: Props) => {
 
         <div className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
           <AgentStatusDot
-            status={
-              availability.status === "none" ? "offline" : availability.status
-            }
+            status={status === "none" ? "offline" : status}
           />
-          <span className="shrink-0">{availabilityLabel(availability)}</span>
+          <span className="shrink-0">{availabilityLabel(item)}</span>
           {itemNotes.length > 0 && (
             <span className="truncate text-muted-foreground/60">
               · {itemNotes.join(" · ")}

@@ -7556,9 +7556,9 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
+export type ListActionFragment = { __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
-export type BrowseActionFragment = { __typename?: 'Action', definedAt: any, availability: ActionAvailability, isDev: boolean, id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
+export type BrowseActionFragment = { __typename?: 'Action', definedAt: any, isDev: boolean, id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
 export type ProvidingImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, lastSeen?: any | null } };
 
@@ -8478,7 +8478,7 @@ export type AllActionsQueryVariables = Exact<{
 }>;
 
 
-export type AllActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
+export type AllActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
 
 export type BrowseActionsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -8487,7 +8487,7 @@ export type BrowseActionsQueryVariables = Exact<{
 }>;
 
 
-export type BrowseActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', definedAt: any, availability: ActionAvailability, isDev: boolean, id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
+export type BrowseActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', definedAt: any, isDev: boolean, id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
 
 export type ActionOverviewQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8560,7 +8560,7 @@ export type SimilarActionsQueryVariables = Exact<{
 }>;
 
 
-export type SimilarActionsQuery = { __typename?: 'Query', similarActions: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
+export type SimilarActionsQuery = { __typename?: 'Query', similarActions: Array<{ __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
 
 export type ActionSignatureByHashQueryVariables = Exact<{
   hash: Scalars['ActionHash']['input'];
@@ -8944,7 +8944,7 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', actions?: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }>, agents?: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } }> };
+export type GlobalSearchQuery = { __typename?: 'Query', actions?: Array<{ __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }>, agents?: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } }> };
 
 export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -9507,6 +9507,7 @@ export const BlokLogoFragmentDoc = gql`
 export const ListActionFragmentDoc = gql`
     fragment ListAction on Action {
   id
+  availability
   logo {
     ...BlokLogo
   }
@@ -9540,7 +9541,6 @@ export const BrowseActionFragmentDoc = gql`
     fragment BrowseAction on Action {
   ...ListAction
   definedAt
-  availability
   isDev
   collections {
     id

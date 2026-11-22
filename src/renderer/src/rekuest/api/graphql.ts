@@ -7498,13 +7498,13 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: (
+export type ListActionFragment = { __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: (
     { __typename?: 'Blok' }
     & BlokLogoFragment
   ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
 export type BrowseActionFragment = (
-  { __typename?: 'Action', definedAt: any, availability: ActionAvailability, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
+  { __typename?: 'Action', definedAt: any, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
   & ListActionFragment
 );
 
@@ -10895,6 +10895,7 @@ export const BlokLogoFragmentDoc = gql`
 export const ListActionFragmentDoc = gql`
     fragment ListAction on Action {
   id
+  availability
   logo {
     ...BlokLogo
   }
@@ -10928,7 +10929,6 @@ export const BrowseActionFragmentDoc = gql`
     fragment BrowseAction on Action {
   ...ListAction
   definedAt
-  availability
   isDev
   collections {
     id

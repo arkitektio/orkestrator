@@ -1,4 +1,5 @@
 import {
+  ActionAvailability,
   ActionFilter,
   ActionKind,
   ActionOrder,
@@ -22,6 +23,15 @@ export type AvailabilityImplementation = {
 };
 
 export type AvailabilityStatus = "online" | "recent" | "offline" | "none";
+
+/** The server's `Action.availability` as the status the cards and dots draw. */
+export const availabilityStatus = (availability: ActionAvailability): AvailabilityStatus =>
+  ({
+    [ActionAvailability.Runnable]: "online",
+    [ActionAvailability.Recent]: "recent",
+    [ActionAvailability.Offline]: "offline",
+    [ActionAvailability.None]: "none",
+  })[availability] as AvailabilityStatus;
 
 export type Availability = {
   /** Number of implementations. */
