@@ -10,43 +10,19 @@ fragment RunEvent on RunEvent {
   causedBy
 }
 
-fragment Snapshot on Snapshot {
-  id
-  run {
-    id
-    taskId
-  }
-  status
-  events {
-    ...RunEvent
-  }
-  t
-}
-
-fragment ListSnapshot on Snapshot {
-  id
-  run {
-    id
-    taskId
-  }
-  t
-}
-
+# A run as its tracker draws it. The snapshots give the range slider its
+# marks (`t` only); the latest one's `t` is where the live tracker starts,
+# and `eventsBetween(min: t)` already returns that snapshot's events.
 fragment DetailRun on Run {
   id
   taskId
   snapshots {
     id
-    status
     t
-    createdAt
   }
   createdAt
   latestSnapshot {
-    createdAt
-    events {
-      ...RunEvent
-    }
+    id
     t
   }
   status
@@ -70,23 +46,11 @@ fragment ListRun on Run {
   }
 }
 
+# A carousel slide: the run's flow as a still preview, not a live tracker.
 fragment CarouselRun on Run {
   id
   taskId
-  snapshots {
-    id
-    status
-    t
-    createdAt
-  }
   createdAt
-  latestSnapshot {
-    createdAt
-    events {
-      ...RunEvent
-    }
-    t
-  }
   status
   flow {
     ...Flow

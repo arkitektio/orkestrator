@@ -3,7 +3,7 @@
 # head of its lineage.
 query ProfileFeedWorkspaces($filters: WorkspaceFilter, $pagination: OffsetPaginationInput) {
   workspaces(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
-    ...ListWorkspace
+    ...FeedWorkspace
   }
 }
 

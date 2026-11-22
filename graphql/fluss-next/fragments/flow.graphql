@@ -187,13 +187,22 @@ fragment ListWorkspace on Workspace {
   }
 }
 
+# A workspace as a profile feed lists it: no flow.
+fragment FeedWorkspace on Workspace {
+  id
+  title
+  description
+  createdAt
+}
+
 fragment Workspace on Workspace {
   id
   title
   latestFlow {
     ...Flow
   }
-  flows {
+  # Every save is a new version: the newest ones, not all of them.
+  flows(ordering: [{ createdAt: DESC }], pagination: { limit: 50 }) {
     ...ListFlow
   }
 }

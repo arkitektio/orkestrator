@@ -5,9 +5,12 @@ import {
   RunFilter,
   RunOrder,
   useListRunsQuery,
+  Ordering,
 } from "@/fluss/api/graphql";
 import React from "react";
 import RunCard from "../cards/RunCard";
+
+const NEWEST_FIRST = [{ createdAt: Ordering.Desc }];
 
 export type Props = {
   filters?: RunFilter;
@@ -18,8 +21,9 @@ export type Props = {
 };
 
 const List = ({ filters, ordering, pagination, title, actions }: Props) => {
+  // Newest first unless told otherwise: offset pages need an order to be pages.
   const { data, refetch, loading, error } = useListRunsQuery({
-    variables: { filters, ordering, pagination },
+    variables: { filters, ordering: ordering ?? NEWEST_FIRST, pagination },
   });
 
   return (
@@ -35,6 +39,8 @@ const List = ({ filters, ordering, pagination, title, actions }: Props) => {
       }
       actions={actions}
       refetch={refetch}
+      // The page the query asked for, so the list does not ask again for another size.
+      limit={pagination?.limit ?? undefined}
     >
       {(item) => <RunCard key={item.id} item={item} />}
     </ListRender>

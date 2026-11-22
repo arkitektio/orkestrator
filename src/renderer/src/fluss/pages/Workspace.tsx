@@ -2,21 +2,16 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Card } from "@/core/ui/card";
 import { FlussFlow, FlussWorkspace } from "@/core/linkers";
-import {
-  useUpdateWorkspaceMutation,
-  useWorkspaceQuery,
-  WorkspaceCarouselDocument,
-  WorkspacesDocument,
-} from "@/fluss/api/graphql";
+import { useUpdateWorkspaceMutation, useWorkspaceQuery } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
 import { RekuestGuard } from "@/rekuest/api/hooks";
 import { RunFlowButton } from "../components/RunFlowButton";
 import { FLUSS_HELP } from "../help";
 
 export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
-  const [saveFlow] = useUpdateWorkspaceMutation({
-    refetchQueries: [WorkspacesDocument, WorkspaceCarouselDocument],
-  });
+  // The saved workspace comes back with its new latest flow and versions:
+  // the cache updates every list and carousel showing it, no refetch.
+  const [saveFlow] = useUpdateWorkspaceMutation();
 
   return (
     <FlussWorkspace.ModelPage

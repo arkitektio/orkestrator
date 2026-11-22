@@ -13,10 +13,3 @@ fragment ReactiveTemplate on ReactiveTemplate {
   title
   description
 }
-
-fragment ListReactiveTemplates on ReactiveTemplate {
-  id
-  title
-  description
-  implementation
-}

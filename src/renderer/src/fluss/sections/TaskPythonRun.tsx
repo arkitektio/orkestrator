@@ -10,7 +10,8 @@ import { PythonRunTrace } from "../python/PythonRunTrace";
  * The Python run of a task whose implementation is a deployed (or bare)
  * `run_python_flow`. The agent opens the run as the task starts, so a fresh
  * task may not have one yet: the run starting (`pythonRuns`) re-reads it. Once
- * there, its status changes (`pythonRun(id)`) re-read the trace.
+ * there, its status changes (`pythonRun(id)`) reach the cache with the new
+ * status and end; only its deletion re-reads it.
  */
 export const TaskPythonRun = ({ taskId }: { taskId: string }) => {
   const { data, error, refetch } = usePythonRunForTaskQuery({
@@ -27,7 +28,9 @@ export const TaskPythonRun = ({ taskId }: { taskId: string }) => {
   useWatchPythonRunSubscription({
     variables: { id: run?.id ?? "" },
     skip: !run,
-    onData: () => void refetch(),
+    onData: ({ data: change }) => {
+      if (change.data?.pythonRun.delete) void refetch();
+    },
   });
 
   if (run) return <PythonRunTrace run={run} />;

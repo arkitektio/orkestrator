@@ -7,15 +7,20 @@ import {
   CarouselPrevious,
 } from "@/core/ui/carousel";
 import { FlussRun } from "@/core/linkers";
-import { useRunCarouselQuery } from "@/fluss/api/graphql";
-import { TrackFlow } from "@/fluss/track/TrackFlow";
+import { Ordering, useRunCarouselQuery } from "@/fluss/api/graphql";
+import { ShowFlow } from "@/fluss/show/ShowFlow";
 
-export const RunCarousel = ({ }) => {
+/**
+ * The three newest runs, each with its flow as a still preview: the run's page
+ * tracks it live, a slide does not (no events, no subscriptions).
+ */
+export const RunCarousel = () => {
   const { data, error } = useRunCarouselQuery({
     variables: {
       pagination: {
         limit: 3,
       },
+      ordering: [{ createdAt: Ordering.Desc }],
     },
   });
 
@@ -26,11 +31,11 @@ export const RunCarousel = ({ }) => {
         <CarouselPrevious />
         <CarouselContent>
           {data?.runs.map((item, index) => (
-            <CarouselItem key={index} className="grid grid-cols-8">
+            <CarouselItem key={item.id} className="grid grid-cols-8">
               <div className="col-span-2 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
                 <div>
                   <p className="mt-3 text-xl text-muted-foreground">
-                    Latest Run
+                    {index === 0 ? "Latest Run" : "Recent Run"}
                   </p>
                   <FlussRun.DetailLink object={item}>
                     <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
@@ -47,7 +52,7 @@ export const RunCarousel = ({ }) => {
                   <Card>
                     <CardContent className="flex aspect-[10/5] p-6 ">
                       <div className="w-full h-full">
-                        {item && <TrackFlow run={item} />}
+                        <ShowFlow flow={item.flow} preview />
                       </div>
                     </CardContent>
                   </Card>

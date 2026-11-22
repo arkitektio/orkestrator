@@ -1,15 +1,3 @@
-query Snapshots {
-  snapshots {
-    ...ListSnapshot
-  }
-}
-
-query DetailSnapshot($id: ID!) {
-  snapshot(id: $id) {
-    ...Snapshot
-  }
-}
-
 query RunForTask($id: ID!) {
   runForTask(id: $id) {
     ...DetailRun

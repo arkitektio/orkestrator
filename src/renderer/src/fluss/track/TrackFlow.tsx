@@ -1,4 +1,4 @@
-import { DetailRunFragment, RunStatus } from "@/fluss/api/graphql";
+import { DetailRunFragment, RunStatus, useWatchRunSubscription } from "@/fluss/api/graphql";
 import { useNodesState } from "@xyflow/react";
 import { AnimatePresence } from "framer-motion";
 import React, { useEffect, useMemo, useState } from "react";
@@ -17,6 +17,9 @@ export type Props = {
 /** A flow with its run events overlaid (live subscription or scrubbable range). */
 export const TrackFlow: React.FC<Props> = ({ run }) => {
   const [runStore] = useState(createRunStateStore);
+  // While it runs, its status follows the run's subscription (the cache takes
+  // it), so the tracker turns from live to range when it completes.
+  useWatchRunSubscription({ variables: { id: run.id }, skip: run.status === RunStatus.Completed });
 
   const initialNodes = useMemo(() => nodes_to_flownodes(run.flow.graph?.nodes || []), [run.flow]);
   const edges = useMemo(() => edges_to_flowedges(run.flow.graph?.edges || []), [run.flow]);

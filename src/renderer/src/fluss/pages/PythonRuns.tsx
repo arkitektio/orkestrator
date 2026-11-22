@@ -1,4 +1,5 @@
 import { FlussPythonFlow, FlussPythonRun, RekuestTask } from "@/core/linkers";
+import { Button } from "@/core/ui/button";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { PageLayout } from "@/core/layout/PageLayout";
 import Timestamp from "@/core/ui/timestamp";
@@ -25,18 +26,32 @@ const duration = (from: string, to: string | null | undefined) => {
   return m < 60 ? `${m} min ${s % 60} s` : `${Math.floor(m / 60)} h ${m % 60} min`;
 };
 
+/** Runs a page asks for; "Show more" asks for as many again. */
+const PAGE = 50;
+
 /** Every run of a Python flow, newest first. */
 const Page = () => {
   const [status, setStatus] = useState(0);
+  const [limit, setLimit] = useState(PAGE);
+  const shown = STATUS_FILTERS[status].value;
   const { data, loading, error, refetch } = usePythonRunsQuery({
     variables: {
-      filters: { status: STATUS_FILTERS[status].value },
+      filters: { status: shown },
       ordering: [{ createdAt: Ordering.Desc }],
-      pagination: { limit: 100 },
+      pagination: { limit },
     },
   });
-  // A run starting or changing status re-reads the page, instead of polling.
-  useWatchPythonRunsSubscription({ onData: () => void refetch() });
+  // A run starting or going re-reads the page. A status change updates its row
+  // through the cache; only under a status filter, which it may now leave, is
+  // the page read again.
+  useWatchPythonRunsSubscription({
+    onData: ({ data: event }) => {
+      const change = event.data?.pythonRuns;
+      if (!change) return;
+      if (change.create || change.delete) return void refetch();
+      if (change.update && shown && !shown.includes(change.update.status)) void refetch();
+    },
+  });
 
   return (
     <PageLayout title="Python runs" help={FLUSS_HELP.pythonRuns}>
@@ -89,6 +104,11 @@ const Page = () => {
             </FlussPythonRun.Smart>
           ))}
         </div>
+        {data && data.pythonRuns.length >= limit && (
+          <Button variant="outline" size="sm" className="self-center" onClick={() => setLimit((n) => n + PAGE)}>
+            Show more
+          </Button>
+        )}
       </div>
     </PageLayout>
   );

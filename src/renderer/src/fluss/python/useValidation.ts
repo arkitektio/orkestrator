@@ -1,5 +1,6 @@
 import {
   ManifestEntryInput,
+  usePythonFlowStubsQuery,
   PythonFlowValidationFragment,
   ValidatePythonFlowDocument,
   ValidatePythonFlowQuery,
@@ -75,4 +76,24 @@ export const useValidation = (args: {
     validating: !args.paused && answer.key !== inputKey,
     error: answer.error,
   };
+};
+
+/**
+ * The stubs an editor completes against. They depend on the manifest and the
+ * structures only, so they are asked once per manifest (with an empty source)
+ * and kept in the cache, not sent back with every check of the source.
+ */
+export const usePythonFlowStubs = (args: {
+  manifest: ManifestEntryInput[];
+  structures: string[];
+  entrypoint?: string;
+  paused?: boolean;
+}): string | undefined => {
+  const { data, previousData } = usePythonFlowStubsQuery({
+    variables: { manifest: args.manifest, structures: args.structures, entrypoint: args.entrypoint ?? "main" },
+    skip: args.paused,
+    fetchPolicy: "cache-first",
+  });
+  // While a changed manifest is asked about, keep completing against the last stubs.
+  return (data ?? previousData)?.validatePythonFlow.stubs;
 };

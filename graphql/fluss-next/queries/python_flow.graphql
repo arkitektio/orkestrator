@@ -16,6 +16,14 @@ query ValidatePythonFlow($input: PythonFlowSourceInput!) {
   }
 }
 
+# The stubs an editor completes against: asked with an empty source, so they
+# are asked again (and cached) per manifest and structures, not per keystroke.
+query PythonFlowStubs($manifest: [ManifestEntryInput!]!, $structures: [String!]!, $entrypoint: String! = "main") {
+  validatePythonFlow(input: { source: "", manifest: $manifest, structures: $structures, entrypoint: $entrypoint }) {
+    stubs
+  }
+}
+
 query PythonRuns($filters: PythonRunFilter, $pagination: OffsetPaginationInput, $ordering: [PythonRunOrder!]) {
   pythonRuns(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListPythonRun

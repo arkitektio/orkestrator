@@ -8,7 +8,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { cn } from "@/core/util/utils";
 import {
   ListPythonFlowFragment,
-  ListWorkspaceFragment,
+  FeedWorkspaceFragment,
   useProfileFeedPythonFlowsQuery,
   useProfileFeedWorkspacesQuery,
 } from "../api/graphql";
@@ -55,7 +55,7 @@ const useWorkspaces = ({ sub, search, limit }: ProfileFeedQuery) => {
   return { items: data?.workspaces ?? EMPTY, loading, error };
 };
 
-const WorkspaceCard = ({ item }: { item: ListWorkspaceFragment }) => (
+const WorkspaceCard = ({ item }: { item: FeedWorkspaceFragment }) => (
   <FlussWorkspace.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
     <FeedCard
       tone="app"
@@ -103,10 +103,10 @@ export const FLUSS_PROFILE_FEED: ProfileFeedSource[] = [
     id: "fluss.workspaces",
     kinds: [{ id: "fluss.workspaces", label: "Flow workspaces", icon: Workflow }],
     useItems: useWorkspaces,
-    itemKey: (item: ListWorkspaceFragment) => item.id,
-    createdAt: (item: ListWorkspaceFragment) => item.createdAt,
+    itemKey: (item: FeedWorkspaceFragment) => item.id,
+    createdAt: (item: FeedWorkspaceFragment) => item.createdAt,
     Card: WorkspaceCard,
-  } satisfies ProfileFeedSource<ListWorkspaceFragment>,
+  } satisfies ProfileFeedSource<FeedWorkspaceFragment>,
   {
     id: "fluss.pythonflows",
     kinds: [{ id: "fluss.pythonflows", label: "Python flows", icon: Code2 }],

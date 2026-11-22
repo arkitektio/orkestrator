@@ -2696,6 +2696,8 @@ export type ListWorkspaceFragment = { __typename?: 'Workspace', id: string, titl
     & ListFlowFragment
   ) | null };
 
+export type FeedWorkspaceFragment = { __typename?: 'Workspace', id: string, title: string, description?: string | null, createdAt: any };
+
 export type WorkspaceFragment = { __typename?: 'Workspace', id: string, title: string, latestFlow?: (
     { __typename?: 'Flow' }
     & FlowFragment
@@ -3247,7 +3249,7 @@ export type DetailPythonRunFragment = { __typename?: 'PythonRun', id: string, ta
       & ManifestEntryFragment
     )> } };
 
-export type PythonFlowValidationFragment = { __typename?: 'PythonFlowValidation', ok: boolean, stubs: string, runtime: string, diagnostics: Array<{ __typename?: 'PythonFlowDiagnostic', message: string, line?: number | null }>, args: Array<(
+export type PythonFlowValidationFragment = { __typename?: 'PythonFlowValidation', ok: boolean, runtime: string, diagnostics: Array<{ __typename?: 'PythonFlowDiagnostic', message: string, line?: number | null }>, args: Array<(
     { __typename?: 'ArgPort' }
     & FlussArgPortFragment
   )>, returns: Array<(
@@ -3266,31 +3268,16 @@ export type ReactiveTemplateFragment = { __typename?: 'ReactiveTemplate', id: st
     & FlussArgPortFragment
   )> };
 
-export type ListReactiveTemplatesFragment = { __typename?: 'ReactiveTemplate', id: string, title: string, description?: string | null, implementation: ReactiveImplementation };
-
 export type RunEventFragment = { __typename?: 'RunEvent', id: string, source: string, handle: string, kind: RunEventKind, createdAt: any, exception?: string | null, value?: any | null, t: number, causedBy: Array<string> };
 
-export type SnapshotFragment = { __typename?: 'Snapshot', id: string, status?: string | null, t: number, run: { __typename?: 'Run', id: string, taskId: string }, events: Array<(
-    { __typename?: 'RunEvent' }
-    & RunEventFragment
-  )> };
-
-export type ListSnapshotFragment = { __typename?: 'Snapshot', id: string, t: number, run: { __typename?: 'Run', id: string, taskId: string } };
-
-export type DetailRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number, createdAt: any }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<(
-      { __typename?: 'RunEvent' }
-      & RunEventFragment
-    )> } | null, flow: (
+export type DetailRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, snapshots: Array<{ __typename?: 'Snapshot', id: string, t: number }>, latestSnapshot?: { __typename?: 'Snapshot', id: string, t: number } | null, flow: (
     { __typename?: 'Flow' }
     & FlowFragment
   ) };
 
 export type ListRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, flow: { __typename?: 'Flow', id: string, title: string, workspace: { __typename?: 'Workspace', id: string, title: string } } };
 
-export type CarouselRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number, createdAt: any }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<(
-      { __typename?: 'RunEvent' }
-      & RunEventFragment
-    )> } | null, flow: (
+export type CarouselRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, flow: (
     { __typename?: 'Flow' }
     & FlowFragment
   ) };
@@ -3389,7 +3376,7 @@ export type ProfileFeedWorkspacesQueryVariables = Exact<{
 
 export type ProfileFeedWorkspacesQuery = { __typename?: 'Query', workspaces: Array<(
     { __typename?: 'Workspace' }
-    & ListWorkspaceFragment
+    & FeedWorkspaceFragment
   )> };
 
 export type ProfileFeedPythonFlowsQueryVariables = Exact<{
@@ -3435,6 +3422,15 @@ export type ValidatePythonFlowQuery = { __typename?: 'Query', validatePythonFlow
     & PythonFlowValidationFragment
   ) };
 
+export type PythonFlowStubsQueryVariables = Exact<{
+  manifest: Array<ManifestEntryInput> | ManifestEntryInput;
+  structures: Array<Scalars['String']['input']> | Scalars['String']['input'];
+  entrypoint?: Scalars['String']['input'];
+}>;
+
+
+export type PythonFlowStubsQuery = { __typename?: 'Query', validatePythonFlow: { __typename?: 'PythonFlowValidation', stubs: string } };
+
 export type PythonRunsQueryVariables = Exact<{
   filters?: InputMaybe<PythonRunFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3465,44 +3461,6 @@ export type PythonRunForTaskQueryVariables = Exact<{
 export type PythonRunForTaskQuery = { __typename?: 'Query', pythonRunForTask: (
     { __typename?: 'PythonRun' }
     & DetailPythonRunFragment
-  ) };
-
-export type ReactiveTemplatesQueryVariables = Exact<{
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ReactiveTemplatesQuery = { __typename?: 'Query', reactiveTemplates: Array<(
-    { __typename?: 'ReactiveTemplate' }
-    & ReactiveTemplateFragment
-  )> };
-
-export type ReactiveTemplateQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type ReactiveTemplateQuery = { __typename?: 'Query', reactiveTemplate: (
-    { __typename?: 'ReactiveTemplate' }
-    & ReactiveTemplateFragment
-  ) };
-
-export type SnapshotsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type SnapshotsQuery = { __typename?: 'Query', snapshots: Array<(
-    { __typename?: 'Snapshot' }
-    & ListSnapshotFragment
-  )> };
-
-export type DetailSnapshotQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DetailSnapshotQuery = { __typename?: 'Query', snapshot: (
-    { __typename?: 'Snapshot' }
-    & SnapshotFragment
   ) };
 
 export type RunForTaskQueryVariables = Exact<{
@@ -3561,17 +3519,6 @@ export type RunCarouselQuery = { __typename?: 'Query', runs: Array<(
     & CarouselRunFragment
   )> };
 
-export type GlobalSearchQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type GlobalSearchQuery = { __typename?: 'Query', workspaces: Array<(
-    { __typename?: 'Workspace' }
-    & ListWorkspaceFragment
-  )> };
-
 export type WorkspaceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3624,14 +3571,21 @@ export type WatchRunsSubscription = { __typename?: 'Subscription', runs: { __typ
 export type WatchPythonRunsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchPythonRunsSubscription = { __typename?: 'Subscription', pythonRuns: { __typename?: 'PythonRunChange', delete?: string | null, create?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus } | null, update?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus } | null } };
+export type WatchPythonRunsSubscription = { __typename?: 'Subscription', pythonRuns: { __typename?: 'PythonRunChange', delete?: string | null, create?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus } | null, update?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus, finishedAt?: any | null } | null } };
 
 export type WatchPythonRunSubscriptionVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type WatchPythonRunSubscription = { __typename?: 'Subscription', pythonRun: { __typename?: 'PythonRunChange', delete?: string | null, update?: { __typename?: 'PythonRun', id: string, status: PythonRunStatus } | null } };
+export type WatchPythonRunSubscription = { __typename?: 'Subscription', pythonRun: { __typename?: 'PythonRunChange', delete?: string | null, update?: { __typename?: 'PythonRun', id: string, status: PythonRunStatus, finishedAt?: any | null } | null } };
+
+export type WatchRunSubscriptionVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type WatchRunSubscription = { __typename?: 'Subscription', run: { __typename?: 'RunChange', delete?: string | null, update?: { __typename?: 'Run', id: string, status: RunStatus, snapshots: Array<{ __typename?: 'Snapshot', id: string, t: number }> } | null } };
 
 export const ListFlowFragmentDoc = gql`
     fragment ListFlow on Flow {
@@ -3656,6 +3610,14 @@ export const ListWorkspaceFragmentDoc = gql`
   }
 }
     ${ListFlowFragmentDoc}`;
+export const FeedWorkspaceFragmentDoc = gql`
+    fragment FeedWorkspace on Workspace {
+  id
+  title
+  description
+  createdAt
+}
+    `;
 export const FlussPortCallLeafArgumentFragmentDoc = gql`
     fragment FlussPortCallLeafArgument on ActionArgument {
   key
@@ -4494,7 +4456,7 @@ export const WorkspaceFragmentDoc = gql`
   latestFlow {
     ...Flow
   }
-  flows {
+  flows(ordering: [{createdAt: DESC}], pagination: {limit: 50}) {
     ...ListFlow
   }
 }
@@ -4611,7 +4573,6 @@ export const DetailPythonRunFragmentDoc = gql`
 export const PythonFlowValidationFragmentDoc = gql`
     fragment PythonFlowValidation on PythonFlowValidation {
   ok
-  stubs
   runtime
   diagnostics {
     message
@@ -4644,14 +4605,6 @@ export const ReactiveTemplateFragmentDoc = gql`
 }
     ${FlussArgPortFragmentDoc}
 ${FlussReturnPortFragmentDoc}`;
-export const ListReactiveTemplatesFragmentDoc = gql`
-    fragment ListReactiveTemplates on ReactiveTemplate {
-  id
-  title
-  description
-  implementation
-}
-    `;
 export const RunEventFragmentDoc = gql`
     fragment RunEvent on RunEvent {
   id
@@ -4665,46 +4618,17 @@ export const RunEventFragmentDoc = gql`
   causedBy
 }
     `;
-export const SnapshotFragmentDoc = gql`
-    fragment Snapshot on Snapshot {
-  id
-  run {
-    id
-    taskId
-  }
-  status
-  events {
-    ...RunEvent
-  }
-  t
-}
-    ${RunEventFragmentDoc}`;
-export const ListSnapshotFragmentDoc = gql`
-    fragment ListSnapshot on Snapshot {
-  id
-  run {
-    id
-    taskId
-  }
-  t
-}
-    `;
 export const DetailRunFragmentDoc = gql`
     fragment DetailRun on Run {
   id
   taskId
   snapshots {
     id
-    status
     t
-    createdAt
   }
   createdAt
   latestSnapshot {
-    createdAt
-    events {
-      ...RunEvent
-    }
+    id
     t
   }
   status
@@ -4712,8 +4636,7 @@ export const DetailRunFragmentDoc = gql`
     ...Flow
   }
 }
-    ${RunEventFragmentDoc}
-${FlowFragmentDoc}`;
+    ${FlowFragmentDoc}`;
 export const ListRunFragmentDoc = gql`
     fragment ListRun on Run {
   id
@@ -4734,27 +4657,13 @@ export const CarouselRunFragmentDoc = gql`
     fragment CarouselRun on Run {
   id
   taskId
-  snapshots {
-    id
-    status
-    t
-    createdAt
-  }
   createdAt
-  latestSnapshot {
-    createdAt
-    events {
-      ...RunEvent
-    }
-    t
-  }
   status
   flow {
     ...Flow
   }
 }
-    ${RunEventFragmentDoc}
-${FlowFragmentDoc}`;
+    ${FlowFragmentDoc}`;
 export const UpdateWorkspaceDocument = gql`
     mutation UpdateWorkspace($id: ID!, $graph: GraphInput!) {
   updateWorkspace(input: {workspace: $id, graph: $graph}) {
@@ -5104,10 +5013,10 @@ export const ProfileFeedWorkspacesDocument = gql`
     pagination: $pagination
     ordering: [{createdAt: DESC}]
   ) {
-    ...ListWorkspace
+    ...FeedWorkspace
   }
 }
-    ${ListWorkspaceFragmentDoc}`;
+    ${FeedWorkspaceFragmentDoc}`;
 
 /**
  * __useProfileFeedWorkspacesQuery__
@@ -5284,6 +5193,45 @@ export function useValidatePythonFlowLazyQuery(baseOptions?: ApolloReactHooks.La
 export type ValidatePythonFlowQueryHookResult = ReturnType<typeof useValidatePythonFlowQuery>;
 export type ValidatePythonFlowLazyQueryHookResult = ReturnType<typeof useValidatePythonFlowLazyQuery>;
 export type ValidatePythonFlowQueryResult = Apollo.QueryResult<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>;
+export const PythonFlowStubsDocument = gql`
+    query PythonFlowStubs($manifest: [ManifestEntryInput!]!, $structures: [String!]!, $entrypoint: String! = "main") {
+  validatePythonFlow(
+    input: {source: "", manifest: $manifest, structures: $structures, entrypoint: $entrypoint}
+  ) {
+    stubs
+  }
+}
+    `;
+
+/**
+ * __usePythonFlowStubsQuery__
+ *
+ * To run a query within a React component, call `usePythonFlowStubsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonFlowStubsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonFlowStubsQuery({
+ *   variables: {
+ *      manifest: // value for 'manifest'
+ *      structures: // value for 'structures'
+ *      entrypoint: // value for 'entrypoint'
+ *   },
+ * });
+ */
+export function usePythonFlowStubsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PythonFlowStubsQuery, PythonFlowStubsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonFlowStubsQuery, PythonFlowStubsQueryVariables>(PythonFlowStubsDocument, options);
+      }
+export function usePythonFlowStubsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonFlowStubsQuery, PythonFlowStubsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonFlowStubsQuery, PythonFlowStubsQueryVariables>(PythonFlowStubsDocument, options);
+        }
+export type PythonFlowStubsQueryHookResult = ReturnType<typeof usePythonFlowStubsQuery>;
+export type PythonFlowStubsLazyQueryHookResult = ReturnType<typeof usePythonFlowStubsLazyQuery>;
+export type PythonFlowStubsQueryResult = Apollo.QueryResult<PythonFlowStubsQuery, PythonFlowStubsQueryVariables>;
 export const PythonRunsDocument = gql`
     query PythonRuns($filters: PythonRunFilter, $pagination: OffsetPaginationInput, $ordering: [PythonRunOrder!]) {
   pythonRuns(filters: $filters, pagination: $pagination, ordering: $ordering) {
@@ -5391,145 +5339,6 @@ export function usePythonRunForTaskLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type PythonRunForTaskQueryHookResult = ReturnType<typeof usePythonRunForTaskQuery>;
 export type PythonRunForTaskLazyQueryHookResult = ReturnType<typeof usePythonRunForTaskLazyQuery>;
 export type PythonRunForTaskQueryResult = Apollo.QueryResult<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>;
-export const ReactiveTemplatesDocument = gql`
-    query ReactiveTemplates($pagination: OffsetPaginationInput) {
-  reactiveTemplates(pagination: $pagination) {
-    ...ReactiveTemplate
-  }
-}
-    ${ReactiveTemplateFragmentDoc}`;
-
-/**
- * __useReactiveTemplatesQuery__
- *
- * To run a query within a React component, call `useReactiveTemplatesQuery` and pass it any options that fit your needs.
- * When your component renders, `useReactiveTemplatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useReactiveTemplatesQuery({
- *   variables: {
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useReactiveTemplatesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ReactiveTemplatesQuery, ReactiveTemplatesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ReactiveTemplatesQuery, ReactiveTemplatesQueryVariables>(ReactiveTemplatesDocument, options);
-      }
-export function useReactiveTemplatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ReactiveTemplatesQuery, ReactiveTemplatesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ReactiveTemplatesQuery, ReactiveTemplatesQueryVariables>(ReactiveTemplatesDocument, options);
-        }
-export type ReactiveTemplatesQueryHookResult = ReturnType<typeof useReactiveTemplatesQuery>;
-export type ReactiveTemplatesLazyQueryHookResult = ReturnType<typeof useReactiveTemplatesLazyQuery>;
-export type ReactiveTemplatesQueryResult = Apollo.QueryResult<ReactiveTemplatesQuery, ReactiveTemplatesQueryVariables>;
-export const ReactiveTemplateDocument = gql`
-    query ReactiveTemplate($id: ID!) {
-  reactiveTemplate(id: $id) {
-    ...ReactiveTemplate
-  }
-}
-    ${ReactiveTemplateFragmentDoc}`;
-
-/**
- * __useReactiveTemplateQuery__
- *
- * To run a query within a React component, call `useReactiveTemplateQuery` and pass it any options that fit your needs.
- * When your component renders, `useReactiveTemplateQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useReactiveTemplateQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useReactiveTemplateQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ReactiveTemplateQuery, ReactiveTemplateQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ReactiveTemplateQuery, ReactiveTemplateQueryVariables>(ReactiveTemplateDocument, options);
-      }
-export function useReactiveTemplateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ReactiveTemplateQuery, ReactiveTemplateQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ReactiveTemplateQuery, ReactiveTemplateQueryVariables>(ReactiveTemplateDocument, options);
-        }
-export type ReactiveTemplateQueryHookResult = ReturnType<typeof useReactiveTemplateQuery>;
-export type ReactiveTemplateLazyQueryHookResult = ReturnType<typeof useReactiveTemplateLazyQuery>;
-export type ReactiveTemplateQueryResult = Apollo.QueryResult<ReactiveTemplateQuery, ReactiveTemplateQueryVariables>;
-export const SnapshotsDocument = gql`
-    query Snapshots {
-  snapshots {
-    ...ListSnapshot
-  }
-}
-    ${ListSnapshotFragmentDoc}`;
-
-/**
- * __useSnapshotsQuery__
- *
- * To run a query within a React component, call `useSnapshotsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSnapshotsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSnapshotsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useSnapshotsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SnapshotsQuery, SnapshotsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SnapshotsQuery, SnapshotsQueryVariables>(SnapshotsDocument, options);
-      }
-export function useSnapshotsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SnapshotsQuery, SnapshotsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SnapshotsQuery, SnapshotsQueryVariables>(SnapshotsDocument, options);
-        }
-export type SnapshotsQueryHookResult = ReturnType<typeof useSnapshotsQuery>;
-export type SnapshotsLazyQueryHookResult = ReturnType<typeof useSnapshotsLazyQuery>;
-export type SnapshotsQueryResult = Apollo.QueryResult<SnapshotsQuery, SnapshotsQueryVariables>;
-export const DetailSnapshotDocument = gql`
-    query DetailSnapshot($id: ID!) {
-  snapshot(id: $id) {
-    ...Snapshot
-  }
-}
-    ${SnapshotFragmentDoc}`;
-
-/**
- * __useDetailSnapshotQuery__
- *
- * To run a query within a React component, call `useDetailSnapshotQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailSnapshotQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailSnapshotQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailSnapshotQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailSnapshotQuery, DetailSnapshotQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<DetailSnapshotQuery, DetailSnapshotQueryVariables>(DetailSnapshotDocument, options);
-      }
-export function useDetailSnapshotLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailSnapshotQuery, DetailSnapshotQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<DetailSnapshotQuery, DetailSnapshotQueryVariables>(DetailSnapshotDocument, options);
-        }
-export type DetailSnapshotQueryHookResult = ReturnType<typeof useDetailSnapshotQuery>;
-export type DetailSnapshotLazyQueryHookResult = ReturnType<typeof useDetailSnapshotLazyQuery>;
-export type DetailSnapshotQueryResult = Apollo.QueryResult<DetailSnapshotQuery, DetailSnapshotQueryVariables>;
 export const RunForTaskDocument = gql`
     query RunForTask($id: ID!) {
   runForTask(id: $id) {
@@ -5711,42 +5520,6 @@ export function useRunCarouselLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type RunCarouselQueryHookResult = ReturnType<typeof useRunCarouselQuery>;
 export type RunCarouselLazyQueryHookResult = ReturnType<typeof useRunCarouselLazyQuery>;
 export type RunCarouselQueryResult = Apollo.QueryResult<RunCarouselQuery, RunCarouselQueryVariables>;
-export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
-  workspaces: workspaces(filters: {search: $search}, pagination: $pagination) {
-    ...ListWorkspace
-  }
-}
-    ${ListWorkspaceFragmentDoc}`;
-
-/**
- * __useGlobalSearchQuery__
- *
- * To run a query within a React component, call `useGlobalSearchQuery` and pass it any options that fit your needs.
- * When your component renders, `useGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGlobalSearchQuery({
- *   variables: {
- *      search: // value for 'search'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useGlobalSearchQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-      }
-export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalSearchQuery, GlobalSearchQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GlobalSearchQuery, GlobalSearchQueryVariables>(GlobalSearchDocument, options);
-        }
-export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
-export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
-export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
 export const WorkspaceDocument = gql`
     query Workspace($id: ID!) {
   workspace(id: $id) {
@@ -5937,6 +5710,7 @@ export const WatchPythonRunsDocument = gql`
       id
       taskId
       status
+      finishedAt
     }
     delete
   }
@@ -5970,6 +5744,7 @@ export const WatchPythonRunDocument = gql`
     update {
       id
       status
+      finishedAt
     }
     delete
   }
@@ -5998,3 +5773,41 @@ export function useWatchPythonRunSubscription(baseOptions: ApolloReactHooks.Subs
       }
 export type WatchPythonRunSubscriptionHookResult = ReturnType<typeof useWatchPythonRunSubscription>;
 export type WatchPythonRunSubscriptionResult = Apollo.SubscriptionResult<WatchPythonRunSubscription>;
+export const WatchRunDocument = gql`
+    subscription WatchRun($id: ID!) {
+  run(id: $id) {
+    update {
+      id
+      status
+      snapshots {
+        id
+        t
+      }
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchRunSubscription__
+ *
+ * To run a query within a React component, call `useWatchRunSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchRunSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchRunSubscription({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useWatchRunSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchRunSubscription, WatchRunSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchRunSubscription, WatchRunSubscriptionVariables>(WatchRunDocument, options);
+      }
+export type WatchRunSubscriptionHookResult = ReturnType<typeof useWatchRunSubscription>;
+export type WatchRunSubscriptionResult = Apollo.SubscriptionResult<WatchRunSubscription>;

@@ -23,21 +23,41 @@ subscription WatchPythonRuns {
       taskId
       status
     }
+    # Enough to update a listed row in place.
     update {
       id
       taskId
       status
+      finishedAt
     }
     delete
   }
 }
 
-# One Python run's status changes (it completes, fails): its trace re-reads then.
+# One Python run's status changes (it completes, fails): the cache takes the
+# new status and end; its source and manifest do not change.
 subscription WatchPythonRun($id: ID!) {
   pythonRun(id: $id) {
     update {
       id
       status
+      finishedAt
+    }
+    delete
+  }
+}
+
+# One run as it changes status: an open tracker turns from live to range when
+# it completes. The snapshots give the range its marks.
+subscription WatchRun($id: ID!) {
+  run(id: $id) {
+    update {
+      id
+      status
+      snapshots {
+        id
+        t
+      }
     }
     delete
   }

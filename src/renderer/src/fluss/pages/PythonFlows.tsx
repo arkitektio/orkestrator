@@ -3,6 +3,7 @@ import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { Button } from "@/core/ui/button";
 import { Input } from "@/core/ui/input";
 import Timestamp from "@/core/ui/timestamp";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { Ordering, PythonFlowStatus, usePythonFlowsQuery } from "@/fluss/api/graphql";
 import { AlertTriangle, Code2, Loader2, Plus } from "lucide-react";
@@ -18,6 +19,9 @@ const STATUS_FILTERS: { label: string; value: PythonFlowStatus[] | undefined }[]
   { label: "Archived", value: [PythonFlowStatus.Archived] },
 ];
 
+/** Flows a page asks for; "Show more" asks for as many again. */
+const PAGE = 50;
+
 /**
  * Every Python flow, one row per flow: its newest version (`latest`, the head of
  * its lineage, decided on the server). The status and search filters apply to
@@ -27,11 +31,14 @@ const Page = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState(0);
+  const [limit, setLimit] = useState(PAGE);
+  // The server embeds every search it is sent: one per pause in typing, not per key.
+  const debouncedSearch = useDebounce(search, 250);
   const { data, loading, error, refetch } = usePythonFlowsQuery({
     variables: {
-      filters: { latest: true, search: search || undefined, status: STATUS_FILTERS[status].value },
+      filters: { latest: true, search: debouncedSearch || undefined, status: STATUS_FILTERS[status].value },
       ordering: [{ createdAt: Ordering.Desc }],
-      pagination: { limit: 200 },
+      pagination: { limit },
     },
     // A save elsewhere adds versions this cached list does not know of.
     fetchPolicy: "cache-and-network",
@@ -112,6 +119,11 @@ const Page = () => {
             </FlussPythonFlow.Smart>
           ))}
         </div>
+        {data && latest.length >= limit && (
+          <Button variant="outline" size="sm" className="self-center" onClick={() => setLimit((n) => n + PAGE)}>
+            Show more
+          </Button>
+        )}
       </div>
     </FlussPythonFlow.ListPage>
   );

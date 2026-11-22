@@ -19,24 +19,31 @@ import RunList from "../components/lists/RunList";
 import WorkspaceList from "../components/lists/WorkspaceList";
 import { FLUSS_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
+import { activeRunChange } from "../runEvents";
 
 const ACTIVE_RUNS_SHOWN = 30;
 
 /**
  * Runs that are still executing, however old: the server filters by status.
- * A run starting or completing anywhere in the organization (the `runs`
- * subscription) re-reads the list, so it flips without a refresh; renders
- * nothing when there is nothing in flight.
+ * The `runs` subscription keeps the list: a run that stops running (or is
+ * deleted) leaves it in place, and only a run that starts, or one not listed
+ * yet, re-reads it. Renders nothing when there is nothing in flight.
  */
 const ActiveRuns = () => {
-  const { data, error, refetch } = useListRunsQuery({
+  const { data, error, refetch, updateQuery } = useListRunsQuery({
     variables: {
       filters: { status: [RunStatus.Running] },
       pagination: { limit: ACTIVE_RUNS_SHOWN },
       ordering: [{ createdAt: Ordering.Desc }],
     },
   });
-  useWatchRunsSubscription({ onData: () => void refetch() });
+  useWatchRunsSubscription({
+    onData: ({ data: event }) => {
+      const change = activeRunChange(data?.runs ?? [], event.data?.runs);
+      if (change.kind === "refetch") void refetch();
+      if (change.kind === "remove") updateQuery((prev) => ({ ...prev, runs: prev.runs.filter((run) => run.id !== change.id) }));
+    },
+  });
 
   const active = data?.runs ?? [];
   if (active.length === 0) return null;

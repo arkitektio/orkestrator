@@ -87,9 +87,10 @@ fragment DetailPythonRun on PythonRun {
   }
 }
 
+# What a check of the source found. The stubs depend on the manifest and
+# structures only, not on the source being typed: PythonFlowStubs asks for them.
 fragment PythonFlowValidation on PythonFlowValidation {
   ok
-  stubs
   runtime
   diagnostics {
     message

@@ -22,7 +22,7 @@ import { PythonSourceEditor } from "./PythonSourceEditor";
 import { PythonFlowStatusBadge } from "./StatusBadges";
 import { NEW_FLOW_SOURCE } from "./stubs";
 import { useRekuestActions } from "./useRekuestActions";
-import { useValidation } from "./useValidation";
+import { usePythonFlowStubs, useValidation } from "./useValidation";
 
 export type WorkbenchLayout = (parts: {
   title: ReactNode;
@@ -99,6 +99,12 @@ export const PythonFlowWorkbench = ({ base, layout }: { base: PythonFlowFragment
   const manifest = useMemo(() => toManifestInput(rows), [rows]);
   const { validation, validating, error: validationError } = useValidation({
     source,
+    manifest,
+    structures,
+    entrypoint: base?.entrypoint,
+    paused: hydrating || (editedStructures === null && derivedStructures === null),
+  });
+  const stubs = usePythonFlowStubs({
     manifest,
     structures,
     entrypoint: base?.entrypoint,
@@ -234,7 +240,7 @@ export const PythonFlowWorkbench = ({ base, layout }: { base: PythonFlowFragment
           value={source}
           onChange={setSource}
           diagnostics={diagnostics}
-          stubs={validation?.stubs}
+          stubs={stubs}
           manifestHashes={new Set(rows.map((row) => row.actionHash))}
           takenAliases={new Set(rows.map((row) => row.alias))}
           searchActions={search}
