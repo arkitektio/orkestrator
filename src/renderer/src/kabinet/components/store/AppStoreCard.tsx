@@ -50,7 +50,7 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
           </p>
           <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
             v{app.latest.version}
-            {app.releases.length > 1 && ` · ${app.releases.length} releases`}
+            {app.releaseCount > 1 && ` · ${app.releaseCount} releases`}
           </p>
         </div>
       </div>

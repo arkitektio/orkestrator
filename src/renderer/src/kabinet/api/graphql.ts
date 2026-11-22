@@ -219,17 +219,29 @@ export type AgentProbeInput = {
 /** An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app). */
 export type App = {
   __typename?: 'App';
+  /** The accelerators the app's flavours require, one entry per vendor (cuda, rocm, oneapi), as `@kabinet/gpu` names them. A flavour that requires several vendors at once is a GPU flavour but names none here. */
+  accelerators: Array<Scalars['String']['output']>;
+  /** How many deployments the app's flavours have, of any release and in any status: 0 for an app that is not installed. */
+  deploymentCount: Scalars['Int']['output'];
   /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   /** This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
+  /** What the app's flavours run on: GPU when one requires an accelerator, CPU when one runs without. Read from the flavours' required selectors (`@kabinet/gpu`); empty for an app without flavours. */
+  hardware: Array<AppHardware>;
   id: Scalars['ID']['output'];
   /** The globally unique, reverse-domain identifier of the app. */
   identifier: Scalars['String']['output'];
+  /** The app's newest release, by `releasedAt` (a channel build counts as a release). Null for an app without releases. */
+  latestRelease?: Maybe<Release>;
   /** The app's logo: the LOGO blok of its newest release that brings one. */
   logoBlok?: Maybe<FlavourBlok>;
   /** The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first. */
   releases: Array<Release>;
+  /** How many of the app's deployments are RUNNING. */
+  runningCount: Scalars['Int']['output'];
+  /** The services any of the app's flavours require (e.g. `live.arkitekt.mikro`), sorted. */
+  services: Array<Scalars['String']['output']>;
 };
 
 
@@ -246,11 +258,27 @@ export type AppFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<AppFilter>;
   OR?: InputMaybe<AppFilter>;
+  /** true: only apps with at least one deployment of any of their flavours (installed); false: only apps with none. */
+  deployed?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep only apps with a flavour for each of these: GPU, a flavour that requires an accelerator; CPU, one that runs on a plain CPU backend. Read from the flavours' required selectors (`@kabinet/gpu`). */
+  hardware?: InputMaybe<Array<AppHardware>>;
+  /** Keep only the app with exactly this identifier (unique within the organization). */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only the apps with exactly these identifiers. */
+  identifiers?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Keep only apps whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only apps with a flavour that requires this service (e.g. `live.arkitekt.mikro`). */
+  service?: InputMaybe<Scalars['String']['input']>;
 };
+
+/** What an app's flavours run on: an accelerator (GPU) or a plain CPU backend. */
+export enum AppHardware {
+  Cpu = 'CPU',
+  Gpu = 'GPU'
+}
 
 /** Input describing a built app image to register (its manifest, image, selectors and inspection). */
 export type AppImageInput = {
@@ -263,8 +291,10 @@ export type AppImageInput = {
 };
 
 export type AppOrder =
-  { id: Ordering; identifier?: never; }
-  |  { id?: never; identifier: Ordering; };
+  { id: Ordering; identifier?: never; releasedAt?: never; }
+  |  { id?: never; identifier: Ordering; releasedAt?: never; }
+  |  /** By the time of the app's newest release (`Release.releasedAt`): DESC for the most recently released first. */
+  { id?: never; identifier?: never; releasedAt: Ordering; };
 
 /** Record that you pre-authorized a release (via a lok mandate) so deployers may install it. */
 export type ApproveReleaseInput = {
@@ -1456,6 +1486,8 @@ export type GithubRepo = {
   bloks: Array<RepoBlok>;
   /** The branch that is scanned for app manifests. */
   branch: Scalars['String']['output'];
+  /** The member who added this repository, if known. */
+  creator?: Maybe<User>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   /** This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
@@ -1507,6 +1539,8 @@ export type GithubRepoFilter = {
   OR?: InputMaybe<GithubRepoFilter>;
   /** Case-insensitive match on the branch name. */
   branch?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only repositories this user added, given by their sub (their id in lok). `user` is the GitHub owner, not a member. */
+  creator?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only repositories whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Case-insensitive match on the GitHub repository name. */
@@ -1900,6 +1934,8 @@ export type OciRepo = {
   addedAt: Scalars['DateTime']['output'];
   /** The channels followed besides the releases. */
   channels: Array<Scalars['String']['output']>;
+  /** The member who imported this repository, if known. */
+  creator?: Maybe<User>;
   /** The flavours read from this repository. */
   flavours: Array<Flavour>;
   id: Scalars['ID']['output'];
@@ -1926,6 +1962,26 @@ export type OciRepoFlavoursArgs = {
   ordering?: Array<FlavourOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
+
+/** Filter for imported OCI repositories. */
+export type OciRepoFilter = {
+  AND?: InputMaybe<OciRepoFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<OciRepoFilter>;
+  OR?: InputMaybe<OciRepoFilter>;
+  /** Keep only repositories this user imported, given by their sub (their id in lok). */
+  creator?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only repositories whose ID is in this list. */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Case-insensitive substring of the name, the registry or the repository path. */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type OciRepoOrder =
+  { addedAt: Ordering; id?: never; name?: never; updatedAt?: never; }
+  |  { addedAt?: never; id: Ordering; name?: never; updatedAt?: never; }
+  |  { addedAt?: never; id?: never; name: Ordering; updatedAt?: never; }
+  |  { addedAt?: never; id?: never; name?: never; updatedAt: Ordering; };
 
 export type OffsetPaginationInput = {
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -2376,6 +2432,8 @@ export type QueryOciRepoArgs = {
 
 
 export type QueryOciReposArgs = {
+  filters?: InputMaybe<OciRepoFilter>;
+  ordering?: Array<OciRepoOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -2496,6 +2554,8 @@ export type Release = {
   name: Scalars['String']['output'];
   /** The original (upstream) logo URL of this release. */
   originalLogo?: Maybe<Scalars['String']['output']>;
+  /** When this release was made: what an app's newest release and `AppOrder.releasedAt` go by. */
+  releasedAt: Scalars['DateTime']['output'];
   /** The source revision this release was built from, when its publisher said. */
   revision?: Maybe<Scalars['String']['output']>;
   /** The OAuth2 scopes this release requires. */
@@ -2568,6 +2628,8 @@ export type ReleaseApprovalFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ReleaseApprovalFilter>;
   OR?: InputMaybe<ReleaseApprovalFilter>;
+  /** Keep only approvals this user gave, given by their sub (their id in lok): with `revoked: false`, what they installed. */
+  approver?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only approvals whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only approvals of this release. */
@@ -3200,6 +3262,11 @@ export type ShelfAppFragment = { __typename?: 'App', id: string, identifier: str
     { __typename?: 'Release' }
     & StoreReleaseFragment
   )> };
+
+export type StoreAppFragment = { __typename?: 'App', id: string, identifier: string, embedding?: any | null, deploymentCount: number, runningCount: number, hardware: Array<AppHardware>, accelerators: Array<string>, services: Array<string>, releases: Array<{ __typename?: 'Release', id: string }>, latestRelease?: (
+    { __typename?: 'Release' }
+    & StoreReleaseFragment
+  ) | null };
 
 export type ListReleaseApprovalFragment = { __typename?: 'ReleaseApproval', id: string, name: string, agent: string, digest: string, mandateId: string, createdAt: any, revokedAt?: any | null, isStale: boolean, isActive: boolean, approver: { __typename?: 'User', sub: string }, release: { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
       { __typename?: 'FlavourBlok' }
@@ -4012,7 +4079,7 @@ export type AppCatalogQueryVariables = Exact<{
 
 export type AppCatalogQuery = { __typename?: 'Query', apps: Array<(
     { __typename?: 'App' }
-    & AppFragment
+    & StoreAppFragment
   )> };
 
 export type ListReleaseApprovalsQueryVariables = Exact<{
@@ -4338,13 +4405,15 @@ export type GlobalSearchQuery = { __typename?: 'Query', definitions: Array<(
   )> };
 
 export type AppStoreQueryVariables = Exact<{
+  filters?: InputMaybe<AppFilter>;
+  ordering?: Array<AppOrder> | AppOrder;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
 
-export type AppStoreQuery = { __typename?: 'Query', releases: Array<(
-    { __typename?: 'Release' }
-    & StoreReleaseFragment
+export type AppStoreQuery = { __typename?: 'Query', apps: Array<(
+    { __typename?: 'App' }
+    & StoreAppFragment
   )> };
 
 export type WatchPodsSubscriptionVariables = Exact<{ [key: string]: never; }>;
@@ -4482,6 +4551,24 @@ export const ShelfAppFragmentDoc = gql`
   identifier
   embedding
   releases(ordering: [{releasedAt: DESC}], pagination: {limit: 1}) {
+    ...StoreRelease
+  }
+}
+    ${StoreReleaseFragmentDoc}`;
+export const StoreAppFragmentDoc = gql`
+    fragment StoreApp on App {
+  id
+  identifier
+  embedding
+  deploymentCount
+  runningCount
+  hardware
+  accelerators
+  services
+  releases {
+    id
+  }
+  latestRelease {
     ...StoreRelease
   }
 }
@@ -6054,11 +6141,11 @@ export type ListAppsLazyQueryHookResult = ReturnType<typeof useListAppsLazyQuery
 export type ListAppsQueryResult = Apollo.QueryResult<ListAppsQuery, ListAppsQueryVariables>;
 export const AppCatalogDocument = gql`
     query AppCatalog($filters: AppFilter, $pagination: OffsetPaginationInput) {
-  apps(filters: $filters, pagination: $pagination) {
-    ...App
+  apps(filters: $filters, pagination: $pagination, ordering: [{releasedAt: DESC}]) {
+    ...StoreApp
   }
 }
-    ${AppFragmentDoc}`;
+    ${StoreAppFragmentDoc}`;
 
 /**
  * __useAppCatalogQuery__
@@ -7265,12 +7352,12 @@ export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
 export const AppStoreDocument = gql`
-    query AppStore($pagination: OffsetPaginationInput) {
-  releases(ordering: [{releasedAt: DESC}], pagination: $pagination) {
-    ...StoreRelease
+    query AppStore($filters: AppFilter, $ordering: [AppOrder!]! = [{releasedAt: DESC}], $pagination: OffsetPaginationInput) {
+  apps(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...StoreApp
   }
 }
-    ${StoreReleaseFragmentDoc}`;
+    ${StoreAppFragmentDoc}`;
 
 /**
  * __useAppStoreQuery__
@@ -7284,6 +7371,8 @@ export const AppStoreDocument = gql`
  * @example
  * const { data, loading, error } = useAppStoreQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });

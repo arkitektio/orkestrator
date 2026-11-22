@@ -30,15 +30,16 @@ import {
 } from "../components/store/StoreParts";
 import {
   filterAppBloks,
-  filterApps,
   filterRepoBloks,
-  groupApps,
+  fromStoreApps,
   pickFeatured,
-  sortApps,
+  storeAppFilter,
+  storeAppOrder,
   StoreApp,
   StoreFilter,
   StoreSort,
 } from "../components/store/storeModel";
+import { AppFilter, AppHardware } from "../api/graphql";
 
 const FILTERS: { value: StoreFilter; label: string; icon: LucideIcon }[] = [
   { value: "all", label: "All apps", icon: ShoppingBag },
@@ -55,18 +56,25 @@ const CUSTOM_BLOKS = {
 
 const SORTS: { value: StoreSort; label: string }[] = [
   { value: "recent", label: "Newest" },
-  { value: "actions", label: "Most actions" },
   { value: "name", label: "A–Z" },
 ];
 
-const Stat = ({ value, label }: { value: number; label: string }) => (
-  <div className="flex flex-col">
-    <span className="text-2xl font-semibold tabular-nums tracking-tight">{value}</span>
-    <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">
-      {label}
-    </span>
-  </div>
-);
+/** Apps a page of the store asks for; "Show more" asks for as many again. */
+const PAGE = 48;
+/** Apps a shelf shows. */
+const SHELF = 12;
+/** Apps the bloks view reads the panels and scenes of. */
+const BLOK_APPS = 100;
+
+/** A shelf of the store: its own small query, so it is not cut by the page above. */
+const useShelf = (filters: AppFilter, skip: boolean) => {
+  const { data } = useAppStoreQuery({
+    variables: { filters, pagination: { limit: SHELF } },
+    skip,
+    fetchPolicy: "cache-and-network",
+  });
+  return useMemo(() => fromStoreApps(data?.apps ?? []), [data]);
+};
 
 const Shelf = ({
   title,
@@ -125,29 +133,45 @@ const EmptyStore = () => (
 );
 
 export const AppStorePage = () => {
-  const { data, loading, error } = useAppStoreQuery({
-    fetchPolicy: "cache-and-network",
-  });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StoreFilter>("all");
   const [service, setService] = useState<string | null>(null);
   const [sort, setSort] = useState<StoreSort>("recent");
+  const [limit, setLimit] = useState(PAGE);
   const debouncedSearch = useDebounce(search, 150);
 
-  const apps = useMemo(() => groupApps(data?.releases ?? []), [data]);
+  // The apps the chips, search and sort ask for, filtered and paged on the
+  // server. The bloks view reads the panels and scenes of the apps instead, so
+  // it asks for apps by service only and narrows the bloks by the search.
+  const bloksView = filter === "bloks";
+  const { data, loading, error } = useAppStoreQuery({
+    variables: {
+      filters: bloksView
+        ? storeAppFilter({ search: "", filter: "all", service })
+        : storeAppFilter({ search: debouncedSearch, filter, service }),
+      ordering: storeAppOrder(sort),
+      pagination: { limit: bloksView ? BLOK_APPS : limit },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+  // Unfiltered, newest first: what the store has at all, its spotlight, the
+  // bloks it shows while browsing and the services it offers as chips.
+  const { data: allData } = useAppStoreQuery({
+    variables: { pagination: { limit: PAGE } },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const visible = useMemo(() => fromStoreApps(data?.apps ?? []), [data]);
+  const apps = useMemo(() => fromStoreApps(allData?.apps ?? []), [allData]);
+  const hasMore = !bloksView && (data?.apps.length ?? 0) >= limit;
   const services = useMemo(
-    () => [...new Set(apps.flatMap((a) => a.services))].sort(),
-    [apps],
-  );
-  const visible = useMemo(
-    () =>
-      sortApps(filterApps(apps, { search: debouncedSearch, filter, service }), sort),
-    [apps, debouncedSearch, filter, service, sort],
+    () => [...new Set([...apps, ...visible].flatMap((a) => a.services))].sort(),
+    [apps, visible],
   );
   const featured = useMemo(() => pickFeatured(apps), [apps]);
   const appBloks = useMemo(
-    () => filterAppBloks(apps, { search: debouncedSearch, service }),
-    [apps, debouncedSearch, service],
+    () => filterAppBloks(bloksView ? visible : apps, { search: debouncedSearch }),
+    [bloksView, visible, apps, debouncedSearch],
   );
   // Bloks GitHub repositories publish on their own. They need no service, so
   // a service chip leaves none of them.
@@ -163,15 +187,8 @@ export const AppStorePage = () => {
   );
 
   const browsing = !debouncedSearch && filter === "all" && !service;
-  const totals = useMemo(
-    () => ({
-      actions: apps.reduce((n, a) => n + a.definitions.length, 0),
-      flavours: apps.reduce((n, a) => n + a.flavours.length, 0),
-      running: apps.reduce((n, a) => n + a.runningCount, 0),
-      bloks: apps.reduce((n, a) => n + a.bloks.length, 0) + repoBlokCount,
-    }),
-    [apps, repoBlokCount],
-  );
+  const gpuShelf = useShelf({ hardware: [AppHardware.Gpu] }, !browsing);
+  const runningShelf = useShelf({ deployed: true }, !browsing);
 
   return (
     <PageLayout
@@ -198,15 +215,6 @@ export const AppStorePage = () => {
                 Browse the apps registered with your organization and the bloks they bring, and deploy them on a running engine.
               </p>
             </div>
-            {(apps.length > 0 || repoBlokCount > 0) && (
-              <div className="flex gap-6">
-                <Stat value={apps.length} label="Apps" />
-                <Stat value={totals.actions} label="Actions" />
-                <Stat value={totals.flavours} label="Flavours" />
-                <Stat value={totals.bloks} label="Bloks" />
-                <Stat value={totals.running} label="Running" />
-              </div>
-            )}
           </div>
 
           <div className="relative">
@@ -266,11 +274,11 @@ export const AppStorePage = () => {
           </div>
         </header>
 
-        {error && !data && (
+        {error && !data && !allData && (
           <ErrorNote error={error} title="Couldn't load the app store" />
         )}
 
-        {loading && !data ? (
+        {loading && !data && !allData ? (
           <LoadingGrid />
         ) : apps.length === 0 && repoBlokCount === 0 ? (
           !error && (
@@ -319,12 +327,12 @@ export const AppStorePage = () => {
                 <Shelf
                   title="GPU accelerated"
                   description="Built to make use of CUDA, ROCm or oneAPI hardware."
-                  apps={apps.filter((a) => a.hardware.includes("gpu"))}
+                  apps={gpuShelf}
                 />
                 <Shelf
-                  title="Already running"
-                  description="Deployed on one of your engines right now."
-                  apps={apps.filter((a) => a.runningCount > 0)}
+                  title="Already deployed"
+                  description="Deployed on one of your engines."
+                  apps={runningShelf}
                 />
               </div>
             )}
@@ -367,7 +375,7 @@ export const AppStorePage = () => {
                 <h3 className="text-base font-semibold tracking-tight">
                   {browsing ? "All apps" : "Results"}
                 </h3>
-                <Badge variant="secondary">{visible.length}</Badge>
+                <Badge variant="secondary">{hasMore ? `${visible.length}+` : visible.length}</Badge>
               </div>
               {visible.length === 0 ? (
                 <div className="flex flex-col items-start gap-2 rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
@@ -391,6 +399,11 @@ export const AppStorePage = () => {
                     <AppStoreCard key={app.identifier} app={app} />
                   ))}
                 </div>
+              )}
+              {hasMore && (
+                <Button variant="outline" size="sm" className="self-center rounded-full" onClick={() => setLimit((n) => n + PAGE)}>
+                  Show more
+                </Button>
               )}
             </section>
 

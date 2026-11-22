@@ -22,3 +22,23 @@ fragment ShelfApp on App {
     ...StoreRelease
   }
 }
+
+# One app as the store lists it: its newest release to draw from, and what the
+# server works out over all of its releases (deployments, hardware, services),
+# so a list of apps is filtered, sorted and paged on the server.
+fragment StoreApp on App {
+  id
+  identifier
+  embedding
+  deploymentCount
+  runningCount
+  hardware
+  accelerators
+  services
+  releases {
+    id
+  }
+  latestRelease {
+    ...StoreRelease
+  }
+}

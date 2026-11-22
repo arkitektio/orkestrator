@@ -13,20 +13,20 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
  * because those URLs are shareable: they are what a deeplink or a pasted link
  * from before the move still points at.
  *
- * `AppFilter.search` matches the identifier, so this is one filtered lookup
- * rather than a scan — but it is a substring match, hence the exact check.
+ * `AppFilter.identifier` is an exact match (unique within the organization),
+ * so this is one lookup.
  */
 export const AppStoreRedirect = () => {
   const { identifier = "" } = useParams<{ identifier: string }>();
   const { data, loading, error, refetch } = useListAppsQuery({
-    variables: { filters: { search: identifier }, pagination: { limit: 20 } },
+    variables: { filters: { identifier }, pagination: { limit: 1 } },
     skip: !identifier,
   });
 
   if (error && !data) return <QueryError error={error} onRetry={() => refetch()} resource="app" />;
   if (loading) return <LoadingPage />;
 
-  const app = data?.apps.find((candidate) => candidate.identifier === identifier);
+  const app = data?.apps[0];
   if (!app) return <NotFound />;
 
   return <Navigate to={KabinetApp.linkBuilder(app.id)} replace />;

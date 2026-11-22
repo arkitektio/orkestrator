@@ -1,6 +1,11 @@
 import {
+  AppFilter,
+  AppHardware,
+  AppOrder,
+  Ordering,
   ComponentContext,
   PodStatus,
+  StoreAppFragment,
   StoreFlavourFragment,
   StoreReleaseFragment,
   StoreRepoBlokFragment,
@@ -25,8 +30,10 @@ export const isOfferedBlok = (blok: Pick<StoreBlok, "context">): boolean =>
 export type Hardware = "gpu" | "cpu";
 
 /**
- * One registered app, folded together from all of its releases. The backend
- * has no `apps` listing, so the store groups releases by `app.identifier`.
+ * One registered app as every store surface draws it. A list reads it from
+ * `apps` (`fromStoreApp`: its newest release plus what the server works out over
+ * all of its releases); a page that holds an app's or a release's releases folds
+ * them with `groupApps`.
  */
 export type StoreApp = {
   /** The `App` row's id — what the app's model page is keyed by. */
@@ -34,8 +41,10 @@ export type StoreApp = {
   identifier: string;
   name: string;
   publisher: string | null;
-  /** Newest release first. */
+  /** Newest release first: what the caller had. A listed app has only its newest. */
   releases: StoreReleaseFragment[];
+  /** How many releases the app has. */
+  releaseCount: number;
   latest: StoreReleaseFragment;
   flavours: StoreFlavourFragment[];
   definitions: StoreDefinition[];
@@ -145,6 +154,7 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
       name,
       publisher: publisher ?? repos[0]?.user ?? null,
       releases: appReleases,
+      releaseCount: appReleases.length,
       latest,
       flavours,
       // Actions come from the latest release so the store shows what you get today.
@@ -179,38 +189,59 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
   });
 };
 
+const HARDWARE: Record<AppHardware, Hardware> = { [AppHardware.Gpu]: "gpu", [AppHardware.Cpu]: "cpu" };
+
+/**
+ * A listed app: drawn from its newest release, with the facts the server works
+ * out over all of its releases (deployments, hardware, accelerators, services).
+ * An app without a release yet has nothing to draw, and is left out.
+ */
+export const fromStoreApp = (app: StoreAppFragment): StoreApp | null => {
+  if (!app.latestRelease) return null;
+  const [folded] = groupApps([app.latestRelease]);
+  return {
+    ...folded,
+    id: app.id,
+    releaseCount: app.releases.length,
+    hardware: app.hardware.map((hardware) => HARDWARE[hardware]),
+    accelerators: app.accelerators,
+    services: [...app.services].sort(),
+    runningCount: app.runningCount,
+    deploymentCount: app.deploymentCount,
+    embedding: typeof app.embedding === "string" ? app.embedding : folded.embedding,
+  };
+};
+
+export const fromStoreApps = (apps: readonly StoreAppFragment[]): StoreApp[] =>
+  apps.flatMap((app) => {
+    const listed = fromStoreApp(app);
+    return listed ? [listed] : [];
+  });
+
 /** `bloks` lists the panels and scenes instead of the apps. */
 export type StoreFilter = "all" | "gpu" | "cpu" | "installed" | "bloks";
-export type StoreSort = "recent" | "name" | "actions";
+export type StoreSort = "recent" | "name";
 
-export const filterApps = (
-  apps: StoreApp[],
-  {
-    search,
-    filter,
-    service,
-  }: { search: string; filter: StoreFilter; service: string | null },
-): StoreApp[] => {
-  const needle = search.trim().toLowerCase();
-  return apps.filter((app) => {
-    if (filter === "gpu" && !app.hardware.includes("gpu")) return false;
-    if (filter === "cpu" && !app.hardware.includes("cpu")) return false;
-    if (filter === "installed" && app.deploymentCount === 0) return false;
-    if (filter === "bloks" && app.bloks.length === 0) return false;
-    if (service && !app.services.includes(service)) return false;
-    if (!needle) return true;
-    return (
-      app.identifier.toLowerCase().includes(needle) ||
-      app.name.toLowerCase().includes(needle) ||
-      app.definitions.some(
-        (d) =>
-          d.name.toLowerCase().includes(needle) ||
-          d.description?.toLowerCase().includes(needle),
-      ) ||
-      app.bloks.some((b) => blokMatches(b, needle))
-    );
-  });
-};
+/** The server's filter for the store's chips and search. */
+export const storeAppFilter = ({
+  search,
+  filter,
+  service,
+}: {
+  search: string;
+  filter: StoreFilter;
+  service: string | null;
+}): AppFilter => ({
+  ...(search.trim() ? { search: search.trim() } : {}),
+  ...(filter === "gpu" ? { hardware: [AppHardware.Gpu] } : {}),
+  ...(filter === "cpu" ? { hardware: [AppHardware.Cpu] } : {}),
+  ...(filter === "installed" ? { deployed: true } : {}),
+  ...(service ? { service } : {}),
+});
+
+/** The server's order for the store's sort buttons. */
+export const storeAppOrder = (sort: StoreSort): AppOrder[] =>
+  sort === "name" ? [{ identifier: Ordering.Asc }] : [{ releasedAt: Ordering.Desc }];
 
 const blokMatches = (blok: StoreBlok, needle: string): boolean =>
   blok.key.toLowerCase().includes(needle) ||
@@ -220,15 +251,14 @@ const blokMatches = (blok: StoreBlok, needle: string): boolean =>
 export type StoreAppBlok = { app: StoreApp; blok: StoreBlok };
 
 /**
- * The app bloks the store shows: those of the apps the filters keep, narrowed
- * to the bloks the search names unless it names their app.
+ * The panels and scenes of the listed apps, narrowed to the bloks the search
+ * names unless it names their app. The apps are the server's answer already
+ * (search, service); which of them bring a blok is only known from their newest
+ * release, so this reads the apps listed, not every app.
  */
-export const filterAppBloks = (
-  apps: StoreApp[],
-  { search, service }: { search: string; service: string | null },
-): StoreAppBlok[] => {
+export const filterAppBloks = (apps: StoreApp[], { search }: { search: string }): StoreAppBlok[] => {
   const needle = search.trim().toLowerCase();
-  return filterApps(apps, { search, filter: "bloks", service }).flatMap((app) => {
+  return apps.filter((app) => app.bloks.length > 0).flatMap((app) => {
     const appMatches =
       !needle ||
       app.identifier.toLowerCase().includes(needle) ||
@@ -237,15 +267,6 @@ export const filterAppBloks = (
       .filter((blok) => appMatches || blokMatches(blok, needle))
       .map((blok) => ({ app, blok }));
   });
-};
-
-export const sortApps = (apps: StoreApp[], sort: StoreSort): StoreApp[] => {
-  if (sort === "recent") return apps;
-  const copy = [...apps];
-  if (sort === "name") copy.sort((a, b) => a.name.localeCompare(b.name));
-  if (sort === "actions")
-    copy.sort((a, b) => b.definitions.length - a.definitions.length);
-  return copy;
 };
 
 /** The app the store spotlights: the one with the most to explore. */

@@ -142,7 +142,7 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
                   <Fact label="Version" value={app.latest.version} />
                   <Fact label="Actions" value={app.definitions.length} />
                   <Fact label="Flavours" value={app.latest.flavours.length} />
-                  <Fact label="Releases" value={app.releases.length} />
+                  <Fact label="Releases" value={app.releaseCount} />
                   <Fact label="Running" value={app.runningCount} />
                   {app.publisher && <Fact label="Publisher" value={app.publisher} />}
                 </div>

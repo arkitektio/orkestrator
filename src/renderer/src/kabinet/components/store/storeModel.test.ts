@@ -5,7 +5,9 @@ vi.mock("@/kabinet/api/hooks", () => ({}));
 
 import {
   ActionKind,
+  AppHardware,
   ComponentContext,
+  Ordering,
   PodStatus,
   StoreFlavourFragment,
   StoreReleaseFragment,
@@ -13,14 +15,15 @@ import {
 import {
   filterAppBloks,
   filterRepoBloks,
+  fromStoreApp,
   installedByOrigin,
   repoBlokState,
-  filterApps,
   groupApps,
   logoFor,
   pickFeatured,
-  sortApps,
   splitIdentifier,
+  storeAppFilter,
+  storeAppOrder,
 } from "./storeModel";
 
 const flavour = (
@@ -125,16 +128,40 @@ describe("storeModel", () => {
     expect(summary[0].identifier).toBe("org.lab.napari-viewer");
   });
 
-  it("filters by search over actions, hardware and deployment", () => {
-    const apps = groupApps(releases);
-    const ids = (f: Parameters<typeof filterApps>[1]) =>
-      filterApps(apps, f).map((a) => a.identifier);
-    expect(ids({ search: "predict", filter: "all", service: null })).toEqual(["stardist"]);
-    expect(ids({ search: "", filter: "gpu", service: null })).toEqual(["org.lab.napari-viewer"]);
-    expect(ids({ search: "", filter: "installed", service: null })).toEqual([
-      "org.lab.napari-viewer",
-    ]);
-    expect(ids({ search: "", filter: "all", service: "live.arkitekt.mikro" })).toHaveLength(1);
+  it("asks the server for the chips, the search and the sort", () => {
+    expect(storeAppFilter({ search: " napari ", filter: "gpu", service: null })).toEqual({
+      search: "napari",
+      hardware: [AppHardware.Gpu],
+    });
+    expect(storeAppFilter({ search: "", filter: "installed", service: "live.arkitekt.mikro" })).toEqual({
+      deployed: true,
+      service: "live.arkitekt.mikro",
+    });
+    expect(storeAppFilter({ search: "", filter: "all", service: null })).toEqual({});
+    expect(storeAppOrder("recent")).toEqual([{ releasedAt: Ordering.Desc }]);
+    expect(storeAppOrder("name")).toEqual([{ identifier: Ordering.Asc }]);
+  });
+
+  it("draws a listed app from its newest release and the server's facts", () => {
+    const [newest] = releases;
+    const app = fromStoreApp({
+      id: "app-1",
+      identifier: newest.app.identifier,
+      embedding: null,
+      deploymentCount: 3,
+      runningCount: 2,
+      hardware: [AppHardware.Gpu, AppHardware.Cpu],
+      accelerators: ["CUDA"],
+      services: ["live.arkitekt.mikro"],
+      releases: [{ id: "r1" }, { id: "r2" }],
+      latestRelease: newest,
+    });
+    expect(app?.id).toBe("app-1");
+    expect(app?.latest).toBe(newest);
+    expect(app?.releaseCount).toBe(2);
+    expect(app?.hardware).toEqual(["gpu", "cpu"]);
+    expect([app?.runningCount, app?.deploymentCount]).toEqual([2, 3]);
+    expect(fromStoreApp({ ...{ id: "x", identifier: "x", embedding: null, deploymentCount: 0, runningCount: 0, hardware: [], accelerators: [], services: [], releases: [] }, latestRelease: null })).toBeNull();
   });
 
   it("offers the latest release's panels and scenes once per key", () => {
@@ -147,14 +174,11 @@ describe("storeModel", () => {
   it("filters bloks by their key, description or app", () => {
     const apps = groupApps(releases);
     const keys = (search: string) =>
-      filterAppBloks(apps, { search, service: null }).map(({ blok }) => blok.key);
+      filterAppBloks(apps, { search }).map(({ blok }) => blok.key);
     expect(keys("")).toEqual(["layers", "volume"]);
     expect(keys("visible")).toEqual(["layers"]);
     expect(keys("napari")).toEqual(["layers", "volume"]);
     expect(keys("predict")).toEqual([]);
-    // An app is found by its bloks, too.
-    expect(filterApps(apps, { search: "volume", filter: "all", service: null })).toHaveLength(1);
-    expect(filterApps(apps, { search: "", filter: "bloks", service: null })).toHaveLength(1);
   });
 
   it("searches repository bloks and tells installed from outdated", () => {
@@ -181,9 +205,8 @@ describe("storeModel", () => {
     expect(bloks.map((b) => repoBlokState(b, installed).kind)).toEqual(["installed", "outdated", "missing"]);
   });
 
-  it("sorts and features", () => {
+  it("features", () => {
     const apps = groupApps(releases);
-    expect(sortApps(apps, "name").map((a) => a.name)).toEqual(["Napari Viewer", "Stardist"]);
     expect(pickFeatured(apps)?.identifier).toBe("org.lab.napari-viewer");
     expect(pickFeatured([])).toBeNull();
   });

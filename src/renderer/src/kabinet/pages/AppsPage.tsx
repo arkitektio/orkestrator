@@ -8,7 +8,7 @@ import { useMemo } from "react";
 import { useAppCatalogQuery } from "../api/graphql";
 import { useListSearch } from "../components/ListSearch";
 import { AppStoreCard } from "../components/store/AppStoreCard";
-import { groupApps } from "../components/store/storeModel";
+import { fromStoreApps } from "../components/store/storeModel";
 import { KABINET_HELP } from "../help";
 
 /**
@@ -23,7 +23,7 @@ const Page = () => {
     fetchPolicy: "cache-and-network",
   });
   // An app without a release yet has nothing to draw a card from.
-  const apps = useMemo(() => groupApps((data?.apps ?? []).flatMap((app) => app.releases)), [data]);
+  const apps = useMemo(() => fromStoreApps(data?.apps ?? []), [data]);
 
   return (
     <KabinetApp.ListPage

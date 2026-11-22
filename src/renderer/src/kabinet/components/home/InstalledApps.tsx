@@ -6,14 +6,20 @@ import { PodStatus, useAppStoreQuery } from "../../api/graphql";
 import { POD_STATUS_DOT, POD_STATUS_RANK, podStatusLabel } from "../../lib/podStatus";
 import { AppIcon } from "../AppIcon";
 import { appStorePath } from "../store/AppStoreCard";
-import { groupApps, StoreApp } from "../store/storeModel";
+import { fromStoreApps, StoreApp } from "../store/storeModel";
 
 /** How many apps the home page shows; the App Store's "Deployed" filter has every one. */
 const SHOWN = 12;
 
-/** An app's deployments as one status: its liveliest (running beats starting beats failed …). */
+/**
+ * An app's deployments as one status: its liveliest (running beats starting
+ * beats failed …). Running is the server's count over all of its releases; the
+ * other states are read off its newest release's deployments.
+ */
 const statusOf = (app: StoreApp): PodStatus =>
-  app.flavours
+  app.runningCount > 0
+    ? PodStatus.Running
+    : app.flavours
     .flatMap((flavour) => flavour.deployments)
     .reduce<PodStatus>(
       (best, deployment) => (POD_STATUS_RANK[deployment.status] < POD_STATUS_RANK[best] ? deployment.status : best),
@@ -48,33 +54,28 @@ const InstalledAppTile = ({ app }: { app: StoreApp }) => {
 
 /**
  * The apps you have installed (deployed at least once), the running ones
- * first: what Kabinet runs for you, app by app. Same query and variables as
- * the store page and the shelf below. Nothing installed draws nothing.
+ * first: what Kabinet runs for you, app by app. Nothing installed draws nothing.
  */
 export const InstalledApps = () => {
-  const { data } = useAppStoreQuery({ fetchPolicy: "cache-and-network" });
+  // The deployed ones, asked of the server (`deployed: true`), newest release first.
+  const { data } = useAppStoreQuery({
+    variables: { filters: { deployed: true }, pagination: { limit: SHOWN } },
+    fetchPolicy: "cache-and-network",
+  });
   const apps = useMemo(
     () =>
-      groupApps(data?.releases ?? [])
-        .filter((app) => app.deploymentCount > 0)
-        // Stable: within a status the store's newest-first order holds.
+      fromStoreApps(data?.apps ?? [])
+        // Stable: within a status the newest-first order holds.
         .sort((a, b) => POD_STATUS_RANK[statusOf(a)] - POD_STATUS_RANK[statusOf(b)]),
     [data],
   );
   if (apps.length === 0) return null;
 
-  const running = apps.filter((app) => app.runningCount > 0).length;
-
   return (
     <HomeSection
       title={
         <span className="flex w-full items-center justify-between">
-          <span>
-            Your apps{" "}
-            <span className="font-normal normal-case tracking-normal">
-              · {running} running · {apps.length} installed
-            </span>
-          </span>
+          <span>Your apps</span>
           <Link
             to="/kabinet/pods"
             className="text-[11px] font-normal normal-case tracking-normal hover:text-foreground"
@@ -85,7 +86,7 @@ export const InstalledApps = () => {
       }
     >
       <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
-        {apps.slice(0, SHOWN).map((app) => (
+        {apps.map((app) => (
           <InstalledAppTile key={app.identifier} app={app} />
         ))}
       </div>

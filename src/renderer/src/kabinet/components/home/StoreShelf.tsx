@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useAppStoreQuery } from "../../api/graphql";
 import { AppStoreCard } from "../store/AppStoreCard";
 import { FeaturedApp } from "../store/FeaturedApp";
-import { groupApps } from "../store/storeModel";
+import { fromStoreApps } from "../store/storeModel";
 
 /** How many apps follow the newest one; the App Store has the rest. */
 const SHOWN = 6;
@@ -14,19 +14,15 @@ const SHOWN = 6;
 /**
  * A taste of the App Store: the newest app you do not have yet, portrayed
  * large, then the next ones as the store's own cards. Installed apps are
- * left to "Your apps" above. Same query and variables as the store page, so
- * opening the store after this costs nothing. Nothing new draws nothing.
+ * left to "Your apps" above. Nothing new draws nothing.
  */
 export const StoreShelf = () => {
-  const { data } = useAppStoreQuery({ fetchPolicy: "cache-and-network" });
-  // `releases` come newest first, and so do the apps grouped from them.
-  const [newest, ...rest] = useMemo(
-    () =>
-      groupApps(data?.releases ?? [])
-        .filter((app) => app.deploymentCount === 0)
-        .slice(0, SHOWN + 1),
-    [data],
-  );
+  // The apps not deployed yet (`deployed: false`), newest release first.
+  const { data } = useAppStoreQuery({
+    variables: { filters: { deployed: false }, pagination: { limit: SHOWN + 1 } },
+    fetchPolicy: "cache-and-network",
+  });
+  const [newest, ...rest] = useMemo(() => fromStoreApps(data?.apps ?? []), [data]);
   if (!newest) return null;
 
   return (

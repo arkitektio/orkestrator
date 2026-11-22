@@ -10,10 +10,10 @@ query ListApps($filters: AppFilter, $pagination: OffsetPaginationInput) {
   }
 }
 
-# The apps page: every app with all of its releases, so what a card counts
-# (flavours, running deployments) is the app's, not only its newest version's.
+# The apps page: one row per app, newest release first; what a card counts
+# (deployments, running) is worked out by the server over all of its releases.
 query AppCatalog($filters: AppFilter, $pagination: OffsetPaginationInput) {
-  apps(filters: $filters, pagination: $pagination) {
-    ...App
+  apps(filters: $filters, pagination: $pagination, ordering: [{ releasedAt: DESC }]) {
+    ...StoreApp
   }
 }

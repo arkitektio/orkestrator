@@ -305,6 +305,16 @@ An application, identified by a globally unique, reverse-domain identifier (e.g.
 """
 type App {
   """
+  The accelerators the app's flavours require, one entry per vendor (cuda, rocm, oneapi), as `@kabinet/gpu` names them. A flavour that requires several vendors at once is a GPU flavour but names none here.
+  """
+  accelerators: [String!]!
+
+  """
+  How many deployments the app's flavours have, of any release and in any status: 0 for an app that is not installed.
+  """
+  deploymentCount: Int!
+
+  """
   This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
@@ -313,10 +323,20 @@ type App {
   This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
   """
   embedding: Embedding
+
+  """
+  What the app's flavours run on: GPU when one requires an accelerator, CPU when one runs without. Read from the flavours' required selectors (`@kabinet/gpu`); empty for an app without flavours.
+  """
+  hardware: [AppHardware!]!
   id: ID!
 
   """The globally unique, reverse-domain identifier of the app."""
   identifier: String!
+
+  """
+  The app's newest release, by `releasedAt` (a channel build counts as a release). Null for an app without releases.
+  """
+  latestRelease: Release
 
   """The app's logo: the LOGO blok of its newest release that brings one."""
   logoBlok: FlavourBlok
@@ -325,6 +345,14 @@ type App {
   The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first.
   """
   releases(filters: ReleaseFilter, ordering: [ReleaseOrder!]! = [], pagination: OffsetPaginationInput): [Release!]!
+
+  """How many of the app's deployments are RUNNING."""
+  runningCount: Int!
+
+  """
+  The services any of the app's flavours require (e.g. `live.arkitekt.mikro`), sorted.
+  """
+  services: [String!]!
 }
 
 """Filter for apps."""
@@ -334,6 +362,24 @@ input AppFilter {
   NOT: AppFilter
   OR: AppFilter
 
+  """
+  true: only apps with at least one deployment of any of their flavours (installed); false: only apps with none.
+  """
+  deployed: Boolean
+
+  """
+  Keep only apps with a flavour for each of these: GPU, a flavour that requires an accelerator; CPU, one that runs on a plain CPU backend. Read from the flavours' required selectors (`@kabinet/gpu`).
+  """
+  hardware: [AppHardware!]
+
+  """
+  Keep only the app with exactly this identifier (unique within the organization).
+  """
+  identifier: String
+
+  """Keep only the apps with exactly these identifiers."""
+  identifiers: [String!]
+
   """Keep only apps whose ID is in this list."""
   ids: [ID!]
 
@@ -341,6 +387,19 @@ input AppFilter {
   Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
+
+  """
+  Keep only apps with a flavour that requires this service (e.g. `live.arkitekt.mikro`).
+  """
+  service: String
+}
+
+"""
+What an app's flavours run on: an accelerator (GPU) or a plain CPU backend.
+"""
+enum AppHardware {
+  CPU
+  GPU
 }
 
 """
@@ -358,6 +417,11 @@ input AppImageInput {
 input AppOrder @oneOf {
   id: Ordering
   identifier: Ordering
+
+  """
+  By the time of the app's newest release (`Release.releasedAt`): DESC for the most recently released first.
+  """
+  releasedAt: Ordering
 }
 
 """
@@ -2006,6 +2070,9 @@ type GithubRepo {
   """The branch that is scanned for app manifests."""
   branch: String!
 
+  """The member who added this repository, if known."""
+  creator: User
+
   """
   This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
@@ -2056,6 +2123,11 @@ input GithubRepoFilter {
 
   """Case-insensitive match on the branch name."""
   branch: String
+
+  """
+  Keep only repositories this user added, given by their sub (their id in lok). `user` is the GitHub owner, not a member.
+  """
+  creator: ID
 
   """Keep only repositories whose ID is in this list."""
   ids: [ID!]
@@ -2525,6 +2597,9 @@ type OciRepo {
   """The channels followed besides the releases."""
   channels: [String!]!
 
+  """The member who imported this repository, if known."""
+  creator: User
+
   """The flavours read from this repository."""
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
   id: ID!
@@ -2549,6 +2624,34 @@ type OciRepo {
 
   """When this repository was last updated."""
   updatedAt: DateTime!
+}
+
+"""Filter for imported OCI repositories."""
+input OciRepoFilter {
+  AND: OciRepoFilter
+  DISTINCT: Boolean
+  NOT: OciRepoFilter
+  OR: OciRepoFilter
+
+  """
+  Keep only repositories this user imported, given by their sub (their id in lok).
+  """
+  creator: ID
+
+  """Keep only repositories whose ID is in this list."""
+  ids: [ID!]
+
+  """
+  Case-insensitive substring of the name, the registry or the repository path.
+  """
+  search: String
+}
+
+input OciRepoOrder @oneOf {
+  addedAt: Ordering
+  id: Ordering
+  name: Ordering
+  updatedAt: Ordering
 }
 
 input OffsetPaginationInput {
@@ -3015,7 +3118,7 @@ type Query {
   """
   List all imported OCI repositories visible to the current organization.
   """
-  ociRepos(pagination: OffsetPaginationInput): [OciRepo!]!
+  ociRepos(filters: OciRepoFilter, ordering: [OciRepoOrder!]! = [], pagination: OffsetPaginationInput): [OciRepo!]!
 
   """Return a single pod by its ID."""
   pod(id: ID!): Pod!
@@ -3152,6 +3255,11 @@ type Release {
   originalLogo: String
 
   """
+  When this release was made: what an app's newest release and `AppOrder.releasedAt` go by.
+  """
+  releasedAt: DateTime!
+
+  """
   The source revision this release was built from, when its publisher said.
   """
   revision: String
@@ -3208,6 +3316,11 @@ input ReleaseApprovalFilter {
   DISTINCT: Boolean
   NOT: ReleaseApprovalFilter
   OR: ReleaseApprovalFilter
+
+  """
+  Keep only approvals this user gave, given by their sub (their id in lok): with `revoked: false`, what they installed.
+  """
+  approver: ID
 
   """Keep only approvals whose ID is in this list."""
   ids: [ID!]
