@@ -30,9 +30,9 @@ import {
 } from "../components/store/StoreParts";
 import {
   filterAppBloks,
-  filterRepoBloks,
   fromStoreApps,
   pickFeatured,
+  shelfTileOf,
   storeAppFilter,
   storeAppOrder,
   StoreApp,
@@ -100,7 +100,7 @@ const Shelf = ({
       </div>
       <div className="-mx-2 flex snap-x gap-1 overflow-x-auto pb-2">
         {apps.map((app) => (
-          <AppShelfTile key={app.identifier} app={app} />
+          <AppShelfTile key={app.identifier} app={shelfTileOf(app)} />
         ))}
       </div>
     </section>
@@ -157,13 +157,18 @@ export const AppStorePage = () => {
     fetchPolicy: "cache-and-network",
   });
   // Unfiltered, newest first: what the store has at all and its spotlight.
+  // The same variables the page above sends while browsing, so the two are one
+  // request then.
   const { data: allData } = useAppStoreQuery({
-    variables: { pagination: { limit: PAGE } },
+    variables: { filters: {}, ordering: storeAppOrder("recent"), pagination: { limit: PAGE } },
     fetchPolicy: "cache-and-network",
   });
   // Counts over every app, not a page: the stats, the service chips, and how
-  // many apps the chosen filters keep.
-  const { data: totalsData } = useAppStoreTotalsQuery({ fetchPolicy: "cache-and-network" });
+  // many apps the chosen filters keep. Unfiltered, they are one request.
+  const { data: totalsData } = useAppStoreTotalsQuery({
+    variables: { filters: {} },
+    fetchPolicy: "cache-and-network",
+  });
   const { data: resultData } = useAppStoreTotalsQuery({
     variables: { filters },
     fetchPolicy: "cache-and-network",
@@ -185,15 +190,27 @@ export const AppStorePage = () => {
   );
   // Bloks GitHub repositories publish on their own. They need no service, so
   // a service chip leaves none of them.
-  const { data: repoData } = useRepoBloksQuery({ fetchPolicy: "cache-and-network" });
-  const repoBloks = useMemo(
-    () => (service ? [] : filterRepoBloks(repoData?.repoBloks ?? [], debouncedSearch)),
-    [repoData, debouncedSearch, service],
+  // A page of them, searched by the server (name, key, description or
+  // repository) while a search is typed; the unsearched page says whether
+  // there are any at all.
+  const { data: repoData } = useRepoBloksQuery({
+    variables: { pagination: { limit: PAGE } },
+    fetchPolicy: "cache-and-network",
+  });
+  const { data: searchedRepoData } = useRepoBloksQuery({
+    variables: { filters: { search: debouncedSearch }, pagination: { limit: PAGE } },
+    skip: !debouncedSearch,
+    fetchPolicy: "cache-and-network",
+  });
+  const shownRepoBloks = useMemo(
+    () => (debouncedSearch ? searchedRepoData?.repoBloks : repoData?.repoBloks) ?? [],
+    [debouncedSearch, searchedRepoData, repoData],
   );
+  const repoBloks = useMemo(() => (service ? [] : shownRepoBloks), [service, shownRepoBloks]);
   const repoBlokCount = repoData?.repoBloks.length ?? 0;
   const customBloks = useMemo(
-    () => ({ ...CUSTOM_BLOKS, listedOrigins: new Set((repoData?.repoBloks ?? []).map((blok) => blok.origin)) }),
-    [repoData],
+    () => ({ ...CUSTOM_BLOKS, listedOrigins: new Set(shownRepoBloks.map((blok) => blok.origin)) }),
+    [shownRepoBloks],
   );
 
   const gpuShelf = useShelf({ hardware: [AppHardware.Gpu] }, !browsing);

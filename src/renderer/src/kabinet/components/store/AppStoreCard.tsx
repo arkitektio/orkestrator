@@ -5,7 +5,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { AppIcon, appGradient } from "../AppIcon";
 import { HardwareBadges, InstallButton } from "./StoreParts";
-import { StoreApp } from "./storeModel";
+import { ShelfTile, StoreApp } from "./storeModel";
 
 /**
  * Where a store tile points. The app page is a model page now, so this goes
@@ -88,7 +88,7 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
 });
 
 /** Compact tile for horizontal shelves. */
-export const AppShelfTile = ({ app }: { app: StoreApp }) => (
+export const AppShelfTile = ({ app }: { app: ShelfTile }) => (
   <Link
     to={appStorePath(app)}
     className="group flex w-56 shrink-0 snap-start items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/60"
@@ -104,7 +104,7 @@ export const AppShelfTile = ({ app }: { app: StoreApp }) => (
         {app.publisher ?? app.identifier}
       </p>
       <p className="text-[0.65rem] text-muted-foreground">
-        {app.definitions.length} actions · v{app.latest.version}
+        {app.actionCount} actions · v{app.version}
       </p>
     </div>
   </Link>

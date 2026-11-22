@@ -14,7 +14,7 @@ import {
 } from "../../api/graphql";
 import {
   filterAppBloks,
-  filterRepoBloks,
+  fromShelfApp,
   fromStoreApp,
   installedByOrigin,
   repoBlokState,
@@ -157,7 +157,7 @@ describe("storeModel", () => {
       hardware: [AppHardware.Gpu, AppHardware.Cpu],
       accelerators: ["CUDA"],
       services: ["live.arkitekt.mikro"],
-      releases: [{ id: "r1" }, { id: "r2" }],
+      releaseCount: 2,
       latestRelease: newest,
     });
     expect(app?.id).toBe("app-1");
@@ -165,7 +165,34 @@ describe("storeModel", () => {
     expect(app?.releaseCount).toBe(2);
     expect(app?.hardware).toEqual(["gpu", "cpu"]);
     expect([app?.runningCount, app?.deploymentCount]).toEqual([2, 3]);
-    expect(fromStoreApp({ ...{ id: "x", identifier: "x", embedding: null, deploymentCount: 0, runningCount: 0, hardware: [], accelerators: [], services: [], releases: [] }, latestRelease: null })).toBeNull();
+    expect(fromStoreApp({ ...{ id: "x", identifier: "x", embedding: null, deploymentCount: 0, runningCount: 0, hardware: [], accelerators: [], services: [], releaseCount: 0 }, latestRelease: null })).toBeNull();
+  });
+
+  it("draws a shelf tile from the newest release and its action ids", () => {
+    const tile = fromShelfApp({
+      id: "app-2",
+      identifier: "live.arkitekt.napari-viewer",
+      embedding: null,
+      latestRelease: {
+        id: "r9",
+        version: "2.0.0",
+        logo: null,
+        originalLogo: null,
+        logoBlok: null,
+        flavours: [
+          { id: "f1", logo: null, originalLogo: null, definitions: [{ id: "d1" }, { id: "d2" }] },
+          { id: "f2", logo: null, originalLogo: null, definitions: [{ id: "d2" }] },
+        ],
+      },
+    });
+    expect(tile).toMatchObject({
+      id: "app-2",
+      name: "Napari Viewer",
+      publisher: "live.arkitekt",
+      version: "2.0.0",
+      actionCount: 2,
+    });
+    expect(fromShelfApp({ id: "x", identifier: "x", embedding: null, latestRelease: null })).toBeNull();
   });
 
   it("offers the latest release's panels and scenes once per key", () => {
@@ -185,7 +212,7 @@ describe("storeModel", () => {
     expect(keys("predict")).toEqual([]);
   });
 
-  it("searches repository bloks and tells installed from outdated", () => {
+  it("tells installed repository bloks from outdated ones", () => {
     const repoBlok = (key: string, hash: string) => ({
       id: key,
       key,
@@ -198,8 +225,6 @@ describe("storeModel", () => {
       repo: { id: "1", name: "lab/bloks:main" },
     });
     const bloks = [repoBlok("layers", "h1"), repoBlok("volume", "h2"), repoBlok("plot", "h3")];
-    expect(filterRepoBloks(bloks, "vol").map((b) => b.key)).toEqual(["volume"]);
-    expect(filterRepoBloks(bloks, "lab/bloks")).toHaveLength(3);
 
     const installed = installedByOrigin([
       { id: "a", origin: bloks[0].origin, originHash: "h1" },

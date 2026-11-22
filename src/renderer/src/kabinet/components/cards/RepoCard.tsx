@@ -15,8 +15,8 @@ interface Props {
  */
 const RepoCard = ({ item }: Props) => {
   const held = [
-    item.flavours.length > 0 && plural(item.flavours.length, "flavour"),
-    item.bloks.length > 0 && plural(item.bloks.length, "blok"),
+    item.flavourCount > 0 && plural(item.flavourCount, "flavour"),
+    item.blokCount > 0 && plural(item.blokCount, "blok"),
   ].filter(Boolean);
 
   return (

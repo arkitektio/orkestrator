@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { AgentsDocument, AssignDocument, ListImplementationsDocument } from "@/rekuest/api/graphql";
-import { GetPodDocument } from "../api/graphql";
+import { GetPodDocument, PodLatestLogsDocument, WatchPodLogsDocument } from "../api/graphql";
 import { logLines, logTone, pickLogAction, refreshPodLogs } from "./podLogs";
 
 const candidate = (id: string, name: string, active = true, iface = name) => ({
@@ -33,15 +33,31 @@ describe("pickLogAction", () => {
   });
 });
 
-const clients = (options: { implementations: ReturnType<typeof candidate>[]; dumps: (string | null)[] }) => {
+const clients = (options: {
+  implementations: ReturnType<typeof candidate>[];
+  /** The dump each slim read finds, in order (the last one repeats). */
+  dumps: (string | null)[];
+  /** The dumps the pod's subscription announces, right after it is opened. */
+  announced?: string[];
+}) => {
   let read = 0;
   const kabinet = {
     query: vi.fn(async ({ query }: { query: unknown }) => {
-      expect(query).toBe(GetPodDocument);
+      if (query === GetPodDocument) {
+        return { data: { pod: { backend: { clientId: "c1", name: "lab" }, latestLogDump: { createdAt: "t0", logs: "x" } } } };
+      }
+      expect(query).toBe(PodLatestLogsDocument);
       const createdAt = options.dumps[Math.min(read++, options.dumps.length - 1)];
+      return { data: { pod: { id: "p1", latestLogDump: createdAt ? { createdAt, logs: "x" } : null } } };
+    }),
+    subscribe: vi.fn(({ query }: { query: unknown }) => {
+      expect(query).toBe(WatchPodLogsDocument);
       return {
-        data: {
-          pod: { backend: { clientId: "c1", name: "lab" }, latestLogDump: createdAt ? { createdAt, logs: "x" } : null },
+        subscribe: (observer: { next: (value: unknown) => void }) => {
+          for (const createdAt of options.announced ?? []) {
+            queueMicrotask(() => observer.next({ data: { pod: { update: { id: "p1", latestLogDump: { createdAt, logs: "y" } } } } }));
+          }
+          return { unsubscribe: vi.fn() };
         },
       };
     }),
@@ -57,13 +73,17 @@ const clients = (options: { implementations: ReturnType<typeof candidate>[]; dum
   return { kabinet, rekuest };
 };
 
+const slimReads = (kabinet: ReturnType<typeof clients>["kabinet"]) =>
+  kabinet.query.mock.calls.filter(([options]) => (options as { query: unknown }).query === PodLatestLogsDocument).length;
+
 describe("refreshPodLogs", () => {
-  it("runs the log action on the pod and waits for a newer dump", async () => {
+  it("runs the log action on the pod and waits for the dump its subscription announces", async () => {
     const { kabinet, rekuest } = clients({
       implementations: [candidate("i1", "Refresh Logs")],
-      dumps: ["t0", "t0", "t1"],
+      dumps: ["t0"],
+      announced: ["t1"],
     });
-    await refreshPodLogs({ kabinet: kabinet as never, rekuest: rekuest as never, pod: "p1", intervalMs: 1 });
+    await refreshPodLogs({ kabinet: kabinet as never, rekuest: rekuest as never, pod: "p1", intervalMs: 60_000 });
     expect(rekuest.mutate).toHaveBeenCalledTimes(1);
     const sent = rekuest.mutate.mock.calls[0] as unknown as [{ mutation: unknown; variables: { input: Record<string, unknown> } }];
     expect(sent[0].mutation).toBe(AssignDocument);
@@ -71,7 +91,17 @@ describe("refreshPodLogs", () => {
       implementation: "i1",
       args: { pod: { __identifier: "@kabinet/pod", object: "p1" } },
     });
-    expect(kabinet.query).toHaveBeenCalledTimes(3);
+    // Listening, not polling: no read of the pod after the first.
+    expect(slimReads(kabinet)).toBe(0);
+  });
+
+  it("finds a dump the subscription missed with a slim read", async () => {
+    const { kabinet, rekuest } = clients({
+      implementations: [candidate("i1", "Refresh Logs")],
+      dumps: ["t0", "t1"],
+    });
+    await refreshPodLogs({ kabinet: kabinet as never, rekuest: rekuest as never, pod: "p1", intervalMs: 1 });
+    expect(slimReads(kabinet)).toBe(2);
   });
 
   it("says so when the backend offers no log action, and runs nothing", async () => {

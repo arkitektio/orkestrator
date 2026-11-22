@@ -341,6 +341,9 @@ type App {
   """The app's logo: the LOGO blok of its newest release that brings one."""
   logoBlok: FlavourBlok
 
+  """How many releases the app has: a count, without listing them."""
+  releaseCount: Int!
+
   """
   The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first.
   """
@@ -389,6 +392,11 @@ input AppFilter {
   ids: [ID!]
 
   """
+  Keep only the apps of this publisher: those whose identifier is the publisher plus one last segment (`live.arkitekt` keeps `live.arkitekt.segmentation`, not `live.arkitekt.tools.segmentation`). Segments are separated by `.` or `/`, either way. An exact match, unlike `search`.
+  """
+  publisher: String
+
+  """
   Search by identifier, by the names of the actions its newest release brings, and by the keys and descriptions of its panels and scenes (each a case-insensitive substring), or by semantic similarity of the query to the identifier. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
@@ -427,6 +435,11 @@ input AppOrder @oneOf {
   By the time of the app's newest release (`Release.releasedAt`): DESC for the most recently released first.
   """
   releasedAt: Ordering
+
+  """
+  By how many of the app's deployments are RUNNING (`App.runningCount`): DESC for the busiest first.
+  """
+  runningCount: Ordering
 }
 
 """The store's totals over every app a filter keeps, not a page of them."""
@@ -1425,6 +1438,11 @@ input DeclareResourceInput {
 An action definition: the abstract, hashed description of an RPC task that a flavour provides.
 """
 type Definition {
+  """
+  The apps that bring this action, each once, ordered by identifier: those with a release whose flavour provides it. What a list shows instead of every flavour of every release.
+  """
+  apps: [App!]!
+
   """The input ports (arguments) of this action."""
   args: [ArgPort!]!
 
@@ -2088,6 +2106,11 @@ type GithubRepo {
   addedAt: DateTime!
 
   """
+  How many bloks this repository publishes on its own: a count, without listing them.
+  """
+  blokCount: Int!
+
+  """
   The bloks this repository publishes on its own, in its `.arkitekt/bloks.yaml`.
   """
   bloks(filters: RepoBlokFilter, pagination: OffsetPaginationInput): [RepoBlok!]!
@@ -2107,6 +2130,11 @@ type GithubRepo {
   This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
   """
   embedding: Embedding
+
+  """
+  How many flavours scanning this repository found: a count, without listing them.
+  """
+  flavourCount: Int!
 
   """The flavours discovered by scanning this repository."""
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
@@ -3508,7 +3536,9 @@ input RepoBlokFilter {
   """Keep only bloks of these repositories."""
   repos: [ID!]
 
-  """Case-insensitive substring of the blok's name, key or description."""
+  """
+  Case-insensitive substring of the blok's name, key or description, or of its repository's name.
+  """
   search: String
 }
 
@@ -4127,9 +4157,17 @@ type Subscription {
   pod(podId: ID!): PodEvent!
 
   """
-  Subscribe to lifecycle events for every pod visible to the current organization.
+  Subscribe to lifecycle events for every pod visible to the current organization, or only those of one resource or backend.
   """
-  pods: PodEvent!
+  pods(
+    """Only the pods of this backend (and every deletion)."""
+    backend: ID = null
+
+    """
+    Only the pods on this resource (and every deletion: it names only an id).
+    """
+    resource: ID = null
+  ): PodEvent!
 }
 
 """

@@ -10,8 +10,37 @@ query GetPod($id: ID!) {
   }
 }
 
-query GetPodForAgent($clientId: ID!) {
-  podForAgent(clientId: $clientId) {
-    ...Pod
+# What a `@kabinet/pod` display line shows.
+query PodDisplay($id: ID!) {
+  pod(id: $id) {
+    id
+    backend {
+      id
+      name
+    }
+    deployment {
+      id
+      flavour {
+        id
+        release {
+          id
+          app {
+            id
+            identifier
+          }
+        }
+      }
+    }
+  }
+}
+
+# A pod's newest log dump, without the rest of the pod.
+query PodLatestLogs($id: ID!) {
+  pod(id: $id) {
+    id
+    latestLogDump {
+      logs
+      createdAt
+    }
   }
 }

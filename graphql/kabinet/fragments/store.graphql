@@ -17,6 +17,17 @@ fragment StoreSelector on Selector {
   }
 }
 
+# An action as the store's and a flavour's Actions tab list it.
+fragment StoreDefinition on Definition {
+  id
+  name
+  description
+  kind
+  logo {
+    ...KabinetLogoBlok
+  }
+}
+
 # A blok the store offers: what a tile shows, and the hash its preview is kept under.
 fragment StoreBlok on FlavourBlok {
   id
@@ -55,13 +66,7 @@ fragment StoreFlavour on Flavour {
     url
   }
   definitions {
-    id
-    name
-    description
-    kind
-    logo {
-      ...KabinetLogoBlok
-    }
+    ...StoreDefinition
   }
   deployments {
     id

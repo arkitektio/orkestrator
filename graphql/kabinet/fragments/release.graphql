@@ -57,7 +57,14 @@ fragment ListRelease on Release {
     embedding
   }
   scopes
+  # The card names what its builds need of a host (the selector kinds), and
+  # falls back to a build's logo.
   flavours {
-    ...ListFlavour
+    id
+    logo
+    originalLogo
+    selectors {
+      __typename
+    }
   }
 }

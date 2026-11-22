@@ -15,7 +15,7 @@ interface Props {
  * returns) on one line, and which apps bring it.
  */
 const TheCard = ({ item }: Props) => {
-  const apps = [...new Set(item.flavours.map((flavour) => flavour.release.app.identifier))];
+  const apps = item.apps.map((app) => app.identifier);
   const line = signature(item.args, item.returns);
 
   return (

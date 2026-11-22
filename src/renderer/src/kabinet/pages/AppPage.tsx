@@ -5,7 +5,7 @@ import { Boxes, KeyRound, Layers, Tag } from "lucide-react";
 import { Suspense, useMemo } from "react";
 import { preloadable } from "@/core/util/preloadable";
 import { useGetAppQuery, useListAppsQuery } from "../api/graphql";
-import { hasOwnLogo } from "../appIdentity";
+import { hasOwnLogo, splitIdentifier } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import {
   AccessTab,
@@ -16,7 +16,7 @@ import {
 } from "../components/AppTabs";
 import { AppShelfTile } from "../components/store/AppStoreCard";
 import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
-import { groupApps, StoreApp } from "../components/store/storeModel";
+import { fromShelfApp, fromStoreApp, ShelfTile, StoreApp } from "../components/store/storeModel";
 import { KABINET_HELP } from "../help";
 
 /**
@@ -27,36 +27,33 @@ import { KABINET_HELP } from "../help";
 const AppMarkCanvas = preloadable(() => import("../components/AppMarkCanvas"));
 
 /**
- * More from the same publisher.
- *
- * A separate, filtered query rather than a slice of every app: `AppFilter.search`
- * matches the identifier, and an identifier is reverse-domain, so the publisher
- * prefix selects exactly that publisher's apps. An app with no publisher in its
- * identifier has nothing to show, and the section does not render.
+ * More from the same publisher: `AppFilter.publisher` keeps exactly the apps
+ * whose identifier is that publisher plus one segment (`search` would also
+ * match action names and similar identifiers). The publisher is the one in the
+ * identifier; an app without one has nothing to show, and the section does not
+ * render.
  */
 const MoreFromPublisher = ({ app }: { app: StoreApp }) => {
+  const { publisher } = splitIdentifier(app.identifier);
   const { data } = useListAppsQuery({
-    variables: { filters: { search: app.publisher ?? "" }, pagination: { limit: 9 } },
-    skip: !app.publisher,
+    variables: { filters: { publisher: publisher ?? "" }, pagination: { limit: 9 } },
+    skip: !publisher,
   });
 
   const siblings = useMemo(
-    () =>
-      groupApps((data?.apps ?? []).flatMap((a) => a.releases)).filter(
-        (a) => a.identifier !== app.identifier,
-      ),
-    [data, app.identifier],
+    () => (data?.apps ?? []).filter((a) => a.id !== app.id).flatMap((a) => fromShelfApp(a) ?? []),
+    [data, app.id],
   );
 
-  if (!app.publisher || siblings.length === 0) return null;
+  if (!publisher || siblings.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-2 border-t pt-6">
       <h3 className="text-base font-semibold tracking-tight">
-        More from <span className="font-mono text-sm">{app.publisher}</span>
+        More from <span className="font-mono text-sm">{publisher}</span>
       </h3>
       <div className="-mx-2 flex snap-x gap-1 overflow-x-auto pb-2">
-        {siblings.map((sibling) => (
+        {siblings.map((sibling: ShelfTile) => (
           <AppShelfTile key={sibling.identifier} app={sibling} />
         ))}
       </div>
@@ -67,14 +64,12 @@ const MoreFromPublisher = ({ app }: { app: StoreApp }) => {
 /**
  * An app: what a scientist installs, with its versions, builds and actions.
  *
- * Reads its releases from `App.releases` rather than fetching every release in
- * the deployment and picking one out client-side, which is what this page did
- * while the schema had no `app(id:)`.
+ * Drawn as the store draws it (`fromStoreApp`): its newest release in full and
+ * what the server works out over all releases. The other versions are only
+ * lines of the Versions tab, so only their version and build names are read.
  */
 export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
-  // `groupApps` folds a set of releases into the one shape every store surface
-  // renders. Handed one app's releases it returns exactly that app.
-  const app = useMemo(() => groupApps(data.app.releases)[0], [data.app.releases]);
+  const app = useMemo(() => fromStoreApp(data.app), [data.app]);
 
   return (
     <KabinetApp.ModelPage
@@ -175,7 +170,7 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
                 <FlavoursTab flavours={app.latest.flavours} />
               </TabsContent>
               <TabsContent value="versions">
-                <VersionsTab releases={app.releases} hue={app.hue} />
+                <VersionsTab releases={data.app.releases} hue={app.hue} />
               </TabsContent>
               <TabsContent value="access">
                 <AccessTab flavours={app.latest.flavours} scopes={app.latest.scopes} />

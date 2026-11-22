@@ -1,6 +1,6 @@
 import { KabinetApp } from "@/core/linkers";
 import { Navigate, useParams } from "react-router-dom";
-import { useListAppsQuery } from "../api/graphql";
+import { useAppIdByIdentifierQuery } from "../api/graphql";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
@@ -18,8 +18,8 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
  */
 export const AppStoreRedirect = () => {
   const { identifier = "" } = useParams<{ identifier: string }>();
-  const { data, loading, error, refetch } = useListAppsQuery({
-    variables: { filters: { identifier }, pagination: { limit: 1 } },
+  const { data, loading, error, refetch } = useAppIdByIdentifierQuery({
+    variables: { identifier },
     skip: !identifier,
   });
 

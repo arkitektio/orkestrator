@@ -13,7 +13,17 @@ import {
   type ListImplementationsQueryVariables,
   PortKind,
 } from "@/rekuest/api/graphql";
-import { GetPodDocument, type GetPodQuery, type GetPodQueryVariables } from "../api/graphql";
+import {
+  GetPodDocument,
+  type GetPodQuery,
+  type GetPodQueryVariables,
+  PodLatestLogsDocument,
+  type PodLatestLogsQuery,
+  type PodLatestLogsQueryVariables,
+  WatchPodLogsDocument,
+  type WatchPodLogsSubscription,
+  type WatchPodLogsSubscriptionVariables,
+} from "../api/graphql";
 
 export const POD_IDENTIFIER = "@kabinet/pod";
 
@@ -65,46 +75,90 @@ const aborted = () => {
   return error;
 };
 
-const wait = (ms: number, signal?: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    if (signal?.aborted) return reject(aborted());
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(aborted());
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
+/**
+ * Waits for a log dump newer than `before`. A dump announces its pod as
+ * updated, so the pod's subscription (`WatchPodLogs`) says when it is there;
+ * a slow, slim read (`PodLatestLogs`) covers a dump that arrived before the
+ * subscription was live, or a connection without one. Both write the dump into
+ * the cache, so an open pod page shows it without being told.
+ */
+const watchForDump = (options: {
+  kabinet: ApolloClient<object>;
+  pod: string;
+  before: string | undefined;
+  timeoutMs: number;
+  intervalMs: number;
+  signal?: AbortSignal;
+  timeoutMessage: () => string;
+}): { arrived: Promise<void>; cancel: () => void } => {
+  const { kabinet, pod, before, signal } = options;
+  let settle: (error?: Error) => void = () => undefined;
+  const arrived = new Promise<void>((resolve, reject) => {
+    let done = false;
+    const fresh = (createdAt: string | undefined | null) => !!createdAt && createdAt !== before;
+    const subscription = kabinet
+      .subscribe<WatchPodLogsSubscription, WatchPodLogsSubscriptionVariables>({
+        query: WatchPodLogsDocument,
+        variables: { podId: pod },
+      })
+      .subscribe({
+        next: ({ data }) => {
+          if (fresh(data?.pod.update?.latestLogDump?.createdAt)) settle();
+        },
+        // The read below still answers.
+        error: () => undefined,
+      });
+    const poll = setInterval(() => {
+      kabinet
+        .query<PodLatestLogsQuery, PodLatestLogsQueryVariables>({
+          query: PodLatestLogsDocument,
+          variables: { id: pod },
+          fetchPolicy: "network-only",
+        })
+        .then(({ data }) => {
+          if (fresh(data.pod.latestLogDump?.createdAt)) settle();
+        })
+        .catch(() => undefined);
+    }, options.intervalMs);
+    const deadline = setTimeout(() => settle(new Error(options.timeoutMessage())), options.timeoutMs);
+    const onAbort = () => settle(aborted());
     signal?.addEventListener("abort", onAbort, { once: true });
+    settle = (error?: Error) => {
+      if (done) return;
+      done = true;
+      subscription.unsubscribe();
+      clearInterval(poll);
+      clearTimeout(deadline);
+      signal?.removeEventListener("abort", onAbort);
+      if (error) reject(error);
+      else resolve();
+    };
+    if (signal?.aborted) settle(aborted());
   });
+  return { arrived, cancel: () => settle(aborted()) };
+};
 
 /**
- * Ask the pod's backend for its logs again and wait until they arrive. The
- * waiting reads the pod from the network, so an open pod page shows the new
- * dump through the cache without being told.
+ * Ask the pod's backend for its logs again and wait until they arrive: on the
+ * pod's subscription, with a slow slim read as the safety net.
  */
 export const refreshPodLogs = async (options: {
-  kabinet: ApolloClient<any>;
-  rekuest: ApolloClient<any>;
+  kabinet: ApolloClient<object>;
+  rekuest: ApolloClient<object>;
   pod: string;
   signal?: AbortSignal;
-  /** How long to wait for the dump, and how often to look. */
+  /** How long to wait for the dump, and how often to look without the subscription. */
   timeoutMs?: number;
   intervalMs?: number;
 }): Promise<void> => {
-  const { kabinet, rekuest, signal, timeoutMs = 30_000, intervalMs = 1_500 } = options;
+  const { kabinet, rekuest, signal, timeoutMs = 30_000, intervalMs = 5_000 } = options;
 
-  const readPod = async () => {
-    const { data } = await kabinet.query<GetPodQuery, GetPodQueryVariables>({
-      query: GetPodDocument,
-      variables: { id: options.pod },
-      fetchPolicy: "network-only",
-    });
-    return data.pod;
-  };
-
-  const pod = await readPod();
+  const { data: podData } = await kabinet.query<GetPodQuery, GetPodQueryVariables>({
+    query: GetPodDocument,
+    variables: { id: options.pod },
+    fetchPolicy: "network-only",
+  });
+  const pod = podData.pod;
   const before = pod.latestLogDump?.createdAt;
 
   const agents = await rekuest.query<AgentsQuery, AgentsQueryVariables>({
@@ -143,24 +197,33 @@ export const refreshPodLogs = async (options: {
   }
   if (signal?.aborted) throw aborted();
 
-  await rekuest.mutate<AssignMutation, AssignMutationVariables>({
-    mutation: AssignDocument,
-    variables: {
-      input: {
-        ...buildAssignInput({
-          args: { pod: { __identifier: POD_IDENTIFIER, object: options.pod } },
-          implementation: action.id,
-        }),
-        hooks: [],
-      },
-    },
+  // Listening before asking, so a quick dump is not missed.
+  const watch = watchForDump({
+    kabinet,
+    pod: options.pod,
+    before,
+    timeoutMs,
+    intervalMs,
+    signal,
+    timeoutMessage: () => `${action.agent.name} was asked for the logs, but has not sent them yet`,
   });
-
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    await wait(intervalMs, signal);
-    const latest = (await readPod()).latestLogDump?.createdAt;
-    if (latest && latest !== before) return;
+  try {
+    await rekuest.mutate<AssignMutation, AssignMutationVariables>({
+      mutation: AssignDocument,
+      variables: {
+        input: {
+          ...buildAssignInput({
+            args: { pod: { __identifier: POD_IDENTIFIER, object: options.pod } },
+            implementation: action.id,
+          }),
+          hooks: [],
+        },
+      },
+    });
+  } catch (error) {
+    watch.cancel();
+    watch.arrived.catch(() => undefined);
+    throw error;
   }
-  throw new Error(`${action.agent.name} was asked for the logs, but has not sent them yet`);
+  await watch.arrived;
 };

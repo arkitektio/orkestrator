@@ -11,6 +11,7 @@ import {
   useListReleaseApprovalsQuery,
   useRevokeApprovalMutation,
 } from "../api/graphql";
+import { useKabinet } from "../api/hooks";
 
 /**
  * Withdraw release approvals. Kabinet's revoke only stops new deployments;
@@ -20,7 +21,10 @@ import {
 export const RevokeApprovalDialog = (props: { ids: string[] }) => {
   const { closeDialog } = useDialog();
   const { data } = useListReleaseApprovalsQuery({ variables: { filters: { ids: props.ids } } });
-  const [revokeApproval] = useRevokeApprovalMutation({ refetchQueries: [ListReleaseApprovalsDocument] });
+  // Each revoke updates its approval in the cache; the lists are refetched
+  // once, after the batch (a revoked one may leave a `revoked: false` list).
+  const [revokeApproval] = useRevokeApprovalMutation();
+  const client = useKabinet();
   const revokeMandate = useOperation("lok.revokeMandate");
   const [signOut, setSignOut] = useState(true);
 
@@ -38,6 +42,7 @@ export const RevokeApprovalDialog = (props: { ids: string[] }) => {
           if (signOut) await revokeMandate({ id: approval.mandateId });
         }),
       );
+      await client.refetchQueries({ include: [ListReleaseApprovalsDocument] });
       const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (failed) throw failed.reason;
     },

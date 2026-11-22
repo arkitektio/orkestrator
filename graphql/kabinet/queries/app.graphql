@@ -4,6 +4,13 @@ query GetApp($id: ID!) {
   }
 }
 
+# What an old identifier-keyed link resolves to: the app's id, nothing else.
+query AppIdByIdentifier($identifier: String!) {
+  apps(filters: { identifier: $identifier }, pagination: { limit: 1 }) {
+    id
+  }
+}
+
 query ListApps($filters: AppFilter, $pagination: OffsetPaginationInput) {
   apps(filters: $filters, pagination: $pagination) {
     ...ShelfApp

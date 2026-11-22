@@ -43,25 +43,10 @@ fragment ListDefinition on Definition {
   }
   # What kind of action it is — every list that shows a definition badges it.
   kind
-  flavours {
+  # Which apps bring it, once each: not every flavour of every release.
+  apps {
     id
-    name
-    logo
-    originalLogo
-    release {
-      id
-      version
-      logo
-      originalLogo
-      logoBlok {
-        ...KabinetLogoBlok
-      }
-      app {
-        id
-        identifier
-        embedding
-      }
-    }
+    identifier
   }
 }
 

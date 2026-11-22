@@ -10,36 +10,14 @@ query ListDefinitions($filters: DefinitionFilter, $pagination: OffsetPaginationI
   }
 }
 
-query PrimaryDefinitions(
-  $pagination: OffsetPaginationInput
-  $identifier: String
-  $search: String
-  $ordering: [DefinitionOrder!]
-) {
-  definitions(
-    ordering: $ordering
-    pagination: $pagination
-    filters: {
-      demands: [
-        {
-          kind: ARGS
-          matches: [{ at: 0, kind: STRUCTURE, identifier: $identifier }]
-        }
-      ]
-      search: $search
-    }
-  ) {
-    ...ListDefinition
-  }
-}
-
+# A menu's rows (alpaka's installable replyers): name and line, a page of them.
 query AllPrimaryDefinitions(
   $pagination: OffsetPaginationInput
   $filters: DefinitionFilter
   $ordering: [DefinitionOrder!]
 ) {
   definitions(ordering: $ordering, pagination: $pagination, filters: $filters) {
-    ...ListDefinition
+    ...SmartDefinition
   }
 }
 

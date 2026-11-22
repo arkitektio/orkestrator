@@ -2,6 +2,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { ModuleHomeHeader } from "@/core/layout/ModuleHome";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import {
   DropdownMenu,
@@ -27,15 +28,19 @@ const CONTEXTS: { value: ComponentContext | null; label: string; icon: LucideIco
   { value: ComponentContext.Scene, label: "Scenes", icon: Box },
 ];
 
+/** Bloks a page asks for; "Show more" asks for as many again. */
+const PAGE = 48;
+
 /** The bloks your GitHub repositories publish on their own (`.arkitekt/bloks.yaml`). */
 const Page = () => {
   const { openDialog } = useDialog();
   const { search, setSearch, filters: searchFilters, searching } = useListSearch();
   const [context, setContext] = useState<ComponentContext | null>(null);
+  const [limit, setLimit] = useState(PAGE);
   const filters = searching || context ? { ...searchFilters, context: context ?? undefined } : undefined;
   const picked = CONTEXTS.find((entry) => entry.value === context);
   const { data, error, loading } = useRepoBloksQuery({
-    variables: { filters },
+    variables: { filters, pagination: { limit } },
     fetchPolicy: "cache-and-network",
   });
   const bloks = data?.repoBloks ?? [];
@@ -105,7 +110,14 @@ const Page = () => {
               : "No repository publishes a blok yet. A repository lists its bloks in .arkitekt/bloks.yaml."}
           </p>
         ) : (
-          <RepoBlokGrid bloks={bloks} />
+          <>
+            <RepoBlokGrid bloks={bloks} />
+            {bloks.length >= limit && (
+              <Button variant="outline" size="sm" className="self-center rounded-full" onClick={() => setLimit((n) => n + PAGE)}>
+                Show more
+              </Button>
+            )}
+          </>
         )}
       </div>
     </PageLayout>

@@ -1,9 +1,9 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KabinetPod } from "@/core/linkers";
-import { useGetPodQuery } from "../api/graphql";
+import { usePodDisplayQuery } from "../api/graphql";
 
 export const PodDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetPodQuery({
+  const { data } = usePodDisplayQuery({
     variables: {
       id: props.id,
     }

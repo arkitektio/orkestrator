@@ -2,7 +2,7 @@ import { HomeSection } from "@/core/layout/ModuleHome";
 import { cn } from "@/core/util/utils";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { PodStatus, useAppStoreQuery } from "../../api/graphql";
+import { Ordering, PodStatus, useAppStoreQuery } from "../../api/graphql";
 import { POD_STATUS_DOT, POD_STATUS_RANK, podStatusLabel } from "../../lib/podStatus";
 import { AppIcon } from "../AppIcon";
 import { appStorePath } from "../store/AppStoreCard";
@@ -57,9 +57,14 @@ const InstalledAppTile = ({ app }: { app: StoreApp }) => {
  * first: what Kabinet runs for you, app by app. Nothing installed draws nothing.
  */
 export const InstalledApps = () => {
-  // The deployed ones, asked of the server (`deployed: true`), newest release first.
+  // The deployed ones, asked of the server (`deployed: true`): the running
+  // ones first (so none falls off the page), then newest release first.
   const { data } = useAppStoreQuery({
-    variables: { filters: { deployed: true }, pagination: { limit: SHOWN } },
+    variables: {
+      filters: { deployed: true },
+      ordering: [{ runningCount: Ordering.Desc }, { releasedAt: Ordering.Desc }],
+      pagination: { limit: SHOWN },
+    },
     fetchPolicy: "cache-and-network",
   });
   const apps = useMemo(

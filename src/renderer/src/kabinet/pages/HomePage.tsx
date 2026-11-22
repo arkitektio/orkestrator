@@ -9,6 +9,8 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { Store } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
+  AppStoreDocument,
+  HomePageDocument,
   HomePageQuery,
   ListDefinitionsDocument,
   ListReleasesDocument,
@@ -29,10 +31,9 @@ const useHomePageQueryAsHookFunction = useHomePageQuery as unknown as HookFuncti
   OperationVariables
 >;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data: any }) => {
+const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data: HomePageQuery }) => {
   const [rescan, { loading }] = useRescanReposMutation({
-    refetchQueries: [ListReleasesDocument, ListDefinitionsDocument],
+    refetchQueries: [HomePageDocument, AppStoreDocument, ListReleasesDocument, ListDefinitionsDocument],
   });
   const { data: stats } = useHomePageStatsQuery();
   return (
@@ -82,7 +83,8 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
         title="Kabinet"
         description="Your organization's app store: install and manage apps from their repositories."
       >
-        {data?.repos?.length == 0 ? (
+        {/* No app at all, from a repository or a registry: say how to bring one in. */}
+        {data.appStoreTotals.apps === 0 ? (
           <HomeEmpty title="No repos yet">
             Press <b>Add Repo</b> or <b>Import from registry</b> to bring in
             your first apps, or browse the <Link to="/kabinet/app-store" className="underline">App Store</Link>.

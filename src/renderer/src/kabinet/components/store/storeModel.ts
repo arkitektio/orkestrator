@@ -5,6 +5,7 @@ import {
   Ordering,
   ComponentContext,
   PodStatus,
+  ShelfAppFragment,
   StoreAppFragment,
   StoreFlavourFragment,
   StoreReleaseFragment,
@@ -12,7 +13,7 @@ import {
 } from "../../api/graphql";
 // The identity helpers are shared with the release and flavour surfaces now;
 // re-exported here because the store has always reached for them by this name.
-import { hueFor, logoFor, splitIdentifier } from "../../appIdentity";
+import { type AppIdentity, hueFor, logoFor, releaseIdentity, splitIdentifier } from "../../appIdentity";
 
 export { hueFor, logoFor, splitIdentifier };
 
@@ -202,7 +203,7 @@ export const fromStoreApp = (app: StoreAppFragment): StoreApp | null => {
   return {
     ...folded,
     id: app.id,
-    releaseCount: app.releases.length,
+    releaseCount: app.releaseCount,
     hardware: app.hardware.map((hardware) => HARDWARE[hardware]),
     accelerators: app.accelerators,
     services: [...app.services].sort(),
@@ -217,6 +218,44 @@ export const fromStoreApps = (apps: readonly StoreAppFragment[]): StoreApp[] =>
     const listed = fromStoreApp(app);
     return listed ? [listed] : [];
   });
+
+/** What a shelf tile draws: the icon, the name, the newest version and how many actions it brings. */
+export type ShelfTile = AppIdentity & {
+  id: string;
+  publisher: string | null;
+  version: string;
+  actionCount: number;
+};
+
+/** A listed app as a shelf tile. */
+export const shelfTileOf = (app: StoreApp): ShelfTile => ({
+  id: app.id,
+  identifier: app.identifier,
+  name: app.name,
+  publisher: app.publisher,
+  logo: app.logo,
+  logoBlok: app.logoBlok,
+  embedding: app.embedding,
+  hue: app.hue,
+  version: app.latest.version,
+  actionCount: app.definitions.length,
+});
+
+/**
+ * A `ShelfApp` (newest release, action ids only) as a shelf tile. An app
+ * without a release yet has nothing to draw, and is left out.
+ */
+export const fromShelfApp = (app: ShelfAppFragment): ShelfTile | null => {
+  const latest = app.latestRelease;
+  if (!latest) return null;
+  return {
+    ...releaseIdentity({ ...latest, app: { id: app.id, identifier: app.identifier, embedding: app.embedding } }),
+    id: app.id,
+    publisher: splitIdentifier(app.identifier).publisher,
+    version: latest.version,
+    actionCount: new Set(latest.flavours.flatMap((flavour) => flavour.definitions.map((definition) => definition.id))).size,
+  };
+};
 
 /** `bloks` lists the panels and scenes instead of the apps. */
 export type StoreFilter = "all" | "gpu" | "cpu" | "installed" | "bloks";
@@ -281,19 +320,6 @@ export const pickFeatured = (apps: StoreApp[]): StoreApp | null =>
         : best,
     null,
   );
-
-/** The repository bloks the search names: by their name, key, description or repository. */
-export const filterRepoBloks = (bloks: StoreRepoBlokFragment[], search: string): StoreRepoBlokFragment[] => {
-  const needle = search.trim().toLowerCase();
-  if (!needle) return bloks;
-  return bloks.filter(
-    (blok) =>
-      blok.name.toLowerCase().includes(needle) ||
-      blok.key.toLowerCase().includes(needle) ||
-      !!blok.description?.toLowerCase().includes(needle) ||
-      blok.repo.name.toLowerCase().includes(needle),
-  );
-};
 
 /** An installed copy of a repository blok, as rekuest keeps it. */
 export type InstalledCopy = { id: string; origin?: string | null; originHash?: string | null };

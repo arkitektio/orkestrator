@@ -6,12 +6,8 @@ fragment ListRepo on GithubRepo {
   repo
   # When it was last read, and what it held then: the card's footer.
   updatedAt
-  flavours {
-    id
-  }
-  bloks {
-    id
-  }
+  flavourCount
+  blokCount
 }
 
 fragment Repo on GithubRepo {

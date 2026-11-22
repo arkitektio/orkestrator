@@ -1,8 +1,10 @@
-# Every pod event of the organization: a page that lists pods (a resource's)
-# keeps its list by these instead of polling. `ListPod` carries `resource`,
-# so a page can tell which events are about its pods.
-subscription WatchPods {
-  pods {
+# Pod events of the organization, or only of one resource or backend: a page
+# that lists pods keeps its list by these instead of polling. `ListPod`
+# carries `resource`; narrowed by `resource`, the update of a pod that moved
+# to another resource is not sent, so a page that must drop it listens
+# unnarrowed (ResourcePage).
+subscription WatchPods($resource: ID, $backend: ID) {
+  pods(resource: $resource, backend: $backend) {
     create {
       ...ListPod
     }
@@ -10,5 +12,19 @@ subscription WatchPods {
       ...ListPod
     }
     delete
+  }
+}
+
+# One pod's events: a log dump announces its pod as updated, so whoever asked
+# for the logs waits on this instead of polling.
+subscription WatchPodLogs($podId: ID!) {
+  pod(podId: $podId) {
+    update {
+      id
+      latestLogDump {
+        logs
+        createdAt
+      }
+    }
   }
 }

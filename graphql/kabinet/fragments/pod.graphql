@@ -39,11 +39,18 @@ fragment ListPod on Pod {
   status
 }
 
+# The pod page: its backend by name (not the backend's every pod and resource).
 fragment Pod on Pod {
   id
   podId
   backend {
-    ...Backend
+    id
+    name
+    kind
+    clientId
+    user {
+      sub
+    }
   }
   status
   latestLogDump {

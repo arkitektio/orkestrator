@@ -1,6 +1,8 @@
+# Whether the organization has any app yet, from a GitHub repository or a
+# registry alike: one count, not the repositories.
 query HomePage {
-  repos: githubRepos {
-    ...ListRepo
+  appStoreTotals {
+    apps
   }
 }
 

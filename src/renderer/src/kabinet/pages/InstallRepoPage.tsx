@@ -145,7 +145,7 @@ const LegacyGithubInstall = () => {
   // pages the asked one out of the answer.
   const branch = coordinates?.branch ?? "main";
   const { data } = useListReposQuery({
-    variables: { filters: { user: coordinates?.user, repo: coordinates?.repo, branch } },
+    variables: { filters: { user: coordinates?.user, repo: coordinates?.repo, branch }, pagination: { limit: 100 } },
     skip: !coordinates,
   });
 

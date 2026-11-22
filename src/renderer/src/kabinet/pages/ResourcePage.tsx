@@ -34,6 +34,8 @@ export const ResourcePage = asDetailQueryRoute(
     useEffect(
       () =>
         subscribeToMore<WatchPodsSubscription, WatchPodsSubscriptionVariables>({
+          // The organization's events, not `resource:`-narrowed ones: a pod
+          // moved to another resource must still leave this list.
           document: WatchPodsDocument,
           updateQuery: (prev, { subscriptionData }) => {
             if (!subscriptionData.data) return prev;

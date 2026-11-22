@@ -36,9 +36,8 @@ fragment ListFlavour on Flavour {
 # declares) and what it NEEDS (its image, its requirements, where it was built
 # from). The selectors on `ListFlavour` only say where it can run.
 #
-# These are spelled out rather than spread from `StoreFlavour`: that fragment
-# selects a thinner `definitions` than the action list here needs, and two
-# different selections of the same field in one fragment do not compose.
+# The actions are the store's selection (`StoreDefinition`): the Actions tab
+# reads name, description, kind and logo, never the ports or flavours.
 fragment Flavour on Flavour {
   ...ListFlavour
   # The full selector shape (`kind` / `required`), not just the CUDA and ROCm
@@ -67,7 +66,7 @@ fragment Flavour on Flavour {
     ...ListDeployment
   }
   definitions {
-    ...ListDefinition
+    ...StoreDefinition
   }
   # Whether its app brings bloks or files at all: the Bloks tab is shown only
   # then, and fetches what it draws itself (FlavourBloks).

@@ -6,7 +6,7 @@ import { cn } from "@/core/util/utils";
 import { useSelf } from "@/core/connection/useSelf";
 import { Cpu, Download, Rocket, Sparkles, Zap } from "lucide-react";
 import React from "react";
-import { StoreFlavourFragment, useGetApprovableReleaseQuery } from "../../api/graphql";
+import { StoreFlavourFragment, useListReleaseApprovalsQuery } from "../../api/graphql";
 import { deployableApprovals } from "../../lib/approvals";
 import { selectorLabel, StoreApp } from "./storeModel";
 
@@ -176,8 +176,12 @@ export const ReleaseInstallActions = ({
   size?: "sm" | "default" | "lg";
 }) => {
   const self = useSelf();
-  const { data } = useGetApprovableReleaseQuery({ variables: { id: release.id } });
-  const installed = deployableApprovals(data?.release.approvals ?? [], self.userId).length > 0;
+  // Only your own live approvals of this release: whether you installed it.
+  const { data } = useListReleaseApprovalsQuery({
+    variables: { filters: { release: release.id, approver: self.userId ?? "", revoked: false } },
+    skip: !self.userId,
+  });
+  const installed = deployableApprovals(data?.releaseApprovals ?? [], self.userId).length > 0;
 
   if (!installed) {
     return <InstallButton release={release} size={size} className="px-5" label={`Install v${release.version}`} />;
