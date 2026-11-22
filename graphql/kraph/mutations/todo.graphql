@@ -69,8 +69,10 @@ mutation SetTodoStructureStatus($id: ID!, $status: TodoStatus!) {
   }
 }
 
-mutation SetTodoStructuresStatus($ids: [ID!]!, $status: TodoStatus!) {
-  setTodoStructuresStatus(input: { ids: $ids, status: $status }) {
+# Objects by id, and/or every object on whole items (`items`: "mark all done"
+# without reading the items' objects first).
+mutation SetTodoStructuresStatus($ids: [ID!] = [], $items: [ID!] = [], $status: TodoStatus!) {
+  setTodoStructuresStatus(input: { ids: $ids, items: $items, status: $status }) {
     ...ListTodoItem
   }
 }

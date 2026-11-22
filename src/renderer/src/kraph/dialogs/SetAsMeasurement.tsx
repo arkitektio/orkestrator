@@ -88,8 +88,11 @@ export const SetAsMeasurement = (props: {
   // Which entity categories this measurement may target. `MaterializedEdge`
   // had one precomputed as `target`; the category declares a *descriptor*, and
   // the server resolves it — the same predicate the writer applies.
+  // In the measurement category's own graph: an entity category of another
+  // view admits the same words but is not the one this measurement points into.
   const { data: targetCategories } = useEntityCategoriesMatchingDescriptorQuery({
     variables: {
+      graph: props.category.graph.id,
       descriptor: {
         keys: props.category.targetDescriptor.keys,
         ontologyTerms: props.category.targetDescriptor.ontologyTerms,

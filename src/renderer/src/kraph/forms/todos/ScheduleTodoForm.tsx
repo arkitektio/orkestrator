@@ -12,7 +12,7 @@ import { useScheduleTodoItemMutation, useScheduleTodoListMutation } from "../../
 export const ScheduleTodoForm = (props: { kind: "item" | "list"; id: string; current?: string | null }) => {
   const [due, setDue] = React.useState<Date | undefined>(props.current ? new Date(props.current) : undefined);
   const [scheduleItem, item] = useScheduleTodoItemMutation({ refetchQueries: ["TodoSummary"] });
-  const [scheduleList, list] = useScheduleTodoListMutation({ refetchQueries: ["TodoList", "TodoItems", "TodoSummary", "SlimTodoItems"] });
+  const [scheduleList, list] = useScheduleTodoListMutation({ refetchQueries: ["TodoList", "TodoItems", "TodoSummary"] });
   const loading = item.loading || list.loading;
 
   const { submit } = useDialogSubmit(

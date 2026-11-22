@@ -11133,9 +11133,38 @@
             "deprecationReason": null
           },
           {
-            "name": "connections",
-            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)",
+            "name": "connectionCount",
+            "description": "How many standing claims connect this thing to something else: the length of `connections`, past any page",
             "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "connections",
+            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "TraversalPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -16876,9 +16905,38 @@
             "deprecationReason": null
           },
           {
-            "name": "connections",
-            "description": "Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it",
+            "name": "connectionCount",
+            "description": "How many standing claims connect this thing to something else: the length of `connections`, past any page",
             "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "connections",
+            "description": "Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it. `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "TraversalPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -25376,9 +25434,38 @@
             "deprecationReason": null
           },
           {
-            "name": "connections",
-            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)",
+            "name": "connectionCount",
+            "description": "How many standing claims connect this thing to something else: the length of `connections`, past any page",
             "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "connections",
+            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "TraversalPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -26836,9 +26923,38 @@
             "deprecationReason": null
           },
           {
-            "name": "connections",
-            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)",
+            "name": "connectionCount",
+            "description": "How many standing claims connect this thing to something else: the length of `connections`, past any page",
             "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "connections",
+            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "TraversalPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -30348,9 +30464,38 @@
             "deprecationReason": null
           },
           {
-            "name": "connections",
-            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)",
+            "name": "connectionCount",
+            "description": "How many standing claims connect this thing to something else: the length of `connections`, past any page",
             "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "connections",
+            "description": "Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are",
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "TraversalPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -31954,7 +32099,7 @@
           },
           {
             "name": "commentsFor",
-            "description": "Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included",
+            "description": "Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included. `pagination` reads one page",
             "args": [
               {
                 "name": "identifier",
@@ -31985,6 +32130,18 @@
                   }
                 },
                 "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "LogPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
                 "isDeprecated": false,
                 "deprecationReason": null
               }
@@ -36895,6 +37052,18 @@
             "deprecationReason": null
           },
           {
+            "name": "admitsInstances",
+            "description": "Only the relation categories that could connect these two claims: in every view that draws both, the categories admitting the categories that view draws them under. `admits` asked once per view the two share, in one query",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "RelationInstancesInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "graph",
             "description": null,
             "type": {
@@ -37464,6 +37633,50 @@
               }
             },
             "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "RelationInstancesInput",
+        "description": "The two claims a relation would connect: instance ids, whichever views draw them",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "source",
+            "description": "The instance at the source end",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "target",
+            "description": "The instance at the target end",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -39406,6 +39619,18 @@
             "deprecationReason": null
           },
           {
+            "name": "graph",
+            "description": "Only the plots drawn from this graph's saved queries",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "type": {
@@ -39443,6 +39668,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "query",
+            "description": "Only the plots drawn from this saved table query",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
               "ofType": null
             },
             "defaultValue": null,
@@ -39657,7 +39894,31 @@
                 }
               }
             },
-            "defaultValue": null,
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "items",
+            "description": "Items whose every object moves, however many they carry",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -43022,8 +43283,20 @@
           },
           {
             "name": "todoChanged",
-            "description": "Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card",
+            "description": "Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card, `identifier` and `object` (given together) to the items one object is on, including the change that takes it off",
             "args": [
+              {
+                "name": "identifier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "item",
                 "description": null,
@@ -43038,6 +43311,18 @@
               },
               {
                 "name": "list",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "object",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",

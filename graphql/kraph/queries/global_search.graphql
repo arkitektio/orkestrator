@@ -1,17 +1,29 @@
+# The command palette's kraph slice: what a row shows (a name and a line of
+# description), a few of each kind. Not the list fragments: those carry
+# descriptors, terms and images a palette row never draws.
 query GlobalSearch($search: String!) {
-  entityCategories(filters: { search: $search }, pagination: { limit: 10 }) {
-    ...ListEntityCategory
+  entityCategories(filters: { search: $search }, pagination: { limit: 4 }) {
+    id
+    label
+    description
   }
-  relationCategories(filters: { search: $search }, pagination: { limit: 10 }) {
-    ...ListRelationCategory
+  relationCategories(filters: { search: $search }, pagination: { limit: 3 }) {
+    id
+    label
+    description
   }
   measurementCategories(
     filters: { search: $search }
-    pagination: { limit: 10 }
+    pagination: { limit: 3 }
   ) {
-    ...ListMeasurementCategory
+    id
+    label
+    description
   }
-  structureKinds(filters: { search: $search }, pagination: { limit: 10 }) {
-    ...ListStructureKind
+  structureKinds(filters: { search: $search }, pagination: { limit: 3 }) {
+    id
+    identifier
+    label
+    description
   }
 }

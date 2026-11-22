@@ -4,21 +4,32 @@ query GetProtocolEventCategory($id: ID!) {
   }
 }
 
-query SearchProtocolEventCategories($search: String, $values: [ID!]) {
-  options: protocolEventCategories(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
 query ListProtocolEventCategories(
   $filters: ProtocolEventCategoryFilter
   $pagination: OffsetPaginationInput
 ) {
   protocolEventCategories(filters: $filters, pagination: $pagination) {
-    ...ProtocolEventCategory
+    ...ListProtocolEventCategory
+  }
+}
+
+# What a display shows of it: its name, its word, its picture and how many roles it has.
+query GetProtocolEventCategorySummary($id: ID!) {
+  protocolEventCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+    image {
+      ...MediaStore
+    }
+    inputs {
+      key
+    }
+    outputs {
+      key
+    }
   }
 }

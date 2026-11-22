@@ -3,16 +3,3 @@ query GetStructureRelation($id: ID!) {
     ...DetailStructureRelation
   }
 }
-
-query SearchStructureRelations($category: ID!, $values: [ID!]) {
-  options: structureRelations(
-    structureRelationCategoryId: $category,
-    filters: { ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
-

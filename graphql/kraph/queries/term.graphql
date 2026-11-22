@@ -26,16 +26,6 @@ query FindTerm($kind: TermKind!, $key: String!) {
   }
 }
 
-query SearchTerms($search: String, $values: [ID!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, ids: $values, hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: key
-  }
-}
-
 # One search for every kind — the kind is a variable, so a picker that knows
 # which sort of word it wants does not need its own query. Hidden words are
 # never offered.
@@ -58,56 +48,6 @@ query SearchAssignableTerms($search: String, $kinds: [TermKind!]) {
 query SearchEntityTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
     filters: { search: $search, keys: $values, kinds: [ENTITY], hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: key
-    label: key
-  }
-}
-
-query SearchProtocolEventTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, keys: $values, kinds: [PROTOCOL_EVENT], hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: key
-    label: key
-  }
-}
-
-query SearchNaturalEventTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, keys: $values, kinds: [NATURAL_EVENT], hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: key
-    label: key
-  }
-}
-
-query SearchRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, keys: $values, kinds: [RELATION], hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: key
-    label: key
-  }
-}
-
-query SearchStructureRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, keys: $values, kinds: [STRUCTURE_RELATION], hidden: $hidden }
-    pagination: { limit: 10 }
-  ) {
-    value: key
-    label: key
-  }
-}
-
-query SearchMeasurementTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: { search: $search, keys: $values, kinds: [MEASUREMENT], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key

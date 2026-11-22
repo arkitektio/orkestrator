@@ -3,16 +3,3 @@ query GetRelation($id: ID!) {
     ...Relation
   }
 }
-
-query SearchRelations($category: ID!, $values: [ID!]) {
-  options: relations(
-    relationCategoryId: $category,
-    filters: { ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
-

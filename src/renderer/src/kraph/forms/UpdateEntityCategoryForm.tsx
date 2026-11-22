@@ -32,9 +32,7 @@ const enumToOptions = (e: Record<string, string>) => {
 };
 
 const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () => void }) => {
-  const [update] = useUpdateEntityCategoryMutation({
-    refetchQueries: ["GetGraph"],
-  });
+  const [update] = useUpdateEntityCategoryMutation(); // answers with the category, which the cache takes as is
 
   const { submit, submitting } = useDialogSubmit(
     (data: UpdateEntityCategoryMutationVariables["input"]) =>

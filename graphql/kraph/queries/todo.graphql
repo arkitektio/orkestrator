@@ -14,6 +14,14 @@ query TodoList($id: ID!) {
   }
 }
 
+# An item where another surface shows it (a chip, a row): the card's shape,
+# without the item's every object.
+query TodoItemSummary($id: ID!) {
+  todoItem(id: $id) {
+    ...TodoItemWithList
+  }
+}
+
 query TodoItem($id: ID!) {
   todoItem(id: $id) {
     ...TodoItemWithList
@@ -44,16 +52,6 @@ query TodoTrack($identifier: String!, $object: ID!) {
 query TodoSummary($filters: TodoItemFilter) {
   todoSummary(filters: $filters) {
     ...TodoSummary
-  }
-}
-
-query SlimTodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
-  todoItems(
-    filters: $filters
-    pagination: $pagination
-    ordering: [{ updatedAt: DESC }]
-  ) {
-    ...SlimTodoItem
   }
 }
 

@@ -29,7 +29,4 @@ fragment ListProtocolEventCategory on ProtocolEventCategory {
   outputs {
     ...EventRole
   }
-  propertyDefinitions {
-     ...PropertyDefinition
-  }
 }

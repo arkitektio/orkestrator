@@ -3,7 +3,7 @@ import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { SchemaBuilderPage } from "@/kraph/pages/SchemaBuilderPage";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEntityNodesQuery, useGetEntityCategoryQuery, useUpdateEntityCategoryMutation } from "../api/graphql";
+import { useGetEntityCategoryQuery, useUpdateEntityCategoryMutation } from "../api/graphql";
 import {
   buildDerivationRule,
   DEFAULT_DERIVATION,
@@ -19,17 +19,8 @@ export function EntityCategorySchemaBuilderPage() {
     skip: !id,
   });
 
-  useEntityNodesQuery({
-    variables: {
-      category: id!,
-      pagination: { limit: 1 },
-    },
-    skip: !id,
-  });
-
-  const [updateEntityCategory] = useUpdateEntityCategoryMutation({
-    refetchQueries: ["GetEntityCategory"],
-  });
+  // The update answers with the whole category, which the cache takes as is.
+  const [updateEntityCategory] = useUpdateEntityCategoryMutation();
 
   if (error && !data) {
     return <QueryError error={error} onRetry={() => refetch()} resource="entity category" id={id} />;

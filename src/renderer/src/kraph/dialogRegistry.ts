@@ -3,7 +3,6 @@ import { CreateEntityWithPropertiesDialog } from "./dialogs/CreateEntityWithProp
 import { CreateNewMeasurement } from "./dialogs/CreateNewMeasurement";
 import { CreateNewRelation } from "./dialogs/CreateNewRelation";
 import { MeasureTermDialog } from "./dialogs/MeasureTerm";
-import { RelateStructures } from "./dialogs/RelateStructures";
 import { SetAsMeasurement } from "./dialogs/SetAsMeasurement";
 import CreateEntityCategoryForm from "./forms/CreateEntityCategoryForm";
 import CreateEntityForm from "./forms/CreateEntityForm";
@@ -28,7 +27,6 @@ import { EditProjectForm } from "./forms/projects/EditProjectForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const KRAPH_DIALOGS = {
-  relatestructure: RelateStructures,
   createnewrelation: CreateNewRelation,
   // Three panes side by side: no natural width to fit.
   createnewmeasurement: prefersSize("large", CreateNewMeasurement),

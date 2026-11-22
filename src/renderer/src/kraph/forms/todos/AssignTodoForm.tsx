@@ -16,8 +16,8 @@ type Values = { assignee: string | null };
  */
 export const AssignTodoForm = (props: { kind: "item" | "list"; id: string; current?: string | null }) => {
   const searchUsers = useStructureOptions("@lok/user");
-  const [assignItem, item] = useAssignTodoItemMutation({ refetchQueries: ["TodoItems", "TodoSummary", "SlimTodoItems"] });
-  const [assignList, list] = useAssignTodoListMutation({ refetchQueries: ["TodoList", "TodoItems", "TodoSummary", "SlimTodoItems"] });
+  const [assignItem, item] = useAssignTodoItemMutation({ refetchQueries: ["TodoItems", "TodoSummary"] });
+  const [assignList, list] = useAssignTodoListMutation({ refetchQueries: ["TodoList", "TodoItems", "TodoSummary"] });
   const loading = item.loading || list.loading;
   const form = useForm<Values>({ defaultValues: { assignee: props.current ?? null } });
 

@@ -5,7 +5,6 @@ import {
   ListCandidateRelationCategoriesQuery,
   ListMeasurementCategoryWithGraphFragment,
   ListStructureRelationCategoryWithGraphFragment,
-  useGetDetailInstanceQuery,
   useListApplicableMeasurementCategoriesQuery,
   useListCandidateRelationCategoriesQuery,
   useListCandidateStructureRelationCategoriesQuery,
@@ -14,7 +13,6 @@ import { GitBranchPlus, Network, Ruler } from "lucide-react";
 import React from "react";
 import type {
   SectionItems,
-  SectionStatus,
   SmartContextSection,
   SmartSectionContext,
 } from "@/core/smart/extensions/section";
@@ -141,72 +139,31 @@ const NO_CANDIDATES: readonly RelationCandidate[] = [];
 /**
  * Both ends arrive as bare uuids, and which relation categories apply depends
  * on the two entities' *categories* — which are view-grain and so exist only
- * inside a graph. `instance(id:) { drawnIn }` bridges that: it says which
- * views draw each claim and under which category. A relation is offered only
- * for a graph that draws both ends, which is also the only graph that could
- * record it.
+ * inside a graph. The server answers that from the claims themselves
+ * (`admitsInstances`): in every view that draws both, the categories whose
+ * descriptors admit what that view draws them as. Two claims with no view in
+ * common get nothing, which is the honest answer.
  */
 const useEntityRelationItems = (ctx: SmartSectionContext): SectionItems<RelationCandidate> => {
   const object = ctx.objects.at(0);
   const partner = ctx.partners?.at(0);
 
-  const source = useGetDetailInstanceQuery({
-    variables: { id: object?.id ?? "" },
-    skip: !object,
-  });
-  const target = useGetDetailInstanceQuery({
-    variables: { id: partner?.id ?? "" },
-    skip: !partner,
-  });
-
-  // The first graph that draws both. Two claims with no view in common cannot
-  // be related there, and saying so by offering nothing is the honest answer.
-  const shared = React.useMemo(() => {
-    const targets = new Map(
-      (target.data?.instance.drawnIn ?? []).map((drawing) => [drawing.graph.id, drawing]),
-    );
-    for (const drawing of source.data?.instance.drawnIn ?? []) {
-      const counterpart = targets.get(drawing.graph.id);
-      if (counterpart) {
-        return {
-          graphId: drawing.graph.id,
-          sourceCategoryId: drawing.category.id,
-          targetCategoryId: counterpart.category.id,
-        };
-      }
-    }
-    return undefined;
-  }, [source.data, target.data]);
-
-  // That graph's relation categories that admit both ends, narrowed by the
-  // server (`admits`), which applies the writer's own predicate.
-  const skip = !shared;
+  const skip = !object || !partner;
   const result = useListCandidateRelationCategoriesQuery({
     ...QUERY_OPTIONS,
     variables: {
       ...searchVariables(ctx.filter),
-      graph: shared?.graphId ?? "",
-      source: shared?.sourceCategoryId ?? "",
-      target: shared?.targetCategoryId ?? "",
+      source: object?.id ?? "",
+      target: partner?.id ?? "",
     },
     skip,
   });
   const candidates = useStableData(result, skip);
 
-  const endsError = source.error ?? target.error;
-  const endsLoading = (source.loading && !source.data) || (target.loading && !target.data);
-  const status: SectionStatus = endsError
-    ? "error"
-    : endsLoading
-      ? "loading"
-      : !shared
-        ? "ready"
-        : candidates.status;
-
   return {
-    items: shared ? (candidates.data?.relationCategories ?? NO_CANDIDATES) : NO_CANDIDATES,
-    status,
-    error: endsError ?? candidates.error,
+    items: candidates.data?.relationCategories ?? NO_CANDIDATES,
+    status: candidates.status,
+    error: candidates.error,
   };
 };
 

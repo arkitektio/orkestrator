@@ -26,7 +26,7 @@ const instance = (id: string, key: string, kind = "ENTITY") => ({
   term: { key, label: null, color: null },
   createdAt: "2026-01-01",
   component: [id],
-  sameAs: [],
+  members: [{ id, evidence: [] }],
   drawnIn: [],
   assertion: { id: `a-${id}`, subject: "me", assertedAt: "2026-01-01" },
 });

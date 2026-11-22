@@ -4,22 +4,15 @@ query GetEntity($id: ID!, $graph: ID!) {
   }
 }
 
-# The category an entity was claimed under — enough to decide which relation
-# categories apply between two entities, without pulling the whole entity.
-query GetListEntity($id: ID!, $graph: ID!) {
+# An entity row's unfolded strip in a category table: a page of its
+# connections, nothing else of it.
+query EntityConnections($id: ID!, $graph: ID!, $limit: Int = 20) {
   entity(id: $id, graph: $graph) {
-    ...ListEntity
-  }
-}
-
-query SearchEntities($category: ID!, $search: String, $values: [ID!], ) {
-  options: entities(
-    entityCategoryId: $category,
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
+    id
+    connections(pagination: { limit: $limit }) {
+      ...Edge
+    }
+    connectionCount
   }
 }
 

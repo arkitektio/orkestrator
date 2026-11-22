@@ -4,21 +4,23 @@ query GetStructureRelationCategory($id: ID!) {
   }
 }
 
-query SearchStructureRelationCategory($search: String, $values: [ID!]) {
-  options: structureRelationCategories(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
 query ListStructureRelationCategory(
   $filters: StructureRelationCategoryFilter
   $pagination: OffsetPaginationInput
 ) {
   structureRelationCategories(filters: $filters, pagination: $pagination) {
     ...ListStructureRelationCategoryWithGraph
+  }
+}
+
+# What a display shows of it: its name, its word and a line of description.
+query GetStructureRelationCategorySummary($id: ID!) {
+  structureRelationCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
   }
 }

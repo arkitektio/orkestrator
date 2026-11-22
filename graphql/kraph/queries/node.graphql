@@ -1,22 +1,8 @@
+# What kind of thing a node is, and its name: enough to dispatch to the page
+# for its kind (which reads the rest itself) or to name it in a tooltip.
 query GetNode($id: ID!, $graph: ID!) {
   node(id: $id, graph: $graph) {
-    ...Node
-  }
-}
-
-query SearchNodes($graph: ID!, $search: String, $values: [ID!], ) {
-  options: nodes(
-    graph: $graph,
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
-query ListNodes($graph: ID!, $filters: NodeFilters, $pagination: NodePaginationInput) {
-  nodes(graph: $graph, filters: $filters, pagination: $pagination) {
+    __typename
     ...ListNode
   }
 }

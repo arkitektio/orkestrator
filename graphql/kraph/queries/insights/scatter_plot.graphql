@@ -4,16 +4,6 @@ query GetScatterPlot($id: ID!) {
   }
 }
 
-query SearchScatterPlots($search: String, $values: [ID!]) {
-  options: scatterPlots(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
 query ListScatterPlots(
   $filters: ScatterPlotFilter
   $pagination: OffsetPaginationInput

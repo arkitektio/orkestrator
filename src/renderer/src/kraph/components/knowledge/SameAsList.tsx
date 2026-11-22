@@ -1,6 +1,5 @@
 import { DisplayWidget } from "@/core/command/Menu";
 import {
-  useSameAsEvidenceQuery,
   type KnowledgeInstanceFragment,
   type ListStructureFragment,
 } from "@/kraph/api/graphql";
@@ -47,8 +46,9 @@ const SameAsMember = ({
 };
 
 /**
- * Everything else claimed to be this same thing, by the datums behind it. One
- * request reads every member with its evidence (`Instance.members`).
+ * Everything else claimed to be this same thing, by the datums behind it. The
+ * Knowledge read already carries every member with its evidence
+ * (`KnowledgeInstance.members`), so this asks nothing of its own.
  */
 export const SameAsList = ({
   instance,
@@ -57,23 +57,15 @@ export const SameAsList = ({
   instance: KnowledgeInstanceFragment;
   self: Structure;
 }) => {
-  const others = instance.component.filter((id) => id !== instance.id);
-  const { data, loading } = useSameAsEvidenceQuery({
-    variables: { id: instance.id },
-    skip: others.length === 0,
-  });
+  const members = instance.members.filter((member) => member.id !== instance.id);
 
-  if (others.length === 0) {
+  if (members.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
         Nothing else is claimed to be this {instance.term.key} yet.
       </p>
     );
   }
-  if (loading && !data) {
-    return <p className="text-xs text-muted-foreground">Loading…</p>;
-  }
-  const members = (data?.instance.members ?? []).filter((member) => member.id !== instance.id);
   return (
     <ul className="flex flex-col gap-1">
       {members.map((member) => (

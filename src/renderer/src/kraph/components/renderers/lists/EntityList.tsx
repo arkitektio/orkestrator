@@ -53,7 +53,7 @@ import {
   PropertyDefinitionFragment,
   ValueKind,
   useEntityNodesQuery,
-  useGetEntityQuery,
+  useEntityConnectionsQuery,
   useAssertMetricValueMutation
 } from "@/kraph/api/graphql";
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
@@ -416,7 +416,8 @@ export const RowEntity = ({
   // view-grain in what it shows, and a category belongs to exactly one graph.
   graphId: string;
 }) => {
-  const { data } = useGetEntityQuery({
+  // A page of the row's connections, not the whole entity.
+  const { data } = useEntityConnectionsQuery({
     variables: { id: row.getValue("id"), graph: graphId },
   });
 

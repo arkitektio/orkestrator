@@ -17,13 +17,12 @@ fragment ListStructure on Structure {
   }
 }
 
+# A structure's page and display. Its metrics are `MetricsForStructure`'s
+# (the page's table) and the Knowledge sidebar's, not this read's.
 fragment Structure on Structure {
   ...ListStructure
   kind {
     ...StructureKind
-  }
-  metrics {
-    ...ListMetric
   }
 }
 

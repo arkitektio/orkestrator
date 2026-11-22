@@ -3,11 +3,3 @@ query GetMetric($id: ID!) {
     ...Metric
   }
 }
-
-# Metrics are now listed by kind only — the server dropped the filter, ordering
-# and pagination arguments, so narrowing happens client-side.
-query ListMetrics($kind: ID!) {
-  metrics(metricKindId: $kind) {
-    ...ListMetric
-  }
-}

@@ -1,10 +1,10 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphNaturalEventCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
-import { useGetNaturalEventCategoryQuery } from "../api/graphql";
+import { useGetNaturalEventCategorySummaryQuery } from "../api/graphql";
 
 export const NaturalEventCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetNaturalEventCategoryQuery({ variables: { id: props.id } });
+  const { data } = useGetNaturalEventCategorySummaryQuery({ variables: { id: props.id } });
 
   if (!data?.naturalEventCategory) {
     return <div className="text-xs text-muted-foreground">Not found</div>;

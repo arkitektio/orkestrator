@@ -18,12 +18,9 @@ import { KRAPH_HELP } from "../help";
 
 // The index of `graphs/:graph`: the graph comes from scope, not from a `:id`
 // segment this route does not have.
-export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch }) => {
-  const [update] = useUpdateGraphMutation({
-    refetchQueries: ["GetGraph"],
-  });
-
-
+export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data }) => {
+  // `updateGraph` answers with the whole graph, which the cache takes as is.
+  const [update] = useUpdateGraphMutation();
 
   const pin = async () => {
     await update({
@@ -34,7 +31,6 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
         },
       },
     });
-    await refetch();
   };
 
   return (
@@ -82,7 +78,8 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
           <Sidebars.Tab label="Plots">
             {(
               <>
-                <ScatterPlotList />
+                {/* This graph's plots: the ones drawn from its saved queries. */}
+                <ScatterPlotList filters={{ graph: data.graph.id }} />
               </>
             )}
           </Sidebars.Tab>

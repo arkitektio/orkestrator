@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button } from "@/core/ui/button";
 import { Alert, AlertDescription } from "@/core/ui/alert";
 import {
   CommentsForDocument,
@@ -21,9 +23,13 @@ import { KommentProps } from "./types";
  * this flows at its natural height instead of claiming `h-full` — otherwise it
  * would fight the claims above it for the same column.
  */
+/** How many remarks a discussion reads at first, and how many more each "older" asks for. */
+export const COMMENTS_PAGE = 30;
+
 export const Komments = ({ identifier, object }: KommentProps) => {
+  const [limit, setLimit] = useState(COMMENTS_PAGE);
   const { data, error } = useCommentsForQuery({
-    variables: { identifier, object: object.id },
+    variables: { identifier, object: object.id, limit },
   });
 
   const [commentOnStructure] = useCommentOnStructureMutation({
@@ -39,6 +45,7 @@ export const Komments = ({ identifier, object }: KommentProps) => {
           variables: {
             identifier,
             object: object.id,
+            limit,
           },
         },
         (data) => {
@@ -73,6 +80,12 @@ export const Komments = ({ identifier, object }: KommentProps) => {
       <div>
         {data?.commentsFor && <CommentList comments={data?.commentsFor} />}
       </div>
+      {/* A full page may have more behind it: the next read asks for a longer one. */}
+      {data && data.commentsFor.length >= limit && (
+        <Button variant="ghost" size="sm" className="self-start text-xs" onClick={() => setLimit(limit + COMMENTS_PAGE)}>
+          Show older remarks
+        </Button>
+      )}
     </div>
   );
 };

@@ -3,16 +3,3 @@ query GetMeasurement($id: ID!) {
     ...Measurement
   }
 }
-
-query SearchMeasurements($category: ID!, $values: [ID!]) {
-  options: measurements(
-    measurementCategoryId: $category
-    filters: { ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
-

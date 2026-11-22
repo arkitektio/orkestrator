@@ -13,9 +13,7 @@ import {
 
 
 const TForm = (props: { relationCategory: RelationCategoryFragment }) => {
-  const [update] = useUpdateRelationCategoryMutation({
-    refetchQueries: ["GetGraph"],
-  });
+  const [update] = useUpdateRelationCategoryMutation(); // answers with the category, which the cache takes as is
 
   const dialog = useGraphQlFormDialog(update);
 

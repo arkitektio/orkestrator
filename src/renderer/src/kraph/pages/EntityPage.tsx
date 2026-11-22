@@ -210,6 +210,11 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <ActivityLogIcon className="h-4 w-4" /> Connections
+                  {data.entity.connectionCount > data.entity.connections.length && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      the first {data.entity.connections.length} of {data.entity.connectionCount}
+                    </span>
+                  )}
                 </h3>
                 {/*
                   One section, not three. `measuredBy`, `participatedIn` and

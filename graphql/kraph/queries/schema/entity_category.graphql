@@ -48,3 +48,15 @@ query EntityCategoryStats($id: ID!) {
     count
   }
 }
+
+# What a display shows of it: its name, its word and a line of description.
+query GetEntityCategorySummary($id: ID!) {
+  entityCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+  }
+}

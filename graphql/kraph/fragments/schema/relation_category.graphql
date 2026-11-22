@@ -19,6 +19,8 @@ fragment RelationCategory on RelationCategory {
   pinned
 }
 
+# A list row, a canvas edge and a picker read the ends and the name. The
+# property definitions (with their rules) are the detail page's and the forms'.
 fragment ListRelationCategory on RelationCategory {
   ...BaseListCategory
   ...BaseListEdgeCategory
@@ -27,9 +29,6 @@ fragment ListRelationCategory on RelationCategory {
   }
   targetDescriptor {
     ...EntityDescriptor
-  }
-  propertyDefinitions {
-     ...PropertyDefinition
   }
   label
 }

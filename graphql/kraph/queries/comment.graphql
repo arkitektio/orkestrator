@@ -1,8 +1,9 @@
 # Comments are addressed by the external datum they are about — (identifier,
 # object) — not by a graph. A remark is organization-scoped: it stands or it
 # does not, and no view scopes it, so there is nothing to pick here.
-query CommentsFor($identifier: String!, $object: ID!) {
-  commentsFor(identifier: $identifier, object: $object) {
+# Newest first, a page at a time: `$limit` grows as the reader asks for older ones.
+query CommentsFor($identifier: String!, $object: ID!, $limit: Int = 30) {
+  commentsFor(identifier: $identifier, object: $object, pagination: { limit: $limit }) {
     ...ListComment
   }
 }
@@ -14,10 +15,4 @@ query MyMentions($limit: Int = 5) {
     ...MentionComment
   }
   myMentionCount(resolved: false)
-}
-
-query DetailComment($id: ID!) {
-  comment(id: $id) {
-    ...DetailComment
-  }
 }

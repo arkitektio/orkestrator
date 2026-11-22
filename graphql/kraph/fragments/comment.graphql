@@ -46,16 +46,6 @@ fragment CommentAssertion on Assertion {
   assertedAt
 }
 
-# A position anyone took on whether a remark still stands.
-fragment CommentStanding on Standing {
-  id
-  stands
-  at
-  assertion {
-    ...CommentAssertion
-  }
-}
-
 # A reply, as a thread draws it. Deliberately does not select `replies` — the
 # thread reads one level down and recursion has no base case here.
 fragment ReplyComment on Comment {
@@ -85,10 +75,9 @@ fragment ListComment on Comment {
   descendants {
     ...Descendant
   }
+  # Whether it still stands is `resolved`, the server's fold; the positions
+  # behind it are not drawn in a thread.
   resolved
-  standings {
-    ...CommentStanding
-  }
   replies {
     ...ReplyComment
   }
@@ -106,8 +95,4 @@ fragment MentionComment on Comment {
     identifier
     object
   }
-}
-
-fragment DetailComment on Comment {
-  ...MentionComment
 }

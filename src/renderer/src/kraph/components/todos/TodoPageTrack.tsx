@@ -260,7 +260,8 @@ export const TodoPageTrack = ({ identifier, object }: { identifier: string; obje
   const id = String(object.id);
   const tracks = useTodoTracks(identifier, id);
   // A colleague's Done, or this object put on a new item, shows without a reload.
-  useTodoLive();
+  // Narrowed to this object on the server: the organization's other todos are not news here.
+  useTodoLive({ identifier, object: id });
   const self = useSelf().userId;
   const me = self === null ? null : String(self);
   const { openBeside } = useTabActions();

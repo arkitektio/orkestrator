@@ -28,7 +28,7 @@ const instance = (
   createdAt: over.createdAt ?? "2026-01-01T00:00:00Z",
   term: { id: `t-${term}`, key: term, kind: "ENTITY", label: null, color: null },
   component: over.component ?? [id],
-  sameAs: [],
+  members: [{ id, evidence: [] }],
   drawnIn: [],
   assertion: { id: `a-${id}`, subject: "u", assertedAt: "", recordedAt: "", seq: 1 },
 });

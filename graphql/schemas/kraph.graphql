@@ -2517,9 +2517,14 @@ type Entity implements Node {
   conflicts: [Difference!]!
 
   """
-  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)
+  How many standing claims connect this thing to something else: the length of `connections`, past any page
   """
-  connections: [Edge!]!
+  connectionCount: Int!
+
+  """
+  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are
+  """
+  connections(pagination: TraversalPaginationInput = null): [Edge!]!
 
   """
   The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs`
@@ -3506,9 +3511,14 @@ type Instance {
   conflicts: [Link!]!
 
   """
-  Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it
+  How many standing claims connect this thing to something else: the length of `connections`, past any page
   """
-  connections: [Link!]!
+  connectionCount: Int!
+
+  """
+  Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it. `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are
+  """
+  connections(pagination: TraversalPaginationInput = null): [Link!]!
 
   """When the claim was recorded"""
   createdAt: DateTime!
@@ -4876,9 +4886,14 @@ type NaturalEvent implements Event & Node {
   conflicts: [Difference!]!
 
   """
-  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)
+  How many standing claims connect this thing to something else: the length of `connections`, past any page
   """
-  connections: [Edge!]!
+  connectionCount: Int!
+
+  """
+  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are
+  """
+  connections(pagination: TraversalPaginationInput = null): [Edge!]!
 
   """
   The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs`
@@ -5136,9 +5151,14 @@ interface Node {
   conflicts: [Difference!]!
 
   """
-  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)
+  How many standing claims connect this thing to something else: the length of `connections`, past any page
   """
-  connections: [Edge!]!
+  connectionCount: Int!
+
+  """
+  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are
+  """
+  connections(pagination: TraversalPaginationInput = null): [Edge!]!
 
   """
   The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs`
@@ -5829,9 +5849,14 @@ type ProtocolEvent implements Event & Node {
   conflicts: [Difference!]!
 
   """
-  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024)
+  How many standing claims connect this thing to something else: the length of `connections`, past any page
   """
-  connections: [Edge!]!
+  connectionCount: Int!
+
+  """
+  Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are
+  """
+  connections(pagination: TraversalPaginationInput = null): [Edge!]!
 
   """
   The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs`
@@ -6087,9 +6112,9 @@ type Query {
   comment(id: ID!): Comment!
 
   """
-  Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included
+  Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included. `pagination` reads one page
   """
-  commentsFor(identifier: String!, object: ID!): [Comment!]!
+  commentsFor(identifier: String!, object: ID!, pagination: LogPaginationInput = null): [Comment!]!
 
   """Get an INFORMS claim by ID — a bare uuid, its `Link` primary key"""
   description(id: ID!): Description!
@@ -6521,6 +6546,11 @@ input RelationCategoryFilter {
   Only the relation categories whose source and target descriptors admit these two entity categories — what the write would accept, in one query
   """
   admits: RelationEndsInput
+
+  """
+  Only the relation categories that could connect these two claims: in every view that draws both, the categories admitting the categories that view draws them under. `admits` asked once per view the two share, in one query
+  """
+  admitsInstances: RelationInstancesInput
   graph: GraphFilter
   id: ID
 
@@ -6618,6 +6648,17 @@ input RelationEndsInput {
 input RelationFilter {
   """Filter by specific relation IDs"""
   ids: [ID!] = null
+}
+
+"""
+The two claims a relation would connect: instance ids, whichever views draw them
+"""
+input RelationInstancesInput {
+  """The instance at the source end"""
+  source: ID!
+
+  """The instance at the target end"""
+  target: ID!
 }
 
 """Ordering options for relation queries"""
@@ -7109,11 +7150,17 @@ input ScatterPlotFilter {
   DISTINCT: Boolean
   NOT: ScatterPlotFilter
   OR: ScatterPlotFilter
+
+  """Only the plots drawn from this graph's saved queries"""
+  graph: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
   name: String
+
+  """Only the plots drawn from this saved table query"""
+  query: ID
 
   """Full-text search over label and description"""
   search: String
@@ -7156,7 +7203,10 @@ input SetTodoStructureStatusInput {
 """Input for moving several objects on todo items to one status at once"""
 input SetTodoStructuresStatusInput {
   """The objects on items (TodoItemStructures)"""
-  ids: [ID!]!
+  ids: [ID!]! = []
+
+  """Items whose every object moves, however many they carry"""
+  items: [ID!]! = []
 
   """To do, Doing or Done, for all of them"""
   status: TodoStatus!
@@ -7825,9 +7875,9 @@ type Subscription {
   assertionRecorded: Assertion!
 
   """
-  Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card
+  Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card, `identifier` and `object` (given together) to the items one object is on, including the change that takes it off
   """
-  todoChanged(item: ID = null, list: ID = null): TodoChange!
+  todoChanged(identifier: String = null, item: ID = null, list: ID = null, object: ID = null): TodoChange!
 }
 
 """Input for superseding a metric value"""

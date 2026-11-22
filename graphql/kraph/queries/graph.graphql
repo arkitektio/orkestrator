@@ -19,3 +19,16 @@ query ListGraphs($filters: GraphFilter, $pagination: OffsetPaginationInput, $ord
     ...ListGraph
   }
 }
+
+# A graph as another surface shows it (a palette row, a card): its name and how
+# many entity categories it declares, not its whole schema.
+query GetGraphSummary($id: ID!) {
+  graph(id: $id) {
+    id
+    name
+    description
+  }
+  entityCategoryStats(filters: { graph: { id: $id } }) {
+    count
+  }
+}

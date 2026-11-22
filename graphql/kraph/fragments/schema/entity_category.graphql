@@ -7,13 +7,6 @@ fragment EntityCategory on EntityCategory {
   image {
     ...MediaStore
   }
-  latest: entities(ordering: [ {
-     createdAt: DESC
-  }], pagination:  {
-     limit: 3
-  }) {
-    ...Entity
-  }
   pinned
   propertyDefinitions {
     ...PropertyDefinition

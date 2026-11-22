@@ -15,9 +15,7 @@ import {
 const TForm = (props: {
   measurementCategory: MeasurementCategoryFragment;
 }) => {
-  const [update] = useUpdateMeasurementCategoryMutation({
-    refetchQueries: ["GetGraph"],
-  });
+  const [update] = useUpdateMeasurementCategoryMutation(); // answers with the category, which the cache takes as is
 
   const dialog = useGraphQlFormDialog(update);
 

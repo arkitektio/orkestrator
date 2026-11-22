@@ -1,9 +1,9 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
-import { useGetEntityCategoryQuery } from "../api/graphql";
+import { useGetEntityCategorySummaryQuery } from "../api/graphql";
 import { TermBadge } from "../components/TermBadge";
 
 export const EntityCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetEntityCategoryQuery({
+  const { data } = useGetEntityCategorySummaryQuery({
     variables: { id: props.id },
   });
 

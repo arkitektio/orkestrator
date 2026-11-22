@@ -1,11 +1,11 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphProtocolEventCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
-import { useGetProtocolEventCategoryQuery } from "../api/graphql";
+import { useGetProtocolEventCategorySummaryQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetProtocolEventCategoryQuery({ variables: { id: props.id } });
+  const { data } = useGetProtocolEventCategorySummaryQuery({ variables: { id: props.id } });
 
   if (!data?.protocolEventCategory) {
     return <div className="text-xs text-muted-foreground">Not found</div>;

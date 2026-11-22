@@ -4,21 +4,32 @@ query GetNaturalEventCategory($id: ID!) {
   }
 }
 
-query SearchNaturalEventCategories($search: String, $values: [ID!]) {
-  options: naturalEventCategories(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
 query ListNaturalEventCategories(
   $filters: NaturalEventCategoryFilter
   $pagination: OffsetPaginationInput
 ) {
   naturalEventCategories(filters: $filters, pagination: $pagination) {
-    ...NaturalEventCategory
+    ...ListNaturalEventCategory
+  }
+}
+
+# What a display shows of it: its name, its word, its picture and how many roles it has.
+query GetNaturalEventCategorySummary($id: ID!) {
+  naturalEventCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+    image {
+      ...MediaStore
+    }
+    inputs {
+      key
+    }
+    outputs {
+      key
+    }
   }
 }

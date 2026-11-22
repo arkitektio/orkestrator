@@ -32,18 +32,17 @@ query ListApplicableMeasurementCategories(
 }
 
 # Relation categories live in one graph's schema, and a pair can only be related
-# in a graph that draws both ends: the caller names that graph.
-# `admits` keeps the categories whose source and target descriptors admit the two
-# entity categories, the predicate the writer applies: the menu offers no pairing
-# the write would refuse.
+# in a graph that draws both ends. `admitsInstances` asks from the two claims:
+# in every view drawing both, the categories whose descriptors admit what that
+# view draws them as — the predicate the writer applies, so the menu offers no
+# pairing the write would refuse, and no view that draws both is left out.
 query ListCandidateRelationCategories(
   $search: String
-  $graph: ID!
   $source: ID!
   $target: ID!
 ) {
   relationCategories(
-    filters: { search: $search, graph: { id: $graph }, admits: { source: $source, target: $target } }
+    filters: { search: $search, admitsInstances: { source: $source, target: $target } }
   ) {
     ...ListRelationCategory
     graph {
@@ -67,24 +66,13 @@ query ListCandidateStructureRelationCategories($search: String, $source: String!
 query EntityCategoriesMatchingDescriptor(
   $ids: [ID!]
   $descriptor: EntityDescriptorInput
+  $graph: ID
 ) {
-  entityCategories(filters: { ids: $ids, matchesDescriptor: $descriptor }) {
+  entityCategories(filters: { ids: $ids, matchesDescriptor: $descriptor, graph: { id: $graph } }) {
     ...ListEntityCategory
     graph {
       id
       name
     }
-  }
-}
-
-query StructureKindsMatchingDescriptor(
-  $identifiers: [String!]
-  $descriptor: StructureDescriptorInput
-) {
-  structureKinds(
-    filters: { identifiers: $identifiers, matchesDescriptor: $descriptor }
-  ) {
-    id
-    identifier
   }
 }

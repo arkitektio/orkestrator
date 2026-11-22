@@ -9,7 +9,7 @@ import { ParagraphField } from "@arkitektio/bsx/ports/forms/ParagraphField";
 import { SearchField } from "@arkitektio/bsx/ports/forms/SearchField";
 import { StringField } from "@arkitektio/bsx/ports/forms/StringField";
 import { useForm } from "react-hook-form";
-import { TodoListDocument, useCreateTodoItemMutation } from "../../api/graphql";
+import { useCreateTodoItemMutation } from "../../api/graphql";
 import { todoTitleFor } from "../../lib/todos";
 import { DueDateField } from "./DueDateField";
 
@@ -19,7 +19,7 @@ type Values = { title: string; description: string; assignee: string | null; due
 export const CreateTodoItemForm = (props: { list: string; structures?: Structure[] }) => {
   const searchUsers = useStructureOptions("@lok/user");
   const [create, { loading }] = useCreateTodoItemMutation({
-    refetchQueries: [{ query: TodoListDocument, variables: { id: props.list } }, "TodoItems", "TodoSummary", "SlimTodoItems"],
+    refetchQueries: ["TodoList", "TodoItems", "TodoSummary"],
   });
   // No title typed: the item is named after what it is about, if anything.
   const defaultTitle = todoTitleFor((props.structures ?? []).map(structureLabel));

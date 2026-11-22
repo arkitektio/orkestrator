@@ -34,9 +34,6 @@ import {
   SetTodoStructuresStatusDocument,
   type SetTodoStructuresStatusMutation,
   type SetTodoStructuresStatusMutationVariables,
-  TodoItemDocument,
-  type TodoItemQuery,
-  type TodoItemQueryVariables,
   TodoItemAssignmentDocument,
   type TodoItemAssignmentQuery,
   type TodoItemAssignmentQueryVariables,
@@ -400,7 +397,7 @@ export const DeleteTodoItemAction: Action = {
   execute: async (params) => {
     const result = await deleteTodoItem.execute(params);
     const client = (params.services.kraph as unknown as { client?: ApolloClient<NormalizedCache> }).client;
-    await client?.refetchQueries({ include: ["TodoList", "Project", "TodoItems", "TodoTrack", "TodoSummary", "SlimTodoItems"] });
+    await client?.refetchQueries({ include: ["TodoList", "Project", "TodoItems", "TodoTrack", "TodoSummary"] });
     return result;
   },
 };
@@ -418,18 +415,14 @@ export const MarkTodoItemsDoneAction: Action = {
   execute: async ({ state, services }) => {
     const client = (services.kraph as unknown as { client?: ApolloClient<NormalizedCache> } | undefined)?.client;
     if (!client) throw new Error("Kraph is not available, so there are no todo lists.");
-    const items = await Promise.all(
-      state.left.map((item) =>
-        client.query<TodoItemQuery, TodoItemQueryVariables>({ query: TodoItemDocument, variables: { id: String(item.id) }, fetchPolicy: "network-only" }),
-      ),
-    );
-    const ids = items.flatMap(({ data }) => data.todoItem.allStructures.filter((structure) => !structure.done).map((structure) => structure.id));
-    if (ids.length === 0) return;
+    const items = state.left.map((item) => String(item.id));
+    if (items.length === 0) return;
     await client.mutate<SetTodoStructuresStatusMutation, SetTodoStructuresStatusMutationVariables>({
       mutation: SetTodoStructuresStatusDocument,
-      variables: { ids, status: TodoStatus.Done },
+      // The items, not their objects: the server moves every object on them.
+      variables: { items, status: TodoStatus.Done },
       // Item columns move; the summary and a moved board column are counted on the server.
-      refetchQueries: ["TodoList", "TodoSummary", "SlimTodoItems"],
+      refetchQueries: ["TodoList", "TodoSummary"],
     });
   },
 };
@@ -505,7 +498,7 @@ const buildMoveTodoItemAction = (status: TodoStatus, title: string, icon: Action
       });
     }
     // The other cards of the column were renumbered on the server.
-    await client.refetchQueries({ include: ["TodoList", "TodoItems", "TodoSummary", "SlimTodoItems", "TodoTrack"] });
+    await client.refetchQueries({ include: ["TodoList", "TodoItems", "TodoSummary", "TodoTrack"] });
   },
 });
 

@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const knowledge = vi.fn();
-const sameAs = vi.fn();
 const me = vi.fn();
 
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
@@ -19,7 +18,6 @@ vi.mock("@/kraph/api/graphql", () => ({
   useAssertEntityExistsMutation: () => [vi.fn(), {}],
   useAssertInformsMutation: () => [vi.fn(), {}],
   useSearchAssignableTermsQuery: () => ({ data: { terms: [] }, loading: false }),
-  useSameAsEvidenceQuery: (o: unknown) => sameAs(o),
 }));
 vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
 // Surfaces with their own plumbing: the discussion, the drop zone, the drag
@@ -69,7 +67,7 @@ const instance = (id: string, key: string, over: Partial<Record<string, unknown>
   term: { id: `t-${key}`, kind: "ENTITY", key, label: null, color: [10, 20, 30] },
   assertion: { id: `a-${id}`, subject: "user-1", assertedAt: "2026-01-01T00:00:00Z" },
   component: [id],
-  sameAs: [],
+  members: [{ id, evidence: [] }],
   drawnIn: [],
   ...over,
 });
@@ -78,10 +76,8 @@ const object = { id: "img-1" };
 
 beforeEach(() => {
   knowledge.mockReset();
-  sameAs.mockReset();
   me.mockReset();
   me.mockReturnValue({ userId: "user-1", username: "ada" });
-  sameAs.mockReturnValue({ data: { instance: { id: "i1", members: [] } }, loading: false });
 });
 
 describe("KnowledgeSidebar", () => {
@@ -107,6 +103,17 @@ describe("KnowledgeSidebar", () => {
           informs: [
             instance("i1", "AIS", {
               component: ["i1", "i9"],
+              // The panel's own read carries every member with its evidence.
+              members: [
+                { id: "i1", evidence: [{ id: "s-own", identifier: "@mikro/file", object: "img-1" }] },
+                {
+                  id: "i9",
+                  evidence: [
+                    { id: "s-self", identifier: "@mikro/file", object: "img-1" },
+                    { id: "s-other", identifier: "@mikro/file", object: "img-7" },
+                  ],
+                },
+              ],
               drawnIn: [
                 {
                   graph: { id: "g1", name: "Neurons" },
@@ -121,24 +128,6 @@ describe("KnowledgeSidebar", () => {
       loading: false,
       refetch: vi.fn(),
     });
-    sameAs.mockReturnValue({
-      data: {
-        instance: {
-          id: "i1",
-          members: [
-            { id: "i1", evidence: [{ id: "s-own", identifier: "@mikro/file", object: "img-1" }] },
-            {
-              id: "i9",
-              evidence: [
-                { id: "s-self", identifier: "@mikro/file", object: "img-1" },
-                { id: "s-other", identifier: "@mikro/file", object: "img-7" },
-              ],
-            },
-          ],
-        },
-      },
-      loading: false,
-    });
     render(<KnowledgeSidebar identifier="@mikro/file" object={object} />);
 
     fireEvent.click(screen.getByRole("button", { name: "AIS" }));
@@ -151,8 +140,6 @@ describe("KnowledgeSidebar", () => {
     expect(screen.getByTestId("link-graph")).toHaveTextContent("Neurons");
     expect(screen.getByText(/Axon initial segment/)).toBeInTheDocument();
 
-    // One request reads every member with its evidence.
-    expect(sameAs).toHaveBeenCalledWith(expect.objectContaining({ variables: { id: "i1" } }));
     // The datum's own structure is not listed as "the same as" itself.
     expect(screen.getAllByTestId("display").map((n) => n.textContent)).toEqual(["@mikro/file:img-7"]);
 

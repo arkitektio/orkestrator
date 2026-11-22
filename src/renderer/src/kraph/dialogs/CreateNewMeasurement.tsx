@@ -92,7 +92,7 @@ export const CreateNewMeasurement = (props: {
       },
       pagination: { limit: 50, offset: 0 },
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   const { data: entityData } = useListEntityCategoryQuery({
@@ -103,7 +103,7 @@ export const CreateNewMeasurement = (props: {
       },
       pagination: { limit: 50, offset: 0 },
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   const [createMeasurementCategory] = useCreateMeasurementCategoryMutation({

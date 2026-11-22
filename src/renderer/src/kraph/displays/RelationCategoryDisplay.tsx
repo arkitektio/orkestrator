@@ -1,10 +1,10 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphRelationCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
-import { useGetRelationCategoryQuery } from "../api/graphql";
+import { useGetRelationCategorySummaryQuery } from "../api/graphql";
 
 export const RelationCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetRelationCategoryQuery({ variables: { id: props.id } });
+  const { data } = useGetRelationCategorySummaryQuery({ variables: { id: props.id } });
 
   if (!data?.relationCategory) {
     return <div className="text-xs text-muted-foreground">Not found</div>;

@@ -1,5 +1,7 @@
-query HomePage {
-  graphs: graphs {
+# The module home: the newest few graphs. `HomePageStats` says how many there
+# are, and the graphs page lists them all.
+query HomePage($limit: Int = 12) {
+  graphs: graphs(pagination: { limit: $limit }, ordering: [{ createdAt: DESC }]) {
     ...ListGraph
   }
 }

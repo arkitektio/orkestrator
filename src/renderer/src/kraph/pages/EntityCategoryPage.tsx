@@ -11,7 +11,6 @@ import { KraphEntityCategory } from "@/core/linkers";
 import { Plus, Settings2 } from "lucide-react";
 import { useNavigate as useNavigateRouter } from "react-router-dom";
 import {
-  EntityNodesDocument,
   useAssertEntityExistsMutation,
   useGetEntityCategoryQuery,
   useUpdateEntityCategoryMutation,
@@ -35,7 +34,9 @@ export const Page = asDetailQueryRoute(
           term: data.entityCategory.term?.key ?? data.entityCategory.key,
         },
       },
-      refetchQueries: [{ query: EntityNodesDocument, variables: { entityCategory: data.entityCategory.id } }],
+      // The category's entity table (`EntityList`), by name: its variables are
+      // its own page and search.
+      refetchQueries: ["EntityNodes"],
     });
 
     const { openSheet } = useDialog();
@@ -52,7 +53,6 @@ export const Page = asDetailQueryRoute(
               },
             },
           });
-          await refetch();
         }
       } catch (e) {
         reportError(e, "Couldn't set the image");
@@ -68,7 +68,6 @@ export const Page = asDetailQueryRoute(
           },
         },
       });
-      await refetch();
     };
 
     return (
@@ -91,7 +90,7 @@ export const Page = asDetailQueryRoute(
             <PageAction
               priority={10}
               onClick={() => {
-                quickCreate().then(() => refetch()).catch(reportErrorAs("Couldn't create the entity"));
+                quickCreate().catch(reportErrorAs("Couldn't create the entity"));
               }}
             >
               Quick+

@@ -119,3 +119,16 @@ fragment TodoSummary on TodoSummary {
     ...TodoProgress
   }
 }
+
+# What a live change is compared against before the cache takes it: which list
+# the item was on, its column and how far its objects were (`useTodoLive`).
+fragment TodoItemProgress on TodoItem {
+  id
+  status
+  list {
+    id
+  }
+  progress {
+    ...TodoProgress
+  }
+}

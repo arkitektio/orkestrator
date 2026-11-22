@@ -20,9 +20,3 @@ fragment ListNode on Node {
   label
 }
 
-fragment Node on Node {
-  ...BaseNode
-  ...Entity
-  ...NaturalEvent
-  ...ProtocolEvent
-}

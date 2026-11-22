@@ -28,9 +28,6 @@ fragment ListStructureRelationCategory on StructureRelationCategory {
   targetDescriptor {
     ...StructureDescriptor
   }
-  propertyDefinitions {
-     ...PropertyDefinition
-   }
   label
 }
 

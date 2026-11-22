@@ -1,12 +1,12 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphTodoItem } from "@/core/linkers";
-import { useTodoItemQuery } from "../api/graphql";
+import { useTodoItemSummaryQuery } from "../api/graphql";
 import { TodoItemRow } from "../components/todos/TodoItemRow";
 import { todoStatusLabel } from "../lib/todos";
 
 /** A todo item where another surface shows it: a chip (its title), or its row. */
 export const TodoItemDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useTodoItemQuery({ variables: { id: props.id } });
+  const { data } = useTodoItemSummaryQuery({ variables: { id: props.id } });
   const item = data?.todoItem;
   if (!item) return <span className="text-xs text-muted-foreground">Todo item not found</span>;
 

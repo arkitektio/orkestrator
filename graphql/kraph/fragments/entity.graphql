@@ -36,9 +36,12 @@ fragment Entity on Entity {
     value
   }
   properties
-  connections {
+  # The first page of what connects to it, and how many there are: an entity
+  # informed by a thousand datums is not read whole.
+  connections(pagination: { limit: 50 }) {
     ...Edge
   }
+  connectionCount
   # Which views draw this claim. Replaces the old single `graph`, which could
   # only ever name one of them.
   drawnIn {

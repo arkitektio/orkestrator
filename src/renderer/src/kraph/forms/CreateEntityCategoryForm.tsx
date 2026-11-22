@@ -55,7 +55,6 @@ import {
   CreateEntityCategoryMutationVariables,
   DerivationType,
   GetGraphDocument,
-  ListEntitiesDocument,
   ValueKind,
   useCreateEntityCategoryMutation,
   useCreateEntityTermInlineMutation,
@@ -490,7 +489,8 @@ const ExistenceStep = ({
 
 const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (data: CreateEntityCategoryMutation) => void }) => {
   const [add] = useCreateEntityCategoryMutation({
-    refetchQueries: [props.graph ? { query: GetGraphDocument, variables: { id: props.graph } } : ListEntitiesDocument],
+    // A new category is a row of its graph's schema and of the category lists.
+    refetchQueries: props.graph ? [{ query: GetGraphDocument, variables: { id: props.graph } }, "ListEntityCategory"] : ["ListEntityCategory"],
   });
 
   const { onSuccess, ...defaults } = props;

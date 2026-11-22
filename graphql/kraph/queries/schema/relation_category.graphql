@@ -4,21 +4,23 @@ query GetRelationCategory($id: ID!) {
   }
 }
 
-query SearchRelationCategory($search: String, $values: [ID!]) {
-  options: relationCategories(
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
 query ListRelationCategory(
   $filters: RelationCategoryFilter
   $pagination: OffsetPaginationInput
 ) {
   relationCategories(filters: $filters, pagination: $pagination) {
     ...ListRelationCategory
+  }
+}
+
+# What a display shows of it: its name, its word and a line of description.
+query GetRelationCategorySummary($id: ID!) {
+  relationCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
   }
 }

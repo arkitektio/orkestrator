@@ -1,9 +1,9 @@
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphGraph } from "@/core/linkers";
-import { useGetGraphQuery } from "../api/graphql";
+import { useGetGraphSummaryQuery } from "../api/graphql";
 
 export const GraphDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetGraphQuery({ variables: { id: props.id } });
+  const { data } = useGetGraphSummaryQuery({ variables: { id: props.id } });
 
   if (!data?.graph) {
     return <div className="text-xs text-muted-foreground">Graph not found</div>;
@@ -32,7 +32,7 @@ export const GraphDisplay = (props: DisplayWidgetProps) => {
           <div className="text-xs text-muted-foreground line-clamp-2">{graph.description}</div>
         )}
         <div className="text-xs text-muted-foreground">
-          {graph.entityCategories?.length ?? 0} entity categories
+          {data.entityCategoryStats.count} entity categories
         </div>
       </div>
     </KraphGraph.DetailLink>

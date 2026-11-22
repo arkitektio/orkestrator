@@ -4,7 +4,7 @@ import { DateTimePicker } from "@/core/ui/datetime-picker";
 import { Input } from "@/core/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { Textarea } from "@/core/ui/textarea";
-import { GetEntityDocument, PropertyDefinitionFragment, useAssertMetricValueMutation, ValueKind } from "@/kraph/api/graphql";
+import { PropertyDefinitionFragment, useAssertMetricValueMutation, ValueKind } from "@/kraph/api/graphql";
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { Check, Pencil, X } from "lucide-react";
 import { useState } from "react";
@@ -22,7 +22,9 @@ export const PropertyEditor = ({
   const [currentValue, setCurrentValue] = useState(value);
   const [failure, setFailure] = useState<unknown>(null);
   const [assertMetricValue, { loading }] = useAssertMetricValueMutation({
-    refetchQueries: [{ query: GetEntityDocument, variables: { id: entityId } }],
+    // By name: the page's `GetEntity` also names its graph, so a document with
+    // `{ id }` alone matched nothing and failed validation besides.
+    refetchQueries: ["GetEntity"],
   });
 
   const assertable = isManuallyAssertable(definition.valueKind);

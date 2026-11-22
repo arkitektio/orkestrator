@@ -3,16 +3,3 @@ query GetProtocolEvent($id: ID!, $graph: ID!) {
     ...ProtocolEvent
   }
 }
-
-query SearchProtocolEvents($category: ID!, $search: String, $values: [ID!]) {
-  options: protocolEvents(
-    protocolEventCategoryId: $category,
-    filters: { search: $search, ids: $values }
-    pagination: { limit: 10 }
-  ) {
-    value: id
-    label: label
-  }
-}
-
-

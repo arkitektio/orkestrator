@@ -1663,7 +1663,9 @@ export type Entity = Node & {
   component: Array<Scalars['ID']['output']>;
   /** Differences the fold could not honour: both ends are still members of this individual through a third instance (a~b, b~c, a≠c). Nothing resolves these automatically — retract one of the claims that disagree */
   conflicts: Array<Difference>;
-  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024) */
+  /** How many standing claims connect this thing to something else: the length of `connections`, past any page */
+  connectionCount: Scalars['Int']['output'];
+  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are */
   connections: Array<Edge>;
   /** The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs` */
   differentFrom: Array<Difference>;
@@ -1695,6 +1697,12 @@ export type Entity = Node & {
   validFrom?: Maybe<Scalars['DateTime']['output']>;
   /** When this entity stopped being valid. . When did it stop existing? */
   validTo?: Maybe<Scalars['DateTime']['output']>;
+};
+
+
+/** An entity in the knowledge graph with derived properties */
+export type EntityConnectionsArgs = {
+  pagination?: InputMaybe<TraversalPaginationInput>;
 };
 
 
@@ -2464,7 +2472,9 @@ export type Instance = {
   confidence?: Maybe<Scalars['Float']['output']>;
   /** Differences whose two ends the organization-grain fold still holds to be one thing, through a third instance. Retract one of the claims that disagree to settle it */
   conflicts: Array<Link>;
-  /** Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it */
+  /** How many standing claims connect this thing to something else: the length of `connections`, past any page */
+  connectionCount: Scalars['Int']['output'];
+  /** Every standing claim connecting this thing to something else — relations, participations, classifications and the structures that inform it. `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are */
   connections: Array<Link>;
   /** When the claim was recorded */
   createdAt: Scalars['DateTime']['output'];
@@ -2494,6 +2504,12 @@ export type Instance = {
   standings: Array<Standing>;
   /** The organization's word this was first claimed under. Which view draws it, and as what, is decided from the claims */
   term: Term;
+};
+
+
+/** A claimed individual — an entity or an event, as the log has it */
+export type InstanceConnectionsArgs = {
+  pagination?: InputMaybe<TraversalPaginationInput>;
 };
 
 export enum InstanceKind {
@@ -4053,7 +4069,9 @@ export type NaturalEvent = Event & Node & {
   component: Array<Scalars['ID']['output']>;
   /** Differences the fold could not honour: both ends are still members of this individual through a third instance (a~b, b~c, a≠c). Nothing resolves these automatically — retract one of the claims that disagree */
   conflicts: Array<Difference>;
-  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024) */
+  /** How many standing claims connect this thing to something else: the length of `connections`, past any page */
+  connectionCount: Scalars['Int']['output'];
+  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are */
   connections: Array<Edge>;
   /** The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs` */
   differentFrom: Array<Difference>;
@@ -4083,6 +4101,12 @@ export type NaturalEvent = Event & Node & {
   sameAs: Array<Sameness>;
   /** The event's word — what the claim says happened, as the organization's term key (e.g. 'Mitosis'). The claim's, never a view's label */
   word: Scalars['String']['output'];
+};
+
+
+/** A natural event in the knowledge graph */
+export type NaturalEventConnectionsArgs = {
+  pagination?: InputMaybe<TraversalPaginationInput>;
 };
 
 
@@ -4257,7 +4281,9 @@ export type Node = {
   component: Array<Scalars['ID']['output']>;
   /** Differences the fold could not honour: both ends are still members of this individual through a third instance (a~b, b~c, a≠c). Nothing resolves these automatically — retract one of the claims that disagree */
   conflicts: Array<Difference>;
-  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024) */
+  /** How many standing claims connect this thing to something else: the length of `connections`, past any page */
+  connectionCount: Scalars['Int']['output'];
+  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are */
   connections: Array<Edge>;
   /** The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs` */
   differentFrom: Array<Difference>;
@@ -4281,6 +4307,12 @@ export type Node = {
   neighbors: Array<Node>;
   /** The standing claims that this instance and another are one thing, with who said so. Exposed so a merge is visible and contestable rather than silent */
   sameAs: Array<Sameness>;
+};
+
+
+/** Base interface for all graph nodes */
+export type NodeConnectionsArgs = {
+  pagination?: InputMaybe<TraversalPaginationInput>;
 };
 
 
@@ -4773,7 +4805,9 @@ export type ProtocolEvent = Event & Node & {
   component: Array<Scalars['ID']['output']>;
   /** Differences the fold could not honour: both ends are still members of this individual through a third instance (a~b, b~c, a≠c). Nothing resolves these automatically — retract one of the claims that disagree */
   conflicts: Array<Difference>;
-  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024) */
+  /** How many standing claims connect this thing to something else: the length of `connections`, past any page */
+  connectionCount: Scalars['Int']['output'];
+  /** Every standing claim connecting this thing to something else — relations, participations and the datums that inform it. **Organization grain** — every claim in the log, not only what this view draws (RFC 0024). `pagination` reads one page of them, in a stable order; `connectionCount` is how many there are */
   connections: Array<Edge>;
   /** The standing claims that this instance and another are two things, with who said so (RFC 0019). Under this view's rule, like `sameAs` */
   differentFrom: Array<Difference>;
@@ -4803,6 +4837,12 @@ export type ProtocolEvent = Event & Node & {
   sameAs: Array<Sameness>;
   /** The event's word — what the claim says happened, as the organization's term key (e.g. 'Mitosis'). The claim's, never a view's label */
   word: Scalars['String']['output'];
+};
+
+
+/** A protocol event in the graph */
+export type ProtocolEventConnectionsArgs = {
+  pagination?: InputMaybe<TraversalPaginationInput>;
 };
 
 
@@ -4979,7 +5019,7 @@ export type Query = {
   changes: Changes;
   /** Get one remark by ID, as the log has it */
   comment: Comment;
-  /** Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included */
+  /** Every remark about one external datum, addressed by (identifier, object), newest first — resolved ones included. `pagination` reads one page */
   commentsFor: Array<Comment>;
   /** Get an INFORMS claim by ID — a bare uuid, its `Link` primary key */
   description: Description;
@@ -5186,6 +5226,7 @@ export type QueryCommentArgs = {
 export type QueryCommentsForArgs = {
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
+  pagination?: InputMaybe<LogPaginationInput>;
 };
 
 
@@ -5778,6 +5819,8 @@ export type RelationCategoryFilter = {
   OR?: InputMaybe<RelationCategoryFilter>;
   /** Only the relation categories whose source and target descriptors admit these two entity categories — what the write would accept, in one query */
   admits?: InputMaybe<RelationEndsInput>;
+  /** Only the relation categories that could connect these two claims: in every view that draws both, the categories admitting the categories that view draws them under. `admits` asked once per view the two share, in one query */
+  admitsInstances?: InputMaybe<RelationInstancesInput>;
   graph?: InputMaybe<GraphFilter>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
@@ -5874,6 +5917,14 @@ export type RelationEndsInput = {
 export type RelationFilter = {
   /** Filter by specific relation IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+/** The two claims a relation would connect: instance ids, whichever views draw them */
+export type RelationInstancesInput = {
+  /** The instance at the source end */
+  source: Scalars['ID']['input'];
+  /** The instance at the target end */
+  target: Scalars['ID']['input'];
 };
 
 /** Ordering options for relation queries */
@@ -6204,10 +6255,14 @@ export type ScatterPlotFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ScatterPlotFilter>;
   OR?: InputMaybe<ScatterPlotFilter>;
+  /** Only the plots drawn from this graph's saved queries */
+  graph?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   name?: InputMaybe<Scalars['String']['input']>;
+  /** Only the plots drawn from this saved table query */
+  query?: InputMaybe<Scalars['ID']['input']>;
   /** Full-text search over label and description */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -6243,7 +6298,9 @@ export type SetTodoStructureStatusInput = {
 /** Input for moving several objects on todo items to one status at once */
 export type SetTodoStructuresStatusInput = {
   /** The objects on items (TodoItemStructures) */
-  ids: Array<Scalars['ID']['input']>;
+  ids?: Array<Scalars['ID']['input']>;
+  /** Items whose every object moves, however many they carry */
+  items?: Array<Scalars['ID']['input']>;
   /** To do, Doing or Done, for all of them */
   status: TodoStatus;
 };
@@ -6761,15 +6818,17 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Each act of claiming in the caller's organization, as its transaction commits. Never an act that rolled back, never another tenant's */
   assertionRecorded: Assertion;
-  /** Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card */
+  /** Each change to the organization's todo lists and items as its transaction commits; `list` or `item` narrow it to one board or one card, `identifier` and `object` (given together) to the items one object is on, including the change that takes it off */
   todoChanged: TodoChange;
 };
 
 
 /** The log, and todo lists, as they are written */
 export type SubscriptionTodoChangedArgs = {
+  identifier?: InputMaybe<Scalars['String']['input']>;
   item?: InputMaybe<Scalars['ID']['input']>;
   list?: InputMaybe<Scalars['ID']['input']>;
+  object?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Input for superseding a metric value */
@@ -7640,26 +7699,6 @@ type ListNode_ProtocolEvent_Fragment = { __typename?: 'ProtocolEvent', id: strin
 
 export type ListNodeFragment = ListNode_Entity_Fragment | ListNode_NaturalEvent_Fragment | ListNode_ProtocolEvent_Fragment;
 
-type Node_Entity_Fragment = (
-  { __typename?: 'Entity' }
-  & BaseNode_Entity_Fragment
-  & EntityFragment
-);
-
-type Node_NaturalEvent_Fragment = (
-  { __typename?: 'NaturalEvent' }
-  & BaseNode_NaturalEvent_Fragment
-  & NaturalEventFragment
-);
-
-type Node_ProtocolEvent_Fragment = (
-  { __typename?: 'ProtocolEvent' }
-  & BaseNode_ProtocolEvent_Fragment
-  & ProtocolEventFragment
-);
-
-export type NodeFragment = Node_Entity_Fragment | Node_NaturalEvent_Fragment | Node_ProtocolEvent_Fragment;
-
 export type AssertionFragment = { __typename?: 'Assertion', id: string, subject: string, appId?: string | null, actionId?: string | null, actionName?: string | null, assertedAt: any, recordedAt: any, seq: number };
 
 export type NodeDrawingFragment = { __typename?: 'NodeDrawing', graph: { __typename?: 'Graph', id: string, name: string }, category: { __typename?: 'EntityCategory', id: string, label: string } | { __typename?: 'MeasurementCategory', id: string, label: string } | { __typename?: 'NaturalEventCategory', id: string, label: string } | { __typename?: 'ProtocolEventCategory', id: string, label: string } | { __typename?: 'RelationCategory', id: string, label: string } | { __typename?: 'StructureCategory', id: string, label: string } | { __typename?: 'StructureRelationCategory', id: string, label: string }, node: (
@@ -7722,10 +7761,10 @@ export type DetailInstanceFragment = (
 );
 
 export type KnowledgeInstanceFragment = (
-  { __typename?: 'Instance', component: Array<string>, sameAs: Array<(
-    { __typename?: 'Link' }
-    & LinkFragment
-  )>, drawnIn: Array<(
+  { __typename?: 'Instance', component: Array<string>, members: Array<{ __typename?: 'Instance', id: string, evidence: Array<(
+      { __typename?: 'Structure' }
+      & ListStructureFragment
+    )> }>, drawnIn: Array<(
     { __typename?: 'NodeDrawing' }
     & NodeDrawingFragment
   )> }
@@ -7934,11 +7973,6 @@ export type DescendantFragment = Descendant_LeafDescendant_Fragment | Descendant
 
 export type CommentAssertionFragment = { __typename?: 'Assertion', id: string, subject: string, assertedAt: any };
 
-export type CommentStandingFragment = { __typename?: 'Standing', id: string, stands: boolean, at: any, assertion: (
-    { __typename?: 'Assertion' }
-    & CommentAssertionFragment
-  ) };
-
 export type ReplyCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, resolved: boolean, assertion: (
     { __typename?: 'Assertion' }
     & CommentAssertionFragment
@@ -7965,9 +7999,6 @@ export type ListCommentFragment = { __typename?: 'Comment', id: string, createdA
   ) | (
     { __typename?: 'ParagraphDescendant' }
     & Descendant_ParagraphDescendant_Fragment
-  )>, standings: Array<(
-    { __typename?: 'Standing' }
-    & CommentStandingFragment
   )>, replies: Array<(
     { __typename?: 'Comment' }
     & ReplyCommentFragment
@@ -7976,11 +8007,6 @@ export type ListCommentFragment = { __typename?: 'Comment', id: string, createdA
 export type MentionCommentFragment = (
   { __typename?: 'Comment', text: string, mentions: Array<string>, structure: { __typename?: 'Structure', id: string, identifier: any, object: string } }
   & ListCommentFragment
-);
-
-export type DetailCommentFragment = (
-  { __typename?: 'Comment' }
-  & MentionCommentFragment
 );
 
 export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
@@ -8086,7 +8112,7 @@ export type EdgeFragment = Edge_Classification_Fragment | Edge_Derivation_Fragme
 export type ListEntityFragment = { __typename?: 'Entity', id: string, label: string, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string }> };
 
 export type EntityFragment = (
-  { __typename?: 'Entity', properties: any, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string, ageName: string, propertyDefinitions: Array<(
+  { __typename?: 'Entity', properties: any, connectionCount: number, categories: Array<{ __typename?: 'EntityCategory', id: string, label: string, ageName: string, propertyDefinitions: Array<(
       { __typename?: 'PropertyDefinition' }
       & PropertyDefinitionFragment
     )> }>, richProperties: Array<{ __typename?: 'RichProperty', key?: string | null, value?: any | null }>, connections: Array<(
@@ -8402,10 +8428,7 @@ export type EntityCategoryFragment = (
   { __typename?: 'EntityCategory', ageName: string, label: string, description?: string | null, pinned: boolean, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
-  ) | null, latest: Array<(
-    { __typename?: 'Entity' }
-    & EntityFragment
-  )>, propertyDefinitions: Array<(
+  ) | null, propertyDefinitions: Array<(
     { __typename?: 'PropertyDefinition' }
     & PropertyDefinitionFragment
   )> }
@@ -8617,9 +8640,6 @@ export type ListProtocolEventCategoryFragment = (
   )>, outputs: Array<(
     { __typename?: 'EventRole' }
     & EventRoleFragment
-  )>, propertyDefinitions: Array<(
-    { __typename?: 'PropertyDefinition' }
-    & PropertyDefinitionFragment
   )> }
   & BaseListCategory_ProtocolEventCategory_Fragment
   & BaseNodeCategory_ProtocolEventCategory_Fragment
@@ -8650,10 +8670,7 @@ export type ListRelationCategoryFragment = (
   ), targetDescriptor: (
     { __typename?: 'EntityDescriptor' }
     & EntityDescriptorFragment
-  ), propertyDefinitions: Array<(
-    { __typename?: 'PropertyDefinition' }
-    & PropertyDefinitionFragment
-  )> }
+  ) }
   & BaseListCategory_RelationCategory_Fragment
   & BaseListEdgeCategory_RelationCategory_Fragment
 );
@@ -8702,10 +8719,7 @@ export type ListStructureRelationCategoryFragment = (
   ), targetDescriptor: (
     { __typename?: 'StructureDescriptor' }
     & StructureDescriptorFragment
-  ), propertyDefinitions: Array<(
-    { __typename?: 'PropertyDefinition' }
-    & PropertyDefinitionFragment
-  )> }
+  ) }
   & BaseListCategory_StructureRelationCategory_Fragment
   & BaseListEdgeCategory_StructureRelationCategory_Fragment
 );
@@ -8721,10 +8735,7 @@ export type StructureFragment = (
   { __typename?: 'Structure', kind?: (
     { __typename?: 'StructureKind' }
     & StructureKindFragment
-  ) | null, metrics: Array<(
-    { __typename?: 'Metric' }
-    & ListMetricFragment
-  )> }
+  ) | null }
   & ListStructureFragment
 );
 
@@ -8844,6 +8855,11 @@ export type TodoTrackRowFragment = (
 );
 
 export type TodoSummaryFragment = { __typename?: 'TodoSummary', todo: number, doing: number, done: number, total: number, overdue: number, objects: (
+    { __typename?: 'TodoProgress' }
+    & TodoProgressFragment
+  ) };
+
+export type TodoItemProgressFragment = { __typename?: 'TodoItem', id: string, status: TodoStatus, list: { __typename?: 'TodoList', id: string }, progress: (
     { __typename?: 'TodoProgress' }
     & TodoProgressFragment
   ) };
@@ -9820,7 +9836,8 @@ export type SetTodoStructureStatusMutation = { __typename?: 'Mutation', setTodoS
     )> } };
 
 export type SetTodoStructuresStatusMutationVariables = Exact<{
-  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  items?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
   status: TodoStatus;
 }>;
 
@@ -9908,7 +9925,6 @@ export type ListApplicableMeasurementCategoriesQuery = { __typename?: 'Query', m
 
 export type ListCandidateRelationCategoriesQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
-  graph: Scalars['ID']['input'];
   source: Scalars['ID']['input'];
   target: Scalars['ID']['input'];
 }>;
@@ -9934,6 +9950,7 @@ export type ListCandidateStructureRelationCategoriesQuery = { __typename?: 'Quer
 export type EntityCategoriesMatchingDescriptorQueryVariables = Exact<{
   ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
   descriptor?: InputMaybe<EntityDescriptorInput>;
+  graph?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -9941,14 +9958,6 @@ export type EntityCategoriesMatchingDescriptorQuery = { __typename?: 'Query', en
     { __typename?: 'EntityCategory', graph: { __typename?: 'Graph', id: string, name: string } }
     & ListEntityCategoryFragment
   )> };
-
-export type StructureKindsMatchingDescriptorQueryVariables = Exact<{
-  identifiers?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  descriptor?: InputMaybe<StructureDescriptorInput>;
-}>;
-
-
-export type StructureKindsMatchingDescriptorQuery = { __typename?: 'Query', structureKinds: Array<{ __typename?: 'StructureKind', id: string, identifier: string }> };
 
 export type GetInstanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10000,19 +10009,10 @@ export type GetStandingsQuery = { __typename?: 'Query', standings: Array<(
     & StandingFragment
   )> };
 
-export type SameAsEvidenceQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type SameAsEvidenceQuery = { __typename?: 'Query', instance: { __typename?: 'Instance', id: string, members: Array<{ __typename?: 'Instance', id: string, evidence: Array<(
-        { __typename?: 'Structure' }
-        & ListStructureFragment
-      )> }> } };
-
 export type CommentsForQueryVariables = Exact<{
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -10031,16 +10031,6 @@ export type MyMentionsQuery = { __typename?: 'Query', myMentionCount: number, my
     & MentionCommentFragment
   )> };
 
-export type DetailCommentQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DetailCommentQuery = { __typename?: 'Query', comment: (
-    { __typename?: 'Comment' }
-    & DetailCommentFragment
-  ) };
-
 export type GetEntityQueryVariables = Exact<{
   id: Scalars['ID']['input'];
   graph: Scalars['ID']['input'];
@@ -10052,25 +10042,44 @@ export type GetEntityQuery = { __typename?: 'Query', entity: (
     & EntityFragment
   ) };
 
-export type GetListEntityQueryVariables = Exact<{
+export type EntityConnectionsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
   graph: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type GetListEntityQuery = { __typename?: 'Query', entity: (
-    { __typename?: 'Entity' }
-    & ListEntityFragment
-  ) };
-
-export type SearchEntitiesQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchEntitiesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Entity', value: string, label: string }> };
+export type EntityConnectionsQuery = { __typename?: 'Query', entity: { __typename?: 'Entity', id: string, connectionCount: number, connections: Array<(
+      { __typename?: 'Classification' }
+      & Edge_Classification_Fragment
+    ) | (
+      { __typename?: 'Derivation' }
+      & Edge_Derivation_Fragment
+    ) | (
+      { __typename?: 'Description' }
+      & Edge_Description_Fragment
+    ) | (
+      { __typename?: 'Difference' }
+      & Edge_Difference_Fragment
+    ) | (
+      { __typename?: 'InputParticipation' }
+      & Edge_InputParticipation_Fragment
+    ) | (
+      { __typename?: 'Measurement' }
+      & Edge_Measurement_Fragment
+    ) | (
+      { __typename?: 'OutputParticipation' }
+      & Edge_OutputParticipation_Fragment
+    ) | (
+      { __typename?: 'Relation' }
+      & Edge_Relation_Fragment
+    ) | (
+      { __typename?: 'Sameness' }
+      & Edge_Sameness_Fragment
+    ) | (
+      { __typename?: 'StructureRelation' }
+      & Edge_StructureRelation_Fragment
+    )> } };
 
 export type ListEntitiesQueryVariables = Exact<{
   entityCategoryId: Scalars['ID']['input'];
@@ -10107,19 +10116,7 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', entityCategories: Array<(
-    { __typename?: 'EntityCategory' }
-    & ListEntityCategoryFragment
-  )>, relationCategories: Array<(
-    { __typename?: 'RelationCategory' }
-    & ListRelationCategoryFragment
-  )>, measurementCategories: Array<(
-    { __typename?: 'MeasurementCategory' }
-    & ListMeasurementCategoryFragment
-  )>, structureKinds: Array<(
-    { __typename?: 'StructureKind' }
-    & ListStructureKindFragment
-  )> };
+export type GlobalSearchQuery = { __typename?: 'Query', entityCategories: Array<{ __typename?: 'EntityCategory', id: string, label: string, description?: string | null }>, relationCategories: Array<{ __typename?: 'RelationCategory', id: string, label: string, description?: string | null }>, measurementCategories: Array<{ __typename?: 'MeasurementCategory', id: string, label: string, description?: string | null }>, structureKinds: Array<{ __typename?: 'StructureKind', id: string, identifier: string, label?: string | null, description?: string | null }> };
 
 export type GetGraphQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10151,6 +10148,13 @@ export type ListGraphsQuery = { __typename?: 'Query', graphs: Array<(
     & ListGraphFragment
   )> };
 
+export type GetGraphSummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetGraphSummaryQuery = { __typename?: 'Query', graph: { __typename?: 'Graph', id: string, name: string, description?: string | null }, entityCategoryStats: { __typename?: 'EntityCategoryStats', count: number } };
+
 export type GetGraphTableQueryQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -10160,25 +10164,6 @@ export type GetGraphTableQueryQuery = { __typename?: 'Query', graphTableQuery: (
     { __typename?: 'GraphTableQuery' }
     & GraphQuery_GraphTableQuery_Fragment
   ) };
-
-export type SearchGraphTableQueriesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchGraphTableQueriesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'GraphTableQuery', value: string, label: string }> };
-
-export type ListGraphTableQueriesQueryVariables = Exact<{
-  filters?: InputMaybe<GraphTableQueryFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListGraphTableQueriesQuery = { __typename?: 'Query', graphTableQueries: Array<(
-    { __typename?: 'GraphTableQuery' }
-    & ListGraphTableQueryFragment
-  )> };
 
 export type RenderGraphTableQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10203,14 +10188,6 @@ export type GetScatterPlotQuery = { __typename?: 'Query', scatterPlot: (
     & ScatterPlotFragment
   ) };
 
-export type SearchScatterPlotsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchScatterPlotsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'ScatterPlot', value: string, label: string }> };
-
 export type ListScatterPlotsQueryVariables = Exact<{
   filters?: InputMaybe<ScatterPlotFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10232,14 +10209,6 @@ export type GetMeasurementQuery = { __typename?: 'Query', measurement: (
     & MeasurementFragment
   ) };
 
-export type SearchMeasurementsQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchMeasurementsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Measurement', value: string, label: string }> };
-
 export type GetMetricQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -10250,36 +10219,6 @@ export type GetMetricQuery = { __typename?: 'Query', metric: (
     & MetricFragment
   ) };
 
-export type ListMetricsQueryVariables = Exact<{
-  kind: Scalars['ID']['input'];
-}>;
-
-
-export type ListMetricsQuery = { __typename?: 'Query', metrics: Array<(
-    { __typename?: 'Metric' }
-    & ListMetricFragment
-  )> };
-
-export type GetNaturalEventQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-  graph: Scalars['ID']['input'];
-}>;
-
-
-export type GetNaturalEventQuery = { __typename?: 'Query', naturalEvent: (
-    { __typename?: 'NaturalEvent' }
-    & NaturalEventFragment
-  ) };
-
-export type SearchNaturalEventsQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchNaturalEventsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'NaturalEvent', value: string, label: string }> };
-
 export type GetNodeQueryVariables = Exact<{
   id: Scalars['ID']['input'];
   graph: Scalars['ID']['input'];
@@ -10287,42 +10226,15 @@ export type GetNodeQueryVariables = Exact<{
 
 
 export type GetNodeQuery = { __typename?: 'Query', node: (
-    { __typename?: 'Entity' }
-    & Node_Entity_Fragment
-  ) | (
-    { __typename?: 'NaturalEvent' }
-    & Node_NaturalEvent_Fragment
-  ) | (
-    { __typename?: 'ProtocolEvent' }
-    & Node_ProtocolEvent_Fragment
-  ) };
-
-export type SearchNodesQueryVariables = Exact<{
-  graph: Scalars['ID']['input'];
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchNodesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Entity', value: string, label: string } | { __typename?: 'NaturalEvent', value: string, label: string } | { __typename?: 'ProtocolEvent', value: string, label: string }> };
-
-export type ListNodesQueryVariables = Exact<{
-  graph: Scalars['ID']['input'];
-  filters?: InputMaybe<NodeFilters>;
-  pagination?: InputMaybe<NodePaginationInput>;
-}>;
-
-
-export type ListNodesQuery = { __typename?: 'Query', nodes: Array<(
-    { __typename?: 'Entity' }
+    { __typename: 'Entity' }
     & ListNode_Entity_Fragment
   ) | (
-    { __typename?: 'NaturalEvent' }
+    { __typename: 'NaturalEvent' }
     & ListNode_NaturalEvent_Fragment
   ) | (
-    { __typename?: 'ProtocolEvent' }
+    { __typename: 'ProtocolEvent' }
     & ListNode_ProtocolEvent_Fragment
-  )> };
+  ) };
 
 export type ProfileTodoListsQueryVariables = Exact<{
   assignee: Scalars['ID']['input'];
@@ -10392,15 +10304,6 @@ export type GetProtocolEventQuery = { __typename?: 'Query', protocolEvent: (
     & ProtocolEventFragment
   ) };
 
-export type SearchProtocolEventsQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchProtocolEventsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'ProtocolEvent', value: string, label: string }> };
-
 export type GetRelationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -10410,14 +10313,6 @@ export type GetRelationQuery = { __typename?: 'Query', relation: (
     { __typename?: 'Relation' }
     & RelationFragment
   ) };
-
-export type SearchRelationsQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchRelationsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Relation', value: string, label: string }> };
 
 export type GetEntityCategoryQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10466,7 +10361,19 @@ export type EntityCategoryStatsQueryVariables = Exact<{
 
 export type EntityCategoryStatsQuery = { __typename?: 'Query', entityCategoryStats: { __typename?: 'EntityCategoryStats', count: number } };
 
-export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetEntityCategorySummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetEntityCategorySummaryQuery = { __typename?: 'Query', entityCategory: { __typename?: 'EntityCategory', id: string, label: string, description?: string | null, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null } };
+
+export type HomePageQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
 
 
 export type HomePageQuery = { __typename?: 'Query', graphs: Array<(
@@ -10489,14 +10396,6 @@ export type GetMeasurmentCategoryQuery = { __typename?: 'Query', measurementCate
     & MeasurementCategoryFragment
   ) };
 
-export type SearchMeasurmentCategoryQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchMeasurmentCategoryQuery = { __typename?: 'Query', options: Array<{ __typename?: 'MeasurementCategory', value: string, label: string }> };
-
 export type ListMeasurmentCategoryQueryVariables = Exact<{
   filters?: InputMaybe<MeasurementCategoryFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10517,14 +10416,6 @@ export type GetMetricKindQuery = { __typename?: 'Query', metricKind: (
     { __typename?: 'MetricKind' }
     & MetricKindFragment
   ) };
-
-export type SearchMetricKindsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchMetricKindsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'MetricKind', value: string, label: string }> };
 
 export type ListMetricKindsQueryVariables = Exact<{
   filters?: InputMaybe<MetricKindFilter>;
@@ -10555,14 +10446,6 @@ export type GetNaturalEventCategoryQuery = { __typename?: 'Query', naturalEventC
     & NaturalEventCategoryFragment
   ) };
 
-export type SearchNaturalEventCategoriesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchNaturalEventCategoriesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'NaturalEventCategory', value: string, label: string }> };
-
 export type ListNaturalEventCategoriesQueryVariables = Exact<{
   filters?: InputMaybe<NaturalEventCategoryFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10571,8 +10454,21 @@ export type ListNaturalEventCategoriesQueryVariables = Exact<{
 
 export type ListNaturalEventCategoriesQuery = { __typename?: 'Query', naturalEventCategories: Array<(
     { __typename?: 'NaturalEventCategory' }
-    & NaturalEventCategoryFragment
+    & ListNaturalEventCategoryFragment
   )> };
+
+export type GetNaturalEventCategorySummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetNaturalEventCategorySummaryQuery = { __typename?: 'Query', naturalEventCategory: { __typename?: 'NaturalEventCategory', id: string, label: string, description?: string | null, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null, image?: (
+      { __typename?: 'MediaStore' }
+      & MediaStoreFragment
+    ) | null, inputs: Array<{ __typename?: 'EventRole', key: string }>, outputs: Array<{ __typename?: 'EventRole', key: string }> } };
 
 export type GetProtocolEventCategoryQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10584,14 +10480,6 @@ export type GetProtocolEventCategoryQuery = { __typename?: 'Query', protocolEven
     & ProtocolEventCategoryFragment
   ) };
 
-export type SearchProtocolEventCategoriesQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchProtocolEventCategoriesQuery = { __typename?: 'Query', options: Array<{ __typename?: 'ProtocolEventCategory', value: string, label: string }> };
-
 export type ListProtocolEventCategoriesQueryVariables = Exact<{
   filters?: InputMaybe<ProtocolEventCategoryFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10600,8 +10488,21 @@ export type ListProtocolEventCategoriesQueryVariables = Exact<{
 
 export type ListProtocolEventCategoriesQuery = { __typename?: 'Query', protocolEventCategories: Array<(
     { __typename?: 'ProtocolEventCategory' }
-    & ProtocolEventCategoryFragment
+    & ListProtocolEventCategoryFragment
   )> };
+
+export type GetProtocolEventCategorySummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetProtocolEventCategorySummaryQuery = { __typename?: 'Query', protocolEventCategory: { __typename?: 'ProtocolEventCategory', id: string, label: string, description?: string | null, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null, image?: (
+      { __typename?: 'MediaStore' }
+      & MediaStoreFragment
+    ) | null, inputs: Array<{ __typename?: 'EventRole', key: string }>, outputs: Array<{ __typename?: 'EventRole', key: string }> } };
 
 export type GetRelationCategoryQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10613,14 +10514,6 @@ export type GetRelationCategoryQuery = { __typename?: 'Query', relationCategory:
     & RelationCategoryFragment
   ) };
 
-export type SearchRelationCategoryQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchRelationCategoryQuery = { __typename?: 'Query', options: Array<{ __typename?: 'RelationCategory', value: string, label: string }> };
-
 export type ListRelationCategoryQueryVariables = Exact<{
   filters?: InputMaybe<RelationCategoryFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10631,6 +10524,16 @@ export type ListRelationCategoryQuery = { __typename?: 'Query', relationCategori
     { __typename?: 'RelationCategory' }
     & ListRelationCategoryFragment
   )> };
+
+export type GetRelationCategorySummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetRelationCategorySummaryQuery = { __typename?: 'Query', relationCategory: { __typename?: 'RelationCategory', id: string, label: string, description?: string | null, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null } };
 
 export type GetStructureKindQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10679,14 +10582,6 @@ export type GetStructureRelationCategoryQuery = { __typename?: 'Query', structur
     & StructureRelationCategoryFragment
   ) };
 
-export type SearchStructureRelationCategoryQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchStructureRelationCategoryQuery = { __typename?: 'Query', options: Array<{ __typename?: 'StructureRelationCategory', value: string, label: string }> };
-
 export type ListStructureRelationCategoryQueryVariables = Exact<{
   filters?: InputMaybe<StructureRelationCategoryFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10698,10 +10593,15 @@ export type ListStructureRelationCategoryQuery = { __typename?: 'Query', structu
     & ListStructureRelationCategoryWithGraphFragment
   )> };
 
-export type StartPaneQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetStructureRelationCategorySummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
 
 
-export type StartPaneQuery = { __typename?: 'Query', entityCategories: Array<{ __typename?: 'EntityCategory', id: string, label: string }>, relationCategories: Array<{ __typename?: 'RelationCategory', id: string, label: string }>, structureKinds: Array<{ __typename?: 'StructureKind', id: string, identifier: string, label?: string | null }>, protocolEventCategories: Array<{ __typename?: 'ProtocolEventCategory', id: string, label: string }>, naturalEventCategories: Array<{ __typename?: 'NaturalEventCategory', id: string, label: string }> };
+export type GetStructureRelationCategorySummaryQuery = { __typename?: 'Query', structureRelationCategory: { __typename?: 'StructureRelationCategory', id: string, label: string, description?: string | null, term?: (
+      { __typename?: 'Term' }
+      & ListTermFragment
+    ) | null } };
 
 export type GetStructureQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -10712,15 +10612,6 @@ export type GetStructureQuery = { __typename?: 'Query', structure: (
     { __typename?: 'Structure' }
     & StructureFragment
   ) };
-
-export type SearchStructuresQueryVariables = Exact<{
-  id?: InputMaybe<Scalars['ID']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchStructuresQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Structure', value: string, label: string }> };
 
 export type KnowledgeForStructureQueryVariables = Exact<{
   identifier: Scalars['StructureIdentifier']['input'];
@@ -10786,14 +10677,6 @@ export type GetStructureRelationQuery = { __typename?: 'Query', structureRelatio
     & DetailStructureRelationFragment
   ) };
 
-export type SearchStructureRelationsQueryVariables = Exact<{
-  category: Scalars['ID']['input'];
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchStructureRelationsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'StructureRelation', value: string, label: string }> };
-
 export type GetTermQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -10836,15 +10719,6 @@ export type FindTermQuery = { __typename?: 'Query', terms: Array<(
     & ListTermFragment
   )> };
 
-export type SearchTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
 export type SearchAssignableTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   kinds?: InputMaybe<Array<TermKind> | TermKind>;
@@ -10865,51 +10739,6 @@ export type SearchEntityTermsQueryVariables = Exact<{
 
 export type SearchEntityTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
 
-export type SearchProtocolEventTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchProtocolEventTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
-export type SearchNaturalEventTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchNaturalEventTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
-export type SearchRelationTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchRelationTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
-export type SearchStructureRelationTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchStructureRelationTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
-export type SearchMeasurementTermsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type SearchMeasurementTermsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Term', value: string, label: string }> };
-
 export type TodoListsQueryVariables = Exact<{
   filters?: InputMaybe<TodoListFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10929,6 +10758,16 @@ export type TodoListQueryVariables = Exact<{
 export type TodoListQuery = { __typename?: 'Query', todoList: (
     { __typename?: 'TodoList' }
     & TodoListFragment
+  ) };
+
+export type TodoItemSummaryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TodoItemSummaryQuery = { __typename?: 'Query', todoItem: (
+    { __typename?: 'TodoItem' }
+    & TodoItemWithListFragment
   ) };
 
 export type TodoItemQueryVariables = Exact<{
@@ -10976,17 +10815,6 @@ export type TodoSummaryQuery = { __typename?: 'Query', todoSummary: (
     & TodoSummaryFragment
   ) };
 
-export type SlimTodoItemsQueryVariables = Exact<{
-  filters?: InputMaybe<TodoItemFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type SlimTodoItemsQuery = { __typename?: 'Query', todoItems: Array<(
-    { __typename?: 'TodoItem' }
-    & SlimTodoItemFragment
-  )> };
-
 export type NextTodoObjectQueryVariables = Exact<{
   item: Scalars['ID']['input'];
 }>;
@@ -11021,6 +10849,8 @@ export type TodoListAssignmentQuery = { __typename?: 'Query', todoList: { __type
 export type TodoChangedSubscriptionVariables = Exact<{
   list?: InputMaybe<Scalars['ID']['input']>;
   item?: InputMaybe<Scalars['ID']['input']>;
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  object?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -11029,61 +10859,6 @@ export type TodoChangedSubscription = { __typename?: 'Subscription', todoChanged
       & TodoItemWithListFragment
     ) | null } };
 
-export const BaseNodeFragmentDoc = gql`
-    fragment BaseNode on Node {
-  id
-  label
-}
-    `;
-export const ClaimConditionFragmentDoc = gql`
-    fragment ClaimCondition on ClaimCondition {
-  field
-  operator
-  value
-}
-    `;
-export const ClaimRuleFragmentDoc = gql`
-    fragment ClaimRule on ClaimRule {
-  when {
-    ...ClaimCondition
-  }
-  unless {
-    when {
-      ...ClaimCondition
-    }
-  }
-}
-    ${ClaimConditionFragmentDoc}`;
-export const DerivationRuleFragmentDoc = gql`
-    fragment DerivationRule on DerivationRule {
-  sourceNode
-  key
-  sourceValueKind
-  aggregation
-  evidence {
-    rules {
-      ...ClaimRule
-    }
-  }
-  subjectPriority
-  toolPriority
-}
-    ${ClaimRuleFragmentDoc}`;
-export const PropertyDefinitionFragmentDoc = gql`
-    fragment PropertyDefinition on PropertyDefinition {
-  key
-  label
-  valueKind
-  unit
-  description
-  derivation
-  index
-  searchable
-  rule {
-    ...DerivationRule
-  }
-}
-    ${DerivationRuleFragmentDoc}`;
 export const BaseEdgeFragmentDoc = gql`
     fragment BaseEdge on Edge {
   id
@@ -11092,115 +10867,6 @@ export const BaseEdgeFragmentDoc = gql`
   targetId
 }
     `;
-export const MeasurementFragmentDoc = gql`
-    fragment Measurement on Measurement {
-  ...BaseEdge
-  category {
-    id
-    label
-  }
-}
-    ${BaseEdgeFragmentDoc}`;
-export const RelationFragmentDoc = gql`
-    fragment Relation on Relation {
-  ...BaseEdge
-  category {
-    id
-    label
-  }
-}
-    ${BaseEdgeFragmentDoc}`;
-export const StructureRelationFragmentDoc = gql`
-    fragment StructureRelation on StructureRelation {
-  ...BaseEdge
-  source {
-    id
-    identifier
-    object
-  }
-  target {
-    id
-    identifier
-    object
-  }
-  category {
-    id
-    label
-  }
-}
-    ${BaseEdgeFragmentDoc}`;
-export const EdgeFragmentDoc = gql`
-    fragment Edge on Edge {
-  ...BaseEdge
-  ...Measurement
-  ...Relation
-  ...StructureRelation
-}
-    ${BaseEdgeFragmentDoc}
-${MeasurementFragmentDoc}
-${RelationFragmentDoc}
-${StructureRelationFragmentDoc}`;
-export const EntityFragmentDoc = gql`
-    fragment Entity on Entity {
-  ...BaseNode
-  categories {
-    id
-    label
-    ageName
-    propertyDefinitions {
-      ...PropertyDefinition
-    }
-  }
-  richProperties {
-    key
-    value
-  }
-  properties
-  connections {
-    ...Edge
-  }
-  drawnIn {
-    graph {
-      id
-      name
-    }
-    category {
-      id
-      label
-    }
-  }
-}
-    ${BaseNodeFragmentDoc}
-${PropertyDefinitionFragmentDoc}
-${EdgeFragmentDoc}`;
-export const NaturalEventFragmentDoc = gql`
-    fragment NaturalEvent on NaturalEvent {
-  ...BaseNode
-  id
-  label
-}
-    ${BaseNodeFragmentDoc}`;
-export const ProtocolEventFragmentDoc = gql`
-    fragment ProtocolEvent on ProtocolEvent {
-  ...BaseNode
-  id
-  categories {
-    id
-    label
-  }
-}
-    ${BaseNodeFragmentDoc}`;
-export const NodeFragmentDoc = gql`
-    fragment Node on Node {
-  ...BaseNode
-  ...Entity
-  ...NaturalEvent
-  ...ProtocolEvent
-}
-    ${BaseNodeFragmentDoc}
-${EntityFragmentDoc}
-${NaturalEventFragmentDoc}
-${ProtocolEventFragmentDoc}`;
 export const EdgeDrawingFragmentDoc = gql`
     fragment EdgeDrawing on EdgeDrawing {
   graph {
@@ -11397,16 +11063,6 @@ export const DescendantFragmentDoc = gql`
     ${LeafFragmentDoc}
 ${MentionFragmentDoc}
 ${ParagraphFragmentDoc}`;
-export const CommentStandingFragmentDoc = gql`
-    fragment CommentStanding on Standing {
-  id
-  stands
-  at
-  assertion {
-    ...CommentAssertion
-  }
-}
-    ${CommentAssertionFragmentDoc}`;
 export const ReplyCommentFragmentDoc = gql`
     fragment ReplyComment on Comment {
   id
@@ -11438,16 +11094,12 @@ export const ListCommentFragmentDoc = gql`
     ...Descendant
   }
   resolved
-  standings {
-    ...CommentStanding
-  }
   replies {
     ...ReplyComment
   }
 }
     ${CommentAssertionFragmentDoc}
 ${DescendantFragmentDoc}
-${CommentStandingFragmentDoc}
 ${ReplyCommentFragmentDoc}`;
 export const MentionCommentFragmentDoc = gql`
     fragment MentionComment on Comment {
@@ -11461,11 +11113,6 @@ export const MentionCommentFragmentDoc = gql`
   }
 }
     ${ListCommentFragmentDoc}`;
-export const DetailCommentFragmentDoc = gql`
-    fragment DetailComment on Comment {
-  ...MentionComment
-}
-    ${MentionCommentFragmentDoc}`;
 export const MediaUploadGrantFragmentDoc = gql`
     fragment MediaUploadGrant on MediaUploadGrant {
   accessKey
@@ -11511,6 +11158,143 @@ export const ListEntityFragmentDoc = gql`
   }
 }
     `;
+export const BaseNodeFragmentDoc = gql`
+    fragment BaseNode on Node {
+  id
+  label
+}
+    `;
+export const ClaimConditionFragmentDoc = gql`
+    fragment ClaimCondition on ClaimCondition {
+  field
+  operator
+  value
+}
+    `;
+export const ClaimRuleFragmentDoc = gql`
+    fragment ClaimRule on ClaimRule {
+  when {
+    ...ClaimCondition
+  }
+  unless {
+    when {
+      ...ClaimCondition
+    }
+  }
+}
+    ${ClaimConditionFragmentDoc}`;
+export const DerivationRuleFragmentDoc = gql`
+    fragment DerivationRule on DerivationRule {
+  sourceNode
+  key
+  sourceValueKind
+  aggregation
+  evidence {
+    rules {
+      ...ClaimRule
+    }
+  }
+  subjectPriority
+  toolPriority
+}
+    ${ClaimRuleFragmentDoc}`;
+export const PropertyDefinitionFragmentDoc = gql`
+    fragment PropertyDefinition on PropertyDefinition {
+  key
+  label
+  valueKind
+  unit
+  description
+  derivation
+  index
+  searchable
+  rule {
+    ...DerivationRule
+  }
+}
+    ${DerivationRuleFragmentDoc}`;
+export const MeasurementFragmentDoc = gql`
+    fragment Measurement on Measurement {
+  ...BaseEdge
+  category {
+    id
+    label
+  }
+}
+    ${BaseEdgeFragmentDoc}`;
+export const RelationFragmentDoc = gql`
+    fragment Relation on Relation {
+  ...BaseEdge
+  category {
+    id
+    label
+  }
+}
+    ${BaseEdgeFragmentDoc}`;
+export const StructureRelationFragmentDoc = gql`
+    fragment StructureRelation on StructureRelation {
+  ...BaseEdge
+  source {
+    id
+    identifier
+    object
+  }
+  target {
+    id
+    identifier
+    object
+  }
+  category {
+    id
+    label
+  }
+}
+    ${BaseEdgeFragmentDoc}`;
+export const EdgeFragmentDoc = gql`
+    fragment Edge on Edge {
+  ...BaseEdge
+  ...Measurement
+  ...Relation
+  ...StructureRelation
+}
+    ${BaseEdgeFragmentDoc}
+${MeasurementFragmentDoc}
+${RelationFragmentDoc}
+${StructureRelationFragmentDoc}`;
+export const EntityFragmentDoc = gql`
+    fragment Entity on Entity {
+  ...BaseNode
+  categories {
+    id
+    label
+    ageName
+    propertyDefinitions {
+      ...PropertyDefinition
+    }
+  }
+  richProperties {
+    key
+    value
+  }
+  properties
+  connections(pagination: {limit: 50}) {
+    ...Edge
+  }
+  connectionCount
+  drawnIn {
+    graph {
+      id
+      name
+    }
+    category {
+      id
+      label
+    }
+  }
+}
+    ${BaseNodeFragmentDoc}
+${PropertyDefinitionFragmentDoc}
+${EdgeFragmentDoc}`;
 export const BaseGraphQueryFragmentDoc = gql`
     fragment BaseGraphQuery on GraphQuery {
   id
@@ -11676,6 +11460,13 @@ export const MetricFragmentDoc = gql`
   }
 }
     ${ListMetricFragmentDoc}`;
+export const NaturalEventFragmentDoc = gql`
+    fragment NaturalEvent on NaturalEvent {
+  ...BaseNode
+  id
+  label
+}
+    ${BaseNodeFragmentDoc}`;
 export const ListNaturalEventFragmentDoc = gql`
     fragment ListNaturalEvent on NaturalEvent {
   id
@@ -11741,6 +11532,16 @@ export const ProjectFragmentDoc = gql`
 }
     ${ListProjectFragmentDoc}
 ${ListTodoListFragmentDoc}`;
+export const ProtocolEventFragmentDoc = gql`
+    fragment ProtocolEvent on ProtocolEvent {
+  ...BaseNode
+  id
+  categories {
+    id
+    label
+  }
+}
+    ${BaseNodeFragmentDoc}`;
 export const ListProtocolEventFragmentDoc = gql`
     fragment ListProtocolEvent on ProtocolEvent {
   id
@@ -11833,9 +11634,6 @@ export const EntityCategoryFragmentDoc = gql`
   image {
     ...MediaStore
   }
-  latest: entities(ordering: [{createdAt: DESC}], pagination: {limit: 3}) {
-    ...Entity
-  }
   pinned
   propertyDefinitions {
     ...PropertyDefinition
@@ -11844,7 +11642,6 @@ export const EntityCategoryFragmentDoc = gql`
     ${BaseCategoryFragmentDoc}
 ${BaseNodeCategoryFragmentDoc}
 ${MediaStoreFragmentDoc}
-${EntityFragmentDoc}
 ${PropertyDefinitionFragmentDoc}`;
 export const EntityDescriptorFragmentDoc = gql`
     fragment EntityDescriptor on EntityDescriptor {
@@ -11949,14 +11746,10 @@ export const ListProtocolEventCategoryFragmentDoc = gql`
   outputs {
     ...EventRole
   }
-  propertyDefinitions {
-    ...PropertyDefinition
-  }
 }
     ${BaseListCategoryFragmentDoc}
 ${BaseNodeCategoryFragmentDoc}
-${EventRoleFragmentDoc}
-${PropertyDefinitionFragmentDoc}`;
+${EventRoleFragmentDoc}`;
 export const ListNaturalEventCategoryFragmentDoc = gql`
     fragment ListNaturalEventCategory on NaturalEventCategory {
   ...BaseListCategory
@@ -11987,15 +11780,11 @@ export const ListRelationCategoryFragmentDoc = gql`
   targetDescriptor {
     ...EntityDescriptor
   }
-  propertyDefinitions {
-    ...PropertyDefinition
-  }
   label
 }
     ${BaseListCategoryFragmentDoc}
 ${BaseListEdgeCategoryFragmentDoc}
-${EntityDescriptorFragmentDoc}
-${PropertyDefinitionFragmentDoc}`;
+${EntityDescriptorFragmentDoc}`;
 export const StructureDescriptorFragmentDoc = gql`
     fragment StructureDescriptor on StructureDescriptor {
   defaultCategoryKey
@@ -12027,15 +11816,11 @@ export const ListStructureRelationCategoryFragmentDoc = gql`
   targetDescriptor {
     ...StructureDescriptor
   }
-  propertyDefinitions {
-    ...PropertyDefinition
-  }
   label
 }
     ${BaseListCategoryFragmentDoc}
 ${BaseListEdgeCategoryFragmentDoc}
-${StructureDescriptorFragmentDoc}
-${PropertyDefinitionFragmentDoc}`;
+${StructureDescriptorFragmentDoc}`;
 export const GraphProjectionFragmentDoc = gql`
     fragment GraphProjection on GraphProjection {
   kind
@@ -12283,13 +12068,9 @@ export const StructureFragmentDoc = gql`
   kind {
     ...StructureKind
   }
-  metrics {
-    ...ListMetric
-  }
 }
     ${ListStructureFragmentDoc}
-${StructureKindFragmentDoc}
-${ListMetricFragmentDoc}`;
+${StructureKindFragmentDoc}`;
 export const ListNodeFragmentDoc = gql`
     fragment ListNode on Node {
   id
@@ -12315,15 +12096,18 @@ export const KnowledgeInstanceFragmentDoc = gql`
     fragment KnowledgeInstance on Instance {
   ...Instance
   component
-  sameAs {
-    ...Link
+  members {
+    id
+    evidence {
+      ...ListStructure
+    }
   }
   drawnIn {
     ...NodeDrawing
   }
 }
     ${InstanceFragmentDoc}
-${LinkFragmentDoc}
+${ListStructureFragmentDoc}
 ${NodeDrawingFragmentDoc}`;
 export const KnowledgeStructureFragmentDoc = gql`
     fragment KnowledgeStructure on Structure {
@@ -12522,6 +12306,18 @@ export const TodoSummaryFragmentDoc = gql`
   total
   overdue
   objects {
+    ...TodoProgress
+  }
+}
+    ${TodoProgressFragmentDoc}`;
+export const TodoItemProgressFragmentDoc = gql`
+    fragment TodoItemProgress on TodoItem {
+  id
+  status
+  list {
+    id
+  }
+  progress {
     ...TodoProgress
   }
 }
@@ -15723,8 +15519,8 @@ export type SetTodoStructureStatusMutationHookResult = ReturnType<typeof useSetT
 export type SetTodoStructureStatusMutationResult = Apollo.MutationResult<SetTodoStructureStatusMutation>;
 export type SetTodoStructureStatusMutationOptions = Apollo.BaseMutationOptions<SetTodoStructureStatusMutation, SetTodoStructureStatusMutationVariables>;
 export const SetTodoStructuresStatusDocument = gql`
-    mutation SetTodoStructuresStatus($ids: [ID!]!, $status: TodoStatus!) {
-  setTodoStructuresStatus(input: {ids: $ids, status: $status}) {
+    mutation SetTodoStructuresStatus($ids: [ID!] = [], $items: [ID!] = [], $status: TodoStatus!) {
+  setTodoStructuresStatus(input: {ids: $ids, items: $items, status: $status}) {
     ...ListTodoItem
   }
 }
@@ -15745,6 +15541,7 @@ export type SetTodoStructuresStatusMutationFn = Apollo.MutationFunction<SetTodoS
  * const [setTodoStructuresStatusMutation, { data, loading, error }] = useSetTodoStructuresStatusMutation({
  *   variables: {
  *      ids: // value for 'ids'
+ *      items: // value for 'items'
  *      status: // value for 'status'
  *   },
  * });
@@ -15998,9 +15795,9 @@ export type ListApplicableMeasurementCategoriesQueryHookResult = ReturnType<type
 export type ListApplicableMeasurementCategoriesLazyQueryHookResult = ReturnType<typeof useListApplicableMeasurementCategoriesLazyQuery>;
 export type ListApplicableMeasurementCategoriesQueryResult = Apollo.QueryResult<ListApplicableMeasurementCategoriesQuery, ListApplicableMeasurementCategoriesQueryVariables>;
 export const ListCandidateRelationCategoriesDocument = gql`
-    query ListCandidateRelationCategories($search: String, $graph: ID!, $source: ID!, $target: ID!) {
+    query ListCandidateRelationCategories($search: String, $source: ID!, $target: ID!) {
   relationCategories(
-    filters: {search: $search, graph: {id: $graph}, admits: {source: $source, target: $target}}
+    filters: {search: $search, admitsInstances: {source: $source, target: $target}}
   ) {
     ...ListRelationCategory
     graph {
@@ -16024,7 +15821,6 @@ export const ListCandidateRelationCategoriesDocument = gql`
  * const { data, loading, error } = useListCandidateRelationCategoriesQuery({
  *   variables: {
  *      search: // value for 'search'
- *      graph: // value for 'graph'
  *      source: // value for 'source'
  *      target: // value for 'target'
  *   },
@@ -16081,8 +15877,10 @@ export type ListCandidateStructureRelationCategoriesQueryHookResult = ReturnType
 export type ListCandidateStructureRelationCategoriesLazyQueryHookResult = ReturnType<typeof useListCandidateStructureRelationCategoriesLazyQuery>;
 export type ListCandidateStructureRelationCategoriesQueryResult = Apollo.QueryResult<ListCandidateStructureRelationCategoriesQuery, ListCandidateStructureRelationCategoriesQueryVariables>;
 export const EntityCategoriesMatchingDescriptorDocument = gql`
-    query EntityCategoriesMatchingDescriptor($ids: [ID!], $descriptor: EntityDescriptorInput) {
-  entityCategories(filters: {ids: $ids, matchesDescriptor: $descriptor}) {
+    query EntityCategoriesMatchingDescriptor($ids: [ID!], $descriptor: EntityDescriptorInput, $graph: ID) {
+  entityCategories(
+    filters: {ids: $ids, matchesDescriptor: $descriptor, graph: {id: $graph}}
+  ) {
     ...ListEntityCategory
     graph {
       id
@@ -16106,6 +15904,7 @@ export const EntityCategoriesMatchingDescriptorDocument = gql`
  *   variables: {
  *      ids: // value for 'ids'
  *      descriptor: // value for 'descriptor'
+ *      graph: // value for 'graph'
  *   },
  * });
  */
@@ -16120,45 +15919,6 @@ export function useEntityCategoriesMatchingDescriptorLazyQuery(baseOptions?: Apo
 export type EntityCategoriesMatchingDescriptorQueryHookResult = ReturnType<typeof useEntityCategoriesMatchingDescriptorQuery>;
 export type EntityCategoriesMatchingDescriptorLazyQueryHookResult = ReturnType<typeof useEntityCategoriesMatchingDescriptorLazyQuery>;
 export type EntityCategoriesMatchingDescriptorQueryResult = Apollo.QueryResult<EntityCategoriesMatchingDescriptorQuery, EntityCategoriesMatchingDescriptorQueryVariables>;
-export const StructureKindsMatchingDescriptorDocument = gql`
-    query StructureKindsMatchingDescriptor($identifiers: [String!], $descriptor: StructureDescriptorInput) {
-  structureKinds(
-    filters: {identifiers: $identifiers, matchesDescriptor: $descriptor}
-  ) {
-    id
-    identifier
-  }
-}
-    `;
-
-/**
- * __useStructureKindsMatchingDescriptorQuery__
- *
- * To run a query within a React component, call `useStructureKindsMatchingDescriptorQuery` and pass it any options that fit your needs.
- * When your component renders, `useStructureKindsMatchingDescriptorQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useStructureKindsMatchingDescriptorQuery({
- *   variables: {
- *      identifiers: // value for 'identifiers'
- *      descriptor: // value for 'descriptor'
- *   },
- * });
- */
-export function useStructureKindsMatchingDescriptorQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>(StructureKindsMatchingDescriptorDocument, options);
-      }
-export function useStructureKindsMatchingDescriptorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>(StructureKindsMatchingDescriptorDocument, options);
-        }
-export type StructureKindsMatchingDescriptorQueryHookResult = ReturnType<typeof useStructureKindsMatchingDescriptorQuery>;
-export type StructureKindsMatchingDescriptorLazyQueryHookResult = ReturnType<typeof useStructureKindsMatchingDescriptorLazyQuery>;
-export type StructureKindsMatchingDescriptorQueryResult = Apollo.QueryResult<StructureKindsMatchingDescriptorQuery, StructureKindsMatchingDescriptorQueryVariables>;
 export const GetInstanceDocument = gql`
     query GetInstance($id: ID!) {
   instance(id: $id) {
@@ -16334,50 +16094,13 @@ export function useGetStandingsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GetStandingsQueryHookResult = ReturnType<typeof useGetStandingsQuery>;
 export type GetStandingsLazyQueryHookResult = ReturnType<typeof useGetStandingsLazyQuery>;
 export type GetStandingsQueryResult = Apollo.QueryResult<GetStandingsQuery, GetStandingsQueryVariables>;
-export const SameAsEvidenceDocument = gql`
-    query SameAsEvidence($id: ID!) {
-  instance(id: $id) {
-    id
-    members {
-      id
-      evidence {
-        ...ListStructure
-      }
-    }
-  }
-}
-    ${ListStructureFragmentDoc}`;
-
-/**
- * __useSameAsEvidenceQuery__
- *
- * To run a query within a React component, call `useSameAsEvidenceQuery` and pass it any options that fit your needs.
- * When your component renders, `useSameAsEvidenceQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSameAsEvidenceQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useSameAsEvidenceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>(SameAsEvidenceDocument, options);
-      }
-export function useSameAsEvidenceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>(SameAsEvidenceDocument, options);
-        }
-export type SameAsEvidenceQueryHookResult = ReturnType<typeof useSameAsEvidenceQuery>;
-export type SameAsEvidenceLazyQueryHookResult = ReturnType<typeof useSameAsEvidenceLazyQuery>;
-export type SameAsEvidenceQueryResult = Apollo.QueryResult<SameAsEvidenceQuery, SameAsEvidenceQueryVariables>;
 export const CommentsForDocument = gql`
-    query CommentsFor($identifier: String!, $object: ID!) {
-  commentsFor(identifier: $identifier, object: $object) {
+    query CommentsFor($identifier: String!, $object: ID!, $limit: Int = 30) {
+  commentsFor(
+    identifier: $identifier
+    object: $object
+    pagination: {limit: $limit}
+  ) {
     ...ListComment
   }
 }
@@ -16397,6 +16120,7 @@ export const CommentsForDocument = gql`
  *   variables: {
  *      identifier: // value for 'identifier'
  *      object: // value for 'object'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
@@ -16447,41 +16171,6 @@ export function useMyMentionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type MyMentionsQueryHookResult = ReturnType<typeof useMyMentionsQuery>;
 export type MyMentionsLazyQueryHookResult = ReturnType<typeof useMyMentionsLazyQuery>;
 export type MyMentionsQueryResult = Apollo.QueryResult<MyMentionsQuery, MyMentionsQueryVariables>;
-export const DetailCommentDocument = gql`
-    query DetailComment($id: ID!) {
-  comment(id: $id) {
-    ...DetailComment
-  }
-}
-    ${DetailCommentFragmentDoc}`;
-
-/**
- * __useDetailCommentQuery__
- *
- * To run a query within a React component, call `useDetailCommentQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailCommentQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailCommentQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailCommentQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
-      }
-export function useDetailCommentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
-        }
-export type DetailCommentQueryHookResult = ReturnType<typeof useDetailCommentQuery>;
-export type DetailCommentLazyQueryHookResult = ReturnType<typeof useDetailCommentLazyQuery>;
-export type DetailCommentQueryResult = Apollo.QueryResult<DetailCommentQuery, DetailCommentQueryVariables>;
 export const GetEntityDocument = gql`
     query GetEntity($id: ID!, $graph: ID!) {
   entity(id: $id, graph: $graph) {
@@ -16518,84 +16207,47 @@ export function useGetEntityLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetEntityQueryHookResult = ReturnType<typeof useGetEntityQuery>;
 export type GetEntityLazyQueryHookResult = ReturnType<typeof useGetEntityLazyQuery>;
 export type GetEntityQueryResult = Apollo.QueryResult<GetEntityQuery, GetEntityQueryVariables>;
-export const GetListEntityDocument = gql`
-    query GetListEntity($id: ID!, $graph: ID!) {
+export const EntityConnectionsDocument = gql`
+    query EntityConnections($id: ID!, $graph: ID!, $limit: Int = 20) {
   entity(id: $id, graph: $graph) {
-    ...ListEntity
+    id
+    connections(pagination: {limit: $limit}) {
+      ...Edge
+    }
+    connectionCount
   }
 }
-    ${ListEntityFragmentDoc}`;
+    ${EdgeFragmentDoc}`;
 
 /**
- * __useGetListEntityQuery__
+ * __useEntityConnectionsQuery__
  *
- * To run a query within a React component, call `useGetListEntityQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetListEntityQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useEntityConnectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useEntityConnectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetListEntityQuery({
+ * const { data, loading, error } = useEntityConnectionsQuery({
  *   variables: {
  *      id: // value for 'id'
  *      graph: // value for 'graph'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
-export function useGetListEntityQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetListEntityQuery, GetListEntityQueryVariables>) {
+export function useEntityConnectionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<EntityConnectionsQuery, EntityConnectionsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetListEntityQuery, GetListEntityQueryVariables>(GetListEntityDocument, options);
+        return ApolloReactHooks.useQuery<EntityConnectionsQuery, EntityConnectionsQueryVariables>(EntityConnectionsDocument, options);
       }
-export function useGetListEntityLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetListEntityQuery, GetListEntityQueryVariables>) {
+export function useEntityConnectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<EntityConnectionsQuery, EntityConnectionsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetListEntityQuery, GetListEntityQueryVariables>(GetListEntityDocument, options);
+          return ApolloReactHooks.useLazyQuery<EntityConnectionsQuery, EntityConnectionsQueryVariables>(EntityConnectionsDocument, options);
         }
-export type GetListEntityQueryHookResult = ReturnType<typeof useGetListEntityQuery>;
-export type GetListEntityLazyQueryHookResult = ReturnType<typeof useGetListEntityLazyQuery>;
-export type GetListEntityQueryResult = Apollo.QueryResult<GetListEntityQuery, GetListEntityQueryVariables>;
-export const SearchEntitiesDocument = gql`
-    query SearchEntities($category: ID!, $search: String, $values: [ID!]) {
-  options: entities(
-    entityCategoryId: $category
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchEntitiesQuery__
- *
- * To run a query within a React component, call `useSearchEntitiesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchEntitiesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchEntitiesQuery({
- *   variables: {
- *      category: // value for 'category'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchEntitiesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchEntitiesQuery, SearchEntitiesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchEntitiesQuery, SearchEntitiesQueryVariables>(SearchEntitiesDocument, options);
-      }
-export function useSearchEntitiesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchEntitiesQuery, SearchEntitiesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchEntitiesQuery, SearchEntitiesQueryVariables>(SearchEntitiesDocument, options);
-        }
-export type SearchEntitiesQueryHookResult = ReturnType<typeof useSearchEntitiesQuery>;
-export type SearchEntitiesLazyQueryHookResult = ReturnType<typeof useSearchEntitiesLazyQuery>;
-export type SearchEntitiesQueryResult = Apollo.QueryResult<SearchEntitiesQuery, SearchEntitiesQueryVariables>;
+export type EntityConnectionsQueryHookResult = ReturnType<typeof useEntityConnectionsQuery>;
+export type EntityConnectionsLazyQueryHookResult = ReturnType<typeof useEntityConnectionsLazyQuery>;
+export type EntityConnectionsQueryResult = Apollo.QueryResult<EntityConnectionsQuery, EntityConnectionsQueryVariables>;
 export const ListEntitiesDocument = gql`
     query ListEntities($entityCategoryId: ID!, $filters: EntityFilter, $pagination: EntityPaginationInput) {
   entities(
@@ -16722,23 +16374,29 @@ export type SearchLinkableEntitiesLazyQueryHookResult = ReturnType<typeof useSea
 export type SearchLinkableEntitiesQueryResult = Apollo.QueryResult<SearchLinkableEntitiesQuery, SearchLinkableEntitiesQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String!) {
-  entityCategories(filters: {search: $search}, pagination: {limit: 10}) {
-    ...ListEntityCategory
+  entityCategories(filters: {search: $search}, pagination: {limit: 4}) {
+    id
+    label
+    description
   }
-  relationCategories(filters: {search: $search}, pagination: {limit: 10}) {
-    ...ListRelationCategory
+  relationCategories(filters: {search: $search}, pagination: {limit: 3}) {
+    id
+    label
+    description
   }
-  measurementCategories(filters: {search: $search}, pagination: {limit: 10}) {
-    ...ListMeasurementCategory
+  measurementCategories(filters: {search: $search}, pagination: {limit: 3}) {
+    id
+    label
+    description
   }
-  structureKinds(filters: {search: $search}, pagination: {limit: 10}) {
-    ...ListStructureKind
+  structureKinds(filters: {search: $search}, pagination: {limit: 3}) {
+    id
+    identifier
+    label
+    description
   }
 }
-    ${ListEntityCategoryFragmentDoc}
-${ListRelationCategoryFragmentDoc}
-${ListMeasurementCategoryFragmentDoc}
-${ListStructureKindFragmentDoc}`;
+    `;
 
 /**
  * __useGlobalSearchQuery__
@@ -16879,6 +16537,46 @@ export function useListGraphsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type ListGraphsQueryHookResult = ReturnType<typeof useListGraphsQuery>;
 export type ListGraphsLazyQueryHookResult = ReturnType<typeof useListGraphsLazyQuery>;
 export type ListGraphsQueryResult = Apollo.QueryResult<ListGraphsQuery, ListGraphsQueryVariables>;
+export const GetGraphSummaryDocument = gql`
+    query GetGraphSummary($id: ID!) {
+  graph(id: $id) {
+    id
+    name
+    description
+  }
+  entityCategoryStats(filters: {graph: {id: $id}}) {
+    count
+  }
+}
+    `;
+
+/**
+ * __useGetGraphSummaryQuery__
+ *
+ * To run a query within a React component, call `useGetGraphSummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGraphSummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGraphSummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetGraphSummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetGraphSummaryQuery, GetGraphSummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetGraphSummaryQuery, GetGraphSummaryQueryVariables>(GetGraphSummaryDocument, options);
+      }
+export function useGetGraphSummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetGraphSummaryQuery, GetGraphSummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetGraphSummaryQuery, GetGraphSummaryQueryVariables>(GetGraphSummaryDocument, options);
+        }
+export type GetGraphSummaryQueryHookResult = ReturnType<typeof useGetGraphSummaryQuery>;
+export type GetGraphSummaryLazyQueryHookResult = ReturnType<typeof useGetGraphSummaryLazyQuery>;
+export type GetGraphSummaryQueryResult = Apollo.QueryResult<GetGraphSummaryQuery, GetGraphSummaryQueryVariables>;
 export const GetGraphTableQueryDocument = gql`
     query GetGraphTableQuery($id: ID!) {
   graphTableQuery(id: $id) {
@@ -16914,82 +16612,6 @@ export function useGetGraphTableQueryLazyQuery(baseOptions?: ApolloReactHooks.La
 export type GetGraphTableQueryQueryHookResult = ReturnType<typeof useGetGraphTableQueryQuery>;
 export type GetGraphTableQueryLazyQueryHookResult = ReturnType<typeof useGetGraphTableQueryLazyQuery>;
 export type GetGraphTableQueryQueryResult = Apollo.QueryResult<GetGraphTableQueryQuery, GetGraphTableQueryQueryVariables>;
-export const SearchGraphTableQueriesDocument = gql`
-    query SearchGraphTableQueries($search: String, $values: [ID!]) {
-  options: graphTableQueries(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchGraphTableQueriesQuery__
- *
- * To run a query within a React component, call `useSearchGraphTableQueriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchGraphTableQueriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchGraphTableQueriesQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchGraphTableQueriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchGraphTableQueriesQuery, SearchGraphTableQueriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchGraphTableQueriesQuery, SearchGraphTableQueriesQueryVariables>(SearchGraphTableQueriesDocument, options);
-      }
-export function useSearchGraphTableQueriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchGraphTableQueriesQuery, SearchGraphTableQueriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchGraphTableQueriesQuery, SearchGraphTableQueriesQueryVariables>(SearchGraphTableQueriesDocument, options);
-        }
-export type SearchGraphTableQueriesQueryHookResult = ReturnType<typeof useSearchGraphTableQueriesQuery>;
-export type SearchGraphTableQueriesLazyQueryHookResult = ReturnType<typeof useSearchGraphTableQueriesLazyQuery>;
-export type SearchGraphTableQueriesQueryResult = Apollo.QueryResult<SearchGraphTableQueriesQuery, SearchGraphTableQueriesQueryVariables>;
-export const ListGraphTableQueriesDocument = gql`
-    query ListGraphTableQueries($filters: GraphTableQueryFilter, $pagination: OffsetPaginationInput) {
-  graphTableQueries(filters: $filters, pagination: $pagination) {
-    ...ListGraphTableQuery
-  }
-}
-    ${ListGraphTableQueryFragmentDoc}`;
-
-/**
- * __useListGraphTableQueriesQuery__
- *
- * To run a query within a React component, call `useListGraphTableQueriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListGraphTableQueriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListGraphTableQueriesQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListGraphTableQueriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListGraphTableQueriesQuery, ListGraphTableQueriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListGraphTableQueriesQuery, ListGraphTableQueriesQueryVariables>(ListGraphTableQueriesDocument, options);
-      }
-export function useListGraphTableQueriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListGraphTableQueriesQuery, ListGraphTableQueriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListGraphTableQueriesQuery, ListGraphTableQueriesQueryVariables>(ListGraphTableQueriesDocument, options);
-        }
-export type ListGraphTableQueriesQueryHookResult = ReturnType<typeof useListGraphTableQueriesQuery>;
-export type ListGraphTableQueriesLazyQueryHookResult = ReturnType<typeof useListGraphTableQueriesLazyQuery>;
-export type ListGraphTableQueriesQueryResult = Apollo.QueryResult<ListGraphTableQueriesQuery, ListGraphTableQueriesQueryVariables>;
 export const RenderGraphTableDocument = gql`
     query RenderGraphTable($id: ID!, $filters: RenderGraphTableFilter, $pagination: RenderGraphTablePagination, $order: RenderGraphTableOrder) {
   renderGraphTable(
@@ -17068,46 +16690,6 @@ export function useGetScatterPlotLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetScatterPlotQueryHookResult = ReturnType<typeof useGetScatterPlotQuery>;
 export type GetScatterPlotLazyQueryHookResult = ReturnType<typeof useGetScatterPlotLazyQuery>;
 export type GetScatterPlotQueryResult = Apollo.QueryResult<GetScatterPlotQuery, GetScatterPlotQueryVariables>;
-export const SearchScatterPlotsDocument = gql`
-    query SearchScatterPlots($search: String, $values: [ID!]) {
-  options: scatterPlots(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchScatterPlotsQuery__
- *
- * To run a query within a React component, call `useSearchScatterPlotsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchScatterPlotsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchScatterPlotsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchScatterPlotsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchScatterPlotsQuery, SearchScatterPlotsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchScatterPlotsQuery, SearchScatterPlotsQueryVariables>(SearchScatterPlotsDocument, options);
-      }
-export function useSearchScatterPlotsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchScatterPlotsQuery, SearchScatterPlotsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchScatterPlotsQuery, SearchScatterPlotsQueryVariables>(SearchScatterPlotsDocument, options);
-        }
-export type SearchScatterPlotsQueryHookResult = ReturnType<typeof useSearchScatterPlotsQuery>;
-export type SearchScatterPlotsLazyQueryHookResult = ReturnType<typeof useSearchScatterPlotsLazyQuery>;
-export type SearchScatterPlotsQueryResult = Apollo.QueryResult<SearchScatterPlotsQuery, SearchScatterPlotsQueryVariables>;
 export const ListScatterPlotsDocument = gql`
     query ListScatterPlots($filters: ScatterPlotFilter, $pagination: OffsetPaginationInput) {
   scatterPlots(filters: $filters, pagination: $pagination) {
@@ -17179,47 +16761,6 @@ export function useGetMeasurementLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetMeasurementQueryHookResult = ReturnType<typeof useGetMeasurementQuery>;
 export type GetMeasurementLazyQueryHookResult = ReturnType<typeof useGetMeasurementLazyQuery>;
 export type GetMeasurementQueryResult = Apollo.QueryResult<GetMeasurementQuery, GetMeasurementQueryVariables>;
-export const SearchMeasurementsDocument = gql`
-    query SearchMeasurements($category: ID!, $values: [ID!]) {
-  options: measurements(
-    measurementCategoryId: $category
-    filters: {ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchMeasurementsQuery__
- *
- * To run a query within a React component, call `useSearchMeasurementsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMeasurementsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchMeasurementsQuery({
- *   variables: {
- *      category: // value for 'category'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchMeasurementsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchMeasurementsQuery, SearchMeasurementsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMeasurementsQuery, SearchMeasurementsQueryVariables>(SearchMeasurementsDocument, options);
-      }
-export function useSearchMeasurementsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMeasurementsQuery, SearchMeasurementsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMeasurementsQuery, SearchMeasurementsQueryVariables>(SearchMeasurementsDocument, options);
-        }
-export type SearchMeasurementsQueryHookResult = ReturnType<typeof useSearchMeasurementsQuery>;
-export type SearchMeasurementsLazyQueryHookResult = ReturnType<typeof useSearchMeasurementsLazyQuery>;
-export type SearchMeasurementsQueryResult = Apollo.QueryResult<SearchMeasurementsQuery, SearchMeasurementsQueryVariables>;
 export const GetMetricDocument = gql`
     query GetMetric($id: ID!) {
   metric(id: $id) {
@@ -17255,126 +16796,14 @@ export function useGetMetricLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetMetricQueryHookResult = ReturnType<typeof useGetMetricQuery>;
 export type GetMetricLazyQueryHookResult = ReturnType<typeof useGetMetricLazyQuery>;
 export type GetMetricQueryResult = Apollo.QueryResult<GetMetricQuery, GetMetricQueryVariables>;
-export const ListMetricsDocument = gql`
-    query ListMetrics($kind: ID!) {
-  metrics(metricKindId: $kind) {
-    ...ListMetric
-  }
-}
-    ${ListMetricFragmentDoc}`;
-
-/**
- * __useListMetricsQuery__
- *
- * To run a query within a React component, call `useListMetricsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListMetricsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListMetricsQuery({
- *   variables: {
- *      kind: // value for 'kind'
- *   },
- * });
- */
-export function useListMetricsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListMetricsQuery, ListMetricsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListMetricsQuery, ListMetricsQueryVariables>(ListMetricsDocument, options);
-      }
-export function useListMetricsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListMetricsQuery, ListMetricsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListMetricsQuery, ListMetricsQueryVariables>(ListMetricsDocument, options);
-        }
-export type ListMetricsQueryHookResult = ReturnType<typeof useListMetricsQuery>;
-export type ListMetricsLazyQueryHookResult = ReturnType<typeof useListMetricsLazyQuery>;
-export type ListMetricsQueryResult = Apollo.QueryResult<ListMetricsQuery, ListMetricsQueryVariables>;
-export const GetNaturalEventDocument = gql`
-    query GetNaturalEvent($id: ID!, $graph: ID!) {
-  naturalEvent(id: $id, graph: $graph) {
-    ...NaturalEvent
-  }
-}
-    ${NaturalEventFragmentDoc}`;
-
-/**
- * __useGetNaturalEventQuery__
- *
- * To run a query within a React component, call `useGetNaturalEventQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetNaturalEventQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetNaturalEventQuery({
- *   variables: {
- *      id: // value for 'id'
- *      graph: // value for 'graph'
- *   },
- * });
- */
-export function useGetNaturalEventQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetNaturalEventQuery, GetNaturalEventQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetNaturalEventQuery, GetNaturalEventQueryVariables>(GetNaturalEventDocument, options);
-      }
-export function useGetNaturalEventLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetNaturalEventQuery, GetNaturalEventQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetNaturalEventQuery, GetNaturalEventQueryVariables>(GetNaturalEventDocument, options);
-        }
-export type GetNaturalEventQueryHookResult = ReturnType<typeof useGetNaturalEventQuery>;
-export type GetNaturalEventLazyQueryHookResult = ReturnType<typeof useGetNaturalEventLazyQuery>;
-export type GetNaturalEventQueryResult = Apollo.QueryResult<GetNaturalEventQuery, GetNaturalEventQueryVariables>;
-export const SearchNaturalEventsDocument = gql`
-    query SearchNaturalEvents($category: ID!, $search: String, $values: [ID!]) {
-  options: naturalEvents(
-    naturalEventCategoryId: $category
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchNaturalEventsQuery__
- *
- * To run a query within a React component, call `useSearchNaturalEventsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchNaturalEventsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchNaturalEventsQuery({
- *   variables: {
- *      category: // value for 'category'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchNaturalEventsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchNaturalEventsQuery, SearchNaturalEventsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchNaturalEventsQuery, SearchNaturalEventsQueryVariables>(SearchNaturalEventsDocument, options);
-      }
-export function useSearchNaturalEventsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchNaturalEventsQuery, SearchNaturalEventsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchNaturalEventsQuery, SearchNaturalEventsQueryVariables>(SearchNaturalEventsDocument, options);
-        }
-export type SearchNaturalEventsQueryHookResult = ReturnType<typeof useSearchNaturalEventsQuery>;
-export type SearchNaturalEventsLazyQueryHookResult = ReturnType<typeof useSearchNaturalEventsLazyQuery>;
-export type SearchNaturalEventsQueryResult = Apollo.QueryResult<SearchNaturalEventsQuery, SearchNaturalEventsQueryVariables>;
 export const GetNodeDocument = gql`
     query GetNode($id: ID!, $graph: ID!) {
   node(id: $id, graph: $graph) {
-    ...Node
+    __typename
+    ...ListNode
   }
 }
-    ${NodeFragmentDoc}`;
+    ${ListNodeFragmentDoc}`;
 
 /**
  * __useGetNodeQuery__
@@ -17404,85 +16833,6 @@ export function useGetNodeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetNodeQueryHookResult = ReturnType<typeof useGetNodeQuery>;
 export type GetNodeLazyQueryHookResult = ReturnType<typeof useGetNodeLazyQuery>;
 export type GetNodeQueryResult = Apollo.QueryResult<GetNodeQuery, GetNodeQueryVariables>;
-export const SearchNodesDocument = gql`
-    query SearchNodes($graph: ID!, $search: String, $values: [ID!]) {
-  options: nodes(
-    graph: $graph
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchNodesQuery__
- *
- * To run a query within a React component, call `useSearchNodesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchNodesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchNodesQuery({
- *   variables: {
- *      graph: // value for 'graph'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchNodesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchNodesQuery, SearchNodesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchNodesQuery, SearchNodesQueryVariables>(SearchNodesDocument, options);
-      }
-export function useSearchNodesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchNodesQuery, SearchNodesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchNodesQuery, SearchNodesQueryVariables>(SearchNodesDocument, options);
-        }
-export type SearchNodesQueryHookResult = ReturnType<typeof useSearchNodesQuery>;
-export type SearchNodesLazyQueryHookResult = ReturnType<typeof useSearchNodesLazyQuery>;
-export type SearchNodesQueryResult = Apollo.QueryResult<SearchNodesQuery, SearchNodesQueryVariables>;
-export const ListNodesDocument = gql`
-    query ListNodes($graph: ID!, $filters: NodeFilters, $pagination: NodePaginationInput) {
-  nodes(graph: $graph, filters: $filters, pagination: $pagination) {
-    ...ListNode
-  }
-}
-    ${ListNodeFragmentDoc}`;
-
-/**
- * __useListNodesQuery__
- *
- * To run a query within a React component, call `useListNodesQuery` and pass it any options that fit your needs.
- * When your component renders, `useListNodesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListNodesQuery({
- *   variables: {
- *      graph: // value for 'graph'
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListNodesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListNodesQuery, ListNodesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListNodesQuery, ListNodesQueryVariables>(ListNodesDocument, options);
-      }
-export function useListNodesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListNodesQuery, ListNodesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListNodesQuery, ListNodesQueryVariables>(ListNodesDocument, options);
-        }
-export type ListNodesQueryHookResult = ReturnType<typeof useListNodesQuery>;
-export type ListNodesLazyQueryHookResult = ReturnType<typeof useListNodesLazyQuery>;
-export type ListNodesQueryResult = Apollo.QueryResult<ListNodesQuery, ListNodesQueryVariables>;
 export const ProfileTodoListsDocument = gql`
     query ProfileTodoLists($assignee: ID!, $pagination: OffsetPaginationInput) {
   todoLists(
@@ -17719,48 +17069,6 @@ export function useGetProtocolEventLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type GetProtocolEventQueryHookResult = ReturnType<typeof useGetProtocolEventQuery>;
 export type GetProtocolEventLazyQueryHookResult = ReturnType<typeof useGetProtocolEventLazyQuery>;
 export type GetProtocolEventQueryResult = Apollo.QueryResult<GetProtocolEventQuery, GetProtocolEventQueryVariables>;
-export const SearchProtocolEventsDocument = gql`
-    query SearchProtocolEvents($category: ID!, $search: String, $values: [ID!]) {
-  options: protocolEvents(
-    protocolEventCategoryId: $category
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchProtocolEventsQuery__
- *
- * To run a query within a React component, call `useSearchProtocolEventsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchProtocolEventsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchProtocolEventsQuery({
- *   variables: {
- *      category: // value for 'category'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchProtocolEventsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchProtocolEventsQuery, SearchProtocolEventsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchProtocolEventsQuery, SearchProtocolEventsQueryVariables>(SearchProtocolEventsDocument, options);
-      }
-export function useSearchProtocolEventsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchProtocolEventsQuery, SearchProtocolEventsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchProtocolEventsQuery, SearchProtocolEventsQueryVariables>(SearchProtocolEventsDocument, options);
-        }
-export type SearchProtocolEventsQueryHookResult = ReturnType<typeof useSearchProtocolEventsQuery>;
-export type SearchProtocolEventsLazyQueryHookResult = ReturnType<typeof useSearchProtocolEventsLazyQuery>;
-export type SearchProtocolEventsQueryResult = Apollo.QueryResult<SearchProtocolEventsQuery, SearchProtocolEventsQueryVariables>;
 export const GetRelationDocument = gql`
     query GetRelation($id: ID!) {
   relation(id: $id) {
@@ -17796,47 +17104,6 @@ export function useGetRelationLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetRelationQueryHookResult = ReturnType<typeof useGetRelationQuery>;
 export type GetRelationLazyQueryHookResult = ReturnType<typeof useGetRelationLazyQuery>;
 export type GetRelationQueryResult = Apollo.QueryResult<GetRelationQuery, GetRelationQueryVariables>;
-export const SearchRelationsDocument = gql`
-    query SearchRelations($category: ID!, $values: [ID!]) {
-  options: relations(
-    relationCategoryId: $category
-    filters: {ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchRelationsQuery__
- *
- * To run a query within a React component, call `useSearchRelationsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchRelationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchRelationsQuery({
- *   variables: {
- *      category: // value for 'category'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchRelationsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchRelationsQuery, SearchRelationsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchRelationsQuery, SearchRelationsQueryVariables>(SearchRelationsDocument, options);
-      }
-export function useSearchRelationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchRelationsQuery, SearchRelationsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchRelationsQuery, SearchRelationsQueryVariables>(SearchRelationsDocument, options);
-        }
-export type SearchRelationsQueryHookResult = ReturnType<typeof useSearchRelationsQuery>;
-export type SearchRelationsLazyQueryHookResult = ReturnType<typeof useSearchRelationsLazyQuery>;
-export type SearchRelationsQueryResult = Apollo.QueryResult<SearchRelationsQuery, SearchRelationsQueryVariables>;
 export const GetEntityCategoryDocument = gql`
     query GetEntityCategory($id: ID!) {
   entityCategory(id: $id) {
@@ -18030,9 +17297,49 @@ export function useEntityCategoryStatsLazyQuery(baseOptions?: ApolloReactHooks.L
 export type EntityCategoryStatsQueryHookResult = ReturnType<typeof useEntityCategoryStatsQuery>;
 export type EntityCategoryStatsLazyQueryHookResult = ReturnType<typeof useEntityCategoryStatsLazyQuery>;
 export type EntityCategoryStatsQueryResult = Apollo.QueryResult<EntityCategoryStatsQuery, EntityCategoryStatsQueryVariables>;
+export const GetEntityCategorySummaryDocument = gql`
+    query GetEntityCategorySummary($id: ID!) {
+  entityCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+  }
+}
+    ${ListTermFragmentDoc}`;
+
+/**
+ * __useGetEntityCategorySummaryQuery__
+ *
+ * To run a query within a React component, call `useGetEntityCategorySummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetEntityCategorySummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetEntityCategorySummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetEntityCategorySummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetEntityCategorySummaryQuery, GetEntityCategorySummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetEntityCategorySummaryQuery, GetEntityCategorySummaryQueryVariables>(GetEntityCategorySummaryDocument, options);
+      }
+export function useGetEntityCategorySummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetEntityCategorySummaryQuery, GetEntityCategorySummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetEntityCategorySummaryQuery, GetEntityCategorySummaryQueryVariables>(GetEntityCategorySummaryDocument, options);
+        }
+export type GetEntityCategorySummaryQueryHookResult = ReturnType<typeof useGetEntityCategorySummaryQuery>;
+export type GetEntityCategorySummaryLazyQueryHookResult = ReturnType<typeof useGetEntityCategorySummaryLazyQuery>;
+export type GetEntityCategorySummaryQueryResult = Apollo.QueryResult<GetEntityCategorySummaryQuery, GetEntityCategorySummaryQueryVariables>;
 export const HomePageDocument = gql`
-    query HomePage {
-  graphs: graphs {
+    query HomePage($limit: Int = 12) {
+  graphs: graphs(pagination: {limit: $limit}, ordering: [{createdAt: DESC}]) {
     ...ListGraph
   }
 }
@@ -18050,6 +17357,7 @@ export const HomePageDocument = gql`
  * @example
  * const { data, loading, error } = useHomePageQuery({
  *   variables: {
+ *      limit: // value for 'limit'
  *   },
  * });
  */
@@ -18133,46 +17441,6 @@ export function useGetMeasurmentCategoryLazyQuery(baseOptions?: ApolloReactHooks
 export type GetMeasurmentCategoryQueryHookResult = ReturnType<typeof useGetMeasurmentCategoryQuery>;
 export type GetMeasurmentCategoryLazyQueryHookResult = ReturnType<typeof useGetMeasurmentCategoryLazyQuery>;
 export type GetMeasurmentCategoryQueryResult = Apollo.QueryResult<GetMeasurmentCategoryQuery, GetMeasurmentCategoryQueryVariables>;
-export const SearchMeasurmentCategoryDocument = gql`
-    query SearchMeasurmentCategory($search: String, $values: [ID!]) {
-  options: measurementCategories(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchMeasurmentCategoryQuery__
- *
- * To run a query within a React component, call `useSearchMeasurmentCategoryQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMeasurmentCategoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchMeasurmentCategoryQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchMeasurmentCategoryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchMeasurmentCategoryQuery, SearchMeasurmentCategoryQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMeasurmentCategoryQuery, SearchMeasurmentCategoryQueryVariables>(SearchMeasurmentCategoryDocument, options);
-      }
-export function useSearchMeasurmentCategoryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMeasurmentCategoryQuery, SearchMeasurmentCategoryQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMeasurmentCategoryQuery, SearchMeasurmentCategoryQueryVariables>(SearchMeasurmentCategoryDocument, options);
-        }
-export type SearchMeasurmentCategoryQueryHookResult = ReturnType<typeof useSearchMeasurmentCategoryQuery>;
-export type SearchMeasurmentCategoryLazyQueryHookResult = ReturnType<typeof useSearchMeasurmentCategoryLazyQuery>;
-export type SearchMeasurmentCategoryQueryResult = Apollo.QueryResult<SearchMeasurmentCategoryQuery, SearchMeasurmentCategoryQueryVariables>;
 export const ListMeasurmentCategoryDocument = gql`
     query ListMeasurmentCategory($filters: MeasurementCategoryFilter, $pagination: OffsetPaginationInput) {
   measurementCategories(filters: $filters, pagination: $pagination) {
@@ -18244,46 +17512,6 @@ export function useGetMetricKindLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GetMetricKindQueryHookResult = ReturnType<typeof useGetMetricKindQuery>;
 export type GetMetricKindLazyQueryHookResult = ReturnType<typeof useGetMetricKindLazyQuery>;
 export type GetMetricKindQueryResult = Apollo.QueryResult<GetMetricKindQuery, GetMetricKindQueryVariables>;
-export const SearchMetricKindsDocument = gql`
-    query SearchMetricKinds($search: String, $values: [ID!]) {
-  options: metricKinds(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchMetricKindsQuery__
- *
- * To run a query within a React component, call `useSearchMetricKindsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMetricKindsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchMetricKindsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchMetricKindsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchMetricKindsQuery, SearchMetricKindsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMetricKindsQuery, SearchMetricKindsQueryVariables>(SearchMetricKindsDocument, options);
-      }
-export function useSearchMetricKindsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMetricKindsQuery, SearchMetricKindsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMetricKindsQuery, SearchMetricKindsQueryVariables>(SearchMetricKindsDocument, options);
-        }
-export type SearchMetricKindsQueryHookResult = ReturnType<typeof useSearchMetricKindsQuery>;
-export type SearchMetricKindsLazyQueryHookResult = ReturnType<typeof useSearchMetricKindsLazyQuery>;
-export type SearchMetricKindsQueryResult = Apollo.QueryResult<SearchMetricKindsQuery, SearchMetricKindsQueryVariables>;
 export const ListMetricKindsDocument = gql`
     query ListMetricKinds($filters: MetricKindFilter, $pagination: VocabularyPaginationInput) {
   metricKinds(filters: $filters, pagination: $pagination) {
@@ -18395,53 +17623,13 @@ export function useGetNaturalEventCategoryLazyQuery(baseOptions?: ApolloReactHoo
 export type GetNaturalEventCategoryQueryHookResult = ReturnType<typeof useGetNaturalEventCategoryQuery>;
 export type GetNaturalEventCategoryLazyQueryHookResult = ReturnType<typeof useGetNaturalEventCategoryLazyQuery>;
 export type GetNaturalEventCategoryQueryResult = Apollo.QueryResult<GetNaturalEventCategoryQuery, GetNaturalEventCategoryQueryVariables>;
-export const SearchNaturalEventCategoriesDocument = gql`
-    query SearchNaturalEventCategories($search: String, $values: [ID!]) {
-  options: naturalEventCategories(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchNaturalEventCategoriesQuery__
- *
- * To run a query within a React component, call `useSearchNaturalEventCategoriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchNaturalEventCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchNaturalEventCategoriesQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchNaturalEventCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchNaturalEventCategoriesQuery, SearchNaturalEventCategoriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchNaturalEventCategoriesQuery, SearchNaturalEventCategoriesQueryVariables>(SearchNaturalEventCategoriesDocument, options);
-      }
-export function useSearchNaturalEventCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchNaturalEventCategoriesQuery, SearchNaturalEventCategoriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchNaturalEventCategoriesQuery, SearchNaturalEventCategoriesQueryVariables>(SearchNaturalEventCategoriesDocument, options);
-        }
-export type SearchNaturalEventCategoriesQueryHookResult = ReturnType<typeof useSearchNaturalEventCategoriesQuery>;
-export type SearchNaturalEventCategoriesLazyQueryHookResult = ReturnType<typeof useSearchNaturalEventCategoriesLazyQuery>;
-export type SearchNaturalEventCategoriesQueryResult = Apollo.QueryResult<SearchNaturalEventCategoriesQuery, SearchNaturalEventCategoriesQueryVariables>;
 export const ListNaturalEventCategoriesDocument = gql`
     query ListNaturalEventCategories($filters: NaturalEventCategoryFilter, $pagination: OffsetPaginationInput) {
   naturalEventCategories(filters: $filters, pagination: $pagination) {
-    ...NaturalEventCategory
+    ...ListNaturalEventCategory
   }
 }
-    ${NaturalEventCategoryFragmentDoc}`;
+    ${ListNaturalEventCategoryFragmentDoc}`;
 
 /**
  * __useListNaturalEventCategoriesQuery__
@@ -18471,6 +17659,56 @@ export function useListNaturalEventCategoriesLazyQuery(baseOptions?: ApolloReact
 export type ListNaturalEventCategoriesQueryHookResult = ReturnType<typeof useListNaturalEventCategoriesQuery>;
 export type ListNaturalEventCategoriesLazyQueryHookResult = ReturnType<typeof useListNaturalEventCategoriesLazyQuery>;
 export type ListNaturalEventCategoriesQueryResult = Apollo.QueryResult<ListNaturalEventCategoriesQuery, ListNaturalEventCategoriesQueryVariables>;
+export const GetNaturalEventCategorySummaryDocument = gql`
+    query GetNaturalEventCategorySummary($id: ID!) {
+  naturalEventCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+    image {
+      ...MediaStore
+    }
+    inputs {
+      key
+    }
+    outputs {
+      key
+    }
+  }
+}
+    ${ListTermFragmentDoc}
+${MediaStoreFragmentDoc}`;
+
+/**
+ * __useGetNaturalEventCategorySummaryQuery__
+ *
+ * To run a query within a React component, call `useGetNaturalEventCategorySummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetNaturalEventCategorySummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetNaturalEventCategorySummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetNaturalEventCategorySummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetNaturalEventCategorySummaryQuery, GetNaturalEventCategorySummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetNaturalEventCategorySummaryQuery, GetNaturalEventCategorySummaryQueryVariables>(GetNaturalEventCategorySummaryDocument, options);
+      }
+export function useGetNaturalEventCategorySummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetNaturalEventCategorySummaryQuery, GetNaturalEventCategorySummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetNaturalEventCategorySummaryQuery, GetNaturalEventCategorySummaryQueryVariables>(GetNaturalEventCategorySummaryDocument, options);
+        }
+export type GetNaturalEventCategorySummaryQueryHookResult = ReturnType<typeof useGetNaturalEventCategorySummaryQuery>;
+export type GetNaturalEventCategorySummaryLazyQueryHookResult = ReturnType<typeof useGetNaturalEventCategorySummaryLazyQuery>;
+export type GetNaturalEventCategorySummaryQueryResult = Apollo.QueryResult<GetNaturalEventCategorySummaryQuery, GetNaturalEventCategorySummaryQueryVariables>;
 export const GetProtocolEventCategoryDocument = gql`
     query GetProtocolEventCategory($id: ID!) {
   protocolEventCategory(id: $id) {
@@ -18506,53 +17744,13 @@ export function useGetProtocolEventCategoryLazyQuery(baseOptions?: ApolloReactHo
 export type GetProtocolEventCategoryQueryHookResult = ReturnType<typeof useGetProtocolEventCategoryQuery>;
 export type GetProtocolEventCategoryLazyQueryHookResult = ReturnType<typeof useGetProtocolEventCategoryLazyQuery>;
 export type GetProtocolEventCategoryQueryResult = Apollo.QueryResult<GetProtocolEventCategoryQuery, GetProtocolEventCategoryQueryVariables>;
-export const SearchProtocolEventCategoriesDocument = gql`
-    query SearchProtocolEventCategories($search: String, $values: [ID!]) {
-  options: protocolEventCategories(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchProtocolEventCategoriesQuery__
- *
- * To run a query within a React component, call `useSearchProtocolEventCategoriesQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchProtocolEventCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchProtocolEventCategoriesQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchProtocolEventCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchProtocolEventCategoriesQuery, SearchProtocolEventCategoriesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchProtocolEventCategoriesQuery, SearchProtocolEventCategoriesQueryVariables>(SearchProtocolEventCategoriesDocument, options);
-      }
-export function useSearchProtocolEventCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchProtocolEventCategoriesQuery, SearchProtocolEventCategoriesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchProtocolEventCategoriesQuery, SearchProtocolEventCategoriesQueryVariables>(SearchProtocolEventCategoriesDocument, options);
-        }
-export type SearchProtocolEventCategoriesQueryHookResult = ReturnType<typeof useSearchProtocolEventCategoriesQuery>;
-export type SearchProtocolEventCategoriesLazyQueryHookResult = ReturnType<typeof useSearchProtocolEventCategoriesLazyQuery>;
-export type SearchProtocolEventCategoriesQueryResult = Apollo.QueryResult<SearchProtocolEventCategoriesQuery, SearchProtocolEventCategoriesQueryVariables>;
 export const ListProtocolEventCategoriesDocument = gql`
     query ListProtocolEventCategories($filters: ProtocolEventCategoryFilter, $pagination: OffsetPaginationInput) {
   protocolEventCategories(filters: $filters, pagination: $pagination) {
-    ...ProtocolEventCategory
+    ...ListProtocolEventCategory
   }
 }
-    ${ProtocolEventCategoryFragmentDoc}`;
+    ${ListProtocolEventCategoryFragmentDoc}`;
 
 /**
  * __useListProtocolEventCategoriesQuery__
@@ -18582,6 +17780,56 @@ export function useListProtocolEventCategoriesLazyQuery(baseOptions?: ApolloReac
 export type ListProtocolEventCategoriesQueryHookResult = ReturnType<typeof useListProtocolEventCategoriesQuery>;
 export type ListProtocolEventCategoriesLazyQueryHookResult = ReturnType<typeof useListProtocolEventCategoriesLazyQuery>;
 export type ListProtocolEventCategoriesQueryResult = Apollo.QueryResult<ListProtocolEventCategoriesQuery, ListProtocolEventCategoriesQueryVariables>;
+export const GetProtocolEventCategorySummaryDocument = gql`
+    query GetProtocolEventCategorySummary($id: ID!) {
+  protocolEventCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+    image {
+      ...MediaStore
+    }
+    inputs {
+      key
+    }
+    outputs {
+      key
+    }
+  }
+}
+    ${ListTermFragmentDoc}
+${MediaStoreFragmentDoc}`;
+
+/**
+ * __useGetProtocolEventCategorySummaryQuery__
+ *
+ * To run a query within a React component, call `useGetProtocolEventCategorySummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetProtocolEventCategorySummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetProtocolEventCategorySummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetProtocolEventCategorySummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetProtocolEventCategorySummaryQuery, GetProtocolEventCategorySummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetProtocolEventCategorySummaryQuery, GetProtocolEventCategorySummaryQueryVariables>(GetProtocolEventCategorySummaryDocument, options);
+      }
+export function useGetProtocolEventCategorySummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetProtocolEventCategorySummaryQuery, GetProtocolEventCategorySummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetProtocolEventCategorySummaryQuery, GetProtocolEventCategorySummaryQueryVariables>(GetProtocolEventCategorySummaryDocument, options);
+        }
+export type GetProtocolEventCategorySummaryQueryHookResult = ReturnType<typeof useGetProtocolEventCategorySummaryQuery>;
+export type GetProtocolEventCategorySummaryLazyQueryHookResult = ReturnType<typeof useGetProtocolEventCategorySummaryLazyQuery>;
+export type GetProtocolEventCategorySummaryQueryResult = Apollo.QueryResult<GetProtocolEventCategorySummaryQuery, GetProtocolEventCategorySummaryQueryVariables>;
 export const GetRelationCategoryDocument = gql`
     query GetRelationCategory($id: ID!) {
   relationCategory(id: $id) {
@@ -18617,46 +17865,6 @@ export function useGetRelationCategoryLazyQuery(baseOptions?: ApolloReactHooks.L
 export type GetRelationCategoryQueryHookResult = ReturnType<typeof useGetRelationCategoryQuery>;
 export type GetRelationCategoryLazyQueryHookResult = ReturnType<typeof useGetRelationCategoryLazyQuery>;
 export type GetRelationCategoryQueryResult = Apollo.QueryResult<GetRelationCategoryQuery, GetRelationCategoryQueryVariables>;
-export const SearchRelationCategoryDocument = gql`
-    query SearchRelationCategory($search: String, $values: [ID!]) {
-  options: relationCategories(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchRelationCategoryQuery__
- *
- * To run a query within a React component, call `useSearchRelationCategoryQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchRelationCategoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchRelationCategoryQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchRelationCategoryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchRelationCategoryQuery, SearchRelationCategoryQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchRelationCategoryQuery, SearchRelationCategoryQueryVariables>(SearchRelationCategoryDocument, options);
-      }
-export function useSearchRelationCategoryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchRelationCategoryQuery, SearchRelationCategoryQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchRelationCategoryQuery, SearchRelationCategoryQueryVariables>(SearchRelationCategoryDocument, options);
-        }
-export type SearchRelationCategoryQueryHookResult = ReturnType<typeof useSearchRelationCategoryQuery>;
-export type SearchRelationCategoryLazyQueryHookResult = ReturnType<typeof useSearchRelationCategoryLazyQuery>;
-export type SearchRelationCategoryQueryResult = Apollo.QueryResult<SearchRelationCategoryQuery, SearchRelationCategoryQueryVariables>;
 export const ListRelationCategoryDocument = gql`
     query ListRelationCategory($filters: RelationCategoryFilter, $pagination: OffsetPaginationInput) {
   relationCategories(filters: $filters, pagination: $pagination) {
@@ -18693,6 +17901,46 @@ export function useListRelationCategoryLazyQuery(baseOptions?: ApolloReactHooks.
 export type ListRelationCategoryQueryHookResult = ReturnType<typeof useListRelationCategoryQuery>;
 export type ListRelationCategoryLazyQueryHookResult = ReturnType<typeof useListRelationCategoryLazyQuery>;
 export type ListRelationCategoryQueryResult = Apollo.QueryResult<ListRelationCategoryQuery, ListRelationCategoryQueryVariables>;
+export const GetRelationCategorySummaryDocument = gql`
+    query GetRelationCategorySummary($id: ID!) {
+  relationCategory(id: $id) {
+    id
+    label
+    description
+    term {
+      ...ListTerm
+    }
+  }
+}
+    ${ListTermFragmentDoc}`;
+
+/**
+ * __useGetRelationCategorySummaryQuery__
+ *
+ * To run a query within a React component, call `useGetRelationCategorySummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetRelationCategorySummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetRelationCategorySummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetRelationCategorySummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetRelationCategorySummaryQuery, GetRelationCategorySummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetRelationCategorySummaryQuery, GetRelationCategorySummaryQueryVariables>(GetRelationCategorySummaryDocument, options);
+      }
+export function useGetRelationCategorySummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetRelationCategorySummaryQuery, GetRelationCategorySummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetRelationCategorySummaryQuery, GetRelationCategorySummaryQueryVariables>(GetRelationCategorySummaryDocument, options);
+        }
+export type GetRelationCategorySummaryQueryHookResult = ReturnType<typeof useGetRelationCategorySummaryQuery>;
+export type GetRelationCategorySummaryLazyQueryHookResult = ReturnType<typeof useGetRelationCategorySummaryLazyQuery>;
+export type GetRelationCategorySummaryQueryResult = Apollo.QueryResult<GetRelationCategorySummaryQuery, GetRelationCategorySummaryQueryVariables>;
 export const GetStructureKindDocument = gql`
     query GetStructureKind($id: ID!) {
   structureKind(id: $id) {
@@ -18879,46 +18127,6 @@ export function useGetStructureRelationCategoryLazyQuery(baseOptions?: ApolloRea
 export type GetStructureRelationCategoryQueryHookResult = ReturnType<typeof useGetStructureRelationCategoryQuery>;
 export type GetStructureRelationCategoryLazyQueryHookResult = ReturnType<typeof useGetStructureRelationCategoryLazyQuery>;
 export type GetStructureRelationCategoryQueryResult = Apollo.QueryResult<GetStructureRelationCategoryQuery, GetStructureRelationCategoryQueryVariables>;
-export const SearchStructureRelationCategoryDocument = gql`
-    query SearchStructureRelationCategory($search: String, $values: [ID!]) {
-  options: structureRelationCategories(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchStructureRelationCategoryQuery__
- *
- * To run a query within a React component, call `useSearchStructureRelationCategoryQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchStructureRelationCategoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchStructureRelationCategoryQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchStructureRelationCategoryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchStructureRelationCategoryQuery, SearchStructureRelationCategoryQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchStructureRelationCategoryQuery, SearchStructureRelationCategoryQueryVariables>(SearchStructureRelationCategoryDocument, options);
-      }
-export function useSearchStructureRelationCategoryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchStructureRelationCategoryQuery, SearchStructureRelationCategoryQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchStructureRelationCategoryQuery, SearchStructureRelationCategoryQueryVariables>(SearchStructureRelationCategoryDocument, options);
-        }
-export type SearchStructureRelationCategoryQueryHookResult = ReturnType<typeof useSearchStructureRelationCategoryQuery>;
-export type SearchStructureRelationCategoryLazyQueryHookResult = ReturnType<typeof useSearchStructureRelationCategoryLazyQuery>;
-export type SearchStructureRelationCategoryQueryResult = Apollo.QueryResult<SearchStructureRelationCategoryQuery, SearchStructureRelationCategoryQueryVariables>;
 export const ListStructureRelationCategoryDocument = gql`
     query ListStructureRelationCategory($filters: StructureRelationCategoryFilter, $pagination: OffsetPaginationInput) {
   structureRelationCategories(filters: $filters, pagination: $pagination) {
@@ -18955,58 +18163,46 @@ export function useListStructureRelationCategoryLazyQuery(baseOptions?: ApolloRe
 export type ListStructureRelationCategoryQueryHookResult = ReturnType<typeof useListStructureRelationCategoryQuery>;
 export type ListStructureRelationCategoryLazyQueryHookResult = ReturnType<typeof useListStructureRelationCategoryLazyQuery>;
 export type ListStructureRelationCategoryQueryResult = Apollo.QueryResult<ListStructureRelationCategoryQuery, ListStructureRelationCategoryQueryVariables>;
-export const StartPaneDocument = gql`
-    query StartPane {
-  entityCategories(filters: {pinned: true}, pagination: {limit: 5}) {
+export const GetStructureRelationCategorySummaryDocument = gql`
+    query GetStructureRelationCategorySummary($id: ID!) {
+  structureRelationCategory(id: $id) {
     id
     label
-  }
-  relationCategories(filters: {pinned: true}, pagination: {limit: 5}) {
-    id
-    label
-  }
-  structureKinds(pagination: {limit: 5}) {
-    id
-    identifier
-    label
-  }
-  protocolEventCategories(filters: {pinned: true}, pagination: {limit: 5}) {
-    id
-    label
-  }
-  naturalEventCategories(filters: {pinned: true}, pagination: {limit: 5}) {
-    id
-    label
+    description
+    term {
+      ...ListTerm
+    }
   }
 }
-    `;
+    ${ListTermFragmentDoc}`;
 
 /**
- * __useStartPaneQuery__
+ * __useGetStructureRelationCategorySummaryQuery__
  *
- * To run a query within a React component, call `useStartPaneQuery` and pass it any options that fit your needs.
- * When your component renders, `useStartPaneQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetStructureRelationCategorySummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetStructureRelationCategorySummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useStartPaneQuery({
+ * const { data, loading, error } = useGetStructureRelationCategorySummaryQuery({
  *   variables: {
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useStartPaneQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<StartPaneQuery, StartPaneQueryVariables>) {
+export function useGetStructureRelationCategorySummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetStructureRelationCategorySummaryQuery, GetStructureRelationCategorySummaryQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<StartPaneQuery, StartPaneQueryVariables>(StartPaneDocument, options);
+        return ApolloReactHooks.useQuery<GetStructureRelationCategorySummaryQuery, GetStructureRelationCategorySummaryQueryVariables>(GetStructureRelationCategorySummaryDocument, options);
       }
-export function useStartPaneLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StartPaneQuery, StartPaneQueryVariables>) {
+export function useGetStructureRelationCategorySummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetStructureRelationCategorySummaryQuery, GetStructureRelationCategorySummaryQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<StartPaneQuery, StartPaneQueryVariables>(StartPaneDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetStructureRelationCategorySummaryQuery, GetStructureRelationCategorySummaryQueryVariables>(GetStructureRelationCategorySummaryDocument, options);
         }
-export type StartPaneQueryHookResult = ReturnType<typeof useStartPaneQuery>;
-export type StartPaneLazyQueryHookResult = ReturnType<typeof useStartPaneLazyQuery>;
-export type StartPaneQueryResult = Apollo.QueryResult<StartPaneQuery, StartPaneQueryVariables>;
+export type GetStructureRelationCategorySummaryQueryHookResult = ReturnType<typeof useGetStructureRelationCategorySummaryQuery>;
+export type GetStructureRelationCategorySummaryLazyQueryHookResult = ReturnType<typeof useGetStructureRelationCategorySummaryLazyQuery>;
+export type GetStructureRelationCategorySummaryQueryResult = Apollo.QueryResult<GetStructureRelationCategorySummaryQuery, GetStructureRelationCategorySummaryQueryVariables>;
 export const GetStructureDocument = gql`
     query GetStructure($id: ID!) {
   structure(id: $id) {
@@ -19042,48 +18238,6 @@ export function useGetStructureLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GetStructureQueryHookResult = ReturnType<typeof useGetStructureQuery>;
 export type GetStructureLazyQueryHookResult = ReturnType<typeof useGetStructureLazyQuery>;
 export type GetStructureQueryResult = Apollo.QueryResult<GetStructureQuery, GetStructureQueryVariables>;
-export const SearchStructuresDocument = gql`
-    query SearchStructures($id: ID, $search: String, $values: [ID!]) {
-  options: structures(
-    structureKindId: $id
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: object
-  }
-}
-    `;
-
-/**
- * __useSearchStructuresQuery__
- *
- * To run a query within a React component, call `useSearchStructuresQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchStructuresQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchStructuresQuery({
- *   variables: {
- *      id: // value for 'id'
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchStructuresQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchStructuresQuery, SearchStructuresQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchStructuresQuery, SearchStructuresQueryVariables>(SearchStructuresDocument, options);
-      }
-export function useSearchStructuresLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchStructuresQuery, SearchStructuresQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchStructuresQuery, SearchStructuresQueryVariables>(SearchStructuresDocument, options);
-        }
-export type SearchStructuresQueryHookResult = ReturnType<typeof useSearchStructuresQuery>;
-export type SearchStructuresLazyQueryHookResult = ReturnType<typeof useSearchStructuresLazyQuery>;
-export type SearchStructuresQueryResult = Apollo.QueryResult<SearchStructuresQuery, SearchStructuresQueryVariables>;
 export const KnowledgeForStructureDocument = gql`
     query KnowledgeForStructure($identifier: StructureIdentifier!, $object: StructureObject!) {
   structureByIdentifier(identifier: $identifier, object: $object) {
@@ -19303,47 +18457,6 @@ export function useGetStructureRelationLazyQuery(baseOptions?: ApolloReactHooks.
 export type GetStructureRelationQueryHookResult = ReturnType<typeof useGetStructureRelationQuery>;
 export type GetStructureRelationLazyQueryHookResult = ReturnType<typeof useGetStructureRelationLazyQuery>;
 export type GetStructureRelationQueryResult = Apollo.QueryResult<GetStructureRelationQuery, GetStructureRelationQueryVariables>;
-export const SearchStructureRelationsDocument = gql`
-    query SearchStructureRelations($category: ID!, $values: [ID!]) {
-  options: structureRelations(
-    structureRelationCategoryId: $category
-    filters: {ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: label
-  }
-}
-    `;
-
-/**
- * __useSearchStructureRelationsQuery__
- *
- * To run a query within a React component, call `useSearchStructureRelationsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchStructureRelationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchStructureRelationsQuery({
- *   variables: {
- *      category: // value for 'category'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchStructureRelationsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SearchStructureRelationsQuery, SearchStructureRelationsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchStructureRelationsQuery, SearchStructureRelationsQueryVariables>(SearchStructureRelationsDocument, options);
-      }
-export function useSearchStructureRelationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchStructureRelationsQuery, SearchStructureRelationsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchStructureRelationsQuery, SearchStructureRelationsQueryVariables>(SearchStructureRelationsDocument, options);
-        }
-export type SearchStructureRelationsQueryHookResult = ReturnType<typeof useSearchStructureRelationsQuery>;
-export type SearchStructureRelationsLazyQueryHookResult = ReturnType<typeof useSearchStructureRelationsLazyQuery>;
-export type SearchStructureRelationsQueryResult = Apollo.QueryResult<SearchStructureRelationsQuery, SearchStructureRelationsQueryVariables>;
 export const GetTermDocument = gql`
     query GetTerm($id: ID!) {
   term(id: $id) {
@@ -19486,47 +18599,6 @@ export function useFindTermLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type FindTermQueryHookResult = ReturnType<typeof useFindTermQuery>;
 export type FindTermLazyQueryHookResult = ReturnType<typeof useFindTermLazyQuery>;
 export type FindTermQueryResult = Apollo.QueryResult<FindTermQuery, FindTermQueryVariables>;
-export const SearchTermsDocument = gql`
-    query SearchTerms($search: String, $values: [ID!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, ids: $values, hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchTermsQuery__
- *
- * To run a query within a React component, call `useSearchTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchTermsQuery, SearchTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchTermsQuery, SearchTermsQueryVariables>(SearchTermsDocument, options);
-      }
-export function useSearchTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchTermsQuery, SearchTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchTermsQuery, SearchTermsQueryVariables>(SearchTermsDocument, options);
-        }
-export type SearchTermsQueryHookResult = ReturnType<typeof useSearchTermsQuery>;
-export type SearchTermsLazyQueryHookResult = ReturnType<typeof useSearchTermsLazyQuery>;
-export type SearchTermsQueryResult = Apollo.QueryResult<SearchTermsQuery, SearchTermsQueryVariables>;
 export const SearchAssignableTermsDocument = gql`
     query SearchAssignableTerms($search: String, $kinds: [TermKind!]) {
   terms(
@@ -19607,211 +18679,6 @@ export function useSearchEntityTermsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type SearchEntityTermsQueryHookResult = ReturnType<typeof useSearchEntityTermsQuery>;
 export type SearchEntityTermsLazyQueryHookResult = ReturnType<typeof useSearchEntityTermsLazyQuery>;
 export type SearchEntityTermsQueryResult = Apollo.QueryResult<SearchEntityTermsQuery, SearchEntityTermsQueryVariables>;
-export const SearchProtocolEventTermsDocument = gql`
-    query SearchProtocolEventTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, keys: $values, kinds: [PROTOCOL_EVENT], hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: key
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchProtocolEventTermsQuery__
- *
- * To run a query within a React component, call `useSearchProtocolEventTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchProtocolEventTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchProtocolEventTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchProtocolEventTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>(SearchProtocolEventTermsDocument, options);
-      }
-export function useSearchProtocolEventTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>(SearchProtocolEventTermsDocument, options);
-        }
-export type SearchProtocolEventTermsQueryHookResult = ReturnType<typeof useSearchProtocolEventTermsQuery>;
-export type SearchProtocolEventTermsLazyQueryHookResult = ReturnType<typeof useSearchProtocolEventTermsLazyQuery>;
-export type SearchProtocolEventTermsQueryResult = Apollo.QueryResult<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>;
-export const SearchNaturalEventTermsDocument = gql`
-    query SearchNaturalEventTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, keys: $values, kinds: [NATURAL_EVENT], hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: key
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchNaturalEventTermsQuery__
- *
- * To run a query within a React component, call `useSearchNaturalEventTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchNaturalEventTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchNaturalEventTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchNaturalEventTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>(SearchNaturalEventTermsDocument, options);
-      }
-export function useSearchNaturalEventTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>(SearchNaturalEventTermsDocument, options);
-        }
-export type SearchNaturalEventTermsQueryHookResult = ReturnType<typeof useSearchNaturalEventTermsQuery>;
-export type SearchNaturalEventTermsLazyQueryHookResult = ReturnType<typeof useSearchNaturalEventTermsLazyQuery>;
-export type SearchNaturalEventTermsQueryResult = Apollo.QueryResult<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>;
-export const SearchRelationTermsDocument = gql`
-    query SearchRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, keys: $values, kinds: [RELATION], hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: key
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchRelationTermsQuery__
- *
- * To run a query within a React component, call `useSearchRelationTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchRelationTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchRelationTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchRelationTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>(SearchRelationTermsDocument, options);
-      }
-export function useSearchRelationTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>(SearchRelationTermsDocument, options);
-        }
-export type SearchRelationTermsQueryHookResult = ReturnType<typeof useSearchRelationTermsQuery>;
-export type SearchRelationTermsLazyQueryHookResult = ReturnType<typeof useSearchRelationTermsLazyQuery>;
-export type SearchRelationTermsQueryResult = Apollo.QueryResult<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>;
-export const SearchStructureRelationTermsDocument = gql`
-    query SearchStructureRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, keys: $values, kinds: [STRUCTURE_RELATION], hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: key
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchStructureRelationTermsQuery__
- *
- * To run a query within a React component, call `useSearchStructureRelationTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchStructureRelationTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchStructureRelationTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchStructureRelationTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>(SearchStructureRelationTermsDocument, options);
-      }
-export function useSearchStructureRelationTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>(SearchStructureRelationTermsDocument, options);
-        }
-export type SearchStructureRelationTermsQueryHookResult = ReturnType<typeof useSearchStructureRelationTermsQuery>;
-export type SearchStructureRelationTermsLazyQueryHookResult = ReturnType<typeof useSearchStructureRelationTermsLazyQuery>;
-export type SearchStructureRelationTermsQueryResult = Apollo.QueryResult<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>;
-export const SearchMeasurementTermsDocument = gql`
-    query SearchMeasurementTerms($search: String, $values: [String!], $hidden: Boolean) {
-  options: terms(
-    filters: {search: $search, keys: $values, kinds: [MEASUREMENT], hidden: $hidden}
-    pagination: {limit: 10}
-  ) {
-    value: key
-    label: key
-  }
-}
-    `;
-
-/**
- * __useSearchMeasurementTermsQuery__
- *
- * To run a query within a React component, call `useSearchMeasurementTermsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchMeasurementTermsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchMeasurementTermsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *      hidden: // value for 'hidden'
- *   },
- * });
- */
-export function useSearchMeasurementTermsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>(SearchMeasurementTermsDocument, options);
-      }
-export function useSearchMeasurementTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>(SearchMeasurementTermsDocument, options);
-        }
-export type SearchMeasurementTermsQueryHookResult = ReturnType<typeof useSearchMeasurementTermsQuery>;
-export type SearchMeasurementTermsLazyQueryHookResult = ReturnType<typeof useSearchMeasurementTermsLazyQuery>;
-export type SearchMeasurementTermsQueryResult = Apollo.QueryResult<SearchMeasurementTermsQuery, SearchMeasurementTermsQueryVariables>;
 export const TodoListsDocument = gql`
     query TodoLists($filters: TodoListFilter, $pagination: OffsetPaginationInput) {
   todoLists(filters: $filters, pagination: $pagination) {
@@ -19887,6 +18754,41 @@ export function useTodoListLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type TodoListQueryHookResult = ReturnType<typeof useTodoListQuery>;
 export type TodoListLazyQueryHookResult = ReturnType<typeof useTodoListLazyQuery>;
 export type TodoListQueryResult = Apollo.QueryResult<TodoListQuery, TodoListQueryVariables>;
+export const TodoItemSummaryDocument = gql`
+    query TodoItemSummary($id: ID!) {
+  todoItem(id: $id) {
+    ...TodoItemWithList
+  }
+}
+    ${TodoItemWithListFragmentDoc}`;
+
+/**
+ * __useTodoItemSummaryQuery__
+ *
+ * To run a query within a React component, call `useTodoItemSummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTodoItemSummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTodoItemSummaryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTodoItemSummaryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TodoItemSummaryQuery, TodoItemSummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TodoItemSummaryQuery, TodoItemSummaryQueryVariables>(TodoItemSummaryDocument, options);
+      }
+export function useTodoItemSummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TodoItemSummaryQuery, TodoItemSummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TodoItemSummaryQuery, TodoItemSummaryQueryVariables>(TodoItemSummaryDocument, options);
+        }
+export type TodoItemSummaryQueryHookResult = ReturnType<typeof useTodoItemSummaryQuery>;
+export type TodoItemSummaryLazyQueryHookResult = ReturnType<typeof useTodoItemSummaryLazyQuery>;
+export type TodoItemSummaryQueryResult = Apollo.QueryResult<TodoItemSummaryQuery, TodoItemSummaryQueryVariables>;
 export const TodoItemDocument = gql`
     query TodoItem($id: ID!) {
   todoItem(id: $id) {
@@ -20037,46 +18939,6 @@ export function useTodoSummaryLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type TodoSummaryQueryHookResult = ReturnType<typeof useTodoSummaryQuery>;
 export type TodoSummaryLazyQueryHookResult = ReturnType<typeof useTodoSummaryLazyQuery>;
 export type TodoSummaryQueryResult = Apollo.QueryResult<TodoSummaryQuery, TodoSummaryQueryVariables>;
-export const SlimTodoItemsDocument = gql`
-    query SlimTodoItems($filters: TodoItemFilter, $pagination: OffsetPaginationInput) {
-  todoItems(
-    filters: $filters
-    pagination: $pagination
-    ordering: [{updatedAt: DESC}]
-  ) {
-    ...SlimTodoItem
-  }
-}
-    ${SlimTodoItemFragmentDoc}`;
-
-/**
- * __useSlimTodoItemsQuery__
- *
- * To run a query within a React component, call `useSlimTodoItemsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSlimTodoItemsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSlimTodoItemsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useSlimTodoItemsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>(SlimTodoItemsDocument, options);
-      }
-export function useSlimTodoItemsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>(SlimTodoItemsDocument, options);
-        }
-export type SlimTodoItemsQueryHookResult = ReturnType<typeof useSlimTodoItemsQuery>;
-export type SlimTodoItemsLazyQueryHookResult = ReturnType<typeof useSlimTodoItemsLazyQuery>;
-export type SlimTodoItemsQueryResult = Apollo.QueryResult<SlimTodoItemsQuery, SlimTodoItemsQueryVariables>;
 export const NextTodoObjectDocument = gql`
     query NextTodoObject($item: ID!) {
   todoItemStructures(
@@ -20229,8 +19091,8 @@ export type TodoListAssignmentQueryHookResult = ReturnType<typeof useTodoListAss
 export type TodoListAssignmentLazyQueryHookResult = ReturnType<typeof useTodoListAssignmentLazyQuery>;
 export type TodoListAssignmentQueryResult = Apollo.QueryResult<TodoListAssignmentQuery, TodoListAssignmentQueryVariables>;
 export const TodoChangedDocument = gql`
-    subscription TodoChanged($list: ID, $item: ID) {
-  todoChanged(list: $list, item: $item) {
+    subscription TodoChanged($list: ID, $item: ID, $identifier: String, $object: ID) {
+  todoChanged(list: $list, item: $item, identifier: $identifier, object: $object) {
     kind
     listId
     itemId
@@ -20255,6 +19117,8 @@ export const TodoChangedDocument = gql`
  *   variables: {
  *      list: // value for 'list'
  *      item: // value for 'item'
+ *      identifier: // value for 'identifier'
+ *      object: // value for 'object'
  *   },
  * });
  */
