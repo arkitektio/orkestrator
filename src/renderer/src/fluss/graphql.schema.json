@@ -4655,6 +4655,18 @@
             "deprecationReason": null
           },
           {
+            "name": "creator",
+            "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ids",
             "description": "Filter by a list of IDs",
             "type": {
@@ -8683,6 +8695,18 @@
             "deprecationReason": null
           },
           {
+            "name": "creator",
+            "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ids",
             "description": "Filter by a list of IDs",
             "type": {
@@ -8697,6 +8721,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "latest",
+            "description": "true: only each flow's newest version (the head of its lineage), so a list shows one row per flow; false: only the versions a newer one replaced. The newest version is decided over all of the lineage's versions, so `status` and `search` next to it apply to that head, not to the newest version that happens to match",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -9223,6 +9259,54 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "PythonRunChange",
+        "description": "A Python run started (`create`), changed status (`update`: reopened, completed, failed, cancelled) or was deleted (`delete`, the id only). Exactly one field is set.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "create",
+            "description": "The run that just started.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "PythonRun",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "delete",
+            "description": "The id of the run that was deleted.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "update",
+            "description": "The run that just changed status.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "PythonRun",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -13461,6 +13545,54 @@
       },
       {
         "kind": "OBJECT",
+        "name": "RunChange",
+        "description": "A run started (`create`), changed status (`update`) or was deleted (`delete`, the id only). Exactly one field is set.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "create",
+            "description": "The run that just started.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Run",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "delete",
+            "description": "The id of the run that was deleted.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "update",
+            "description": "The run that just changed, e.g. was completed.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Run",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
         "name": "RunEvent",
         "description": "A RunEvent is a single event emitted while a Run executes: a streamed value (NEXT), an ERROR, or a COMPLETE, originating from a specific node handle in the flow.",
         "isOneOf": null,
@@ -13961,6 +14093,26 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "status",
+            "description": "Filter by run status, e.g. [RUNNING] for the runs still going however old they are",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "RunStatus",
+                  "kind": "ENUM",
+                  "ofType": null
+                }
+              }
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -15448,6 +15600,104 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "pythonRun",
+            "description": "One Python run as it changes status or is deleted.",
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "PythonRunChange",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "pythonRuns",
+            "description": "Every Python run of the organization as it starts, is reopened, finishes or is deleted.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "PythonRunChange",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "run",
+            "description": "One run as it changes status or is deleted.",
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "RunChange",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "runs",
+            "description": "Every run of the organization as it starts, changes status (RUNNING to COMPLETED) or is deleted: with `runs(filters: { status: [RUNNING] })` a list of the running runs, kept current without polling.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "RunChange",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -16548,6 +16798,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "DateTime",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "creator",
+            "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
               "ofType": null
             },
             "defaultValue": null,

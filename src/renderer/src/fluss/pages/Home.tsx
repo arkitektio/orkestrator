@@ -9,6 +9,7 @@ import {
   RunStatus,
   useHomePageStatsQuery,
   useListRunsQuery,
+  useWatchRunsSubscription,
   WorkspaceOrder,
 } from "@/fluss/api/graphql";
 import { Activity, Loader2, Plus } from "lucide-react";
@@ -19,26 +20,25 @@ import WorkspaceList from "../components/lists/WorkspaceList";
 import { FLUSS_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 
-const ACTIVE_RUNS_WINDOW = 30;
+const ACTIVE_RUNS_SHOWN = 30;
 
 /**
- * Runs that are still executing, drawn from the most recent runs.
- *
- * The backend has no status filter on `runs`, so this looks at the latest
- * `ACTIVE_RUNS_WINDOW` runs and keeps the running ones client-side. It polls
- * so a run flips to completed without a manual refresh, and renders nothing
- * when there is nothing in flight.
+ * Runs that are still executing, however old: the server filters by status.
+ * A run starting or completing anywhere in the organization (the `runs`
+ * subscription) re-reads the list, so it flips without a refresh; renders
+ * nothing when there is nothing in flight.
  */
 const ActiveRuns = () => {
-  const { data, error } = useListRunsQuery({
+  const { data, error, refetch } = useListRunsQuery({
     variables: {
-      pagination: { limit: ACTIVE_RUNS_WINDOW },
+      filters: { status: [RunStatus.Running] },
+      pagination: { limit: ACTIVE_RUNS_SHOWN },
       ordering: [{ createdAt: Ordering.Desc }],
     },
-    pollInterval: 5000,
   });
+  useWatchRunsSubscription({ onData: () => void refetch() });
 
-  const active = data?.runs.filter((r) => r.status === RunStatus.Running) ?? [];
+  const active = data?.runs ?? [];
   if (active.length === 0) return null;
 
   return (

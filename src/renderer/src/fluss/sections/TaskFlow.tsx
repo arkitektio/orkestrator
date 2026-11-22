@@ -1,14 +1,9 @@
 import type { Object } from "@/core/types";
 import { useDetailTaskQuery } from "@/rekuest/api/graphql";
-import { useEffect, useRef } from "react";
-import { useRunForTaskQuery } from "../api/graphql";
+import { useRunForTaskQuery, useWatchRunsSubscription } from "../api/graphql";
 import { PYTHON_RUNNER_INTERFACE } from "../python/deployments";
 import { TrackFlow } from "../track/TrackFlow";
 import { TaskPythonRun } from "./TaskPythonRun";
-
-const RETRY_BASE_MS = 1000;
-const RETRY_MAX_MS = 30_000;
-const RETRY_MAX_ATTEMPTS = 6;
 
 /** A task run by fluss's Python flow runner, deployed or called bare. */
 const isPythonFlowTask = (task: {
@@ -37,21 +32,14 @@ const TaskGraphFlow = (props: { id: string }) => {
     },
   });
 
-  // Retry with exponential backoff and a ceiling: a persistent error must not
-  // become an unbounded 1 Hz refetch loop.
-  const attemptsRef = useRef(0);
-  useEffect(() => {
-    if (!error) {
-      attemptsRef.current = 0;
-      return;
-    }
-    console.error(error);
-    if (attemptsRef.current >= RETRY_MAX_ATTEMPTS) return;
-    const delay = Math.min(RETRY_BASE_MS * 2 ** attemptsRef.current, RETRY_MAX_MS);
-    attemptsRef.current += 1;
-    const t = setTimeout(() => void refetch(), delay);
-    return () => clearTimeout(t);
-  }, [error, refetch]);
+  // A fresh task may not have its run yet: the run starting for this task
+  // (`runs` subscription) re-reads it, instead of retrying on a timer.
+  useWatchRunsSubscription({
+    skip: !!data?.runForTask,
+    onData: ({ data: change }) => {
+      if (change.data?.runs.create?.taskId === props.id) void refetch();
+    },
+  });
 
   return (
     <>

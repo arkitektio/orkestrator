@@ -6,7 +6,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { cn } from "@/core/util/utils";
 import { Ordering, PythonFlowStatus, usePythonFlowsQuery } from "@/fluss/api/graphql";
 import { AlertTriangle, Code2, Loader2, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FLUSS_HELP } from "../help";
 import { PythonFlowStatusBadge } from "../python/StatusBadges";
@@ -18,14 +18,18 @@ const STATUS_FILTERS: { label: string; value: PythonFlowStatus[] | undefined }[]
   { label: "Archived", value: [PythonFlowStatus.Archived] },
 ];
 
-/** Every Python flow, one row per flow: its newest version that matches. */
+/**
+ * Every Python flow, one row per flow: its newest version (`latest`, the head of
+ * its lineage, decided on the server). The status and search filters apply to
+ * that head, so a flow whose newest version is a draft is not listed as published.
+ */
 const Page = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState(0);
   const { data, loading, error, refetch } = usePythonFlowsQuery({
     variables: {
-      filters: { search: search || undefined, status: STATUS_FILTERS[status].value },
+      filters: { latest: true, search: search || undefined, status: STATUS_FILTERS[status].value },
       ordering: [{ createdAt: Ordering.Desc }],
       pagination: { limit: 200 },
     },
@@ -33,14 +37,7 @@ const Page = () => {
     fetchPolicy: "cache-and-network",
   });
 
-  const latest = useMemo(() => {
-    const seen = new Set<string>();
-    return (data?.pythonFlows ?? []).filter((flow) => {
-      if (seen.has(flow.lineage)) return false;
-      seen.add(flow.lineage);
-      return true;
-    });
-  }, [data]);
+  const latest = data?.pythonFlows ?? [];
 
   return (
     <FlussPythonFlow.ListPage

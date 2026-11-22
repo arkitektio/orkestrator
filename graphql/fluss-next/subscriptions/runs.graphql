@@ -1,0 +1,44 @@
+# Runs as they start, change status and go: the home page's "running now" and
+# the runs lists refetch on these instead of polling.
+subscription WatchRuns {
+  runs {
+    create {
+      id
+      taskId
+      status
+    }
+    update {
+      id
+      taskId
+      status
+    }
+    delete
+  }
+}
+
+subscription WatchPythonRuns {
+  pythonRuns {
+    create {
+      id
+      taskId
+      status
+    }
+    update {
+      id
+      taskId
+      status
+    }
+    delete
+  }
+}
+
+# One Python run's status changes (it completes, fails): its trace re-reads then.
+subscription WatchPythonRun($id: ID!) {
+  pythonRun(id: $id) {
+    update {
+      id
+      status
+    }
+    delete
+  }
+}

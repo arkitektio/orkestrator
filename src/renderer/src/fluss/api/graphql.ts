@@ -681,6 +681,8 @@ export type FlowFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
+  creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
@@ -1244,8 +1246,12 @@ export type PythonFlowFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
+  creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** true: only each flow's newest version (the head of its lineage), so a list shows one row per flow; false: only the versions a newer one replaced. The newest version is decided over all of the lineage's versions, so `status` and `search` next to it apply to that head, not to the newest version that happens to match */
+  latest?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the versions of one flow */
   lineage?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
@@ -1318,6 +1324,17 @@ export type PythonRun = {
   status: PythonRunStatus;
   /** The id of the rekuest task that runs the flow. */
   taskId: Scalars['ID']['output'];
+};
+
+/** A Python run started (`create`), changed status (`update`: reopened, completed, failed, cancelled) or was deleted (`delete`, the id only). Exactly one field is set. */
+export type PythonRunChange = {
+  __typename?: 'PythonRunChange';
+  /** The run that just started. */
+  create?: Maybe<PythonRun>;
+  /** The id of the run that was deleted. */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** The run that just changed status. */
+  update?: Maybe<PythonRun>;
 };
 
 export type PythonRunFilter = {
@@ -1901,6 +1918,17 @@ export type RunSnapshotsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** A run started (`create`), changed status (`update`) or was deleted (`delete`, the id only). Exactly one field is set. */
+export type RunChange = {
+  __typename?: 'RunChange';
+  /** The run that just started. */
+  create?: Maybe<Run>;
+  /** The id of the run that was deleted. */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** The run that just changed, e.g. was completed. */
+  update?: Maybe<Run>;
+};
+
 /** A RunEvent is a single event emitted while a Run executes: a streamed value (NEXT), an ERROR, or a COMPLETE, originating from a specific node handle in the flow. */
 export type RunEvent = {
   __typename?: 'RunEvent';
@@ -1968,6 +1996,8 @@ export type RunFilter = {
   requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by task id (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by run status, e.g. [RUNNING] for the runs still going however old they are */
+  status?: InputMaybe<Array<RunStatus>>;
 };
 
 export type RunOrder =
@@ -2163,11 +2193,29 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Subscribe to the live stream of events for a given run. */
   events: RunEvent;
+  /** One Python run as it changes status or is deleted. */
+  pythonRun: PythonRunChange;
+  /** Every Python run of the organization as it starts, is reopened, finishes or is deleted. */
+  pythonRuns: PythonRunChange;
+  /** One run as it changes status or is deleted. */
+  run: RunChange;
+  /** Every run of the organization as it starts, changes status (RUNNING to COMPLETED) or is deleted: with `runs(filters: { status: [RUNNING] })` a list of the running runs, kept current without polling. */
+  runs: RunChange;
 };
 
 
 export type SubscriptionEventsArgs = {
   run: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionPythonRunArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionRunArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type TimeBucket = {
@@ -2317,6 +2365,8 @@ export type WorkspaceFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
+  creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
@@ -3331,6 +3381,28 @@ export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type HomePageStatsQuery = { __typename?: 'Query', workspaceStats: { __typename?: 'WorkspaceStats', count: number } };
 
+export type ProfileFeedWorkspacesQueryVariables = Exact<{
+  filters?: InputMaybe<WorkspaceFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedWorkspacesQuery = { __typename?: 'Query', workspaces: Array<(
+    { __typename?: 'Workspace' }
+    & ListWorkspaceFragment
+  )> };
+
+export type ProfileFeedPythonFlowsQueryVariables = Exact<{
+  filters?: InputMaybe<PythonFlowFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ProfileFeedPythonFlowsQuery = { __typename?: 'Query', pythonFlows: Array<(
+    { __typename?: 'PythonFlow' }
+    & ListPythonFlowFragment
+  )> };
+
 export type PythonFlowsQueryVariables = Exact<{
   filters?: InputMaybe<PythonFlowFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3543,6 +3615,23 @@ export type EventsSubscription = { __typename?: 'Subscription', events: (
     { __typename?: 'RunEvent' }
     & RunEventFragment
   ) };
+
+export type WatchRunsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchRunsSubscription = { __typename?: 'Subscription', runs: { __typename?: 'RunChange', delete?: string | null, create?: { __typename?: 'Run', id: string, taskId: string, status: RunStatus } | null, update?: { __typename?: 'Run', id: string, taskId: string, status: RunStatus } | null } };
+
+export type WatchPythonRunsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchPythonRunsSubscription = { __typename?: 'Subscription', pythonRuns: { __typename?: 'PythonRunChange', delete?: string | null, create?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus } | null, update?: { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus } | null } };
+
+export type WatchPythonRunSubscriptionVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type WatchPythonRunSubscription = { __typename?: 'Subscription', pythonRun: { __typename?: 'PythonRunChange', delete?: string | null, update?: { __typename?: 'PythonRun', id: string, status: PythonRunStatus } | null } };
 
 export const ListFlowFragmentDoc = gql`
     fragment ListFlow on Flow {
@@ -5008,6 +5097,86 @@ export function useHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQuery>;
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
+export const ProfileFeedWorkspacesDocument = gql`
+    query ProfileFeedWorkspaces($filters: WorkspaceFilter, $pagination: OffsetPaginationInput) {
+  workspaces(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListWorkspace
+  }
+}
+    ${ListWorkspaceFragmentDoc}`;
+
+/**
+ * __useProfileFeedWorkspacesQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedWorkspacesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedWorkspacesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedWorkspacesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedWorkspacesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>(ProfileFeedWorkspacesDocument, options);
+      }
+export function useProfileFeedWorkspacesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>(ProfileFeedWorkspacesDocument, options);
+        }
+export type ProfileFeedWorkspacesQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesQuery>;
+export type ProfileFeedWorkspacesLazyQueryHookResult = ReturnType<typeof useProfileFeedWorkspacesLazyQuery>;
+export type ProfileFeedWorkspacesQueryResult = Apollo.QueryResult<ProfileFeedWorkspacesQuery, ProfileFeedWorkspacesQueryVariables>;
+export const ProfileFeedPythonFlowsDocument = gql`
+    query ProfileFeedPythonFlows($filters: PythonFlowFilter, $pagination: OffsetPaginationInput) {
+  pythonFlows(
+    filters: $filters
+    pagination: $pagination
+    ordering: [{createdAt: DESC}]
+  ) {
+    ...ListPythonFlow
+  }
+}
+    ${ListPythonFlowFragmentDoc}`;
+
+/**
+ * __useProfileFeedPythonFlowsQuery__
+ *
+ * To run a query within a React component, call `useProfileFeedPythonFlowsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProfileFeedPythonFlowsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileFeedPythonFlowsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useProfileFeedPythonFlowsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProfileFeedPythonFlowsQuery, ProfileFeedPythonFlowsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProfileFeedPythonFlowsQuery, ProfileFeedPythonFlowsQueryVariables>(ProfileFeedPythonFlowsDocument, options);
+      }
+export function useProfileFeedPythonFlowsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProfileFeedPythonFlowsQuery, ProfileFeedPythonFlowsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProfileFeedPythonFlowsQuery, ProfileFeedPythonFlowsQueryVariables>(ProfileFeedPythonFlowsDocument, options);
+        }
+export type ProfileFeedPythonFlowsQueryHookResult = ReturnType<typeof useProfileFeedPythonFlowsQuery>;
+export type ProfileFeedPythonFlowsLazyQueryHookResult = ReturnType<typeof useProfileFeedPythonFlowsLazyQuery>;
+export type ProfileFeedPythonFlowsQueryResult = Apollo.QueryResult<ProfileFeedPythonFlowsQuery, ProfileFeedPythonFlowsQueryVariables>;
 export const PythonFlowsDocument = gql`
     query PythonFlows($filters: PythonFlowFilter, $pagination: OffsetPaginationInput, $ordering: [PythonFlowOrder!]) {
   pythonFlows(filters: $filters, pagination: $pagination, ordering: $ordering) {
@@ -5717,3 +5886,115 @@ export function useEventsSubscription(baseOptions: ApolloReactHooks.Subscription
       }
 export type EventsSubscriptionHookResult = ReturnType<typeof useEventsSubscription>;
 export type EventsSubscriptionResult = Apollo.SubscriptionResult<EventsSubscription>;
+export const WatchRunsDocument = gql`
+    subscription WatchRuns {
+  runs {
+    create {
+      id
+      taskId
+      status
+    }
+    update {
+      id
+      taskId
+      status
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchRunsSubscription__
+ *
+ * To run a query within a React component, call `useWatchRunsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchRunsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchRunsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchRunsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchRunsSubscription, WatchRunsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchRunsSubscription, WatchRunsSubscriptionVariables>(WatchRunsDocument, options);
+      }
+export type WatchRunsSubscriptionHookResult = ReturnType<typeof useWatchRunsSubscription>;
+export type WatchRunsSubscriptionResult = Apollo.SubscriptionResult<WatchRunsSubscription>;
+export const WatchPythonRunsDocument = gql`
+    subscription WatchPythonRuns {
+  pythonRuns {
+    create {
+      id
+      taskId
+      status
+    }
+    update {
+      id
+      taskId
+      status
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchPythonRunsSubscription__
+ *
+ * To run a query within a React component, call `useWatchPythonRunsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchPythonRunsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchPythonRunsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchPythonRunsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchPythonRunsSubscription, WatchPythonRunsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchPythonRunsSubscription, WatchPythonRunsSubscriptionVariables>(WatchPythonRunsDocument, options);
+      }
+export type WatchPythonRunsSubscriptionHookResult = ReturnType<typeof useWatchPythonRunsSubscription>;
+export type WatchPythonRunsSubscriptionResult = Apollo.SubscriptionResult<WatchPythonRunsSubscription>;
+export const WatchPythonRunDocument = gql`
+    subscription WatchPythonRun($id: ID!) {
+  pythonRun(id: $id) {
+    update {
+      id
+      status
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchPythonRunSubscription__
+ *
+ * To run a query within a React component, call `useWatchPythonRunSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchPythonRunSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchPythonRunSubscription({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useWatchPythonRunSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchPythonRunSubscription, WatchPythonRunSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchPythonRunSubscription, WatchPythonRunSubscriptionVariables>(WatchPythonRunDocument, options);
+      }
+export type WatchPythonRunSubscriptionHookResult = ReturnType<typeof useWatchPythonRunSubscription>;
+export type WatchPythonRunSubscriptionResult = Apollo.SubscriptionResult<WatchPythonRunSubscription>;

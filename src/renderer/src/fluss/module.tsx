@@ -4,6 +4,7 @@ import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { FLUSS_NAV_LINKS } from "./navLinks";
+import { FLUSS_PROFILE_FEED } from "./profile/feed";
 import { ImplementationFlow } from "./sections/ImplementationFlow";
 import { TaskFlow } from "./sections/TaskFlow";
 
@@ -31,5 +32,7 @@ export const FLUSS_MODULE = defineModule({
         Component: TaskFlow,
       },
     ],
+    // The workspaces and Python flows they made, in the profile's newest-first feed.
+    profileFeed: FLUSS_PROFILE_FEED,
   },
 });

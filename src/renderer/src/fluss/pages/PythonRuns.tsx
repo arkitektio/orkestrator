@@ -3,7 +3,7 @@ import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { PageLayout } from "@/core/layout/PageLayout";
 import Timestamp from "@/core/ui/timestamp";
 import { cn } from "@/core/util/utils";
-import { Ordering, PythonRunStatus, usePythonRunsQuery } from "@/fluss/api/graphql";
+import { Ordering, PythonRunStatus, usePythonRunsQuery, useWatchPythonRunsSubscription } from "@/fluss/api/graphql";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { FLUSS_HELP } from "../help";
@@ -34,8 +34,9 @@ const Page = () => {
       ordering: [{ createdAt: Ordering.Desc }],
       pagination: { limit: 100 },
     },
-    pollInterval: 10_000,
   });
+  // A run starting or changing status re-reads the page, instead of polling.
+  useWatchPythonRunsSubscription({ onData: () => void refetch() });
 
   return (
     <PageLayout title="Python runs" help={FLUSS_HELP.pythonRuns}>

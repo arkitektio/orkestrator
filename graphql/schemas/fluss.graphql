@@ -913,6 +913,11 @@ input FlowFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """
+  Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
+  """
+  creator: ID
+
   """Filter by a list of IDs"""
   ids: [ID!]
 
@@ -1551,8 +1556,18 @@ input PythonFlowFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """
+  Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
+  """
+  creator: ID
+
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  true: only each flow's newest version (the head of its lineage), so a list shows one row per flow; false: only the versions a newer one replaced. The newest version is decided over all of the lineage's versions, so `status` and `search` next to it apply to that head, not to the newest version that happens to match
+  """
+  latest: Boolean
 
   """Filter to the versions of one flow"""
   lineage: ID
@@ -1659,6 +1674,20 @@ type PythonRun {
 
   """The id of the rekuest task that runs the flow."""
   taskId: ID!
+}
+
+"""
+A Python run started (`create`), changed status (`update`: reopened, completed, failed, cancelled) or was deleted (`delete`, the id only). Exactly one field is set.
+"""
+type PythonRunChange {
+  """The run that just started."""
+  create: PythonRun
+
+  """The id of the run that was deleted."""
+  delete: ID
+
+  """The run that just changed status."""
+  update: PythonRun
 }
 
 input PythonRunFilter {
@@ -2320,6 +2349,20 @@ type Run {
 }
 
 """
+A run started (`create`), changed status (`update`) or was deleted (`delete`, the id only). Exactly one field is set.
+"""
+type RunChange {
+  """The run that just started."""
+  create: Run
+
+  """The id of the run that was deleted."""
+  delete: ID
+
+  """The run that just changed, e.g. was completed."""
+  update: Run
+}
+
+"""
 A RunEvent is a single event emitted while a Run executes: a streamed value (NEXT), an ERROR, or a COMPLETE, originating from a specific node handle in the flow.
 """
 type RunEvent {
@@ -2410,6 +2453,11 @@ input RunFilter {
 
   """Search by task id (case-insensitive substring)"""
   search: String
+
+  """
+  Filter by run status, e.g. [RUNNING] for the runs still going however old they are
+  """
+  status: [RunStatus!]
 }
 
 input RunOrder @oneOf {
@@ -2654,6 +2702,22 @@ input StringAssignWidgetInput {
 type Subscription {
   """Subscribe to the live stream of events for a given run."""
   events(run: ID!): RunEvent!
+
+  """One Python run as it changes status or is deleted."""
+  pythonRun(id: ID!): PythonRunChange!
+
+  """
+  Every Python run of the organization as it starts, is reopened, finishes or is deleted.
+  """
+  pythonRuns: PythonRunChange!
+
+  """One run as it changes status or is deleted."""
+  run(id: ID!): RunChange!
+
+  """
+  Every run of the organization as it starts, changes status (RUNNING to COMPLETED) or is deleted: with `runs(filters: { status: [RUNNING] })` a list of the running runs, kept current without polling.
+  """
+  runs: RunChange!
 }
 
 type TimeBucket {
@@ -2827,6 +2891,11 @@ input WorkspaceFilter {
 
   """Filter for items created before this datetime"""
   createdBefore: DateTime
+
+  """
+  Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
+  """
+  creator: ID
 
   """Filter by a list of IDs"""
   ids: [ID!]

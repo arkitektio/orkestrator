@@ -1,0 +1,14 @@
+# A member's profile feed: the workspaces and Python flows they made, newest
+# first (`creator` takes their sub). Python flows list each flow once, by the
+# head of its lineage.
+query ProfileFeedWorkspaces($filters: WorkspaceFilter, $pagination: OffsetPaginationInput) {
+  workspaces(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListWorkspace
+  }
+}
+
+query ProfileFeedPythonFlows($filters: PythonFlowFilter, $pagination: OffsetPaginationInput) {
+  pythonFlows(filters: $filters, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListPythonFlow
+  }
+}
