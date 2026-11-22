@@ -1,5 +1,7 @@
 import WorkerPool from "@/core/data/zarr/pool/workerpool";
+import { ZARR_IDLE_RELEASE_MS } from "@/core/data/zarr/caches/idleRelease";
 import { createDefaultWorker } from "@/core/data/zarr/runner/get-worker";
+import { disposeWorker } from "@/core/data/zarr/runner/worker-rpc";
 import { ZARR_WORKER_POOL_SIZE } from "./poolSize";
 
 // The pool owns its workers (spawns into empty slots on demand), and each
@@ -19,4 +21,9 @@ export const ZARR_REQUESTS_PER_WORKER = 8;
 export const workerPool = new WorkerPool(ZARR_WORKER_POOL_SIZE, {
   factory: createDefaultWorker,
   maxInFlightPerWorker: ZARR_REQUESTS_PER_WORKER,
+  // Stopped after a quiet minute: the pool outlives every scene and chart,
+  // and a worker's wasm heap never shrinks. `disposeWorker` also drops the
+  // RPC dispatcher (its listeners and the metas it sent that worker).
+  idleReleaseMs: ZARR_IDLE_RELEASE_MS,
+  dispose: (worker) => disposeWorker(worker),
 });

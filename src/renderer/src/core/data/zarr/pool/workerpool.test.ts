@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TaskPriority } from "./types";
 import WorkerPool from "./workerpool";
@@ -197,6 +197,64 @@ describe("WorkerPool", () => {
       await tick();
     }
     expect(results).toEqual(Array.from({ length: n }, (_, i) => i));
+  });
+});
+
+describe("WorkerPool idle release", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("stops its workers once nothing has run for idleReleaseMs, and respawns on the next task", async () => {
+    vi.useFakeTimers();
+    const disposed: Worker[] = [];
+    const pool = new WorkerPool(2, {
+      factory: fakeWorker,
+      idleReleaseMs: 1000,
+      dispose: (worker) => disposed.push(worker),
+    });
+    const { started, make } = controlledTasks();
+
+    const first = pool.enqueue(make("a"));
+    expect(pool.liveWorkers).toBe(1);
+    // Busy longer than the timeout: nothing is stopped under a running task.
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(disposed).toHaveLength(0);
+    started[0].finish();
+    await first.promise;
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(pool.liveWorkers).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(pool.liveWorkers).toBe(0);
+    expect(disposed).toHaveLength(1);
+
+    pool.enqueue(make("b"));
+    expect(pool.liveWorkers).toBe(1);
+    expect(started[1].worker).not.toBe(disposed[0]);
+  });
+
+  it("restarts the quiet period on every task, and stops prewarmed workers nobody used", async () => {
+    vi.useFakeTimers();
+    const pool = new WorkerPool(3, { factory: fakeWorker, idleReleaseMs: 1000 });
+    pool.prewarm();
+    expect(pool.liveWorkers).toBe(3);
+
+    await vi.advanceTimersByTimeAsync(600);
+    const { started, make } = controlledTasks();
+    const task = pool.enqueue(make("a"));
+    started[0].finish();
+    await task.promise;
+    await vi.advanceTimersByTimeAsync(600);
+    expect(pool.liveWorkers).toBe(3);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(pool.liveWorkers).toBe(0);
+  });
+
+  it("keeps its workers without idleReleaseMs", async () => {
+    vi.useFakeTimers();
+    const pool = new WorkerPool(1, { factory: fakeWorker });
+    pool.prewarm();
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(pool.liveWorkers).toBe(1);
   });
 });
 

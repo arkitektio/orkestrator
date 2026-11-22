@@ -1,3 +1,5 @@
+import { IdleRelease, ZARR_IDLE_RELEASE_MS } from "./idleRelease";
+
 /**
  * Byte-bounded LRU for raw fetched bytes (metadata documents and any chunk
  * reads routed through `store.get` rather than the worker path). Same policy
@@ -8,9 +10,22 @@ export class ByteBudgetByteCache {
   private readonly entries = new Map<string, ArrayBuffer>();
   private bytes = 0;
 
-  constructor(private readonly maxBytes: number) {}
+  private readonly idle: IdleRelease | undefined;
+
+  /**
+   * `idleClearMs`: empty the cache once nothing has read or written it for
+   * that long (`null` = never). These caches are module-level, so without it
+   * they hold their full budget for the rest of the session.
+   */
+  constructor(
+    private readonly maxBytes: number,
+    idleClearMs: number | null = ZARR_IDLE_RELEASE_MS,
+  ) {
+    this.idle = idleClearMs === null ? undefined : new IdleRelease(() => this.clear(), idleClearMs);
+  }
 
   get(key: string): ArrayBuffer | undefined {
+    this.idle?.touch();
     const entry = this.entries.get(key);
     if (!entry) return undefined;
     // Move-to-end recency.
@@ -20,6 +35,7 @@ export class ByteBudgetByteCache {
   }
 
   set(key: string, value: ArrayBuffer): void {
+    this.idle?.touch();
     const existing = this.entries.get(key);
     if (existing) {
       this.bytes -= existing.byteLength;

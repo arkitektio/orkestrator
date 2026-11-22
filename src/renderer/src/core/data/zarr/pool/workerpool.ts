@@ -4,6 +4,7 @@ import type {
   WorkerPoolTaskInput,
   WorkerPoolTaskOptions,
 } from './types'
+import { IdleRelease } from '../caches/idleRelease'
 
 type QueuedTask<T> = WorkerPoolTaskDescriptor<T> & {
   id: number
@@ -43,6 +44,14 @@ export interface WorkerPoolOptions {
    * receives `null` and must spawn (and return) its own.
    */
   factory?: () => Worker
+  /**
+   * Stop every worker once the pool has had nothing queued or running for
+   * this long; the next task spawns again (with a `factory`). Off by default.
+   * Each worker holds a wasm heap the size of the largest chunk it decoded.
+   */
+  idleReleaseMs?: number
+  /** How a worker the pool stops is torn down (default `terminate()`). */
+  dispose?: (worker: Worker) => void
 }
 
 export const DEFAULT_MAX_IN_FLIGHT_PER_WORKER = 4
@@ -75,6 +84,10 @@ export class WorkerPool {
 
   private readonly factory: (() => Worker) | undefined
 
+  private readonly dispose: (worker: Worker) => void
+
+  private readonly idle: IdleRelease | undefined
+
   private taskQueue: Array<QueuedTask<unknown>>
 
   private tasks: Map<number, QueuedTask<unknown>>
@@ -90,6 +103,11 @@ export class WorkerPool {
       options.maxInFlightPerWorker ?? DEFAULT_MAX_IN_FLIGHT_PER_WORKER,
     )
     this.factory = options.factory
+    this.dispose = options.dispose ?? ((worker) => worker.terminate())
+    this.idle =
+      options.idleReleaseMs === undefined
+        ? undefined
+        : new IdleRelease(() => this.releaseIdleWorkers(), options.idleReleaseMs)
     this.taskQueue = []
     this.tasks = new Map()
     this.nextTaskId = 0
@@ -125,6 +143,8 @@ export class WorkerPool {
         spawned++
       }
     }
+    // Warmed for a read that may never come.
+    if (spawned > 0 && this.isIdle()) this.idle?.touch()
   }
 
   enqueue<T>(
@@ -217,9 +237,27 @@ export class WorkerPool {
 
   terminateWorkers(): void {
     for (const slot of this.slots) {
-      slot.worker?.terminate()
+      if (slot.worker) this.dispose(slot.worker)
       slot.worker = null
     }
+  }
+
+  /** Live workers (spawned and not yet stopped). */
+  get liveWorkers(): number {
+    let live = 0
+    for (const slot of this.slots) if (slot.worker !== null) live++
+    return live
+  }
+
+  private isIdle(): boolean {
+    return this.taskQueue.length === 0 && this.inFlight === 0
+  }
+
+  /** The idle timer fired. A task that started since keeps them all: its
+   * settle re-arms the timer when the pool is quiet again. */
+  private releaseIdleWorkers(): void {
+    if (!this.isIdle()) return
+    this.terminateWorkers()
   }
 
   /**
@@ -291,6 +329,7 @@ export class WorkerPool {
           this.pumpQueue()
         })
     }
+    if (this.idle && this.isIdle()) this.idle.touch()
   }
 
   private release(slot: WorkerSlot, returnedWorker: Worker | null): void {
