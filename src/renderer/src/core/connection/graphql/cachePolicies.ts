@@ -1,9 +1,45 @@
-import type { TypePolicies } from "@apollo/client";
+import type { FieldPolicy, TypePolicies } from "@apollo/client";
 import {
   buildOffsetPaginationPolicies,
+  mergeOffsetPage,
+  offsetPaginationPolicy,
   portsByKeyPolicy,
   type PaginatedFieldMap,
 } from "@/core/connection/arkitekt/builders/cachePolicies";
+
+/**
+ * The most rows a strawberry_django service returns for one page
+ * (`PAGINATION_MAX_LIMIT`, 100 by default and not raised by any service). A
+ * larger `limit` is cut to it without a word.
+ */
+export const SERVER_PAGE_CAP = 100;
+
+type PageArgs = { pagination?: { offset?: number | null; limit?: number | null } | null } | null | undefined;
+
+/** The page as the server answers it: a `limit` past the cap is the cap. */
+const cappedArgs = (args: PageArgs): PageArgs => {
+  const limit = args?.pagination?.limit;
+  if (typeof limit !== "number" || limit <= SERVER_PAGE_CAP) return args;
+  return { ...args, pagination: { ...args?.pagination, limit: SERVER_PAGE_CAP } };
+};
+
+/**
+ * `offsetPaginationPolicy` for a service that caps pages: a window refetched
+ * whole (a `refetchQueries`, a reconnect) that comes back at the cap is a
+ * full page, not the end of the list, so the rows after it that "Show more"
+ * fetched stay in the window.
+ */
+export const cappedOffsetPaginationPolicy = (keyArgs: readonly string[]): FieldPolicy<unknown[]> => ({
+  ...offsetPaginationPolicy(keyArgs),
+  merge: (existing, incoming, { args }) => mergeOffsetPage(existing, incoming ?? [], cappedArgs(args as PageArgs)),
+});
+
+/** `buildOffsetPaginationPolicies` with `cappedOffsetPaginationPolicy`. */
+export const buildCappedOffsetPaginationPolicies = (fields: PaginatedFieldMap): TypePolicies => ({
+  Query: {
+    fields: Object.fromEntries(Object.entries(fields).map(([name, keyArgs]) => [name, cappedOffsetPaginationPolicy(keyArgs)])),
+  },
+});
 
 /**
  * Root `Query` fields that take a `pagination` argument, per service, mapped
@@ -18,9 +54,11 @@ import {
  *   import re; s = open("graphql/schemas/rekuest.graphql").read()
  *   body = re.search(r'^type Query\s*\{(.*?)^\}', s, re.S | re.M).group(1)
  *   body = re.sub(r'"""[\s\S]*?"""|"[^"\n]*"', "", body)
- *   for m in re.finditer(r'(\w+)\s*\(([^)]*)\)\s*:', body):
+ *   for m in re.finditer(r'(\w+)\s*\(([^)]*)\)\s*:\s*(\[?)', body):
  *       args = re.findall(r'(\w+)\s*:', m.group(2))
- *       if "pagination" in args:
+ *       # Lists only: a field that pages inside ONE object (kraph's
+ *       # `renderGraphTable`) must keep Apollo's default keying.
+ *       if "pagination" in args and m.group(3):
  *           print(f'  {m.group(1)}: {[a for a in args if a != "pagination"]},')
  *   EOF
  *
@@ -30,12 +68,15 @@ import {
 
 /** `alpaka.graphql` */
 export const ALPAKA_PAGINATED_FIELDS: PaginatedFieldMap = {
+  budgets: ["filters", "ordering"],
   chromaCollections: ["filters", "ordering"],
   defaultUses: ["filters", "ordering"],
   llmModels: ["filters", "ordering"],
+  memories: ["filters", "ordering"],
   messages: ["filters", "ordering"],
   providers: ["filters", "ordering"],
   rooms: ["filters", "ordering"],
+  usageRecords: ["filters", "ordering"],
 };
 
 /** `bank.graphql` */
@@ -60,10 +101,15 @@ export const LOKATE_PAGINATED_FIELDS: PaginatedFieldMap = {
 
 /** `kuvert.graphql` */
 export const KUVERT_PAGINATED_FIELDS: PaginatedFieldMap = {
+  categories: ["filters"],
   mailAccounts: ["filters"],
+  mailChanges: ["filters"],
   mailFolders: ["filters"],
+  mailProviders: ["filters"],
   messages: ["filters", "ordering"],
   outbox: ["filters"],
+  taskLists: ["filters"],
+  tasks: ["filters", "ordering"],
   threads: ["filters", "ordering"],
 };
 
@@ -133,7 +179,9 @@ export const KRAPH_PAGINATED_FIELDS: PaginatedFieldMap = {
   protocolEvents: ["filters", "ordering", "protocolEventCategoryId"],
   relationCategories: ["filters", "ordering"],
   relations: ["filters", "ordering", "relationCategoryId"],
-  renderGraphTable: ["filters", "order", "query"],
+  // Not `renderGraphTable`, though it takes `pagination`: it answers one object
+  // (rows and columns), not a list, so an offset merge stored a page as `[]` and
+  // threw on an unpaged render. Apollo's default keying (every argument) is right.
   scatterPlots: ["filters", "ordering"],
   structureKinds: ["filters"],
   structureRelationCategories: ["filters", "ordering"],
@@ -145,13 +193,18 @@ export const KRAPH_PAGINATED_FIELDS: PaginatedFieldMap = {
 /** `lok-next.graphql` */
 export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
   apps: ["filters", "ordering"],
+  bugReports: ["filters", "ordering"],
   clients: ["filters", "ordering"],
   deviceGroups: ["filters", "ordering"],
   devices: ["filters", "ordering"],
   groups: ["filters", "ordering"],
+  hubs: ["filters", "ordering"],
   invites: ["filters", "ordering"],
   layers: ["filters", "ordering"],
+  mandates: ["filters", "ordering"],
+  membershipRequests: ["filters", "ordering"],
   organizations: ["filters", "ordering"],
+  releases: ["filters", "ordering"],
   roles: ["filters", "ordering"],
   serviceInstances: ["filters", "ordering"],
   serviceReleases: ["filters", "ordering"],
@@ -162,7 +215,8 @@ export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
 /** `lovekit.graphql` */
 export const LOVEKIT_PAGINATED_FIELDS: PaginatedFieldMap = {
   agents: ["filters"],
-  streams: ["filters"],
+  calls: ["filters", "order"],
+  streams: ["filters", "order"],
 };
 
 /** `mikro.graphql` */
@@ -204,8 +258,10 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   agents: ["filters", "ordering"],
   bloks: ["filters"],
   clients: ["filters", "ordering"],
+  dashboards: [],
   firings: ["filters", "ordering"],
   implementations: ["filters", "ordering"],
+  interfaces: ["search"],
   materializedBloks: ["filters", "ordering"],
   memoryDrawers: ["filters"],
   memoryShelves: ["filters", "ordering"],
@@ -217,6 +273,8 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   shortcuts: ["filters", "ordering"],
   signals: ["filters", "ordering"],
   spaces: ["filters", "ordering"],
+  structurePackages: ["search"],
+  structures: ["search"],
   tasks: ["filters", "ordering"],
   testCases: ["filters"],
   testResults: ["filters"],
@@ -225,9 +283,9 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   wiregrams: [],
 };
 
-export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);
+export const ALPAKA_TYPE_POLICIES = buildCappedOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);
 export const BANK_TYPE_POLICIES = buildOffsetPaginationPolicies(BANK_PAGINATED_FIELDS);
-export const KUVERT_TYPE_POLICIES = buildOffsetPaginationPolicies(KUVERT_PAGINATED_FIELDS);
+export const KUVERT_TYPE_POLICIES = buildCappedOffsetPaginationPolicies(KUVERT_PAGINATED_FIELDS);
 export const LOKATE_TYPE_POLICIES = buildOffsetPaginationPolicies(LOKATE_PAGINATED_FIELDS);
 /**
  * A neuron model's cells and sections carry the id from the model's config,
@@ -250,7 +308,7 @@ export const ELEKTRO_TYPE_POLICIES: TypePolicies = {
 export const FLUSS_TYPE_POLICIES = buildOffsetPaginationPolicies(FLUSS_PAGINATED_FIELDS);
 export const KABINET_TYPE_POLICIES = buildOffsetPaginationPolicies(KABINET_PAGINATED_FIELDS);
 export const KRAPH_TYPE_POLICIES = buildOffsetPaginationPolicies(KRAPH_PAGINATED_FIELDS);
-const lokPagination = buildOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
+const lokPagination = buildCappedOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
 /**
  * `user(id)` answers from the normalized `User:<id>` when it holds what the
  * query asks for: a user already known from a list, a chip batch
@@ -258,6 +316,13 @@ const lokPagination = buildOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
  */
 export const LOK_TYPE_POLICIES: TypePolicies = {
   ...lokPagination,
+  // The Team page pages one organization's members by role, a page at a time
+  // ("Show more" fetches the next one): the same offset window as a root list.
+  Organization: {
+    fields: {
+      memberships: cappedOffsetPaginationPolicy(["filters", "ordering"]),
+    },
+  },
   Query: {
     ...lokPagination.Query,
     fields: {
@@ -269,7 +334,7 @@ export const LOK_TYPE_POLICIES: TypePolicies = {
     },
   },
 };
-export const LOVEKIT_TYPE_POLICIES = buildOffsetPaginationPolicies(LOVEKIT_PAGINATED_FIELDS);
+export const LOVEKIT_TYPE_POLICIES = buildCappedOffsetPaginationPolicies(LOVEKIT_PAGINATED_FIELDS);
 export const MIKRO_TYPE_POLICIES: TypePolicies = {
   ...buildOffsetPaginationPolicies(MIKRO_PAGINATED_FIELDS),
   // A lineage node's `id` is its object's id in ITS table, so `file:4` and
