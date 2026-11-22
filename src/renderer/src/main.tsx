@@ -9,14 +9,17 @@ import "./index.css";
 
 installDiagnostics();
 
-// Every split chunk is in before the first render, so nothing flashes its
-// loading fallback on first use (`app/boot`).
-await preloadWindow();
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
 );
+
+// Every split chunk is loaded right after the first render, so a page, viewer
+// or blok opened later does not flash its loading fallback (`app/boot`). Never
+// awaited before rendering: in the built app the split chunks import from this
+// entry chunk, and a top-level await here suspends the entry they wait on —
+// the window stayed blank (`e2e/smoke.spec.ts` guards it).
+void preloadWindow().catch((error: unknown) => console.warn("[boot] preloading the split chunks failed", error));
 
 warmEngines();
