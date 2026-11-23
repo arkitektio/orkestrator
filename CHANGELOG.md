@@ -1,3 +1,11 @@
+# [8.26.0](https://github.com/arkitektio/orkestrator/compare/v8.25.0...v8.26.0) (2026-11-23)
+
+
+### Features
+
+* **rekuest:** a blok debugger in debug mode ([ca7485d](https://github.com/arkitektio/orkestrator/commit/ca7485d009f1b96a134230e157db16a84e889130))
+* **rekuest:** a glyph beside the agent says when live updates are not flowing ([4cd924c](https://github.com/arkitektio/orkestrator/commit/4cd924caebd06b8de4684774eddb16aa717c927a))
+
 # [8.25.0](https://github.com/arkitektio/orkestrator/compare/v8.24.0...v8.25.0) (2026-11-23)
 
 
