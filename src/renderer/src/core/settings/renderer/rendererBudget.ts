@@ -67,7 +67,7 @@ export type RendererHardware = {
 
 /** The settings this module reads. */
 export type RendererBudgetSettings = {
-  /** Add the snapshot to bug reports (Settings → Telemetry). On unless switched off. */
+  /** Add the snapshot to bug reports (Settings → Bug reports). On unless switched off. */
   telemetryAttachHardware?: boolean;
   rendererHardware?: RendererHardware | null;
   /** Megabytes; null = automatic. */

@@ -43,7 +43,7 @@ export type HardwareDisplay = {
  * in the settings as-is and read again at the next boot, so it must stay
  * serialisable and small.
  *
- * It can also be attached to a bug report (Settings → Telemetry), so it holds
+ * It can also be attached to a bug report (Settings → Bug reports), so it holds
  * what DESCRIBES the machine and nothing that NAMES it: no hostname, serial
  * number, user name, MAC address or disk contents. `systeminformation` offers
  * all of those; `toHardwareInfo` copies fields one by one so none can ride

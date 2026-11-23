@@ -16,7 +16,7 @@ import ResetPage from "./pages/ResetPage";
 import HubPage from "./pages/HubPage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
 import ShortcutsPage from "./pages/ShortcutsPage";
-import TelemetryPage from "./pages/TelemetryPage";
+import BugReportsPage from "./pages/BugReportsPage";
 import UpdatesPage from "./pages/UpdatesPage";
 import VoicePage from "./pages/VoicePage";
 import { DEFAULT_SECTION, MOVED_SECTIONS, SETTINGS_SECTIONS, settingsLink } from "./sections";
@@ -32,7 +32,7 @@ const PAGES: Record<string, React.FC> = {
   connection: ConnectionPage,
   hub: HubPage,
   mesh: MeshPage,
-  telemetry: TelemetryPage,
+  reports: BugReportsPage,
   updates: UpdatesPage,
   experiments: ExperimentsPage,
   developer: DeveloperPage,

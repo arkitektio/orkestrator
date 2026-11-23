@@ -160,11 +160,7 @@ export const useModuleHome = (moduleKey: string, fallback: string): string =>
 export const ModuleNavMenu = ({
   moduleKey,
   ready,
-  to,
-  label,
-  icon,
-  footer,
-  children,
+  ...card
 }: {
   moduleKey: string;
   ready: boolean;
@@ -176,9 +172,32 @@ export const ModuleNavMenu = ({
   footer?: React.ReactNode;
   children: React.ReactNode;
 }) => {
-  const [open, setOpen] = useState(false);
   const nav = useModuleNav(moduleKey);
   const shown = useMemo(() => (ready ? nav : { home: nav.home, groups: [] }), [ready, nav]);
+  return <NavCardMenu nav={shown} {...card} />;
+};
+
+/**
+ * The card on right-click of a rail tile, for pages given as they are: a
+ * module's (`ModuleNavMenu`), or the host's own, which no module declares
+ * (Settings).
+ */
+export const NavCardMenu = ({
+  nav,
+  to,
+  label,
+  icon,
+  footer,
+  children,
+}: {
+  nav: ModuleNavLayout;
+  to: string;
+  label: string;
+  icon?: React.ReactNode;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -203,7 +222,7 @@ export const ModuleNavMenu = ({
           if ((event.target as HTMLElement).closest("a")) setOpen(false);
         }}
       >
-        <ModuleNavCard nav={shown} to={to} label={label} icon={icon} />
+        <ModuleNavCard nav={nav} to={to} label={label} icon={icon} />
         {footer}
       </PopoverContent>
     </Popover>

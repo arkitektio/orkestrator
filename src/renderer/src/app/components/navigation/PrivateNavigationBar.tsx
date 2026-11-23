@@ -11,11 +11,13 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Settings,
 } from "lucide-react";
 import React from "react";
 import { useMatch } from "react-router-dom";
 import { matchIcon } from "../../../core/modules/moduleIcons";
-import ModuleNavMenu, { useModuleHome } from "./ModuleNavMenu";
+import ModuleNavMenu, { NavCardMenu, useModuleHome } from "./ModuleNavMenu";
+import { settingsNav } from "@/app/settings/sections";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { isModuleAllowed, ModuleRailIslands } from "@/core/modules/registries";
@@ -290,6 +292,27 @@ const TeamNavItem = () => {
   );
 };
 
+/**
+ * Settings, as a tile like a module's: a click opens it, a right-click lists
+ * its sections. It used to be a line in the organization menu at the foot of
+ * the rail, two clicks from anywhere and filed under "switch organization".
+ *
+ * Not a module (no service, no manifest), so its card is built from the
+ * settings' own section list, not from a `navLinks` builtin.
+ */
+const SettingsNavItem = () => {
+  const { roles } = useRoles();
+  const nav = React.useMemo(() => settingsNav(roles), [roles]);
+  const icon = <Settings className="h-4 w-4" />;
+  return (
+    <NavCardMenu nav={nav} to="/settings" label="Settings" icon={icon}>
+      <ModuleTile route="/settings" home="/settings" label="Settings">
+        {icon}
+      </ModuleTile>
+    </NavCardMenu>
+  );
+};
+
 const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
   const moduleState = Arkitekt.useModuleState(moduleKey);
   const home = useModuleHome(moduleKey, moduleState?.route ?? `/${moduleKey}`);
@@ -393,6 +416,8 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
         {moduleOrder.map((moduleKey) => (
           <ModuleNavItem key={moduleKey} moduleKey={moduleKey} />
         ))}
+        {/* Last: about the app itself, after everything that is in it. */}
+        <SettingsNavItem />
       </div>
 
       {/* The open tabs. A module's own links live on the right-click card of

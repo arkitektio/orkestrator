@@ -101,7 +101,7 @@ const errorText = (errors: readonly RecordedError[]) =>
 
 /**
  * "Report a bug". Plain by default: one line, "What's wrong?", and Send. What
- * goes along is what Settings → Telemetry says, named in one sentence.
+ * goes along is what Settings → Bug reports says, named in one sentence.
  * "Debug yourself" opens the rest: every part of what the app recorded, with
  * a tick box, and what it holds. The report is built once from the ticks
  * (`buildReport`), and that one object is what is shown, sent, saved or
@@ -124,7 +124,7 @@ export const ReportBugDialog = ({
   const [description, setDescription] = useState("");
   const [expected, setExpected] = useState("");
   const { settings } = useSettings();
-  // What goes unless the user opens it up: the switches in Settings → Telemetry.
+  // What goes unless the user opens it up: the switches in Settings → Bug reports.
   const [selection, setSelection] = useState<ReportSelection>(() => selectionFromSettings(settings));
   // "Debug yourself": the parts, each with what it holds, and a tick box.
   const [advanced, setAdvanced] = useState(false);
@@ -286,7 +286,7 @@ export const ReportBugDialog = ({
           {!advanced && (
             <p className="text-xs text-muted-foreground">
               {included ? `Sent with it: ${included}, and which version and page you are on.` : "Sent with it: only which version and page you are on."}{" "}
-              Settings → Telemetry decides what goes along.
+              Settings → Bug reports decides what goes along.
             </p>
           )}
 

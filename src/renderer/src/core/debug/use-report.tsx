@@ -8,7 +8,7 @@ import { useCallback, useRef } from "react";
 
 /**
  * What a report says about this computer: the detected hardware, unless the
- * user switched that off in Settings → Telemetry. Read when the report is
+ * user switched that off in Settings → Bug reports. Read when the report is
  * filed, so it follows the setting as it is then.
  */
 const reportHardware = (): string[] | undefined => {

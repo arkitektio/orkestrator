@@ -3,7 +3,7 @@ import { defaultSettings } from "@/core/settings/store/validator";
 import { describeSelection, selectionFromSettings } from "./reportSettings";
 
 describe("what a report carries by default", () => {
-  it("follows Settings → Telemetry, and leaves the page's data out until asked", () => {
+  it("follows Settings → Bug reports, and leaves the page's data out until asked", () => {
     expect(selectionFromSettings(defaultSettings)).toMatchObject({ screenshot: true, errors: true, data: false });
     const selection = selectionFromSettings({
       ...defaultSettings,

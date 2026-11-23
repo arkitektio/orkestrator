@@ -173,17 +173,15 @@ describe("RailFooter", () => {
     expect(await screen.findByText("Switch organization")).toBeInTheDocument();
   }, 20000);
 
-  it("keeps the agent's state in the row and its switch, with settings, in the menu", async () => {
+  it("keeps the agent's state in the row and its switch in the menu, and leaves Settings to its rail tile", async () => {
     activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
     renderFooter();
 
     expect(screen.getByTestId("agent-icon")).toHaveAttribute("data-agent", "connected");
-    expect(screen.queryByText("Settings")).toBeNull();
-
     await userEvent.click(screen.getByText("Acme Labs"));
 
     expect(await screen.findByText("Agent")).toBeInTheDocument();
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.queryByText("Settings")).toBeNull();
   }, 20000);
 
   describe("how services are reached", () => {

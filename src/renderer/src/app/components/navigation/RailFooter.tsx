@@ -12,9 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
 import { cn } from "@/core/util/utils";
-import { AlertTriangle, ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { AlertTriangle, ChevronsUpDown, Laptop, Network, Server, ShieldCheck, UsersRound } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 
 import { pathTitle, type TunnelPath } from "@/core/connection/mesh/connectionPath";
 import { directnessLine, type Directness } from "@/core/connection/mesh/directness";
@@ -117,7 +116,6 @@ export const RailFooter = () => {
   // again (at most every half minute) when the pointer comes to rest here.
   const directness = useMeshDirectness();
   const agent = useAgentEngage();
-  const navigate = useNavigate();
   const tunnel = path.kind === "direct" ? undefined : path;
   const style = tunnel && PATH_STYLE[tunnel.kind];
 
@@ -143,7 +141,7 @@ export const RailFooter = () => {
 
   return (
     // `app-no-drag`: the rail around it is a window-drag region, which would
-    // otherwise swallow every click on the switcher and the settings link.
+    // otherwise swallow every click on the switcher.
     <div className="app-no-drag flex w-full min-w-0 shrink-0 px-2 pb-2">
       {/* When a tunnel carries the traffic the avatar wears its colour, and
           hovering folds a note out above the switcher — in place, growing
@@ -262,15 +260,7 @@ export const RailFooter = () => {
           {/* Whether apps you run may ask you something here (the agent). */}
           <AgentEngageItem />
 
-          {/* Settings is a destination: appearance (light / dark) lives there
-              too, not here. */}
-          <DropdownMenuItem
-            className="cursor-pointer gap-2 text-xs"
-            onSelect={() => navigate("/settings")}
-          >
-            <Settings className="h-3.5 w-3.5" />
-            Settings
-          </DropdownMenuItem>
+          {/* No Settings here: it is a tile among the modules, at the top of the rail. */}
 
           {/* Adding an account hands off to an external browser for up to a
               minute, which a menu that closes on every click cannot host — so

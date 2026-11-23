@@ -19,7 +19,7 @@ export function describeGpuMemory(gpu: RendererGpu, hardware: RendererHardware):
 
 /**
  * The detected hardware as the lines a bug report carries — and, word for
- * word, what Settings → Telemetry shows the user it will carry. One function
+ * word, what Settings → Bug reports shows the user it will carry. One function
  * for both, so the preview cannot promise less than the report sends.
  */
 export function hardwareReportLines(hardware: RendererHardware): string[] {

@@ -9,7 +9,7 @@ import { canProbeRendererHardware, probeRendererHardware } from "./probeHardware
  * scene can mount, and a probe is not.
  *
  * Only while the user allows it (`telemetryDetectHardware`, on unless switched
- * off in Settings → Telemetry).
+ * off in Settings → Bug reports).
  *
  * Saved onto the settings as they are when the answer arrives, not as they
  * were when it was asked for: a change made in between must survive, and

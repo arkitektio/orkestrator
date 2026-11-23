@@ -108,7 +108,7 @@ export function registerIssueIpc() {
         /**
          * Lines describing this computer, already worded by the renderer
          * (`hardwareReportLines`). Present only while the user leaves
-         * "Attach to bug reports" on in Settings → Telemetry.
+         * "Attach to bug reports" on in Settings → Bug reports.
          */
         hardware?: string[];
         /**

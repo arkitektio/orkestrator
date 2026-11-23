@@ -8,7 +8,7 @@ import {
   Mic,
   Network,
   Pin,
-  Radio,
+  MessageSquareWarning,
   RotateCcw,
   Server,
   Sparkles,
@@ -16,7 +16,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { RoleRequirement } from "@/core/connection/roles";
+import { satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
+import type { ModuleNavLayout } from "@/core/modules/hooks/useModuleNav";
 
 /**
  * The settings, as sections: one route each, grouped in the left column.
@@ -123,10 +124,10 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     group: "computer",
   },
   {
-    slug: "telemetry",
-    label: "Telemetry",
-    description: "What Orkestrator learns about this computer, and what a bug report says about it.",
-    icon: Radio,
+    slug: "reports",
+    label: "Bug reports",
+    description: "What a bug report you file carries, and who it goes to. Nothing is sent by itself.",
+    icon: MessageSquareWarning,
     group: "computer",
   },
   {
@@ -139,7 +140,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     slug: "experiments",
     label: "Experiments",
-    description: "Recent features, on by default: switch one off if it gets in the way.",
+    description: "Recent features, on by default: switch one off if it gets in the way. And what is only here to be tried.",
     icon: FlaskConical,
     group: "advanced",
   },
@@ -155,6 +156,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
 /** Slugs sections had before, and where they are now: old links still land. */
 export const MOVED_SECTIONS: Record<string, string> = {
   general: "experiments",
+  telemetry: "reports",
   services: "hub",
 };
 
@@ -162,6 +164,25 @@ export const MOVED_SECTIONS: Record<string, string> = {
 export const DEFAULT_SECTION = "appearance";
 
 export const settingsLink = (slug: string) => `/settings/${slug}`;
+
+/**
+ * The sections as a rail tile's card draws a module's pages: grouped, each
+ * with its line of description, only those `roles` may open.
+ */
+export const settingsNav = (roles: Parameters<typeof satisfiesRoles>[0]): ModuleNavLayout => ({
+  groups: SETTINGS_GROUPS.map(({ key, title }) => ({
+    title,
+    links: SETTINGS_SECTIONS.filter(
+      (section) => section.group === key && satisfiesRoles(roles, section.roles),
+    ).map((section) => ({
+      module: "settings",
+      label: section.label,
+      route: settingsLink(section.slug),
+      icon: section.icon,
+      description: section.description,
+    })),
+  })).filter((group) => group.links.length > 0),
+});
 
 export const sectionBySlug = (slug: string) =>
   SETTINGS_SECTIONS.find((section) => section.slug === slug);

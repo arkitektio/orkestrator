@@ -8,6 +8,7 @@ import {
   SETTINGS_SECTIONS,
   sectionBySlug,
   settingsLink,
+  settingsNav,
 } from "./sections";
 
 describe("settings sections", () => {
@@ -44,5 +45,18 @@ describe("settings sections", () => {
     for (const group of SETTINGS_GROUPS) {
       expect(SETTINGS_SECTIONS.some((s) => s.group === group.key), group.key).toBe(true);
     }
+  });
+
+  it("gives the rail tile's card every section, in the page's groups and order", () => {
+    const nav = settingsNav([]);
+    expect(nav.groups.map((group) => group.title)).toEqual(SETTINGS_GROUPS.map((group) => group.title));
+    expect(nav.groups.flatMap((group) => group.links.map((link) => link.route))).toEqual(
+      SETTINGS_GROUPS.flatMap((group) =>
+        SETTINGS_SECTIONS.filter((section) => section.group === group.key && !section.roles).map((section) =>
+          settingsLink(section.slug),
+        ),
+      ),
+    );
+    expect(nav.groups.every((group) => group.links.every((link) => link.description && link.icon))).toBe(true);
   });
 });

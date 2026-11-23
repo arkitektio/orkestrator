@@ -3,7 +3,8 @@ import { hardwareReportLines } from "@/core/settings/renderer/hardwareReport";
 import type { RendererHardware } from "@/core/settings/renderer/rendererBudget";
 import type { Settings } from "@/core/settings/store/validator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
-import { Bug, ScanSearch } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/core/ui/alert";
+import { Bug, ScanSearch, ShieldCheck } from "lucide-react";
 import { useWatch } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { SettingsForm } from "../components/SettingsForm";
@@ -47,19 +48,25 @@ const ReportPreview = () => {
   );
 };
 
-export const TelemetryPage = () => (
-  <SettingsPage slug="telemetry">
+/**
+ * Settings → Bug reports. It was called "Telemetry", which read as if the app
+ * reported on its own; it does not, and the page now opens by saying so. The
+ * stored settings keep their `telemetry…` names.
+ */
+export const BugReportsPage = () => (
+  <SettingsPage slug="reports">
     <SettingsForm>
+      <Alert role="note" className="border-primary/30 bg-primary/5">
+        <ShieldCheck className="text-primary" />
+        <AlertTitle>No telemetry</AlertTitle>
+        <AlertDescription>
+          No data ever travels to the developers of Arkitekt unless you choose to send it, or an
+          admin of your organization does.
+        </AlertDescription>
+      </Alert>
       <p className="text-sm text-muted-foreground">
-        Orkestrator sends nothing about you or this computer by itself. What it detects stays in
-        its settings on this computer, and leaves only inside a bug report that you file.
-      </p>
-      <p className="text-sm text-muted-foreground">
-        While it runs, each window also remembers its last errors, failed requests, console
-        warnings and the pages and dialogs you opened, so that a bug report can say what went
-        wrong. That record is kept in memory only, is gone when the window closes, and is listed
-        part by part in the report dialog, where you can leave any part out. A report you send
-        goes to the admins of your own organization, not to the developers of Orkestrator.
+        Only a bug report you file leaves this computer. It goes to the admins of your
+        organization, or, if you press the button for it, to GitHub as an issue.
       </p>
 
       <Card>
@@ -69,20 +76,19 @@ export const TelemetryPage = () => (
             Hardware detection
           </CardTitle>
           <CardDescription>
-            When it first starts, Orkestrator looks at this computer's graphics card, processor,
-            memory, operating system and displays. It uses the graphics card and the memory to
-            decide how much 3D scenes may load (see{" "}
+            Orkestrator looks at this computer's graphics card and memory to decide how much 3D
+            scenes may load (see{" "}
             <Link className="underline" to={settingsLink("renderer")}>
               Renderer
             </Link>
-            ). It does not read the computer's name, your user name, serial numbers or files.
+            ). It reads no names, serial numbers or files.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <SwitchField
             name="telemetryDetectHardware"
             label="Detect this computer's hardware"
-            description="Switching this off also forgets what was detected. 3D scenes then load as if this were a modest computer, unless you set the limits yourself."
+            description="Off also forgets what was detected; 3D scenes then load as on a modest computer."
           />
         </CardContent>
       </Card>
@@ -94,11 +100,9 @@ export const TelemetryPage = () => (
             Bug reports
           </CardTitle>
           <CardDescription>
-            “Report a bug” asks one thing, what is wrong, and sends your answer to the admins of
-            your organization together with the parts switched on here. To look at a part before
-            it goes, or to change this for a single report, press “Debug yourself” in the report.
-            The version of Orkestrator, your operating system and the page you are on always go
-            along.
+            What a report carries besides your description. The app version, your operating
+            system and the page you are on always go along; press “Debug yourself” in a report to
+            see each part first.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -135,12 +139,12 @@ export const TelemetryPage = () => (
           <SwitchField
             name="telemetryReportData"
             label="What the page loaded"
-            description="The data the page's queries returned. This is your own data (names, metadata), so it is off unless you switch it on."
+            description="The data the page's queries returned: your own data, so off by default."
           />
           <SwitchField
             name="telemetryAttachHardware"
             label="Attach hardware details to bug reports"
-            description="Makes rendering problems far easier to reproduce. Applies to reports filed from now on."
+            description="Makes rendering problems far easier to reproduce."
           />
           <ReportPreview />
         </CardContent>
@@ -149,4 +153,4 @@ export const TelemetryPage = () => (
   </SettingsPage>
 );
 
-export default TelemetryPage;
+export default BugReportsPage;

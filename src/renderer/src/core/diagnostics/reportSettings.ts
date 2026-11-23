@@ -3,7 +3,7 @@ import type { ReportSelection } from "./report";
 
 /**
  * What a bug report carries unless the user says otherwise in the dialog:
- * the switches under Settings → Telemetry. The plain report ("What's
+ * the switches under Settings → Bug reports. The plain report ("What's
  * wrong?") sends exactly this; "Debug yourself" opens it up per report.
  * Hardware has its own, older switch, read where the hardware is
  * (`getReportableHardware`).

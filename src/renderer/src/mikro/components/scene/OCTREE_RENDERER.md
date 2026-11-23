@@ -320,7 +320,7 @@ both read. The decoded-chunk cache follows the same module (half the ceiling,
 at most an eighth of real RAM) and is sized once per session. Not handled: an
 atlas allocation that runs out of memory does not shrink and retry, and the
 ceiling is a share of the card's TOTAL, sampled once. Detection is the user's
-to switch off (Settings → Telemetry, on by default): off means no probe, the
+to switch off (Settings → Bug reports, on by default): off means no probe, the
 snapshot is dropped and the old rule applies. The same snapshot is what a bug
 report attaches (also on by default, also switchable there).
 The `totalBrickCount` cap matters: a tiny 4-brick debug layer must not allocate

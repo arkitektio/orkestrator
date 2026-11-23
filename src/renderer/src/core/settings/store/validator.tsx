@@ -195,7 +195,7 @@ export const settingsValidator = zod.object({
   /** Memory for decoded image data, in MB; null follows the GPU ceiling. */
   rendererDecodeCacheMB: zod.number().positive().nullable(),
 
-  // ── Telemetry (Settings → Telemetry) ──
+  // ── Telemetry (Settings → Bug reports) ──
   // Nothing here sends anything by itself. Both are ON unless switched off.
   /**
    * Look at this computer's hardware on first start (and on "Detect again")

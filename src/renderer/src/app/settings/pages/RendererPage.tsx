@@ -232,8 +232,8 @@ const HardwareCard = () => {
         {available && !allowed && (
           <p className="text-sm text-muted-foreground">
             Switch it on under{" "}
-            <Link className="underline" to={settingsLink("telemetry")}>
-              Telemetry
+            <Link className="underline" to={settingsLink("reports")}>
+              Bug reports
             </Link>
             .
           </p>

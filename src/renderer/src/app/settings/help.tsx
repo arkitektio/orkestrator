@@ -60,9 +60,9 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       ]}
     />
   ),
-  telemetry: (
+  reports: (
     <PageHelp
-      intro="What Orkestrator learns about this computer, and what a bug report you file says about it. Nothing is sent by itself."
+      intro="What a bug report you file carries, and who it goes to. There is no telemetry: nothing is sent by itself."
       steps={[
         <>Leave <b>Detect this computer's hardware</b> on to let Orkestrator size 3D scenes to your graphics card. Switch it off to forget what was detected.</>,
         <>Under “Bug reports”, switch each part a report may carry on or off: <b>Screenshot</b>, <b>Recent errors</b>, <b>Failed requests</b>, <b>Steps before the report</b>, <b>Console warnings and errors</b>, <b>Request variables</b> and <b>What the page loaded</b>.</>,
