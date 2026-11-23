@@ -1,4 +1,5 @@
 import { useArkitektActions, useArkitektStore } from "@/core/connection/arkitekt/provider";
+import { agentConnectionKey } from "./connectionKey";
 import { useDialog } from "@/core/dialogs/registry";
 import { useArkitektStoreApi } from "@/core/connection/arkitekt/hooks";
 import { useSettings } from "@/core/settings/store/SettingsContext";
@@ -78,11 +79,11 @@ export const AgentProvider: React.FC<{
   const awaitDialogRef = useRef(awaitDialog);
   awaitDialogRef.current = awaitDialog;
 
-  // A stable identity for "the connection we're bound to": the endpoint. Token
-  // refresh keeps the same endpoint, so it does not churn the agent.
-  const connectionKey = useArkitektStore(
-    (state) => state.connection?.endpoint?.base_url ?? null,
-  );
+  // A stable identity for "the connection we're bound to": the login and the
+  // hub. A token refresh keeps both, so it does not churn the agent; a switch
+  // to another login on the same hub is another agent (another user, org or
+  // client), with a socket, session and journal of its own.
+  const connectionKey = useArkitektStore(agentConnectionKey);
 
   useEffect(() => {
     try {
