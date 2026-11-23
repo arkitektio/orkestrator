@@ -1,9 +1,6 @@
 import { useRekuest } from "@/rekuest/api/hooks";
 import {
   TaskEventChangeFragment,
-  WatchOrgTasksDocument,
-  WatchOrgTasksSubscription,
-  WatchOrgTasksSubscriptionVariables,
 } from "@/rekuest/api/graphql";
 import { writeTaskEventToCache } from "@/rekuest/lib/taskCache";
 import {
@@ -11,7 +8,7 @@ import {
   taskEventChangeToEvent,
 } from "@/rekuest/lib/taskTracker";
 import { toTaskEventChange, type WireTaskEvent } from "@/rekuest/session/frames";
-import { useFeedSource, useRekuestSession } from "@/rekuest/session/hooks";
+import { useRekuestSession } from "@/rekuest/session/hooks";
 import { useEffect } from "react";
 
 const REFETCH_DEBOUNCE_MS = 750;
@@ -33,10 +30,9 @@ const REFETCH_DEBOUNCE_MS = 750;
 export const OrgTasksUpdater = () => {
   const client = useRekuest();
   const session = useRekuestSession();
-  const source = useFeedSource(session);
 
   useEffect(() => {
-    if (!client || source === "pending") return undefined;
+    if (!client) return undefined;
 
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const scheduleListRefetch = () => {
@@ -66,9 +62,7 @@ export const OrgTasksUpdater = () => {
       }
     };
 
-    let stop: () => void;
-    if (source === "session") {
-      stop = session.watch("tasks:org", {
+    const stop = session.watch("tasks:org", {
         onData: (item) => {
           const change = item as { event?: WireTaskEvent | null; create?: unknown };
           onChange({
@@ -81,23 +75,12 @@ export const OrgTasksUpdater = () => {
           if (reason !== "new") scheduleListRefetch();
         },
       });
-    } else {
-      const subscription = client
-        .subscribe<WatchOrgTasksSubscription, WatchOrgTasksSubscriptionVariables>({
-          query: WatchOrgTasksDocument,
-          variables: {},
-        })
-        .subscribe((res) =>
-          onChange({ event: res.data?.tasks.event, create: res.data?.tasks.create }),
-        );
-      stop = () => subscription.unsubscribe();
-    }
 
     return () => {
       stop();
       if (timeout) clearTimeout(timeout);
     };
-  }, [client, session, source]);
+  }, [client, session]);
 
   return null;
 };

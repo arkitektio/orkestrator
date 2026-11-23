@@ -41,10 +41,8 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const make = (overrides: Partial<ConstructorParameters<typeof RekuestSession>[0]> = {}) =>
   new RekuestSession({
     url: "wss://hub/rekuest/session",
-    httpUrl: "https://hub/rekuest/session",
     getToken: async () => "token",
     WebSocket: FakeSocket as unknown as typeof WebSocket,
-    fetch: (async () => ({ status: 400 })) as unknown as typeof fetch,
     ...overrides,
   });
 
@@ -152,30 +150,6 @@ describe("RekuestSession", () => {
     await expect(answer).rejects.toEqual(new SessionRefusal("Not a task you assigned."));
   });
 
-  it("is unsupported where the server has no session route", async () => {
-    const session = make({
-      fetch: (async () => ({ status: 404 })) as unknown as typeof fetch,
-    });
-    FakeSocket.all.at(-1)!.drop();
-    await flush();
-    await flush();
-    expect(session.getStatus()).toBe("unsupported");
-  });
-
-  it("keeps trying a server that is only unreachable", async () => {
-    const session = make({
-      fetch: (async () => {
-        throw new TypeError("offline");
-      }) as unknown as typeof fetch,
-    });
-    FakeSocket.all.at(-1)!.drop();
-    await flush();
-    await flush();
-    expect(session.getStatus()).toBe("connecting");
-    vi.advanceTimersByTime(3_000);
-    expect(FakeSocket.all.length).toBe(2);
-  });
-
   it("a window back after its grace catches every list up, not just a first look", async () => {
     const session = make();
     const reasons: string[] = [];
@@ -191,31 +165,24 @@ describe("RekuestSession", () => {
     expect(reasons).toEqual(["new", "session_expired"]);
   });
 
-  it("falls back to GraphQL when it cannot tell why it never opens, and moves over once it does", async () => {
-    const session = make({
-      fetch: (async () => {
-        throw new TypeError("a 404 this origin may not read");
-      }) as unknown as typeof fetch,
-    });
-    const dropFresh = async () => {
-      FakeSocket.all.at(-1)!.drop();
-      await flush();
-      await flush();
-    };
-    await dropFresh();
+  it("keeps trying a server that never opens, and opens once it does", async () => {
+    const session = make();
+    FakeSocket.all.at(-1)!.drop();
     expect(session.getStatus()).toBe("connecting");
-    vi.advanceTimersByTime(11_000);
-    await dropFresh();
-    expect(session.getStatus()).toBe("fallback");
-    vi.advanceTimersByTime(40_000);
+    vi.advanceTimersByTime(3_000);
+    expect(FakeSocket.all.length).toBe(2);
     await welcome("s-1");
     expect(session.getStatus()).toBe("open");
   });
 
-  it("does not connect when turned off", () => {
-    const session = make({ enabled: () => false });
-    expect(session.getStatus()).toBe("disabled");
-    expect(FakeSocket.all.length).toBe(0);
+  it("a call made before the socket opens goes out once it does", async () => {
+    const session = make();
+    const answer = session.call({ type: "PAUSE", task: "3" });
+    const socket = await welcome();
+    const sent = socket.ofType("PAUSE");
+    expect(sent).toHaveLength(1);
+    socket.push({ type: "ACCEPTED", pos: 1, request: sent[0].request });
+    await expect(answer).resolves.toMatchObject({ type: "ACCEPTED" });
   });
 
   it("drops a state patch it already has", async () => {

@@ -1021,13 +1021,12 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         variables: { id },
         fetchPolicy: 'network-only',
       })
-      // Over the window's session while there is one, else the mutation.
       const session = sessionOf(services.rekuest)
       if (isResumable(data.task)) {
-        await controlTask(services.rekuest.client, session, 'RESUME', id)
+        await controlTask(session, 'RESUME', id)
         toast.success('Resuming task')
       } else if (isPausable(data.task)) {
-        await controlTask(services.rekuest.client, session, 'PAUSE', id)
+        await controlTask(session, 'PAUSE', id)
         toast.success('Pausing task')
       } else {
         toast.info('This task is not running, so it cannot be paused')

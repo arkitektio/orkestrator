@@ -4,16 +4,13 @@ import { useEffect } from "react";
 import {
   AgentChangeEventFragment,
   AgentChangeFragment,
-  WatchAgentsDocument,
-  WatchAgentsSubscription,
-  WatchAgentsSubscriptionVariables,
 } from "../../api/graphql";
 import {
   toAgentChange,
   type ListSnapshot,
   type WireAgentChange,
 } from "../../session/frames";
-import { useFeedSource, useRekuestSession } from "../../session/hooks";
+import { useRekuestSession } from "../../session/hooks";
 
 type RekuestClient = ApolloClient<unknown>;
 
@@ -95,10 +92,9 @@ const REFETCH_DEBOUNCE_MS = 750;
 export const AgentUpdater = () => {
   const client = useRekuest();
   const session = useRekuestSession();
-  const source = useFeedSource(session);
 
   useEffect(() => {
-    if (!client || source === "pending") return undefined;
+    if (!client) return undefined;
 
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const pending = new Set<string>();
@@ -120,9 +116,7 @@ export const AgentUpdater = () => {
       scheduleRefetch(agentListsToRefetch(event, reconnected));
     };
 
-    let stop: () => void;
-    if (source === "session") {
-      stop = session.watch("agents:org", {
+    const stop = session.watch("agents:org", {
         onData: (item) => {
           const change = item as {
             create?: WireAgentChange;
@@ -145,21 +139,12 @@ export const AgentUpdater = () => {
           scheduleRefetch(AGENT_LIST_QUERIES);
         },
       });
-    } else {
-      const subscription = client
-        .subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
-          query: WatchAgentsDocument,
-          variables: {},
-        })
-        .subscribe((res) => onEvent(res.data?.agents));
-      stop = () => subscription.unsubscribe();
-    }
 
     return () => {
       stop();
       if (timeout) clearTimeout(timeout);
     };
-  }, [client, session, source]);
+  }, [client, session]);
 
   return <></>;
 };

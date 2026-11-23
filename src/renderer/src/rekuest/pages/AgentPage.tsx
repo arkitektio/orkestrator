@@ -22,13 +22,10 @@ import {
   WatchImplementationsDocument,
   WatchImplementationsSubscription,
   WatchImplementationsSubscriptionVariables,
-  WatchAgentTasksDocument,
-  WatchAgentTasksSubscription,
-  WatchAgentTasksSubscriptionVariables,
   TaskChangeFragment,
 } from "@/rekuest/api/graphql";
 import { toTaskChange, type ListSnapshot, type WireTaskChange } from "@/rekuest/session/frames";
-import { useFeedSource, useRekuestSession } from "@/rekuest/session/hooks";
+import { useRekuestSession } from "@/rekuest/session/hooks";
 import { LayoutPanelTop, Pin, PinOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageAction } from "@/core/ui/page-action";
@@ -191,18 +188,16 @@ export const AgentPage = asDetailQueryRoute(
       });
     }, [subscribeToMore, data.agent.id]);
 
-    // `agentTasks` streams thin, non-traversable `TaskChange` deltas (scalar ids
-    // only), so this cannot go through `subscribeToMore` — a create has to be
-    // hydrated, and `updateQuery` is synchronous. Subscribe directly and merge
-    // into the cache, exactly like the global `TaskUpdater`.
+    // The agent's tasks over the window's session (`agent:<id>/tasks`): thin
+    // `TaskChange` deltas; a create is hydrated, an update merged into the cache,
+    // exactly like the global `TaskUpdater`.
     const client = useRekuest();
     const agentId = data.agent.id;
 
     const session = useRekuestSession();
-    const source = useFeedSource(session);
 
     useEffect(() => {
-      if (!client || source === "pending") return undefined;
+      if (!client) return undefined;
 
       const onChange = (change: {
         create?: TaskChangeFragment | null;
@@ -218,43 +213,26 @@ export const AgentPage = asDetailQueryRoute(
         }
       };
 
-      if (source === "session") {
-        return session.watch(`agent:${agentId}/tasks`, {
-          onData: (item) => {
-            const change = item as { create?: WireTaskChange | null; update?: WireTaskChange | null };
-            onChange({
-              create: change.create ? toTaskChange(change.create) : null,
-              update: change.update ? toTaskChange(change.update) : null,
-            });
-          },
-          onResync: (snapshot, reason) => {
-            if (reason === "new") return;
-            // Back after a drop: its tasks as they are now (newest first); one it
-            // started meanwhile joins the list.
-            for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
-              const change = toTaskChange(row);
-              applyTaskChangeScalars(client, change);
-              void hydrateAndInsertAgentTask(client, change, agentId);
-            }
-          },
-        });
-      }
-
-      const subscription = client
-        .subscribe<
-          WatchAgentTasksSubscription,
-          WatchAgentTasksSubscriptionVariables
-        >({
-          query: WatchAgentTasksDocument,
-          variables: { agent: agentId },
-        })
-        .subscribe((res) => {
-          const change = res.data?.agentTasks;
-          if (change) onChange(change);
-        });
-
-      return () => subscription.unsubscribe();
-    }, [client, agentId, session, source]);
+      return session.watch(`agent:${agentId}/tasks`, {
+        onData: (item) => {
+          const change = item as { create?: WireTaskChange | null; update?: WireTaskChange | null };
+          onChange({
+            create: change.create ? toTaskChange(change.create) : null,
+            update: change.update ? toTaskChange(change.update) : null,
+          });
+        },
+        onResync: (snapshot, reason) => {
+          if (reason === "new") return;
+          // Back after a drop: its tasks as they are now (newest first); one it
+          // started meanwhile joins the list.
+          for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
+            const change = toTaskChange(row);
+            applyTaskChangeScalars(client, change);
+            void hydrateAndInsertAgentTask(client, change, agentId);
+          }
+        },
+      });
+    }, [client, agentId, session]);
 
     const recentTasks = data.agent.tasks.slice(0, 5);
     const bloks = useAgentBloks(agentId);

@@ -6,9 +6,6 @@ import {
   TaskChangeFragment,
   TaskEventChangeFragment,
   useMyTasksQuery,
-  WatchMyTasksDocument,
-  WatchMyTasksSubscription,
-  WatchMyTasksSubscriptionVariables,
 } from "../../api/graphql";
 import {
   bufferEvent,
@@ -30,7 +27,6 @@ import {
   flushBufferedEvents,
   hydrateAndInsertMyTask,
 } from "../../lib/taskCache";
-import { onSocketReconnect } from "@/core/connection/graphql/reconnects";
 import {
   toTaskChange,
   toTaskEventChange,
@@ -38,7 +34,7 @@ import {
   type WireTaskChange,
   type WireTaskEvent,
 } from "../../session/frames";
-import { useFeedSource, useRekuestSession } from "../../session/hooks";
+import { useRekuestSession } from "../../session/hooks";
 import {
   notify as notifyTask,
   notifyMany as notifyTasks,
@@ -49,7 +45,6 @@ export { registeredCallbacks } from "../../lib/taskTracker";
 export const TaskUpdater = () => {
   const client = useRekuest();
   const session = useRekuestSession();
-  const source = useFeedSource(session);
 
   // The single network query for the global "my tasks" list: TaskUpdater is
   // mounted exactly once at the app root, so this fires once on startup (and on
@@ -81,7 +76,7 @@ export const TaskUpdater = () => {
   }, [data, loading]);
 
   useEffect(() => {
-    if (!client || source === "pending") return undefined;
+    if (!client) return undefined;
 
     // The cache writes are collected (one broadcast per flush); an event
     // whose task is not cached yet is buffered for its hydration to replay.
@@ -156,54 +151,34 @@ export const TaskUpdater = () => {
       );
     };
 
-    if (source === "session") {
-      // The window's caller session: a resume replays nothing of a list, it
-      // resends it (`RESYNC resumed`), which is when the list is read again.
-      const stop = session.watch("tasks:mine", {
-        onData: (item) => {
-          const change = item as { event?: WireTaskEvent | null; create?: WireTaskChange | null };
-          onChange({
-            event: change.event ? toTaskEventChange(change.event) : null,
-            create: change.create ? toTaskChange(change.create) : null,
-          });
-        },
-        onResync: (snapshot, reason) => {
-          if (reason === "new") return;
-          for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
-            applyTaskChangeScalars(client, toTaskChange(row));
-          }
-          void client
-            .refetchQueries({ include: [MyTasksDocument] })
-            .catch((e) => console.warn("[rekuest] reading my tasks again failed:", e));
-          catchUp();
-        },
-      });
-      return () => {
-        stop();
-        events.flush();
-      };
-    }
-
-    const subscription = client
-      .subscribe<WatchMyTasksSubscription, WatchMyTasksSubscriptionVariables>({
-        query: WatchMyTasksDocument,
-        variables: {},
-      })
-      .subscribe((res) =>
-        onChange({ event: res.data?.mytasks.event, create: res.data?.mytasks.create }),
-      );
-
-    // A socket that dropped and came back sends nothing of what happened in
-    // between. The lists are refetched by the connection; the tasks a
-    // component tracks locally are told here what they missed.
-    const stopCatchingUp = onSocketReconnect(client, catchUp);
-
+    // The window's caller session: a resume replays nothing of a list, it
+    // resends it (`RESYNC resumed`), and a window back after its grace gets it
+    // as `session_expired`: then the list is read again and the tasks a
+    // component tracks locally are told what they missed.
+    const stop = session.watch("tasks:mine", {
+      onData: (item) => {
+        const change = item as { event?: WireTaskEvent | null; create?: WireTaskChange | null };
+        onChange({
+          event: change.event ? toTaskEventChange(change.event) : null,
+          create: change.create ? toTaskChange(change.create) : null,
+        });
+      },
+      onResync: (snapshot, reason) => {
+        if (reason === "new") return;
+        for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
+          applyTaskChangeScalars(client, toTaskChange(row));
+        }
+        void client
+          .refetchQueries({ include: [MyTasksDocument] })
+          .catch((e) => console.warn("[rekuest] reading my tasks again failed:", e));
+        catchUp();
+      },
+    });
     return () => {
-      stopCatchingUp();
-      subscription.unsubscribe();
+      stop();
       events.flush();
     };
-  }, [client, session, source]);
+  }, [client, session]);
 
   return <></>;
 };

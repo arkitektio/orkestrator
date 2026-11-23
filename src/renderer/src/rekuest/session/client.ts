@@ -27,13 +27,8 @@ export type SessionStatus =
   | "open"
   /** It was open; it is coming back (and will resume). */
   | "reconnecting"
-  /** This server has no caller sessions: use the GraphQL subscriptions. */
-  | "unsupported"
-  /** It never opened in a while (no answer to tell why): the GraphQL subscriptions meanwhile,
-   *  while it keeps trying; once it opens, the feeds move over. */
-  | "fallback"
-  /** Turned off (Settings → Developer), or disposed. */
-  | "disabled";
+  /** Disposed (the service was replaced or disconnected). */
+  | "closed";
 
 export type TopicListener = {
   onData: (item: unknown) => void;
@@ -69,19 +64,12 @@ type Topic = {
 
 export type RekuestSessionOptions = {
   url: string;
-  /** The same path over http(s): asked once when the socket cannot open, to tell a server
-   *  without sessions (404) from one that is not reachable right now. */
-  httpUrl: string;
   getToken: () => Promise<string>;
   clientInfo?: Record<string, unknown>;
-  enabled?: () => boolean;
   WebSocket?: typeof WebSocket;
-  fetch?: typeof fetch;
 };
 
 const SEEN_LIMIT = 4096;
-/** How long the first connection may try before the feeds fall back to GraphQL meanwhile. */
-const FALLBACK_AFTER_MS = 10_000;
 const REAUTH_EVERY_MS = 60_000;
 
 /** A key for an item that may arrive twice at a seam; null when it carries none. */
@@ -122,14 +110,9 @@ export class RekuestSession {
   private reauther: ReturnType<typeof setInterval> | null = null;
   private disposed = false;
   private counter = 0;
-  private startedAt = Date.now();
 
   constructor(options: RekuestSessionOptions) {
     this.options = options;
-    if (options.enabled && !options.enabled()) {
-      this.setStatus("disabled");
-      return;
-    }
     this.connect();
   }
 
@@ -202,43 +185,21 @@ export class RekuestSession {
       this.socket = null;
       this.stopTimers();
       if (this.disposed) return;
-      if (!opened && !this.everOpen) {
-        void this.probe();
-        return;
-      }
       if (event.code === CLOSE.UNAUTHORIZED) {
         // The token was refused: the next attempt asks for a fresh one.
         console.warn("[rekuest] the session's token was refused; trying again with a fresh one");
       }
-      this.setStatus(
-        this.everOpen ? "reconnecting" : this.status === "fallback" ? "fallback" : "connecting",
-      );
+      if (!opened && !this.everOpen) {
+        // A server without a session route never opens one: said, then tried again.
+        console.warn(`[rekuest] could not open the session at ${this.options.url}; trying again`);
+      }
+      this.setStatus(this.everOpen ? "reconnecting" : "connecting");
       this.retry();
     };
   }
 
-  /** The socket never opened: is there a session route at all? */
-  private async probe() {
-    const fetchImpl = this.options.fetch ?? fetch;
-    try {
-      const answer = await fetchImpl(this.options.httpUrl, { method: "GET" });
-      if (answer.status === 404) {
-        this.setStatus("unsupported");
-        return;
-      }
-    } catch {
-      // Not reachable, or a 404 this window may not read (no CORS on it): no way to tell.
-    }
-    // Not known to be there: after a while the feeds use GraphQL meanwhile, and move over
-    // once a socket opens.
-    if (this.status === "connecting" && Date.now() - this.startedAt >= FALLBACK_AFTER_MS) {
-      this.setStatus("fallback");
-    }
-    this.retry();
-  }
-
   private retry() {
-    if (this.disposed || this.status === "disabled" || this.status === "unsupported") return;
+    if (this.disposed) return;
     const wait = Math.min(30_000, 1_000 * 2 ** Math.min(this.attempt, 5)) + Math.random() * 1_000;
     this.attempt += 1;
     this.timers.push(setTimeout(() => this.connect(), wait));
@@ -401,8 +362,8 @@ export class RekuestSession {
    * id: answered once.
    */
   call<A extends Answer = Answer>(frame: CallFrame): Promise<A> {
-    if (this.status === "disabled" || this.status === "unsupported") {
-      return Promise.reject(new Error("The session is not available."));
+    if (this.disposed) {
+      return Promise.reject(new Error("The session was closed."));
     }
     this.counter += 1;
     const request = `${Date.now().toString(36)}-${this.counter}-${Math.random().toString(36).slice(2, 8)}`;
@@ -433,6 +394,6 @@ export class RekuestSession {
     const socket = this.socket;
     this.socket = null;
     socket?.close(1000);
-    this.setStatus("disabled");
+    this.setStatus("closed");
   }
 }

@@ -2,7 +2,6 @@ import * as React from 'react';
 import {reportError} from '@/core/notify';
 import {useLatestRef} from '@/core/util/hooks/useLatestRef';
 import {type TaskEventKind} from '../api/graphql';
-import {useRekuest} from '../api/hooks';
 import {isCancelable, isInterruptable, isPausable, isResumable} from '../lib/taskStatus';
 import {controlTask} from '../session/calls';
 import {useRekuestSession} from '../session/hooks';
@@ -55,7 +54,6 @@ export const useTaskControl = (
   task: Controlled | null,
   past: boolean,
 ): {can: TaskCan; control: ((operation: TaskControl) => unknown) | undefined} => {
-  const client = useLatestRef(useRekuest());
   const session = useLatestRef(useRekuestSession());
   const id = task?.id;
   const done = task?.isDone ?? false;
@@ -70,7 +68,6 @@ export const useTaskControl = (
     return (operation: TaskControl) => {
       if (!canRef.current[operation]) return undefined;
       const run = async () => {
-        if (!client.current) throw new Error('Rekuest is not connected.');
         const kind =
           operation === 'cancel'
             ? 'CANCEL'
@@ -79,10 +76,10 @@ export const useTaskControl = (
               : operation === 'interrupt'
                 ? 'INTERRUPT'
                 : 'RESUME';
-        await controlTask(client.current, session.current, kind, id, operation === 'step');
+        await controlTask(session.current, kind, id, operation === 'step');
       };
       return run().catch((error: unknown) => reportError(error, FAILED[operation]));
     };
-  }, [canRef, client, id, session]);
+  }, [canRef, id, session]);
   return {can, control};
 };

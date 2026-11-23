@@ -1,15 +1,5 @@
-import { useRekuest } from "@/rekuest/api/hooks";
-import type { ApolloClient } from "@apollo/client";
 import { applyPatch } from "fast-json-patch";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import {
-  WatchAgentDocument,
-  WatchStateDocument,
-  type WatchAgentSubscription,
-  type WatchAgentSubscriptionVariables,
-  type WatchStateSubscription,
-  type WatchStateSubscriptionVariables,
-} from "../api/graphql";
 import type { RekuestSession } from "../session/client";
 import {
   materialize,
@@ -18,61 +8,36 @@ import {
   type StatesSnapshot,
   type WirePatch,
 } from "../session/frames";
-import { useFeedSource, useRekuestSession } from "../session/hooks";
+import { useRekuestSession } from "../session/hooks";
 import { createLiveStateStore, EMPTY_LIVE_STATE, toOperations } from "./liveStateStore";
 
 /**
- * One `WatchState` subscription per `(agentID, interface)` shared by every
- * consumer, patches coalesced to one publish per animation frame — see
- * `./liveStateStore.ts`. The client is the same one the generated
- * `useWatchStateSubscription` uses (`lib/rekuest/hooks.tsx` → `useRekuest()`).
+ * One subscription per `(agentID, interface)` shared by every consumer, patches
+ * coalesced to one publish per animation frame (`./liveStateStore.ts`), over the
+ * window's caller session: the state's snapshot (its newest checkpoint with the
+ * patches after it applied), then each patch; a resume replays the patches missed.
  */
-/** Where a state is followed from: the window's session, or a GraphQL subscription. */
-type LiveStateSource = {
-  apollo: ApolloClient<unknown>;
-  session: RekuestSession;
-  source: "session" | "graphql";
-};
-
-const agentLiveStateStore = createLiveStateStore<LiveStateSource>({
-  subscribe: ({ apollo, session, source }, variables, handlers) => {
-    if (source === "session") {
-      // The state over the session: its snapshot (applied on top of the newest checkpoint),
-      // then each patch; a resume replays the patches missed.
-      return session.watch(`state:${variables.agentID}/${variables.interface}`, {
-        onData: (item) => {
-          const patch = toStatePatchEvent(item as WirePatch);
-          handlers.next({
-            __typename: "StatePatchEvent",
-            ops: patch.ops,
-            globalRevision: patch.globalRevision,
-          });
-        },
-        onResync: (snapshot) => {
-          const event = toStateSnapshotEvent(snapshot as StatesSnapshot, variables.interface);
-          handlers.next({
-            __typename: "StateSnapshotEvent",
-            value: event?.value ?? null,
-            globalRevision: event?.globalRevision ?? 0,
-          });
-        },
-        onRefused: (error) => handlers.error(new Error(error)),
-      });
-    }
-    const subscription = apollo
-      .subscribe<WatchStateSubscription, WatchStateSubscriptionVariables>({
-        query: WatchStateDocument,
-        variables: { agentID: variables.agentID, interface: variables.interface },
-      })
-      .subscribe({
-        next: (result) => {
-          const event = result.data?.watchState;
-          if (event) handlers.next(event);
-        },
-        error: handlers.error,
-      });
-    return () => subscription.unsubscribe();
-  },
+const agentLiveStateStore = createLiveStateStore<RekuestSession>({
+  subscribe: (session, variables, handlers) =>
+    session.watch(`state:${variables.agentID}/${variables.interface}`, {
+      onData: (item) => {
+        const patch = toStatePatchEvent(item as WirePatch);
+        handlers.next({
+          __typename: "StatePatchEvent",
+          ops: patch.ops,
+          globalRevision: patch.globalRevision,
+        });
+      },
+      onResync: (snapshot) => {
+        const event = toStateSnapshotEvent(snapshot as StatesSnapshot, variables.interface);
+        handlers.next({
+          __typename: "StateSnapshotEvent",
+          value: event?.value ?? null,
+          globalRevision: event?.globalRevision ?? 0,
+        });
+      },
+      onRefused: (error) => handlers.error(new Error(error)),
+    }),
 });
 
 export const useAgentLiveState = ({
@@ -84,23 +49,20 @@ export const useAgentLiveState = ({
   stateInterface?: string;
   skip?: boolean;
 }) => {
-  const client = useRekuest();
   const session = useRekuestSession();
-  const source = useFeedSource(session);
-  const active =
-    !skip && !!agentID && !!stateInterface && !!client && source !== "pending";
+  const active = !skip && !!agentID && !!stateInterface;
 
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
       if (!active) return () => {};
       return agentLiveStateStore.acquire(
-        { apollo: client, session, source },
+        session,
         agentID as string,
         stateInterface as string,
         onStoreChange,
       );
     },
-    [active, client, session, source, agentID, stateInterface],
+    [active, session, agentID, stateInterface],
   );
   const getSnapshot = useCallback(
     () =>
@@ -125,15 +87,13 @@ export const useAgentStates = ({
 }: {
   agentID: string;
 }) => {
-  const client = useRekuest();
   const session = useRekuestSession();
-  const source = useFeedSource(session);
   const [liveValue, setLiveValue] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [revision, setRevision] = useState<number | null>(null);
   const valueRef = useRef<Record<string, Record<string, unknown>> | null>(null);
 
   useEffect(() => {
-    if (!client || !agentID || source === "pending") return undefined;
+    if (!agentID) return undefined;
 
     const onSnapshot = (values: Record<string, Record<string, unknown>>, rev: number) => {
       valueRef.current = values;
@@ -150,40 +110,22 @@ export const useAgentStates = ({
       setRevision(rev);
     };
 
-    if (source === "session") {
-      return session.watch(`states:${agentID}`, {
-        onData: (item) => {
-          const patch = item as WirePatch;
-          onPatch(String(patch.state), toStatePatchEvent(patch).ops, patch.global_rev);
-        },
-        onResync: (snapshot) => {
-          const states = snapshot as StatesSnapshot;
-          // Keyed by state id, as the GraphQL feed's snapshot is.
-          const values: Record<string, Record<string, unknown>> = {};
-          for (const state of Object.values(states.states)) {
-            values[String(state.state)] = materialize(state.value) as Record<string, unknown>;
-          }
-          onSnapshot(values, states.global_rev);
-        },
-      });
-    }
-
-    const subscription = client
-      .subscribe<WatchAgentSubscription, WatchAgentSubscriptionVariables>({
-        query: WatchAgentDocument,
-        variables: { agentID },
-      })
-      .subscribe(({ data }) => {
-        const event = data?.watchAgent;
-        if (!event) return;
-        if (event.__typename === "AgentSnapshotEvent") {
-          onSnapshot(event.values, event.globalRevision);
-        } else if (event.__typename === "StatePatchEvent") {
-          onPatch(event.stateId, event.ops, event.globalRevision);
+    return session.watch(`states:${agentID}`, {
+      onData: (item) => {
+        const patch = item as WirePatch;
+        onPatch(String(patch.state), toStatePatchEvent(patch).ops, patch.global_rev);
+      },
+      onResync: (snapshot) => {
+        const states = snapshot as StatesSnapshot;
+        // Keyed by state id, as the states page reads them.
+        const values: Record<string, Record<string, unknown>> = {};
+        for (const state of Object.values(states.states)) {
+          values[String(state.state)] = materialize(state.value) as Record<string, unknown>;
         }
-      });
-    return () => subscription.unsubscribe();
-  }, [client, agentID, session, source]);
+        onSnapshot(values, states.global_rev);
+      },
+    });
+  }, [agentID, session]);
 
   return {
     value: liveValue,

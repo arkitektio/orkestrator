@@ -1,8 +1,7 @@
 import { REKUEST_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/connection/arkitekt/builders/graphQlServiceBuidler";
-import { aliasToHttpPath, aliasToWsPath } from "@/core/connection/arkitekt/alias/helpers";
+import { aliasToWsPath } from "@/core/connection/arkitekt/alias/helpers";
 import type { Service, ServiceBuilder } from "@/core/connection/arkitekt/types";
-import { sessionsEnabled } from "@/core/connection/realtime";
 import type { ApolloClient } from "@apollo/client";
 import rekuestResult from "./api/fragments";
 import { RekuestSession } from "./session/client";
@@ -18,20 +17,18 @@ const graphql = createGraphQLServiceBuilder(rekuestResult.possibleTypes, {
 /**
  * The GraphQL client as every module has one, and the caller session
  * (`rekuest/session`): one socket per window to takt, over which tasks and
- * states are followed and calls made. A server without sessions leaves it
- * `unsupported` and the feeds on their GraphQL subscriptions.
+ * states are followed and calls made. It is the only live path: a hub whose
+ * gateway does not route `/rekuest/session` to takt has no live updates.
  */
 const builder: ServiceBuilder<RekuestService> = (options) => {
   const service = graphql(options);
   const session = new RekuestSession({
     url: aliasToWsPath(options.alias, "session"),
-    httpUrl: aliasToHttpPath(options.alias, "session"),
     getToken: async () => (await options.getToken()).access_token,
     clientInfo: {
       app: "orkestrator",
       window: typeof window !== "undefined" ? window.name || "main" : "main",
     },
-    enabled: sessionsEnabled,
   });
   return {
     ...service,

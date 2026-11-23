@@ -2,8 +2,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toggle } from "@/core/ui/toggle";
 import { cn } from "@/core/util/utils";
 import { Unplug } from "lucide-react";
-import { overSession } from "../session/calls";
-import { useRekuestSession, useRekuestSessionStatus } from "../session/hooks";
 
 /** How long a window may be gone, the choices offered. */
 const CHOICES = [
@@ -15,9 +13,8 @@ const CHOICES = [
 /**
  * "Stop if I leave": the dead man switch of the run about to start. Pressed,
  * the run is cancelled once this window has been gone the chosen time (closed,
- * crashed, offline); otherwise a run never depends on the window. Only offered
- * while the window has a session with the server, the only thing that knows
- * whether it is there.
+ * crashed, offline); otherwise a run never depends on the window. The window's
+ * session with the server is what tells whether it is there.
  */
 export const DeadmanToggle = ({
   seconds,
@@ -29,9 +26,6 @@ export const DeadmanToggle = ({
   onChange: (seconds: number | null) => void;
   className?: string;
 }) => {
-  const session = useRekuestSession();
-  useRekuestSessionStatus(session);
-  if (!overSession(session)) return null;
   const on = seconds != null;
   return (
     <span className={cn("flex items-center gap-1", className)}>

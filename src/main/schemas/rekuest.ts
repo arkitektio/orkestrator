@@ -9330,11 +9330,6 @@ export type ModulesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ModulesQuery = { __typename?: 'Query', modules: Array<{ __typename?: 'Module', id: string, name: string, description?: string | null, isRegistered: boolean, catalogs: Array<string>, components: Array<{ __typename?: 'CatalogComponent', name: string, description?: string | null, acceptsChildren: boolean, context: ComponentContext, childrenContext?: ComponentContext | null, downstreamOf: Array<string>, notDownstreamOf: Array<string>, props: Array<{ __typename?: 'CatalogProp', key: string, kind: CatalogValueKind, required: boolean, description?: string | null }> }>, operations: Array<{ __typename?: 'CatalogOperation', name: string, description?: string | null, returns: CatalogValueKind, arguments: Array<{ __typename?: 'CatalogArgument', key: string, kind: CatalogValueKind, required: boolean, description?: string | null }> }> }> };
 
-export type WatchAgentsSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type WatchAgentsSubscription = { __typename?: 'Subscription', agents: { __typename?: 'AgentChangeEvent', delete?: string | null, create?: { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string } | null, update?: { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string } | null } };
-
 export type WatchAssetsSubscriptionVariables = Exact<{
   refs?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
@@ -9356,55 +9351,6 @@ export type WatchSignalsSubscriptionVariables = Exact<{ [key: string]: never; }>
 
 
 export type WatchSignalsSubscription = { __typename?: 'Subscription', signals: { __typename?: 'SignalChangeEvent', create?: { __typename?: 'SignalChange', id: string, service: string, kind: SignalKind, identifier: string, object: string, receivedAt: any, processedAt?: any | null, fired: number } | null, update?: { __typename?: 'SignalChange', id: string, service: string, kind: SignalKind, identifier: string, object: string, receivedAt: any, processedAt?: any | null, fired: number } | null } };
-
-export type WatchStateSubscriptionVariables = Exact<{
-  stateID?: InputMaybe<Scalars['ID']['input']>;
-  agentID?: InputMaybe<Scalars['ID']['input']>;
-  interface?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type WatchStateSubscription = { __typename?: 'Subscription', watchState: { __typename?: 'StatePatchEvent', stateId: string, agentId: string, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string, ops: Array<{ __typename?: 'JSONPatch', op: JsonPatchOperation, path: string, value?: any | null }> } | { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null } };
-
-export type WatchAgentSubscriptionVariables = Exact<{
-  agentID: Scalars['ID']['input'];
-}>;
-
-
-export type WatchAgentSubscription = { __typename?: 'Subscription', watchAgent: { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null } | { __typename?: 'StatePatchEvent', stateId: string, agentId: string, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string, ops: Array<{ __typename?: 'JSONPatch', op: JsonPatchOperation, path: string, value?: any | null }> } };
-
-export type WatchMyTasksSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type WatchMyTasksSubscription = { __typename?: 'Subscription', mytasks: { __typename?: 'TaskChangeEvent', create?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null, event?: { __typename?: 'TaskEventChange', id: string, task: string, taskSeq?: number | null, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any } | null } };
-
-export type WatchOrgTasksSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type WatchOrgTasksSubscription = { __typename?: 'Subscription', tasks: { __typename?: 'TaskChangeEvent', create?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null, event?: { __typename?: 'TaskEventChange', id: string, task: string, taskSeq?: number | null, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any } | null } };
-
-export type WatchChildTasksSubscriptionVariables = Exact<{
-  parentId: Scalars['ID']['input'];
-}>;
-
-
-export type WatchChildTasksSubscription = { __typename?: 'Subscription', childTasks: { __typename?: 'ChildTaskEvent', create?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null, update?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null } };
-
-export type WatchAgentTasksSubscriptionVariables = Exact<{
-  agent: Scalars['ID']['input'];
-}>;
-
-
-export type WatchAgentTasksSubscription = { __typename?: 'Subscription', agentTasks: { __typename?: 'AgentTaskUpdate', create?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null, update?: { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null } | null } };
-
-export type WatchTaskEventsSubscriptionVariables = Exact<{
-  task: Scalars['ID']['input'];
-  after?: InputMaybe<Scalars['ID']['input']>;
-  afterSeq?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type WatchTaskEventsSubscription = { __typename?: 'Subscription', taskEvents: { __typename?: 'TaskEventChange', id: string, task: string, taskSeq?: number | null, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any } };
 
 export type WatchImplementationSubscriptionVariables = Exact<{
   implementation: Scalars['ID']['input'];
@@ -14689,13 +14635,6 @@ export const ModulesDocument = gql`
   }
 }
     ${ModuleFragmentDoc}`;
-export const WatchAgentsDocument = gql`
-    subscription WatchAgents {
-  agents {
-    ...AgentChangeEvent
-  }
-}
-    ${AgentChangeEventFragmentDoc}`;
 export const WatchAssetsDocument = gql`
     subscription WatchAssets($refs: [String!]) {
   assets(refs: $refs) {
@@ -14743,64 +14682,6 @@ export const WatchSignalsDocument = gql`
   }
 }
     ${SignalChangeFragmentDoc}`;
-export const WatchStateDocument = gql`
-    subscription WatchState($stateID: ID, $agentID: ID, $interface: String) {
-  watchState(stateId: $stateID, agentId: $agentID, interface: $interface) {
-    ...StatePatchEvent
-    ...StateSnapshotEvent
-  }
-}
-    ${StatePatchEventFragmentDoc}
-${StateSnapshotEventFragmentDoc}`;
-export const WatchAgentDocument = gql`
-    subscription WatchAgent($agentID: ID!) {
-  watchAgent(agentId: $agentID) {
-    ...StatePatchEvent
-    ...AgentSnapshotEvent
-  }
-}
-    ${StatePatchEventFragmentDoc}
-${AgentSnapshotEventFragmentDoc}`;
-export const WatchMyTasksDocument = gql`
-    subscription WatchMyTasks {
-  mytasks {
-    ...TaskChangeEvent
-  }
-}
-    ${TaskChangeEventFragmentDoc}`;
-export const WatchOrgTasksDocument = gql`
-    subscription WatchOrgTasks {
-  tasks {
-    ...TaskChangeEvent
-  }
-}
-    ${TaskChangeEventFragmentDoc}`;
-export const WatchChildTasksDocument = gql`
-    subscription WatchChildTasks($parentId: ID!) {
-  childTasks(id: $parentId) {
-    ...ChildTaskEvent
-  }
-}
-    ${ChildTaskEventFragmentDoc}`;
-export const WatchAgentTasksDocument = gql`
-    subscription WatchAgentTasks($agent: ID!) {
-  agentTasks(agent: $agent) {
-    create {
-      ...TaskChange
-    }
-    update {
-      ...TaskChange
-    }
-  }
-}
-    ${TaskChangeFragmentDoc}`;
-export const WatchTaskEventsDocument = gql`
-    subscription WatchTaskEvents($task: ID!, $after: ID, $afterSeq: Int) {
-  taskEvents(task: $task, after: $after, afterSeq: $afterSeq) {
-    ...TaskEventChange
-  }
-}
-    ${TaskEventChangeFragmentDoc}`;
 export const WatchImplementationDocument = gql`
     subscription WatchImplementation($implementation: ID!) {
   implementationChange(implementation: $implementation) {
@@ -15369,9 +15250,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     Modules(variables?: ModulesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ModulesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ModulesQuery>({ document: ModulesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Modules', 'query', variables);
     },
-    WatchAgents(variables?: WatchAgentsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAgentsSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchAgentsSubscription>({ document: WatchAgentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAgents', 'subscription', variables);
-    },
     WatchAssets(variables?: WatchAssetsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAssetsSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchAssetsSubscription>({ document: WatchAssetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAssets', 'subscription', variables);
     },
@@ -15383,27 +15261,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     WatchSignals(variables?: WatchSignalsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchSignalsSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchSignalsSubscription>({ document: WatchSignalsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchSignals', 'subscription', variables);
-    },
-    WatchState(variables?: WatchStateSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchStateSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchStateSubscription>({ document: WatchStateDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchState', 'subscription', variables);
-    },
-    WatchAgent(variables: WatchAgentSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAgentSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchAgentSubscription>({ document: WatchAgentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAgent', 'subscription', variables);
-    },
-    WatchMyTasks(variables?: WatchMyTasksSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchMyTasksSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchMyTasksSubscription>({ document: WatchMyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchMyTasks', 'subscription', variables);
-    },
-    WatchOrgTasks(variables?: WatchOrgTasksSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchOrgTasksSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchOrgTasksSubscription>({ document: WatchOrgTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchOrgTasks', 'subscription', variables);
-    },
-    WatchChildTasks(variables: WatchChildTasksSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchChildTasksSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchChildTasksSubscription>({ document: WatchChildTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchChildTasks', 'subscription', variables);
-    },
-    WatchAgentTasks(variables: WatchAgentTasksSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchAgentTasksSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchAgentTasksSubscription>({ document: WatchAgentTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchAgentTasks', 'subscription', variables);
-    },
-    WatchTaskEvents(variables: WatchTaskEventsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchTaskEventsSubscription> {
-      return withWrapper((wrappedRequestHeaders) => client.request<WatchTaskEventsSubscription>({ document: WatchTaskEventsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchTaskEvents', 'subscription', variables);
     },
     WatchImplementation(variables: WatchImplementationSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchImplementationSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchImplementationSubscription>({ document: WatchImplementationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchImplementation', 'subscription', variables);
