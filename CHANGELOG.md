@@ -1,3 +1,20 @@
+# [8.25.0](https://github.com/arkitektio/orkestrator/compare/v8.24.0...v8.25.0) (2026-11-23)
+
+
+### Bug Fixes
+
+* **agent:** a switch to another login on the same hub starts another agent ([7e03356](https://github.com/arkitektio/orkestrator/commit/7e03356e1daef4cbd0976f512afbd2345ad4e9dc))
+* **rekuest:** a task's summary line never reads the runtime's "Queued for running" ([101fd4b](https://github.com/arkitektio/orkestrator/commit/101fd4b3a39880f44307735f0077afd73519f661))
+* **rekuest:** a window back after its grace catches up; feeds never wait on a mute server ([3dd677f](https://github.com/arkitektio/orkestrator/commit/3dd677f8011e2680a79293033fd9acd19bd9c977))
+* **rekuest:** the session sends nothing but HELLO before it is welcomed ([197eab2](https://github.com/arkitektio/orkestrator/commit/197eab214c4f621044a8ae0f58f688a3df3d1e20))
+
+
+### Features
+
+* **rekuest:** an agent's latest run follows the session's `latest:` topic ([08e2edb](https://github.com/arkitektio/orkestrator/commit/08e2edb1baa960c809859adadbf37a86aaf343e0))
+* **rekuest:** follow and steer tasks over the window's caller session on takt ([54806bc](https://github.com/arkitektio/orkestrator/commit/54806bc163942795e6a2c92de91ff52ad5c943f4))
+* **rekuest:** pin an agent's panel from its page ([21e7788](https://github.com/arkitektio/orkestrator/commit/21e7788111a35950cd8c3fe149293a3de2a506cc))
+
 # [8.24.0](https://github.com/arkitektio/orkestrator/compare/v8.23.2...v8.24.0) (2026-11-22)
 
 
