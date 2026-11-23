@@ -1,6 +1,7 @@
 import {idleTaskRecord, withTaskStatus, type BlokTaskRecord, type BlokTaskStatus} from '@arkitektio/bsx/renderer/runtime/index';
 import {TaskEventKind} from '../api/graphql';
 import {askClosed, pendingHolds, type HoldRequest} from '../lib/holds';
+import {saidByTask} from '../lib/taskMessage';
 import {isTerminalEvent} from '../lib/taskTracker';
 import {parseTimestamp} from '../travel/travelSource';
 
@@ -141,6 +142,7 @@ export const taskRecordOf = (task: TaskRootSource, at?: number): TaskRecord => {
   // Being stopped, the run asks nothing any more: `task.ask` is empty, so a blok drawing its own form takes no answer.
   const shown = askClosed(task) ? undefined : shownAsk(task);
   const status = statusOf(task.latestEventKind, ended, shown !== undefined);
+  const said = saidByTask({latestMessage: task.latestMessage}) ?? null;
   const progress = typeof task.latestProgress === 'number' && Number.isFinite(task.latestProgress) ? task.latestProgress : 0;
   return {
     ...withStatus(status),
@@ -148,8 +150,8 @@ export const taskRecordOf = (task: TaskRootSource, at?: number): TaskRecord => {
     id: task.id,
     args,
     progress: status === 'done' ? 100 : Math.min(100, Math.max(0, progress)),
-    message: task.latestMessage ?? null,
-    error: status === 'failed' ? (task.latestMessage ?? null) : null,
+    message: said,
+    error: status === 'failed' ? said : null,
     ask: askOf(shown),
     returns: isRecordValue(task.latestReturns) ? task.latestReturns : {},
   };

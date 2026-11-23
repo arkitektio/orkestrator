@@ -16,6 +16,7 @@ import {
 } from "../../lib/taskStatus";
 import { formatDuration } from "../../lib/taskTimeline";
 import { firstReturnedStructure } from "../../lib/firstReturn";
+import { saidByTask } from "../../lib/taskMessage";
 import { ActionMonogram } from "../logo/ActionMonogram";
 import { BlokLogo } from "../logo/BlokLogo";
 
@@ -64,7 +65,7 @@ const TheCard = ({ item }: Props) => {
     : undefined;
   // What it last said: the most useful line of a live or failed run, and how
   // a finished one ended ("Successfully done" when it said nothing).
-  const said = item.latestMessage ?? item.events.find((e) => e.message)?.message;
+  const said = saidByTask(item);
   const message = bucket === "done" ? (said ?? "Successfully done") : live || failed ? said : undefined;
   // What a finished run made, to open or act on from its card.
   const made = bucket === "done" ? firstReturnedStructure(item.action.returns, item.latestReturns) : null;

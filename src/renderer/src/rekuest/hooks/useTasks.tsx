@@ -5,6 +5,7 @@ import {
   LiveTaskFragment,
   useMyTasksQuery,
 } from "../api/graphql";
+import { saidByTask } from "../lib/taskMessage";
 
 export const useTasks = () => {
   // Read the global "my tasks" list from cache. `cache-first` means consumers do
@@ -164,8 +165,7 @@ export const deriveLiveState = (
     )
     .at(0)?.message;
 
-  const latestMessage =
-    task?.latestMessage ?? task?.events.find((x) => x.message != undefined)?.message;
+  const latestMessage = task ? saidByTask(task) : undefined;
 
   return {
     progress:

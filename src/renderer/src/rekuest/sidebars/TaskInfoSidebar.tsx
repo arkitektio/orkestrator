@@ -19,6 +19,7 @@ import {
   formatEventKind,
   TaskStatusIcon,
 } from "../lib/taskStatus";
+import { saidByTask } from "../lib/taskMessage";
 import { formatDuration, getEndTime } from "../lib/taskTimeline";
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
@@ -62,6 +63,7 @@ export const TaskFacts = ({ task }: { task: DetailTaskFragment }) => {
   const agent = task.implementation?.agent;
   const deviceId = agent?.client.device?.deviceId;
   const walltime = formatDuration(getEndTime(task) - new Date(task.createdAt).getTime());
+  const said = saidByTask({ latestMessage: task.latestMessage });
   const root = task.root && task.root.id !== task.parent?.id && task.root.id !== task.id ? task.root : null;
 
   return (
@@ -70,8 +72,8 @@ export const TaskFacts = ({ task }: { task: DetailTaskFragment }) => {
         <RekuestAction.DetailLink object={task.action} className={cn("break-all text-lg font-semibold", LINK)}>
           {task.action.name}
         </RekuestAction.DetailLink>
-        {task.latestMessage && (
-          <p className="text-sm text-muted-foreground">{task.latestMessage}</p>
+        {said && (
+          <p className="text-sm text-muted-foreground">{said}</p>
         )}
       </div>
 

@@ -118,6 +118,22 @@ describe("TaskCard", () => {
     expect(screen.getByText("Successfully done")).toBeTruthy();
   });
 
+  it("never reads the runtime's own queue line as how a run ended", () => {
+    render(
+      <TaskCard
+        item={task({
+          isDone: true,
+          latestEventKind: TaskEventKind.Completed,
+          finishedAt: "2026-09-17T10:00:01.000Z",
+          latestMessage: "Queued for running",
+          events: [event({ progress: 0, message: "Queued for running" })],
+        })}
+      />,
+    );
+    expect(screen.getByText("Successfully done")).toBeTruthy();
+    expect(screen.queryByText("Queued for running")).toBeNull();
+  });
+
   it("surfaces the failure message of a failed task", () => {
     const { container } = render(
       <TaskCard
