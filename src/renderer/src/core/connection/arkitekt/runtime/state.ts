@@ -29,7 +29,12 @@ export const buildConfigurationIssues = (
   Object.values(moduleRegistry).forEach((moduleDefinition) => {
     const requirement = moduleDefinition.requirement;
 
-    if (!session.fakts.instances[requirement.serviceKey] && !requirement.optional) {
+    // An optional service the hub does not grant hides its module: that is no issue. Only a
+    // service the app cannot do without is.
+    const serviceOptional = Object.values(serviceBuilderMap).find(
+      (definition) => definition.key === requirement.serviceKey,
+    )?.optional;
+    if (!session.fakts.instances[requirement.serviceKey] && !requirement.optional && !serviceOptional) {
       issues.push(
         `Module '${moduleDefinition.key}' is missing required service '${requirement.serviceKey}'.`,
       );

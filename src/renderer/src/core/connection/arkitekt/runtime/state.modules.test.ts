@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { buildModuleStates, createModuleRegistryFromServices } from "./state";
+import { buildConfigurationIssues, buildModuleStates, createModuleRegistryFromServices } from "./state";
+import type { StoredArkitektSession } from "../session/record";
 import type { ServiceBuilderMap, ServiceHealthStatus, ServiceRuntimeState } from "../types";
 
 const serviceBuilderMap = {
@@ -34,5 +35,26 @@ describe("buildModuleStates", () => {
       mikro: { key: "mikro", configured: false, status: "unconfigured", errors: [] } as unknown as ServiceRuntimeState,
     }).mikro;
     expect(state.status).toBe("hidden");
+  });
+});
+
+describe("buildConfigurationIssues", () => {
+  const services = {
+    mikro: { key: "mikro", service: "live.arkitekt.mikro", optional: false, builder: () => ({ client: {} }) },
+    omero_ark: { key: "omero_ark", service: "live.arkitekt.omero_ark", optional: true, builder: () => ({ client: {} }) },
+  } as unknown as ServiceBuilderMap;
+  const modules = createModuleRegistryFromServices(services);
+  const session = (instances: string[]) =>
+    ({ fakts: { instances: Object.fromEntries(instances.map((key) => [key, {}])) } }) as unknown as StoredArkitektSession;
+
+  it("says nothing of a module whose optional service the hub does not grant", () => {
+    expect(buildConfigurationIssues(services, modules, session(["mikro"]))).toEqual([]);
+  });
+
+  it("names a required service the hub does not grant, and the module that needs it", () => {
+    expect(buildConfigurationIssues(services, modules, session(["omero_ark"]))).toEqual([
+      "Missing configuration for required service 'mikro'.",
+      "Module 'mikro' is missing required service 'mikro'.",
+    ]);
   });
 });
