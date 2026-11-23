@@ -1,3 +1,10 @@
+# [8.28.0](https://github.com/arkitektio/orkestrator/compare/v8.27.0...v8.28.0) (2026-11-23)
+
+
+### Features
+
+* update ([1fcd327](https://github.com/arkitektio/orkestrator/commit/1fcd3277625fba1fe23bb84dde811592f874b5e7))
+
 # [8.27.0](https://github.com/arkitektio/orkestrator/compare/v8.26.0...v8.27.0) (2026-11-23)
 
 
